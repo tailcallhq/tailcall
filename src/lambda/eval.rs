@@ -15,14 +15,5 @@ where
     conc: &'a Concurrency,
   ) -> Pin<Box<dyn Future<Output = Result<Output>> + 'a + Send>>
   where
-    Output: 'a,
-  {
-    Box::pin(self.async_eval(ctx, conc))
-  }
-
-  fn async_eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-    &'a self,
-    ctx: &'a EvaluationContext<'a, Ctx>,
-    conc: &'a Concurrency,
-  ) -> impl Future<Output = Result<Output>> + Send;
+    Output: 'a;
 }

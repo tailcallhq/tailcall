@@ -1,4 +1,6 @@
+use core::future::Future;
 use std::fmt::Debug;
+use std::pin::Pin;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
@@ -80,32 +82,34 @@ impl Expression {
 }
 
 impl Eval for Expression {
-  async fn async_eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+  fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
     conc: &'a Concurrency,
-  ) -> Result<async_graphql::Value> {
-    match self {
-      Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
-      Expression::Context(op) => match op {
-        Context::Value => Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null)),
-        Context::Path(path) => Ok(ctx.path_value(path).cloned().unwrap_or(async_graphql::Value::Null)),
-      },
-      Expression::Input(input, path) => {
-        let inp = &input.eval(ctx, conc).await?;
-        Ok(inp.get_path(path).unwrap_or(&async_graphql::Value::Null).clone())
-      }
-      Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
-      Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
-        left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
-      )),
-      Expression::Io(operation) => operation.async_eval(ctx, conc).await,
+  ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    Box::pin(async move {
+      match self {
+        Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
+        Expression::Context(op) => match op {
+          Context::Value => Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null)),
+          Context::Path(path) => Ok(ctx.path_value(path).cloned().unwrap_or(async_graphql::Value::Null)),
+        },
+        Expression::Input(input, path) => {
+          let inp = &input.eval(ctx, conc).await?;
+          Ok(inp.get_path(path).unwrap_or(&async_graphql::Value::Null).clone())
+        }
+        Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
+        Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
+          left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
+        )),
+        Expression::Io(operation) => operation.eval(ctx, conc).await,
 
-      Expression::Relation(relation) => relation.async_eval(ctx, conc).await,
-      Expression::Logic(logic) => logic.async_eval(ctx, conc).await,
-      Expression::List(list) => list.async_eval(ctx, conc).await,
-      Expression::Math(math) => math.async_eval(ctx, conc).await,
-    }
+        Expression::Relation(relation) => relation.eval(ctx, conc).await,
+        Expression::Logic(logic) => logic.eval(ctx, conc).await,
+        Expression::List(list) => list.eval(ctx, conc).await,
+        Expression::Math(math) => math.eval(ctx, conc).await,
+      }
+    })
   }
 }
 

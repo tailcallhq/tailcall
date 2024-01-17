@@ -1,5 +1,8 @@
+use core::future::Future;
 use std::ops;
+use std::pin::Pin;
 
+use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{Concurrency, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
@@ -21,108 +24,110 @@ pub enum Math {
 }
 
 impl Eval for Math {
-  async fn async_eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+  fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
     conc: &'a Concurrency,
-  ) -> anyhow::Result<ConstValue> {
-    Ok(match self {
-      Math::Mod(lhs, rhs) => {
-        let lhs = lhs.eval(ctx, conc).await?;
-        let rhs = rhs.eval(ctx, conc).await?;
+  ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    Box::pin(async move {
+      Ok(match self {
+        Math::Mod(lhs, rhs) => {
+          let lhs = lhs.eval(ctx, conc).await?;
+          let rhs = rhs.eval(ctx, conc).await?;
 
-        try_i64_operation(&lhs, &rhs, ops::Rem::rem)
-          .or_else(|| try_u64_operation(&lhs, &rhs, ops::Rem::rem))
-          .ok_or(EvaluationError::ExprEvalError("mod".into()))?
-      }
-      Math::Add(lhs, rhs) => {
-        let lhs = lhs.eval(ctx, conc).await?;
-        let rhs = rhs.eval(ctx, conc).await?;
+          try_i64_operation(&lhs, &rhs, ops::Rem::rem)
+            .or_else(|| try_u64_operation(&lhs, &rhs, ops::Rem::rem))
+            .ok_or(EvaluationError::ExprEvalError("mod".into()))?
+        }
+        Math::Add(lhs, rhs) => {
+          let lhs = lhs.eval(ctx, conc).await?;
+          let rhs = rhs.eval(ctx, conc).await?;
 
-        try_f64_operation(&lhs, &rhs, ops::Add::add)
-          .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
-          .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
-          .ok_or(EvaluationError::ExprEvalError("add".into()))?
-      }
-      Math::Dec(val) => {
-        let val = val.eval(ctx, conc).await?;
-
-        val
-          .as_f64_ok()
-          .ok()
-          .map(|val| (val - 1f64).into())
-          .or_else(|| val.as_u64_ok().ok().map(|val| (val - 1u64).into()))
-          .or_else(|| val.as_i64_ok().ok().map(|val| (val - 1i64).into()))
-          .ok_or(EvaluationError::ExprEvalError("dec".into()))?
-      }
-      Math::Divide(lhs, rhs) => {
-        let lhs = lhs.eval(ctx, conc).await?;
-        let rhs = rhs.eval(ctx, conc).await?;
-
-        try_f64_operation(&lhs, &rhs, ops::Div::div)
-          .or_else(|| try_u64_operation(&lhs, &rhs, ops::Div::div))
-          .or_else(|| try_i64_operation(&lhs, &rhs, ops::Div::div))
-          .ok_or(EvaluationError::ExprEvalError("divide".into()))?
-      }
-      Math::Inc(val) => {
-        let val = val.eval(ctx, conc).await?;
-
-        val
-          .as_f64_ok()
-          .ok()
-          .map(|val| (val + 1f64).into())
-          .or_else(|| val.as_u64_ok().ok().map(|val| (val + 1u64).into()))
-          .or_else(|| val.as_i64_ok().ok().map(|val| (val + 1i64).into()))
-          .ok_or(EvaluationError::ExprEvalError("dec".into()))?
-      }
-      Math::Multiply(lhs, rhs) => {
-        let lhs = lhs.eval(ctx, conc).await?;
-        let rhs = rhs.eval(ctx, conc).await?;
-
-        try_f64_operation(&lhs, &rhs, ops::Mul::mul)
-          .or_else(|| try_u64_operation(&lhs, &rhs, ops::Mul::mul))
-          .or_else(|| try_i64_operation(&lhs, &rhs, ops::Mul::mul))
-          .ok_or(EvaluationError::ExprEvalError("multiply".into()))?
-      }
-      Math::Negate(val) => {
-        let val = val.eval(ctx, conc).await?;
-
-        val
-          .as_f64_ok()
-          .ok()
-          .map(|val| (-val).into())
-          .or_else(|| val.as_i64_ok().ok().map(|val| (-val).into()))
-          .ok_or(EvaluationError::ExprEvalError("neg".into()))?
-      }
-      Math::Product(exprs) => {
-        let results: Vec<_> = exprs.eval(ctx, conc).await?;
-
-        results.into_iter().try_fold(1i64.into(), |lhs, rhs| {
-          try_f64_operation(&lhs, &rhs, ops::Mul::mul)
-            .or_else(|| try_u64_operation(&lhs, &rhs, ops::Mul::mul))
-            .or_else(|| try_i64_operation(&lhs, &rhs, ops::Mul::mul))
-            .ok_or(EvaluationError::ExprEvalError("product".into()))
-        })?
-      }
-      Math::Subtract(lhs, rhs) => {
-        let lhs = lhs.eval(ctx, conc).await?;
-        let rhs = rhs.eval(ctx, conc).await?;
-
-        try_f64_operation(&lhs, &rhs, ops::Sub::sub)
-          .or_else(|| try_u64_operation(&lhs, &rhs, ops::Sub::sub))
-          .or_else(|| try_i64_operation(&lhs, &rhs, ops::Sub::sub))
-          .ok_or(EvaluationError::ExprEvalError("subtract".into()))?
-      }
-      Math::Sum(exprs) => {
-        let results: Vec<_> = exprs.eval(ctx, conc).await?;
-
-        results.into_iter().try_fold(0i64.into(), |lhs, rhs| {
           try_f64_operation(&lhs, &rhs, ops::Add::add)
             .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
             .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
-            .ok_or(EvaluationError::ExprEvalError("sum".into()))
-        })?
-      }
+            .ok_or(EvaluationError::ExprEvalError("add".into()))?
+        }
+        Math::Dec(val) => {
+          let val = val.eval(ctx, conc).await?;
+
+          val
+            .as_f64_ok()
+            .ok()
+            .map(|val| (val - 1f64).into())
+            .or_else(|| val.as_u64_ok().ok().map(|val| (val - 1u64).into()))
+            .or_else(|| val.as_i64_ok().ok().map(|val| (val - 1i64).into()))
+            .ok_or(EvaluationError::ExprEvalError("dec".into()))?
+        }
+        Math::Divide(lhs, rhs) => {
+          let lhs = lhs.eval(ctx, conc).await?;
+          let rhs = rhs.eval(ctx, conc).await?;
+
+          try_f64_operation(&lhs, &rhs, ops::Div::div)
+            .or_else(|| try_u64_operation(&lhs, &rhs, ops::Div::div))
+            .or_else(|| try_i64_operation(&lhs, &rhs, ops::Div::div))
+            .ok_or(EvaluationError::ExprEvalError("divide".into()))?
+        }
+        Math::Inc(val) => {
+          let val = val.eval(ctx, conc).await?;
+
+          val
+            .as_f64_ok()
+            .ok()
+            .map(|val| (val + 1f64).into())
+            .or_else(|| val.as_u64_ok().ok().map(|val| (val + 1u64).into()))
+            .or_else(|| val.as_i64_ok().ok().map(|val| (val + 1i64).into()))
+            .ok_or(EvaluationError::ExprEvalError("dec".into()))?
+        }
+        Math::Multiply(lhs, rhs) => {
+          let lhs = lhs.eval(ctx, conc).await?;
+          let rhs = rhs.eval(ctx, conc).await?;
+
+          try_f64_operation(&lhs, &rhs, ops::Mul::mul)
+            .or_else(|| try_u64_operation(&lhs, &rhs, ops::Mul::mul))
+            .or_else(|| try_i64_operation(&lhs, &rhs, ops::Mul::mul))
+            .ok_or(EvaluationError::ExprEvalError("multiply".into()))?
+        }
+        Math::Negate(val) => {
+          let val = val.eval(ctx, conc).await?;
+
+          val
+            .as_f64_ok()
+            .ok()
+            .map(|val| (-val).into())
+            .or_else(|| val.as_i64_ok().ok().map(|val| (-val).into()))
+            .ok_or(EvaluationError::ExprEvalError("neg".into()))?
+        }
+        Math::Product(exprs) => {
+          let results: Vec<_> = exprs.eval(ctx, conc).await?;
+
+          results.into_iter().try_fold(1i64.into(), |lhs, rhs| {
+            try_f64_operation(&lhs, &rhs, ops::Mul::mul)
+              .or_else(|| try_u64_operation(&lhs, &rhs, ops::Mul::mul))
+              .or_else(|| try_i64_operation(&lhs, &rhs, ops::Mul::mul))
+              .ok_or(EvaluationError::ExprEvalError("product".into()))
+          })?
+        }
+        Math::Subtract(lhs, rhs) => {
+          let lhs = lhs.eval(ctx, conc).await?;
+          let rhs = rhs.eval(ctx, conc).await?;
+
+          try_f64_operation(&lhs, &rhs, ops::Sub::sub)
+            .or_else(|| try_u64_operation(&lhs, &rhs, ops::Sub::sub))
+            .or_else(|| try_i64_operation(&lhs, &rhs, ops::Sub::sub))
+            .ok_or(EvaluationError::ExprEvalError("subtract".into()))?
+        }
+        Math::Sum(exprs) => {
+          let results: Vec<_> = exprs.eval(ctx, conc).await?;
+
+          results.into_iter().try_fold(0i64.into(), |lhs, rhs| {
+            try_f64_operation(&lhs, &rhs, ops::Add::add)
+              .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
+              .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
+              .ok_or(EvaluationError::ExprEvalError("sum".into()))
+          })?
+        }
+      })
     })
   }
 }

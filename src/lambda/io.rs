@@ -1,6 +1,9 @@
+use core::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql_value::ConstValue;
 use reqwest::Request;
 
 use super::{Eval, EvaluationContext, Expression, ResolverContextLike};
@@ -44,90 +47,92 @@ pub enum Io {
 pub struct DataLoaderId(pub usize);
 
 impl Eval for Io {
-  async fn async_eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
+  fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a super::EvaluationContext<'a, Ctx>,
     _conc: &'a super::Concurrency,
-  ) -> anyhow::Result<async_graphql_value::ConstValue> {
-    match self {
-      Io::Http { req_template, dl_id, .. } => {
-        let req = req_template.to_request(ctx)?;
-        let is_get = req.method() == reqwest::Method::GET;
+  ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    Box::pin(async move {
+      match self {
+        Io::Http { req_template, dl_id, .. } => {
+          let req = req_template.to_request(ctx)?;
+          let is_get = req.method() == reqwest::Method::GET;
 
-        let res = if is_get && ctx.req_ctx.is_batching_enabled() {
-          let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
-            dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
-          execute_request_with_dl(ctx, req, data_loader).await?
-        } else {
-          execute_raw_request(ctx, req).await?
-        };
+          let res = if is_get && ctx.req_ctx.is_batching_enabled() {
+            let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
+              dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
+            execute_request_with_dl(ctx, req, data_loader).await?
+          } else {
+            execute_raw_request(ctx, req).await?
+          };
 
-        if ctx.req_ctx.server.get_enable_http_validation() {
-          req_template
-            .endpoint
-            .output
-            .validate(&res.body)
-            .to_result()
-            .map_err(EvaluationError::from)?;
+          if ctx.req_ctx.server.get_enable_http_validation() {
+            req_template
+              .endpoint
+              .output
+              .validate(&res.body)
+              .to_result()
+              .map_err(EvaluationError::from)?;
+          }
+
+          set_cache_control(ctx, &res);
+
+          Ok(res.body)
         }
+        Io::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
+          let req = req_template.to_request(ctx)?;
 
-        set_cache_control(ctx, &res);
+          let res = if ctx.req_ctx.upstream.batch.is_some()
+            && matches!(req_template.operation_type, GraphQLOperationType::Query)
+          {
+            let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
+              dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
+            execute_request_with_dl(ctx, req, data_loader).await?
+          } else {
+            execute_raw_request(ctx, req).await?
+          };
 
-        Ok(res.body)
-      }
-      Io::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
-        let req = req_template.to_request(ctx)?;
-
-        let res = if ctx.req_ctx.upstream.batch.is_some()
-          && matches!(req_template.operation_type, GraphQLOperationType::Query)
-        {
-          let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
-            dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
-          execute_request_with_dl(ctx, req, data_loader).await?
-        } else {
-          execute_raw_request(ctx, req).await?
-        };
-
-        set_cache_control(ctx, &res);
-        parse_graphql_response(ctx, res, field_name)
-      }
-      Io::Grpc { req_template, dl_id, .. } => {
-        let rendered = req_template.render(ctx)?;
-
-        let res = if ctx.req_ctx.upstream.batch.is_some() &&
-                  // TODO: share check for operation_type for resolvers
-                  matches!(req_template.operation_type, GraphQLOperationType::Query)
-        {
-          let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
-            dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
-          execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
-        } else {
-          let req = rendered.to_request()?;
-          execute_raw_grpc_request(ctx, req, &req_template.operation).await?
-        };
-
-        set_cache_control(ctx, &res);
-
-        Ok(res.body)
-      }
-      Io::JS(input, script) => {
-        let result;
-        #[cfg(not(feature = "unsafe-js"))]
-        {
-          let _ = script;
-          let _ = input;
-          result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
+          set_cache_control(ctx, &res);
+          parse_graphql_response(ctx, res, field_name)
         }
+        Io::Grpc { req_template, dl_id, .. } => {
+          let rendered = req_template.render(ctx)?;
 
-        #[cfg(feature = "unsafe-js")]
-        {
-          let input = input.eval(ctx, _conc).await?;
-          result = javascript::execute_js(script, input, Some(ctx.timeout))
-            .map_err(|e| EvaluationError::JSException(e.to_string()).into());
+          let res = if ctx.req_ctx.upstream.batch.is_some() &&
+                    // TODO: share check for operation_type for resolvers
+                    matches!(req_template.operation_type, GraphQLOperationType::Query)
+          {
+            let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
+              dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
+            execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
+          } else {
+            let req = rendered.to_request()?;
+            execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+          };
+
+          set_cache_control(ctx, &res);
+
+          Ok(res.body)
         }
-        result
+        Io::JS(input, script) => {
+          let result;
+          #[cfg(not(feature = "unsafe-js"))]
+          {
+            let _ = script;
+            let _ = input;
+            result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
+          }
+
+          #[cfg(feature = "unsafe-js")]
+          {
+            let input = input.eval(ctx, _conc).await?;
+            result = javascript::execute_js(script, input, Some(ctx.timeout))
+              .map_err(|e| EvaluationError::JSException(e.to_string()).into());
+          }
+          result
+        }
       }
-    }
+    })
   }
 }
 
