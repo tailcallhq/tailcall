@@ -97,30 +97,16 @@
   "definitions": {
     "Encoding": {
       "type": "string",
-      "enum": [
-        "ApplicationJson",
-        "ApplicationXWwwFormUrlEncoded"
-      ],
+      "enum": ["ApplicationJson", "ApplicationXWwwFormUrlEncoded"],
       "description": "Specifies the encoding type."
     },
     "HttpVersion": {
       "type": "string",
-      "enum": [
-        "HTTP1",
-        "HTTP2"
-      ]
+      "enum": ["HTTP1", "HTTP2"]
     },
     "Method": {
       "type": "string",
-      "enum": [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "PATCH",
-        "HEAD",
-        "OPTIONS"
-      ]
+      "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
     },
     "Proxy": {
       "type": "object",
@@ -129,9 +115,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "url"
-      ]
+      "required": ["url"]
     },
     "KeyValue": {
       "type": "object",
@@ -143,10 +127,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "key",
-        "value"
-      ]
+      "required": ["key", "value"]
     },
     "Batch": {
       "type": "object",
@@ -164,11 +145,7 @@
           }
         }
       },
-      "required": [
-        "maxSize",
-        "delay",
-        "headers"
-      ]
+      "required": ["maxSize", "delay", "headers"]
     },
     "ExprBody": {
       "type": "object",
@@ -204,11 +181,7 @@
           "$ref": "#/definitions/ExprBody"
         }
       },
-      "required": [
-        "cond",
-        "then",
-        "else"
-      ],
+      "required": ["cond", "then", "else"],
       "description": "Branch based on a condition in the expression AST."
     },
     "ExprHttp": {
@@ -245,10 +218,7 @@
           }
         }
       },
-      "required": [
-        "path",
-        "groupBy"
-      ],
+      "required": ["path", "groupBy"],
       "description": "Represents an HTTP request in the expression AST."
     },
     "ExprGrpc": {
@@ -279,11 +249,7 @@
           }
         }
       },
-      "required": [
-        "service",
-        "method",
-        "groupBy"
-      ],
+      "required": ["service", "method", "groupBy"],
       "description": "Represents a gRPC request in the expression AST."
     },
     "ExprGraphQL": {
@@ -311,9 +277,7 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "description": "Represents a GraphQL request in the expression AST."
     }
   },
@@ -517,9 +481,7 @@
           "description": "The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`."
         }
       },
-      "required": [
-        "path"
-      ]
+      "required": ["path"]
     },
     "grpc": {
       "type": "object",
@@ -560,10 +522,7 @@
           "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).\n"
         }
       },
-      "required": [
-        "service",
-        "method"
-      ]
+      "required": ["service", "method"]
     },
     "addField": {
       "type": "object",
@@ -579,9 +538,7 @@
           }
         }
       },
-      "required": [
-        "path"
-      ]
+      "required": ["path"]
     },
     "modify": {
       "type": "object",
@@ -606,9 +563,7 @@
           }
         }
       },
-      "required": [
-        "path"
-      ]
+      "required": ["path"]
     },
     "const": {
       "type": "object",
@@ -660,9 +615,7 @@
           "description": "Specifies the duration, in milliseconds, of how long the value has to be stored in the cache."
         }
       },
-      "required": [
-        "maxAge"
-      ]
+      "required": ["maxAge"]
     },
     "expr": {
       "type": "object",
@@ -673,9 +626,7 @@
           "description": "Root of the expression AST."
         }
       },
-      "required": [
-        "body"
-      ]
+      "required": ["body"]
     }
   }
 }
