@@ -9,7 +9,7 @@ use crate::blueprint::{Blueprint, Cache, Definition, Type};
 use crate::helpers;
 use crate::http::RequestContext;
 use crate::json::JsonLike;
-use crate::lambda::{Concurrency, Eval, EvaluationContext};
+use crate::lambda::{Concurrent, Eval, EvaluationContext};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {
@@ -95,14 +95,14 @@ fn to_type(def: &Definition) -> dynamic::Type {
                       log::info!("Reading from cache. key = {key}");
                       const_value
                     } else {
-                      let const_value = expr.eval(&ctx, &Concurrency::Sequential).await?;
+                      let const_value = expr.eval(&ctx, &Concurrent::Sequential).await?;
                       log::info!("Writing to cache. key = {key}");
                       // Write value to cache
                       ctx.req_ctx.cache_insert(key, const_value.clone(), ttl);
                       const_value
                     }
                   }
-                  _ => expr.eval(&ctx, &Concurrency::Sequential).await?,
+                  _ => expr.eval(&ctx, &Concurrent::Sequential).await?,
                 };
 
                 let p = match const_value {

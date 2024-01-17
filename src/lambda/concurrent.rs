@@ -1,13 +1,18 @@
 use futures_util::stream::FuturesUnordered;
 use futures_util::{Future, StreamExt};
 
+///
+/// Concurrent controls the concurrency of a fold or foreach operation on lists.
+/// It's a flag that is set based on operators that are applied on a list.
+/// The goal is to identify list operations that can be executed in parallel eg: and, or etc.
+///
 #[derive(Clone, Debug)]
-pub enum Concurrency {
+pub enum Concurrent {
   Parallel,
   Sequential,
 }
 
-impl Concurrency {
+impl Concurrent {
   pub async fn fold<F, A, B>(
     &self,
     iter: impl Iterator<Item = F>,
@@ -18,14 +23,14 @@ impl Concurrency {
     F: Future<Output = A>,
   {
     match self {
-      Concurrency::Sequential => {
+      Concurrent::Sequential => {
         let mut output = acc;
         for future in iter.into_iter() {
           output = f(output, future.await)?;
         }
         Ok(output)
       }
-      Concurrency::Parallel => {
+      Concurrent::Parallel => {
         let mut futures: FuturesUnordered<_> = iter.into_iter().collect();
         let mut output = acc;
         while let Some(result) = futures.next().await {

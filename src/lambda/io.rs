@@ -50,7 +50,7 @@ impl Eval for IO {
   fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a super::EvaluationContext<'a, Ctx>,
-    _conc: &'a super::Concurrency,
+    _conc: &'a super::Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
       match self {

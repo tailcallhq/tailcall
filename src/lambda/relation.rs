@@ -8,7 +8,7 @@ use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
 use tokio::join;
 
-use super::{Concurrency, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
+use super::{Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
 use crate::helpers::value::HashableConstValue;
 
 #[derive(Clone, Debug)]
@@ -33,7 +33,7 @@ impl Eval for Relation {
   fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
-    conc: &'a Concurrency,
+    conc: &'a Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
       Ok(match self {
@@ -260,7 +260,7 @@ fn is_pair_comparable(lhs: &ConstValue, rhs: &ConstValue) -> bool {
 #[allow(clippy::too_many_arguments)]
 async fn set_operation<'a, 'b, Ctx: ResolverContextLike<'a> + Sync + Send, F>(
   ctx: &'a EvaluationContext<'a, Ctx>,
-  conc: &'a Concurrency,
+  conc: &'a Concurrent,
   lhs: &'a [Expression],
   rhs: &'a [Expression],
   operation: F,

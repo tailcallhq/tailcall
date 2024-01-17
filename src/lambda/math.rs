@@ -5,7 +5,7 @@ use std::pin::Pin;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 
-use super::{Concurrency, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
+use super::{Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
 use crate::json::JsonLike;
 
 #[derive(Clone, Debug)]
@@ -26,7 +26,7 @@ impl Eval for Math {
   fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
-    conc: &'a Concurrency,
+    conc: &'a Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
       Ok(match self {

@@ -9,7 +9,7 @@ use thiserror::Error;
 
 use super::list::List;
 use super::logic::Logic;
-use super::{Concurrency, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
+use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
 use crate::json::JsonLike;
 
 #[derive(Clone, Debug)]
@@ -23,7 +23,7 @@ pub enum Expression {
   Relation(Relation),
   List(List),
   Math(Math),
-  Concurrency(Concurrency, Box<Expression>),
+  Concurrency(Concurrent, Box<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -54,24 +54,24 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-  pub fn concurrency(self, conc: Concurrency) -> Self {
+  pub fn concurrency(self, conc: Concurrent) -> Self {
     Expression::Concurrency(conc, Box::new(self))
   }
 
   pub fn in_parallel(self) -> Self {
-    self.concurrency(Concurrency::Parallel)
+    self.concurrency(Concurrent::Parallel)
   }
 
   pub fn parallel_when(self, cond: bool) -> Self {
     if cond {
-      self.concurrency(Concurrency::Parallel)
+      self.concurrency(Concurrent::Parallel)
     } else {
       self
     }
   }
 
   pub fn in_sequence(self) -> Self {
-    self.concurrency(Concurrency::Sequential)
+    self.concurrency(Concurrent::Sequential)
   }
 }
 
@@ -79,7 +79,7 @@ impl Eval for Expression {
   fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
-    conc: &'a Concurrency,
+    conc: &'a Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
       match self {

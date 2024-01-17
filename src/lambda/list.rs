@@ -5,7 +5,7 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
 
-use super::{Concurrency, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
+use super::{Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
 
 #[derive(Clone, Debug)]
 pub enum List {
@@ -16,7 +16,7 @@ impl Eval for List {
   fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
-    conc: &'a Concurrency,
+    conc: &'a Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
       match self {
@@ -43,13 +43,13 @@ where
   fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
-    conc: &'a Concurrency,
+    conc: &'a Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<C>> + 'a + Send>> {
     Box::pin(async move {
       let future_iter = self.as_ref().iter().map(|expr| expr.eval(ctx, conc));
       match *conc {
-        Concurrency::Parallel => join_all(future_iter).await.into_iter().collect::<Result<C>>(),
-        Concurrency::Sequential => {
+        Concurrent::Parallel => join_all(future_iter).await.into_iter().collect::<Result<C>>(),
+        Concurrent::Sequential => {
           let mut results = Vec::with_capacity(self.as_ref().len());
           for future in future_iter {
             results.push(future.await?);
