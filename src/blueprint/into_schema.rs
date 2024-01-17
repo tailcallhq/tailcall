@@ -92,7 +92,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                   cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
                 let const_value = match ttl_and_key {
                   Some((ttl, key)) => {
-                    if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
+                    if let Some(const_value) = ctx.req_ctx.cache_get(&key).await {
                       // Return value from cache
                       log::info!("Reading from cache. key = {key}");
                       const_value
@@ -100,7 +100,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                       let const_value = expr.eval(&ctx).await?;
                       log::info!("Writing to cache. key = {key}");
                       // Write value to cache
-                      ctx.req_ctx.cache_insert(key, const_value.clone(), ttl);
+                      ctx.req_ctx.cache_insert(key, const_value.clone(), ttl).await;
                       const_value
                     }
                   }

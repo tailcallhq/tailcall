@@ -25,9 +25,10 @@ impl<K: Hash + Eq, V: Clone> NativeChronoCache<K, V> {
     NativeChronoCache { data: Arc::new(RwLock::new(TtlCache::new(CACHE_CAPACITY))) }
   }
 }
+#[async_trait::async_trait]
 impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> ChronoCache<K, V> for NativeChronoCache<K, V> {
   #[allow(clippy::too_many_arguments)]
-  fn insert(&self, key: K, value: V, ttl: NonZeroU64) -> Result<V> {
+  async fn insert<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> Result<V> {
     let ttl = Duration::from_millis(ttl.get());
     self
       .data
@@ -37,7 +38,7 @@ impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> ChronoCache<K, V> for N
       .ok_or(anyhow!("unable to insert value"))
   }
 
-  fn get(&self, key: &K) -> Result<V> {
+  async fn get<'a>(&'a self, key: &'a K) -> Result<V> {
     self
       .data
       .read()
