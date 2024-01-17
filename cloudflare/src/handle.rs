@@ -8,11 +8,11 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
-use tailcall::EnvIO;
+use tailcall::{EnvIO, FileIO};
 
 use crate::env::CloudflareEnv;
 use crate::http::{to_request, to_response, CloudflareHttp};
-use crate::{init_env, init_file, init_http};
+use crate::{init_cache, init_env, init_file, init_http};
 
 type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
 lazy_static! {
@@ -55,8 +55,15 @@ async fn get_app_ctx(env: Rc<worker::Env>) -> anyhow::Result<Arc<CloudFlareAppCo
     let cfg = get_config(&env_io, env.clone()).await?;
     let blueprint = Blueprint::try_from(&cfg)?;
     let h_client = Arc::new(init_http());
+    let cache = Arc::new(init_cache(env));
 
-    let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
+    let app_ctx = Arc::new(AppContext::new(
+      blueprint,
+      h_client.clone(),
+      h_client,
+      Arc::new(env_io),
+      cache,
+    ));
     *APP_CTX.write().unwrap() = Some(app_ctx.clone());
     log::info!("Initialized new application context");
     Ok(app_ctx)

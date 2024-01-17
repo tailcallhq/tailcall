@@ -12,6 +12,9 @@ mod r2_address;
 pub fn init_env(env: Rc<worker::Env>) -> env::CloudflareEnv {
   env::CloudflareEnv::init(env)
 }
+pub fn init_cache(env: Rc<worker::Env>) -> chrono_cache::CloudflareChronoCache {
+  chrono_cache::CloudflareChronoCache::init(env)
+}
 
 pub fn init_file(env: Rc<worker::Env>) -> file::CloudflareFileIO {
   file::CloudflareFileIO::init(env)
