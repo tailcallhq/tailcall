@@ -1,3 +1,16 @@
+#!/usr/bin/env rust-script
+
+//! ```cargo
+//! [dependencies]
+//! tokio = {version = "1.35.1",features = ["macros"]}
+//! env_logger = "0.10.1"
+//! log = "0.4.20"
+//! anyhow = "1.0.79"
+//! schemars = "0.8.16"
+//! serde_json = "1.0.111"
+//! tailcall = {path = "."}
+//! ```
+
 use std::env;
 use std::path::PathBuf;
 use std::process::exit;
@@ -45,7 +58,7 @@ async fn main() {
 }
 
 async fn mode_check() -> Result<()> {
-  let mut json_schema = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  let mut json_schema = PathBuf::from(file!());
   json_schema.pop();
   json_schema.push("examples");
   json_schema.push(JSON_SCHEMA_FILE);
@@ -69,7 +82,7 @@ async fn mode_fix() -> Result<()> {
 }
 
 async fn update_json() -> Result<()> {
-  let mut json_schema = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  let mut json_schema = PathBuf::from(file!());
   json_schema.pop();
   json_schema.push("examples");
   json_schema.push(JSON_SCHEMA_FILE);

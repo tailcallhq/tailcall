@@ -24,14 +24,11 @@ pub struct Config {
   pub server: Server,
   #[serde(default)]
   pub upstream: Upstream,
-  #[schemars(skip)]
   pub schema: RootSchema,
   #[serde(default)]
   #[setters(skip)]
-  #[schemars(skip)]
   pub types: BTreeMap<String, Type>,
   #[serde(default, skip_serializing_if = "is_default")]
-  #[schemars(skip)]
   pub unions: BTreeMap<String, Union>,
 }
 impl Config {
@@ -132,7 +129,7 @@ impl Config {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Type {
   pub fields: BTreeMap<String, Field>,
   #[serde(default, skip_serializing_if = "is_default")]
@@ -207,7 +204,7 @@ fn merge_unions(
   self_unions
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema)]
 #[setters(strip_option)]
 pub struct RootSchema {
   pub query: Option<String>,
@@ -228,10 +225,10 @@ impl RootSchema {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Omit {}
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema)]
 #[setters(strip_option)]
 pub struct Field {
   #[serde(rename = "type", default, skip_serializing_if = "is_default")]
@@ -328,12 +325,12 @@ impl Field {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Unsafe {
   pub script: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Modify {
   #[serde(default, skip_serializing_if = "is_default")]
   pub name: Option<String>,
@@ -346,7 +343,7 @@ pub struct Inline {
   pub path: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Arg {
   #[serde(rename = "type")]
   pub type_of: String,
@@ -362,7 +359,7 @@ pub struct Arg {
   pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Union {
   pub types: BTreeSet<String>,
   pub doc: Option<String>,

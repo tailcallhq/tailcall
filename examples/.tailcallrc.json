@@ -1,6 +1,53 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
+    "AddField": {
+      "description": "The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)",
+      "properties": {
+        "name": {
+          "description": "TODO",
+          "type": "string"
+        },
+        "path": {
+          "description": "TODO",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["name", "path"],
+      "type": "object"
+    },
+    "Arg": {
+      "properties": {
+        "default_value": true,
+        "doc": {
+          "type": ["string", "null"]
+        },
+        "list": {
+          "type": "boolean"
+        },
+        "modify": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Modify"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "type": "object"
+    },
     "Batch": {
       "properties": {
         "delay": {
@@ -26,6 +73,407 @@
       },
       "type": "object"
     },
+    "Cache": {
+      "description": "The @cache operator enables caching for the query, field or type it is applied to.",
+      "properties": {
+        "maxAge": {
+          "description": "Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.",
+          "format": "uint64",
+          "minimum": 1.0,
+          "type": "integer"
+        }
+      },
+      "required": ["maxAge"],
+      "type": "object"
+    },
+    "Const": {
+      "description": "The `@const` operators allows us to embed a constant response for the schema.",
+      "properties": {
+        "data": true
+      },
+      "required": ["data"],
+      "type": "object"
+    },
+    "Encoding": {
+      "enum": ["ApplicationJson", "ApplicationXWwwFormUrlencoded"],
+      "type": "string"
+    },
+    "Expr": {
+      "description": "Allows composing operators as simple expressions",
+      "properties": {
+        "body": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Root of the expression AST"
+        }
+      },
+      "required": ["body"],
+      "type": "object"
+    },
+    "ExprBody": {
+      "description": "Kinds of nodes that the expression AST can use",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "description": "Fetch a resources using the http operator",
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "required": ["http"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Fetch a resources using the grpc operator",
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "required": ["grpc"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Fetch a resources using the graphQL operator",
+          "properties": {
+            "graphQL": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "required": ["graphQL"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Evaluate to constant data",
+          "properties": {
+            "const": true
+          },
+          "required": ["const"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Branch based on a condition",
+          "properties": {
+            "if": {
+              "properties": {
+                "cond": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/ExprBody"
+                    }
+                  ],
+                  "description": "Expression to be used as a condition"
+                },
+                "else": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/ExprBody"
+                    }
+                  ],
+                  "description": "Expression to evaluate if the condition is false"
+                },
+                "then": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/ExprBody"
+                    }
+                  ],
+                  "description": "Expression to evaluate if the condition is true"
+                }
+              },
+              "required": ["cond", "else", "then"],
+              "type": "object"
+            }
+          },
+          "required": ["if"],
+          "type": "object"
+        }
+      ]
+    },
+    "Field": {
+      "properties": {
+        "args": {
+          "additionalProperties": {
+            "$ref": "#/definitions/Arg"
+          },
+          "type": "object"
+        },
+        "cache": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Cache"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "const": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Const"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "doc": {
+          "type": ["string", "null"]
+        },
+        "expr": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Expr"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "graphql": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/GraphQL"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grpc": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Grpc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "http": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Http"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "list": {
+          "type": "boolean"
+        },
+        "list_type_required": {
+          "type": "boolean"
+        },
+        "modify": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Modify"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "omit": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Omit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string"
+        },
+        "unsafe": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Unsafe"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "GraphQL": {
+      "description": "The @graphQL operator allows to specify GraphQL API server request to fetch data from.",
+      "properties": {
+        "args": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/KeyValues"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)"
+        },
+        "baseURL": {
+          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
+          "type": ["string", "null"]
+        },
+        "batch": {
+          "description": "If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.\n\nMake sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.",
+          "type": "boolean"
+        },
+        "headers": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeyValues"
+            }
+          ],
+          "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values."
+        },
+        "name": {
+          "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
+          "type": "string"
+        }
+      },
+      "required": ["name"],
+      "type": "object"
+    },
+    "Grpc": {
+      "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
+      "properties": {
+        "baseURL": {
+          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
+          "type": ["string", "null"]
+        },
+        "body": {
+          "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.",
+          "type": ["string", "null"]
+        },
+        "groupBy": {
+          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "headers": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeyValues"
+            }
+          ],
+          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc"
+        },
+        "method": {
+          "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
+          "type": "string"
+        },
+        "protoPath": {
+          "description": "The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.",
+          "type": "string"
+        },
+        "service": {
+          "description": "This refers to the gRPC service you're going to call. For instance `NewsService`.",
+          "type": "string"
+        }
+      },
+      "required": ["method", "protoPath", "service"],
+      "type": "object"
+    },
+    "Http": {
+      "description": "The @http operator indicates that a field or node is backed by a REST API.\n\nFor instance, if you add the @http operator to the `users` field of the Query type with a path argument of `\"/users\"`, it signifies that the `users` field is backed by a REST API. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
+      "properties": {
+        "baseURL": {
+          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
+          "type": ["string", "null"]
+        },
+        "body": {
+          "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
+          "type": ["string", "null"]
+        },
+        "encoding": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Encoding"
+            }
+          ],
+          "description": "The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`."
+        },
+        "groupBy": {
+          "description": "The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "headers": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeyValues"
+            }
+          ],
+          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values."
+        },
+        "input": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/schema"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "TODO"
+        },
+        "method": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/Method"
+            }
+          ],
+          "description": "This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`."
+        },
+        "output": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/schema"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "TODO"
+        },
+        "path": {
+          "description": "This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
+          "type": "string"
+        },
+        "query": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeyValues"
+            }
+          ],
+          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL."
+        }
+      },
+      "required": ["path"],
+      "type": "object"
+    },
     "HttpVersion": {
       "enum": ["HTTP1", "HTTP2"],
       "type": "string"
@@ -36,6 +484,24 @@
       },
       "type": "object"
     },
+    "Method": {
+      "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "CONNECT", "TRACE"],
+      "type": "string"
+    },
+    "Modify": {
+      "properties": {
+        "name": {
+          "type": ["string", "null"]
+        },
+        "omit": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Omit": {
+      "type": "object"
+    },
     "Proxy": {
       "properties": {
         "url": {
@@ -43,6 +509,20 @@
         }
       },
       "required": ["url"],
+      "type": "object"
+    },
+    "RootSchema": {
+      "properties": {
+        "mutation": {
+          "type": ["string", "null"]
+        },
+        "query": {
+          "type": ["string", "null"]
+        },
+        "subscription": {
+          "type": ["string", "null"]
+        }
+      },
       "type": "object"
     },
     "Server": {
@@ -137,6 +617,83 @@
           "type": ["integer", "null"]
         }
       },
+      "type": "object"
+    },
+    "Type": {
+      "properties": {
+        "added_fields": {
+          "items": {
+            "$ref": "#/definitions/AddField"
+          },
+          "type": "array"
+        },
+        "cache": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Cache"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "doc": {
+          "type": ["string", "null"]
+        },
+        "enum": {
+          "items": {
+            "type": "string"
+          },
+          "type": ["array", "null"],
+          "uniqueItems": true
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/definitions/Field"
+          },
+          "type": "object"
+        },
+        "implements": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "interface": {
+          "type": "boolean"
+        },
+        "scalar": {
+          "type": "boolean"
+        }
+      },
+      "required": ["fields"],
+      "type": "object"
+    },
+    "Union": {
+      "properties": {
+        "doc": {
+          "type": ["string", "null"]
+        },
+        "types": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": ["types"],
+      "type": "object"
+    },
+    "Unsafe": {
+      "properties": {
+        "script": {
+          "type": "string"
+        }
+      },
+      "required": ["script"],
       "type": "object"
     },
     "Upstream": {
@@ -236,9 +793,53 @@
         }
       },
       "type": "object"
+    },
+    "schema": {
+      "oneOf": [
+        {
+          "enum": ["Str", "Num", "Bool"],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "Obj": {
+              "additionalProperties": {
+                "$ref": "#/definitions/schema"
+              },
+              "type": "object"
+            }
+          },
+          "required": ["Obj"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "Arr": {
+              "$ref": "#/definitions/schema"
+            }
+          },
+          "required": ["Arr"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "Opt": {
+              "$ref": "#/definitions/schema"
+            }
+          },
+          "required": ["Opt"],
+          "type": "object"
+        }
+      ]
     }
   },
   "properties": {
+    "schema": {
+      "$ref": "#/definitions/RootSchema"
+    },
     "server": {
       "allOf": [
         {
@@ -246,6 +847,19 @@
         }
       ],
       "default": {}
+    },
+    "types": {
+      "additionalProperties": {
+        "$ref": "#/definitions/Type"
+      },
+      "default": {},
+      "type": "object"
+    },
+    "unions": {
+      "additionalProperties": {
+        "$ref": "#/definitions/Union"
+      },
+      "type": "object"
     },
     "upstream": {
       "allOf": [
@@ -256,6 +870,7 @@
       "default": {}
     }
   },
+  "required": ["schema"],
   "title": "Config",
   "type": "object"
 }

@@ -36,7 +36,7 @@ run_prettier() {
 
 run_autogen_schema() {
     MODE=$1
-    cargo run --package autogen-schema --bin autogen-schema -- $MODE
+    ./schemagen.sh $MODE
     return $?
 }
 
