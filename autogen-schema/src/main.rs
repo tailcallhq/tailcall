@@ -9,7 +9,6 @@ use tailcall::config::Config;
 use tailcall::FileIO;
 
 static JSON_SCHEMA_FILE: &'static str = ".tailcallrc.json";
-static GQL_SCHEMA_FILE: &'static str = ".tailcallrc.graphql";
 
 #[tokio::main]
 async fn main() {
@@ -91,10 +90,6 @@ async fn get_updated_json() -> Result<String> {
   let serde = json!(schema);
   let schema = serde_json::to_string_pretty(&serde)?;
   Ok(schema)
-}
-
-async fn update_gql() -> Result<()> {
-  unimplemented!()
 }
 
 fn logger_init() {
