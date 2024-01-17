@@ -396,7 +396,22 @@ jobs:
         with:
           context: .
           push: true
-          tags:
-            - ${{env.REGISTRY}}/${{env.IMAGE_NAME}}:latest
-            - ${{env.REGISTRY}}/${{env.IMAGE_NAME}}:${{needs.draft_release.outputs.create_release_name}}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+  homebrew-release:
+    name: Homebrew Release
+    needs: [draft_release, release]
+    if: (contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: tailcallhq/homebrew-tailcall
+          ref: main
+          token: ${{ secrets.HOMEBREW_ACCESS }}
+
+      - name: Update Homebrew Formula
+        run: ./update-formula.sh ${{needs.draft_release.outputs.create_release_name }}
