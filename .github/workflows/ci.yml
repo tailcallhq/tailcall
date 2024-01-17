@@ -103,6 +103,7 @@ jobs:
       - name: Install Prettier
         run: npm install --global prettier
       - name: Install Nightly Toolchain
+        # TODO: migrate to something actual
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly

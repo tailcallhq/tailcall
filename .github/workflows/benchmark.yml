@@ -77,19 +77,19 @@ jobs:
         name: Convert Output to Markdown
         working-directory: ci-benchmark
         run: |
-          node wrk-output-to-md.js wrk-output.txt > wrk-output.md
+          node wrk-output-to-md.js wrk-output.txt > body.md
 
       - id: cat_md
         name: Cat Markdown
         working-directory: ci-benchmark
         run: |
-          cat wrk-output.md
+          cat body.md
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: body
-          path: body.txt
+          path: body.md
 
   Cache_Benchmarks:
     name: Cache Micro Benchmarks result

@@ -27,4 +27,4 @@ jobs:
         uses: peter-evans/commit-comment@v3
         with:
           sha: ${{ github.event.workflow_run.head_sha }}
-          body-path: body.txt
+          body-path: body.md
