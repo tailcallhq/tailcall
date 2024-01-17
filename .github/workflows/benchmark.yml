@@ -5,11 +5,12 @@ on:
     paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
-  pull_request_target:
+  pull_request:
     paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
 
+  # TODO: test it works
   workflow_dispatch:
     inputs:
       branch:
@@ -18,7 +19,7 @@ on:
         default: "main"
 
 jobs:
-  benchmark:
+  macro_benchmark:
     name: Macro Benchmarks
     if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
@@ -27,8 +28,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - run: git rev-parse HEAD
-
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -86,24 +85,14 @@ jobs:
         run: |
           cat wrk-output.md
 
-      - id: get_comment_body
-        name: Get Comment Body
-        working-directory: ci-benchmark
-        run: |
-          body="$(cat wrk-output.md)"
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Commit Comment
-        uses: peter-evans/commit-comment@v3
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
         with:
-          sha: ${{github.event.pull_request.head.sha}}
-          body: ${{steps.get_comment_body.outputs.body}}
+          name: body
+          path: body.txt
 
   Cache_Benchmarks:
-    name: Micro Benchmarks
+    name: Cache Micro Benchmarks result
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       pull-requests: write
