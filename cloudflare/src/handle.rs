@@ -12,7 +12,7 @@ use tailcall::EnvIO;
 
 use crate::env::CloudflareEnv;
 use crate::http::{to_request, to_response, CloudflareHttp};
-use crate::{init_env, init_file_r2, init_http};
+use crate::{init_env, init_file_r2, init_file_static, init_http};
 
 type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
 lazy_static! {
@@ -42,7 +42,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 ///
 async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Config> {
   let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("CONFIG var is not set"))?;
-  let file_io = init_file_r2(env.clone(), bucket_id);
+  let file_io = init_file_static(env.clone());
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
   let config = reader.read(&[file_path]).await?;

@@ -13,8 +13,8 @@ command = "cargo install -q worker-build && worker-build --release"
 BUCKET = "MY_R2"
 
 [site]
-bucket = "../examples"
-
+bucket = ".." # should not run with remote flag in package.json, else it will upload all the files to cf
+              # replace .. with ../examples before running with remote flag
 [[r2_buckets]]
 binding = 'MY_R2'               # this binding/name is to be used in code
 bucket_name = 'configs'
