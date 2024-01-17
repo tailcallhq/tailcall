@@ -19,13 +19,13 @@ impl CloudflareFileIO {
 }
 
 impl CloudflareFileIO {
-  async fn bucket(&self, r2: &R2Address) -> anyhow::Result<worker::Bucket> {
+  fn bucket(&self, r2: &R2Address) -> anyhow::Result<worker::Bucket> {
     Ok(self.env.bucket(&r2.bucket).map_err(|e| anyhow!(e.to_string()))?)
   }
 
   async fn get(&self, r2: &R2Address) -> anyhow::Result<String> {
     log::debug!("Reading from bucket:{} path:{}", r2.bucket, r2.path);
-    let bucket = self.bucket(&r2).await.map_err(to_anyhow)?;
+    let bucket = self.bucket(&r2).map_err(to_anyhow)?;
 
     let maybe_object = bucket.get(&r2.path).execute().await.map_err(to_anyhow)?;
     let object = maybe_object.ok_or(anyhow!("File {} was not found in bucket: {}", r2.path, r2.bucket))?;
@@ -38,7 +38,7 @@ impl CloudflareFileIO {
   }
 
   async fn put(&self, r2: &R2Address, value: Vec<u8>) -> anyhow::Result<()> {
-    let bucket = self.bucket(&r2).await.map_err(to_anyhow)?;
+    let bucket = self.bucket(&r2).map_err(to_anyhow)?;
     bucket.put(&r2.path, value).execute().await.map_err(to_anyhow)?;
     Ok(())
   }
