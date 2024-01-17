@@ -7,7 +7,6 @@ on:
       - main
   pull_request_target:
     paths-ignore: ["docs/**", "**.md"]
-    types: [opened, synchronize, labeled]
     branches:
       - main
 
@@ -28,6 +27,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - run: git rev-parse HEAD
 
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
