@@ -3,9 +3,9 @@ mod compress;
 mod const_utils;
 mod from_config;
 mod into_schema;
+mod mustache;
 mod operation;
 mod timeout;
-mod validate;
 
 pub use blueprint::*;
 pub use const_utils::*;
