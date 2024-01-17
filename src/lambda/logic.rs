@@ -7,7 +7,6 @@ use futures_util::future::join_all;
 use futures_util::stream::FuturesUnordered;
 use futures_util::StreamExt;
 
-use super::helpers::{is_empty, is_truthy, is_truthy_ref};
 use super::{Concurrency, Eval, EvaluationContext, Expression, ResolverContextLike};
 
 #[derive(Clone, Debug)]
@@ -142,5 +141,79 @@ impl Eval for Logic {
         }
       })
     })
+  }
+}
+
+/// Check if a value is truthy
+///
+/// Special cases:
+/// 1. An empty string is considered falsy
+/// 2. A collection of bytes is truthy, even if the value in those bytes is 0. An empty collection is falsy.
+pub fn is_truthy(value: async_graphql::Value) -> bool {
+  use async_graphql::{Number, Value};
+  use hyper::body::Bytes;
+
+  match value {
+    Value::Null => false,
+    Value::Enum(_) => true,
+    Value::List(_) => true,
+    Value::Object(_) => true,
+    Value::String(s) => !s.is_empty(),
+    Value::Boolean(b) => b,
+    Value::Number(n) => n != Number::from(0),
+    Value::Binary(b) => b != Bytes::default(),
+  }
+}
+
+fn is_truthy_ref(value: &async_graphql::Value) -> bool {
+  use async_graphql::{Number, Value};
+  use hyper::body::Bytes;
+
+  match value {
+    &Value::Null => false,
+    &Value::Enum(_) => true,
+    &Value::List(_) => true,
+    &Value::Object(_) => true,
+    Value::String(s) => !s.is_empty(),
+    &Value::Boolean(b) => b,
+    Value::Number(n) => n != &Number::from(0),
+    Value::Binary(b) => b != &Bytes::default(),
+  }
+}
+
+fn is_empty(value: &async_graphql::Value) -> bool {
+  match value {
+    ConstValue::Null => true,
+    ConstValue::Number(_) | ConstValue::Boolean(_) | ConstValue::Enum(_) => false,
+    ConstValue::Binary(bytes) => bytes.is_empty(),
+    ConstValue::List(list) => list.is_empty(),
+    ConstValue::Object(obj) => obj.is_empty(),
+    ConstValue::String(string) => string.is_empty(),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use async_graphql::{Name, Number, Value};
+  use hyper::body::Bytes;
+  use indexmap::IndexMap;
+
+  use crate::lambda::is_truthy;
+
+  #[test]
+  fn test_is_truthy() {
+    assert!(is_truthy(Value::Enum(Name::new("EXAMPLE"))));
+    assert!(is_truthy(Value::List(vec![])));
+    assert!(is_truthy(Value::Object(IndexMap::default())));
+    assert!(is_truthy(Value::String("Hello".to_string())));
+    assert!(is_truthy(Value::Boolean(true)));
+    assert!(is_truthy(Value::Number(Number::from(1))));
+    assert!(is_truthy(Value::Binary(Bytes::from_static(&[0, 1, 2]))));
+
+    assert!(!is_truthy(Value::Null));
+    assert!(!is_truthy(Value::String("".to_string())));
+    assert!(!is_truthy(Value::Boolean(false)));
+    assert!(!is_truthy(Value::Number(Number::from(0))));
+    assert!(!is_truthy(Value::Binary(Bytes::default())));
   }
 }

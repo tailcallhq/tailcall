@@ -6,7 +6,6 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{Concurrency, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
-use crate::helpers::value::{try_f64_operation, try_i64_operation, try_u64_operation};
 use crate::json::JsonLike;
 
 #[derive(Clone, Debug)]
@@ -129,5 +128,41 @@ impl Eval for Math {
         }
       })
     })
+  }
+}
+
+fn try_f64_operation<F>(lhs: &ConstValue, rhs: &ConstValue, f: F) -> Option<ConstValue>
+where
+  F: Fn(f64, f64) -> f64,
+{
+  match (lhs, rhs) {
+    (ConstValue::Number(lhs), ConstValue::Number(rhs)) => {
+      lhs.as_f64().and_then(|lhs| rhs.as_f64().map(|rhs| f(lhs, rhs).into()))
+    }
+    _ => None,
+  }
+}
+
+fn try_i64_operation<F>(lhs: &ConstValue, rhs: &ConstValue, f: F) -> Option<ConstValue>
+where
+  F: Fn(i64, i64) -> i64,
+{
+  match (lhs, rhs) {
+    (ConstValue::Number(lhs), ConstValue::Number(rhs)) => {
+      lhs.as_i64().and_then(|lhs| rhs.as_i64().map(|rhs| f(lhs, rhs).into()))
+    }
+    _ => None,
+  }
+}
+
+fn try_u64_operation<F>(lhs: &ConstValue, rhs: &ConstValue, f: F) -> Option<ConstValue>
+where
+  F: Fn(u64, u64) -> u64,
+{
+  match (lhs, rhs) {
+    (ConstValue::Number(lhs), ConstValue::Number(rhs)) => {
+      lhs.as_u64().and_then(|lhs| rhs.as_u64().map(|rhs| f(lhs, rhs).into()))
+    }
+    _ => None,
   }
 }

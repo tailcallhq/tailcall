@@ -7,11 +7,8 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
 
-use super::{
-  get_path_for_const_value_owned, get_path_for_const_value_ref, set_operation, Concurrency, Eval, EvaluationContext,
-  EvaluationError, Expression, ResolverContextLike,
-};
-use crate::helpers::value::{compare, is_list_comparable, HashableConstValue};
+use super::{Concurrency, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
+use crate::helpers::value::HashableConstValue;
 
 #[derive(Clone, Debug)]
 pub enum Relation {
@@ -216,4 +213,116 @@ impl Eval for Relation {
       })
     })
   }
+}
+
+fn is_list_comparable(list: &[ConstValue]) -> bool {
+  list
+    .iter()
+    .zip(list.iter().skip(1))
+    .all(|(lhs, rhs)| is_pair_comparable(lhs, rhs))
+}
+
+fn compare(lhs: &ConstValue, rhs: &ConstValue) -> Option<Ordering> {
+  Some(match (lhs, rhs) {
+    (ConstValue::Null, ConstValue::Null) => Ordering::Equal,
+    (ConstValue::Boolean(lhs), ConstValue::Boolean(rhs)) => lhs.partial_cmp(rhs)?,
+    (ConstValue::Enum(lhs), ConstValue::Enum(rhs)) => lhs.partial_cmp(rhs)?,
+    (ConstValue::Number(lhs), ConstValue::Number(rhs)) => lhs
+      .as_f64()
+      .partial_cmp(&rhs.as_f64())
+      .or(lhs.as_i64().partial_cmp(&rhs.as_i64()))
+      .or(lhs.as_u64().partial_cmp(&rhs.as_u64()))?,
+    (ConstValue::Binary(lhs), ConstValue::Binary(rhs)) => lhs.partial_cmp(rhs)?,
+    (ConstValue::String(lhs), ConstValue::String(rhs)) => lhs.partial_cmp(rhs)?,
+    (ConstValue::List(lhs), ConstValue::List(rhs)) => lhs
+      .iter()
+      .zip(rhs.iter())
+      .find_map(|(lhs, rhs)| compare(lhs, rhs).filter(|ord| ord != &Ordering::Equal))
+      .unwrap_or(lhs.len().partial_cmp(&rhs.len())?),
+    _ => None?,
+  })
+}
+
+fn is_pair_comparable(lhs: &ConstValue, rhs: &ConstValue) -> bool {
+  matches!(
+    (lhs, rhs),
+    (ConstValue::Null, ConstValue::Null)
+      | (ConstValue::Boolean(_), ConstValue::Boolean(_))
+      | (ConstValue::Enum(_), ConstValue::Enum(_))
+      | (ConstValue::Number(_), ConstValue::Number(_))
+      | (ConstValue::Binary(_), ConstValue::Binary(_))
+      | (ConstValue::String(_), ConstValue::String(_))
+      | (ConstValue::List(_), ConstValue::List(_))
+  )
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn set_operation<'a, 'b, Ctx: ResolverContextLike<'a> + Sync + Send, F>(
+  ctx: &'a EvaluationContext<'a, Ctx>,
+  conc: &'a Concurrency,
+  lhs: &'a [Expression],
+  rhs: &'a [Expression],
+  operation: F,
+) -> Result<ConstValue>
+where
+  F: Fn(HashSet<HashableConstValue>, HashSet<HashableConstValue>) -> Vec<ConstValue>,
+{
+  let lhs = eval_map_list_expressions(ctx, conc, lhs, HashableConstValue).await?;
+  let rhs = eval_map_list_expressions(ctx, conc, rhs, HashableConstValue).await?;
+  Ok(operation(lhs, rhs).into())
+}
+
+#[allow(clippy::redundant_closure, clippy::too_many_arguments)]
+async fn eval_map_list_expressions<
+  'a,
+  Ctx: ResolverContextLike<'a> + Sync + Send,
+  O,
+  C: FromIterator<O>,
+  F: Fn(ConstValue) -> O,
+>(
+  ctx: &'a EvaluationContext<'a, Ctx>,
+  conc: &'a Concurrency,
+  exprs: &'a [Expression],
+  f: F,
+) -> Result<C> {
+  let future_iter = exprs.iter().map(|expr| expr.eval(ctx, conc));
+  match *conc {
+    Concurrency::Parallel => join_all(future_iter)
+      .await
+      .into_iter()
+      .map(|result| result.map(|cv| f(cv)))
+      .collect::<Result<C>>(),
+    Concurrency::Sequential => {
+      let mut results = Vec::with_capacity(exprs.len());
+      for future in future_iter {
+        results.push(f(future.await?));
+      }
+      Ok(results.into_iter().collect())
+    }
+  }
+}
+
+fn get_path_for_const_value_ref<'a>(
+  path: &[impl AsRef<str>],
+  mut const_value: &'a ConstValue,
+) -> Option<&'a ConstValue> {
+  for path in path.iter() {
+    const_value = match const_value {
+      ConstValue::Object(ref obj) => obj.get(path.as_ref())?,
+      _ => None?,
+    }
+  }
+
+  Some(const_value)
+}
+
+fn get_path_for_const_value_owned(path: &[impl AsRef<str>], mut const_value: ConstValue) -> Option<ConstValue> {
+  for path in path.iter() {
+    const_value = match const_value {
+      ConstValue::Object(mut obj) => obj.remove(path.as_ref())?,
+      _ => None?,
+    }
+  }
+
+  Some(const_value)
 }
