@@ -4,6 +4,7 @@ mod expression;
 mod graphql_operation_context;
 mod lambda;
 mod math;
+mod relation;
 mod resolver_context_like;
 
 pub use eval::*;
@@ -12,4 +13,5 @@ pub(crate) use expression::*;
 pub use graphql_operation_context::GraphQLOperationContext;
 pub use lambda::Lambda;
 pub use math::*;
+pub use relation::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContextLike};
