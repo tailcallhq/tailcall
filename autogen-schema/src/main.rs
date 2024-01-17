@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
-use serde_json::json;
+use serde_json::{json, Value};
 use tailcall::cli::init_file;
 use tailcall::config::Config;
 use tailcall::FileIO;
@@ -54,8 +54,9 @@ async fn mode_check() -> Result<()> {
   let content = file_io
     .read(json_schema.to_str().ok_or(anyhow!("Unable to determine path"))?)
     .await?;
+  let content = serde_json::from_str::<Value>(&content)?;
   let schema = get_updated_json().await?;
-  match content == schema {
+  match content.eq(&schema) {
     true => Ok(()),
     false => Err(anyhow!("Schema mismatch")),
   }
@@ -73,8 +74,7 @@ async fn update_json() -> Result<()> {
   json_schema.push("examples");
   json_schema.push(JSON_SCHEMA_FILE);
 
-  let schema = get_updated_json().await?;
-
+  let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
   let file_io = init_file();
   file_io
     .write(
@@ -85,10 +85,9 @@ async fn update_json() -> Result<()> {
   Ok(())
 }
 
-async fn get_updated_json() -> Result<String> {
+async fn get_updated_json() -> Result<Value> {
   let schema = schemars::schema_for!(Config);
-  let serde = json!(schema);
-  let schema = serde_json::to_string_pretty(&serde)?;
+  let schema = json!(schema);
   Ok(schema)
 }
 
