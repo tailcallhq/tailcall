@@ -315,14 +315,28 @@ The @call operator is used to reference a resolver operator (available resolvers
 """
 directive @call(
   """
-  The name of the field that has the `@http` resolver to be called.
+  The name of the field that has the resolver to be called.
   """
   query: String!
+  # """
+  # The name of the field that has the resolver to be called.
+  # """
+  # mutation: String!
+  # """
+  The arguments to be replace the values on the actual resolver.
   """
-  The arguments to be replace the `@http` resolver args.
+  args: Args
   """
-  args: JSON
 ) on FIELD_DEFINITION
+
+"""An union between JSON and ExprArgs"""
+union Args = JSON | ExprArgs
+
+input ExprArgs {
+  http: ExprHttp
+  grpc: ExprGrpc
+  graphQL: ExprGraphQL
+}
 
 """
 Allows composing operators as simple expressions
@@ -377,6 +391,8 @@ input ExprIf {
   """
   else: ExprBody!
 }
+
+input 
 
 """
 Arguments for the http-node in expression AST. Same as the @http directive.
