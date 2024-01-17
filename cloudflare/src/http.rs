@@ -21,7 +21,7 @@ impl Default for CloudflareHttp {
 impl CloudflareHttp {
   pub fn init() -> Self {
     let client = Client::new();
-    Self { client: client }
+    Self { client }
   }
 }
 

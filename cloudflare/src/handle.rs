@@ -12,7 +12,7 @@ use tailcall::EnvIO;
 
 use crate::env::CloudflareEnv;
 use crate::http::{to_request, to_response, CloudflareHttp};
-use crate::{init_env, init_file_static, init_http};
+use crate::{init_env, init_file_r2, init_http};
 
 type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
 lazy_static! {
@@ -24,7 +24,15 @@ lazy_static! {
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
   log::debug!("Execution starting");
-  let app_ctx = get_app_ctx(env).await?;
+  let app_ctx = get_app_ctx(
+    env,
+    req
+      .path()
+      .strip_prefix('/')
+      .ok_or(anyhow!("invalid prefix"))?
+      .to_string(),
+  )
+  .await?;
   let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
 }
@@ -32,12 +40,12 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 ///
 /// Reads the configuration from the CONFIG environment variable.
 ///
-async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result<Config> {
-  let path = env_io.get("CONFIG_STATIC").ok_or(anyhow!("CONFIG var is not set"))?;
-  let file_io = init_file_static(env.clone());
+async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Config> {
+  let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("CONFIG var is not set"))?;
+  let file_io = init_file_r2(env.clone(), bucket_id);
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
-  let config = reader.read(&[path]).await?;
+  let config = reader.read(&[file_path]).await?;
   Ok(config)
 }
 
@@ -45,14 +53,14 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>) -> anyhow::Result
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn get_app_ctx(env: Rc<worker::Env>) -> anyhow::Result<Arc<CloudFlareAppContext>> {
+async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
   if let Some(app_ctx) = read_app_ctx() {
     Ok(app_ctx.clone())
   } else {
     // Create new context
     let env_io = init_env(env.clone());
-    let cfg = get_config(&env_io, env.clone()).await?;
+    let cfg = get_config(&env_io, env.clone(), file_path).await?;
     let blueprint = Blueprint::try_from(&cfg)?;
     let h_client = Arc::new(init_http());
 

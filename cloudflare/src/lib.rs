@@ -6,14 +6,13 @@ mod env;
 mod file;
 mod handle;
 mod http;
-mod r2_address;
 
 pub fn init_env(env: Rc<worker::Env>) -> env::CloudflareEnv {
   env::CloudflareEnv::init(env)
 }
 
-pub fn init_file_r2(env: Rc<worker::Env>) -> file::CloudflareR2FileIO {
-  file::CloudflareR2FileIO::init(env)
+pub fn init_file_r2(env: Rc<worker::Env>, id: String) -> file::CloudflareR2FileIO {
+  file::CloudflareR2FileIO::init(env, id)
 }
 
 pub fn init_file_static(env: Rc<worker::Env>) -> file::CloudflareStaticFileIO {
