@@ -17,18 +17,21 @@ use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
   #[serde(default)]
   pub server: Server,
   #[serde(default)]
   pub upstream: Upstream,
+  #[schemars(skip)]
   pub schema: RootSchema,
   #[serde(default)]
   #[setters(skip)]
+  #[schemars(skip)]
   pub types: BTreeMap<String, Type>,
   #[serde(default, skip_serializing_if = "is_default")]
+  #[schemars(skip)]
   pub unions: BTreeMap<String, Union>,
 }
 impl Config {
@@ -172,9 +175,11 @@ impl Type {
   }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+/// The @cache operator enables caching for the query, field or type it is applied to.
 #[serde(rename_all = "camelCase")]
 pub struct Cache {
+  /// Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.
   pub max_age: NonZeroU64,
 }
 
@@ -370,79 +375,128 @@ impl Union {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+/// The @http operator indicates that a field or node is backed by a REST API.
+///
+/// For instance, if you add the @http operator to the `users` field of the Query type with a path argument of `"/users"`, it signifies that the `users` field is backed by a REST API.
+/// The path argument specifies the path of the REST API.
+/// In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
 pub struct Http {
+  /// This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.
+  ///
+  /// For dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.
   pub path: String,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
   pub method: Method,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.
   pub query: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// TODO
   pub input: Option<JsonSchema>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// TODO
   pub output: Option<JsonSchema>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.
   pub body: Option<String>,
   #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+  /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.
   pub headers: KeyValues,
   #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
+  /// The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   pub group_by: Vec<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   pub encoding: Encoding,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// Kinds of nodes that the expression AST can use
 pub enum ExprBody {
   #[serde(rename = "http")]
+  /// Fetch a resources using the http operator
   Http(Http),
   #[serde(rename = "grpc")]
+  /// Fetch a resources using the grpc operator
   Grpc(Grpc),
   #[serde(rename = "graphQL")]
+  /// Fetch a resources using the graphQL operator
   GraphQL(GraphQL),
   #[serde(rename = "const")]
+  /// Evaluate to constant data
   Const(Value),
   #[serde(rename = "if")]
+  /// Branch based on a condition
   If {
+    /// Expression to be used as a condition
     cond: Box<ExprBody>,
+    /// Expression to evaluate if the condition is true
     then: Box<ExprBody>,
     #[serde(rename = "else")]
+    /// Expression to evaluate if the condition is false
     els: Box<ExprBody>,
   },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// Allows composing operators as simple expressions
 pub struct Expr {
+  /// Root of the expression AST
   pub body: ExprBody,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+/// The @grpc operator indicates that a field or node is backed by a gRPC API.
+///
+/// For instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API.
+/// The `service` argument specifies the name of the gRPC service.
+/// The `method` argument specifies the name of the gRPC method.
+/// In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.
 pub struct Grpc {
+  /// This refers to the gRPC service you're going to call. For instance `NewsService`.
   pub service: String,
+  /// This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   pub method: String,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.
   pub body: Option<String>,
   #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+  /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc
   pub headers: KeyValues,
+  /// The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.
   pub proto_path: String,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   pub group_by: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+/// The @graphQL operator allows to specify GraphQL API server request to fetch data from.
 pub struct GraphQL {
+  /// Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.
   pub name: String,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   pub args: Option<KeyValues>,
   #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+  /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.
   pub headers: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.
+  ///
+  /// Make sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   pub batch: bool,
 }
 
@@ -463,14 +517,18 @@ impl Display for GraphQLOperationType {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// The `@const` operators allows us to embed a constant response for the schema.
 pub struct Const {
   pub data: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
+  /// TODO
   pub name: String,
+  /// TODO
   pub path: Vec<String>,
 }
 
@@ -504,7 +562,7 @@ impl Config {
   }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema)]
 pub enum Encoding {
   #[default]
   ApplicationJson,
@@ -512,6 +570,7 @@ pub enum Encoding {
 }
 
 #[cfg(test)]
+
 mod tests {
   use pretty_assertions::assert_eq;
 

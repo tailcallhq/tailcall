@@ -1,16 +1,13 @@
 use std::env;
-use std::fs::File;
-use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
 use jsonschema::{Draft, JSONSchema};
-use serde_json::Value;
-use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_file, init_http};
-use tailcall::config::reader::ConfigReader;
-use tailcall::config::Upstream;
+use serde_json::{json, Value};
+use tailcall::cli::init_file;
+use tailcall::config::Config;
+use tailcall::FileIO;
 
 static JSON_SCHEMA_FILE: &'static str = ".tailcallrc.json";
 static GQL_SCHEMA_FILE: &'static str = ".tailcallrc.graphql";
@@ -35,7 +32,7 @@ async fn main() {
       log::info!("JSON Schema updated in the file .tailcallrc.json");
     }
     "check" => {
-      let result = mode_check();
+      let result = mode_check().await;
       if let Err(e) = result {
         log::error!("{}", e);
         exit(1);
@@ -49,7 +46,7 @@ async fn main() {
   }
 }
 
-fn mode_check() -> Result<()> {
+async fn mode_check() -> Result<()> {
   let mut root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   root_dir.pop();
   root_dir.push("examples");
@@ -59,18 +56,19 @@ fn mode_check() -> Result<()> {
   let mut json_schema = root_dir.clone();
   json_schema.push(JSON_SCHEMA_FILE);
 
-  let mut file = File::open(json_schema)?;
-  let mut content = String::new();
-  file.read_to_string(&mut content)?;
+  let file_io = init_file();
+  let content = file_io
+    .read(json_schema.to_str().ok_or(anyhow!("Unable to determine path"))?)
+    .await?;
 
   let compiled_schema = JSONSchema::options()
     .with_draft(Draft::Draft7)
     .compile(&serde_json::from_slice::<Value>(content.as_bytes())?)
     .map_err(|e| anyhow!(e.to_string()))?;
 
-  let mut file = File::open(json_placeholder)?;
-  let mut content = String::new();
-  file.read_to_string(&mut content)?;
+  let content = file_io
+    .read(json_placeholder.to_str().ok_or(anyhow!("Unable to determine path"))?)
+    .await?;
 
   let placeholder = serde_json::from_str::<Value>(&content).unwrap();
   compiled_schema.validate(&placeholder).map_err(|errs| {
@@ -82,54 +80,32 @@ fn mode_check() -> Result<()> {
 }
 
 async fn mode_fix() -> Result<()> {
-  update_json()?;
+  update_json().await?;
   // update_gql().await?;
   Ok(())
 }
 
-fn update_json() -> Result<()> {
-  let mut root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-  root_dir.pop();
-  root_dir.push("examples");
-
-  let mut json_placeholder = root_dir.clone();
-  json_placeholder.push("jsonplaceholder.json");
-
-  let mut json_schema = root_dir.clone();
+async fn update_json() -> Result<()> {
+  let mut json_schema = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  json_schema.pop();
+  json_schema.push("examples");
   json_schema.push(JSON_SCHEMA_FILE);
 
-  let mut file = File::open(json_placeholder)?;
-  let mut content = String::new();
-  file.read_to_string(&mut content)?;
-
-  let value = serde_json::from_str::<Value>(&content)?;
-  let schema_json = schemars::schema_for_value!(value);
-  let schema_json = serde_json::to_string_pretty(&schema_json)?;
-
-  let mut file = File::create(json_schema)?;
-  file.write_all(schema_json.as_bytes())?;
-
+  let schema = schemars::schema_for!(Config);
+  let serde = json!(schema);
+  let schema = serde_json::to_string_pretty(&serde)?;
+  let file_io = init_file();
+  file_io
+    .write(
+      json_schema.to_str().ok_or(anyhow!("Unable to determine path"))?,
+      schema.as_bytes(),
+    )
+    .await?;
   Ok(())
 }
 
 async fn update_gql() -> Result<()> {
-  unimplemented!();
-  /*    let mut root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-  root_dir.pop();
-  root_dir.push("examples");
-
-  let mut json_placeholder_gql = root_dir.clone();
-  json_placeholder_gql.push("jsonplaceholder.graphql");
-
-  let mut gql_schema = root_dir;
-  gql_schema.push(GQL_SCHEMA_FILE);
-
-  let reader = ConfigReader::init(init_file(), init_http(&Upstream::default()));
-  let config = reader.read(&[json_placeholder_gql.to_str().unwrap()]).await?;
-  let blueprint = Blueprint::try_from(&config)?;
-  log::info!("{:?}",blueprint);*/
-
-  Ok(())
+  unimplemented!()
 }
 
 fn logger_init() {
