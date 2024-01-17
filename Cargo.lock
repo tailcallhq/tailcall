@@ -495,6 +495,8 @@ name = "autogen-schema"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-graphql",
+ "async-graphql-value",
  "env_logger",
  "jsonschema",
  "log",
@@ -502,6 +504,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tailcall",
+ "tokio",
 ]
 
 [[package]]
