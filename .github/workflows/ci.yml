@@ -89,8 +89,7 @@ jobs:
       pull-requests: write
       contents: write
     env:
-      LINT_MODE: |
-        ${{ contains(github.event.pull_request.labels.*.name, 'ci: lint') && 'fix' || 'check' }}
+      LINT_MODE: "${{ contains(github.event.pull_request.labels.*.name, 'ci: lint') && 'fix' || 'check' }}"
     steps:
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -113,6 +112,8 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ (env.LINT_MODE == 'fix' && github.event.pull_request.head.sha) || '' }}
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed
