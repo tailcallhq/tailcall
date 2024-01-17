@@ -2,7 +2,7 @@ name: Comment on commit
 
 on:
   workflow_run:
-    workflows: ['Benchmark']
+    workflows: ["Benchmark"]
     types:
       - completed
 
