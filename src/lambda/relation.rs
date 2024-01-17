@@ -43,9 +43,9 @@ impl Eval for Relation {
         let set: HashSet<_> = match results_iter.next() {
           Some(first) => match first? {
             ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
-            _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
+            _ => Err(EvaluationError::ExprEvalError("element is not a list".into()))?,
           },
-          None => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
+          None => Err(EvaluationError::ExprEvalError("element is not a list".into()))?,
         };
 
         let final_set = results_iter.try_fold(set, |mut acc, result| match result? {
@@ -54,7 +54,7 @@ impl Eval for Relation {
             acc = acc.intersection(&set).cloned().collect();
             Ok::<_, anyhow::Error>(acc)
           }
-          _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
+          _ => Err(EvaluationError::ExprEvalError("element is not a list".into()))?,
         })?;
 
         final_set
@@ -100,7 +100,7 @@ impl Eval for Relation {
       Relation::Max(exprs) => {
         let mut results: Vec<_> = exprs.eval(ctx, conc).await?;
 
-        let last = results.pop().ok_or(EvaluationError::OperationFailed(
+        let last = results.pop().ok_or(EvaluationError::ExprEvalError(
           "`max` cannot be called on empty list".into(),
         ))?;
 
@@ -119,7 +119,7 @@ impl Eval for Relation {
       Relation::Min(exprs) => {
         let mut results: Vec<_> = exprs.eval(ctx, conc).await?;
 
-        let last = results.pop().ok_or(EvaluationError::OperationFailed(
+        let last = results.pop().ok_or(EvaluationError::ExprEvalError(
           "`min` cannot be called on empty list".into(),
         ))?;
 
@@ -159,7 +159,7 @@ impl Eval for Relation {
         let value = expr.eval(ctx, conc).await?;
         let values = match value {
           ConstValue::List(list) => list,
-          _ => Err(EvaluationError::OperationFailed(
+          _ => Err(EvaluationError::ExprEvalError(
             "`sortPath` can only be applied to expressions that return list".into(),
           ))?,
         };

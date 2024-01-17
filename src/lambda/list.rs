@@ -24,7 +24,7 @@ impl Eval for List {
             lhs.extend(rhs.into_iter());
             Ok(ConstValue::List(lhs))
           }
-          _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
+          _ => Err(EvaluationError::ExprEvalError("element is not a list".into()))?,
         }),
     }
   }

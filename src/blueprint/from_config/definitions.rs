@@ -341,7 +341,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
     update_args(hasher)
       .and(update_http().trace(config::Http::trace_name().as_str()))
       .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-      .and(update_unsafe().trace(config::Unsafe::trace_name().as_str()))
+      .and(update_unsafe().trace(config::Io::trace_name().as_str()))
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))

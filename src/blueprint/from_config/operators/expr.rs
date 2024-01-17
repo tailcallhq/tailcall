@@ -47,7 +47,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
   let field = ctx.config_field;
   let operation_type = ctx.operation_type;
   match expr {
-    // Unsafe Expr
+    // Io Expr
     ExprBody::Http(http) => compile_http(config, field, &http),
     ExprBody::Grpc(grpc) => {
       let grpc = CompileGrpc { config, field, operation_type, grpc: &grpc, validate_with_schema: false };

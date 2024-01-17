@@ -5,7 +5,7 @@ use crate::blueprint::compress::compress;
 use crate::blueprint::*;
 use crate::config::{Arg, Batch, Config, Field};
 use crate::json::JsonSchema;
-use crate::lambda::{Expression, Unsafe};
+use crate::lambda::{Expression, Io};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
 
@@ -43,7 +43,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
   for def in blueprint.definitions.iter() {
     if let Definition::ObjectTypeDefinition(object_type_definition) = def {
       for field in object_type_definition.fields.iter() {
-        if let Some(Expression::Unsafe(Unsafe::Http { group_by: Some(_), .. })) = field.resolver.clone() {
+        if let Some(Expression::Io(Io::Http { group_by: Some(_), .. })) = field.resolver.clone() {
           blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
           return blueprint;
         }

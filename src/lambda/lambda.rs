@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
-use super::expression;
-use super::expression::{Context, Expression, Unsafe};
+use super::expression::{Context, Expression};
+use super::{expression, Io};
 use crate::{graphql, grpc, http};
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ impl<A> Lambda<A> {
   }
 
   pub fn to_unsafe_js(self, script: String) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), script)))
+    Lambda::new(Expression::Io(Io::JS(self.box_expr(), script)))
   }
 
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
@@ -45,11 +45,7 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_request_template(req_template: http::RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::Http {
-      req_template,
-      group_by: None,
-      dl_id: None,
-    }))
+    Lambda::new(Expression::Io(Io::Http { req_template, group_by: None, dl_id: None }))
   }
 
   pub fn from_graphql_request_template(
@@ -57,7 +53,7 @@ impl Lambda<serde_json::Value> {
     field_name: String,
     batch: bool,
   ) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::GraphQLEndpoint {
+    Lambda::new(Expression::Io(Io::GraphQLEndpoint {
       req_template,
       field_name,
       batch,
@@ -66,11 +62,7 @@ impl Lambda<serde_json::Value> {
   }
 
   pub fn from_grpc_request_template(req_template: grpc::RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::Grpc {
-      req_template,
-      group_by: None,
-      dl_id: None,
-    }))
+    Lambda::new(Expression::Io(Io::Grpc { req_template, group_by: None, dl_id: None }))
   }
 }
 

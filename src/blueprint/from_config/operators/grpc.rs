@@ -8,7 +8,7 @@ use crate::config::{Config, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
-use crate::lambda::{Expression, Lambda, Unsafe};
+use crate::lambda::{Expression, Io, Lambda};
 use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError};
@@ -136,11 +136,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     .map(|(url, headers, operation, body)| {
       let req_template = RequestTemplate { url, headers, operation, body, operation_type: operation_type.clone() };
       if !grpc.group_by.is_empty() {
-        Expression::Unsafe(Unsafe::Grpc {
-          req_template,
-          group_by: Some(GroupBy::new(grpc.group_by.clone())),
-          dl_id: None,
-        })
+        Expression::Io(Io::Grpc { req_template, group_by: Some(GroupBy::new(grpc.group_by.clone())), dl_id: None })
       } else {
         Lambda::from_grpc_request_template(req_template).expression
       }

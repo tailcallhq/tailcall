@@ -250,7 +250,7 @@ pub struct Field {
   #[serde(default, skip_serializing_if = "is_default")]
   pub grpc: Option<Grpc>,
   #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
-  pub unsafe_operation: Option<Unsafe>,
+  pub unsafe_operation: Option<Io>,
   #[serde(rename = "const", default, skip_serializing_if = "is_default")]
   pub const_field: Option<Const>,
   #[serde(default, skip_serializing_if = "is_default")]
@@ -278,7 +278,7 @@ impl Field {
       directives.push(GraphQL::trace_name());
     }
     if self.unsafe_operation.is_some() {
-      directives.push(Unsafe::trace_name());
+      directives.push(Io::trace_name());
     }
     if self.const_field.is_some() {
       directives.push(Const::trace_name());
@@ -324,7 +324,7 @@ impl Field {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Unsafe {
+pub struct Io {
   pub script: String,
 }
 

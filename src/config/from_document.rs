@@ -245,10 +245,10 @@ where
       }
     })
 }
-fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Unsafe> {
+fn to_unsafe_operation(directives: &[Positioned<ConstDirective>]) -> Option<config::Io> {
   directives.iter().find_map(|directive| {
-    if directive.node.name.node == config::Unsafe::directive_name() {
-      config::Unsafe::from_directive(&directive.node).to_result().ok()
+    if directive.node.name.node == config::Io::directive_name() {
+      config::Io::from_directive(&directive.node).to_result().ok()
     } else {
       None
     }
