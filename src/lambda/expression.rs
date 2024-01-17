@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fmt::Debug;
-use std::ops;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -13,7 +12,7 @@ use reqwest::Request;
 use serde_json::Value;
 use thiserror::Error;
 
-use super::{Eval, ResolverContextLike};
+use super::{eval_math, Eval, Math, ResolverContextLike};
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -23,7 +22,7 @@ use crate::grpc::data_loader::GrpcDataLoader;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
-use crate::helpers::value::{self, try_f64_operation, try_i64_operation, try_u64_operation, HashableConstValue};
+use crate::helpers::value::{self, HashableConstValue};
 use crate::http::{self, cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 #[cfg(feature = "unsafe-js")]
 use crate::javascript;
@@ -86,20 +85,6 @@ pub enum Logic {
   DefaultTo(Box<Expression>, Box<Expression>),
   IsEmpty(Box<Expression>),
   Not(Box<Expression>),
-}
-
-#[derive(Clone, Debug)]
-pub enum Math {
-  Mod(Box<Expression>, Box<Expression>),
-  Add(Box<Expression>, Box<Expression>),
-  Dec(Box<Expression>),
-  Divide(Box<Expression>, Box<Expression>),
-  Inc(Box<Expression>),
-  Multiply(Box<Expression>, Box<Expression>),
-  Negate(Box<Expression>),
-  Product(Vec<Expression>),
-  Subtract(Box<Expression>, Box<Expression>),
-  Sum(Vec<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -616,112 +601,7 @@ impl Eval for Logic {
   }
 }
 
-async fn eval_math<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-  ctx: &'a EvaluationContext<'a, Ctx>,
-  math: &'a Math,
-  conc: &'a Concurrency,
-) -> Result<ConstValue> {
-  Ok(match math {
-    Math::Mod(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      try_i64_operation(&lhs, &rhs, ops::Rem::rem)
-        .or_else(|| try_u64_operation(&lhs, &rhs, ops::Rem::rem))
-        .ok_or(EvaluationError::OperationFailed("mod".into()))?
-    }
-    Math::Add(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      try_f64_operation(&lhs, &rhs, ops::Add::add)
-        .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
-        .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
-        .ok_or(EvaluationError::OperationFailed("add".into()))?
-    }
-    Math::Dec(val) => {
-      let val = val.eval(ctx, conc).await?;
-
-      val
-        .as_f64_ok()
-        .ok()
-        .map(|val| (val - 1f64).into())
-        .or_else(|| val.as_u64_ok().ok().map(|val| (val - 1u64).into()))
-        .or_else(|| val.as_i64_ok().ok().map(|val| (val - 1i64).into()))
-        .ok_or(EvaluationError::OperationFailed("dec".into()))?
-    }
-    Math::Divide(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      try_f64_operation(&lhs, &rhs, ops::Div::div)
-        .or_else(|| try_u64_operation(&lhs, &rhs, ops::Div::div))
-        .or_else(|| try_i64_operation(&lhs, &rhs, ops::Div::div))
-        .ok_or(EvaluationError::OperationFailed("divide".into()))?
-    }
-    Math::Inc(val) => {
-      let val = val.eval(ctx, conc).await?;
-
-      val
-        .as_f64_ok()
-        .ok()
-        .map(|val| (val + 1f64).into())
-        .or_else(|| val.as_u64_ok().ok().map(|val| (val + 1u64).into()))
-        .or_else(|| val.as_i64_ok().ok().map(|val| (val + 1i64).into()))
-        .ok_or(EvaluationError::OperationFailed("dec".into()))?
-    }
-    Math::Multiply(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      try_f64_operation(&lhs, &rhs, ops::Mul::mul)
-        .or_else(|| try_u64_operation(&lhs, &rhs, ops::Mul::mul))
-        .or_else(|| try_i64_operation(&lhs, &rhs, ops::Mul::mul))
-        .ok_or(EvaluationError::OperationFailed("multiply".into()))?
-    }
-    Math::Negate(val) => {
-      let val = val.eval(ctx, conc).await?;
-
-      val
-        .as_f64_ok()
-        .ok()
-        .map(|val| (-val).into())
-        .or_else(|| val.as_i64_ok().ok().map(|val| (-val).into()))
-        .ok_or(EvaluationError::OperationFailed("neg".into()))?
-    }
-    Math::Product(exprs) => {
-      let results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
-
-      results.into_iter().try_fold(1i64.into(), |lhs, rhs| {
-        try_f64_operation(&lhs, &rhs, ops::Mul::mul)
-          .or_else(|| try_u64_operation(&lhs, &rhs, ops::Mul::mul))
-          .or_else(|| try_i64_operation(&lhs, &rhs, ops::Mul::mul))
-          .ok_or(EvaluationError::OperationFailed("product".into()))
-      })?
-    }
-    Math::Subtract(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      try_f64_operation(&lhs, &rhs, ops::Sub::sub)
-        .or_else(|| try_u64_operation(&lhs, &rhs, ops::Sub::sub))
-        .or_else(|| try_i64_operation(&lhs, &rhs, ops::Sub::sub))
-        .ok_or(EvaluationError::OperationFailed("subtract".into()))?
-    }
-    Math::Sum(exprs) => {
-      let results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
-
-      results.into_iter().try_fold(0i64.into(), |lhs, rhs| {
-        try_f64_operation(&lhs, &rhs, ops::Add::add)
-          .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
-          .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
-          .ok_or(EvaluationError::OperationFailed("sum".into()))
-      })?
-    }
-  })
-}
-
-async fn eval_list_expressions<'a, Ctx: ResolverContextLike<'a> + Sync + Send, C: FromIterator<ConstValue>>(
+pub async fn eval_list_expressions<'a, Ctx: ResolverContextLike<'a> + Sync + Send, C: FromIterator<ConstValue>>(
   ctx: &'a EvaluationContext<'a, Ctx>,
   conc: &'a Concurrency,
   exprs: &'a [Expression],
