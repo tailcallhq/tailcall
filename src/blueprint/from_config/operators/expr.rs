@@ -161,3 +161,68 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use std::sync::{Arc, Mutex};
+
+  use pretty_assertions::assert_eq;
+  use serde_json::json;
+
+  use super::{compile, CompilationContext};
+  use crate::config::{Config, Expr, Field, GraphQLOperationType};
+  use crate::http::RequestContext;
+  use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
+
+  #[derive(Default)]
+  struct Context<'a> {
+    value: Option<&'a async_graphql_value::ConstValue>,
+    args: Option<&'a indexmap::IndexMap<async_graphql_value::Name, async_graphql_value::ConstValue>>,
+    field: Option<async_graphql::SelectionField<'a>>,
+    errors: Arc<Mutex<Vec<async_graphql::ServerError>>>,
+  }
+
+  impl<'a> ResolverContextLike<'a> for Context<'a> {
+    fn value(&'a self) -> Option<&'a async_graphql_value::ConstValue> {
+      self.value
+    }
+
+    fn args(&'a self) -> Option<&'a indexmap::IndexMap<async_graphql_value::Name, async_graphql_value::ConstValue>> {
+      self.args
+    }
+
+    fn field(&'a self) -> Option<async_graphql::SelectionField> {
+      self.field
+    }
+
+    fn add_error(&'a self, error: async_graphql::ServerError) {
+      self.errors.lock().unwrap().push(error);
+    }
+  }
+
+  impl Expr {
+    async fn eval(expr: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+      let expr = serde_json::from_value::<Expr>(expr)?;
+      let config = Config::default();
+      let field = Field::default();
+      let operation_type = GraphQLOperationType::Query;
+      let context = CompilationContext { config: &config, config_field: &field, operation_type: &operation_type };
+      let expression = compile(&context, expr.body.clone()).to_result()?;
+      let req_ctx = RequestContext::default();
+      let graphql_ctx = Context::default();
+      let ctx = EvaluationContext::new(&req_ctx, &graphql_ctx);
+      let value = expression.eval(&ctx, &Concurrent::default()).await?;
+
+      Ok(serde_json::to_value(value)?)
+    }
+  }
+
+  #[tokio::test]
+  async fn test_is_truthy() {
+    let actual = Expr::eval(json!({"body": {"inc": {"const": 1}}})).await.unwrap();
+    let expected = json!(2.0);
+    assert_eq!(actual, expected);
+  }
+
+  // TODO: add tests for all other expr operators
+}

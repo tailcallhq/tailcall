@@ -6,9 +6,10 @@ use futures_util::{Future, StreamExt};
 /// It's a flag that is set based on operators that are applied on a list.
 /// The goal is to identify list operations that can be executed in parallel eg: and, or etc.
 ///
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum Concurrent {
   Parallel,
+  #[default]
   Sequential,
 }
 
