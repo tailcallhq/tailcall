@@ -11,6 +11,7 @@ on:
     types: [opened, reopened, synchronize]
 permissions:
   contents: read
+
 jobs:
   check_if_build:
     name: Check if Build
@@ -88,6 +89,12 @@ jobs:
     name: Run Formatter and Lint Check
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    env:
+      LINT_MODE: |
+        ${{ contains(github.event.pull_request.labels.*.name, 'ci: lint') && 'fix' || 'check' }}
     steps:
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -110,7 +117,12 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@v4
       - name: Run Lint Script
-        run: ./lint.sh --mode=check
+        run: ./lint.sh --mode=$LINT_MODE
+      - name: Commit and push if changed
+        if: env.LINT_MODE == "fix"
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: apply lint fixes"
 
   draft_release:
     name: Draft Release
