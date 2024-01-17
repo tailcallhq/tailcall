@@ -41,6 +41,7 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
 
       - name: Build WASM
+        # TODO: probably for pull_requests we can run just `cargo check` to execute if faster
         run: cargo build --lib --release --target wasm32-unknown-unknown
         working-directory: ./cloudflare
 
@@ -146,9 +147,11 @@ jobs:
       create_release_name: ${{ steps.set_output.outputs.create_release_name }}
       create_release_id: ${{ steps.set_output.outputs.create_release_id }}
 
+  # TODO: move to separate file to separate responsibilities
   release:
     name: Release
     needs: [test, format, draft_release, check_if_build, compile_wasm]
+    # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
