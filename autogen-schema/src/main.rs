@@ -3,8 +3,7 @@ use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
-use jsonschema::{Draft, JSONSchema};
-use serde_json::{json, Value};
+use serde_json::json;
 use tailcall::cli::init_file;
 use tailcall::config::Config;
 use tailcall::FileIO;
@@ -47,36 +46,20 @@ async fn main() {
 }
 
 async fn mode_check() -> Result<()> {
-  let mut root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-  root_dir.pop();
-  root_dir.push("examples");
-  let mut json_placeholder = root_dir.clone();
-  json_placeholder.push("jsonplaceholder.json");
-
-  let mut json_schema = root_dir.clone();
+  let mut json_schema = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  json_schema.pop();
+  json_schema.push("examples");
   json_schema.push(JSON_SCHEMA_FILE);
 
   let file_io = init_file();
   let content = file_io
     .read(json_schema.to_str().ok_or(anyhow!("Unable to determine path"))?)
     .await?;
-
-  let compiled_schema = JSONSchema::options()
-    .with_draft(Draft::Draft7)
-    .compile(&serde_json::from_slice::<Value>(content.as_bytes())?)
-    .map_err(|e| anyhow!(e.to_string()))?;
-
-  let content = file_io
-    .read(json_placeholder.to_str().ok_or(anyhow!("Unable to determine path"))?)
-    .await?;
-
-  let placeholder = serde_json::from_str::<Value>(&content).unwrap();
-  compiled_schema.validate(&placeholder).map_err(|errs| {
-    let errs = errs.map(|e| format!("{}\n", e)).collect::<Vec<String>>();
-    anyhow!("{:?}", errs)
-  })?;
-
-  Ok(())
+  let schema = get_updated_json().await?;
+  match content == schema {
+    true => Ok(()),
+    false => Err(anyhow!("Schema mismatch")),
+  }
 }
 
 async fn mode_fix() -> Result<()> {
@@ -91,9 +74,8 @@ async fn update_json() -> Result<()> {
   json_schema.push("examples");
   json_schema.push(JSON_SCHEMA_FILE);
 
-  let schema = schemars::schema_for!(Config);
-  let serde = json!(schema);
-  let schema = serde_json::to_string_pretty(&serde)?;
+  let schema = get_updated_json().await?;
+
   let file_io = init_file();
   file_io
     .write(
@@ -102,6 +84,13 @@ async fn update_json() -> Result<()> {
     )
     .await?;
   Ok(())
+}
+
+async fn get_updated_json() -> Result<String> {
+  let schema = schemars::schema_for!(Config);
+  let serde = json!(schema);
+  let schema = serde_json::to_string_pretty(&serde)?;
+  Ok(schema)
 }
 
 async fn update_gql() -> Result<()> {
