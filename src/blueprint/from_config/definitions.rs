@@ -9,6 +9,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
+use crate::lambda::Unsafe;
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
@@ -349,11 +350,6 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(validate_call(&operation_type).trace(config::Call::trace_name().as_str()))
       .and(update_nested_resolvers())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
-      .and_then(|b_field| {
-        println!("b_field.resolver: {:?}", b_field.resolver);
-
-        Valid::succeed(b_field)
-      })
   };
 
   // Process fields that are not marked as `omit`
