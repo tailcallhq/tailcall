@@ -60,7 +60,7 @@ impl Eval for Logic {
           let future_iter = list.iter().map(|expr| async move { expr.eval(ctx, conc).await });
 
           conc
-            .fold(future_iter, false, |acc, val| Ok(acc && is_truthy(&val?)))
+            .fold(future_iter, true, |acc, val| Ok(acc && is_truthy(&val?)))
             .await
             .map(ConstValue::from)?
         }
