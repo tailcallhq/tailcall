@@ -4,6 +4,8 @@ mod fmt;
 pub mod server;
 mod tc;
 
+use std::hash::Hash;
+
 pub use error::CLIError;
 pub use tc::run;
 
@@ -16,6 +18,8 @@ pub(crate) mod http;
 pub use env::EnvNative;
 pub use file::NativeFileIO;
 pub use http::NativeHttp;
+
+use crate::chrono_cache::NativeChronoCache;
 
 // Provides access to env in native rust environment
 pub fn init_env() -> env::EnvNative {
@@ -35,4 +39,8 @@ pub fn init_http(upstream: &Upstream) -> http::NativeHttp {
 // Provides access to http in native rust environment
 pub fn init_http2_only(upstream: &Upstream) -> http::NativeHttp {
   http::NativeHttp::init(&upstream.clone().http2_only(true))
+}
+
+pub fn init_chrono_cahe<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
+  NativeChronoCache::new()
 }

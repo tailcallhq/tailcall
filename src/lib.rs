@@ -27,6 +27,8 @@ pub mod try_fold;
 pub mod valid;
 
 use std::future::Future;
+use std::hash::Hash;
+use std::num::NonZeroU64;
 
 use http::Response;
 
@@ -42,4 +44,11 @@ pub trait HttpIO: Sync + Send + 'static {
 pub trait FileIO {
   fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> impl Future<Output = anyhow::Result<()>>;
   fn read<'a>(&'a self, file_path: &'a str) -> impl Future<Output = anyhow::Result<String>>;
+}
+
+// TODO: Make async
+pub trait ChronoCache<K: Hash + Eq, V>: Send + Sync {
+  #[allow(clippy::too_many_arguments)]
+  fn insert(&self, key: K, value: V, ttl: NonZeroU64) -> anyhow::Result<V>;
+  fn get(&self, key: &K) -> anyhow::Result<V>;
 }

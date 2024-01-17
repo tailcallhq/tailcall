@@ -15,7 +15,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_env, init_http};
+use tailcall::cli::{init_chrono_cahe, init_env, init_http};
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
@@ -302,7 +302,14 @@ async fn test_execution() -> std::io::Result<()> {
           .unwrap();
         let h_client = Arc::new(init_http(&blueprint.upstream));
         let h2_client = Arc::new(init_http(&blueprint.upstream));
-        let server_ctx = AppContext::new(blueprint, h_client, h2_client, Arc::new(init_env()));
+        let chrono_cache = init_chrono_cahe();
+        let server_ctx = AppContext::new(
+          blueprint,
+          h_client,
+          h2_client,
+          Arc::new(init_env()),
+          Arc::new(chrono_cache),
+        );
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {

@@ -7,13 +7,12 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::blueprint::Server;
-use crate::chrono_cache::ChronoCache;
 use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::{grpc, EnvIO, HttpIO};
+use crate::{grpc, ChronoCache, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -28,7 +27,7 @@ pub struct RequestContext {
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
+  pub cache: Arc<dyn ChronoCache<u64, ConstValue>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub min_max_age: Arc<Mutex<Option<i32>>>,
   pub cache_public: Arc<Mutex<Option<bool>>>,
@@ -81,12 +80,12 @@ impl RequestContext {
   }
 
   pub fn cache_get(&self, key: &u64) -> Option<ConstValue> {
-    self.cache.get(key)
+    self.cache.get(key).ok()
   }
 
   #[allow(clippy::too_many_arguments)]
   pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Option<ConstValue> {
-    self.cache.insert(key, value, ttl)
+    self.cache.insert(key, value, ttl).ok()
   }
 
   pub fn is_batching_enabled(&self) -> bool {
@@ -121,7 +120,7 @@ mod test {
   use hyper::HeaderMap;
 
   use crate::blueprint::Server;
-  use crate::chrono_cache::ChronoCache;
+  use crate::chrono_cache::NativeChronoCache;
   use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
@@ -142,7 +141,7 @@ mod test {
         upstream,
         http_data_loaders: Arc::new(vec![]),
         gql_data_loaders: Arc::new(vec![]),
-        cache: ChronoCache::new(),
+        cache: Arc::new(NativeChronoCache::new()),
         grpc_data_loaders: Arc::new(vec![]),
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),

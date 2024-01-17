@@ -6,13 +6,12 @@ use async_graphql_value::ConstValue;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
-use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
-use crate::{grpc, EnvIO, HttpIO};
+use crate::{grpc, ChronoCache, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
@@ -21,14 +20,20 @@ pub struct AppContext<Http, Env> {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
+  pub cache: Arc<dyn ChronoCache<u64, ConstValue>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub env_vars: Arc<Env>,
 }
 
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
-  pub fn new(mut blueprint: Blueprint, h_client: Arc<Http>, h2_client: Arc<Http>, env: Arc<Env>) -> Self {
+  pub fn new(
+    mut blueprint: Blueprint,
+    h_client: Arc<Http>,
+    h2_client: Arc<Http>,
+    env: Arc<Env>,
+    chrono_cache: Arc<dyn ChronoCache<u64, ConstValue>>,
+  ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
@@ -101,7 +106,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
-      cache: ChronoCache::new(),
+      cache: chrono_cache,
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
     }
