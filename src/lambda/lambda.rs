@@ -95,7 +95,7 @@ mod tests {
 
   use crate::endpoint::Endpoint;
   use crate::http::{RequestContext, RequestTemplate};
-  use crate::lambda::{Concurrency, EmptyResolverContext, EvaluationContext, Lambda};
+  use crate::lambda::{Concurrency, EmptyResolverContext, Eval, EvaluationContext, Lambda};
 
   impl<B> Lambda<B>
   where

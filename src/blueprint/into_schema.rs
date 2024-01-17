@@ -9,7 +9,7 @@ use crate::blueprint::{Blueprint, Cache, Definition, Type};
 use crate::helpers;
 use crate::http::RequestContext;
 use crate::json::JsonLike;
-use crate::lambda::{Concurrency, EvaluationContext};
+use crate::lambda::{Concurrency, Eval, EvaluationContext};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {

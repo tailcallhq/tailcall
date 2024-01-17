@@ -1,9 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fmt::Debug;
-use std::future::Future;
 use std::ops;
-use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -15,7 +13,7 @@ use reqwest::Request;
 use serde_json::Value;
 use thiserror::Error;
 
-use super::ResolverContextLike;
+use super::{Eval, ResolverContextLike};
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -181,432 +179,441 @@ impl Expression {
   pub fn in_sequence(self) -> Self {
     self.concurrency(Concurrency::Sequential)
   }
+}
 
-  pub fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+impl Eval for Expression {
+  async fn async_eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
     conc: &'a Concurrency,
-  ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
-    Box::pin(async move {
-      match self {
-        Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
-        Expression::Context(op) => match op {
-          Context::Value => Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null)),
-          Context::Path(path) => Ok(ctx.path_value(path).cloned().unwrap_or(async_graphql::Value::Null)),
-        },
-        Expression::Input(input, path) => {
-          let inp = &input.eval(ctx, conc).await?;
-          Ok(inp.get_path(path).unwrap_or(&async_graphql::Value::Null).clone())
+  ) -> Result<async_graphql::Value> {
+    match self {
+      Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
+      Expression::Context(op) => match op {
+        Context::Value => Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null)),
+        Context::Path(path) => Ok(ctx.path_value(path).cloned().unwrap_or(async_graphql::Value::Null)),
+      },
+      Expression::Input(input, path) => {
+        let inp = &input.eval(ctx, conc).await?;
+        Ok(inp.get_path(path).unwrap_or(&async_graphql::Value::Null).clone())
+      }
+      Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
+      Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
+        left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
+      )),
+      Expression::Unsafe(operation) => match operation {
+        Unsafe::Http { req_template, dl_id, .. } => {
+          let req = req_template.to_request(ctx)?;
+          let is_get = req.method() == reqwest::Method::GET;
+
+          let res = if is_get && ctx.req_ctx.is_batching_enabled() {
+            let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
+              dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
+            execute_request_with_dl(ctx, req, data_loader).await?
+          } else {
+            execute_raw_request(ctx, req).await?
+          };
+
+          if ctx.req_ctx.server.get_enable_http_validation() {
+            req_template
+              .endpoint
+              .output
+              .validate(&res.body)
+              .to_result()
+              .map_err(EvaluationError::from)?;
+          }
+
+          set_cache_control(ctx, &res);
+
+          Ok(res.body)
         }
-        Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
-        Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
-          left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
-        )),
-        Expression::Unsafe(operation) => match operation {
-          Unsafe::Http { req_template, dl_id, .. } => {
-            let req = req_template.to_request(ctx)?;
-            let is_get = req.method() == reqwest::Method::GET;
+        Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
+          let req = req_template.to_request(ctx)?;
 
-            let res = if is_get && ctx.req_ctx.is_batching_enabled() {
-              let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
-                dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader).await?
-            } else {
-              execute_raw_request(ctx, req).await?
-            };
+          let res = if ctx.req_ctx.upstream.batch.is_some()
+            && matches!(req_template.operation_type, GraphQLOperationType::Query)
+          {
+            let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
+              dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
+            execute_request_with_dl(ctx, req, data_loader).await?
+          } else {
+            execute_raw_request(ctx, req).await?
+          };
 
-            if ctx.req_ctx.server.get_enable_http_validation() {
-              req_template
-                .endpoint
-                .output
-                .validate(&res.body)
-                .to_result()
-                .map_err(EvaluationError::from)?;
-            }
+          set_cache_control(ctx, &res);
+          parse_graphql_response(ctx, res, field_name)
+        }
+        Unsafe::Grpc { req_template, dl_id, .. } => {
+          let rendered = req_template.render(ctx)?;
 
-            set_cache_control(ctx, &res);
-
-            Ok(res.body)
-          }
-          Unsafe::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
-            let req = req_template.to_request(ctx)?;
-
-            let res = if ctx.req_ctx.upstream.batch.is_some()
-              && matches!(req_template.operation_type, GraphQLOperationType::Query)
-            {
-              let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
-                dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
-              execute_request_with_dl(ctx, req, data_loader).await?
-            } else {
-              execute_raw_request(ctx, req).await?
-            };
-
-            set_cache_control(ctx, &res);
-            parse_graphql_response(ctx, res, field_name)
-          }
-          Unsafe::Grpc { req_template, dl_id, .. } => {
-            let rendered = req_template.render(ctx)?;
-
-            let res = if ctx.req_ctx.upstream.batch.is_some() &&
+          let res = if ctx.req_ctx.upstream.batch.is_some() &&
                 // TODO: share check for operation_type for resolvers
                 matches!(req_template.operation_type, GraphQLOperationType::Query)
-            {
-              let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
-                dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
-              execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
-            } else {
-              let req = rendered.to_request()?;
-              execute_raw_grpc_request(ctx, req, &req_template.operation).await?
-            };
+          {
+            let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
+              dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
+            execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
+          } else {
+            let req = rendered.to_request()?;
+            execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+          };
 
-            set_cache_control(ctx, &res);
+          set_cache_control(ctx, &res);
 
-            Ok(res.body)
+          Ok(res.body)
+        }
+        Unsafe::JS(input, script) => {
+          let result;
+          #[cfg(not(feature = "unsafe-js"))]
+          {
+            let _ = script;
+            let _ = input;
+            result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
           }
-          Unsafe::JS(input, script) => {
-            let result;
-            #[cfg(not(feature = "unsafe-js"))]
-            {
-              let _ = script;
-              let _ = input;
-              result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
-            }
 
-            #[cfg(feature = "unsafe-js")]
-            {
-              let input = input.eval(ctx, conc).await?;
-              result = javascript::execute_js(script, input, Some(ctx.timeout))
-                .map_err(|e| EvaluationError::JSException(e.to_string()).into());
-            }
-            result
+          #[cfg(feature = "unsafe-js")]
+          {
+            let input = input.eval(ctx, conc).await?;
+            result = javascript::execute_js(script, input, Some(ctx.timeout))
+              .map_err(|e| EvaluationError::JSException(e.to_string()).into());
           }
-        },
+          result
+        }
+      },
 
-        Expression::Relation(relation) => eval_relation(ctx, relation, conc).await,
-        Expression::Logic(logic) => eval_logic(ctx, logic, conc).await,
-        Expression::List(list) => eval_list(ctx, list, conc).await,
-        Expression::Math(math) => eval_math(ctx, math, conc).await,
+      Expression::Relation(relation) => relation.async_eval(ctx, conc).await,
+      Expression::Logic(logic) => logic.async_eval(ctx, conc).await,
+      Expression::List(list) => list.async_eval(ctx, conc).await,
+      Expression::Math(math) => eval_math(ctx, math, conc).await,
+    }
+  }
+}
+
+impl Eval for Relation {
+  async fn async_eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    &'a self,
+    ctx: &'a EvaluationContext<'a, Ctx>,
+    conc: &'a Concurrency,
+  ) -> Result<async_graphql::Value> {
+    Ok(match self {
+      Relation::Intersection(exprs) => {
+        let results = join_all(exprs.iter().map(|expr| expr.eval(ctx, conc))).await;
+
+        let mut results_iter = results.into_iter();
+
+        let set: HashSet<_> = match results_iter.next() {
+          Some(first) => match first? {
+            ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
+            _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
+          },
+          None => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
+        };
+
+        let final_set = results_iter.try_fold(set, |mut acc, result| match result? {
+          ConstValue::List(list) => {
+            let set: HashSet<_> = list.into_iter().map(HashableConstValue).collect();
+            acc = acc.intersection(&set).cloned().collect();
+            Ok::<_, anyhow::Error>(acc)
+          }
+          _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
+        })?;
+
+        final_set
+          .into_iter()
+          .map(|HashableConstValue(const_value)| const_value)
+          .collect()
+      }
+      Relation::Difference(lhs, rhs) => {
+        set_operation(ctx, conc, lhs, rhs, |lhs, rhs| {
+          lhs
+            .difference(&rhs)
+            .cloned()
+            .map(|HashableConstValue(const_value)| const_value)
+            .collect()
+        })
+        .await?
+      }
+      Relation::Equals(lhs, rhs) => (lhs.eval(ctx, conc).await? == rhs.eval(ctx, conc).await?).into(),
+      Relation::Gt(lhs, rhs) => {
+        let lhs = lhs.eval(ctx, conc).await?;
+        let rhs = rhs.eval(ctx, conc).await?;
+
+        (value::compare(&lhs, &rhs) == Some(Ordering::Greater)).into()
+      }
+      Relation::Gte(lhs, rhs) => {
+        let lhs = lhs.eval(ctx, conc).await?;
+        let rhs = rhs.eval(ctx, conc).await?;
+
+        matches!(
+          value::compare(&lhs, &rhs),
+          Some(Ordering::Greater) | Some(Ordering::Equal)
+        )
+        .into()
+      }
+      Relation::Lt(lhs, rhs) => {
+        let lhs = lhs.eval(ctx, conc).await?;
+        let rhs = rhs.eval(ctx, conc).await?;
+
+        (value::compare(&lhs, &rhs) == Some(Ordering::Less)).into()
+      }
+      Relation::Lte(lhs, rhs) => {
+        let lhs = lhs.eval(ctx, conc).await?;
+        let rhs = rhs.eval(ctx, conc).await?;
+
+        matches!(value::compare(&lhs, &rhs), Some(Ordering::Less) | Some(Ordering::Equal)).into()
+      }
+      Relation::Max(exprs) => {
+        let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
+
+        let last = results.pop().ok_or(EvaluationError::OperationFailed(
+          "`max` cannot be called on empty list".into(),
+        ))?;
+
+        results.into_iter().try_fold(last, |mut largest, current| {
+          let ord = value::compare(&largest, &current);
+          largest = match ord {
+            Some(Ordering::Greater | Ordering::Equal) => largest,
+            Some(Ordering::Less) => current,
+            _ => Err(anyhow::anyhow!(
+              "`max` cannot be calculated for types that cannot be compared"
+            ))?,
+          };
+          Ok::<_, anyhow::Error>(largest)
+        })?
+      }
+      Relation::Min(exprs) => {
+        let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
+
+        let last = results.pop().ok_or(EvaluationError::OperationFailed(
+          "`min` cannot be called on empty list".into(),
+        ))?;
+
+        results.into_iter().try_fold(last, |mut largest, current| {
+          let ord = value::compare(&largest, &current);
+          largest = match ord {
+            Some(Ordering::Less | Ordering::Equal) => largest,
+            Some(Ordering::Greater) => current,
+            _ => Err(anyhow::anyhow!(
+              "`min` cannot be calculated for types that cannot be compared"
+            ))?,
+          };
+          Ok::<_, anyhow::Error>(largest)
+        })?
+      }
+      Relation::PathEq(lhs, path, rhs) => {
+        let lhs = lhs.eval(ctx, conc).await?;
+        let lhs = get_path_for_const_value_owned(path, lhs).ok_or(anyhow::anyhow!("Could not find path: {path:?}"))?;
+
+        let rhs = rhs.eval(ctx, conc).await?;
+        let rhs = get_path_for_const_value_owned(path, rhs).ok_or(anyhow::anyhow!("Could not find path: {path:?}"))?;
+
+        (lhs == rhs).into()
+      }
+      Relation::PropEq(lhs, prop, rhs) => {
+        let lhs = lhs.eval(ctx, conc).await?;
+        let lhs =
+          get_path_for_const_value_owned(&[prop], lhs).ok_or(anyhow::anyhow!("Could not find path: {prop:?}"))?;
+
+        let rhs = rhs.eval(ctx, conc).await?;
+        let rhs =
+          get_path_for_const_value_owned(&[prop], rhs).ok_or(anyhow::anyhow!("Could not find path: {prop:?}"))?;
+
+        (lhs == rhs).into()
+      }
+      Relation::SortPath(expr, path) => {
+        let value = expr.eval(ctx, conc).await?;
+        let values = match value {
+          ConstValue::List(list) => list,
+          _ => Err(EvaluationError::OperationFailed(
+            "`sortPath` can only be applied to expressions that return list".into(),
+          ))?,
+        };
+
+        let is_comparable = value::is_list_comparable(&values);
+        let mut values: Vec<_> = values.into_iter().enumerate().collect();
+
+        if !is_comparable {
+          Err(anyhow::anyhow!("sortPath requires a list of comparable types"))?
+        }
+
+        let value_paths: Vec<_> = values
+          .iter()
+          .filter_map(|(_, val)| get_path_for_const_value_ref(path, val))
+          .cloned()
+          .collect();
+
+        if values.len() != value_paths.len() {
+          Err(anyhow::anyhow!(
+            "path is not valid for all the element in the list: {value_paths:?}"
+          ))?
+        }
+
+        values
+          .sort_by(|(index1, _), (index2, _)| value::compare(&value_paths[*index1], &value_paths[*index2]).unwrap());
+
+        values.into_iter().map(|(_, val)| val).collect::<Vec<_>>().into()
+      }
+      Relation::SymmetricDifference(lhs, rhs) => {
+        set_operation(ctx, conc, lhs, rhs, |lhs, rhs| {
+          lhs
+            .symmetric_difference(&rhs)
+            .cloned()
+            .map(|HashableConstValue(const_value)| const_value)
+            .collect()
+        })
+        .await?
+      }
+      Relation::Union(lhs, rhs) => {
+        set_operation(ctx, conc, lhs, rhs, |lhs, rhs| {
+          lhs
+            .union(&rhs)
+            .cloned()
+            .map(|HashableConstValue(const_value)| const_value)
+            .collect()
+        })
+        .await?
       }
     })
   }
 }
 
-async fn eval_relation<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-  ctx: &'a EvaluationContext<'a, Ctx>,
-  relation: &'a Relation,
-  conc: &'a Concurrency,
-) -> Result<async_graphql::Value> {
-  Ok(match relation {
-    Relation::Intersection(list) => {
-      let results = join_all(list.iter().map(|expr| expr.eval(ctx, conc))).await;
-
-      let mut results_iter = results.into_iter();
-
-      let set: HashSet<_> = match results_iter.next() {
-        Some(first) => match first? {
-          ConstValue::List(list) => list.into_iter().map(HashableConstValue).collect(),
-          _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
-        },
-        None => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
-      };
-
-      let final_set = results_iter.try_fold(set, |mut acc, result| match result? {
-        ConstValue::List(list) => {
-          let set: HashSet<_> = list.into_iter().map(HashableConstValue).collect();
-          acc = acc.intersection(&set).cloned().collect();
-          Ok::<_, anyhow::Error>(acc)
-        }
-        _ => Err(EvaluationError::IntersectionException("element is not a list".into()))?,
-      })?;
-
-      final_set
+impl Eval for List {
+  async fn async_eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    &'a self,
+    ctx: &'a EvaluationContext<'a, Ctx>,
+    conc: &'a Concurrency,
+  ) -> Result<async_graphql::Value> {
+    match self {
+      List::Concat(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
+        .await
         .into_iter()
-        .map(|HashableConstValue(const_value)| const_value)
-        .collect()
+        .try_fold(async_graphql::Value::List(vec![]), |acc, result| match (acc, result?) {
+          (ConstValue::List(mut lhs), ConstValue::List(rhs)) => {
+            lhs.extend(rhs.into_iter());
+            Ok(ConstValue::List(lhs))
+          }
+          _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
+        }),
     }
-    Relation::Difference(lhs, rhs) => {
-      set_operation(ctx, conc, lhs, rhs, |lhs, rhs| {
-        lhs
-          .difference(&rhs)
-          .cloned()
-          .map(|HashableConstValue(const_value)| const_value)
-          .collect()
-      })
-      .await?
-    }
-    Relation::Equals(lhs, rhs) => (lhs.eval(ctx, conc).await? == rhs.eval(ctx, conc).await?).into(),
-    Relation::Gt(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      (value::compare(&lhs, &rhs) == Some(Ordering::Greater)).into()
-    }
-    Relation::Gte(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      matches!(
-        value::compare(&lhs, &rhs),
-        Some(Ordering::Greater) | Some(Ordering::Equal)
-      )
-      .into()
-    }
-    Relation::Lt(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      (value::compare(&lhs, &rhs) == Some(Ordering::Less)).into()
-    }
-    Relation::Lte(lhs, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let rhs = rhs.eval(ctx, conc).await?;
-
-      matches!(value::compare(&lhs, &rhs), Some(Ordering::Less) | Some(Ordering::Equal)).into()
-    }
-    Relation::Max(exprs) => {
-      let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
-
-      let last = results.pop().ok_or(EvaluationError::OperationFailed(
-        "`max` cannot be called on empty list".into(),
-      ))?;
-
-      results.into_iter().try_fold(last, |mut largest, current| {
-        let ord = value::compare(&largest, &current);
-        largest = match ord {
-          Some(Ordering::Greater | Ordering::Equal) => largest,
-          Some(Ordering::Less) => current,
-          _ => Err(anyhow::anyhow!(
-            "`max` cannot be calculated for types that cannot be compared"
-          ))?,
-        };
-        Ok::<_, anyhow::Error>(largest)
-      })?
-    }
-    Relation::Min(exprs) => {
-      let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
-
-      let last = results.pop().ok_or(EvaluationError::OperationFailed(
-        "`min` cannot be called on empty list".into(),
-      ))?;
-
-      results.into_iter().try_fold(last, |mut largest, current| {
-        let ord = value::compare(&largest, &current);
-        largest = match ord {
-          Some(Ordering::Less | Ordering::Equal) => largest,
-          Some(Ordering::Greater) => current,
-          _ => Err(anyhow::anyhow!(
-            "`min` cannot be calculated for types that cannot be compared"
-          ))?,
-        };
-        Ok::<_, anyhow::Error>(largest)
-      })?
-    }
-    Relation::PathEq(lhs, path, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let lhs = get_path_for_const_value_owned(path, lhs).ok_or(anyhow::anyhow!("Could not find path: {path:?}"))?;
-
-      let rhs = rhs.eval(ctx, conc).await?;
-      let rhs = get_path_for_const_value_owned(path, rhs).ok_or(anyhow::anyhow!("Could not find path: {path:?}"))?;
-
-      (lhs == rhs).into()
-    }
-    Relation::PropEq(lhs, prop, rhs) => {
-      let lhs = lhs.eval(ctx, conc).await?;
-      let lhs = get_path_for_const_value_owned(&[prop], lhs).ok_or(anyhow::anyhow!("Could not find path: {prop:?}"))?;
-
-      let rhs = rhs.eval(ctx, conc).await?;
-      let rhs = get_path_for_const_value_owned(&[prop], rhs).ok_or(anyhow::anyhow!("Could not find path: {prop:?}"))?;
-
-      (lhs == rhs).into()
-    }
-    Relation::SortPath(expr, path) => {
-      let value = expr.eval(ctx, conc).await?;
-      let values = match value {
-        ConstValue::List(list) => list,
-        _ => Err(EvaluationError::OperationFailed(
-          "`sortPath` can only be applied to expressions that return list".into(),
-        ))?,
-      };
-
-      let is_comparable = value::is_list_comparable(&values);
-      let mut values: Vec<_> = values.into_iter().enumerate().collect();
-
-      if !is_comparable {
-        Err(anyhow::anyhow!("sortPath requires a list of comparable types"))?
-      }
-
-      let value_paths: Vec<_> = values
-        .iter()
-        .filter_map(|(_, val)| get_path_for_const_value_ref(path, val))
-        .cloned()
-        .collect();
-
-      if values.len() != value_paths.len() {
-        Err(anyhow::anyhow!(
-          "path is not valid for all the element in the list: {value_paths:?}"
-        ))?
-      }
-
-      values.sort_by(|(index1, _), (index2, _)| value::compare(&value_paths[*index1], &value_paths[*index2]).unwrap());
-
-      values.into_iter().map(|(_, val)| val).collect::<Vec<_>>().into()
-    }
-    Relation::SymmetricDifference(lhs, rhs) => {
-      set_operation(ctx, conc, lhs, rhs, |lhs, rhs| {
-        lhs
-          .symmetric_difference(&rhs)
-          .cloned()
-          .map(|HashableConstValue(const_value)| const_value)
-          .collect()
-      })
-      .await?
-    }
-    Relation::Union(lhs, rhs) => {
-      set_operation(ctx, conc, lhs, rhs, |lhs, rhs| {
-        lhs
-          .union(&rhs)
-          .cloned()
-          .map(|HashableConstValue(const_value)| const_value)
-          .collect()
-      })
-      .await?
-    }
-  })
-}
-
-async fn eval_list<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-  ctx: &'a EvaluationContext<'a, Ctx>,
-  list: &'a List,
-  conc: &'a Concurrency,
-) -> Result<async_graphql::Value> {
-  match list {
-    List::Concat(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
-      .await
-      .into_iter()
-      .try_fold(async_graphql::Value::List(vec![]), |acc, result| match (acc, result?) {
-        (ConstValue::List(mut lhs), ConstValue::List(rhs)) => {
-          lhs.extend(rhs.into_iter());
-          Ok(ConstValue::List(lhs))
-        }
-        _ => Err(EvaluationError::ConcatException("element is not a list".into()))?,
-      }),
   }
 }
 
-async fn eval_logic<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-  ctx: &'a EvaluationContext<'a, Ctx>,
-  logic: &'a Logic,
-  conc: &'a Concurrency,
-) -> Result<async_graphql::Value> {
-  Ok(match logic {
-    Logic::Or(list) => {
-      let future_iter = list.iter().map(|expr| expr.eval(ctx, conc));
+impl Eval for Logic {
+  async fn async_eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    &'a self,
+    ctx: &'a EvaluationContext<'a, Ctx>,
+    conc: &'a Concurrency,
+  ) -> Result<async_graphql::Value> {
+    Ok(match self {
+      Logic::Or(list) => {
+        let future_iter = list.iter().map(|expr| expr.eval(ctx, conc));
 
-      match *conc {
-        Concurrency::Parallel => {
-          let mut futures: FuturesUnordered<_> = future_iter.collect();
-          let mut output = false;
+        match *conc {
+          Concurrency::Parallel => {
+            let mut futures: FuturesUnordered<_> = future_iter.collect();
+            let mut output = false;
 
-          while let Some(result) = futures.next().await {
-            let result: Result<ConstValue> = result;
-            if is_truthy(result?) {
-              output = true;
-              break;
+            while let Some(result) = futures.next().await {
+              let result: Result<ConstValue> = result;
+              if is_truthy(result?) {
+                output = true;
+                break;
+              }
             }
+            output
           }
-          output
+          Concurrency::Sequential => {
+            let mut output = false;
+            for future in future_iter.into_iter() {
+              if is_truthy(future.await?) {
+                output = true;
+                break;
+              }
+            }
+            output
+          }
         }
+        .into()
+      }
+      Logic::Cond(default, list) => match *conc {
         Concurrency::Sequential => {
-          let mut output = false;
-          for future in future_iter.into_iter() {
-            if is_truthy(future.await?) {
-              output = true;
+          let mut result = None;
+          for (cond, expr) in list.iter() {
+            if is_truthy(cond.eval(ctx, conc).await?) {
+              result = Some(expr.eval(ctx, conc).await?);
               break;
             }
           }
-          output
+          result.unwrap_or(default.eval(ctx, conc).await?)
         }
-      }
-      .into()
-    }
-    Logic::Cond(default, list) => match *conc {
-      Concurrency::Sequential => {
-        let mut result = None;
-        for (cond, expr) in list.iter() {
-          if is_truthy(cond.eval(ctx, conc).await?) {
-            result = Some(expr.eval(ctx, conc).await?);
-            break;
+        Concurrency::Parallel => {
+          let true_cond_index = join_all(list.iter().map(|(cond, _)| cond.eval(ctx, conc)))
+            .await
+            .into_iter()
+            .enumerate()
+            .find_map(|(index, cond)| Some(is_truthy_ref(cond.as_ref().ok()?)).map(|_| index));
+
+          if let Some(index) = true_cond_index {
+            let (_, value) = list
+              .get(index)
+              .ok_or(anyhow::anyhow!("no condition found at index {index}"))?;
+            value.eval(ctx, conc).await?
+          } else {
+            default.eval(ctx, conc).await?
           }
         }
-        result.unwrap_or(default.eval(ctx, conc).await?)
-      }
-      Concurrency::Parallel => {
-        let true_cond_index = join_all(list.iter().map(|(cond, _)| cond.eval(ctx, conc)))
-          .await
-          .into_iter()
-          .enumerate()
-          .find_map(|(index, cond)| Some(is_truthy_ref(cond.as_ref().ok()?)).map(|_| index));
-
-        if let Some(index) = true_cond_index {
-          let (_, value) = list
-            .get(index)
-            .ok_or(anyhow::anyhow!("no condition found at index {index}"))?;
-          value.eval(ctx, conc).await?
-        } else {
+      },
+      Logic::DefaultTo(value, default) => {
+        let result = value.eval(ctx, conc).await?;
+        if is_empty(&result) {
           default.eval(ctx, conc).await?
+        } else {
+          result
         }
       }
-    },
-    Logic::DefaultTo(value, default) => {
-      let result = value.eval(ctx, conc).await?;
-      if is_empty(&result) {
-        default.eval(ctx, conc).await?
-      } else {
-        result
-      }
-    }
-    Logic::IsEmpty(expr) => is_empty(&expr.eval(ctx, conc).await?).into(),
-    Logic::Not(expr) => (!is_truthy(expr.eval(ctx, conc).await?)).into(),
+      Logic::IsEmpty(expr) => is_empty(&expr.eval(ctx, conc).await?).into(),
+      Logic::Not(expr) => (!is_truthy(expr.eval(ctx, conc).await?)).into(),
 
-    Logic::And(list) => {
-      let future_iter = list.iter().map(|expr| expr.eval(ctx, conc));
+      Logic::And(list) => {
+        let future_iter = list.iter().map(|expr| expr.eval(ctx, conc));
 
-      match *conc {
-        Concurrency::Parallel => {
-          let mut futures: FuturesUnordered<_> = future_iter.collect();
-          let mut output = true;
+        match *conc {
+          Concurrency::Parallel => {
+            let mut futures: FuturesUnordered<_> = future_iter.collect();
+            let mut output = true;
 
-          while let Some(result) = futures.next().await {
-            let result: Result<ConstValue> = result;
-            if !is_truthy(result?) {
-              output = false;
-              break;
+            while let Some(result) = futures.next().await {
+              let result: Result<ConstValue> = result;
+              if !is_truthy(result?) {
+                output = false;
+                break;
+              }
             }
+            output
           }
-          output
-        }
-        Concurrency::Sequential => {
-          let mut output = true;
-          for future in future_iter.into_iter() {
-            if !is_truthy(future.await?) {
-              output = false;
-              break;
+          Concurrency::Sequential => {
+            let mut output = true;
+            for future in future_iter.into_iter() {
+              if !is_truthy(future.await?) {
+                output = false;
+                break;
+              }
             }
+            output
           }
-          output
+        }
+        .into()
+      }
+      Logic::If { cond, then, els } => {
+        let cond = cond.eval(ctx, conc).await?;
+        if is_truthy(cond) {
+          then.eval(ctx, conc).await?
+        } else {
+          els.eval(ctx, conc).await?
         }
       }
-      .into()
-    }
-    Logic::If { cond, then, els } => {
-      let cond = cond.eval(ctx, conc).await?;
-      if is_truthy(cond) {
-        then.eval(ctx, conc).await?
-      } else {
-        els.eval(ctx, conc).await?
-      }
-    }
-  })
+    })
+  }
 }
 
 async fn eval_math<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
