@@ -1,0 +1,261 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Batch": {
+      "properties": {
+        "delay": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "headers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "maxSize": {
+          "default": 100,
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "HttpVersion": {
+      "enum": ["HTTP1", "HTTP2"],
+      "type": "string"
+    },
+    "KeyValues": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "Proxy": {
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": ["url"],
+      "type": "object"
+    },
+    "Server": {
+      "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
+      "properties": {
+        "apolloTracing": {
+          "description": "`apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
+          "type": ["boolean", "null"]
+        },
+        "batchRequests": {
+          "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`",
+          "type": ["boolean", "null"]
+        },
+        "cacheControlHeader": {
+          "description": "`cacheControlHeader` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
+          "type": ["boolean", "null"]
+        },
+        "cert": {
+          "description": "`cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.",
+          "type": ["string", "null"]
+        },
+        "globalResponseTimeout": {
+          "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
+          "format": "int64",
+          "type": ["integer", "null"]
+        },
+        "graphiql": {
+          "description": "`graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.",
+          "type": ["boolean", "null"]
+        },
+        "hostname": {
+          "description": "`hostname` sets the server hostname.",
+          "type": ["string", "null"]
+        },
+        "introspection": {
+          "description": "`introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.",
+          "type": ["boolean", "null"]
+        },
+        "key": {
+          "description": "`key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.",
+          "type": ["string", "null"]
+        },
+        "pipelineFlush": {
+          "description": "TODO",
+          "type": ["boolean", "null"]
+        },
+        "port": {
+          "description": "`port` sets the Tailcall running port. @default `8000`.",
+          "format": "uint16",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "queryValidation": {
+          "description": "`queryValidation` checks incoming GraphQL queries against the schema, preventing errors from invalid queries. Can be disabled for performance. @default `false`.",
+          "type": ["boolean", "null"]
+        },
+        "responseHeaders": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeyValues"
+            }
+          ],
+          "description": "`responseHeaders` appends headers to all server responses, aiding cross-origin requests or extra headers for downstream services.\n\nThe responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services."
+        },
+        "responseValidation": {
+          "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
+          "type": ["boolean", "null"]
+        },
+        "vars": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeyValues"
+            }
+          ],
+          "description": "This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information."
+        },
+        "version": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/HttpVersion"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "`version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`."
+        },
+        "workers": {
+          "description": "`workers` sets the number of worker threads. @default the number of system cores.",
+          "format": "uint",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        }
+      },
+      "type": "object"
+    },
+    "Upstream": {
+      "description": "The `upstream` directive allows you to control various aspects of the upstream server connection. This includes settings like connection timeouts, keep-alive intervals, and more. If not specified, default values are used.",
+      "properties": {
+        "allowedHeaders": {
+          "description": "`allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services. If not set, no headers are forwarded, enhancing security but possibly limiting data flow.",
+          "items": {
+            "type": "string"
+          },
+          "type": ["array", "null"],
+          "uniqueItems": true
+        },
+        "baseURL": {
+          "description": "This refers to the default base URL for your APIs. If it's not explicitly mentioned in the `@upstream` operator, then each [@http](#http) operator must specify its own `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results in a compilation error.",
+          "type": ["string", "null"]
+        },
+        "batch": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Batch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch)."
+        },
+        "connectTimeout": {
+          "description": "The time in seconds that the connection will wait for a response before timing out.",
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "http2Only": {
+          "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",
+          "type": ["boolean", "null"]
+        },
+        "httpCache": {
+          "description": "Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `false` if unspecified.",
+          "type": ["boolean", "null"]
+        },
+        "keepAliveInterval": {
+          "description": "The time in seconds between each keep-alive message sent to maintain the connection.",
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "keepAliveTimeout": {
+          "description": "The time in seconds that the connection will wait for a keep-alive message before closing.",
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "keepAliveWhileIdle": {
+          "description": "A boolean value that determines whether keep-alive messages should be sent while the connection is idle.",
+          "type": ["boolean", "null"]
+        },
+        "poolIdleTimeout": {
+          "description": "The time in seconds that the connection pool will wait before closing idle connections.",
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "poolMaxIdlePerHost": {
+          "description": "The maximum number of idle connections that will be maintained per host.",
+          "format": "uint",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "proxy": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Proxy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The `proxy` setting defines an intermediary server through which the upstream requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies."
+        },
+        "tcpKeepAlive": {
+          "description": "The time in seconds between each TCP keep-alive message sent to maintain the connection.",
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "timeout": {
+          "description": "The maximum time in seconds that the connection will wait for a response.",
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": ["integer", "null"]
+        },
+        "userAgent": {
+          "description": "The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`",
+          "type": ["string", "null"]
+        }
+      },
+      "type": "object"
+    }
+  },
+  "properties": {
+    "server": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Server"
+        }
+      ],
+      "default": {}
+    },
+    "upstream": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Upstream"
+        }
+      ],
+      "default": {}
+    }
+  },
+  "title": "Config",
+  "type": "object"
+}
