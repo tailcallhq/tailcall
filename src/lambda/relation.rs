@@ -5,8 +5,8 @@ use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
 
 use super::{
-  eval_list_expressions, get_path_for_const_value_owned, get_path_for_const_value_ref, set_operation, Concurrency,
-  Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
+  get_path_for_const_value_owned, get_path_for_const_value_ref, set_operation, Concurrency, Eval, EvaluationContext,
+  EvaluationError, Expression, ResolverContextLike,
 };
 use crate::helpers::value::{compare, is_list_comparable, HashableConstValue};
 
@@ -98,7 +98,7 @@ impl Eval for Relation {
         matches!(compare(&lhs, &rhs), Some(Ordering::Less) | Some(Ordering::Equal)).into()
       }
       Relation::Max(exprs) => {
-        let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
+        let mut results: Vec<_> = exprs.eval(ctx, conc).await?;
 
         let last = results.pop().ok_or(EvaluationError::OperationFailed(
           "`max` cannot be called on empty list".into(),
@@ -117,7 +117,7 @@ impl Eval for Relation {
         })?
       }
       Relation::Min(exprs) => {
-        let mut results: Vec<_> = eval_list_expressions(ctx, conc, exprs).await?;
+        let mut results: Vec<_> = exprs.eval(ctx, conc).await?;
 
         let last = results.pop().ok_or(EvaluationError::OperationFailed(
           "`min` cannot be called on empty list".into(),

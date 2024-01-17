@@ -5,7 +5,7 @@ use anyhow::Result;
 
 use super::{Concurrency, EvaluationContext, ResolverContextLike};
 
-pub trait Eval
+pub trait Eval<Output = async_graphql::Value>
 where
   Self: Send + Sync,
 {
@@ -13,7 +13,10 @@ where
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
     conc: &'a Concurrency,
-  ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value>> + 'a + Send>> {
+  ) -> Pin<Box<dyn Future<Output = Result<Output>> + 'a + Send>>
+  where
+    Output: 'a,
+  {
     Box::pin(self.async_eval(ctx, conc))
   }
 
@@ -21,5 +24,5 @@ where
     &'a self,
     ctx: &'a EvaluationContext<'a, Ctx>,
     conc: &'a Concurrency,
-  ) -> impl Future<Output = Result<async_graphql::Value>> + Send;
+  ) -> impl Future<Output = Result<Output>> + Send;
 }
