@@ -16,20 +16,14 @@
           "type": "array"
         }
       },
-      "required": [
-        "name",
-        "path"
-      ],
+      "required": ["name", "path"],
       "type": "object"
     },
     "Arg": {
       "properties": {
         "default_value": true,
         "doc": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "list": {
           "type": "boolean"
@@ -51,9 +45,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "type"
-      ],
+      "required": ["type"],
       "type": "object"
     },
     "Batch": {
@@ -91,9 +83,7 @@
           "type": "integer"
         }
       },
-      "required": [
-        "maxAge"
-      ],
+      "required": ["maxAge"],
       "type": "object"
     },
     "Const": {
@@ -101,16 +91,11 @@
       "properties": {
         "data": true
       },
-      "required": [
-        "data"
-      ],
+      "required": ["data"],
       "type": "object"
     },
     "Encoding": {
-      "enum": [
-        "ApplicationJson",
-        "ApplicationXWwwFormUrlencoded"
-      ],
+      "enum": ["ApplicationJson", "ApplicationXWwwFormUrlencoded"],
       "type": "string"
     },
     "Expr": {
@@ -125,9 +110,7 @@
           "description": "Root of the expression AST"
         }
       },
-      "required": [
-        "body"
-      ],
+      "required": ["body"],
       "type": "object"
     },
     "ExprBody": {
@@ -140,9 +123,7 @@
               "$ref": "#/definitions/Http"
             }
           },
-          "required": [
-            "http"
-          ],
+          "required": ["http"],
           "type": "object"
         },
         {
@@ -153,9 +134,7 @@
               "$ref": "#/definitions/Grpc"
             }
           },
-          "required": [
-            "grpc"
-          ],
+          "required": ["grpc"],
           "type": "object"
         },
         {
@@ -166,9 +145,7 @@
               "$ref": "#/definitions/GraphQL"
             }
           },
-          "required": [
-            "graphQL"
-          ],
+          "required": ["graphQL"],
           "type": "object"
         },
         {
@@ -177,9 +154,7 @@
           "properties": {
             "const": true
           },
-          "required": [
-            "const"
-          ],
+          "required": ["const"],
           "type": "object"
         },
         {
@@ -213,17 +188,11 @@
                   "description": "Expression to evaluate if the condition is true"
                 }
               },
-              "required": [
-                "cond",
-                "else",
-                "then"
-              ],
+              "required": ["cond", "else", "then"],
               "type": "object"
             }
           },
-          "required": [
-            "if"
-          ],
+          "required": ["if"],
           "type": "object"
         },
         {
@@ -236,9 +205,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "and"
-          ],
+          "required": ["and"],
           "type": "object"
         },
         {
@@ -251,9 +218,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "or"
-          ],
+          "required": ["or"],
           "type": "object"
         },
         {
@@ -286,9 +251,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "cond"
-          ],
+          "required": ["cond"],
           "type": "object"
         },
         {
@@ -308,9 +271,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "defaultTo"
-          ],
+          "required": ["defaultTo"],
           "type": "object"
         },
         {
@@ -320,9 +281,7 @@
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "isEmpty"
-          ],
+          "required": ["isEmpty"],
           "type": "object"
         },
         {
@@ -332,9 +291,7 @@
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "not"
-          ],
+          "required": ["not"],
           "type": "object"
         },
         {
@@ -347,9 +304,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "concat"
-          ],
+          "required": ["concat"],
           "type": "object"
         },
         {
@@ -362,9 +317,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "intersection"
-          ],
+          "required": ["intersection"],
           "type": "object"
         },
         {
@@ -390,9 +343,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "difference"
-          ],
+          "required": ["difference"],
           "type": "object"
         },
         {
@@ -412,9 +363,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "eq"
-          ],
+          "required": ["eq"],
           "type": "object"
         },
         {
@@ -434,9 +383,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "gt"
-          ],
+          "required": ["gt"],
           "type": "object"
         },
         {
@@ -456,9 +403,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "gte"
-          ],
+          "required": ["gte"],
           "type": "object"
         },
         {
@@ -478,9 +423,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "lt"
-          ],
+          "required": ["lt"],
           "type": "object"
         },
         {
@@ -500,9 +443,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "lte"
-          ],
+          "required": ["lte"],
           "type": "object"
         },
         {
@@ -515,9 +456,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "max"
-          ],
+          "required": ["max"],
           "type": "object"
         },
         {
@@ -530,9 +469,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "min"
-          ],
+          "required": ["min"],
           "type": "object"
         },
         {
@@ -558,9 +495,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "pathEq"
-          ],
+          "required": ["pathEq"],
           "type": "object"
         },
         {
@@ -583,9 +518,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "propEq"
-          ],
+          "required": ["propEq"],
           "type": "object"
         },
         {
@@ -608,9 +541,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "sortPath"
-          ],
+          "required": ["sortPath"],
           "type": "object"
         },
         {
@@ -636,9 +567,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "symmetricDifference"
-          ],
+          "required": ["symmetricDifference"],
           "type": "object"
         },
         {
@@ -664,9 +593,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "union"
-          ],
+          "required": ["union"],
           "type": "object"
         },
         {
@@ -686,9 +613,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "mod"
-          ],
+          "required": ["mod"],
           "type": "object"
         },
         {
@@ -708,9 +633,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "add"
-          ],
+          "required": ["add"],
           "type": "object"
         },
         {
@@ -720,9 +643,7 @@
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "dec"
-          ],
+          "required": ["dec"],
           "type": "object"
         },
         {
@@ -742,9 +663,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "divide"
-          ],
+          "required": ["divide"],
           "type": "object"
         },
         {
@@ -754,9 +673,7 @@
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "inc"
-          ],
+          "required": ["inc"],
           "type": "object"
         },
         {
@@ -776,9 +693,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "multiply"
-          ],
+          "required": ["multiply"],
           "type": "object"
         },
         {
@@ -788,9 +703,7 @@
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "negate"
-          ],
+          "required": ["negate"],
           "type": "object"
         },
         {
@@ -803,9 +716,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "product"
-          ],
+          "required": ["product"],
           "type": "object"
         },
         {
@@ -825,9 +736,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "subtract"
-          ],
+          "required": ["subtract"],
           "type": "object"
         },
         {
@@ -840,9 +749,7 @@
               "type": "array"
             }
           },
-          "required": [
-            "sum"
-          ],
+          "required": ["sum"],
           "type": "object"
         }
       ]
@@ -881,10 +788,7 @@
         },
         "doc": {
           "description": "Publicly visible documentation for the field.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "expr": {
           "anyOf": [
@@ -998,10 +902,7 @@
         },
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "batch": {
           "description": "If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.\n\nMake sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.",
@@ -1020,9 +921,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "type": "object"
     },
     "Grpc": {
@@ -1030,17 +929,11 @@
       "properties": {
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "body": {
           "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "groupBy": {
           "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
@@ -1070,11 +963,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "method",
-        "protoPath",
-        "service"
-      ],
+      "required": ["method", "protoPath", "service"],
       "type": "object"
     },
     "Http": {
@@ -1082,17 +971,11 @@
       "properties": {
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "body": {
           "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "encoding": {
           "allOf": [
@@ -1160,16 +1043,11 @@
           "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL."
         }
       },
-      "required": [
-        "path"
-      ],
+      "required": ["path"],
       "type": "object"
     },
     "HttpVersion": {
-      "enum": [
-        "HTTP1",
-        "HTTP2"
-      ],
+      "enum": ["HTTP1", "HTTP2"],
       "type": "string"
     },
     "JS": {
@@ -1178,9 +1056,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "script"
-      ],
+      "required": ["script"],
       "type": "object"
     },
     "KeyValues": {
@@ -1190,26 +1066,13 @@
       "type": "object"
     },
     "Method": {
-      "enum": [
-        "GET",
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-        "HEAD",
-        "OPTIONS",
-        "CONNECT",
-        "TRACE"
-      ],
+      "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "CONNECT", "TRACE"],
       "type": "string"
     },
     "Modify": {
       "properties": {
         "name": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "omit": {
           "type": "boolean"
@@ -1226,30 +1089,19 @@
           "type": "string"
         }
       },
-      "required": [
-        "url"
-      ],
+      "required": ["url"],
       "type": "object"
     },
     "RootSchema": {
       "properties": {
         "mutation": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "query": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "subscription": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         }
       },
       "type": "object"
@@ -1259,90 +1111,54 @@
       "properties": {
         "apolloTracing": {
           "description": "`apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "batchRequests": {
           "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "cacheControlHeader": {
           "description": "`cacheControlHeader` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "cert": {
           "description": "`cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "format": "int64",
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "graphiql": {
           "description": "`graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "hostname": {
           "description": "`hostname` sets the server hostname.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "introspection": {
           "description": "`introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "key": {
           "description": "`key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "pipelineFlush": {
           "description": "TODO",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "port": {
           "description": "`port` sets the Tailcall running port. @default `8000`.",
           "format": "uint16",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "queryValidation": {
           "description": "`queryValidation` checks incoming GraphQL queries against the schema, preventing errors from invalid queries. Can be disabled for performance. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "responseHeaders": {
           "allOf": [
@@ -1354,10 +1170,7 @@
         },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "vars": {
           "allOf": [
@@ -1382,10 +1195,7 @@
           "description": "`workers` sets the number of worker threads. @default the number of system cores.",
           "format": "uint",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         }
       },
       "type": "object"
@@ -1414,20 +1224,14 @@
         },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "enum": {
           "description": "Variants for the type if it's an enum",
           "items": {
             "type": "string"
           },
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": ["array", "null"],
           "uniqueItems": true
         },
         "fields": {
@@ -1454,18 +1258,13 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "fields"
-      ],
+      "required": ["fields"],
       "type": "object"
     },
     "Union": {
       "properties": {
         "doc": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "types": {
           "items": {
@@ -1475,9 +1274,7 @@
           "uniqueItems": true
         }
       },
-      "required": [
-        "types"
-      ],
+      "required": ["types"],
       "type": "object"
     },
     "Upstream": {
@@ -1488,18 +1285,12 @@
           "items": {
             "type": "string"
           },
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": ["array", "null"],
           "uniqueItems": true
         },
         "baseURL": {
           "description": "This refers to the default base URL for your APIs. If it's not explicitly mentioned in the `@upstream` operator, then each [@http](#http) operator must specify its own `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results in a compilation error.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         },
         "batch": {
           "anyOf": [
@@ -1516,67 +1307,43 @@
           "description": "The time in seconds that the connection will wait for a response before timing out.",
           "format": "uint64",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "http2Only": {
           "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "httpCache": {
           "description": "Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `false` if unspecified.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "keepAliveInterval": {
           "description": "The time in seconds between each keep-alive message sent to maintain the connection.",
           "format": "uint64",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "keepAliveTimeout": {
           "description": "The time in seconds that the connection will wait for a keep-alive message before closing.",
           "format": "uint64",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "keepAliveWhileIdle": {
           "description": "A boolean value that determines whether keep-alive messages should be sent while the connection is idle.",
-          "type": [
-            "boolean",
-            "null"
-          ]
+          "type": ["boolean", "null"]
         },
         "poolIdleTimeout": {
           "description": "The time in seconds that the connection pool will wait before closing idle connections.",
           "format": "uint64",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "poolMaxIdlePerHost": {
           "description": "The maximum number of idle connections that will be maintained per host.",
           "format": "uint",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "proxy": {
           "anyOf": [
@@ -1593,26 +1360,17 @@
           "description": "The time in seconds between each TCP keep-alive message sent to maintain the connection.",
           "format": "uint64",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "timeout": {
           "description": "The maximum time in seconds that the connection will wait for a response.",
           "format": "uint64",
           "minimum": 0.0,
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": ["integer", "null"]
         },
         "userAgent": {
           "description": "The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`",
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         }
       },
       "type": "object"
@@ -1620,11 +1378,7 @@
     "schema": {
       "oneOf": [
         {
-          "enum": [
-            "Str",
-            "Num",
-            "Bool"
-          ],
+          "enum": ["Str", "Num", "Bool"],
           "type": "string"
         },
         {
@@ -1637,9 +1391,7 @@
               "type": "object"
             }
           },
-          "required": [
-            "Obj"
-          ],
+          "required": ["Obj"],
           "type": "object"
         },
         {
@@ -1649,9 +1401,7 @@
               "$ref": "#/definitions/schema"
             }
           },
-          "required": [
-            "Arr"
-          ],
+          "required": ["Arr"],
           "type": "object"
         },
         {
@@ -1661,9 +1411,7 @@
               "$ref": "#/definitions/schema"
             }
           },
-          "required": [
-            "Opt"
-          ],
+          "required": ["Opt"],
           "type": "object"
         }
       ]
@@ -1712,9 +1460,7 @@
       "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections."
     }
   },
-  "required": [
-    "schema"
-  ],
+  "required": ["schema"],
   "title": "Config",
   "type": "object"
 }
