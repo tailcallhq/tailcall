@@ -33,12 +33,14 @@ pub fn update_graphql<'a>(
   operation_type: &'a GraphQLOperationType,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, _, _), b_field| {
+    |(config, field, type_of, _), b_field| {
       let Some(graphql) = &field.graphql else {
         return Valid::succeed(b_field);
       };
 
-      compile_graphql(config, operation_type, graphql).map(|resolver| b_field.resolver(Some(resolver)))
+      compile_graphql(config, operation_type, graphql)
+        .map(|resolver| b_field.resolver(Some(resolver)))
+        .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
     },
   )
 }

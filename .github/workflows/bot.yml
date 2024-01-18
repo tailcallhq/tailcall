@@ -37,7 +37,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -122,7 +122,7 @@ jobs:
           toolchain: nightly
           components: rustfmt, clippy
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -165,7 +165,7 @@ jobs:
           cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
@@ -199,7 +199,7 @@ jobs:
         run: cat benches/change_benchmarks.md
 
       - name: Restore file
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
