@@ -399,7 +399,8 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
                   .map(|(k, _)| format!("'{}'", k))
                   .collect::<Vec<String>>()
                   .join(", ")
-              ));
+              ))
+              .trace(field_name.as_str());
             }
 
             let Some(resolver) = resolver else {
