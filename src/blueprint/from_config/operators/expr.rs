@@ -164,10 +164,11 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashSet;
   use std::sync::{Arc, Mutex};
 
   use pretty_assertions::assert_eq;
-  use serde_json::json;
+  use serde_json::{json, Number};
 
   use super::{compile, CompilationContext};
   use crate::config::{Config, Expr, Field, GraphQLOperationType};
@@ -535,10 +536,12 @@ mod tests {
 
   #[tokio::test]
   async fn test_relation_union() {
-    let expected = json!([1, 2, 3]);
-    let actual = Expr::eval(json!({"body": {"union": [[{"const": 1}, {"const": 2}], [{"const": 2}, {"const": 3}]]}}))
+    let expected = serde_json::from_value::<HashSet<Number>>(json!([1, 2, 3, 4])).unwrap();
+
+    let actual = Expr::eval(json!({"body": {"union": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}, {"const": 4}]]}}))
       .await
       .unwrap();
+    let actual = serde_json::from_value::<HashSet<Number>>(actual).unwrap();
     assert_eq!(actual, expected);
   }
 
