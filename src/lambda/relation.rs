@@ -6,7 +6,6 @@ use std::pin::Pin;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
-use tokio::join;
 
 use super::{Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
 use crate::helpers::value::HashableConstValue;
@@ -268,7 +267,7 @@ async fn set_operation<'a, 'b, Ctx: ResolverContextLike<'a> + Sync + Send, F>(
 where
   F: Fn(HashSet<HashableConstValue>, HashSet<HashableConstValue>) -> Vec<ConstValue>,
 {
-  let (lhs, rhs) = join!(
+  let (lhs, rhs) = futures_util::join!(
     conc.foreach(lhs.iter().map(|e| e.eval(ctx, conc)), HashableConstValue),
     conc.foreach(rhs.iter().map(|e| e.eval(ctx, conc)), HashableConstValue)
   );
