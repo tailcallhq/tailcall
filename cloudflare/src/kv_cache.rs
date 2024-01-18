@@ -26,24 +26,17 @@ impl CloudflareChronoCache {
     self.env.kv("TMP_KV").map_err(to_anyhow)
   }
   async fn internal_insert(kv_store: KvStore, key: String, value: ConstValue, ttl: u64) -> Result<ConstValue> {
-    let mut json = serde_json::Map::new();
-    json.insert("ttl".to_string(), Value::Number(Number::from(ttl)));
-    let value_str = value.as_str_ok().map_err(to_anyhow)?;
-    json.insert("value".to_string(), serde_json::from_str(value_str)?);
     kv_store
-      .put(&key.to_string(), Value::Object(json))
+      .put(&key.to_string(), value.to_string())
       .map_err(to_anyhow)?
+      .expiration_ttl(ttl)
       .execute()
       .await
       .map_err(to_anyhow)?;
     Ok(value)
   }
   async fn internal_get(kv_store: KvStore, key: String) -> Result<ConstValue> {
-    let val = kv_store
-      .get(&key.to_string())
-      .json::<Value>()
-      .await
-      .map_err(to_anyhow)?;
+    let val = kv_store.get(&key).json::<Value>().await.map_err(to_anyhow)?;
     let val = val.ok_or(anyhow!("key not found"))?;
     Ok(ConstValue::from_json(val)?)
   }
