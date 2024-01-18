@@ -62,7 +62,7 @@ jobs:
           default: true
 
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -101,7 +101,7 @@ jobs:
           toolchain: nightly
           components: rustfmt, clippy
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
