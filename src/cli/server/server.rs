@@ -46,8 +46,9 @@ impl Server {
       .enable_all()
       .build()?;
 
-    let _ = runtime.spawn(async { self.start().await }).await?;
+    let result = runtime.spawn(async { self.start().await }).await?;
+    runtime.shutdown_background();
 
-    Ok(())
+    result
   }
 }
