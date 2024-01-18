@@ -114,7 +114,6 @@
       "type": "object"
     },
     "ExprBody": {
-      "description": "Kinds of nodes that the expression AST can use",
       "oneOf": [
         {
           "additionalProperties": false,
@@ -170,7 +169,7 @@
                       "$ref": "#/definitions/ExprBody"
                     }
                   ],
-                  "description": "Expression to be used as a condition"
+                  "description": "Condition to evaluate"
                 },
                 "else": {
                   "allOf": [
@@ -194,6 +193,563 @@
             }
           },
           "required": ["if"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "and": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["and"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "or": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["or"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "cond": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "items": {
+                    "items": [
+                      {
+                        "$ref": "#/definitions/ExprBody"
+                      },
+                      {
+                        "$ref": "#/definitions/ExprBody"
+                      }
+                    ],
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "type": "array"
+                  },
+                  "type": "array"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["cond"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "defaultTo": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["defaultTo"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "isEmpty": {
+              "$ref": "#/definitions/ExprBody"
+            }
+          },
+          "required": ["isEmpty"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "not": {
+              "$ref": "#/definitions/ExprBody"
+            }
+          },
+          "required": ["not"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "concat": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["concat"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "intersection": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["intersection"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "difference": {
+              "items": [
+                {
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  },
+                  "type": "array"
+                },
+                {
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  },
+                  "type": "array"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["difference"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "eq": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["eq"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "gt": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["gt"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "gte": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["gte"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "lt": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["lt"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "lte": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["lte"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "max": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["max"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["min"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "pathEq": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            }
+          },
+          "required": ["pathEq"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "propEq": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            }
+          },
+          "required": ["propEq"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "sortPath": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["sortPath"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "symmetricDifference": {
+              "items": [
+                {
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  },
+                  "type": "array"
+                },
+                {
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  },
+                  "type": "array"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["symmetricDifference"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "union": {
+              "items": [
+                {
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  },
+                  "type": "array"
+                },
+                {
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  },
+                  "type": "array"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["union"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mod": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["mod"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "add": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["add"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "dec": {
+              "$ref": "#/definitions/ExprBody"
+            }
+          },
+          "required": ["dec"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "divide": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["divide"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "inc": {
+              "$ref": "#/definitions/ExprBody"
+            }
+          },
+          "required": ["inc"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "multiply": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["multiply"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "negate": {
+              "$ref": "#/definitions/ExprBody"
+            }
+          },
+          "required": ["negate"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "product": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["product"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "subtract": {
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            }
+          },
+          "required": ["subtract"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "sum": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": ["sum"],
           "type": "object"
         }
       ]
@@ -312,20 +868,20 @@
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
         },
-        "type": {
-          "description": "Refers to the type of the value the field can be resolved to.",
-          "type": "string"
-        },
-        "unsafe": {
+        "script": {
           "anyOf": [
             {
-              "$ref": "#/definitions/Unsafe"
+              "$ref": "#/definitions/JS"
             },
             {
               "type": "null"
             }
           ],
           "description": "Inserts a Javascript resolver for the field."
+        },
+        "type": {
+          "description": "Refers to the type of the value the field can be resolved to.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -493,6 +1049,15 @@
     "HttpVersion": {
       "enum": ["HTTP1", "HTTP2"],
       "type": "string"
+    },
+    "JS": {
+      "properties": {
+        "script": {
+          "type": "string"
+        }
+      },
+      "required": ["script"],
+      "type": "object"
     },
     "KeyValues": {
       "additionalProperties": {
@@ -710,15 +1275,6 @@
         }
       },
       "required": ["types"],
-      "type": "object"
-    },
-    "Unsafe": {
-      "properties": {
-        "script": {
-          "type": "string"
-        }
-      },
-      "required": ["script"],
       "type": "object"
     },
     "Upstream": {

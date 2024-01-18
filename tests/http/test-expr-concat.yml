@@ -1,0 +1,16 @@
+config: !file tests/http/config/test-expr-concat.graphql
+name: expr concat
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { concat }"
+    response:
+      body:
+        data:
+          concat:
+            - 1
+            - 2
+            - 3
+            - 4

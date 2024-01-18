@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Server, Upstream};
+use super::{Expr, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
@@ -129,7 +129,7 @@ impl Config {
   }
 
   pub fn to_document(&self) -> ServiceDocument {
-    (self.clone()).into()
+    self.clone().into()
   }
 
   pub fn to_sdl(&self) -> String {
@@ -248,8 +248,8 @@ pub struct Cache {
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
   for (name, mut other_type) in other_types {
     if let Some(self_type) = self_types.remove(&name) {
-      other_type = self_type.merge_right(&other_type)
-    };
+      other_type = self_type.merge_right(&other_type);
+    }
 
     self_types.insert(name, other_type);
   }
@@ -362,8 +362,8 @@ pub struct Field {
   ///
   /// Inserts a Javascript resolver for the field.
   ///
-  #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
-  pub unsafe_operation: Option<Unsafe>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub script: Option<JS>,
 
   ///
   /// Inserts a constant resolver for the field.
@@ -391,28 +391,28 @@ pub struct Field {
 impl Field {
   pub fn has_resolver(&self) -> bool {
     self.http.is_some()
-      || self.unsafe_operation.is_some()
+      || self.script.is_some()
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
       || self.expr.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
-    let mut directives = Vec::with_capacity(4);
+    let mut directives = Vec::new();
     if self.http.is_some() {
-      directives.push(Http::trace_name())
+      directives.push(Http::trace_name());
     }
     if self.graphql.is_some() {
-      directives.push(GraphQL::trace_name())
+      directives.push(GraphQL::trace_name());
     }
-    if self.unsafe_operation.is_some() {
-      directives.push(Unsafe::trace_name())
+    if self.script.is_some() {
+      directives.push(JS::trace_name());
     }
     if self.const_field.is_some() {
-      directives.push(Const::trace_name())
+      directives.push(Const::trace_name());
     }
     if self.grpc.is_some() {
-      directives.push(Grpc::trace_name())
+      directives.push(Grpc::trace_name());
     }
     directives
   }
@@ -452,7 +452,7 @@ impl Field {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-pub struct Unsafe {
+pub struct JS {
   pub script: String,
 }
 
@@ -536,41 +536,6 @@ pub struct Http {
   #[serde(default, skip_serializing_if = "is_default")]
   /// The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   pub encoding: Encoding,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-/// Kinds of nodes that the expression AST can use
-pub enum ExprBody {
-  #[serde(rename = "http")]
-  /// Fetch a resources using the http operator
-  Http(Http),
-  #[serde(rename = "grpc")]
-  /// Fetch a resources using the grpc operator
-  Grpc(Grpc),
-  #[serde(rename = "graphQL")]
-  /// Fetch a resources using the graphQL operator
-  GraphQL(GraphQL),
-  #[serde(rename = "const")]
-  /// Evaluate to constant data
-  Const(Value),
-  #[serde(rename = "if")]
-  /// Branch based on a condition
-  If {
-    /// Expression to be used as a condition
-    cond: Box<ExprBody>,
-    /// Expression to evaluate if the condition is true
-    then: Box<ExprBody>,
-    #[serde(rename = "else")]
-    /// Expression to evaluate if the condition is false
-    els: Box<ExprBody>,
-  },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-/// Allows composing operators as simple expressions
-pub struct Expr {
-  /// Root of the expression AST
-  pub body: ExprBody,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
