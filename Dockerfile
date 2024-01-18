@@ -1,8 +1,6 @@
 # Builder stage
 FROM rust:slim-buster AS builder
 
-ENV TAILCALL_LOG_LEVEL=error
-
 WORKDIR /prod
 # Copy manifests and the graphql file
 COPY Cargo.lock Cargo.toml examples/jsonplaceholder.graphql ./
@@ -26,6 +24,8 @@ FROM fedora:34 AS runner
 # Copy necessary files from the builder stage
 COPY --from=builder /prod/target/release/tailcall /bin
 COPY --from=builder /prod/jsonplaceholder.graphql /jsonplaceholder.graphql
+
+ENV TAILCALL_LOG_LEVEL=error
 
 CMD ["/bin/tailcall", "start", "jsonplaceholder.graphql"]
 
