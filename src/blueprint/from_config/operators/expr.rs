@@ -310,5 +310,179 @@ mod tests {
     assert_eq!(actual, expected);
   }
 
+  #[tokio::test]
+  async fn test_logic_and_true() {
+    let expected = json!(true);
+
+    let actual = Expr::eval(json!({"body": {"and": [{"const": true}, {"const": true}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"and": [{"const": true}, {"const": true}, {"const": true}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_and_false() {
+    let expected = json!(false);
+
+    let actual = Expr::eval(json!({"body": {"and": [{"const": true}, {"const": false}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"and": [{"const": true}, {"const": true}, {"const": false}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"and": [{"const": false}, {"const": false}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_is_empty_true() {
+    let expected = json!(true);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": []}}})).await.unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": {}}}})).await.unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": ""}}})).await.unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": null}}})).await.unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_is_empty_false() {
+    let expected = json!(false);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": [1]}}})).await.unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": {"a": 1}}}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": "a"}}})).await.unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": 1}}})).await.unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"isEmpty": {"const": false}}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_not_true() {
+    let expected = json!(false);
+
+    let actual = Expr::eval(json!({"body": {"not": {"const": true}}})).await.unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"not": {"const": 1}}})).await.unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_not_false() {
+    let expected = json!(true);
+
+    let actual = Expr::eval(json!({"body": {"not": {"const": false}}})).await.unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_or_false() {
+    let expected = json!(false);
+
+    let actual = Expr::eval(json!({"body": {"or": [{"const": false}, {"const": false}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"or": [{"const": false}, {"const": false}, {"const": false}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_or_true() {
+    let expected = json!(true);
+
+    let actual = Expr::eval(json!({"body": {"or": [{"const": true}, {"const": false}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"or": [{"const": false}, {"const": false}, {"const": true}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let actual = Expr::eval(json!({"body": {"or": [{"const": true}, {"const": true}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_cond() {
+    let expected = json!(0);
+
+    let actual = Expr::eval(
+      json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": false}, {"const": 2}]]]}}),
+    )
+    .await
+    .unwrap();
+    assert_eq!(actual, expected);
+
+    let expected = json!(1);
+
+    let actual = Expr::eval(
+      json!({"body": {"cond": [{"const": 0}, [[{"const": true}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
+    )
+    .await
+    .unwrap();
+    assert_eq!(actual, expected);
+
+    let expected = json!(2);
+    let actual = Expr::eval(
+      json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
+    )
+    .await
+    .unwrap();
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_logic_default_to() {
+    let expected = json!(0);
+    let actual = Expr::eval(json!({"body": {"defaultTo": [{"const": null}, {"const": 0}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+
+    let expected = json!(true);
+    let actual = Expr::eval(json!({"body": {"defaultTo": [{"const": ""}, {"const": true}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+  }
+
   // TODO: add tests for all other expr operators
 }
