@@ -60,7 +60,6 @@ pub struct Server {
   /// `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   pub key: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
-  /// TODO
   pub pipeline_flush: Option<bool>,
 }
 

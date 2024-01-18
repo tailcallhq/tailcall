@@ -516,10 +516,10 @@ pub struct Http {
   /// This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.
   pub query: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
-  /// TODO
+  /// Schema of the input of the API call. It is automatically inferred in most cases.
   pub input: Option<JsonSchema>,
   #[serde(default, skip_serializing_if = "is_default")]
-  /// TODO
+  /// Schema of the output of the API call. It is automatically inferred in most cases.
   pub output: Option<JsonSchema>,
   #[serde(default, skip_serializing_if = "is_default")]
   /// The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.
@@ -614,9 +614,9 @@ pub struct Const {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
-  /// TODO
+  /// Name of the new field to be added
   pub name: String,
-  /// TODO
+  /// Path of the data where the field should point to
   pub path: Vec<String>,
 }
 
