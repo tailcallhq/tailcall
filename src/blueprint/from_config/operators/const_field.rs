@@ -34,14 +34,9 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
 
   let data = value.to_owned();
   match ConstValue::from_json(data.to_owned()) {
-    Ok(gql) => {
-      let validation = if validate {
-        validate_data_with_schema(config, field, gql)
-      } else {
-        Valid::succeed(())
-      };
-      validation.map(|_| Literal(data))
-    }
+    Ok(gql) => validate_data_with_schema(config, field, gql)
+      .when(|| validate)
+      .map_to(Literal(data)),
     Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
   }
 }
