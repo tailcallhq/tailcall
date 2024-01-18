@@ -362,8 +362,8 @@ pub struct Field {
   ///
   /// Inserts a Javascript resolver for the field.
   ///
-  #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
-  pub unsafe_operation: Option<Io>,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub script: Option<JS>,
 
   ///
   /// Inserts a constant resolver for the field.
@@ -391,22 +391,22 @@ pub struct Field {
 impl Field {
   pub fn has_resolver(&self) -> bool {
     self.http.is_some()
-      || self.unsafe_operation.is_some()
+      || self.script.is_some()
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
       || self.expr.is_some()
   }
   pub fn resolvable_directives(&self) -> Vec<String> {
-    let mut directives = Vec::with_capacity(4);
+    let mut directives = Vec::new();
     if self.http.is_some() {
       directives.push(Http::trace_name());
     }
     if self.graphql.is_some() {
       directives.push(GraphQL::trace_name());
     }
-    if self.unsafe_operation.is_some() {
-      directives.push(Io::trace_name());
+    if self.script.is_some() {
+      directives.push(JS::trace_name());
     }
     if self.const_field.is_some() {
       directives.push(Const::trace_name());
@@ -452,7 +452,7 @@ impl Field {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-pub struct Io {
+pub struct JS {
   pub script: String,
 }
 

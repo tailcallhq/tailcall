@@ -75,7 +75,7 @@ where
     Some(type_) => {
       let mut schema_fields = HashMap::new();
       for (name, field) in type_.fields.iter() {
-        if field.unsafe_operation.is_none() && field.http.is_none() {
+        if field.script.is_none() && field.http.is_none() {
           schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
         }
       }

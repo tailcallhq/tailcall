@@ -868,20 +868,20 @@
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
         },
-        "type": {
-          "description": "Refers to the type of the value the field can be resolved to.",
-          "type": "string"
-        },
-        "unsafe": {
+        "script": {
           "anyOf": [
             {
-              "$ref": "#/definitions/Io"
+              "$ref": "#/definitions/JS"
             },
             {
               "type": "null"
             }
           ],
           "description": "Inserts a Javascript resolver for the field."
+        },
+        "type": {
+          "description": "Refers to the type of the value the field can be resolved to.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -1050,7 +1050,7 @@
       "enum": ["HTTP1", "HTTP2"],
       "type": "string"
     },
-    "Io": {
+    "JS": {
       "properties": {
         "script": {
           "type": "string"

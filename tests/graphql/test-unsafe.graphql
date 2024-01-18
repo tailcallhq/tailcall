@@ -4,7 +4,7 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 }
 
 type Query {
-  foo: [User] @io(script: "return [{id: 1, name: 'foo'}]")
+  foo: [User] @js(script: "[{id: 1, name: 'foo'}]")
 }
 
 type User {

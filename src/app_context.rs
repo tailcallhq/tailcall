@@ -36,8 +36,8 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
     for def in blueprint.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
         for field in &mut def.fields {
-          if let Some(Expression::IO(expr_unsafe)) = &mut field.resolver {
-            match expr_unsafe {
+          if let Some(Expression::IO(expr)) = &mut field.resolver {
+            match expr {
               IO::Http { req_template, group_by, .. } => {
                 let data_loader = HttpDataLoader::new(
                   h_client.clone(),

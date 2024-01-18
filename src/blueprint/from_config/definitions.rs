@@ -93,10 +93,13 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
 
   if let Some(next_field) = type_info.fields.get(field_name) {
     if next_field.has_resolver() {
-      let next_dir_http = next_field.http.as_ref().map(|_| "http");
-      let next_dir_const = next_field.const_field.as_ref().map(|_| "const");
+      let next_dir_http = next_field.http.as_ref().map(|_| config::Http::directive_name());
+      let next_dir_const = next_field.const_field.as_ref().map(|_| config::Const::directive_name());
       return path_resolver_error_handler(
-        next_dir_http.or(next_dir_const).unwrap_or("unsafe"),
+        next_dir_http
+          .or(next_dir_const)
+          .unwrap_or(config::JS::directive_name())
+          .as_str(),
         &field.type_of,
         field_name,
         context.original_path,
@@ -331,6 +334,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
 
   let to_field = move |name: &String, field: &Field| {
     let directives = field.resolvable_directives();
+
     if directives.len() > 1 {
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
@@ -341,7 +345,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
     update_args(hasher)
       .and(update_http().trace(config::Http::trace_name().as_str()))
       .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-      .and(update_unsafe().trace(config::Io::trace_name().as_str()))
+      .and(update_js().trace(config::JS::trace_name().as_str()))
       .and(update_const_field().trace(config::Const::trace_name().as_str()))
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))

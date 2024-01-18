@@ -22,7 +22,7 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::EqualTo(self.box_expr(), Box::new(other.expression)))
   }
 
-  pub fn to_unsafe_js(self, script: String) -> Lambda<serde_json::Value> {
+  pub fn to_js(self, script: String) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::IO(IO::JS(self.box_expr(), script)))
   }
 
@@ -136,8 +136,8 @@ mod tests {
 
   #[cfg(feature = "unsafe-js")]
   #[tokio::test]
-  async fn test_unsafe_js() {
-    let result = Lambda::from(1.0).to_unsafe_js("ctx + 100".to_string()).eval().await;
+  async fn test_js() {
+    let result = Lambda::from(1.0).to_js("ctx + 100".to_string()).eval().await;
     let f64 = result.unwrap().as_f64().unwrap();
     assert_eq!(f64, 101.0)
   }
