@@ -5,11 +5,11 @@
       "description": "The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)",
       "properties": {
         "name": {
-          "description": "TODO",
+          "description": "Name of the new field to be added",
           "type": "string"
         },
         "path": {
-          "description": "TODO",
+          "description": "Path of the data where the field should point to",
           "items": {
             "type": "string"
           },
@@ -1009,7 +1009,7 @@
               "type": "null"
             }
           ],
-          "description": "TODO"
+          "description": "Schema of the input of the API call. It is automatically inferred in most cases."
         },
         "method": {
           "allOf": [
@@ -1028,7 +1028,7 @@
               "type": "null"
             }
           ],
-          "description": "TODO"
+          "description": "Schema of the output of the API call. It is automatically inferred in most cases."
         },
         "path": {
           "description": "This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
@@ -1147,7 +1147,6 @@
           "type": ["string", "null"]
         },
         "pipelineFlush": {
-          "description": "TODO",
           "type": ["boolean", "null"]
         },
         "port": {

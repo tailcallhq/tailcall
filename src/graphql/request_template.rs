@@ -13,7 +13,6 @@ use crate::mustache::Mustache;
 use crate::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
-/// TODO: add benchmarks for this
 #[derive(Setters, Debug, Clone)]
 pub struct RequestTemplate {
   // TODO: should be Mustache as for other templates
