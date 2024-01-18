@@ -224,5 +224,91 @@ mod tests {
     assert_eq!(actual, expected);
   }
 
+  #[tokio::test]
+  async fn test_math_add() {
+    let actual = Expr::eval(json!({"body": {"add": [{"const": 40}, {"const": 2}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_subtract() {
+    let actual = Expr::eval(json!({"body": {"subtract": [{"const": 52}, {"const": 10}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_multiply() {
+    let actual = Expr::eval(json!({"body": {"multiply": [{"const": 7}, {"const": 6}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_mod() {
+    let actual = Expr::eval(json!({"body": {"mod": [{"const": 1379}, {"const": 1337}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_div1() {
+    let actual = Expr::eval(json!({"body": {"divide": [{"const": 9828}, {"const": 234}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_div2() {
+    let actual = Expr::eval(json!({"body": {"divide": [{"const": 105}, {"const": 2.5}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_inc() {
+    let actual = Expr::eval(json!({"body": {"inc": {"const": 41}}})).await.unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_dec() {
+    let actual = Expr::eval(json!({"body": {"dec": {"const": 43}}})).await.unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_product() {
+    let actual = Expr::eval(json!({"body": {"product": [{"const": 7}, {"const": 3}, {"const": 2}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_sum() {
+    let actual = Expr::eval(json!({"body": {"sum": [{"const": 20}, {"const": 15}, {"const": 7}]}}))
+      .await
+      .unwrap();
+    let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
   // TODO: add tests for all other expr operators
 }
