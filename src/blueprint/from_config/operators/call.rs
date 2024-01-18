@@ -1,3 +1,4 @@
+use std::collections::hash_map::Iter;
 use std::collections::BTreeMap;
 
 use crate::blueprint::*;
@@ -7,6 +8,12 @@ use crate::lambda::{Expression, Unsafe};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
+
+fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option<&'a String> {
+  args
+    .clone()
+    .find_map(|(k, value)| if k == key { Some(value) } else { None })
+}
 
 pub fn update_call(
   operation_type: &GraphQLOperationType,
@@ -70,21 +77,18 @@ pub fn update_call(
                     .root_url
                     .get_segments()
                     .iter()
-                    .map(|segment| {
-                      match segment {
-                        Segment::Literal(literal) => Segment::Literal(literal.clone()),
-                        Segment::Expression(expression) => {
-                          if expression[0] == "args" {
-                            // this value will always be present because we already checked it
-                            let (_, value) = args.clone().find(|(k, _)| **k == expression[1]).unwrap();
-                            let item = Mustache::parse(value).unwrap();
+                    .map(|segment| match segment {
+                      Segment::Literal(literal) => Segment::Literal(literal.clone()),
+                      Segment::Expression(expression) => {
+                        if expression[0] == "args" {
+                          let value = find_value(&args, &expression[1]).unwrap();
+                          let item = Mustache::parse(value).unwrap();
 
-                            let expression = item.get_segments().first().unwrap().to_owned().to_owned();
+                          let expression = item.get_segments().first().unwrap().to_owned().to_owned();
 
-                            expression
-                          } else {
-                            Segment::Expression(expression.clone())
-                          }
+                          expression
+                        } else {
+                          Segment::Expression(expression.clone())
                         }
                       }
                     })
@@ -100,17 +104,10 @@ pub fn update_call(
             if let Some(mut _args) = graphql.args {
               let mut updated: BTreeMap<String, String> = BTreeMap::new();
 
-              for (key, value) in _args.0 {
-                let found = args
-                  .clone()
-                  .into_iter()
-                  .find_map(|(k, v)| if *k == key { Some(v) } else { None });
+              for (key, _) in _args.0 {
+                let value = find_value(&args, &key).unwrap();
 
-                if let Some(v) = found {
-                  updated.insert(key, v.clone().to_string());
-                } else {
-                  updated.insert(key, value);
-                }
+                updated.insert(key.clone(), value.to_string());
               }
 
               graphql.args = Some(KeyValues(updated));
