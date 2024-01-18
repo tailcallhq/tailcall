@@ -46,7 +46,9 @@ pub trait DirectiveCodec<A> {
   }
 }
 fn lower_case_first_letter(s: String) -> String {
-  if let Some(first_char) = s.chars().next() {
+  if s.len() <= 2 {
+    s.to_lowercase()
+  } else if let Some(first_char) = s.chars().next() {
     first_char.to_string().to_lowercase() + &s[first_char.len_utf8()..]
   } else {
     s.to_string()
