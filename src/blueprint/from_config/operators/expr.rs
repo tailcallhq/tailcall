@@ -484,5 +484,14 @@ mod tests {
     assert_eq!(actual, expected);
   }
 
+  #[tokio::test]
+  async fn test_concat() {
+    let expected = json!([1, 2, 3, 4]);
+    let actual = Expr::eval(json!({"body": {"concat": [{"const": [1, 2]}, {"const": [3, 4]}]}}))
+      .await
+      .unwrap();
+    assert_eq!(actual, expected);
+  }
+
   // TODO: add tests for all other expr operators
 }
