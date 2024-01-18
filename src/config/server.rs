@@ -5,53 +5,73 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{is_default, KeyValues};
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+/// The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.
 pub struct Server {
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.
   pub apollo_tracing: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `cacheControlHeader` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.
   pub cache_control_header: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.
   pub graphiql: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.
   pub introspection: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `queryValidation` checks incoming GraphQL queries against the schema, preventing errors from invalid queries. Can be disabled for performance. @default `false`.
   pub query_validation: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.
   pub response_validation: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`
   pub batch_requests: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.
   pub global_response_timeout: Option<i64>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `workers` sets the number of worker threads. @default the number of system cores.
   pub workers: Option<usize>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `hostname` sets the server hostname.
   pub hostname: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `port` sets the Tailcall running port. @default `8000`.
   pub port: Option<u16>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
+  /// `responseHeaders` appends headers to all server responses, aiding cross-origin requests or extra headers for downstream services.
+  ///
+  /// The responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services.
   pub response_headers: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`.
   pub version: Option<HttpVersion>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
   pub cert: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   pub key: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// TODO
   pub pipeline_flush: Option<bool>,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema)]
 pub enum HttpVersion {
   #[default]
   HTTP1,
   HTTP2,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
   pub max_size: usize,
@@ -144,44 +164,60 @@ impl Server {
   }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
 pub struct Proxy {
   pub url: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
+/// The `upstream` directive allows you to control various aspects of the upstream server connection. This includes settings like connection timeouts, keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The time in seconds that the connection pool will wait before closing idle connections.
   pub pool_idle_timeout: Option<u64>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The maximum number of idle connections that will be maintained per host.
   pub pool_max_idle_per_host: Option<usize>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The time in seconds between each keep-alive message sent to maintain the connection.
   pub keep_alive_interval: Option<u64>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The time in seconds that the connection will wait for a keep-alive message before closing.
   pub keep_alive_timeout: Option<u64>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// A boolean value that determines whether keep-alive messages should be sent while the connection is idle.
   pub keep_alive_while_idle: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The `proxy` setting defines an intermediary server through which the upstream requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies.
   pub proxy: Option<Proxy>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The time in seconds that the connection will wait for a response before timing out.
   pub connect_timeout: Option<u64>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The maximum time in seconds that the connection will wait for a response.
   pub timeout: Option<u64>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The time in seconds between each TCP keep-alive message sent to maintain the connection.
   pub tcp_keep_alive: Option<u64>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`
   pub user_agent: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services. If not set, no headers are forwarded, enhancing security but possibly limiting data flow.
   pub allowed_headers: Option<BTreeSet<String>>,
   #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+  /// This refers to the default base URL for your APIs. If it's not explicitly mentioned in the `@upstream` operator, then each [@http](#http) operator must specify its own `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results in a compilation error.
   pub base_url: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `false` if unspecified.
   pub http_cache: Option<bool>,
   #[serde(default, skip_serializing_if = "is_default")]
+  /// An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch).
   pub batch: Option<Batch>,
   #[setters(strip_option)]
   #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
+  /// The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.
   pub http2_only: Option<bool>,
 }
 

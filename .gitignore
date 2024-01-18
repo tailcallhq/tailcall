@@ -1,6 +1,5 @@
 /target
 /.idea
-.vscode
 .DS_Store
 .bsp
 /cloudflare/node_modules
