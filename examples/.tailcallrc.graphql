@@ -325,19 +325,8 @@ directive @call(
   """
   The arguments to be replace the values on the actual resolver.
   """
-  args: Args
+  args: JSON
 ) on FIELD_DEFINITION
-
-"""
-An union between JSON and ExprArgs
-"""
-union Args = JSON | ExprArgs
-
-input ExprArgs {
-  http: ExprHttp
-  grpc: ExprGrpc
-  graphQL: ExprGraphQL
-}
 
 """
 Allows composing operators as simple expressions
