@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev python g++ git ma
 
 # Copy the rest of the source code
 COPY . .
+RUN sed -i 's/"cloudflare",\s*//;s/, "cloudflare"//g' Cargo.toml
 
 RUN chmod +x docker.sh && ./docker.sh
 
