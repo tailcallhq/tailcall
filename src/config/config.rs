@@ -20,14 +20,35 @@ use crate::valid::Valid;
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+  ///
+  /// Dictates how the server behaves and helps tune tailcall for all ingress requests.
+  /// Features such as request batching, SSL, HTTP2 etc. can be configured here.
+  ///
   #[serde(default)]
   pub server: Server,
+
+  ///
+  /// Dictates how tailcall should handle upstream requests/responses.
+  /// Tuning upstream can improve performance and reliability for connections.
+  ///
   #[serde(default)]
   pub upstream: Upstream,
+
+  ///
+  /// Specifies the entry points for query and mutation in the generated GraphQL schema.
+  ///
   pub schema: RootSchema,
+
+  ///
+  /// A map of all the types in the schema.
+  ///
   #[serde(default)]
   #[setters(skip)]
   pub types: BTreeMap<String, Type>,
+
+  ///
+  /// A map of all the union types in the schema.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub unions: BTreeMap<String, Union>,
 }
