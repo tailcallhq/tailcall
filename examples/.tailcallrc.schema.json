@@ -620,6 +620,7 @@
       "type": "object"
     },
     "Type": {
+      "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
       "properties": {
         "added_fields": {
           "items": {
@@ -838,7 +839,12 @@
   },
   "properties": {
     "schema": {
-      "$ref": "#/definitions/RootSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/RootSchema"
+        }
+      ],
+      "description": "Specifies the entry points for query and mutation in the generated GraphQL schema."
     },
     "server": {
       "allOf": [
@@ -846,19 +852,22 @@
           "$ref": "#/definitions/Server"
         }
       ],
-      "default": {}
+      "default": {},
+      "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here."
     },
     "types": {
       "additionalProperties": {
         "$ref": "#/definitions/Type"
       },
       "default": {},
+      "description": "A map of all the types in the schema.",
       "type": "object"
     },
     "unions": {
       "additionalProperties": {
         "$ref": "#/definitions/Union"
       },
+      "description": "A map of all the union types in the schema.",
       "type": "object"
     },
     "upstream": {
@@ -867,7 +876,8 @@
           "$ref": "#/definitions/Upstream"
         }
       ],
-      "default": {}
+      "default": {},
+      "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections."
     }
   },
   "required": ["schema"],

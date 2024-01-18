@@ -1,9 +1,10 @@
 {
-  "$schema": ".tailcallrc.json",
+  "$schema": ".tailcallrc.schema.json",
   "server": {
     "graphiql": true,
     "hostname": "0.0.0.0",
-    "port": 8000
+    "port": 8000,
+    "sds": 102
   },
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",

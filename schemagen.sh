@@ -21,7 +21,7 @@ use tailcall::cli::init_file;
 use tailcall::config::Config;
 use tailcall::FileIO;
 
-static JSON_SCHEMA_FILE: &'static str = ".tailcallrc.json";
+static JSON_SCHEMA_FILE: &'static str = ".tailcallrc.schema.json";
 
 #[tokio::main]
 async fn main() {
