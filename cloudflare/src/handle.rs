@@ -24,10 +24,19 @@ lazy_static! {
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
   log::debug!("Execution starting");
-  let file_path = format!(
-    "{}.graphql",
-    req.path().strip_prefix('/').ok_or(anyhow!("invalid prefix"))?
-  );
+  log::info!("{}", req.path());
+  let route = req
+    .path()
+    .strip_prefix('/')
+    .ok_or(anyhow!("invalid prefix"))?
+    .to_string();
+  let file_path = match route.ends_with("/graphql") {
+    true => route.replace("/graphql", ".graphql").to_string(),
+    false => {
+      format!("{}.graphql", route)
+    }
+  };
+  log::info!("{}", file_path);
   let app_ctx = get_app_ctx(env, file_path).await?;
   let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)

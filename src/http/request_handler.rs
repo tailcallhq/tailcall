@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql::http::GraphiQLSource;
 use async_graphql::ServerError;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -12,11 +12,12 @@ use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::{EnvIO, HttpIO};
 
-fn graphiql() -> Result<Response<Body>> {
+fn graphiql(req: Request<Body>) -> Result<Response<Body>> {
+  let route = req.uri().path().strip_prefix('/').ok_or(anyhow!("invalid prefix"))?;
   Ok(Response::new(Body::from(
     GraphiQLSource::build()
       .title("Tailcall - GraphQL IDE")
-      .endpoint("/graphql")
+      .endpoint(&format!("{route}/graphql"))
       .finish(),
   )))
 }
@@ -102,8 +103,10 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike, Http: Http
   state: Arc<AppContext<Http, Env>>,
 ) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::POST if req.uri().path() == "/graphql" => graphql_request::<T, Http, Env>(req, state.as_ref()).await,
-    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
+    hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
+      graphql_request::<T, Http, Env>(req, state.as_ref()).await
+    }
+    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(req),
     _ => not_found(),
   }
 }
