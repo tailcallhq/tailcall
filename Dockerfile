@@ -6,6 +6,7 @@ WORKDIR /prod
 COPY Cargo.lock Cargo.toml examples/jsonplaceholder.graphql ./
 
 # This is the trick to speed up the building process.
+COPY cloudflare ./cloudflare
 RUN mkdir .cargo \
     && cargo vendor > .cargo/config
 
