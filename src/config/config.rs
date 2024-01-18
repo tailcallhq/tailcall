@@ -156,20 +156,44 @@ impl Config {
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Type {
+  ///
+  /// A map of field name and its definition.
+  ///
   pub fields: BTreeMap<String, Field>,
   #[serde(default, skip_serializing_if = "is_default")]
+  ///
+  /// Additional fields to be added to the type
+  ///
   pub added_fields: Vec<AddField>,
   #[serde(default, skip_serializing_if = "is_default")]
+  ///
+  /// Documentation for the type that is publicly visible.
+  ///
   pub doc: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
+  ///
+  /// Flag to indicate if the type is an interface.
+  ///
   pub interface: bool,
   #[serde(default, skip_serializing_if = "is_default")]
+  ///
+  /// Interfaces that the type implements.
+  ///
   pub implements: BTreeSet<String>,
   #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
+  ///
+  /// Variants for the type if it's an enum
+  ///
   pub variants: Option<BTreeSet<String>>,
   #[serde(default, skip_serializing_if = "is_default")]
+  ///
+  /// Flag to indicate if the type is a scalar.
+  ///
   pub scalar: bool,
   #[serde(default)]
+  ///
+  /// Setting to indicate if the type is cacheable.
+  ///
   pub cache: Option<Cache>,
 }
 
@@ -253,37 +277,98 @@ impl RootSchema {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Omit {}
 
+///
+/// A field definition containing all the metadata information about resolving a field.
+///
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema)]
 #[setters(strip_option)]
 pub struct Field {
+  ///
+  /// Refers to the type of the value the field can be resolved to.
+  ///
   #[serde(rename = "type", default, skip_serializing_if = "is_default")]
   pub type_of: String,
+
+  ///
+  /// Flag to indicate the type is a list.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub list: bool,
+
+  ///
+  /// Flag to indicate the type is required.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub required: bool,
+
+  ///
+  /// Flag to indicate if the type inside the list is required.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub list_type_required: bool,
+
+  ///
+  /// Map of argument name and its definition.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub args: BTreeMap<String, Arg>,
+
+  ///
+  /// Publicly visible documentation for the field.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub doc: Option<String>,
+
+  ///
+  /// Allows modifying existing fields.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub modify: Option<Modify>,
+
+  ///
+  /// Omits a field from public consumption.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub omit: Option<Omit>,
+
+  ///
+  /// Inserts an HTTP resolver for the field.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub http: Option<Http>,
+
+  ///
+  /// Inserts a GRPC resolver for the field.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub grpc: Option<Grpc>,
+
+  ///
+  /// Inserts a Javascript resolver for the field.
+  ///
   #[serde(rename = "unsafe", default, skip_serializing_if = "is_default")]
   pub unsafe_operation: Option<Unsafe>,
+
+  ///
+  /// Inserts a constant resolver for the field.
+  ///
   #[serde(rename = "const", default, skip_serializing_if = "is_default")]
   pub const_field: Option<Const>,
+
+  ///
+  /// Inserts a GraphQL resolver for the field.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub graphql: Option<GraphQL>,
+
+  ///
+  /// Inserts an Expression resolver for the field.
+  ///
   #[serde(default, skip_serializing_if = "is_default")]
   pub expr: Option<Expr>,
+  ///
+  /// Sets the cache configuration for a field
+  ///
   pub cache: Option<Cache>,
 }
 

@@ -1,4 +1,3 @@
-$schema: ".tailcallrc.json"
 server:
   graphiql: true
   hostname: 0.0.0.0
