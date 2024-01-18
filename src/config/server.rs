@@ -288,13 +288,15 @@ impl Upstream {
     self.tcp_keep_alive = other.tcp_keep_alive.or(self.tcp_keep_alive);
     self.timeout = other.timeout.or(self.timeout);
     self.user_agent = other.user_agent.or(self.user_agent);
-    self.batch = other.batch.map(|other| {
+
+    if let Some(other) = other.batch {
       let mut batch = self.batch.unwrap_or_default();
       batch.max_size = other.max_size;
       batch.delay = other.delay;
       batch.headers.extend(other.headers);
-      batch
-    });
+
+      self.batch = Some(batch);
+    }
 
     self.http2_only = other.http2_only.or(self.http2_only);
     self

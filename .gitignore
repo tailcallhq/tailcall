@@ -1,5 +1,8 @@
 /target
 /.idea
+/.vscode/**
+!/.vscode/launch.json
+!/.vscode/settings.json
 .DS_Store
 .bsp
 /cloudflare/node_modules
