@@ -40,14 +40,12 @@ impl Server {
   }
 
   /// Starts the server in its own multithreaded Runtime
-  pub async fn fork_start(self) -> anyhow::Result<()> {
+  pub fn fork_start(self) -> anyhow::Result<()> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
       .worker_threads(self.config.server.get_workers())
       .enable_all()
       .build()?;
 
-    let _ = runtime.spawn(async { self.start().await }).await?;
-
-    Ok(())
+    runtime.block_on(async { self.start().await })
   }
 }

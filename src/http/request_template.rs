@@ -32,6 +32,7 @@ impl RequestTemplate {
   /// Fills in all the mustache templates with required values.
   fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
     let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
+    println!("{:?}", self.query);
     if self.query.is_empty() && self.root_url.is_const() {
       return Ok(url);
     }

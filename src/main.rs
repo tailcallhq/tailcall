@@ -9,7 +9,14 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 fn run_blocking() -> anyhow::Result<()> {
   let rt = tokio::runtime::Runtime::new()?;
-  rt.block_on(async { tailcall::cli::run().await })
+
+  let server = rt.block_on(async { tailcall::cli::run().await })?;
+
+  if let Some(server) = server {
+    server.fork_start()
+  } else {
+    Ok(())
+  }
 }
 
 fn main() -> anyhow::Result<()> {

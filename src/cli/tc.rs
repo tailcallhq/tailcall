@@ -19,7 +19,7 @@ use crate::{print_schema, FileIO};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn run() -> anyhow::Result<Option<Server>> {
   let cli = Cli::parse();
 
   logger_init();
@@ -31,8 +31,7 @@ pub async fn run() -> anyhow::Result<()> {
       let config = config_reader.read(&file_paths).await?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let server = Server::new(config);
-      server.fork_start().await?;
-      Ok(())
+      Ok(Some(server))
     }
     Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
       let config = (config_reader.read(&file_paths)).await?;
@@ -59,16 +58,17 @@ pub async fn run() -> anyhow::Result<()> {
           validate_operations(&blueprint, ops)
             .await
             .to_result()
+            .map(|_| None)
             .map_err(|e| CLIError::from(e).message("Invalid Operation".to_string()).into())
         }
         Err(e) => Err(e.into()),
       }
     }
-    Command::Init { folder_path } => init(&folder_path).await,
+    Command::Init { folder_path } => init(&folder_path).await.map(|_| None),
     Command::Compose { file_paths, format } => {
       let config = (config_reader.read(&file_paths).await)?;
       Fmt::display(format.encode(&config)?);
-      Ok(())
+      Ok(None)
     }
   }
 }
