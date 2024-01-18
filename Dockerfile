@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev python g++ git ma
 
 # Copy the rest of the source code
 COPY . .
+RUN sed -i 's/"cloudflare",\s*//;s/, "cloudflare"//g' Cargo.toml
 
 # Compile the project
 RUN RUST_BACKTRACE=1 cargo build --release
@@ -26,5 +27,6 @@ FROM fedora:34 AS runner
 COPY --from=builder /prod/target/release/tailcall /bin
 COPY --from=builder /prod/jsonplaceholder.graphql /jsonplaceholder.graphql
 
-CMD ["TAILCALL_LOG_LEVEL=error", "/bin/tailcall", "start", "jsonplaceholder.graphql"]
+ENV TAILCALL_LOG_LEVEL=error
+CMD ["/bin/tailcall", "start", "jsonplaceholder.graphql"]
 
