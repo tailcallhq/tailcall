@@ -20,7 +20,7 @@ type Post {
   withoutResolver: User @call(query: "userWithoutResolver", args: {id: "{{value.userId}}"})
   multipleResolvers: User @http(path: "/users/{{value.userId}}") @call(query: "user", args: {id: "{{value.userId}}"})
   withoutOperator: User @call(args: {id: "{{value.userId}}"})
-  argumentMismatchHttp: User @call(query: "user", args: {})
+  urlMismatchHttp: User @call(query: "user", args: {})
   argumentMismatchGraphQL: User @call(query: "userWithGraphQLResolver", args: {})
   headersMismatchGraphQL: User @call(query: "userWithGraphQLResolver", args: {})
 }
@@ -32,7 +32,6 @@ type Failure
     message: "no argument 'id' found"
     trace: ["Post", "argumentMismatchGraphQL", "@call", "userWithGraphQLResolver"]
   )
-type Failure @error(message: "no argument 'id' found", trace: ["Post", "argumentMismatchHttp", "@call", "user"])
 type Failure
   @error(
     message: "no argument 'id' found"
@@ -43,5 +42,6 @@ type Failure
     message: "@call directive is not allowed on field multipleResolvers because it already has a resolver"
     trace: ["Post", "multipleResolvers", "@call"]
   )
+type Failure @error(message: "no argument 'id' found", trace: ["Post", "urlMismatchHttp", "@call", "user"])
 type Failure @error(message: "call must have query", trace: ["Post", "withoutOperator", "@call"])
 type Failure @error(message: "userWithoutResolver field has no resolver", trace: ["Post", "withoutResolver", "@call"])
