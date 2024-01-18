@@ -2,12 +2,9 @@ use std::collections::BTreeMap;
 
 use crate::blueprint::*;
 use crate::config;
-use crate::config::KeyValues;
-use crate::config::{Config, Field, GraphQLOperationType};
-use crate::lambda::Expression;
-use crate::lambda::Unsafe;
-use crate::mustache::Mustache;
-use crate::mustache::Segment;
+use crate::config::{Config, Field, GraphQLOperationType, KeyValues};
+use crate::lambda::{Expression, Unsafe};
+use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
