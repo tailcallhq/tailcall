@@ -54,7 +54,7 @@ pub fn update_call(
           let empties: Vec<(&String, &config::Arg)> = _field
             .args
             .iter()
-            .filter(|(k, _)| args.clone().find(|(k1, _)| k == k1).is_none())
+            .filter(|(k, _)| !args.clone().any(|(k1, _)| k1.eq(*k)))
             .collect();
 
           if empties.len().gt(&0) {
