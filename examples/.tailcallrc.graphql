@@ -328,7 +328,9 @@ directive @call(
   args: Args
 ) on FIELD_DEFINITION
 
-"""An union between JSON and ExprArgs"""
+"""
+An union between JSON and ExprArgs
+"""
 union Args = JSON | ExprArgs
 
 input ExprArgs {
@@ -390,8 +392,6 @@ input ExprIf {
   """
   else: ExprBody!
 }
-
-input 
 
 """
 Arguments for the http-node in expression AST. Same as the @http directive.
