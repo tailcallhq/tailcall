@@ -9,7 +9,7 @@ use crate::to_anyhow;
 #[derive(Clone)]
 pub struct CloudflareFileIO {
   env: Rc<Env>,
-  bucket_id: String
+  bucket_id: String,
 }
 
 impl CloudflareFileIO {
@@ -46,7 +46,10 @@ impl CloudflareFileIO {
 
 impl FileIO for CloudflareFileIO {
   async fn write<'a>(&'a self, file_path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-    self.put(file_path.to_string(), content.to_vec()).await.map_err(to_anyhow)?;
+    self
+      .put(file_path.to_string(), content.to_vec())
+      .await
+      .map_err(to_anyhow)?;
     Ok(())
   }
 

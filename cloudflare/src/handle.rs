@@ -24,7 +24,11 @@ lazy_static! {
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
   log::debug!("Execution starting");
-  let app_ctx = get_app_ctx(req.path(), env).await?;
+  let file_path = format!(
+    "{}.graphql",
+    req.path().strip_prefix('/').ok_or(anyhow!("invalid prefix"))?
+  );
+  let app_ctx = get_app_ctx(env, file_path).await?;
   let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
 }
@@ -33,8 +37,8 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 /// Reads the configuration from the CONFIG environment variable.
 ///
 async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Config> {
-  let path = env_io.get("BUCKET").ok_or(anyhow!("BUCKET var is not set"))?;
-  let file_io = init_file(env.clone(), path);
+  let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("CONFIG var is not set"))?;
+  let file_io = init_file(env.clone(), bucket_id);
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
   let config = reader.read(&[file_path]).await?;
@@ -45,18 +49,14 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: String
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn get_app_ctx(req: worker::Request, env: Rc<worker::Env>) -> anyhow::Result<Arc<CloudFlareAppContext>> {
+async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
   if let Some(app_ctx) = read_app_ctx() {
     Ok(app_ctx.clone())
   } else {
     // Create new context
     let env_io = init_env(env.clone());
-    let cfg = get_config(&env_io, env.clone(), req
-        .path()
-        .strip_prefix('/')
-        .ok_or(anyhow!("invalid prefix"))?
-        .to_string()).await?;
+    let cfg = get_config(&env_io, env.clone(), file_path).await?;
     let blueprint = Blueprint::try_from(&cfg)?;
     let h_client = Arc::new(init_http());
 
