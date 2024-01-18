@@ -4,7 +4,7 @@ FROM rust:slim-buster AS builder
 WORKDIR /prod
 # Copy manifests and the graphql file
 COPY Cargo.lock Cargo.toml examples/jsonplaceholder.graphql ./
-
+COPY autogen ./autogen
 RUN sed -i 's/"cloudflare",\s*//;s/, "cloudflare"//g' Cargo.toml
 # This is the trick to speed up the building process.
 RUN mkdir .cargo \
