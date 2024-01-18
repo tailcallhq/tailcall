@@ -9,9 +9,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
-use crate::lambda::Unsafe;
 use crate::lambda::{Expression, Lambda};
-use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -348,148 +346,9 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
       .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
       .and(update_modify().trace(config::Modify::trace_name().as_str()))
-      // .and(validate_call(&operation_type).trace(config::Call::trace_name().as_str()))
+      .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
       .and(update_nested_resolvers())
       .try_fold(&(config, field, type_of, name), FieldDefinition::default())
-      .and_then(|b_field| {
-        let Some(call) = &field.call else {
-          return Valid::succeed(b_field);
-        };
-
-        if validate_field_has_resolver(name, field, &config.types).is_succeed() {
-          return Valid::fail(format!(
-            "@call directive is not allowed on field {} because it already has a resolver",
-            name
-          ))
-          .trace(config::Call::trace_name().as_str());
-        }
-
-        Valid::from_option(call.query.clone(), "call must have query".to_string())
-          .and_then(|field_name| {
-            Valid::from_option(config.find_type("Query"), "Query type not found on config".to_string())
-              .zip(Valid::succeed(field_name))
-          })
-          .and_then(|(query_type, field_name)| {
-            Valid::from_option(
-              query_type.fields.get(&field_name),
-              format!("{} field not found", field_name),
-            )
-            .zip(Valid::succeed(field_name))
-            // .and_then(|field| {
-            //   if field.has_resolver() {
-            //     Valid::succeed((field, field_name, call.args.iter()))
-            //   } else {
-            //     Valid::fail(format!("{} field has no resolver", field_name))
-            //   }
-            // })
-          })
-          .zip(Valid::succeed((call.args.iter(), b_field.resolver.clone())))
-          .and_then(|((_field, field_name), (args, resolver))| {
-            let empties: Vec<(&String, &config::Arg)> = _field
-              .args
-              .iter()
-              .filter(|(k, _)| args.clone().find(|(k1, _)| k == k1).is_none())
-              .collect();
-
-            if empties.len().gt(&0) {
-              return Valid::fail(format!(
-                "no argument {} found",
-                empties
-                  .iter()
-                  .map(|(k, _)| format!("'{}'", k))
-                  .collect::<Vec<String>>()
-                  .join(", ")
-              ))
-              .trace(field_name.as_str());
-            }
-
-            let Some(resolver) = resolver else {
-              return Valid::fail(format!("{} field has no resolver", field_name));
-            };
-
-            Valid::succeed(b_field.clone())
-          })
-          .map_to(b_field)
-          // .zip(Valid::succeed(resolver))
-          // .and_then(|(data , other)| {})
-          // .and_then(|((field, field_name, args), resolver)| {
-          //   match resolver {
-          //     Expression::Unsafe(Unsafe::Http { req_template, .. }) => {
-          //       todo!()
-          //     }
-          //     Expression::Unsafe(Unsafe::GraphQLEndpoint { mut req_template, batch, field_name, dl_id }) => {
-          //       // req_template.operation_arguments = Some(
-          //       //   req_template
-          //       //     .operation_arguments
-          //       //     .iter()
-          //       //     .map(|data| {
-          //       //       data.clone()
-          //       //       // data
-          //       //       //   .iter()
-          //       //       //   .map(|(k, v)| {
-          //       //       //     if k == key {
-          //       //       //       (k.clone(), Mustache::parse(&value).unwrap())
-          //       //       //     } else {
-          //       //       //       (k.clone(), v.clone())
-          //       //       //     }
-          //       //       //   })
-          //       //       //   .collect::<Vec<(String, Mustache)>>()
-          //       //     })
-          //       //     .collect(),
-          //       if let Some(operation_arguments) = &mut req_template.operation_arguments {
-          //         todo!("graphql endpoint")
-          //         // Valid::succeed(operation_arguments).and_then(|operation_arguments| {
-          //         //   Valid::succeed(operation_arguments.iter())
-          //         //     .and_then(|operation_arguments| operation_arguments.map(|(key, value)| (key, value)))
-          //         //     .map_to(b_field)
-          //         // operation_arguments.iter_mut().for_each(|(key, value)| {
-          //         //   let arg = args.clone().find(|(k, _)| k == &key);
-          //         //   if let Some((_, _value)) = arg {
-          //         //     *value = Mustache::parse(&_value).unwrap();
-          //         //     req_template.operation_arguments = Some(operation_arguments.clone());
-          //         //   } else {
-          //         //     return Valid::fail(format!("{} argument not found", key));
-          //         //   }
-          //         // });
-          //         // })
-          //         // Valid::succeed(operation_arguments.iter_mut())
-          //         //   .and_then(|operation_arguments| {
-          //         //     Valid::succeed(operation_arguments.map(|(key, value)| {
-          //         //       let arg = args.clone().find(|(k, _)| k == &key);
-          //         //       if let Some((_, _value)) = arg {
-          //         //         *value = Mustache::parse(&_value).unwrap();
-          //         //         Valid::succeed(operation_arguments.clone())
-          //         //       } else {
-          //         //         return Valid::fail(format!("{} argument not found", key));
-          //         //       }
-          //         //     }))
-          //         //   })
-          //         //   .map_to(b_field)
-          //         // Valid::succeed(
-          //         //   operation_arguments
-          //         //     .iter()
-          //         //     .map(|(key, value)| {
-          //         //       let arg = args.clone().find(|(k, _)| k == &key);
-          //         //       if let Some((_, _value)) = arg {
-          //         //         Valid::succeed((key.clone(), Mustache::parse(&_value).unwrap()))
-          //         //       } else {
-          //         //         Valid::fail(format!("{} argument not found", key))
-          //         //       }
-          //         //     })
-          //         //     .collect::<Vec<Valid<(String, Mustache), String>>>(),
-          //         // )
-          //         // .and_then(|operation_arguments| {})
-          //         // .map_to(b_field.clone())
-          //       } else {
-          //         Valid::succeed(b_field.clone())
-          //       }
-          //     }
-          //     Expression::Unsafe(Unsafe::Grpc { .. }) => todo!("grpc not implemented yet"),
-          //     _ => Valid::succeed(b_field.clone()),
-          //   }
-          // })
-          .trace(config::Call::trace_name().as_str())
-      })
   };
 
   // Process fields that are not marked as `omit`

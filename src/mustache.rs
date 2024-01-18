@@ -64,6 +64,12 @@ impl Mustache {
     }
   }
 
+  pub fn get_segments(&self) -> Vec<&Segment> {
+    match self {
+      Mustache(segments) => segments.iter().collect(),
+    }
+  }
+
   pub fn expression_segments(&self) -> Vec<&Vec<String>> {
     match self {
       Mustache(segments) => segments

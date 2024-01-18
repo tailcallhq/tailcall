@@ -1,81 +1,21 @@
+use std::collections::BTreeMap;
+
 use crate::blueprint::*;
 use crate::config;
+use crate::config::KeyValues;
 use crate::config::{Config, Field, GraphQLOperationType};
-use crate::directive::DirectiveCodec;
 use crate::lambda::Expression;
 use crate::lambda::Unsafe;
-// use crate::mustache::Mustache;
+use crate::mustache::Mustache;
+use crate::mustache::Segment;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
-// use crate::valid::ValidationError;
 
-// fn fail_if_has_call(field: &Field, b_field: FieldDefinition) -> Valid<FieldDefinition, String> {
-//   if field.call.is_some().clone() {
-//     Valid::fail("Resolver is not defined".to_string())
-//   } else {
-//     Valid::succeed(b_field)
-//   }
-//   .trace(config::Call::trace_name().as_str())
-// }
-
-// pub fn build_call<'a>(
-//   config: &'a Config,
-//   field: &'a Field,
-//   type_of: &'a config::Type,
-// ) -> impl Fn(FieldDefinition) -> Valid<FieldDefinition, String> + 'a {
-//   |b_field: FieldDefinition| {
-//     let Some(resolver) = b_field.resolver.clone() else {
-//       return fail_if_has_call(field, b_field);
-//     };
-
-//     field
-//       .call
-//       .clone()
-//       .unwrap()
-//       .args
-//       .iter()
-//       .fold(resolver.clone(), |resolver, (key, value)| match resolver.clone() {
-//         Expression::Unsafe(Unsafe::Http { req_template, .. }) => {
-//           todo!()
-//         }
-//         Expression::Unsafe(Unsafe::GraphQLEndpoint { req_template, .. }) => todo!(),
-//         Expression::Unsafe(Unsafe::Grpc { .. }) => todo!("grpc not implemented yet"),
-//         _ => resolver,
-//       });
-
-//     Valid::succeed(b_field)
-
-//     // match resolver {
-//     //   Expression::Unsafe(Unsafe::Http { req_template, .. }) => {
-//     //     req_template.
-//     //   }
-//     //   _ => fail_if_has_call(field, b_field),
-//     // }
-
-//     // .and_then(|b_field| {
-//     //   let Some(resolver) = b_field.resolver else {
-//     //     return Valid::fail("Resolver is not defined".to_string());
-//     //   };
-
-//     //   match resolver {
-//     //     Expression::Unsafe(Unsafe::Http { req_template, .. }) => {
-
-//     //     }
-//     //   }
-//     // })
-//     // .and_then(|b_field| {
-//     //   b_field
-//     //     .validate_field(type_of, config)
-//     //     .trace(config::Call::trace_name().as_str())
-//     // })
-//   }
-// }
-
-pub fn validate_call(
+pub fn update_call(
   operation_type: &GraphQLOperationType,
 ) -> TryFold<'_, (&Config, &Field, &config::Type, &str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
-    move |(config, field, type_of, name), b_field| {
+    move |(config, field, _type_of, name), b_field| {
       let Some(call) = &field.call else {
         return Valid::succeed(b_field);
       };
@@ -97,7 +37,8 @@ pub fn validate_call(
             query_type.fields.get(&field_name),
             format!("{} field not found", field_name),
           )
-          .and_then(|field| {
+          .zip(Valid::succeed(field_name))
+          .and_then(|(field, field_name)| {
             if field.has_resolver() {
               Valid::succeed((field, field_name, call.args.iter()))
             } else {
@@ -105,54 +46,87 @@ pub fn validate_call(
             }
           })
         })
-        // .map_to(b_field)
-        .and_then(|(field, field_name, args)| {
-          args.fold(Valid::succeed(field.clone()), |field, (key, value)| {
-            field.and_then(|field| {
-              // not sure if the code below will be useful
-              // TO-DO: remove if not needed
-              // let mustache = Mustache::parse(value.as_str()).map_err(|e| ValidationError::new(e.to_string())).unwrap();
-              // println!("mustache: {:?}", mustache);
-              // println!("field: {:?}", field);
+        .and_then(|(_field, field_name, args)| {
+          let empties: Vec<(&String, &config::Arg)> = _field
+            .args
+            .iter()
+            .filter(|(k, _)| args.clone().find(|(k1, _)| k == k1).is_none())
+            .collect();
 
-              if let Some(http) = field.clone().http.as_mut() {
-                let value = value.replace("{{", "").replace("}}", "");
+          if empties.len().gt(&0) {
+            return Valid::fail(format!(
+              "no argument {} found",
+              empties
+                .iter()
+                .map(|(k, _)| format!("'{}'", k))
+                .collect::<Vec<String>>()
+                .join(", ")
+            ))
+            .trace(field_name.as_str());
+          }
 
-                http.path = http.path.replace(format!("args.{}", key).as_str(), value.as_str());
+          if let Some(http) = _field.http.clone() {
+            compile_http(config, field, &http).and_then(|expr| match expr.clone() {
+              Expression::Unsafe(Unsafe::Http { mut req_template, group_by, dl_id }) => {
+                req_template = req_template.clone().root_url(
+                  req_template
+                    .root_url
+                    .get_segments()
+                    .iter()
+                    .map(|segment| {
+                      match segment {
+                        Segment::Literal(literal) => Segment::Literal(literal.clone()),
+                        Segment::Expression(expression) => {
+                          if expression[0] == "args" {
+                            // this value will always be present because we already checked it
+                            let (_, value) = args.clone().find(|(k, _)| **k == expression[1]).unwrap();
+                            let item = Mustache::parse(value).unwrap();
 
-                let field = Field { http: Some(http.clone()), ..field.clone() };
+                            let expression = item.get_segments().first().unwrap().to_owned().to_owned();
 
-                Valid::succeed(field)
-              } else if let Some(graphql) = field.clone().graphql.as_mut() {
-                graphql.args = graphql.args.clone().map(|mut args| {
-                  args.0.iter_mut().for_each(|(k, v)| {
-                    if k == key {
-                      *v = value.clone();
-                    }
-                  });
+                            expression
+                          } else {
+                            Segment::Expression(expression.clone())
+                          }
+                        }
+                      }
+                    })
+                    .collect::<Vec<Segment>>()
+                    .into(),
+                );
 
-                  args
-                });
-
-                let field = Field { graphql: Some(graphql.clone()), ..field.clone() };
-
-                Valid::succeed(field)
-              } else if let Some(_grpc) = field.clone().grpc.as_mut() {
-                todo!("grpc not implemented yet");
-              } else {
-                Valid::fail(format!("{} field does not have an http resolver", field_name))
+                Valid::succeed(Expression::Unsafe(Unsafe::Http { req_template, group_by, dl_id }))
               }
+              _ => Valid::succeed(expr),
             })
-          })
-        })
-        .and_then(|_field| {
-          TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(|_, b_field| {
-            Valid::succeed(b_field)
-          })
-          .and(update_http().trace(config::Http::trace_name().as_str()))
-          .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
-          .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
-          .try_fold(&(config, &_field, type_of, name), b_field)
+          } else if let Some(mut graphql) = _field.graphql.clone() {
+            if let Some(mut _args) = graphql.args {
+              let mut updated: BTreeMap<String, String> = BTreeMap::new();
+
+              for (key, value) in _args.0 {
+                let found = args
+                  .clone()
+                  .into_iter()
+                  .find_map(|(k, v)| if *k == key { Some(v) } else { None });
+
+                if let Some(v) = found {
+                  updated.insert(key, v.clone().to_string());
+                } else {
+                  updated.insert(key, value);
+                }
+              }
+
+              graphql.args = Some(KeyValues(updated));
+            }
+            compile_graphql(config, operation_type, &graphql)
+          } else if let Some(grpc) = _field.grpc.clone() {
+            let inputs: CompileGrpc<'_> =
+              CompileGrpc { config, operation_type, field, grpc: &grpc, validate_with_schema: false };
+            compile_grpc(inputs)
+          } else {
+            return Valid::fail(format!("{} field has no resolver", field_name));
+          }
+          .and_then(|resolver| Valid::succeed(b_field.resolver(Some(resolver))))
         })
     },
   )
