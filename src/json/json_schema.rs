@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::valid::Valid;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename = "schema")]
 pub enum JsonSchema {
   Obj(HashMap<String, JsonSchema>),

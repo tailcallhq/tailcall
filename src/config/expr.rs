@@ -3,28 +3,42 @@ use serde_json::Value;
 
 use super::{GraphQL, Grpc, Http};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// Allows composing operators as simple expressions
 pub struct Expr {
+  /// Root of the expression AST
   pub body: ExprBody,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub enum ExprBody {
-  // IO
+  /// Fetch a resources using the http operator
   #[serde(rename = "http")]
   Http(Http),
+
+  /// Fetch a resources using the grpc operator
   #[serde(rename = "grpc")]
   Grpc(Grpc),
+
+  /// Fetch a resources using the graphQL operator
   #[serde(rename = "graphQL")]
   GraphQL(GraphQL),
+
+  /// Evaluate to constant data
   #[serde(rename = "const")]
   Const(Value),
   // Logic
+  /// Branch based on a condition
   #[serde(rename = "if")]
   If {
+    /// Condition to evaluate
     cond: Box<ExprBody>,
+
+    /// Expression to evaluate if the condition is true
     #[serde(rename = "then")]
     on_true: Box<ExprBody>,
+
+    /// Expression to evaluate if the condition is false
     #[serde(rename = "else")]
     on_false: Box<ExprBody>,
   },
