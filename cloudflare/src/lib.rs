@@ -2,18 +2,18 @@ use std::rc::Rc;
 
 use anyhow::anyhow;
 
-mod chrono_cache;
 mod env;
 mod file;
 mod handle;
 mod http;
+mod kv_cache;
 mod r2_address;
 
 pub fn init_env(env: Rc<worker::Env>) -> env::CloudflareEnv {
   env::CloudflareEnv::init(env)
 }
-pub fn init_cache(env: Rc<worker::Env>) -> chrono_cache::CloudflareChronoCache {
-  chrono_cache::CloudflareChronoCache::init(env)
+pub fn init_cache(env: Rc<worker::Env>) -> kv_cache::CloudflareChronoCache {
+  kv_cache::CloudflareChronoCache::init(env)
 }
 
 pub fn init_file(env: Rc<worker::Env>) -> file::CloudflareFileIO {

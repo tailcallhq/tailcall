@@ -47,7 +47,7 @@ pub trait FileIO {
 }
 
 #[async_trait::async_trait]
-pub trait ChronoCache<K: Hash + Eq, V>: Send + Sync {
+pub trait Cache<K: Hash + Eq, V>: Send + Sync {
   #[allow(clippy::too_many_arguments)]
   async fn insert<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> anyhow::Result<V>;
   async fn get<'a>(&'a self, key: &'a K) -> anyhow::Result<V>;

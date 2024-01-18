@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 use async_graphql_value::ConstValue;
 use serde_json::{Number, Value};
 use tailcall::json::JsonLike;
-use tailcall::ChronoCache;
+use tailcall::Cache;
 use worker::kv::KvStore;
 
 use crate::to_anyhow;
@@ -50,7 +50,7 @@ impl CloudflareChronoCache {
 }
 // TODO: Needs fix
 #[async_trait::async_trait]
-impl ChronoCache<u64, ConstValue> for CloudflareChronoCache {
+impl Cache<u64, ConstValue> for CloudflareChronoCache {
   async fn insert<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<ConstValue> {
     let kv_store = self.get_kv()?;
     async_std::task::spawn_local(Self::internal_insert(kv_store, key.to_string(), value, ttl.get())).await

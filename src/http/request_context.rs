@@ -12,7 +12,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::{grpc, ChronoCache, EnvIO, HttpIO};
+use crate::{grpc, Cache, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -27,7 +27,7 @@ pub struct RequestContext {
   pub req_headers: HeaderMap,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: Arc<dyn ChronoCache<u64, ConstValue>>,
+  pub cache: Arc<dyn Cache<u64, ConstValue>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub min_max_age: Arc<Mutex<Option<i32>>>,
   pub cache_public: Arc<Mutex<Option<bool>>>,

@@ -11,7 +11,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, Unsafe};
-use crate::{grpc, ChronoCache, EnvIO, HttpIO};
+use crate::{grpc, Cache, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
@@ -20,7 +20,7 @@ pub struct AppContext<Http, Env> {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: Arc<dyn ChronoCache<u64, ConstValue>>,
+  pub cache: Arc<dyn Cache<u64, ConstValue>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub env_vars: Arc<Env>,
 }
@@ -32,7 +32,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
     h_client: Arc<Http>,
     h2_client: Arc<Http>,
     env: Arc<Env>,
-    chrono_cache: Arc<dyn ChronoCache<u64, ConstValue>>,
+    chrono_cache: Arc<dyn Cache<u64, ConstValue>>,
   ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
