@@ -1,0 +1,104 @@
+config: !file tests/http/config/entity-caching-same-args.graphql
+name: Caching
+mock:
+  - request:
+      url: http://example.com/bars
+    response:
+      body:
+        - id: 1
+          foo:
+            id: 2
+        - id: 3
+          foo:
+            id: 4
+        - id: 5
+          foo:
+            id: 6
+        - id: 7
+          foo:
+            id: 8
+  - request:
+      url: http://example.com/bar
+    response:
+      body:
+        id: 1
+        foo:
+          id: 2
+  - request:
+      url: http://example.com/bars1/10
+    response:
+      body:
+        - id: 1
+          foo:
+            id: 2
+        - id: 3
+          foo:
+            id: 4
+  - request:
+      url: http://example.com/bar1/20
+    response:
+      body:
+        id: 1
+        foo:
+          id: 2
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bars { id foo { id } } }
+    response:
+      body:
+        data:
+          bars:
+            - id: 1
+              foo:
+                id: 2
+            - id: 3
+              foo:
+                id: 4
+            - id: 5
+              foo:
+                id: 6
+            - id: 7
+              foo:
+                id: 8
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bar { id foo { id } } }
+    response:
+      body:
+        data:
+          bar:
+            id: 1
+            foo:
+              id: 2
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { bars1(id: 10) { id foo { id } } }"
+    response:
+      body:
+        data:
+          bars1:
+            - id: 1
+              foo:
+                id: 2
+            - id: 3
+              foo:
+                id: 4
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { bar1(id: 20) { id foo { id } } }"
+    response:
+      body:
+        data:
+          bar1:
+            id: 1
+            foo:
+              id: 2
