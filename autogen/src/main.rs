@@ -144,7 +144,7 @@ fn write_type(mut writer: impl Write, name: String, schema: SchemaObject, _defs:
                 let nm = name.split("/").last().unwrap();
                 writeln!(writer, "[{nm}]")
               } else {
-                writeln!(writer, "JSON1")
+                writeln!(writer, "JSON")
               }
             },
             x => writeln!(writer, "[{x:?}]")
@@ -153,10 +153,10 @@ fn write_type(mut writer: impl Write, name: String, schema: SchemaObject, _defs:
           let nm = name.split("/").last().unwrap();
           writeln!(writer, "[{nm}]")
         } else {
-          writeln!(writer, "JSON1")
+          writeln!(writer, "JSON")
         }
       } else if let Some(_typ) = schema.object.clone() {
-        writeln!(writer, "JSONOBJ")
+        writeln!(writer, "JSON")
       } else if let Some(sub_schema) = schema.subschemas.clone().into_iter().next() {
         let list = if let Some(list) = sub_schema.any_of {
           list
@@ -165,7 +165,7 @@ fn write_type(mut writer: impl Write, name: String, schema: SchemaObject, _defs:
         } else if let Some(list) = sub_schema.one_of {
           list
         } else {
-          writeln!(writer, "JSON2")?;
+          writeln!(writer, "JSON")?;
           return Ok(())
         };
         let first = list.first().unwrap();
