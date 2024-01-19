@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
-use super::jwks::Jwks;
+use super::jwks::JWKS;
 use super::remote_jwks::RemoteJwks;
 use super::JwtClaims;
 use crate::auth::error::Error;
 use crate::{blueprint, HttpIO};
 
 pub enum JwksDecoder {
-  Local(Jwks),
+  Local(JWKS),
   Remote(RemoteJwks),
 }
 
 impl JwksDecoder {
   pub fn new(options: &blueprint::JwtProvider, client: Arc<dyn HttpIO>) -> Self {
     match &options.jwks {
-      blueprint::Jwks::Local(jwks) => Self::Local(Jwks::from(jwks.clone()).optional_kid(options.optional_kid)),
+      blueprint::Jwks::Local(jwks) => Self::Local(JWKS::from(jwks.clone()).optional_kid(options.optional_kid)),
       blueprint::Jwks::Remote { url, max_age } => {
         let decoder = RemoteJwks::new(url.clone(), client, *max_age);
 

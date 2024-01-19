@@ -7,13 +7,13 @@ use jsonwebtoken::jwk::JwkSet;
 use reqwest::Request;
 use url::Url;
 
-use super::jwks::Jwks;
+use super::jwks::JWKS;
 use super::JwtClaims;
 use crate::auth::error::Error;
 use crate::HttpIO;
 
 struct JWKSCache {
-  jwks: Jwks,
+  jwks: JWKS,
   expiration: Instant,
 }
 
@@ -62,7 +62,7 @@ impl RemoteJwks {
 
     *cache = Some(JWKSCache {
       jwks: {
-        let v = Jwks::from(jwks);
+        let v = JWKS::from(jwks);
         v.optional_kid(self.optional_kid)
       },
       expiration: std::time::Instant::now() + self.max_age,

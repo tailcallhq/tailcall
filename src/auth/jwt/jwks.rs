@@ -9,18 +9,18 @@ use super::JwtClaims;
 use crate::auth::error::Error;
 
 #[derive(Setters)]
-pub struct Jwks {
+pub struct JWKS {
   set: JwkSet,
   optional_kid: bool,
 }
 
-impl From<JwkSet> for Jwks {
+impl From<JwkSet> for JWKS {
   fn from(set: JwkSet) -> Self {
     Self { set, optional_kid: false }
   }
 }
 
-impl Jwks {
+impl JWKS {
   fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaims, Error> {
     let key = DecodingKey::from_jwk(jwk).map_err(|_| Error::ValidationCheckFailed)?;
     let algorithm = jwk
@@ -71,7 +71,7 @@ mod tests {
 
   #[test]
   fn test_decode_required_kid() {
-    let jwks = Jwks::from(JWK_SET.clone());
+    let jwks = JWKS::from(JWK_SET.clone());
 
     assert!(matches!(jwks.decode(""), Err(Error::Invalid)));
 
@@ -85,7 +85,7 @@ mod tests {
 
   #[test]
   fn test_decode_optional_kid() {
-    let jwks = Jwks::from(JWK_SET.clone()).optional_kid(true);
+    let jwks = JWKS::from(JWK_SET.clone()).optional_kid(true);
 
     assert!(matches!(jwks.decode(""), Err(Error::Invalid)));
 
