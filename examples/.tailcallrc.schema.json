@@ -86,6 +86,21 @@
       "required": ["maxAge"],
       "type": "object"
     },
+    "Call": {
+      "properties": {
+        "args": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "query": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["args"],
+      "type": "object"
+    },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
       "properties": {
@@ -774,6 +789,17 @@
             }
           ],
           "description": "Sets the cache configuration for a field"
+        },
+        "call": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Call"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a call resolver for the field."
         },
         "const": {
           "anyOf": [
