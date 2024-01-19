@@ -2,7 +2,8 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::Config;
+use super::{Config, Protected};
+use crate::blueprint::TypeLike;
 use crate::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -10,20 +11,17 @@ fn pos<A>(a: A) -> Positioned<A> {
 }
 fn config_document(config: &Config) -> ServiceDocument {
   let mut definitions = Vec::new();
+  let directives = vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())];
+
   let schema_definition = SchemaDefinition {
     extend: false,
-    directives: vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())],
-    query: config.graphql.schema.query.clone().map(|name| pos(Name::new(name))),
-    mutation: config.graphql.schema.mutation.clone().map(|name| pos(Name::new(name))),
-    subscription: config
-      .graphql
-      .schema
-      .subscription
-      .clone()
-      .map(|name| pos(Name::new(name))),
+    directives,
+    query: config.schema.query.clone().map(|name| pos(Name::new(name))),
+    mutation: config.schema.mutation.clone().map(|name| pos(Name::new(name))),
+    subscription: config.schema.subscription.clone().map(|name| pos(Name::new(name))),
   };
   definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
-  for (type_name, type_def) in config.graphql.types.iter() {
+  for (type_name, type_def) in config.types.iter() {
     let kind = if type_def.interface {
       TypeKind::Interface(InterfaceType {
         implements: type_def
@@ -39,7 +37,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             let directives = get_directives(field);
             let base_type = if field.list {
               BaseType::List(Box::new(Type {
-                nullable: !field.required,
+                nullable: !field.list_type_required,
                 base: BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -75,7 +73,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             let directives = get_directives(field);
             let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
-                nullable: !field.required,
+                nullable: !field.list_type_required,
                 base: async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -110,7 +108,7 @@ fn config_document(config: &Config) -> ServiceDocument {
             let directives = get_directives(field);
             let base_type = if field.list {
               async_graphql::parser::types::BaseType::List(Box::new(Type {
-                nullable: !field.required,
+                nullable: !field.list_type_required,
                 base: async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone())),
               }))
             } else {
@@ -123,7 +121,7 @@ fn config_document(config: &Config) -> ServiceDocument {
               .map(|(name, arg)| {
                 let base_type = if arg.list {
                   async_graphql::parser::types::BaseType::List(Box::new(Type {
-                    nullable: !arg.required,
+                    nullable: !arg.list_type_required(),
                     base: async_graphql::parser::types::BaseType::Named(Name::new(arg.type_of.clone())),
                   }))
                 } else {
@@ -167,7 +165,7 @@ fn config_document(config: &Config) -> ServiceDocument {
       kind,
     })));
   }
-  for (name, union) in config.graphql.unions.iter() {
+  for (name, union) in config.unions.iter() {
     definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
       extend: false,
       description: None,
@@ -183,24 +181,23 @@ fn config_document(config: &Config) -> ServiceDocument {
 }
 
 fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective>> {
-  let mut directives = Vec::new();
-  if let Some(http) = field.clone().http {
-    let http_dir = http.to_directive();
-    directives.push(pos(http_dir));
-  }
-  if let Some(us) = field.clone().js {
-    let us_dir = us.to_directive();
-    directives.push(pos(us_dir));
-  }
-  if let Some(const_field) = field.clone().const_field {
-    let us_dir = const_field.to_directive();
-    directives.push(pos(us_dir));
-  }
-  if let Some(modify) = field.clone().modify {
-    let dir = modify.to_directive();
-    directives.push(pos(dir));
-  }
-  directives
+  let directives = vec![
+    field.http.as_ref().map(|d| pos(d.to_directive())),
+    field.script.as_ref().map(|d| pos(d.to_directive())),
+    field.const_field.as_ref().map(|d| pos(d.to_directive())),
+    field.modify.as_ref().map(|d| pos(d.to_directive())),
+    field.omit.as_ref().map(|d| pos(d.to_directive())),
+    field.graphql.as_ref().map(|d| pos(d.to_directive())),
+    field.grpc.as_ref().map(|d| pos(d.to_directive())),
+    field.expr.as_ref().map(|d| pos(d.to_directive())),
+    if field.protected {
+      Some(pos((Protected {}).to_directive()))
+    } else {
+      None
+    },
+  ];
+
+  directives.into_iter().flatten().collect()
 }
 
 impl From<Config> for ServiceDocument {

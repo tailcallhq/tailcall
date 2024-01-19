@@ -1,6 +1,7 @@
+use std::slice::Iter;
+
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
-use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
@@ -35,16 +36,34 @@ pub trait DirectiveCodec<A> {
   fn trace_name() -> String {
     format!("@{}", Self::directive_name())
   }
+  fn from_directives(directives: Iter<'_, Positioned<ConstDirective>>) -> Valid<Option<A>, String> {
+    for directive in directives {
+      if directive.node.name.node == Self::directive_name() {
+        return Self::from_directive(&directive.node).map(Some);
+      }
+    }
+    Valid::succeed(None)
+  }
+}
+fn lower_case_first_letter(s: String) -> String {
+  if s.len() <= 2 {
+    s.to_lowercase()
+  } else if let Some(first_char) = s.chars().next() {
+    first_char.to_string().to_lowercase() + &s[first_char.len_utf8()..]
+  } else {
+    s.to_string()
+  }
 }
 
 impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
   fn directive_name() -> String {
-    std::any::type_name::<A>()
-      .split("::")
-      .last()
-      .unwrap_or_default()
-      .to_string()
-      .to_case(Case::Camel)
+    lower_case_first_letter(
+      std::any::type_name::<A>()
+        .split("::")
+        .last()
+        .unwrap_or_default()
+        .to_string(),
+    )
   }
 
   fn from_directive(directive: &ConstDirective) -> Valid<A, String> {

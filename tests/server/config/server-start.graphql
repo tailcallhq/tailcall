@@ -1,0 +1,7 @@
+schema @server(port: 8800) {
+  query: Query
+}
+
+type Query {
+  greet: String @const(data: "Hello World!")
+}

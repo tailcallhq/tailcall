@@ -1,0 +1,27 @@
+---
+config: !file tests/http/config/nested-objects.graphql
+name: Nested objects
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      body:
+        id: 1
+        name: foo
+        address:
+          geo:
+            lat: "-37.3159"
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { user { address { geo { lat } } } }"
+    response:
+      body:
+        data:
+          user:
+            address:
+              geo:
+                lat: "-37.3159"

@@ -1,0 +1,17 @@
+#> server-sdl
+schema @server {
+  query: Query
+}
+
+type Query {
+  foo: String @expr(data: {const: "John"})
+  bar: String @expr(body: {unsupported: true})
+}
+
+#> client-sdl
+type Failure
+  @error(message: "Parsing failed because of missing field `body`", trace: ["@expr"])
+  @error(
+    message: "Parsing failed because of unknown variant `unsupported`, expected one of `http`, `grpc`, `graphQL`, `const`, `if`, `and`, `or`, `cond`, `defaultTo`, `isEmpty`, `not`, `concat`, `intersection`, `difference`, `eq`, `gt`, `gte`, `lt`, `lte`, `max`, `min`, `pathEq`, `propEq`, `sortPath`, `symmetricDifference`, `union`, `mod`, `add`, `dec`, `divide`, `inc`, `multiply`, `negate`, `product`, `subtract`, `sum`"
+    trace: ["@expr", "body"]
+  )

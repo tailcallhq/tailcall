@@ -1,9 +1,12 @@
 /target
 /.idea
-.vscode
-*.svg
+/.vscode/**
+!/.vscode/launch.json
+!/.vscode/settings.json
 .DS_Store
-
+.bsp
+/cloudflare/node_modules
+/cloudflare/.wrangler
 # direnv
 .direnv
 .envrc
@@ -11,3 +14,10 @@
 
 npm/@tailcallhq
 npm/node_modules
+
+cloudflare/.wrangler
+cloudflare/build
+cloudflare/node_modules
+cloudflare/pkg
+
+.wrangler/

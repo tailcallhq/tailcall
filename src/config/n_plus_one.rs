@@ -38,7 +38,7 @@ fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
 }
 
 pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
-  if let Some(query) = &config.graphql.schema.query {
+  if let Some(query) = &config.schema.query {
     find_fan_out(FindFanOutContext { config, type_name: query, path: Vec::new(), is_list: false })
   } else {
     Vec::new()

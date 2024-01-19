@@ -1,0 +1,22 @@
+config: !file tests/http/config/simple.graphql
+name: Simple GraphQL Request
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+    response:
+      status: 503
+      body: {}
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { user { name } }
+    response:
+      body:
+        data: null
+        errors:
+          - message: "IOException: Status code error"
+            locations:
+              - line: 1
+                column: 9

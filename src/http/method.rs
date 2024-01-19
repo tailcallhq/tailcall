@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema)]
 pub enum Method {
   #[default]
   GET,
@@ -13,24 +13,18 @@ pub enum Method {
   TRACE,
 }
 
-impl From<Method> for reqwest::Method {
-  fn from(method: Method) -> Self {
-    (&method).into()
-  }
-}
-
-impl From<&Method> for reqwest::Method {
-  fn from(method: &Method) -> Self {
-    match method {
-      Method::GET => reqwest::Method::GET,
-      Method::POST => reqwest::Method::POST,
-      Method::PUT => reqwest::Method::PUT,
-      Method::PATCH => reqwest::Method::PATCH,
-      Method::DELETE => reqwest::Method::DELETE,
-      Method::HEAD => reqwest::Method::HEAD,
-      Method::OPTIONS => reqwest::Method::OPTIONS,
-      Method::CONNECT => reqwest::Method::CONNECT,
-      Method::TRACE => reqwest::Method::TRACE,
+impl Method {
+  pub fn to_hyper(self) -> hyper::Method {
+    match self {
+      Method::GET => hyper::Method::GET,
+      Method::POST => hyper::Method::POST,
+      Method::PUT => hyper::Method::PUT,
+      Method::PATCH => hyper::Method::PATCH,
+      Method::DELETE => hyper::Method::DELETE,
+      Method::HEAD => hyper::Method::HEAD,
+      Method::OPTIONS => hyper::Method::OPTIONS,
+      Method::CONNECT => hyper::Method::CONNECT,
+      Method::TRACE => hyper::Method::TRACE,
     }
   }
 }

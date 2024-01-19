@@ -1,56 +1,61 @@
 server:
+  graphiql: true
+  hostname: 0.0.0.0
   port: 8000
-  enableGraphiql: true
-  enableQueryValidation: false
-  hostname: "0.0.0.0"
 upstream:
-  baseURL: "http://jsonplaceholder.typicode.com"
-  enableHttpCache: true
-graphql:
-  schema:
-    query: Query
-  types:
-    Post:
-      fields:
-        body:
-          type_of: String
-          required: true
-        id:
-          type_of: Int
-          required: true
-        title:
-          type_of: String
-          required: true
-        user:
-          type_of: User
-          http:
-            path: /users/{{value.userId}}
-        userId:
-          type_of: Int
-          required: true
-    Query:
-      fields:
-        posts:
-          type_of: Post
-          list: true
-          http:
-            path: /posts
-    User:
-      fields:
-        email:
-          type_of: String
-          required: true
-        id:
-          type_of: Int
-          required: true
-        name:
-          type_of: String
-          required: true
-        phone:
-          type_of: String
-        username:
-          type_of: String
-          required: true
-        website:
-          type_of: String
-  unions: {}
+  baseURL: http://jsonplaceholder.typicode.com
+  httpCache: true
+schema:
+  query: Query
+types:
+  Post:
+    fields:
+      body:
+        type: String
+        required: true
+      id:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      user:
+        type: User
+        http:
+          path: /users/{{value.userId}}
+      userId:
+        type: Int
+        required: true
+  Query:
+    fields:
+      posts:
+        type: Post
+        list: true
+        http:
+          path: /posts
+      user:
+        type: User
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          path: /users/{{args.id}}
+  User:
+    fields:
+      email:
+        type: String
+        required: true
+      id:
+        type: Int
+        required: true
+      name:
+        type: String
+        required: true
+      phone:
+        type: String
+      username:
+        type: String
+        required: true
+      website:
+        type: String

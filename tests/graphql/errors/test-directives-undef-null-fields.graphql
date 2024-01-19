@@ -3,8 +3,14 @@ schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
   query: Query
 }
 
+type NestedUser {
+  id: ID
+}
+
 type User {
   id: ID!
+  nestedUser: NestedUser
+  nonNullableNestedUser: NestedUser!
 }
 
 type Query {
@@ -19,9 +25,19 @@ type Post {
   id: Int!
   userId: Int
   user: User @http(path: "/users/{{value.id}}", baseURL: "http://localhost:8080")
+  nonNullableUser: User! @http(path: "/users/{{value.id}}", baseURL: "http://localhost:8080")
   userArg: User @http(path: "/users/{{args.id}}", baseURL: "http://localhost:8080")
-  userInvalidDirective: User @http(path: "/users/{{valu.userId}}", baseURL: "http://localhost:8080")
-  userNonScalar: User @http(path: "/users/{{value.user.id}}", baseURL: "http://localhost:8080")
+  userInvalidDirective: User @http(path: "/users/{{Vale.userId}}", baseURL: "http://localhost:8080")
+  userNonScalar: User @http(path: "/users/{{value.nonNullableUser}}", baseURL: "http://localhost:8080")
+  userNullable: User @http(path: "/users/{{value.user.id}}", baseURL: "http://localhost:8080")
+  nestedUserNullable: User
+    @http(path: "/users/{{value.nonNullableUser.nestedUser.id}}", baseURL: "http://localhost:8080")
+  nestedNonScalar: User
+    @http(path: "/users/{{value.nonNullableUser.nonNullableNestedUser}}", baseURL: "http://localhost:8080")
+  nestedUndefinedValue: User
+    @http(path: "/users/{{value.nonNullableUser.nonNullableNestedUser.userId}}", baseURL: "http://localhost:8080")
+  nestedNullable: User
+    @http(path: "/users/{{value.nonNullableUser.nonNullableNestedUser.id}}", baseURL: "http://localhost:8080")
   userNullValue: User @http(path: "/users/{{value.userId}}", baseURL: "http://localhost:8080")
   # nullable values are allowed in queries
   userNullValueQuery: User
@@ -34,11 +50,26 @@ type Post {
 }
 
 #> client-sdl
+type Failure
+  @error(
+    message: "value 'nonNullableNestedUser' is not of a scalar type"
+    trace: ["Post", "nestedNonScalar", "@http", "path"]
+  )
+type Failure @error(message: "value 'id' is a nullable type", trace: ["Post", "nestedNullable", "@http", "path"])
+type Failure
+  @error(
+    message: "no value 'nonNullableUser.nonNullableNestedUser.userId' found"
+    trace: ["Post", "nestedUndefinedValue", "@http", "path"]
+  )
+type Failure
+  @error(message: "value 'nestedUser' is a nullable type", trace: ["Post", "nestedUserNullable", "@http", "path"])
 type Failure @error(message: "no argument 'id' found", trace: ["Post", "userArg", "@http", "path"])
 type Failure
-  @error(message: "unknown template directive 'valu'", trace: ["Post", "userInvalidDirective", "@http", "path"])
-type Failure @error(message: "value 'user' is not of a scalar type", trace: ["Post", "userNonScalar", "@http", "path"])
+  @error(message: "unknown template directive 'Vale'", trace: ["Post", "userInvalidDirective", "@http", "path"])
+type Failure
+  @error(message: "value 'nonNullableUser' is not of a scalar type", trace: ["Post", "userNonScalar", "@http", "path"])
 type Failure @error(message: "value 'userId' is a nullable type", trace: ["Post", "userNullValue", "@http", "path"])
+type Failure @error(message: "value 'user' is a nullable type", trace: ["Post", "userNullable", "@http", "path"])
 type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValue", "@http", "path"])
 type Failure @error(message: "no value 'userid' found", trace: ["Post", "userUndefinedValueQuery", "@http", "query"])
 type Failure

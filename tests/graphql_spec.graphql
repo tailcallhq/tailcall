@@ -1,0 +1,1 @@
+directive @error(message: String!, trace: [String!]!, description: String) repeatable on OBJECT

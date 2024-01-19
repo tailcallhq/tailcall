@@ -1,14 +1,9 @@
----
-config: tests/http/config/n-plus-one.graphql
+config: !file tests/http/config/n-plus-one.graphql
 name: n + 1 Request List
-annotation: Fail
-upstream_mocks:
-  - - url: http://example.com/bars
-      headers:
-        Accept: application/json
-    - status: 200
-      headers:
-        Content-Type: application/json
+mock:
+  - request:
+      url: http://example.com/bars
+    response:
       body:
         - id: 1
           fooId: 1
@@ -18,52 +13,37 @@ upstream_mocks:
           fooId: 2
         - id: 4
           fooId: 2
-  - - url: http://example.com/foos?id=1&id=2
-      headers:
-        Accept: application/json
-    - status: 200
-      headers:
-        Content-Type: application/json
+  - request:
+      url: http://example.com/foos?id=1&id=2
+    response:
       body:
         - id: 1
           name: foo1
         - id: 2
           name: foo2
-expected_upstream_requests:
-  - url: http://example.com/foos?id=1&id=2
-    headers:
-      Accept: application/json
-  - url: http://example.com/bars
-    headers:
-      Accept: application/json
-downstream_assertions:
+assert:
   - request:
       method: POST
       url: http://localhost:8080/graphql
-      headers:
-        Accept: application/json
       body:
-        query: query { bars { fooId id foo { id } } }
+        query: query { bars { foo { id } fooId id } }
     response:
-      status: 200
-      headers:
-        Content-Type: application/json
       body:
         data:
           bars:
             - fooId: 1
               id: 1
               foo:
-                id: 1
+                - id: 1
             - id: 2
               fooId: 1
               foo:
-                id: 1
+                - id: 1
             - id: 3
               fooId: 2
               foo:
-                id: 2
+                - id: 2
             - id: 4
               fooId: 2
               foo:
-                id: 2
+                - id: 2

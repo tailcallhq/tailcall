@@ -1,12 +1,13 @@
 schema
-  @server(port: 8000, enableGraphiql: true, enableQueryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", enableHttpCache: true)
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
   @js_plugin(src: "target/debug") {
   query: Query
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
   value_const: String @const(data: "str")
   value_js: String @js(inline: "'str'")
   test_js_float: Float @js(inline: "0.1 + 0.2")

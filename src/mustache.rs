@@ -1,11 +1,11 @@
 use nom::{Finish, IResult};
 
-use crate::path_string::PathString;
+use crate::path::{PathGraphql, PathString};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Segment {
   Literal(String),
   Expression(Vec<String>),
@@ -31,6 +31,7 @@ impl Mustache {
     }
   }
 
+  // TODO: infallible function, no need to return Result
   pub fn parse(str: &str) -> anyhow::Result<Mustache> {
     let result = parse_mustache(str).finish();
     match result {
@@ -51,6 +52,18 @@ impl Mustache {
     }
   }
 
+  pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
+    match self {
+      Mustache(segments) => segments
+        .iter()
+        .map(|segment| match segment {
+          Segment::Literal(text) => text.to_string(),
+          Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
+        })
+        .collect(),
+    }
+  }
+
   pub fn expression_segments(&self) -> Vec<&Vec<String>> {
     match self {
       Mustache(segments) => segments
@@ -65,15 +78,19 @@ impl Mustache {
 }
 
 fn parse_name(input: &str) -> IResult<&str, String> {
-  nom::combinator::map(
-    nom::sequence::tuple((
-      nom::character::complete::multispace0,
-      nom::character::complete::alpha1,
-      nom::character::complete::alphanumeric0,
-      nom::character::complete::multispace0,
-    )),
-    |(_, a, b, _)| format!("{}{}", a, b),
-  )(input)
+  let spaces = nom::character::complete::multispace0;
+  let alpha = nom::character::complete::alpha1;
+  let alphanumeric_or_underscore = nom::multi::many0(nom::branch::alt((
+    nom::character::complete::alphanumeric1,
+    nom::bytes::complete::tag("_"),
+  )));
+
+  let parser = nom::sequence::tuple((spaces, alpha, alphanumeric_or_underscore, spaces));
+
+  nom::combinator::map(parser, |(_, a, b, _)| {
+    let b: String = b.into_iter().collect();
+    format!("{}{}", a, b)
+  })(input)
 }
 
 fn parse_expression(input: &str) -> IResult<&str, Vec<String>> {
@@ -215,6 +232,27 @@ mod tests {
       let mustache = Mustache::parse("123").unwrap();
       assert_eq!(mustache, Mustache::from(vec![Segment::Literal("123".to_string())]));
     }
+
+    #[test]
+    fn parse_env_name() {
+      let result = Mustache::parse("{{env.FOO}}").unwrap();
+      assert_eq!(
+        result,
+        Mustache::from(vec![Segment::Expression(vec!["env".to_string(), "FOO".to_string()])])
+      );
+    }
+
+    #[test]
+    fn parse_env_with_underscores() {
+      let result = Mustache::parse("{{env.FOO_BAR}}").unwrap();
+      assert_eq!(
+        result,
+        Mustache::from(vec![Segment::Expression(vec![
+          "env".to_string(),
+          "FOO_BAR".to_string()
+        ])])
+      );
+    }
   }
   mod render {
     use std::borrow::Cow;
@@ -222,7 +260,7 @@ mod tests {
     use serde_json::json;
 
     use crate::mustache::{Mustache, Segment};
-    use crate::path_string::PathString;
+    use crate::path::PathString;
 
     #[test]
     fn test_query_params_template() {
@@ -304,6 +342,62 @@ mod tests {
       ]);
 
       assert_eq!(mustache.render(&DummyPath).as_str(), "    bar    ");
+    }
+  }
+
+  mod render_graphql {
+    use crate::mustache::{Mustache, Segment};
+    use crate::path::PathGraphql;
+
+    #[test]
+    fn test_render_mixed() {
+      struct DummyPath;
+
+      impl PathGraphql for DummyPath {
+        fn path_graphql<T: AsRef<str>>(&self, parts: &[T]) -> Option<String> {
+          let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
+
+          if parts == ["foo", "bar"] {
+            Some("FOOBAR".to_owned())
+          } else if parts == ["baz", "qux"] {
+            Some("BAZQUX".to_owned())
+          } else {
+            None
+          }
+        }
+      }
+
+      let mustache = Mustache::from(vec![
+        Segment::Literal("prefix ".to_string()),
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" middle ".to_string()),
+        Segment::Expression(vec!["baz".to_string(), "qux".to_string()]),
+        Segment::Literal(" suffix".to_string()),
+      ]);
+
+      assert_eq!(
+        mustache.render_graphql(&DummyPath),
+        "prefix FOOBAR middle BAZQUX suffix"
+      );
+    }
+
+    #[test]
+    fn test_render_with_missing_path() {
+      struct DummyPath;
+
+      impl PathGraphql for DummyPath {
+        fn path_graphql<T: AsRef<str>>(&self, _: &[T]) -> Option<String> {
+          None
+        }
+      }
+
+      let mustache = Mustache::from(vec![
+        Segment::Literal("prefix ".to_string()),
+        Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
+        Segment::Literal(" suffix".to_string()),
+      ]);
+
+      assert_eq!(mustache.render_graphql(&DummyPath), "prefix  suffix");
     }
   }
 }

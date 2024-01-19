@@ -6,8 +6,8 @@ use hyper::HeaderMap;
 use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
-use tailcall::path_string::PathString;
-use tailcall::request_template::RequestTemplate;
+use tailcall::http::RequestTemplate;
+use tailcall::path::PathString;
 
 #[derive(Setters)]
 struct Context {

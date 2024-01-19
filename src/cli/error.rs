@@ -159,6 +159,24 @@ impl From<hyper::Error> for CLIError {
   }
 }
 
+impl From<rustls::Error> for CLIError {
+  fn from(error: rustls::Error) -> Self {
+    let cli_error = CLIError::new("Failed to create TLS Acceptor");
+    let message = error.to_string();
+
+    cli_error.description(message)
+  }
+}
+
+impl From<std::io::Error> for CLIError {
+  fn from(error: std::io::Error) -> Self {
+    let cli_error = CLIError::new("IO Error");
+    let message = error.to_string();
+
+    cli_error.description(message)
+  }
+}
+
 impl<'a> From<ValidationError<&'a str>> for CLIError {
   fn from(error: ValidationError<&'a str>) -> Self {
     CLIError::new("Invalid Configuration").caused_by(
@@ -189,9 +207,14 @@ impl From<ValidationError<String>> for CLIError {
   }
 }
 
+impl From<Box<dyn std::error::Error>> for CLIError {
+  fn from(value: Box<dyn std::error::Error>) -> Self {
+    CLIError::new(value.to_string().as_str())
+  }
+}
+
 #[cfg(test)]
 mod tests {
-  use std::collections::VecDeque;
 
   use pretty_assertions::assert_eq;
   use stripmargin::StripMargin;
@@ -319,12 +342,7 @@ mod tests {
   fn test_from_validation() {
     let cause = Cause::new("Base URL needs to be specified")
       .description("Set `baseURL` in @http or @server directives")
-      .trace(VecDeque::from(vec![
-        "Query".to_string(),
-        "users".to_string(),
-        "@http".to_string(),
-        "baseURL".to_string(),
-      ]));
+      .trace(vec!["Query", "users", "@http", "baseURL"]);
     let valid = ValidationError::from(cause);
     let error = CLIError::from(valid);
     let expected = r"|Error: Invalid Configuration

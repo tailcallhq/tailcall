@@ -1,0 +1,25 @@
+{
+  "rust-analyzer.linkedProjects": ["./Cargo.toml", "./cloudflare/Cargo.toml"],
+  "cSpell.words": [
+    "hasher",
+    "Htpasswd",
+    "httpmock",
+    "indexmap",
+    "jwks",
+    "prost",
+    "Sfixed",
+    "thiserror"
+  ],
+  "files.watcherExclude": {
+    "**/target": true
+  },
+  "yaml.schemas": {
+    "./examples/.tailcallrc.schema.json": ["examples/*.yml"]
+  },
+  "json.schemas": [
+    {
+      "fileMatch": ["examples/*.json"],
+      "url": "./examples/.tailcallrc.schema.json"
+    }
+  ]
+}

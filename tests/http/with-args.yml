@@ -1,0 +1,22 @@
+---
+config: !file tests/http/config/with-args.graphql
+name: With args
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=1
+    response:
+      body:
+        - id: 1
+          name: "Leanne Graham"
+
+assert:
+  - request:
+      url: http://localhost:8080/graphql
+      method: POST
+      body:
+        query: "query { user(id: 1) { name } }"
+    response:
+      body:
+        data:
+          user:
+            - name: "Leanne Graham"

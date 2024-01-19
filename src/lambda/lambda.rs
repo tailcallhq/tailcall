@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
-use super::expression;
-use super::expression::{Context, Expression, Unsafe};
+use super::expression::{Context, Expression};
+use super::{expression, IO};
 use crate::blueprint::js_plugin::JsPluginExecutor;
-use crate::request_template::RequestTemplate;
+use crate::{graphql, grpc, http};
 
 #[derive(Clone)]
 pub struct Lambda<A> {
@@ -23,12 +23,16 @@ impl<A> Lambda<A> {
     Lambda::new(Expression::EqualTo(self.box_expr(), Box::new(other.expression)))
   }
 
-  pub fn to_unsafe_js(self, executor: JsPluginExecutor) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::JS(self.box_expr(), executor)))
+  pub fn to_js(self, executor: JsPluginExecutor) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::IO(IO::JS(self.box_expr(), executor)))
   }
 
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Input(self.box_expr(), path))
+  }
+
+  pub fn auth_protected(self) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::Protected(self.box_expr()))
   }
 }
 
@@ -45,8 +49,25 @@ impl Lambda<serde_json::Value> {
     Lambda::new(Expression::Context(Context::Path(path)))
   }
 
-  pub fn from_request_template(req_template: RequestTemplate) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Unsafe(Unsafe::Http(req_template, None, None)))
+  pub fn from_request_template(req_template: http::RequestTemplate) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::IO(IO::Http { req_template, group_by: None, dl_id: None }))
+  }
+
+  pub fn from_graphql_request_template(
+    req_template: graphql::RequestTemplate,
+    field_name: String,
+    batch: bool,
+  ) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::IO(IO::GraphQLEndpoint {
+      req_template,
+      field_name,
+      batch,
+      dl_id: None,
+    }))
+  }
+
+  pub fn from_grpc_request_template(req_template: grpc::RequestTemplate) -> Lambda<serde_json::Value> {
+    Lambda::new(Expression::IO(IO::Grpc { req_template, group_by: None, dl_id: None }))
   }
 }
 
@@ -70,9 +91,8 @@ mod tests {
   use serde_json::json;
 
   use crate::endpoint::Endpoint;
-  use crate::http::RequestContext;
-  use crate::lambda::{EmptyResolverContext, EvaluationContext, Lambda};
-  use crate::request_template::RequestTemplate;
+  use crate::http::{RequestContext, RequestTemplate};
+  use crate::lambda::{Concurrent, EmptyResolverContext, Eval, EvaluationContext, Lambda};
 
   impl<B> Lambda<B>
   where
@@ -81,7 +101,7 @@ mod tests {
     async fn eval(self) -> Result<B> {
       let req_ctx = RequestContext::default();
       let ctx = EvaluationContext::new(&req_ctx, &EmptyResolverContext);
-      let result = self.expression.eval(&ctx).await?;
+      let result = self.expression.eval(&ctx, &Concurrent::Sequential).await?;
       let json = serde_json::to_value(result)?;
       Ok(serde_json::from_value(json)?)
     }
@@ -117,5 +137,13 @@ mod tests {
     let result = Lambda::from_request_template(endpoint).eval().await.unwrap();
 
     assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")
+  }
+
+  #[cfg(feature = "unsafe-js")]
+  #[tokio::test]
+  async fn test_js() {
+    let result = Lambda::from(1.0).to_js("ctx + 100".to_string()).eval().await;
+    let f64 = result.unwrap().as_f64().unwrap();
+    assert_eq!(f64, 101.0)
   }
 }

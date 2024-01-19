@@ -1,1 +1,3 @@
 target/
+*.schema.json
+.vscode/

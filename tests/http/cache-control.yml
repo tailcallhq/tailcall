@@ -1,0 +1,126 @@
+---
+name: Sending requests to verify Cache-Control behavior
+config: !inline
+  upstream:
+  schema:
+    query: Query
+  server:
+    cacheControlHeader: true
+  types:
+    Query:
+      fields:
+        user:
+          type: User
+          args:
+            id:
+              type: Int
+          http:
+            path: /users
+            baseURL: http://jsonplaceholder.typicode.com
+            query:
+              - key: id
+                value: "{{args.id}}"
+    User:
+      fields:
+        id:
+          type: Int
+        name:
+          type: String
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=1
+      headers:
+        test: test
+    response:
+      headers:
+        Cache-Control: "max-age=3600"
+      body:
+        id: 1
+        name: foo
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=2
+      headers:
+        test: test
+    response:
+      headers:
+        Cache-Control: "max-age=7200"
+      body:
+        id: 2
+        name: bar
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=3
+      headers:
+        test: test
+    response:
+      headers:
+        Cache-Control: "max-age=7200, private"
+      body:
+        id: 3
+        name: foobar
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=4
+      headers:
+        test: test
+    response:
+      headers:
+        Cache-Control: "no-cache"
+      body:
+        id: 4
+        name: barfoo
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { u1: user(id: 1) { id } u2: user(id: 2) { id } }"
+    response:
+      headers:
+        Cache-Control: "max-age=3600"
+      body:
+        data:
+          u1:
+            id: 1
+          u2:
+            id: 2
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { u1: user(id: 1) { id } u3: user(id: 3) { id } }"
+    response:
+      headers:
+        Cache-Control: "max-age=3600, private"
+      body:
+        data:
+          u1:
+            id: 1
+          u3:
+            id: 3
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { u1: user(id: 1) { id } u4: user(id: 4) { id } }"
+    response:
+      headers:
+        Cache-Control: "no-cache"
+      body:
+        data:
+          u1:
+            id: 1
+          u4:
+            id: 4
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { u3: user(id: 3) { id } u4: user(id: 4) { id } }"
+    response:
+      headers:
+        Cache-Control: "no-cache, private"
+      body:
+        data:
+          u3:
+            id: 3
+          u4:
+            id: 4

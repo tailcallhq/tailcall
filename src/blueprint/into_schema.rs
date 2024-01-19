@@ -1,14 +1,15 @@
 use std::borrow::Cow;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::dynamic::{
-  FieldFuture, FieldValue, SchemaBuilder, {self},
-};
+use async_graphql::dynamic::{self, FieldFuture, FieldValue, ResolverContext, SchemaBuilder};
 use async_graphql_value::ConstValue;
 
-use crate::blueprint::{Blueprint, Definition, Type};
+use crate::blueprint::{Blueprint, Cache, Definition, Type};
+use crate::helpers;
 use crate::http::RequestContext;
-use crate::lambda::EvaluationContext;
+use crate::json::JsonLike;
+use crate::lambda::{Concurrent, Eval, EvaluationContext};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {
@@ -30,6 +31,38 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   }
 }
 
+fn get_cache_key<'a, H: Hasher + Clone>(
+  ctx: &'a EvaluationContext<'a, ResolverContext<'a>>,
+  mut hasher: H,
+) -> Option<u64> {
+  // Hash on parent value
+  if let Some(const_value) = ctx
+    .graphql_ctx
+    .parent_value
+    .as_value()
+    // TODO: handle _id, id, or any field that has @key on it.
+    .filter(|value| value != &&ConstValue::Null)
+    .map(|data| data.get_key("id"))
+  {
+    // Hash on parent's id only?
+    helpers::value::hash(const_value?, &mut hasher);
+  }
+
+  let key = ctx
+    .graphql_ctx
+    .args
+    .iter()
+    .map(|(key, value)| {
+      let mut hasher = hasher.clone();
+      key.hash(&mut hasher);
+      helpers::value::hash(value.as_value(), &mut hasher);
+      hasher.finish()
+    })
+    .fold(hasher.finish(), |acc, val| acc ^ val);
+
+  Some(key)
+}
+
 fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
@@ -38,27 +71,48 @@ fn to_type(def: &Definition) -> dynamic::Type {
         let field = field.clone();
         let type_ref = to_type_ref(&field.of_type);
         let field_name = &field.name.clone();
+        let cache = field.cache.clone();
         let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
           let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-          let field_name = field.name.clone();
-          let resolver = field.resolver.clone();
-          FieldFuture::new(async move {
-            match resolver {
-              None => {
+          let field_name = &field.name;
+          match &field.resolver {
+            None => {
+              let ctx = EvaluationContext::new(req_ctx, &ctx);
+              FieldFuture::from_value(ctx.path_value(&[field_name]).map(|a| a.to_owned()))
+            }
+            Some(expr) => {
+              let expr = expr.to_owned();
+              let cache = cache.clone();
+              FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
-                Ok(ctx.path_value(&[field_name]).map(|a| FieldValue::from(a.to_owned())))
-              }
-              Some(expr) => {
-                let ctx = EvaluationContext::new(req_ctx, &ctx);
-                let const_value = expr.eval(&ctx).await?;
+
+                let ttl_and_key =
+                  cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
+                let const_value = match ttl_and_key {
+                  Some((ttl, key)) => {
+                    if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
+                      // Return value from cache
+                      log::info!("Reading from cache. key = {key}");
+                      const_value
+                    } else {
+                      let const_value = expr.eval(&ctx, &Concurrent::Sequential).await?;
+                      log::info!("Writing to cache. key = {key}");
+                      // Write value to cache
+                      ctx.req_ctx.cache_insert(key, const_value.clone(), ttl);
+                      const_value
+                    }
+                  }
+                  _ => expr.eval(&ctx, &Concurrent::Sequential).await?,
+                };
+
                 let p = match const_value {
                   ConstValue::List(a) => FieldValue::list(a),
                   a => FieldValue::from(a),
                 };
                 Ok(Some(p))
-              }
+              })
             }
-          })
+          }
         });
         if let Some(description) = &field.description {
           dyn_schema_field = dyn_schema_field.description(description);
@@ -121,20 +175,16 @@ fn to_type(def: &Definition) -> dynamic::Type {
   }
 }
 
-fn create(blueprint: &Blueprint) -> SchemaBuilder {
-  let query = blueprint.query();
-  let mutation = blueprint.mutation();
-  let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
-
-  for def in blueprint.definitions.iter() {
-    schema = schema.register(to_type(def));
-  }
-
-  schema
-}
-
 impl From<&Blueprint> for SchemaBuilder {
   fn from(blueprint: &Blueprint) -> Self {
-    create(blueprint)
+    let query = blueprint.query();
+    let mutation = blueprint.mutation();
+    let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+
+    for def in blueprint.definitions.iter() {
+      schema = schema.register(to_type(def));
+    }
+
+    schema
   }
 }

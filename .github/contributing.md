@@ -12,15 +12,16 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 
 ## Setting Up the Development Environment
 
-1. **Install Rust:** If you haven't already, install Rust using [rustup](https://rustup.rs/).
-2. **Build the Application:** Navigate to the project directory and build the application.
+1. **Install Rust:** If you haven't already, install Rust using [rustup](https://rustup.rs/). Install the `nightly` toolchain as well, as it's used for linting.
+2. **Install Prettier:** Install [Prettier](https://prettier.io/) too as this is also used for linting.
+3. **Build the Application:** Navigate to the project directory and build the application.
 
    ```bash
    cd tailcall
    cargo build
    ```
 
-3. **Start the Server:** To start the server, use the following command:
+4. **Start the Server:** To start the server, use the following command:
    ```bash
    cargo run -- start ./examples/jsonplaceholder.graphql
    ```
@@ -45,6 +46,29 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    ```bash
    cargo test
    ```
+
+## Benchmarks Comparison
+
+### Criterion Benchmarks
+
+1. **Important:** Make sure all the commits are done.
+2. **Install packages:** Install cargo-criterion rust-script.
+   ```bash
+   cargo install cargo-criterion rust-script
+   ```
+3. **Comparing Benchmarks:**
+   You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
+
+   ```bash
+   git checkout main
+   cargo criterion --message-format=json > main.json
+   git checkout -
+   cargo criterion --message-format=json > feature.json
+   ./scripts/criterion_compare.rs base.json main.json table
+
+   ```
+
+4. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/benchmark.md" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
 
 ## Documentation
 

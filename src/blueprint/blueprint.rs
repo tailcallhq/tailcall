@@ -1,13 +1,15 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
+use std::num::NonZeroU64;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
-use async_graphql::*;
+use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
 use super::GlobalTimeout;
-use crate::blueprint::server::Server;
+use crate::blueprint::from_config::Server;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
 
@@ -42,7 +44,7 @@ impl Type {
       Type::ListType { of_type, .. } => of_type.name(),
     }
   }
-
+  /// checks if the type is nullable
   pub fn is_nullable(&self) -> bool {
     !match self {
       Type::NamedType { non_null, .. } => *non_null,
@@ -125,6 +127,12 @@ pub struct InputFieldDefinition {
   pub description: Option<String>,
 }
 
+#[derive(Clone, Debug)]
+pub struct Cache {
+  pub max_age: NonZeroU64,
+  pub hasher: DefaultHasher,
+}
+
 #[derive(Clone, Debug, Setters, Default)]
 pub struct FieldDefinition {
   pub name: String,
@@ -133,6 +141,7 @@ pub struct FieldDefinition {
   pub resolver: Option<Expression>,
   pub directives: Vec<Directive>,
   pub description: Option<String>,
+  pub cache: Option<Cache>,
 }
 
 impl FieldDefinition {
@@ -174,6 +183,22 @@ pub struct UnionTypeDefinition {
   pub description: Option<String>,
   pub types: BTreeSet<String>,
 }
+
+///
+/// Controls the kind of blueprint that is generated.
+///
+#[derive(Copy, Clone, Debug, Default)]
+pub struct SchemaModifiers {
+  /// If true, the generated schema will not have any resolvers.
+  pub no_resolver: bool,
+}
+
+impl SchemaModifiers {
+  pub fn no_resolver() -> Self {
+    Self { no_resolver: true }
+  }
+}
+
 impl Blueprint {
   pub fn query(&self) -> String {
     self.schema.query.clone()
@@ -183,9 +208,38 @@ impl Blueprint {
     self.schema.mutation.clone()
   }
 
+  fn drop_resolvers(mut self) -> Self {
+    for def in self.definitions.iter_mut() {
+      if let Definition::ObjectTypeDefinition(def) = def {
+        for field in def.fields.iter_mut() {
+          field.resolver = None;
+        }
+      }
+    }
+
+    self
+  }
+
+  ///
+  /// This function is used to generate a schema from a blueprint.
+  ///
   pub fn to_schema(&self) -> Schema {
-    let server = &self.server;
-    let mut schema = SchemaBuilder::from(self);
+    self.to_schema_with(SchemaModifiers::default())
+  }
+
+  ///
+  /// This function is used to generate a schema from a blueprint.
+  /// The generated schema can be modified using the SchemaModifiers.
+  ///
+  pub fn to_schema_with(&self, schema_modifiers: SchemaModifiers) -> Schema {
+    let blueprint = if schema_modifiers.no_resolver {
+      self.clone().drop_resolvers()
+    } else {
+      self.clone()
+    };
+
+    let server = &blueprint.server;
+    let mut schema = SchemaBuilder::from(&blueprint);
 
     if server.enable_apollo_tracing {
       schema = schema.extension(ApolloTracing);
@@ -197,12 +251,13 @@ impl Blueprint {
         .extension(GlobalTimeout);
     }
 
-    if server.get_enable_query_validation() {
+    if server.get_enable_query_validation() || schema_modifiers.no_resolver {
       schema = schema.validation_mode(ValidationMode::Strict);
     } else {
       schema = schema.validation_mode(ValidationMode::Fast);
     }
-    if !server.get_enable_introspection() {
+
+    if !server.get_enable_introspection() || schema_modifiers.no_resolver {
       schema = schema.disable_introspection();
     }
 

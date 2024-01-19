@@ -45,6 +45,10 @@ impl<A, E> Valid<A, E> {
     Valid(Ok(a))
   }
 
+  pub fn is_succeed(&self) -> bool {
+    self.0.is_ok()
+  }
+
   pub fn and<A1>(self, other: Valid<A1, E>) -> Valid<A1, E> {
     self.zip(other).map(|(_, a1)| a1)
   }
@@ -71,10 +75,10 @@ impl<A, E> Valid<A, E> {
     Valid(valid)
   }
 
-  pub fn fold<A1>(self, ok: impl Fn(A) -> Valid<A1, E>, err: Valid<A1, E>) -> Valid<A1, E> {
+  pub fn fold<A1>(self, ok: impl FnOnce(A) -> Valid<A1, E>, err: impl FnOnce() -> Valid<A1, E>) -> Valid<A1, E> {
     match self.0 {
       Ok(a) => ok(a),
-      Err(e) => Valid::<A1, E>(Err(e)).and(err),
+      Err(e) => Valid::<A1, E>(Err(e)).and(err()),
     }
   }
 
@@ -146,6 +150,16 @@ impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
       Ok(a) => Valid::succeed(a),
       Err(e) => Valid::from_validation_err(e),
     }
+  }
+}
+
+impl<A, E> Clone for Valid<A, E>
+where
+  A: Clone,
+  E: Clone,
+{
+  fn clone(&self) -> Self {
+    Self(self.0.clone())
   }
 }
 
@@ -231,14 +245,14 @@ mod tests {
   #[test]
   fn test_validate_fold_err() {
     let valid = Valid::<(), i32>::fail(1);
-    let result = valid.fold(|_| Valid::<(), i32>::fail(2), Valid::<(), i32>::fail(3));
+    let result = valid.fold(|_| Valid::<(), i32>::fail(2), || Valid::<(), i32>::fail(3));
     assert_eq!(result, Valid::from_vec_cause(vec![Cause::new(1), Cause::new(3)]));
   }
 
   #[test]
   fn test_validate_fold_ok() {
     let valid = Valid::<i32, i32>::succeed(1);
-    let result = valid.fold(Valid::<i32, i32>::fail, Valid::<i32, i32>::fail(2));
+    let result = valid.fold(Valid::<i32, i32>::fail, || Valid::<i32, i32>::fail(2));
     assert_eq!(result, Valid::fail(1));
   }
 

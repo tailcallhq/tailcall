@@ -1,0 +1,23 @@
+schema
+  @server(port: 8000, queryValidation: false)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts?id=11&id=3&foo=1")
+}
+
+type Post {
+  id: Int
+  title: String
+  body: String
+  userId: Int!
+  user: User
+    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], groupBy: ["id"])
+}
+
+type User {
+  id: Int
+  name: String
+}

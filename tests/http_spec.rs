@@ -1,76 +1,135 @@
 extern crate core;
 
-use std::collections::BTreeMap;
-use std::fs;
+use std::collections::{BTreeMap, HashMap};
+use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
+use std::{env, fs, panic};
 
-use anyhow::anyhow;
-use async_graphql_value::ConstValue;
+use anyhow::{anyhow, Context};
 use derive_setters::Setters;
+use futures_util::future::join_all;
+use hyper::body::Bytes;
 use hyper::{Body, Request};
+use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::config::{Config, Source};
-use tailcall::http::{graphql_request, HttpClient, Method, Response, ServerContext};
+use tailcall::cli::{init_file, init_http};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, Source, Upstream};
+use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
 static INIT: Once = Once::new();
 
-#[derive(Deserialize, Clone, Debug)]
-pub enum Annotation {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+enum Annotation {
   Skip,
   Only,
   Fail,
 }
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct APIRequest {
+
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct APIRequest {
   #[serde(default)]
   method: Method,
-  pub url: Url,
+  url: Url,
   #[serde(default)]
-  pub headers: BTreeMap<String, String>,
+  headers: BTreeMap<String, String>,
   #[serde(default)]
-  pub body: serde_json::Value,
-}
-#[derive(Deserialize, Clone, Debug)]
-pub struct APIResponse {
-  pub status: u16,
-  #[serde(default)]
-  pub headers: BTreeMap<String, String>,
-  #[serde(default)]
-  pub body: serde_json::Value,
-}
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct UpstreamRequest(pub APIRequest);
-#[derive(Deserialize, Clone, Debug)]
-pub struct UpstreamResponse(APIResponse);
-#[derive(Deserialize, Clone)]
-pub struct DownstreamRequest(pub APIRequest);
-#[derive(Deserialize, Clone)]
-pub struct DownstreamResponse(pub APIResponse);
-#[derive(Deserialize, Clone)]
-pub struct DownstreamAssertion {
-  pub request: DownstreamRequest,
-  pub response: DownstreamResponse,
+  body: serde_json::Value,
 }
 
-#[derive(Default, Deserialize, Clone, Setters)]
-pub struct HttpSpec {
-  pub config: String,
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct APIResponse {
+  #[serde(default = "default_status")]
+  status: u16,
+  #[serde(default)]
+  headers: BTreeMap<String, String>,
+  #[serde(default)]
+  body: serde_json::Value,
+}
+
+pub struct Env {
+  env: HashMap<String, String>,
+}
+
+impl EnvIO for Env {
+  fn get(&self, key: &str) -> Option<String> {
+    self.env.get(key).cloned()
+  }
+}
+
+impl Env {
+  pub fn init(map: HashMap<String, String>) -> Self {
+    Self { env: map }
+  }
+}
+
+fn default_status() -> u16 {
+  200
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+struct UpstreamRequest(APIRequest);
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct UpstreamResponse(APIResponse);
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct DownstreamRequest(APIRequest);
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct DownstreamResponse(APIResponse);
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct DownstreamAssertion {
+  request: DownstreamRequest,
+  response: DownstreamResponse,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+enum ConfigSource {
+  File(String),
+  Inline(Config),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct Mock {
+  request: UpstreamRequest,
+  response: UpstreamResponse,
+}
+
+#[derive(Serialize, Deserialize, Clone, Setters, Debug)]
+#[serde(rename_all = "camelCase")]
+struct HttpSpec {
+  config: ConfigSource,
   #[serde(skip)]
   path: PathBuf,
-  pub name: String,
+  name: String,
+  description: Option<String>,
+
   #[serde(default)]
-  pub description: Option<String>,
-  pub upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
+  mock: Vec<Mock>,
+
   #[serde(default)]
-  pub expected_upstream_requests: Vec<UpstreamRequest>,
-  pub downstream_assertions: Vec<DownstreamAssertion>,
-  pub annotation: Option<Annotation>,
+  env: HashMap<String, String>,
+
+  #[serde(default)]
+  expected_upstream_requests: Vec<UpstreamRequest>,
+  assert: Vec<DownstreamAssertion>,
+
+  // Annotations for the runner
+  runner: Option<Annotation>,
 }
 
 impl HttpSpec {
@@ -86,7 +145,9 @@ impl HttpSpec {
       let source = Source::detect(path.to_str().unwrap_or_default())?;
       if path.is_file() && (source.ext() == "json" || source.ext() == "yml") {
         let contents = fs::read_to_string(&path)?;
-        let spec: HttpSpec = Self::from_source(source, contents)?;
+        let spec: HttpSpec =
+          Self::from_source(source, contents).map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+
         files.push(spec.path(path));
       }
     }
@@ -104,7 +165,7 @@ impl HttpSpec {
     let mut filtered_specs = Vec::new();
 
     for spec in specs {
-      match spec.annotation {
+      match spec.runner {
         Some(Annotation::Skip) => log::warn!("{} {} ... skipped", spec.name, spec.path.display()),
         Some(Annotation::Only) => only_specs.push(spec),
         Some(Annotation::Fail) => filtered_specs.push(spec),
@@ -126,65 +187,119 @@ impl HttpSpec {
         .init();
     });
 
-    let spec = match source {
+    let spec: HttpSpec = match source {
       Source::Json => anyhow::Ok(serde_json::from_str(&contents)?),
       Source::Yml => anyhow::Ok(serde_yaml::from_str(&contents)?),
       _ => Err(anyhow!("only json and yaml are supported")),
-    };
-    anyhow::Ok(spec?)
+    }?;
+
+    anyhow::Ok(spec)
   }
-  async fn setup(&self) -> Arc<ServerContext> {
-    let config = Config::from_file_paths([self.config.clone()].iter())
-      .await
-      .ok()
-      .unwrap();
-    let blueprint = Blueprint::try_from(&config).unwrap();
-    let client = Arc::new(MockHttpClient {
-      upstream_mocks: self.upstream_mocks.to_vec(),
-      expected_upstream_requests: self.expected_upstream_requests.to_vec(),
-    });
-    let server_context = ServerContext::new(blueprint, client);
-    Arc::new(server_context)
+
+  async fn server_context(&self) -> anyhow::Result<Arc<AppContext<impl HttpIO, impl EnvIO>>> {
+    let http_client = init_http(&Upstream::default());
+    let config = match self.config.clone() {
+      ConfigSource::File(file) => {
+        let reader = ConfigReader::init(init_file(), http_client);
+        reader.read(&[file]).await?
+      }
+      ConfigSource::Inline(config) => config,
+    };
+
+    for (k, v) in &self.env {
+      env::set_var(k, v.clone());
+    }
+
+    let blueprint = Blueprint::try_from(&config)?;
+    let client = Arc::new(MockHttpClient { spec: self.clone() });
+    let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
+    let env = Arc::new(Env::init(self.env.clone()));
+    let server_context = AppContext::new(blueprint, client, http2_client, env.clone());
+    Ok(Arc::new(server_context))
   }
 }
 
 #[derive(Clone)]
 struct MockHttpClient {
-  upstream_mocks: Vec<(UpstreamRequest, UpstreamResponse)>,
-  expected_upstream_requests: Vec<UpstreamRequest>,
+  spec: HttpSpec,
 }
+
+fn string_to_bytes(input: &str) -> Vec<u8> {
+  let mut bytes = Vec::new();
+  let mut chars = input.chars().peekable();
+
+  while let Some(c) = chars.next() {
+    match c {
+      '\\' => match chars.next() {
+        Some('0') => bytes.push(0),
+        Some('n') => bytes.push(b'\n'),
+        Some('t') => bytes.push(b'\t'),
+        Some('r') => bytes.push(b'\r'),
+        Some('\\') => bytes.push(b'\\'),
+        Some('\"') => bytes.push(b'\"'),
+        Some('x') => {
+          let mut hex = chars.next().unwrap().to_string();
+          hex.push(chars.next().unwrap());
+          let byte = u8::from_str_radix(&hex, 16).unwrap();
+          bytes.push(byte);
+        }
+        _ => panic!("Unsupported escape sequence"),
+      },
+      _ => bytes.push(c as u8),
+    }
+  }
+
+  bytes
+}
+
 #[async_trait::async_trait]
-impl HttpClient for MockHttpClient {
-  async fn execute(&self, req: reqwest::Request) -> Result<Response, anyhow::Error> {
-    // Clone the mocks to allow iteration without borrowing issues.
-    let mocks = self.upstream_mocks.clone();
+impl HttpIO for MockHttpClient {
+  async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+    let mocks = self.spec.mock.clone();
+
+    // Determine if the request is a GRPC request based on PORT
+    let is_grpc = req.url().as_str().contains("50051");
 
     // Try to find a matching mock for the incoming request.
     let mock = mocks
       .iter()
-      .find(|(mock_req, _)| {
-        let method_match = req.method().as_str()
-          == serde_json::to_string(&mock_req.0.method.clone())
-            .expect("provided method is not valid")
-            .as_str()
-            .trim_matches('"');
+      .find(|Mock { request: mock_req, response: _ }| {
+        let method_match = req.method() == mock_req.0.method.clone().to_hyper();
         let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-        method_match && url_match
+        let req_body = match req.body() {
+          Some(body) => {
+            if let Some(bytes) = body.as_bytes() {
+              if let Ok(body_str) = std::str::from_utf8(bytes) {
+                Value::from(body_str)
+              } else {
+                Value::Null
+              }
+            } else {
+              Value::Null
+            }
+          }
+          None => Value::Null,
+        };
+        let body_match = req_body == mock_req.0.body;
+        method_match && url_match && (body_match || is_grpc)
       })
-      .expect("Mock not found");
-    // Assert upstream request
-    let upstream_request = mock.0.clone();
-    assert!(
-      self.expected_upstream_requests.contains(&upstream_request),
-      "Unexpected upstream request: {:?}",
-      upstream_request
-    );
+      .ok_or(anyhow!(
+        "No mock found for request: {:?} {} in {}",
+        req.method(),
+        req.url(),
+        format!("{}", self.spec.path.to_str().unwrap())
+      ))?;
 
     // Clone the response from the mock to avoid borrowing issues.
-    let mock_response = mock.1.clone();
+    let mock_response = mock.response.clone();
 
     // Build the response with the status code from the mock.
     let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
+
+    if status_code.is_client_error() || status_code.is_server_error() {
+      return Err(anyhow::format_err!("Status code error"));
+    }
+
     let mut response = Response { status: status_code, ..Default::default() };
 
     // Insert headers from the mock into the response.
@@ -194,55 +309,118 @@ impl HttpClient for MockHttpClient {
       response.headers.insert(header_name, header_value);
     }
 
-    // Set the body of the response.
-    response.body = ConstValue::try_from(serde_json::from_value::<Value>(mock_response.0.body)?)?;
-
-    Ok(response)
+    // Special Handling for GRPC
+    if is_grpc {
+      let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
+      response.body = Bytes::from_iter(body);
+      Ok(response)
+    } else {
+      let body = serde_json::to_vec(&mock_response.0.body)?;
+      response.body = Bytes::from_iter(body);
+      Ok(response)
+    }
   }
 }
 
 async fn assert_downstream(spec: HttpSpec) {
-  for downstream_assertion in spec.downstream_assertions.iter() {
-    if let Some(Annotation::Fail) = spec.annotation {
-      let response = run(spec.clone(), &downstream_assertion).await.unwrap();
+  for assertion in spec.assert.iter() {
+    if let Some(Annotation::Fail) = spec.runner {
+      let response = run(spec.clone(), &assertion).await.unwrap();
       let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-      assert_ne!(
-        body,
-        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      )
+      let result = panic::catch_unwind(AssertUnwindSafe(|| {
+        assert_eq!(
+          body,
+          serde_json::to_string(&assertion.response.0.body).unwrap(),
+          "File: {} {}",
+          spec.name,
+          spec.path.display()
+        );
+      }));
+
+      match result {
+        Ok(_) => {
+          panic!(
+            "Expected spec: {} {} to fail but it passed",
+            spec.name,
+            spec.path.display()
+          );
+        }
+        Err(_) => {
+          log::info!("{} {} ... failed (expected)", spec.name, spec.path.display());
+        }
+      }
     } else {
-      let response = run(spec.clone(), &downstream_assertion).await.unwrap();
-      let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+      let response = run(spec.clone(), &assertion)
+        .await
+        .context(spec.path.to_str().unwrap().to_string())
+        .unwrap();
+      let actual_status = response.status().clone().as_u16();
+      let actual_headers = response.headers().clone();
+      let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+
+      // Assert Status
       assert_eq!(
-        body,
-        serde_json::to_string(&downstream_assertion.response.0.body).unwrap()
-      )
+        actual_status,
+        assertion.response.0.status,
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
+      );
+
+      // Assert Body
+      assert_eq!(
+        to_json_pretty(actual_body).unwrap(),
+        serde_json::to_string_pretty(&assertion.response.0.body).unwrap(),
+        "File: {} {}",
+        spec.name,
+        spec.path.display()
+      );
+
+      // Assert Headers
+      for (key, value) in assertion.response.0.headers.iter() {
+        match actual_headers.get(key) {
+          None => panic!("Expected header {} to be present", key),
+          Some(actual_value) => assert_eq!(actual_value, value, "File: {} {}", spec.name, spec.path.display()),
+        }
+      }
     }
   }
   log::info!("{} {} ... ok", spec.name, spec.path.display());
 }
+
+fn to_json_pretty(bytes: Bytes) -> anyhow::Result<String> {
+  let body_str = String::from_utf8(bytes.to_vec())?;
+  let json: Value = serde_json::from_str(&body_str)?;
+  Ok(serde_json::to_string_pretty(&json)?)
+}
+
 #[tokio::test]
-async fn test_body() -> std::io::Result<()> {
-  let spec = HttpSpec::cargo_read("tests/http").unwrap();
+async fn http_spec_e2e() -> anyhow::Result<()> {
+  let spec = HttpSpec::cargo_read("tests/http")?;
   let spec = HttpSpec::filter_specs(spec);
-  let tasks: Vec<_> = spec
-    .into_iter()
-    .map(|spec| tokio::spawn(async move { assert_downstream(spec).await }))
-    .collect();
-  for task in tasks {
-    task.await?;
-  }
+  let tasks: Vec<_> = spec.into_iter().map(assert_downstream).collect();
+  join_all(tasks).await;
   Ok(())
 }
 
 async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> anyhow::Result<hyper::Response<Body>> {
   let query_string = serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
   let method = downstream_assertion.request.0.method.clone();
+  let headers = downstream_assertion.request.0.headers.clone();
   let url = downstream_assertion.request.0.url.clone();
-  let state = spec.setup().await;
-  let req = Request::builder()
-    .method(method)
-    .uri(url.as_str())
-    .body(Body::from(query_string));
-  graphql_request(req?, state.as_ref()).await
+  let server_context = spec.server_context().await?;
+  let req = headers
+    .into_iter()
+    .fold(
+      Request::builder().method(method.to_hyper()).uri(url.as_str()),
+      |acc, (key, value)| acc.header(key, value),
+    )
+    .body(Body::from(query_string))?;
+
+  // TODO: reuse logic from server.rs to select the correct handler
+  if server_context.blueprint.server.enable_batch_requests {
+    handle_request::<GraphQLBatchRequest, _, _>(req, server_context).await
+  } else {
+    handle_request::<GraphQLRequest, _, _>(req, server_context).await
+  }
 }

@@ -1,0 +1,34 @@
+schema
+  @server(
+    port: 3000
+    graphiql: true
+    queryValidation: false
+    hostname: "0.0.0.0"
+    version: HTTP2
+    cert: "./examples/example.crt"
+    key: "./examples/example.key"
+  )
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @http(path: "/users/{{value.userId}}")
+}

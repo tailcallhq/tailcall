@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(baseURL: "https://jsonplaceholder.typicode.com", responseHeaders: [{key: "a", value: "a \n b"}]) {
+schema @server(responseHeaders: [{key: "a", value: "a \n b"}]) {
   query: Query
 }
 
