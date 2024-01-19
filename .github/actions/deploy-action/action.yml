@@ -1,0 +1,25 @@
+name: 'Deploy to My Infrastructure'
+description: 'This action deploys files to my Cloudflare R2 storage'
+
+inputs:
+  file-path:
+    description: 'Relative path of the file to deploy'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+    - name: Install Wrangler
+      shell: bash
+      run: npm install -g wrangler
+    - run: |
+        echo 'account_id = "${{ secrets.CF_ACCOUNT_ID }}"' > wrangler.toml
+        wrangler r2 object put configs/${{ inputs.file-path }} --file=${{ inputs.file-path }}
+      env:
+        CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        CF_API_EMAIL: ${{ secrets.CF_API_EMAIL }}
+      shell: bash
