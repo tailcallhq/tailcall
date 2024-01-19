@@ -4,7 +4,6 @@
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
 
-use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 

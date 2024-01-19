@@ -10,8 +10,8 @@ type User {
 
 type Query {
   user1: User @const(data: {name: "John"}) @http(path: "/users/1")
-  user2: User @const(data: {name: "John"}) @js(script: "{id: 1, name: 'foo'}")
-  user3: User @http(path: "/users/1") @js(script: "{id: 1, name: 'foo'}")
+  user2: User @const(data: {name: "John"}) @js(inline: "{id: 1, name: 'foo'}")
+  user3: User @http(path: "/users/1") @js(inline: "{id: 1, name: 'foo'}")
 }
 
 #> client-sdl

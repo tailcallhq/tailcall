@@ -7,6 +7,11 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{args.id}}")
+  value_const: String @const(data: "str")
+  value_js: String @js(inline: "'str'")
+  test_js_float: Float @js(inline: "0.1 + 0.2")
+  test_js_string: String @js(inline: "'hello world'")
+  test_js_random: Float @js(inline: "Math.random()")
 }
 
 type User {
@@ -19,7 +24,7 @@ type User {
 }
 
 type Post {
-  id: Int!
+  id: Int! @js(inline: "ctx.id + 500", withContext: true)
   userId: Int!
   title: String!
   body: String!

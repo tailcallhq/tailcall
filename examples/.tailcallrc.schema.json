@@ -989,6 +989,17 @@
           ],
           "description": "Inserts an HTTP resolver for the field."
         },
+        "js": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/JS"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a Javascript resolver for the field."
+        },
         "list": {
           "description": "Flag to indicate the type is a list.",
           "type": "boolean"
@@ -1026,17 +1037,6 @@
         "required": {
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
-        },
-        "script": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/JS"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Inserts a Javascript resolver for the field."
         },
         "type": {
           "description": "Refers to the type of the value the field can be resolved to.",
@@ -1237,12 +1237,15 @@
     },
     "JS": {
       "properties": {
-        "script": {
+        "inline": {
           "type": "string"
+        },
+        "withContext": {
+          "type": "boolean"
         }
       },
       "required": [
-        "script"
+        "inline"
       ],
       "type": "object"
     },

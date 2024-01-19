@@ -14,7 +14,7 @@ mod resolver_context_like;
 pub use concurrent::*;
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
-pub(crate) use expression::*;
+pub use expression::*;
 pub use graphql_operation_context::GraphQLOperationContext;
 pub use io::*;
 pub use lambda::Lambda;

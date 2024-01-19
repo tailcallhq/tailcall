@@ -9,9 +9,10 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
+use crate::javascript::{JsPluginWrapper, JsPluginWrapperInterface};
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, ValidationError};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
   Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
@@ -342,17 +343,21 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
     let mut hasher = DefaultHasher::new();
     object_name.hash(&mut hasher);
 
-    update_args(hasher)
-      .and(update_http().trace(config::Http::trace_name().as_str()))
-      .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-      .and(update_js().trace(config::JS::trace_name().as_str()))
-      .and(update_const_field().trace(config::Const::trace_name().as_str()))
-      .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
-      .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
-      .and(update_modify().trace(config::Modify::trace_name().as_str()))
-      .and(update_nested_resolvers())
-      .and(update_protected())
-      .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+    Valid::from(JsPluginWrapper::try_new().map_err(|e| ValidationError::new(e.to_string()))).and_then(|js_wrapper| {
+      let result = update_args(hasher)
+        .and(update_http().trace(config::Http::trace_name().as_str()))
+        .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
+        .and(update_js(&js_wrapper).trace(config::JS::trace_name().as_str()))
+        .and(update_const_field().trace(config::Const::trace_name().as_str()))
+        .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
+        .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
+        .and(update_modify().trace(config::Modify::trace_name().as_str()))
+        .and(update_nested_resolvers())
+        .and(update_protected())
+        .try_fold(&(config, field, type_of, name), FieldDefinition::default());
+
+      Valid::from(js_wrapper.start().map_err(|e| ValidationError::new(e.to_string()))).and(result)
+    })
   };
 
   // Process fields that are not marked as `omit`

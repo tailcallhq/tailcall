@@ -34,6 +34,7 @@ rustls = { version = "0.22.2", optional = true }
 rustls-pemfile = { version = "1.0.4", optional = true }
 rustls-pki-types = "1.1.0"
 inquire = { version = "0.6.2", optional = true }
+js_executor = { path = "./plugins/js_executor", optional = true }
 
 # dependencies safe for wasm:
 
@@ -94,8 +95,6 @@ mime = "0.3.17"
 getrandom = { version = "0.2.1", features = ["js"] } # required to make some other dependencies wasm friendly
 htpasswd-verify = { version = "0.3.0", git = "https://github.com/twistedfall/htpasswd-verify", rev = "ff14703083cbd639f7d05622b398926f3e718d61" } # fork version that is wasm compatible
 jsonwebtoken = "9.2.0"
-libloading = "0.8.1"
-js_executor_interface = { path = "plugins/js_executor_interface", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["async_tokio"] }
@@ -105,7 +104,7 @@ pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 
 [features]
-unsafe-js = ["dep:js_executor_interface"]
+unsafe-js = ["dep:js_executor"]
 default = [
     "tokio/fs",
     "tokio/rt-multi-thread",
@@ -116,6 +115,7 @@ default = [
     "rustls",
     "rustls-pemfile",
     "inquire",
+    "unsafe-js"
 ]
 
 [profile.release]

@@ -183,7 +183,7 @@ fn config_document(config: &Config) -> ServiceDocument {
 fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective>> {
   let directives = vec![
     field.http.as_ref().map(|d| pos(d.to_directive())),
-    field.script.as_ref().map(|d| pos(d.to_directive())),
+    field.js.as_ref().map(|d| pos(d.to_directive())),
     field.const_field.as_ref().map(|d| pos(d.to_directive())),
     field.modify.as_ref().map(|d| pos(d.to_directive())),
     field.omit.as_ref().map(|d| pos(d.to_directive())),

@@ -3,12 +3,8 @@ name = "js_executor"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["dylib"]
-
 [dependencies]
 async-graphql-value = { workspace = true }
-js_executor_interface = { path = "../js_executor_interface" }
 log = { workspace = true }
 mimalloc = { workspace = true }
 mini-v8 = "0.4.1"

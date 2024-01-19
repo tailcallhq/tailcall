@@ -39,6 +39,35 @@ pub struct RequestContext {
   pub cache: ChronoCache<u64, ConstValue>,
 }
 
+// used for tests and benchmarks
+impl Default for RequestContext {
+  fn default() -> Self {
+    use crate::cli::{init_env, init_http, init_http2_only};
+
+    let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
+    let server = Server::try_from(server).unwrap();
+
+    let h_client = Arc::new(init_http(&upstream));
+    let h2_client = Arc::new(init_http2_only(&upstream.clone()));
+    RequestContext {
+      req_headers: HeaderMap::new(),
+      allowed_headers: HeaderMap::new(),
+      h_client,
+      h2_client,
+      server,
+      upstream,
+      http_data_loaders: Arc::new(vec![]),
+      gql_data_loaders: Arc::new(vec![]),
+      cache: ChronoCache::new(),
+      grpc_data_loaders: Arc::new(vec![]),
+      min_max_age: Arc::new(Mutex::new(None)),
+      cache_public: Arc::new(Mutex::new(None)),
+      env_vars: Arc::new(init_env()),
+      auth_ctx: AuthContext::default(),
+    }
+  }
+}
+
 impl RequestContext {
   fn set_min_max_age_conc(&self, min_max_age: i32) {
     *self.min_max_age.lock().unwrap() = Some(min_max_age);
@@ -121,43 +150,11 @@ impl<Http: HttpIO, Env: EnvIO> From<&AppContext<Http, Env>> for RequestContext {
 
 #[cfg(test)]
 mod test {
-  use std::sync::{Arc, Mutex};
-
   use cache_control::Cachability;
-  use hyper::HeaderMap;
 
-  use crate::auth::context::AuthContext;
   use crate::blueprint::Server;
-  use crate::chrono_cache::ChronoCache;
-  use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
-
-  impl Default for RequestContext {
-    fn default() -> Self {
-      let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
-      let server = Server::try_from(server).unwrap();
-
-      let h_client = Arc::new(init_http(&upstream));
-      let h2_client = Arc::new(init_http2_only(&upstream.clone()));
-      RequestContext {
-        req_headers: HeaderMap::new(),
-        allowed_headers: HeaderMap::new(),
-        h_client,
-        h2_client,
-        server,
-        upstream,
-        http_data_loaders: Arc::new(vec![]),
-        gql_data_loaders: Arc::new(vec![]),
-        cache: ChronoCache::new(),
-        grpc_data_loaders: Arc::new(vec![]),
-        min_max_age: Arc::new(Mutex::new(None)),
-        cache_public: Arc::new(Mutex::new(None)),
-        env_vars: Arc::new(init_env()),
-        auth_ctx: AuthContext::default(),
-      }
-    }
-  }
 
   #[test]
   fn test_update_max_age_less_than_existing() {

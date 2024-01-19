@@ -15,8 +15,6 @@ mod n_plus_one;
 pub mod reader;
 mod server;
 mod source;
-mod js_plugin;
-pub use js_plugin::*;
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()

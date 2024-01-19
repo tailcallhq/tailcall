@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Expr, Server, Upstream, JsPlugin};
+use super::{Expr, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::{is_default, KeyValues};
@@ -33,7 +33,6 @@ pub struct Config {
   ///
   #[serde(default)]
   pub upstream: Upstream,
-  pub js_plugin: Option<JsPlugin>,
 
   ///
   /// Specifies the entry points for query and mutation in the generated GraphQL schema.
@@ -162,9 +161,8 @@ impl Config {
     let unions = merge_unions(self.unions, other.unions.clone());
     let schema = self.schema.merge_right(other.schema.clone());
     let upstream = self.upstream.merge_right(other.upstream.clone());
-    let js_plugin = self.js_plugin.or(other.js_plugin.clone());
 
-    Self { server, upstream, js_plugin, types, schema, unions }
+    Self { server, upstream, types, schema, unions }
   }
 }
 
@@ -370,7 +368,7 @@ pub struct Field {
   /// Inserts a Javascript resolver for the field.
   ///
   #[serde(default, skip_serializing_if = "is_default")]
-  pub script: Option<JS>,
+  pub js: Option<JS>,
 
   ///
   /// Inserts a constant resolver for the field.
@@ -400,7 +398,7 @@ pub struct Field {
 impl Field {
   pub fn has_resolver(&self) -> bool {
     self.http.is_some()
-      || self.script.is_some()
+      || self.js.is_some()
       || self.const_field.is_some()
       || self.graphql.is_some()
       || self.grpc.is_some()
@@ -414,7 +412,7 @@ impl Field {
     if self.graphql.is_some() {
       directives.push(GraphQL::trace_name());
     }
-    if self.script.is_some() {
+    if self.js.is_some() {
       directives.push(JS::trace_name());
     }
     if self.const_field.is_some() {
@@ -461,8 +459,11 @@ impl Field {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct JS {
-  pub script: String,
+  pub inline: String,
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub with_context: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

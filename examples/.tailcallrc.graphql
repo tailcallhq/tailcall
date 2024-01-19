@@ -334,7 +334,11 @@ directive @js(
   """
   A javascript expression that returns a JSON value
   """
-  script: String!
+  inline: String!
+  """
+  Specified if provided javascript call uses `ctx` in the code
+  """
+  withContext: Boolean
 ) on FIELD_DEFINITION
 
 """

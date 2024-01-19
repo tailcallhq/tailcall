@@ -7,7 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{JS, JsPlugin};
+use super::JS;
 use crate::config::{
   self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
 };
@@ -68,9 +68,6 @@ fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
 }
 
-fn js_plugin(schema_definition: &SchemaDefinition) -> Valid<Option<JsPlugin>, String> {
-  process_schema_directives(schema_definition, "js_plugin")
-}
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
   let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);
@@ -243,7 +240,7 @@ where
     .zip(Protected::from_directives(directives.iter()))
     .zip(JS::from_directives(directives.iter()))
     .map(
-      |((((((((http, graphql), cache), grpc), expr), omit), modify), protected), script)| {
+      |((((((((http, graphql), cache), grpc), expr), omit), modify), protected), js)| {
         let const_field = to_const_field(directives);
         config::Field {
           type_of,
@@ -256,7 +253,7 @@ where
           omit,
           http,
           grpc,
-          script,
+          js,
           const_field,
           graphql,
           expr,

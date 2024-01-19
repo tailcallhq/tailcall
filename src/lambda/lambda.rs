@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::expression::{Context, Expression};
 use super::{expression, IO};
-use crate::blueprint::js_plugin::JsPluginExecutor;
+use crate::javascript::JsPluginExecutor;
 use crate::{graphql, grpc, http};
 
 #[derive(Clone)]
@@ -142,7 +142,12 @@ mod tests {
   #[cfg(feature = "unsafe-js")]
   #[tokio::test]
   async fn test_js() {
-    let result = Lambda::from(1.0).to_js("ctx + 100".to_string()).eval().await;
+    use crate::javascript::{JsPluginWrapper, JsPluginWrapperInterface};
+
+    let js_plugin = JsPluginWrapper::try_new().unwrap();
+    let executor = js_plugin.create_executor("ctx + 100".to_string(), true);
+    js_plugin.start().unwrap();
+    let result = Lambda::from(1.0).to_js(executor).eval().await;
     let f64 = result.unwrap().as_f64().unwrap();
     assert_eq!(f64, 101.0)
   }

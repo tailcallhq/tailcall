@@ -16,6 +16,7 @@ use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::javascript::{JsPluginExecutor, JsPluginExecutorInterface};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
 use crate::{grpc, http};
@@ -38,7 +39,7 @@ pub enum IO {
     group_by: Option<GroupBy>,
     dl_id: Option<DataLoaderId>,
   },
-  JS(Box<Expression>, String),
+  JS(Box<Expression>, JsPluginExecutor),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -48,7 +49,7 @@ impl Eval for IO {
   fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
     &'a self,
     ctx: &'a super::EvaluationContext<'a, Ctx>,
-    _conc: &'a super::Concurrent,
+    conc: &'a super::Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
       match self {
@@ -112,27 +113,7 @@ impl Eval for IO {
 
           Ok(res.body)
         }
-        IO::JS(input, script) => {
-          let result;
-          #[cfg(not(feature = "unsafe-js"))]
-          {
-            let _ = script;
-            let _ = input;
-            result = Err(EvaluationError::JSException("JS execution is disabled".to_string()).into());
-          }
-
-          #[cfg(feature = "unsafe-js")]
-          {
-            let input = input.eval(ctx).await?;
-
-            executor
-              .call(input)
-              .await
-              // TODO: error handling?
-              .map_err(|e| EvaluationError::JSException(e.to_string()).into())
-          }
-          result
-        }
+        IO::JS(input, executor) => executor.call(input.eval(ctx, conc).await?).await,
       }
     })
   }

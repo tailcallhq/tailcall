@@ -1,4 +1,5 @@
-use async_graphql_value::{indexmap::IndexMap, ConstValue as GQValue, Name as GQName, Number};
+use async_graphql_value::indexmap::IndexMap;
+use async_graphql_value::{ConstValue as GQValue, Name as GQName, Number};
 use mini_v8::{Error, FromValue, MiniV8, Result, ToValue, Value as JSValue};
 
 #[derive(Debug)]
@@ -20,7 +21,7 @@ impl FromValue for ValueWrapper {
   fn from_value(value: JSValue, _: &MiniV8) -> mini_v8::Result<Self> {
     let ag_value = match value {
       JSValue::Undefined | JSValue::Null => GQValue::Null,
-      JSValue::Boolean(v) => GQValue::Boolean(v).into(),
+      JSValue::Boolean(v) => GQValue::Boolean(v),
       JSValue::Number(v) => GQValue::Number(Number::from_f64(v).ok_or(Error::FromJsConversionError {
         from: "number",
         to: "graphql number as it is out of supported range",
@@ -89,7 +90,8 @@ impl ToValue for ValueWrapper {
 
 #[cfg(test)]
 mod tests {
-  use async_graphql_value::{indexmap::indexmap, ConstValue as GQValue, Name, Number};
+  use async_graphql_value::indexmap::indexmap;
+  use async_graphql_value::{ConstValue as GQValue, Name, Number};
   use mini_v8::{FromValue, MiniV8, ToValue, Value as JSValue};
   use once_cell::sync::Lazy;
 
