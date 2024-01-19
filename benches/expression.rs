@@ -1,8 +1,16 @@
+use std::sync::{Arc, Mutex};
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use hyper::HeaderMap;
 use indexmap::IndexMap;
 use mimalloc::MiMalloc;
 use once_cell::sync::Lazy;
 use serde_json::{Number, Value};
+use tailcall::auth::context::AuthContext;
+use tailcall::blueprint::Server;
+use tailcall::chrono_cache::ChronoCache;
+use tailcall::cli::{init_env, init_http, init_http2_only};
+use tailcall::config::Config;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
 use tokio::runtime::Runtime;
@@ -80,8 +88,33 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
   fn add_error(&'a self, _error: async_graphql::ServerError) {}
 }
 
+// TODO: think about how to share test initialization for tests and benchmarks
+fn create_request_context() -> RequestContext {
+  let Config { server, upstream, .. } = Config::default();
+  let server = Server::try_from(server).unwrap();
+
+  let h_client = Arc::new(init_http(&upstream));
+  let h2_client = Arc::new(init_http2_only(&upstream.clone()));
+  RequestContext {
+    req_headers: HeaderMap::new(),
+    allowed_headers: HeaderMap::new(),
+    h_client,
+    h2_client,
+    server,
+    upstream,
+    http_data_loaders: Arc::new(vec![]),
+    gql_data_loaders: Arc::new(vec![]),
+    cache: ChronoCache::new(),
+    grpc_data_loaders: Arc::new(vec![]),
+    min_max_age: Arc::new(Mutex::new(None)),
+    cache_public: Arc::new(Mutex::new(None)),
+    env_vars: Arc::new(init_env()),
+    auth_ctx: AuthContext::default(),
+  }
+}
+
 fn bench_main(c: &mut Criterion) {
-  let req_ctx = RequestContext::default();
+  let req_ctx = create_request_context();
 
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
 
