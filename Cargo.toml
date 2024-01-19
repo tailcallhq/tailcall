@@ -11,18 +11,18 @@ path = "src/main.rs"
 members = [".", "autogen", "cloudflare", "plugins/*"]
 
 [workspace.dependencies]
-anyhow = "1.0.75"
+anyhow = "1.0.79"
 async-graphql-value = "7.0"
 log = "0.4.20"
 mimalloc = { version = "0.1.39", default-features = false }
-once_cell = "1.18.0"
+once_cell = "1.19.0"
 serde = { version = "1.0", features = ["derive"] }
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 
-mimalloc = { version = "0.1.39", default-features = false, optional = true }
+mimalloc = { workspace = true, optional = true }
 http-cache-reqwest = { version = "0.13.0", features = [
     "manager-moka",
 ], default-features = false, optional = true }
@@ -41,7 +41,7 @@ js_executor = { path = "./plugins/js_executor", optional = true }
 schemars = { version = "0.8.16", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"], default-features = false }
 tokio = { version = "1.35.1", features = ["rt", "time"] }
-anyhow = "1.0.79"
+anyhow = { workspace = true }
 derive_setters = "0.1.6"
 thiserror = "1.0.56"
 serde_json = "1.0"
@@ -59,10 +59,9 @@ async-graphql = { version = "7.0.0", features = [
     "apollo_tracing",
 ] }
 async-graphql-value = { workspace = true }
-base64 = "0.21"
 indexmap = "2.1"
 once_cell = { workspace = true }
-clap = { version = "4.4.8", features = ["derive"] }
+clap = { version = "4.4.18", features = ["derive"] }
 colored = "2"
 regex = "1.10.2"
 reqwest-middleware = "0.2.4"
@@ -71,9 +70,8 @@ serde_path_to_error = "0.1.15"
 cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
-resource = "0.5.0"
 log = { workspace = true }
-env_logger = "0.10.1"
+env_logger = "0.10.2"
 stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
@@ -98,8 +96,7 @@ jsonwebtoken = "9.2.0"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["async_tokio"] }
-httpmock = "0.6"
-mockito = "1.2.0"
+httpmock = "0.7"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 

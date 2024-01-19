@@ -97,6 +97,7 @@ mod tests {
 
   use super::ValueWrapper;
 
+  // TODO: const is actually wrong example to use in real app. But for tests that seems ok
   const V8: Lazy<MiniV8> = Lazy::new(|| MiniV8::new());
 
   #[test]
