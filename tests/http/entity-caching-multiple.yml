@@ -1,0 +1,31 @@
+config: !file tests/http/config/entity-caching-multiple.graphql
+name: Caching
+mock:
+  - request:
+      url: http://example.com/bar1
+    response:
+      body:
+        id: 1
+  - request:
+      url: http://example.com/bar2
+    response:
+      body:
+        id: 2
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { foo { bar1 { id } bar2 { id } bar3 { id } bar4 { id } } }
+    response:
+      body:
+        data:
+          foo:
+            bar1:
+              id: 1
+            bar2:
+              id: 2
+            bar3:
+              id: 1
+            bar4:
+              id: 2

@@ -1,0 +1,18 @@
+schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
+  query: Query
+}
+
+type Query {
+  foo: Foo
+}
+
+type Foo {
+  bar1: Bar @http(path: "/bar1")
+  bar2: Bar @http(path: "/bar2")
+  bar3: Bar @http(path: "/bar1")
+  bar4: Bar @http(path: "/bar2")
+}
+
+type Bar @cache(maxAge: 1000) {
+  id: Int
+}
