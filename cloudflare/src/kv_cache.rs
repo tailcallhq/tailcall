@@ -28,7 +28,7 @@ impl CloudflareChronoCache {
 // TODO: Needs fix
 #[async_trait::async_trait]
 impl Cache<u64, ConstValue> for CloudflareChronoCache {
-  async fn insert<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<ConstValue> {
+  async fn set<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<ConstValue> {
     let kv_store = self.get_kv()?;
     let ttl = ttl.get();
     async_std::task::spawn_local(async move {
