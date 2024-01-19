@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use jsonwebtoken::jwk::JwkSet;
+use surrealdb_jsonwebtoken::jwk::JwkSet;
 use url::Url;
 
 use super::init_context::InitContext;
