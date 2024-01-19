@@ -545,9 +545,15 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+// The @call operator is used to reference a resolver operator (`@http`, `@grpc`, `@graphQL`) from a field on `Query` type.
+///
+/// For instance, if you have a `user(id: Int!): User @http(path: "/users/{{args.id}}")` field on the `Query` type, you can reference it from another field on the `Query` type using the `@call` operator.
+/// So, on `Post.user` you can declare `user: User @call(query: "user", args: {id: "{{value.userId}}"})`, and this will replace the `{{args.id}}` used in the `@http` operator with the value of `userId` from the `Post` type.
 pub struct Call {
   #[serde(default, skip_serializing_if = "is_default")]
+  /// The name of the field on the `Query` type that you want to call. For instance `user`.
   pub query: Option<String>,
+  /// The arguments of the field on the `Query` type that you want to call. For instance `{id: "{{value.userId}}"}`.
   pub args: HashMap<String, String>,
 }
 
