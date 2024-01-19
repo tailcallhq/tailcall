@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::jwks::Jwks;
 use super::jwks_remote::JwksRemote;
-use super::JwtClaim;
+use super::jwt_verify::JwtClaim;
 use crate::auth::error::Error;
 use crate::{blueprint, HttpIO};
 

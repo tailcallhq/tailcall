@@ -80,8 +80,8 @@ mod tests {
   use super::*;
   use crate::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
   use crate::auth::basic::BasicVerifier;
-  use crate::auth::jwt::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
-  use crate::auth::jwt::JwtVerifier;
+  use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
+  use crate::auth::jwt::jwt_verify::JwtVerifier;
   use crate::blueprint;
   use crate::http::Response;
 

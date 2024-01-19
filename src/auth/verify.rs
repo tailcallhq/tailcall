@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::basic::BasicVerifier;
 use super::error::Error;
-use super::jwt::JwtVerifier;
+use super::jwt::jwt_verify::JwtVerifier;
 use crate::http::RequestContext;
 use crate::{blueprint, HttpIO};
 

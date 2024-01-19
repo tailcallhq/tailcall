@@ -5,7 +5,7 @@ use derive_setters::Setters;
 use jsonwebtoken::jwk::{Jwk, JwkSet};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 
-use super::JwtClaim;
+use super::jwt_verify::JwtClaim;
 use crate::auth::error::Error;
 
 #[derive(Setters)]
@@ -66,8 +66,8 @@ impl Jwks {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::auth::jwt::tests::{JWK_SET, JWT_VALID_TOKEN_NO_KID, JWT_VALID_TOKEN_WITH_KID};
-  use crate::auth::jwt::OneOrMany;
+  use crate::auth::jwt::jwt_verify::tests::{JWK_SET, JWT_VALID_TOKEN_NO_KID, JWT_VALID_TOKEN_WITH_KID};
+  use crate::auth::jwt::jwt_verify::OneOrMany;
 
   #[test]
   fn test_decode_required_kid() {

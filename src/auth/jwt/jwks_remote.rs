@@ -8,7 +8,7 @@ use reqwest::Request;
 use url::Url;
 
 use super::jwks::Jwks;
-use super::JwtClaim;
+use super::jwt_verify::JwtClaim;
 use crate::auth::error::Error;
 use crate::HttpIO;
 
