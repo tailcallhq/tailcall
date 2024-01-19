@@ -39,3 +39,16 @@ assert:
             - id: 7
               foo:
                 id: 8
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: query { bars { id } }
+    response:
+      body:
+        data:
+          bars:
+            - id: 1
+            - id: 3
+            - id: 5
+            - id: 7
