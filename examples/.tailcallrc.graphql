@@ -465,7 +465,7 @@ input Batch {
 }
 
 input AuthBasic {
-  data: String
+  htpasswd: String
 }
 
 input AuthJwksRemote {

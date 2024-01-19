@@ -13,7 +13,7 @@ schema
       }
     ]
     auth: [
-      {id: "basic-1", basic: {data: "{{vars.BASIC_AUTH}}"}}
+      {id: "basic-1", basic: {htpasswd: "{{vars.BASIC_AUTH}}"}}
       {
         id: "jwt-1"
         jwt: {

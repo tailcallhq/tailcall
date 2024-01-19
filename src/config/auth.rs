@@ -20,7 +20,7 @@ mod default {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum BasicProvider {
-  Data(String),
+  Htpasswd(String),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, schemars::JsonSchema)]
@@ -56,6 +56,7 @@ pub enum AuthProvider {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct AuthEntry {
+  // FIXME: should be optional
   pub id: String,
   #[serde(flatten)]
   pub provider: AuthProvider,

@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server(auth: [{basic: {data: "{{env.BASIC_AUTH}}"}, id: "basic"}, {id: "jwt", jwt: {jwks: {data: "{{vars.JWKS}}"}}}], vars: [{key: "JWKS", value: "{\"keys\": []}"}]) @upstream {
+schema @server(auth: [{basic: {htpasswd: "{{env.BASIC_AUTH}}"}, id: "basic"}, {id: "jwt", jwt: {jwks: {data: "{{vars.JWKS}}"}}}], vars: [{key: "JWKS", value: "{\"keys\": []}"}]) @upstream {
   query: Query
 }
 

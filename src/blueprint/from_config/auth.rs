@@ -61,7 +61,7 @@ impl Auth {
 }
 fn to_basic(init_context: &InitContext, options: config::BasicProvider) -> Valid<BasicProvider, String> {
   match options {
-    config::BasicProvider::Data(data) => {
+    config::BasicProvider::Htpasswd(data) => {
       Valid::from(Mustache::parse(&data).map_err(|e| ValidationError::new(e.to_string())))
         .map(|tmpl| {
           let htpasswd = tmpl.render(init_context);
