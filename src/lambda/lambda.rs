@@ -145,10 +145,16 @@ mod tests {
     use crate::javascript::{JsPluginWrapper, JsPluginWrapperInterface};
 
     let js_plugin = JsPluginWrapper::try_new().unwrap();
-    let executor = js_plugin.create_executor("ctx + 100".to_string(), true);
+    let executor_with_input = js_plugin.create_executor("ctx + 100".to_string(), true);
+    let executor_no_input = js_plugin.create_executor("0.5 * 3".to_string(), false);
     js_plugin.start().unwrap();
-    let result = Lambda::from(1.0).to_js(executor).eval().await;
-    let f64 = result.unwrap().as_f64().unwrap();
-    assert_eq!(f64, 101.0)
+
+    let result = Lambda::from(1.0).to_js(executor_with_input).eval().await;
+    let result = result.unwrap().as_f64().unwrap();
+    assert_eq!(result, 101.0);
+
+    let result = Lambda::from(1.0).to_js(executor_no_input).eval().await;
+    let result = result.unwrap().as_f64().unwrap();
+    assert_eq!(result, 1.5);
   }
 }
