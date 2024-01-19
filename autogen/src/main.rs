@@ -6,12 +6,11 @@ use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
+use schemars::schema::{InstanceType, RootSchema, Schema, SchemaObject, SingleOrVec};
 use schemars::JsonSchema;
-use schemars::schema::{RootSchema, SchemaObject, Schema, SingleOrVec, InstanceType};
 use serde_json::{json, Value};
 use tailcall::cli::init_file;
-use tailcall::config;
-use tailcall::FileIO;
+use tailcall::{config, FileIO};
 
 static JSON_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.schema.json";
 static GRAPHQL_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.graphql";
@@ -94,7 +93,7 @@ fn get_file_path() -> PathBuf {
 
 async fn get_updated_json() -> Result<Value> {
   let schema: RootSchema = schemars::schema_for!(config::Server);
-  println!("{schema:#?}");
+  // println!("{schema:#?}");
   let schema = json!(schema);
   Ok(schema)
 }
@@ -108,46 +107,61 @@ fn write_description(mut writer: impl Write, description: Option<&String>) -> st
   Ok(())
 }
 
-fn write_type(mut writer: impl Write, name: String, schema: SchemaObject, _defs: &BTreeMap<String, Schema>) -> std::io::Result<()> {
+fn write_type(
+  mut writer: impl Write,
+  name: String,
+  schema: SchemaObject,
+  _defs: &BTreeMap<String, Schema>,
+) -> std::io::Result<()> {
   write!(writer, "{name}: ")?;
   match schema.instance_type {
-    Some(SingleOrVec::Single(typ)) if matches!(*typ, InstanceType::Null
-      |InstanceType::Boolean
-      |InstanceType::Number
-      |InstanceType::String
-      |InstanceType::Integer) => writeln!(writer, "{typ:?}!"),
-    Some(SingleOrVec::Vec(typ)) if matches!(typ.first().unwrap(), InstanceType::Null
-      |InstanceType::Boolean
-      |InstanceType::Number
-      |InstanceType::String
-      |InstanceType::Integer) => writeln!(writer, "{:?}", typ.first().unwrap()),
+    Some(SingleOrVec::Single(typ))
+      if matches!(
+        *typ,
+        InstanceType::Null
+          | InstanceType::Boolean
+          | InstanceType::Number
+          | InstanceType::String
+          | InstanceType::Integer
+      ) =>
+    {
+      writeln!(writer, "{typ:?}!")
+    }
+    Some(SingleOrVec::Vec(typ))
+      if matches!(
+        typ.first().unwrap(),
+        InstanceType::Null
+          | InstanceType::Boolean
+          | InstanceType::Number
+          | InstanceType::String
+          | InstanceType::Integer
+      ) =>
+    {
+      writeln!(writer, "{:?}", typ.first().unwrap())
+    }
     _ => {
       if let Some(schema) = schema.array.clone().and_then(|arr| {
         Some(match arr.items? {
-          SingleOrVec::Single(typ) => {
-            typ.into_object()
-          },
-          SingleOrVec::Vec(typ) => {
-            typ.into_iter().next()?.into_object()
-          }
+          SingleOrVec::Single(typ) => typ.into_object(),
+          SingleOrVec::Vec(typ) => typ.into_iter().next()?.into_object(),
         })
       }) {
         if let Some(it) = schema.instance_type.clone() {
           let typ = match it {
             SingleOrVec::Single(typ) => *typ,
-            SingleOrVec::Vec(typ) => typ.into_iter().next().unwrap()
+            SingleOrVec::Vec(typ) => typ.into_iter().next().unwrap(),
           };
 
           match typ {
-            InstanceType::Array|InstanceType::Object => {
+            InstanceType::Array | InstanceType::Object => {
               if let Some(name) = schema.reference.clone() {
                 let nm = name.split("/").last().unwrap();
                 writeln!(writer, "[{nm}]")
               } else {
                 writeln!(writer, "JSON")
               }
-            },
-            x => writeln!(writer, "[{x:?}]")
+            }
+            x => writeln!(writer, "[{x:?}]"),
           }
         } else if let Some(name) = schema.reference.clone() {
           let nm = name.split("/").last().unwrap();
@@ -166,51 +180,51 @@ fn write_type(mut writer: impl Write, name: String, schema: SchemaObject, _defs:
           list
         } else {
           writeln!(writer, "JSON")?;
-          return Ok(())
+          return Ok(());
         };
         let first = list.first().unwrap();
         let name = match first {
-          Schema::Object(obj) => {
-            obj.reference.as_ref().unwrap().split("/").last().unwrap()
-          }
-          _ => panic!()
+          Schema::Object(obj) => obj.reference.as_ref().unwrap().split("/").last().unwrap(),
+          _ => panic!(),
         };
         writeln!(writer, "{name}")
       } else if let Some(name) = schema.reference {
-        let nm = name
-          .split("/")
-          .last()
-          .unwrap();
-        
+        let nm = name.split("/").last().unwrap();
+
         writeln!(writer, "{nm}")
       } else {
-        println!("{name}: {schema:?}");
+        // println!("{name}: {schema:?}");
         writeln!(writer, "JSON")
       }
     }
   }
 }
 
-fn write_input_type(mut writer: impl Write, name: String, typ: SchemaObject, defs: &BTreeMap<String, Schema>) -> std::io::Result<()> {
-  println!("InputType {name}");
+fn write_input_type(
+  mut writer: impl Write,
+  name: String,
+  typ: SchemaObject,
+  defs: &BTreeMap<String, Schema>,
+) -> std::io::Result<()> {
+  // println!("InputType {name}");
   match name.as_str() {
     "Const" | "Arg" => return Ok(()),
     _ => {}
   }
 
-  let description = typ
-    .metadata
-    .as_ref()
-    .and_then(|metadata| metadata.description.as_ref());
+  let description = typ.metadata.as_ref().and_then(|metadata| metadata.description.as_ref());
   write_description(&mut writer, description)?;
   if let Some(obj) = typ.object {
     if obj.properties.is_empty() {
-      return Ok(())
+      return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
     for (name, property) in obj.properties.into_iter() {
       let property = property.into_object();
-      let description = property.metadata.as_ref().and_then(|metadata| metadata.description.as_ref());
+      let description = property
+        .metadata
+        .as_ref()
+        .and_then(|metadata| metadata.description.as_ref());
       write_description(&mut writer, description)?;
       write_type(&mut writer, name, property, defs)?;
     }
@@ -224,23 +238,26 @@ fn write_input_type(mut writer: impl Write, name: String, typ: SchemaObject, def
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
     if list.is_empty() {
-      return Ok(())
+      return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
     for property in list {
       let property = property.clone().into_object();
-      let description = property.metadata.as_ref().and_then(|metadata| metadata.description.as_ref());
+      let description = property
+        .metadata
+        .as_ref()
+        .and_then(|metadata| metadata.description.as_ref());
       write_description(&mut writer, description)?;
       if let Some(obj) = property.object {
         for (name, schema) in obj.properties {
           write_type(&mut writer, name, schema.into_object(), defs)?;
         }
       }
-    } 
+    }
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
     if list.is_empty() {
-      return Ok(())
+      return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
     for property in list {
@@ -252,12 +269,17 @@ fn write_input_type(mut writer: impl Write, name: String, typ: SchemaObject, def
     }
     writeln!(writer, "}}")?;
   }
-  
+
   Ok(())
 }
 
-fn write_property(mut writer: impl Write, name: String, property: Schema, defs: &BTreeMap<String, Schema>) -> std::io::Result<()> {
-  println!("Property: name = {name}");
+fn write_property(
+  mut writer: impl Write,
+  name: String,
+  property: Schema,
+  defs: &BTreeMap<String, Schema>,
+) -> std::io::Result<()> {
+  // println!("Property: name = {name}");
   let property = property.into_object();
   let description = property
     .metadata
@@ -268,40 +290,46 @@ fn write_property(mut writer: impl Write, name: String, property: Schema, defs: 
   Ok(())
 }
 
-fn write_schema(mut writer: impl Write, mut name: String, schema: SchemaObject, defs: &BTreeMap<String, Schema>, on: &str) -> std::io::Result<()> {
-    println!("{name}: {:?}", ());
-    let description = schema
-      .metadata
-      .as_ref()
-      .and_then(|metadata| metadata.description.as_ref());
-    write_description(&mut writer, description)?;
-    unsafe {
-      name.as_bytes_mut().get_mut(0).map(|ch| {
-        let lower = (*ch as char).to_ascii_lowercase();
-        *ch = lower as u8;
-      });
-    }
-    write!(writer, "directive @{}", name)?;
-    if let Some(properties) = schema.object.map(|object| object.properties) {
-      let mut properties_iter = properties.into_iter();
-      
-      let mut close_param = false;
-      if let Some((name, property)) = properties_iter.next() {
-        writeln!(writer, " (")?;
-        write_property(&mut writer, name, property, defs)?;
-        close_param = true;
-      }
-      for (name, property) in properties_iter {
-        write_property(&mut writer, name, property, defs)?;
-      }
-      if close_param {
-        write!(writer, ")")?;
-      }
-    }
-    writeln!(writer, " on {on}")?;
-
-    Ok(())
+fn write_schema(
+  mut writer: impl Write,
+  mut name: String,
+  schema: SchemaObject,
+  defs: &BTreeMap<String, Schema>,
+  on: &str,
+) -> std::io::Result<()> {
+  // println!("{name}: {:?}", ());
+  let description = schema
+    .metadata
+    .as_ref()
+    .and_then(|metadata| metadata.description.as_ref());
+  write_description(&mut writer, description)?;
+  unsafe {
+    name.as_bytes_mut().get_mut(0).map(|ch| {
+      let lower = (*ch as char).to_ascii_lowercase();
+      *ch = lower as u8;
+    });
   }
+  write!(writer, "directive @{}", name)?;
+  if let Some(properties) = schema.object.map(|object| object.properties) {
+    let mut properties_iter = properties.into_iter();
+
+    let mut close_param = false;
+    if let Some((name, property)) = properties_iter.next() {
+      writeln!(writer, " (")?;
+      write_property(&mut writer, name, property, defs)?;
+      close_param = true;
+    }
+    for (name, property) in properties_iter {
+      write_property(&mut writer, name, property, defs)?;
+    }
+    if close_param {
+      write!(writer, ")")?;
+    }
+  }
+  writeln!(writer, " on {on}")?;
+
+  Ok(())
+}
 
 fn write_schema_for<T: JsonSchema>(mut writer: impl Write, name: &str, on: &str) -> Result<()> {
   let schema: RootSchema = schemars::schema_for!(T);
@@ -315,7 +343,10 @@ fn write_schema_for_field(mut writer: impl Write) -> Result<()> {
   let schema = schemars::schema_for!(config::Field);
   // println!("{schema:#?}");
   let defs: BTreeMap<String, Schema> = schema.definitions;
-  let defs1: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.to_lowercase().clone(), v.clone())).collect();
+  let defs1: BTreeMap<String, Schema> = defs
+    .iter()
+    .map(|(k, v)| (k.to_lowercase().clone(), v.clone()))
+    .collect();
   for (name, _) in schema.schema.object.unwrap().properties {
     if let Some(schema) = defs1.get(name.as_str()).cloned() {
       let schema = schema.into_object();
