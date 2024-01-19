@@ -12,6 +12,7 @@ pub struct BasicVerifier {
 }
 
 impl Verify for BasicVerifier {
+  /// Verify the request context against the basic auth provider.
   async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
     let header = req_ctx.req_headers.typed_get::<Authorization<Basic>>();
 
