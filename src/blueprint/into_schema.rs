@@ -70,24 +70,12 @@ fn write_entity_cache<'a>(ctx: &'a EvaluationContext<'a, ResolverContext<'a>>, t
       ctx.req_ctx.cache.insert(key, output.clone(), *ttl);
     }
   }
-
-  // if let Some(fld_caches) = ctx.req_ctx.field_cache_config.get(type_name) {
-  //   let fields_present_in_response = fld_caches
-  //     .iter()
-  //     .filter_map(|(k, c)| {
-  //       output.get_key(k).map(|r| (r, c))
-  //     });
-  //   for (field, Cache{max_age: ttl, hasher}) in fields_present_in_response {
-  //     let key = hasher.finish();
-  //     ctx.req_ctx.cache.insert(key, field.clone(), *ttl);
-  //   }
-  // }
 }
 
 async fn read_entity_cache<'a>(
   ctx: &'a EvaluationContext<'a, ResolverContext<'a>>,
   type_name: &str,
-) -> anyhow::Result<ConstValue> {
+) -> Option<ConstValue> {
   if let Some(Cache { hasher, .. }) = ctx.req_ctx.type_cache_config.get(type_name) {
     let hasher = hasher.clone();
 
@@ -95,24 +83,11 @@ async fn read_entity_cache<'a>(
       return ctx
         .req_ctx
         .cache
-        .get(&key)
-        .ok_or(anyhow::anyhow!("NOT_PRESENT_IN_CACHE"));
+        .get(&key);
     }
   }
 
-  Err(anyhow::anyhow!("NOT_PRESENT_IN_CACHE"))
-
-  // if let Some(fld_caches) = ctx.req_ctx.field_cache_config.get(type_name) {
-  //   let fields_present_in_response = fld_caches
-  //     .iter()
-  //     .filter_map(|(k, c)| {
-  //       output.get_key(k).map(|r| (r, c))
-  //     });
-  //   for (field, Cache{max_age: ttl, hasher}) in fields_present_in_response {
-  //     let key = hasher.finish();
-  //     ctx.req_ctx.cache.insert(key, field.clone(), *ttl);
-  //   }
-  // }
+  None
 }
 
 fn to_type(def: &Definition) -> dynamic::Type {
@@ -148,7 +123,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                       // Return value from cache
                       log::info!("Reading from cache. key = {key}");
                       const_value
-                    } else if let Ok(const_value) = read_entity_cache(&ctx, &of_type).await {
+                    } else if let Some(const_value) = read_entity_cache(&ctx, &of_type).await {
                       read_from_entity_cache = true;
                       log::info!("Reading from cache.");
                       const_value
@@ -161,7 +136,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     }
                   }
                   _ => {
-                    if let Ok(const_value) = read_entity_cache(&ctx, &of_type).await {
+                    if let Some(const_value) = read_entity_cache(&ctx, &of_type).await {
                       read_from_entity_cache = true;
                       log::info!("Reading to cache.");
                       const_value
