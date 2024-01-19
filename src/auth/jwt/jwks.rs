@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
 use anyhow::Result;
 use derive_setters::Setters;
-use jsonwebtoken::jwk::{Jwk, JwkSet};
-use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
+use surrealdb_jsonwebtoken::jwk::{Jwk, JwkSet};
+use surrealdb_jsonwebtoken::{decode, decode_header, DecodingKey, Validation};
 
 use super::jwt_verify::JwtClaim;
 use crate::auth::error::Error;
@@ -23,15 +21,8 @@ impl From<JwkSet> for Jwks {
 impl Jwks {
   fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaim, Error> {
     let key = DecodingKey::from_jwk(jwk).map_err(|_| Error::ValidationCheckFailed)?;
-    let algorithm = jwk
-      .common
-      .key_algorithm
-      .and_then(|alg| Algorithm::from_str(alg.to_string().as_str()).ok())
-      .ok_or(Error::ValidationCheckFailed)?;
-    let mut validation = Validation::new(algorithm);
-
-    // will validate on our side later
-    validation.validate_aud = false;
+    let algorithm = jwk.common.algorithm.ok_or(Error::ValidationCheckFailed)?;
+    let validation = Validation::new(algorithm);
 
     let decoded = decode::<JwtClaim>(token, &key, &validation).map_err(|_| Error::Invalid)?;
 

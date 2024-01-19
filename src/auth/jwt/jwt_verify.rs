@@ -98,8 +98,8 @@ pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool
 pub mod tests {
   use std::collections::HashSet;
 
-  use jsonwebtoken::jwk::JwkSet;
   use once_cell::sync::Lazy;
+  use surrealdb_jsonwebtoken::jwk::JwkSet;
 
   use super::*;
   use crate::http::Response;
