@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
@@ -24,21 +25,17 @@ lazy_static! {
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
   log::debug!("Execution starting");
-  log::info!("{}", req.path());
-  let route = req
-    .path()
-    .strip_prefix('/')
-    .ok_or(anyhow!("invalid prefix"))?
-    .to_string();
-  let file_path = match route.ends_with("/graphql") {
-    true => route.replace("/graphql", ".graphql").to_string(),
-    false => {
-      format!("{}.graphql", route)
-    }
-  };
-  log::info!("{}", file_path);
-  let app_ctx = get_app_ctx(env, file_path).await?;
-  let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(to_request(req).await?, app_ctx).await?;
+
+  let hyper_req = to_request(req).await?;
+  let query = hyper_req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
+  let query = serde_qs::from_str::<HashMap<String, String>>(query)?;
+  let config = query
+    .get("config")
+    .ok_or(anyhow!("The key 'config' not found in the query"))?
+    .clone();
+
+  let app_ctx = get_app_ctx(env, config).await?;
+  let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(hyper_req, app_ctx).await?;
   Ok(to_response(resp).await?)
 }
 

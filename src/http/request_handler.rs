@@ -13,11 +13,11 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::{EnvIO, HttpIO};
 
 fn graphiql(req: Request<Body>) -> Result<Response<Body>> {
-  let route = req.uri().path().strip_prefix('/').ok_or(anyhow!("invalid prefix"))?;
+  let query = req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
   Ok(Response::new(Body::from(
     GraphiQLSource::build()
       .title("Tailcall - GraphQL IDE")
-      .endpoint(&format!("{route}/graphql"))
+      .endpoint(&format!("/graphql?{query}"))
       .finish(),
   )))
 }
