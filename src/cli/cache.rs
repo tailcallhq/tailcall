@@ -26,7 +26,9 @@ impl<K: Hash + Eq, V: Clone> NativeChronoCache<K, V> {
   }
 }
 #[async_trait::async_trait]
-impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> Cache<K, V> for NativeChronoCache<K, V> {
+impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> Cache for NativeChronoCache<K, V> {
+  type Key = K;
+  type Value = V;
   #[allow(clippy::too_many_arguments)]
   async fn set<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> Result<V> {
     let ttl = Duration::from_millis(ttl.get());

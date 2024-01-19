@@ -13,7 +13,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::{grpc, EnvIO, HttpIO, EntityCache};
+use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
