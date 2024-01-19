@@ -107,6 +107,13 @@ fn write_description(mut writer: impl Write, description: Option<&String>) -> st
   Ok(())
 }
 
+fn write_instance_type(mut writer: impl Write, typ: &InstanceType) -> std::io::Result<()> {
+  match typ {
+    &InstanceType::Integer => writeln!(writer, "Int"),
+    x => writeln!(writer, "{x:?}")
+  }
+}
+
 fn write_type(
   mut writer: impl Write,
   name: String,
@@ -125,7 +132,7 @@ fn write_type(
           | InstanceType::Integer
       ) =>
     {
-      writeln!(writer, "{typ:?}!")
+      write_instance_type(&mut writer, &typ)
     }
     Some(SingleOrVec::Vec(typ))
       if matches!(
@@ -137,7 +144,7 @@ fn write_type(
           | InstanceType::Integer
       ) =>
     {
-      writeln!(writer, "{:?}", typ.first().unwrap())
+      write_instance_type(&mut writer, typ.first().unwrap())
     }
     _ => {
       if let Some(schema) = schema.array.clone().and_then(|arr| {
@@ -161,7 +168,7 @@ fn write_type(
                 writeln!(writer, "JSON")
               }
             }
-            x => writeln!(writer, "[{x:?}]"),
+            x => write_instance_type(&mut writer, &x),
           }
         } else if let Some(name) = schema.reference.clone() {
           let nm = name.split("/").last().unwrap();
@@ -205,10 +212,14 @@ fn write_input_type(
   name: String,
   typ: SchemaObject,
   defs: &BTreeMap<String, Schema>,
+  scalars: &mut Vec<String>
 ) -> std::io::Result<()> {
-  // println!("InputType {name}");
+  println!("InputType {name}");
+  if name.as_str() == "Auth" {
+    println!("{typ:?}");
+  }
   match name.as_str() {
-    "Const" | "Arg" => return Ok(()),
+    "Arg" => return Ok(()),
     _ => {}
   }
 
@@ -216,6 +227,7 @@ fn write_input_type(
   write_description(&mut writer, description)?;
   if let Some(obj) = typ.object {
     if obj.properties.is_empty() {
+      scalars.push(name);
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
@@ -238,6 +250,7 @@ fn write_input_type(
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
     if list.is_empty() {
+      scalars.push(name);
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
@@ -257,6 +270,7 @@ fn write_input_type(
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
     if list.is_empty() {
+      scalars.push(name);
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
@@ -268,6 +282,12 @@ fn write_input_type(
       }
     }
     writeln!(writer, "}}")?;
+  } else if let Some(SingleOrVec::Single(item)) = typ.array.and_then(|arr| arr.items) {
+    if let Some(name) = item.into_object().reference {
+      writeln!(writer, "{name}")?;
+    } else {
+      scalars.push(name);
+    }
   }
 
   Ok(())
@@ -358,11 +378,16 @@ fn write_schema_for_field(mut writer: impl Write) -> Result<()> {
 }
 
 fn write_all_input_types(mut writer: impl Write) -> std::io::Result<()> {
-  let schema = schemars::schema_for!(config::Field);
+  let schema = schemars::schema_for!(config::Config);
 
   let defs = schema.definitions;
+  let mut scalars = vec![];
   for (name, input_type) in defs.iter() {
-    write_input_type(&mut writer, name.clone(), input_type.clone().into_object(), &defs)?;
+    write_input_type(&mut writer, name.clone(), input_type.clone().into_object(), &defs, &mut scalars)?;
+  }
+  println!("{scalars:?}");
+  for name in scalars {
+    writeln!(writer, "scalar {name}")?;
   }
 
   Ok(())
@@ -377,6 +402,8 @@ fn generate_rc_file(mut file: File) -> Result<()> {
   write_schema_for_field(&mut file)?;
 
   write_all_input_types(&mut file)?;
+
+  writeln!(&mut file, "scalar JSON")?;
 
   Ok(())
 }
