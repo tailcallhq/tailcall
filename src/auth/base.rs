@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use thiserror::Error;
 
-use super::basic::BasicProvider;
-use super::jwt::JwtProvider;
+use super::basic::BasicVerifier;
+use super::jwt::JWTVerifier;
 use crate::http::RequestContext;
 use crate::{blueprint, HttpIO};
 
@@ -19,7 +19,7 @@ pub enum AuthError {
   Invalid,
 }
 
-pub(crate) trait AuthProviderTrait {
+pub(crate) trait AuthVerifierTrait {
   async fn validate(&self, req_ctx: &RequestContext) -> Result<(), AuthError>;
 }
 
@@ -27,25 +27,25 @@ pub(crate) trait AuthProviderTrait {
 // the difference in size is indeed significant here
 // but it's quite unlikely that someone will require to store several hundreds
 // of providers or more to care much
-pub enum AuthProvider {
-  Basic(BasicProvider),
-  Jwt(JwtProvider),
+pub enum AuthVerifier {
+  Basic(BasicVerifier),
+  Jwt(JWTVerifier),
 }
 
-impl AuthProvider {
+impl AuthVerifier {
   pub fn from_config(config: blueprint::AuthProvider, client: Arc<dyn HttpIO>) -> Self {
     match config {
-      blueprint::AuthProvider::Basic(options) => AuthProvider::Basic(BasicProvider::new(options)),
-      blueprint::AuthProvider::Jwt(options) => AuthProvider::Jwt(JwtProvider::new(options, client)),
+      blueprint::AuthProvider::Basic(options) => AuthVerifier::Basic(BasicVerifier::new(options)),
+      blueprint::AuthProvider::Jwt(options) => AuthVerifier::Jwt(JWTVerifier::new(options, client)),
     }
   }
 }
 
-impl AuthProviderTrait for AuthProvider {
+impl AuthVerifierTrait for AuthVerifier {
   async fn validate(&self, req_ctx: &RequestContext) -> Result<(), AuthError> {
     match self {
-      AuthProvider::Basic(basic) => basic.validate(req_ctx).await,
-      AuthProvider::Jwt(jwt) => jwt.validate(req_ctx).await,
+      AuthVerifier::Basic(basic) => basic.validate(req_ctx).await,
+      AuthVerifier::Jwt(jwt) => jwt.validate(req_ctx).await,
     }
   }
 }

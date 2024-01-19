@@ -2,14 +2,14 @@ use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 
-use super::base::{AuthError, AuthProvider, AuthProviderTrait};
+use super::base::{AuthError, AuthVerifier, AuthVerifierTrait};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
 use crate::HttpIO;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
-  providers: Vec<AuthProvider>,
+  providers: Vec<AuthVerifier>,
 }
 
 #[derive(Default)]
@@ -47,7 +47,7 @@ impl GlobalAuthContext {
     let providers = auth
       .0
       .into_iter()
-      .map(|provider| AuthProvider::from_config(provider.provider, client.clone()))
+      .map(|provider| AuthVerifier::from_config(provider.provider, client.clone()))
       .collect();
 
     Self { providers }
@@ -78,9 +78,9 @@ impl From<&Arc<GlobalAuthContext>> for AuthContext {
 mod tests {
   use super::*;
   use crate::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
-  use crate::auth::basic::BasicProvider;
+  use crate::auth::basic::BasicVerifier;
   use crate::auth::jwt::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
-  use crate::auth::jwt::JwtProvider;
+  use crate::auth::jwt::JWTVerifier;
   use crate::blueprint;
   use crate::http::Response;
 
@@ -95,12 +95,12 @@ mod tests {
 
   #[tokio::test]
   async fn validate_request() {
-    let basic_provider = BasicProvider::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
+    let basic_provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
     let jwt_options = blueprint::JwtProvider::test_value();
-    let jwt_provider = JwtProvider::new(jwt_options, Arc::new(MockHttpClient));
+    let jwt_provider = JWTVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let auth_context =
-      GlobalAuthContext { providers: vec![AuthProvider::Basic(basic_provider), AuthProvider::Jwt(jwt_provider)] };
+      GlobalAuthContext { providers: vec![AuthVerifier::Basic(basic_provider), AuthVerifier::Jwt(jwt_provider)] };
 
     let validation = auth_context.validate(&RequestContext::default()).await.err();
     assert_eq!(validation, Some(AuthError::Missing));

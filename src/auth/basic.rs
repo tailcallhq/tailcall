@@ -2,15 +2,15 @@ use headers::authorization::Basic;
 use headers::{Authorization, HeaderMapExt};
 use htpasswd_verify::Htpasswd;
 
-use super::base::{AuthError, AuthProviderTrait};
+use super::base::{AuthError, AuthVerifierTrait};
 use crate::blueprint;
 use crate::http::RequestContext;
 
-pub struct BasicProvider {
+pub struct BasicVerifier {
   verifier: Htpasswd<'static>,
 }
 
-impl AuthProviderTrait for BasicProvider {
+impl AuthVerifierTrait for BasicVerifier {
   async fn validate(&self, req_ctx: &RequestContext) -> Result<(), AuthError> {
     let header = req_ctx.req_headers.typed_get::<Authorization<Basic>>();
 
@@ -26,7 +26,7 @@ impl AuthProviderTrait for BasicProvider {
   }
 }
 
-impl BasicProvider {
+impl BasicVerifier {
   pub fn new(options: blueprint::BasicProvider) -> Self {
     Self { verifier: Htpasswd::new_owned(&options.htpasswd) }
   }
@@ -57,7 +57,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
   #[tokio::test]
   async fn verify_passwords() {
-    let provider = BasicProvider::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
+    let provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
 
     let validation = provider.validate(&RequestContext::default()).await.err();
     assert_eq!(validation, Some(AuthError::Missing));
