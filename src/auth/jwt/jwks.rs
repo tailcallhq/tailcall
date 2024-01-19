@@ -21,15 +21,8 @@ impl From<JwkSet> for Jwks {
 impl Jwks {
   fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaim, Error> {
     let key = DecodingKey::from_jwk(jwk).map_err(|_| Error::ValidationCheckFailed)?;
-    let algorithm = jwk
-      .common
-      .algorithm
-      // .and_then(|alg| Algorithm::from_str(alg.to_string().as_str()).ok())
-      .ok_or(Error::ValidationCheckFailed)?;
+    let algorithm = jwk.common.algorithm.ok_or(Error::ValidationCheckFailed)?;
     let validation = Validation::new(algorithm);
-
-    // will validate on our side later
-    // validation.validate_aud = false;
 
     let decoded = decode::<JwtClaim>(token, &key, &validation).map_err(|_| Error::Invalid)?;
 
