@@ -24,6 +24,7 @@ pub enum Expression {
   List(List),
   Math(Math),
   Concurrency(Concurrent, Box<Expression>),
+  Protected(Box<Expression>),
 }
 
 #[derive(Clone, Debug)]
@@ -96,6 +97,10 @@ impl Eval for Expression {
         Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
           left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
         )),
+        Expression::Protected(expr) => {
+          ctx.req_ctx.auth_ctx.validate(ctx.req_ctx).await?;
+          expr.eval(ctx, conc).await
+        }
         Expression::IO(operation) => operation.eval(ctx, conc).await,
 
         Expression::Relation(relation) => relation.eval(ctx, conc).await,

@@ -1,8 +1,10 @@
+pub use auth::*;
 pub use config::*;
 pub use expr::*;
 pub use key_values::*;
 pub use server::*;
 pub use source::*;
+mod auth;
 mod config;
 mod expr;
 mod from_document;
