@@ -3,8 +3,8 @@ use headers::{Authorization, HeaderMapExt};
 use htpasswd_verify::Htpasswd;
 
 use super::error::Error;
+use super::provider::BasicProvider;
 use super::verify::Verify;
-use crate::blueprint;
 use crate::http::RequestContext;
 
 pub struct BasicVerifier {
@@ -28,13 +28,14 @@ impl Verify for BasicVerifier {
 }
 
 impl BasicVerifier {
-  pub fn new(options: blueprint::BasicProvider) -> Self {
+  pub fn new(options: BasicProvider) -> Self {
     Self { verifier: Htpasswd::new_owned(&options.htpasswd) }
   }
 }
 
 #[cfg(test)]
 pub mod tests {
+
   use super::*;
 
   // testuser1:password123
@@ -58,7 +59,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
   #[tokio::test]
   async fn verify_passwords() {
-    let provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
+    let provider = BasicVerifier::new(BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
 
     let validation = provider.verify(&RequestContext::default()).await.err();
     assert_eq!(validation, Some(Error::Missing));

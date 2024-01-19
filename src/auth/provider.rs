@@ -4,9 +4,9 @@ use std::time::Duration;
 use jsonwebtoken::jwk::JwkSet;
 use url::Url;
 
-use super::init_context::InitContext;
 use crate::config;
 use crate::mustache::Mustache;
+use crate::path::PathString;
 use crate::valid::{Valid, ValidationError};
 
 #[derive(Debug, Clone)]
@@ -15,7 +15,7 @@ pub struct BasicProvider {
 }
 
 #[derive(Debug, Clone)]
-pub enum Jwks {
+pub enum JwksAddress {
   Local(JwkSet),
   Remote { url: Url, max_age: Duration },
 }
@@ -25,7 +25,7 @@ pub struct JwtProvider {
   pub issuer: Option<String>,
   pub audiences: HashSet<String>,
   pub optional_kid: bool,
-  pub jwks: Jwks,
+  pub jwks: JwksAddress,
 }
 
 #[derive(Clone, Debug)]
@@ -43,7 +43,7 @@ pub struct AuthEntry {
 #[derive(Clone, Default, Debug)]
 pub struct Auth(pub Vec<AuthEntry>);
 
-fn to_basic(init_context: &InitContext, options: config::BasicProvider) -> Valid<BasicProvider, String> {
+fn to_basic<S: PathString>(init_context: &S, options: config::BasicProvider) -> Valid<BasicProvider, String> {
   match options {
     config::BasicProvider::Data(data) => {
       Valid::from(Mustache::parse(&data).map_err(|e| ValidationError::new(e.to_string())))
@@ -57,7 +57,7 @@ fn to_basic(init_context: &InitContext, options: config::BasicProvider) -> Valid
   }
 }
 
-fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<JwtProvider, String> {
+fn to_jwt<S: PathString>(init_context: &S, options: config::JwtProvider) -> Valid<JwtProvider, String> {
   let jwks = &options.jwks;
 
   let jwks_valid = match &jwks {
@@ -73,7 +73,7 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
           let de = &mut serde_json::Deserializer::from_str(&data);
 
           Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
-            .map(|jwks: JwkSet| Jwks::Local(jwks))
+            .map(|jwks: JwkSet| JwksAddress::Local(jwks))
         }
         .trace("data")
       }),
@@ -82,7 +82,7 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
         let url = url.render(init_context);
 
         Valid::from(Url::parse(&url).map_err(|e| ValidationError::new(e.to_string())))
-          .map(|url| Jwks::Remote { url, max_age: Duration::from_millis(max_age.get()) })
+          .map(|url| JwksAddress::Remote { url, max_age: Duration::from_millis(max_age.get()) })
       })
     }
   }
@@ -96,7 +96,7 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
   })
 }
 
-pub fn to_auth(init_context: &InitContext, auth: &config::Auth) -> Valid<Auth, String> {
+pub fn to_auth<S: PathString>(init_context: &S, auth: &config::Auth) -> Valid<Auth, String> {
   Valid::from_iter(&auth.0, |input| {
     let provider = match &input.provider {
       config::AuthProvider::Basic(basic) => to_basic(init_context, basic.clone())

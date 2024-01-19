@@ -3,8 +3,9 @@ use std::sync::Arc;
 use super::basic::BasicVerifier;
 use super::error::Error;
 use super::jwt::jwt_verify::JwtVerifier;
+use super::provider::AuthProvider;
 use crate::http::RequestContext;
-use crate::{blueprint, HttpIO};
+use crate::HttpIO;
 
 pub(crate) trait Verify {
   async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error>;
@@ -20,10 +21,10 @@ pub enum AuthVerifier {
 }
 
 impl AuthVerifier {
-  pub fn from_config(config: blueprint::AuthProvider, client: Arc<dyn HttpIO>) -> Self {
+  pub fn from_config(config: AuthProvider, client: Arc<dyn HttpIO>) -> Self {
     match config {
-      blueprint::AuthProvider::Basic(options) => AuthVerifier::Basic(BasicVerifier::new(options)),
-      blueprint::AuthProvider::Jwt(options) => AuthVerifier::Jwt(JwtVerifier::new(options, client)),
+      AuthProvider::Basic(options) => AuthVerifier::Basic(BasicVerifier::new(options)),
+      AuthProvider::Jwt(options) => AuthVerifier::Jwt(JwtVerifier::new(options, client)),
     }
   }
 }

@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 use futures_util::future::join_all;
 
 use super::error::Error;
+use super::provider::Auth;
 use super::verify::{AuthVerifier, Verify};
-use crate::blueprint::Auth;
 use crate::http::RequestContext;
 use crate::HttpIO;
 
@@ -82,7 +82,7 @@ mod tests {
   use crate::auth::basic::BasicVerifier;
   use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
   use crate::auth::jwt::jwt_verify::JwtVerifier;
-  use crate::blueprint;
+  use crate::auth::provider::{BasicProvider, JwtProvider};
   use crate::http::Response;
 
   struct MockHttpClient;
@@ -96,8 +96,8 @@ mod tests {
 
   #[tokio::test]
   async fn validate_request() {
-    let basic_provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
-    let jwt_options = blueprint::JwtProvider::test_value();
+    let basic_provider = BasicVerifier::new(BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
+    let jwt_options = JwtProvider::test_value();
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let auth_context =

@@ -6,9 +6,10 @@ use serde::Deserialize;
 
 use super::jwks_decoder::JwksDecoder;
 use crate::auth::error::Error;
+use crate::auth::provider::JwtProvider;
 use crate::auth::verify::Verify;
 use crate::http::RequestContext;
-use crate::{blueprint, HttpIO};
+use crate::HttpIO;
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -24,12 +25,12 @@ pub struct JwtClaim {
 }
 
 pub struct JwtVerifier {
-  options: blueprint::JwtProvider,
+  options: JwtProvider,
   decoder: JwksDecoder,
 }
 
 impl JwtVerifier {
-  pub fn new(options: blueprint::JwtProvider, client: Arc<dyn HttpIO>) -> Self {
+  pub fn new(options: JwtProvider, client: Arc<dyn HttpIO>) -> Self {
     Self { decoder: JwksDecoder::new(&options, client), options }
   }
 
@@ -70,7 +71,7 @@ impl Verify for JwtVerifier {
   }
 }
 
-pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool {
+pub fn validate_iss(options: &JwtProvider, claims: &JwtClaim) -> bool {
   options
     .issuer
     .as_ref()
@@ -78,7 +79,7 @@ pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool
     .unwrap_or(true)
 }
 
-pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool {
+pub fn validate_aud(options: &JwtProvider, claims: &JwtClaim) -> bool {
   let audiences = &options.audiences;
 
   if audiences.is_empty() {
@@ -102,6 +103,7 @@ pub mod tests {
   use once_cell::sync::Lazy;
 
   use super::*;
+  use crate::auth::provider::{JwksAddress, JwtProvider};
   use crate::http::Response;
 
   struct MockHttpClient;
@@ -145,9 +147,9 @@ pub mod tests {
     serde_json::from_value(value).unwrap()
   });
 
-  impl blueprint::JwtProvider {
+  impl JwtProvider {
     pub fn test_value() -> Self {
-      let jwks = blueprint::Jwks::Local(JWK_SET.clone());
+      let jwks = JwksAddress::Local(JWK_SET.clone());
 
       Self { issuer: Default::default(), audiences: Default::default(), optional_kid: false, jwks }
     }
@@ -165,7 +167,7 @@ pub mod tests {
 
   #[tokio::test]
   async fn validate_token_iss() {
-    let jwt_options = blueprint::JwtProvider::test_value();
+    let jwt_options = JwtProvider::test_value();
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let valid = jwt_provider
@@ -174,7 +176,7 @@ pub mod tests {
 
     assert!(valid.is_ok());
 
-    let jwt_options = blueprint::JwtProvider { issuer: Some("me".to_owned()), ..blueprint::JwtProvider::test_value() };
+    let jwt_options = JwtProvider { issuer: Some("me".to_owned()), ..JwtProvider::test_value() };
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let valid = jwt_provider
@@ -183,8 +185,7 @@ pub mod tests {
 
     assert!(valid.is_ok());
 
-    let jwt_options =
-      blueprint::JwtProvider { issuer: Some("another".to_owned()), ..blueprint::JwtProvider::test_value() };
+    let jwt_options = JwtProvider { issuer: Some("another".to_owned()), ..JwtProvider::test_value() };
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let error = jwt_provider
@@ -197,7 +198,7 @@ pub mod tests {
 
   #[tokio::test]
   async fn validate_token_aud() {
-    let jwt_options = blueprint::JwtProvider::test_value();
+    let jwt_options = JwtProvider::test_value();
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let valid = jwt_provider
@@ -206,10 +207,7 @@ pub mod tests {
 
     assert!(valid.is_ok());
 
-    let jwt_options = blueprint::JwtProvider {
-      audiences: HashSet::from_iter(["them".to_string()]),
-      ..blueprint::JwtProvider::test_value()
-    };
+    let jwt_options = JwtProvider { audiences: HashSet::from_iter(["them".to_string()]), ..JwtProvider::test_value() };
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let valid = jwt_provider
@@ -218,10 +216,8 @@ pub mod tests {
 
     assert!(valid.is_ok());
 
-    let jwt_options = blueprint::JwtProvider {
-      audiences: HashSet::from_iter(["anothem".to_string()]),
-      ..blueprint::JwtProvider::test_value()
-    };
+    let jwt_options =
+      JwtProvider { audiences: HashSet::from_iter(["anothem".to_string()]), ..JwtProvider::test_value() };
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let error = jwt_provider
@@ -234,7 +230,6 @@ pub mod tests {
 
   mod iss {
     use super::*;
-    use crate::blueprint::JwtProvider;
 
     #[test]
     fn validate_iss_not_defined() {
@@ -269,7 +264,6 @@ pub mod tests {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::blueprint::JwtProvider;
 
     #[test]
     fn validate_aud_not_defined() {

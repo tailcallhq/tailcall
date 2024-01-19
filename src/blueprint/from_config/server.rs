@@ -6,7 +6,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
 use super::init_context::InitContext;
-use super::{to_auth, Auth};
+use crate::auth::provider::{to_auth, Auth};
 use crate::config::{self, HttpVersion};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError};
