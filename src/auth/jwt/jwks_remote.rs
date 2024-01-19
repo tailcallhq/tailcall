@@ -7,27 +7,27 @@ use jsonwebtoken::jwk::JwkSet;
 use reqwest::Request;
 use url::Url;
 
-use super::jwks::JWKS;
-use super::JwtClaims;
+use super::jwks::Jwks;
+use super::JwtClaim;
 use crate::auth::error::Error;
 use crate::HttpIO;
 
-struct JWKSCache {
-  jwks: JWKS,
+struct JwksCache {
+  jwks: Jwks,
   expiration: Instant,
 }
 
-pub struct RemoteJwks {
+pub struct JwksRemote {
   url: Url,
   // as a trait object due to deep bubbling of generic definition
   // up to the entry point
   client: Arc<dyn HttpIO>,
   max_age: Duration,
-  cache: RwLock<Option<JWKSCache>>,
+  cache: RwLock<Option<JwksCache>>,
   optional_kid: bool,
 }
 
-impl RemoteJwks {
+impl JwksRemote {
   pub fn new(url: Url, client: Arc<dyn HttpIO>, max_age: Duration) -> Self {
     Self { url, client, max_age, cache: RwLock::new(None), optional_kid: false }
   }
@@ -40,7 +40,7 @@ impl RemoteJwks {
     self
   }
 
-  pub async fn decode(&self, token: &str) -> Result<JwtClaims, Error> {
+  pub async fn decode(&self, token: &str) -> Result<JwtClaim, Error> {
     {
       let cache = self.cache.read().unwrap();
 
@@ -60,9 +60,9 @@ impl RemoteJwks {
       }
     }
 
-    *cache = Some(JWKSCache {
+    *cache = Some(JwksCache {
       jwks: {
-        let v = JWKS::from(jwks);
+        let v = Jwks::from(jwks);
         v.optional_kid(self.optional_kid)
       },
       expiration: std::time::Instant::now() + self.max_age,

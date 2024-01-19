@@ -2,8 +2,8 @@ use headers::authorization::Basic;
 use headers::{Authorization, HeaderMapExt};
 use htpasswd_verify::Htpasswd;
 
-use super::base::AuthVerifierTrait;
 use super::error::Error;
+use super::verify::Verify;
 use crate::blueprint;
 use crate::http::RequestContext;
 
@@ -11,8 +11,8 @@ pub struct BasicVerifier {
   verifier: Htpasswd<'static>,
 }
 
-impl AuthVerifierTrait for BasicVerifier {
-  async fn validate(&self, req_ctx: &RequestContext) -> Result<(), Error> {
+impl Verify for BasicVerifier {
+  async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
     let header = req_ctx.req_headers.typed_get::<Authorization<Basic>>();
 
     let Some(header) = header else {
@@ -60,28 +60,26 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
   async fn verify_passwords() {
     let provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
 
-    let validation = provider.validate(&RequestContext::default()).await.err();
+    let validation = provider.verify(&RequestContext::default()).await.err();
     assert_eq!(validation, Some(Error::Missing));
 
     let validation = provider
-      .validate(&create_basic_auth_request("testuser1", "wrong-password"))
+      .verify(&create_basic_auth_request("testuser1", "wrong-password"))
       .await
       .err();
     assert_eq!(validation, Some(Error::Invalid));
 
     let validation = provider
-      .validate(&create_basic_auth_request("testuser1", "password123"))
+      .verify(&create_basic_auth_request("testuser1", "password123"))
       .await;
     assert!(validation.is_ok());
 
     let validation = provider
-      .validate(&create_basic_auth_request("testuser2", "mypassword"))
+      .verify(&create_basic_auth_request("testuser2", "mypassword"))
       .await;
     assert!(validation.is_ok());
 
-    let validation = provider
-      .validate(&create_basic_auth_request("testuser3", "abc123"))
-      .await;
+    let validation = provider.verify(&create_basic_auth_request("testuser3", "abc123")).await;
     assert!(validation.is_ok());
   }
 }

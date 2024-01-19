@@ -1,7 +1,7 @@
-use super::{JwtClaims, OneOrMany};
+use super::{JwtClaim, OneOrMany};
 use crate::blueprint;
 
-pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaims) -> bool {
+pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool {
   options
     .issuer
     .as_ref()
@@ -9,7 +9,7 @@ pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaims) -> boo
     .unwrap_or(true)
 }
 
-pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaims) -> bool {
+pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool {
   let audiences = &options.audiences;
 
   if audiences.is_empty() {
@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn validate_iss_not_defined() {
       let options = JwtProvider::test_value();
-      let mut claims = JwtClaims::default();
+      let mut claims = JwtClaim::default();
 
       assert!(validate_iss(&options, &claims));
 
@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn validate_iss_defined() {
       let options = JwtProvider { issuer: Some("iss".to_owned()), ..JwtProvider::test_value() };
-      let mut claims = JwtClaims::default();
+      let mut claims = JwtClaim::default();
 
       assert!(!validate_iss(&options, &claims));
 
@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn validate_aud_not_defined() {
       let options = JwtProvider::test_value();
-      let mut claims = JwtClaims::default();
+      let mut claims = JwtClaim::default();
 
       assert!(validate_aud(&options, &claims));
 
@@ -90,7 +90,7 @@ mod tests {
         audiences: HashSet::from_iter(["aud1".to_owned(), "aud2".to_owned()]),
         ..JwtProvider::test_value()
       };
-      let mut claims = JwtClaims::default();
+      let mut claims = JwtClaim::default();
 
       assert!(!validate_aud(&options, &claims));
 

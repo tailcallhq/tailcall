@@ -2,8 +2,8 @@ use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 
-use super::base::{AuthVerifier, AuthVerifierTrait};
 use super::error::Error;
+use super::verify::{AuthVerifier, Verify};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
 use crate::HttpIO;
@@ -25,7 +25,7 @@ impl GlobalAuthContext {
   // with additional info. But this actually requires rewrites to expression to work with that type
   // since otherwise any additional info will be lost during conversion to anyhow::Error
   async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
-    let validations = join_all(self.providers.iter().map(|provider| provider.validate(request))).await;
+    let validations = join_all(self.providers.iter().map(|provider| provider.verify(request))).await;
 
     let mut error = Error::Missing;
 
@@ -81,7 +81,7 @@ mod tests {
   use crate::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
   use crate::auth::basic::BasicVerifier;
   use crate::auth::jwt::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
-  use crate::auth::jwt::JWTVerifier;
+  use crate::auth::jwt::JwtVerifier;
   use crate::blueprint;
   use crate::http::Response;
 
@@ -98,7 +98,7 @@ mod tests {
   async fn validate_request() {
     let basic_provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
     let jwt_options = blueprint::JwtProvider::test_value();
-    let jwt_provider = JWTVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let auth_context =
       GlobalAuthContext { providers: vec![AuthVerifier::Basic(basic_provider), AuthVerifier::Jwt(jwt_provider)] };

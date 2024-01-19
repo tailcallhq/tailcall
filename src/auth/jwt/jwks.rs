@@ -5,23 +5,23 @@ use derive_setters::Setters;
 use jsonwebtoken::jwk::{Jwk, JwkSet};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 
-use super::JwtClaims;
+use super::JwtClaim;
 use crate::auth::error::Error;
 
 #[derive(Setters)]
-pub struct JWKS {
+pub struct Jwks {
   set: JwkSet,
   optional_kid: bool,
 }
 
-impl From<JwkSet> for JWKS {
+impl From<JwkSet> for Jwks {
   fn from(set: JwkSet) -> Self {
     Self { set, optional_kid: false }
   }
 }
 
-impl JWKS {
-  fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaims, Error> {
+impl Jwks {
+  fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaim, Error> {
     let key = DecodingKey::from_jwk(jwk).map_err(|_| Error::ValidationCheckFailed)?;
     let algorithm = jwk
       .common
@@ -33,12 +33,12 @@ impl JWKS {
     // will validate on our side later
     validation.validate_aud = false;
 
-    let decoded = decode::<JwtClaims>(token, &key, &validation).map_err(|_| Error::Invalid)?;
+    let decoded = decode::<JwtClaim>(token, &key, &validation).map_err(|_| Error::Invalid)?;
 
     Ok(decoded.claims)
   }
 
-  pub fn decode(&self, token: &str) -> Result<JwtClaims, Error> {
+  pub fn decode(&self, token: &str) -> Result<JwtClaim, Error> {
     let header = decode_header(token).map_err(|_| Error::Invalid)?;
 
     if let Some(kid) = &header.kid {
@@ -71,7 +71,7 @@ mod tests {
 
   #[test]
   fn test_decode_required_kid() {
-    let jwks = JWKS::from(JWK_SET.clone());
+    let jwks = Jwks::from(JWK_SET.clone());
 
     assert!(matches!(jwks.decode(""), Err(Error::Invalid)));
 
@@ -85,7 +85,7 @@ mod tests {
 
   #[test]
   fn test_decode_optional_kid() {
-    let jwks = JWKS::from(JWK_SET.clone()).optional_kid(true);
+    let jwks = Jwks::from(JWK_SET.clone()).optional_kid(true);
 
     assert!(matches!(jwks.decode(""), Err(Error::Invalid)));
 
