@@ -21,9 +21,8 @@ pub struct AppContext<Http, Env> {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
+  pub cache: Arc<dyn Cache<u64, ConstValue>>,
   pub env_vars: Arc<Env>,
   pub auth_ctx: Arc<GlobalAuthContext>,
 }
