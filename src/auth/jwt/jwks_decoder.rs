@@ -12,9 +12,9 @@ pub enum JwksDecoder {
 }
 
 impl JwksDecoder {
-  pub fn new(options: &blueprint::JwtProvider, client: Arc<dyn HttpIO>) -> Self {
+  pub fn new(options: &blueprint::Jwt, client: Arc<dyn HttpIO>) -> Self {
     match &options.jwks {
-      blueprint::Jwks::Local(jwks) => Self::Local(Jwks::from(jwks.clone()).optional_kid(options.optional_kid)),
+      blueprint::Jwks::Data(jwks) => Self::Local(Jwks::from(jwks.clone()).optional_kid(options.optional_kid)),
       blueprint::Jwks::Remote { url, max_age } => {
         let decoder = JwksRemote::new(url.clone(), client, *max_age);
 

@@ -29,7 +29,7 @@ impl Verify for BasicVerifier {
 }
 
 impl BasicVerifier {
-  pub fn new(options: blueprint::BasicProvider) -> Self {
+  pub fn new(options: blueprint::Basic) -> Self {
     Self { verifier: Htpasswd::new_owned(&options.htpasswd) }
   }
 }
@@ -59,7 +59,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
   #[tokio::test]
   async fn verify_passwords() {
-    let provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
+    let provider = BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
 
     let validation = provider.verify(&RequestContext::default()).await.err();
     assert_eq!(validation, Some(Error::Missing));

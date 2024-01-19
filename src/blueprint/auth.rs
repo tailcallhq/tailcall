@@ -11,18 +11,18 @@ use crate::mustache::Mustache;
 use crate::valid::{Valid, ValidationError};
 
 #[derive(Debug, Clone)]
-pub struct BasicProvider {
+pub struct Basic {
   pub htpasswd: String,
 }
 
 #[derive(Debug, Clone)]
 pub enum Jwks {
-  Local(JwkSet),
+  Data(JwkSet),
   Remote { url: Url, max_age: Duration },
 }
 
 #[derive(Clone, Debug)]
-pub struct JwtProvider {
+pub struct Jwt {
   pub issuer: Option<String>,
   pub audiences: HashSet<String>,
   pub optional_kid: bool,
@@ -31,8 +31,8 @@ pub struct JwtProvider {
 
 #[derive(Clone, Debug)]
 pub enum AuthProvider {
-  Basic(BasicProvider),
-  Jwt(JwtProvider),
+  Jwt(Jwt),
+  Basic(Basic),
 }
 
 #[derive(Clone, Debug)]
@@ -62,19 +62,19 @@ impl Auth {
   }
 }
 
-fn to_basic(init_context: &InitContext, options: config::Basic) -> Valid<BasicProvider, String> {
+fn to_basic(init_context: &InitContext, options: config::Basic) -> Valid<Basic, String> {
   match options {
     config::Basic::Htpasswd(data) => {
       Valid::from(Mustache::parse(&data).map_err(|e| ValidationError::new(e.to_string()))).map(|tmpl| {
         let htpasswd = tmpl.render(init_context);
 
-        BasicProvider { htpasswd }
+        Basic { htpasswd }
       })
     }
   }
 }
 
-fn to_jwt(init_context: &InitContext, options: config::Jwt) -> Valid<JwtProvider, String> {
+fn to_jwt(init_context: &InitContext, options: config::Jwt) -> Valid<Jwt, String> {
   let jwks = &options.jwks;
 
   let jwks_valid = match &jwks {
@@ -89,7 +89,7 @@ fn to_jwt(init_context: &InitContext, options: config::Jwt) -> Valid<JwtProvider
         let de = &mut serde_json::Deserializer::from_str(&data);
 
         Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
-          .map(|jwks: JwkSet| Jwks::Local(jwks))
+          .map(|jwks: JwkSet| Jwks::Data(jwks))
       }),
     config::Jwks::Remote { url, max_age } => {
       Valid::from(Mustache::parse(url).map_err(|e| ValidationError::new(e.to_string()))).and_then(|url| {
@@ -101,7 +101,7 @@ fn to_jwt(init_context: &InitContext, options: config::Jwt) -> Valid<JwtProvider
     }
   };
 
-  jwks_valid.map(|jwks| JwtProvider {
+  jwks_valid.map(|jwks| Jwt {
     issuer: options.issuer,
     audiences: options.audiences,
     optional_kid: options.optional_kid,

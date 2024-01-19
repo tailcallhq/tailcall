@@ -89,14 +89,6 @@
           "type": "object"
         }
       ],
-      "properties": {
-        "id": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
       "type": "object"
     },
     "Basic": {

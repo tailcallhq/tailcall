@@ -96,8 +96,8 @@ mod tests {
 
   #[tokio::test]
   async fn validate_request() {
-    let basic_provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
-    let jwt_options = blueprint::JwtProvider::test_value();
+    let basic_provider = BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
+    let jwt_options = blueprint::Jwt::test_value();
     let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
 
     let auth_context =
