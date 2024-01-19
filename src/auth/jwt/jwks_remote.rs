@@ -3,8 +3,8 @@ use std::time::{Duration, Instant};
 
 use hyper::header::HeaderValue;
 use hyper::Method;
-use jsonwebtoken::jwk::JwkSet;
 use reqwest::Request;
+use surrealdb_jsonwebtoken::jwk::JwkSet;
 use url::Url;
 
 use super::jwks::Jwks;
