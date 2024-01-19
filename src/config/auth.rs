@@ -17,13 +17,13 @@ mod default {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum BasicProvider {
   Data(String),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum Jwks {
   Data(String),
@@ -35,7 +35,7 @@ pub enum Jwks {
   },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct JwtProvider {
   #[serde(skip_serializing_if = "is_default")]
@@ -47,21 +47,21 @@ pub struct JwtProvider {
   pub jwks: Jwks,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum AuthProvider {
   Jwt(JwtProvider),
   Basic(BasicProvider),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct AuthEntry {
   pub id: String,
   #[serde(flatten)]
   pub provider: AuthProvider,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Auth(pub Vec<AuthEntry>);
 
 impl Auth {

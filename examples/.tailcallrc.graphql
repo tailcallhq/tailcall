@@ -328,6 +328,16 @@ directive @expr(
 ) on FIELD_DEFINITION
 
 """
+Allows executing arbitrary javascript code
+"""
+directive @js(
+  """
+  A javascript expression that returns a JSON value
+  """
+  script: String!
+) on FIELD_DEFINITION
+
+"""
 Kinds of nodes that the expression AST can use
 """
 input ExprBody {

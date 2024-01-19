@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
 pub struct KeyValues(pub BTreeMap<String, String>);
 
 impl Deref for KeyValues {
