@@ -3425,11 +3425,11 @@ dependencies = [
  "regex",
  "reqwest",
  "reqwest-middleware",
- "semver",
  "rustls 0.22.2",
  "rustls-pemfile 1.0.4",
  "rustls-pki-types",
  "schemars",
+ "semver",
  "serde",
  "serde_json",
  "serde_path_to_error",
@@ -4008,7 +4008,7 @@ dependencies = [
  "either",
  "home",
  "once_cell",
- "rustix 0.38.28",
+ "rustix 0.38.30",
  "windows-sys 0.48.0",
 ]
 

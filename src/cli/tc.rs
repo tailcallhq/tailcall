@@ -6,8 +6,7 @@ use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
-
-use tokio::runtime::{Builder, Runtime};
+use tokio::runtime::{Runtime};
 
 use super::command::{Cli, Command};
 use super::update_checker;
