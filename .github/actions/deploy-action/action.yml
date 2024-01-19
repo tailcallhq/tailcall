@@ -1,5 +1,5 @@
-name: 'Deploy to My Infrastructure'
-description: 'This action deploys files to my Cloudflare R2 storage'
+name: 'Deploy to tailcall edge'
+description: 'This action deploys files to tailcall edge'
 
 inputs:
   file-path:
@@ -16,6 +16,13 @@ runs:
     - name: Install Wrangler
       shell: bash
       run: npm install -g wrangler
+    - name: Install tailcall
+      shell: bash
+      run: npm install -g @tailcallhq/tailcall
+    - name: check config]
+      shell: bash
+      run: |
+        tailcall check ${{ inputs.file-path }}
     - run: |
         echo 'account_id = "59eda2a637301830ad43a6e3e4419346"' > wrangler.toml
         wrangler r2 object put configs/${{ inputs.file-path }} --file=${{ inputs.file-path }}
