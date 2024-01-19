@@ -17,7 +17,7 @@ use crate::{init_env, init_file, init_http};
 
 type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
 lazy_static! {
-  static ref APP_CTX: RwLock<Option<Arc<CloudFlareAppContext>>> = RwLock::new(None);
+  static ref APP_CTX: RwLock<Option<(String, Arc<CloudFlareAppContext>)>> = RwLock::new(None);
 }
 ///
 /// The main fetch handler that handles requests on cloudflare
@@ -25,7 +25,7 @@ lazy_static! {
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
   log::debug!("Execution starting");
-
+  log::info!("{} {:?}", req.method().to_string(), req.url().map(|u| u.to_string()));
   let hyper_req = to_request(req).await?;
   let query = hyper_req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
   let query = serde_qs::from_str::<HashMap<String, String>>(query)?;
@@ -34,6 +34,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
     .ok_or(anyhow!("The key 'config' not found in the query"))?
     .clone();
 
+  log::info!("config-url: {}", config);
   let app_ctx = get_app_ctx(env, config).await?;
   let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(hyper_req, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -58,21 +59,22 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: String
 async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
   if let Some(app_ctx) = read_app_ctx() {
-    Ok(app_ctx.clone())
-  } else {
-    // Create new context
-    let env_io = init_env(env.clone());
-    let cfg = get_config(&env_io, env.clone(), file_path).await?;
-    let blueprint = Blueprint::try_from(&cfg)?;
-    let h_client = Arc::new(init_http());
-
-    let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
-    *APP_CTX.write().unwrap() = Some(app_ctx.clone());
-    log::info!("Initialized new application context");
-    Ok(app_ctx)
+    if app_ctx.0 == file_path {
+      return Ok(app_ctx.clone().1);
+    }
   }
+  // Create new context
+  let env_io = init_env(env.clone());
+  let cfg = get_config(&env_io, env.clone(), file_path.clone()).await?;
+  let blueprint = Blueprint::try_from(&cfg)?;
+  let h_client = Arc::new(init_http());
+
+  let app_ctx = Arc::new(AppContext::new(blueprint, h_client.clone(), h_client, Arc::new(env_io)));
+  *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
+  log::info!("Initialized new application context");
+  Ok(app_ctx)
 }
 
-fn read_app_ctx() -> Option<Arc<CloudFlareAppContext>> {
+fn read_app_ctx() -> Option<(String, Arc<CloudFlareAppContext>)> {
   APP_CTX.read().unwrap().clone()
 }

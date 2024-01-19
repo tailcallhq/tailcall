@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use async_graphql::http::GraphiQLSource;
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
@@ -14,12 +14,11 @@ use crate::{EnvIO, HttpIO};
 
 fn graphiql(req: Request<Body>) -> Result<Response<Body>> {
   let query = req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
-  Ok(Response::new(Body::from(
-    GraphiQLSource::build()
-      .title("Tailcall - GraphQL IDE")
-      .endpoint(&format!("/graphql?{query}"))
-      .finish(),
-  )))
+  let endpoint = &format!("/graphql?{query}");
+  log::info!("GraphiQL endpoint: {}", endpoint);
+  Ok(Response::new(Body::from(playground_source(
+    GraphQLPlaygroundConfig::new(endpoint).title("Tailcall - GraphQL IDE"),
+  ))))
 }
 
 fn not_found() -> Result<Response<Body>> {
