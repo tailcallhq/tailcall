@@ -120,7 +120,7 @@ mod test {
   use hyper::HeaderMap;
 
   use crate::blueprint::Server;
-  use crate::chrono_cache::NativeChronoCache;
+  use crate::cli::chrono_cache::NativeChronoCache;
   use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
