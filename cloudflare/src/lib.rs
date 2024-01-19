@@ -2,6 +2,8 @@ use std::rc::Rc;
 
 use anyhow::anyhow;
 
+use std::panic;
+
 mod cache;
 mod env;
 mod file;
@@ -41,6 +43,7 @@ async fn fetch(req: worker::Request, env: worker::Env, context: worker::Context)
 fn start() {
   // Initialize Logger
   wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+  panic::set_hook(Box::new(console_error_panic_hook::hook));
 }
 
 fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {

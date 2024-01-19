@@ -23,8 +23,7 @@ lazy_static! {
 ///
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   let env = Rc::new(env);
-  log::debug!("Execution starting");
-  log::info!("{}", req.path());
+  log::info!("{} {}", req.method().to_string(), req.path());
   let route = req
     .path()
     .strip_prefix('/')
@@ -36,7 +35,6 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
       format!("{}.graphql", route)
     }
   };
-  log::info!("{}", file_path);
   let app_ctx = get_app_ctx(env, file_path).await?;
   let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(to_request(req).await?, app_ctx).await?;
   Ok(to_response(resp).await?)
@@ -47,6 +45,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 ///
 async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Config> {
   let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("CONFIG var is not set"))?;
+  log::debug!("R2 Bucket ID: {}", bucket_id);
   let file_io = init_file(env.clone(), bucket_id)?;
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
@@ -61,12 +60,19 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: String
 async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
   if let Some(app_ctx) = read_app_ctx() {
+    log::info!("Using cached application context");
     Ok(app_ctx.clone())
   } else {
     // Create new context
     let env_io = init_env(env.clone());
     let cfg = get_config(&env_io, env.clone(), file_path).await?;
-    let blueprint = Blueprint::try_from(&cfg)?;
+    log::info!("Configuration read ... ok");
+    log::debug!("\n{}", cfg.to_sdl());
+    let blueprint = Blueprint::try_from(&cfg).map_err(|e| {
+      log::error!("Blueprint generation failed: {}", e);
+      e
+    })?;
+    log::info!("Blueprint generated ... ok");
     let h_client = Arc::new(init_http());
     let cache = Arc::new(init_cache(env));
 
