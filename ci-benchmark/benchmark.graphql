@@ -4,7 +4,7 @@ schema
   query: Query
 }
 
-type Query @cache(maxAge: 30000) {
+type Query {
   posts: [Post] @http(path: "/posts")
 }
 
@@ -17,7 +17,7 @@ type User {
   website: String
 }
 
-type Post {
+type Post @cache(maxAge: 30000) {
   id: Int!
   userId: Int!
   title: String!
