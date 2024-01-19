@@ -1,26 +1,13 @@
 use std::sync::Arc;
 
-use thiserror::Error;
-
 use super::basic::BasicVerifier;
+use super::error::Error;
 use super::jwt::JWTVerifier;
 use crate::http::RequestContext;
 use crate::{blueprint, HttpIO};
 
-#[derive(Debug, Error, Clone, PartialEq, PartialOrd)]
-pub enum AuthError {
-  #[error("Haven't found auth parameters")]
-  Missing,
-  #[error("Couldn't validate auth request")]
-  // in case we haven't managed to actually validate the request
-  // and have failed somewhere else, usually while executing request
-  ValidationCheckFailed,
-  #[error("Auth validation failed")]
-  Invalid,
-}
-
 pub(crate) trait AuthVerifierTrait {
-  async fn validate(&self, req_ctx: &RequestContext) -> Result<(), AuthError>;
+  async fn validate(&self, req_ctx: &RequestContext) -> Result<(), Error>;
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -42,7 +29,7 @@ impl AuthVerifier {
 }
 
 impl AuthVerifierTrait for AuthVerifier {
-  async fn validate(&self, req_ctx: &RequestContext) -> Result<(), AuthError> {
+  async fn validate(&self, req_ctx: &RequestContext) -> Result<(), Error> {
     match self {
       AuthVerifier::Basic(basic) => basic.validate(req_ctx).await,
       AuthVerifier::Jwt(jwt) => jwt.validate(req_ctx).await,

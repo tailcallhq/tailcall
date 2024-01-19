@@ -2,7 +2,8 @@ use headers::authorization::Basic;
 use headers::{Authorization, HeaderMapExt};
 use htpasswd_verify::Htpasswd;
 
-use super::base::{AuthError, AuthVerifierTrait};
+use super::base::AuthVerifierTrait;
+use super::error::Error;
 use crate::blueprint;
 use crate::http::RequestContext;
 
@@ -11,17 +12,17 @@ pub struct BasicVerifier {
 }
 
 impl AuthVerifierTrait for BasicVerifier {
-  async fn validate(&self, req_ctx: &RequestContext) -> Result<(), AuthError> {
+  async fn validate(&self, req_ctx: &RequestContext) -> Result<(), Error> {
     let header = req_ctx.req_headers.typed_get::<Authorization<Basic>>();
 
     let Some(header) = header else {
-      return Err(AuthError::Missing);
+      return Err(Error::Missing);
     };
 
     if self.verifier.check(header.username(), header.password()) {
       Ok(())
     } else {
-      Err(AuthError::Invalid)
+      Err(Error::Invalid)
     }
   }
 }
@@ -60,13 +61,13 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     let provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
 
     let validation = provider.validate(&RequestContext::default()).await.err();
-    assert_eq!(validation, Some(AuthError::Missing));
+    assert_eq!(validation, Some(Error::Missing));
 
     let validation = provider
       .validate(&create_basic_auth_request("testuser1", "wrong-password"))
       .await
       .err();
-    assert_eq!(validation, Some(AuthError::Invalid));
+    assert_eq!(validation, Some(Error::Invalid));
 
     let validation = provider
       .validate(&create_basic_auth_request("testuser1", "password123"))

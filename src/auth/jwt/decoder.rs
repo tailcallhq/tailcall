@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::jwks::Jwks;
 use super::remote_jwks::RemoteJwks;
 use super::JwtClaims;
-use crate::auth::base::AuthError;
+use crate::auth::error::Error;
 use crate::{blueprint, HttpIO};
 
 pub enum JwksDecoder {
@@ -23,7 +23,7 @@ impl JwksDecoder {
     }
   }
 
-  pub async fn decode(&self, token: &str) -> Result<JwtClaims, AuthError> {
+  pub async fn decode(&self, token: &str) -> Result<JwtClaims, Error> {
     match self {
       JwksDecoder::Local(decoder) => decoder.decode(token),
       JwksDecoder::Remote(verifier) => verifier.decode(token).await,

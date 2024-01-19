@@ -6,7 +6,7 @@ use jsonwebtoken::jwk::{Jwk, JwkSet};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 
 use super::JwtClaims;
-use crate::auth::base::AuthError;
+use crate::auth::error::Error;
 
 #[derive(Setters)]
 pub struct Jwks {
@@ -21,33 +21,33 @@ impl From<JwkSet> for Jwks {
 }
 
 impl Jwks {
-  fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaims, AuthError> {
-    let key = DecodingKey::from_jwk(jwk).map_err(|_| AuthError::ValidationCheckFailed)?;
+  fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaims, Error> {
+    let key = DecodingKey::from_jwk(jwk).map_err(|_| Error::ValidationCheckFailed)?;
     let algorithm = jwk
       .common
       .key_algorithm
       .and_then(|alg| Algorithm::from_str(alg.to_string().as_str()).ok())
-      .ok_or(AuthError::ValidationCheckFailed)?;
+      .ok_or(Error::ValidationCheckFailed)?;
     let mut validation = Validation::new(algorithm);
 
     // will validate on our side later
     validation.validate_aud = false;
 
-    let decoded = decode::<JwtClaims>(token, &key, &validation).map_err(|_| AuthError::Invalid)?;
+    let decoded = decode::<JwtClaims>(token, &key, &validation).map_err(|_| Error::Invalid)?;
 
     Ok(decoded.claims)
   }
 
-  pub fn decode(&self, token: &str) -> Result<JwtClaims, AuthError> {
-    let header = decode_header(token).map_err(|_| AuthError::Invalid)?;
+  pub fn decode(&self, token: &str) -> Result<JwtClaims, Error> {
+    let header = decode_header(token).map_err(|_| Error::Invalid)?;
 
     if let Some(kid) = &header.kid {
-      let jwk = self.set.find(kid).ok_or(AuthError::ValidationCheckFailed)?;
+      let jwk = self.set.find(kid).ok_or(Error::ValidationCheckFailed)?;
 
       self.decode_with_jwk(token, jwk)
     } else {
       if !self.optional_kid {
-        return Err(AuthError::Invalid);
+        return Err(Error::Invalid);
       }
 
       // iterate over all available jwk and try to decode incoming token with it
@@ -58,7 +58,7 @@ impl Jwks {
         }
       }
 
-      Err(AuthError::Invalid)
+      Err(Error::Invalid)
     }
   }
 }
@@ -73,21 +73,21 @@ mod tests {
   fn test_decode_required_kid() {
     let jwks = Jwks::from(JWK_SET.clone());
 
-    assert!(matches!(jwks.decode(""), Err(AuthError::Invalid)));
+    assert!(matches!(jwks.decode(""), Err(Error::Invalid)));
 
     let data = jwks.decode(JWT_VALID_TOKEN_WITH_KID).unwrap();
 
     assert!(matches!(data.aud, Some(OneOrMany::Vec(v)) if v == ["them"]));
     assert!(matches!(data.iss, Some(v) if v == "me"));
 
-    assert!(matches!(jwks.decode(JWT_VALID_TOKEN_NO_KID), Err(AuthError::Invalid)));
+    assert!(matches!(jwks.decode(JWT_VALID_TOKEN_NO_KID), Err(Error::Invalid)));
   }
 
   #[test]
   fn test_decode_optional_kid() {
     let jwks = Jwks::from(JWK_SET.clone()).optional_kid(true);
 
-    assert!(matches!(jwks.decode(""), Err(AuthError::Invalid)));
+    assert!(matches!(jwks.decode(""), Err(Error::Invalid)));
 
     let data = jwks.decode(JWT_VALID_TOKEN_WITH_KID).unwrap();
 

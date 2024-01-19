@@ -2,7 +2,8 @@ use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 
-use super::base::{AuthError, AuthVerifier, AuthVerifierTrait};
+use super::base::{AuthVerifier, AuthVerifierTrait};
+use super::error::Error;
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
 use crate::HttpIO;
@@ -15,7 +16,7 @@ pub struct GlobalAuthContext {
 #[derive(Default)]
 pub struct AuthContext {
   // TODO: can we do without mutex?
-  auth_result: Mutex<Option<Result<(), AuthError>>>,
+  auth_result: Mutex<Option<Result<(), Error>>>,
   global_ctx: Arc<GlobalAuthContext>,
 }
 
@@ -23,10 +24,10 @@ impl GlobalAuthContext {
   // TODO: it could be better to return async_graphql::Error to make it more graphql way
   // with additional info. But this actually requires rewrites to expression to work with that type
   // since otherwise any additional info will be lost during conversion to anyhow::Error
-  async fn validate(&self, request: &RequestContext) -> Result<(), AuthError> {
+  async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
     let validations = join_all(self.providers.iter().map(|provider| provider.validate(request))).await;
 
-    let mut error = AuthError::Missing;
+    let mut error = Error::Missing;
 
     for v in validations {
       let Err(err) = v else {
@@ -55,7 +56,7 @@ impl GlobalAuthContext {
 }
 
 impl AuthContext {
-  pub async fn validate(&self, request: &RequestContext) -> Result<(), AuthError> {
+  pub async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
     if let Some(result) = self.auth_result.lock().unwrap().as_ref() {
       return result.clone();
     }
@@ -103,13 +104,13 @@ mod tests {
       GlobalAuthContext { providers: vec![AuthVerifier::Basic(basic_provider), AuthVerifier::Jwt(jwt_provider)] };
 
     let validation = auth_context.validate(&RequestContext::default()).await.err();
-    assert_eq!(validation, Some(AuthError::Missing));
+    assert_eq!(validation, Some(Error::Missing));
 
     let validation = auth_context
       .validate(&create_basic_auth_request("testuser1", "wrong-password"))
       .await
       .err();
-    assert_eq!(validation, Some(AuthError::Invalid));
+    assert_eq!(validation, Some(Error::Invalid));
 
     let validation = auth_context
       .validate(&create_basic_auth_request("testuser1", "password123"))

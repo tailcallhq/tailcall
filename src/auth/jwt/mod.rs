@@ -11,7 +11,8 @@ use serde::Deserialize;
 
 use self::decoder::JwksDecoder;
 use self::validation::{validate_aud, validate_iss};
-use super::base::{AuthError, AuthVerifierTrait};
+use super::base::AuthVerifierTrait;
+use super::error::Error;
 use crate::http::RequestContext;
 use crate::{blueprint, HttpIO};
 
@@ -44,19 +45,19 @@ impl JWTVerifier {
     value.map(|token| token.token().to_owned())
   }
 
-  async fn validate_token(&self, token: &str) -> Result<(), AuthError> {
+  async fn validate_token(&self, token: &str) -> Result<(), Error> {
     let claims = self
       .decoder
       .decode(token)
       .await
-      .map_err(|_| AuthError::ValidationCheckFailed)?;
+      .map_err(|_| Error::ValidationCheckFailed)?;
 
     self.validate_claims(&claims)
   }
 
-  fn validate_claims(&self, claims: &JwtClaims) -> Result<(), AuthError> {
+  fn validate_claims(&self, claims: &JwtClaims) -> Result<(), Error> {
     if !validate_iss(&self.options, claims) || !validate_aud(&self.options, claims) {
-      return Err(AuthError::Invalid);
+      return Err(Error::Invalid);
     }
 
     Ok(())
@@ -64,11 +65,11 @@ impl JWTVerifier {
 }
 
 impl AuthVerifierTrait for JWTVerifier {
-  async fn validate(&self, request: &RequestContext) -> Result<(), AuthError> {
+  async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
     let token = self.resolve_token(request);
 
     let Some(token) = token else {
-      return Err(AuthError::Missing);
+      return Err(Error::Missing);
     };
 
     self.validate_token(&token).await
@@ -173,7 +174,7 @@ pub mod tests {
       .await
       .err();
 
-    assert_eq!(error, Some(AuthError::Invalid));
+    assert_eq!(error, Some(Error::Invalid));
   }
 
   #[tokio::test]
@@ -210,6 +211,6 @@ pub mod tests {
       .await
       .err();
 
-    assert_eq!(error, Some(AuthError::Invalid));
+    assert_eq!(error, Some(Error::Invalid));
   }
 }

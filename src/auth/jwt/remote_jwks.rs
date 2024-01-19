@@ -9,7 +9,7 @@ use url::Url;
 
 use super::jwks::Jwks;
 use super::JwtClaims;
-use crate::auth::base::AuthError;
+use crate::auth::error::Error;
 use crate::HttpIO;
 
 struct JWKSCache {
@@ -40,7 +40,7 @@ impl RemoteJwks {
     self
   }
 
-  pub async fn decode(&self, token: &str) -> Result<JwtClaims, AuthError> {
+  pub async fn decode(&self, token: &str) -> Result<JwtClaims, Error> {
     {
       let cache = self.cache.read().unwrap();
 
@@ -51,10 +51,7 @@ impl RemoteJwks {
       }
     }
 
-    let jwks = self
-      .request_jwks()
-      .await
-      .map_err(|_| AuthError::ValidationCheckFailed)?;
+    let jwks = self.request_jwks().await.map_err(|_| Error::ValidationCheckFailed)?;
 
     let mut cache = self.cache.write().unwrap();
     if let Some(c) = cache.as_ref() {
@@ -71,12 +68,7 @@ impl RemoteJwks {
       expiration: std::time::Instant::now() + self.max_age,
     });
 
-    cache
-      .as_ref()
-      .unwrap()
-      .jwks
-      .decode(token)
-      .map_err(|_| AuthError::Invalid)
+    cache.as_ref().unwrap().jwks.decode(token).map_err(|_| Error::Invalid)
   }
 
   async fn request_jwks(&self) -> anyhow::Result<JwkSet> {
