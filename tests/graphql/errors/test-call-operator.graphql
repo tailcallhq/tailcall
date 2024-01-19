@@ -39,7 +39,7 @@ type Failure
   )
 type Failure
   @error(
-    message: "@call directive is not allowed on field multipleResolvers because it already has a resolver"
+    message: "@call directive is not allowed on field because it already has a resolver"
     trace: ["Post", "multipleResolvers", "@call"]
   )
 type Failure @error(message: "no argument 'id' found", trace: ["Post", "urlMismatchHttp", "@call", "user"])
