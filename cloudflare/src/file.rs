@@ -8,27 +8,20 @@ use crate::to_anyhow;
 
 #[derive(Clone)]
 pub struct CloudflareFileIO {
-  env: Rc<Env>,
-  bucket_id: String,
+  bucket: Rc<worker::Bucket>,
 }
 
 impl CloudflareFileIO {
-  pub fn init(env: Rc<Env>, bucket_id: String) -> Self {
-    CloudflareFileIO { env, bucket_id }
+  pub fn init(env: Rc<Env>, bucket_id: String) -> anyhow::Result<Self> {
+    let bucket = env.bucket(bucket_id.as_str()).map_err(|e| anyhow!(e.to_string()))?;
+    Ok(CloudflareFileIO { bucket: Rc::new(bucket) })
   }
 }
 
 impl CloudflareFileIO {
-  async fn bucket(&self) -> anyhow::Result<worker::Bucket> {
-    Ok(self.env.bucket(&self.bucket_id).map_err(|e| anyhow!(e.to_string()))?)
-  }
-
   async fn get(&self, path: String) -> anyhow::Result<String> {
-    log::debug!("Reading from bucket:{} path:{}", self.bucket_id, path);
-    let bucket = self.bucket().await.map_err(to_anyhow)?;
-
-    let maybe_object = bucket.get(&path).execute().await.map_err(to_anyhow)?;
-    let object = maybe_object.ok_or(anyhow!("File {} was not found in bucket: {}", path, self.bucket_id))?;
+    let maybe_object = self.bucket.get(&path).execute().await.map_err(to_anyhow)?;
+    let object = maybe_object.ok_or(anyhow!("File {} was not found in bucket", path))?;
 
     let body = match object.body() {
       Some(body) => body.text().await.map_err(to_anyhow),
@@ -38,8 +31,7 @@ impl CloudflareFileIO {
   }
 
   async fn put(&self, path: String, value: Vec<u8>) -> anyhow::Result<()> {
-    let bucket = self.bucket().await.map_err(to_anyhow)?;
-    bucket.put(&path, value).execute().await.map_err(to_anyhow)?;
+    self.bucket.put(&path, value).execute().await.map_err(to_anyhow)?;
     Ok(())
   }
 }
