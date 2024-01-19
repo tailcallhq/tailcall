@@ -6,59 +6,71 @@ use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
+
 use tokio::runtime::{Builder, Runtime};
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::Blueprint;
+use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{init_file, init_http, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
-use crate::print_schema;
+use crate::{print_schema, FileIO};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
-pub fn run() -> Result<()> {
+pub async fn run() -> anyhow::Result<()> {
   let cli = Cli::parse();
   logger_init();
   let rt = Runtime::new().unwrap();
   rt.spawn(update_checker::check_for_update());
   let file_io = init_file();
   let default_http_io = init_http(&Upstream::default());
-  let config_reader = ConfigReader::init(file_io, default_http_io);
+  let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
   match cli.command {
     Command::Start { file_paths } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+      let config = config_reader.read(&file_paths).await?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
-      let runtime = Builder::new_multi_thread()
-        .worker_threads(config.server.get_workers())
-        .enable_all()
-        .build()?;
       let server = Server::new(config);
-      runtime.block_on(server.start())?;
+      server.fork_start().await?;
       Ok(())
     }
-    Command::Check { file_paths, n_plus_one_queries, schema } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+    Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
+      let config = (config_reader.read(&file_paths)).await?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
+
       match blueprint {
         Ok(blueprint) => {
+          log::info!("{}", "Config successfully validated".to_string());
           display_config(&config, n_plus_one_queries);
           if schema {
             display_schema(&blueprint);
           }
 
-          Ok(())
+          let ops: Vec<OperationQuery> = futures_util::future::join_all(operations.iter().map(|op| async {
+            file_io
+              .read(op)
+              .await
+              .map(|query| OperationQuery::new(query, op.clone()))
+          }))
+          .await
+          .into_iter()
+          .collect::<anyhow::Result<Vec<_>>>()?;
+
+          validate_operations(&blueprint, ops)
+            .await
+            .to_result()
+            .map_err(|e| CLIError::from(e).message("Invalid Operation".to_string()).into())
         }
         Err(e) => Err(e.into()),
       }
     }
-    Command::Init { folder_path } => Ok(tokio::runtime::Runtime::new()?.block_on(async { init(&folder_path).await })?),
+    Command::Init { folder_path } => init(&folder_path).await,
     Command::Compose { file_paths, format } => {
-      let config = tokio::runtime::Runtime::new()?.block_on(config_reader.read(&file_paths))?;
+      let config = (config_reader.read(&file_paths).await)?;
       Fmt::display(format.encode(&config)?);
       Ok(())
     }
@@ -147,11 +159,10 @@ pub async fn init(folder_path: &str) -> Result<()> {
 pub fn display_schema(blueprint: &Blueprint) {
   Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
   let sdl = blueprint.to_schema();
-  Fmt::display(print_schema::print_schema(sdl));
+  Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
 }
 
 fn display_config(config: &Config, n_plus_one_queries: bool) {
-  Fmt::display(Fmt::success(&"No errors found".to_string()));
   let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
   Fmt::display(Fmt::table(seq));
 }

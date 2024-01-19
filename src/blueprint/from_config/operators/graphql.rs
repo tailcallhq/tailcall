@@ -16,7 +16,7 @@ pub fn compile_graphql(
     graphql.base_url.as_ref().or(config.upstream.base_url.as_ref()),
     "No base URL defined".to_string(),
   )
-  .zip(helpers::headers::to_headervec(&graphql.headers))
+  .zip(helpers::headers::to_mustache_headers(&graphql.headers))
   .and_then(|(base_url, headers)| {
     Valid::from(
       RequestTemplate::new(base_url.to_owned(), operation_type, &graphql.name, args, headers)
@@ -33,12 +33,14 @@ pub fn update_graphql<'a>(
   operation_type: &'a GraphQLOperationType,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
   TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-    |(config, field, _, _), b_field| {
+    |(config, field, type_of, _), b_field| {
       let Some(graphql) = &field.graphql else {
         return Valid::succeed(b_field);
       };
 
-      compile_graphql(config, operation_type, graphql).map(|resolver| b_field.resolver(Some(resolver)))
+      compile_graphql(config, operation_type, graphql)
+        .map(|resolver| b_field.resolver(Some(resolver)))
+        .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
     },
   )
 }

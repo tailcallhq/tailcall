@@ -2,16 +2,14 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::dynamic::{
-  FieldFuture, FieldValue, ResolverContext, SchemaBuilder, {self},
-};
+use async_graphql::dynamic::{self, FieldFuture, FieldValue, ResolverContext, SchemaBuilder};
 use async_graphql_value::ConstValue;
 
-use super::hash_const_value;
 use crate::blueprint::{Blueprint, Cache, Definition, Type};
+use crate::helpers;
 use crate::http::RequestContext;
 use crate::json::JsonLike;
-use crate::lambda::EvaluationContext;
+use crate::lambda::{Concurrent, Eval, EvaluationContext};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
   match type_of {
@@ -47,7 +45,7 @@ fn get_cache_key<'a, H: Hasher + Clone>(
     .map(|data| data.get_key("id"))
   {
     // Hash on parent's id only?
-    hash_const_value(const_value?, &mut hasher)
+    helpers::value::hash(const_value?, &mut hasher);
   }
 
   let key = ctx
@@ -57,7 +55,7 @@ fn get_cache_key<'a, H: Hasher + Clone>(
     .map(|(key, value)| {
       let mut hasher = hasher.clone();
       key.hash(&mut hasher);
-      hash_const_value(value.as_value(), &mut hasher);
+      helpers::value::hash(value.as_value(), &mut hasher);
       hasher.finish()
     })
     .fold(hasher.finish(), |acc, val| acc ^ val);
@@ -97,14 +95,14 @@ fn to_type(def: &Definition) -> dynamic::Type {
                       log::info!("Reading from cache. key = {key}");
                       const_value
                     } else {
-                      let const_value = expr.eval(&ctx).await?;
+                      let const_value = expr.eval(&ctx, &Concurrent::Sequential).await?;
                       log::info!("Writing to cache. key = {key}");
                       // Write value to cache
                       ctx.req_ctx.cache_insert(key, const_value.clone(), ttl);
                       const_value
                     }
                   }
-                  _ => expr.eval(&ctx).await?,
+                  _ => expr.eval(&ctx, &Concurrent::Sequential).await?,
                 };
 
                 let p = match const_value {
@@ -177,20 +175,16 @@ fn to_type(def: &Definition) -> dynamic::Type {
   }
 }
 
-fn create(blueprint: &Blueprint) -> SchemaBuilder {
-  let query = blueprint.query();
-  let mutation = blueprint.mutation();
-  let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
-
-  for def in blueprint.definitions.iter() {
-    schema = schema.register(to_type(def));
-  }
-
-  schema
-}
-
 impl From<&Blueprint> for SchemaBuilder {
   fn from(blueprint: &Blueprint) -> Self {
-    create(blueprint)
+    let query = blueprint.query();
+    let mutation = blueprint.mutation();
+    let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+
+    for def in blueprint.definitions.iter() {
+      schema = schema.register(to_type(def));
+    }
+
+    schema
   }
 }
