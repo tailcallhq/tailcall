@@ -68,7 +68,7 @@
           "additionalProperties": false,
           "properties": {
             "jwt": {
-              "$ref": "#/definitions/JwtProvider"
+              "$ref": "#/definitions/Jwt"
             }
           },
           "required": [
@@ -80,7 +80,7 @@
           "additionalProperties": false,
           "properties": {
             "basic": {
-              "$ref": "#/definitions/BasicProvider"
+              "$ref": "#/definitions/Basic"
             }
           },
           "required": [
@@ -99,7 +99,7 @@
       },
       "type": "object"
     },
-    "BasicProvider": {
+    "Basic": {
       "oneOf": [
         {
           "additionalProperties": false,
@@ -1288,7 +1288,7 @@
         }
       ]
     },
-    "JwtProvider": {
+    "Jwt": {
       "properties": {
         "audiences": {
           "items": {

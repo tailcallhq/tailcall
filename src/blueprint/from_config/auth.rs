@@ -6,6 +6,7 @@ use url::Url;
 
 use super::init_context::InitContext;
 use crate::config;
+use crate::directive::DirectiveCodec;
 use crate::mustache::Mustache;
 use crate::valid::{Valid, ValidationError};
 
@@ -48,49 +49,47 @@ impl Auth {
       let provider = match &input.provider {
         config::AuthProvider::Basic(basic) => to_basic(init_context, basic.clone())
           .map(AuthProvider::Basic)
-          .trace("basic"),
-        config::AuthProvider::Jwt(jwt) => to_jwt(init_context, jwt.clone()).map(AuthProvider::Jwt).trace("jwt"),
+          .trace(config::Basic::directive_name().as_str()),
+        config::AuthProvider::Jwt(jwt) => to_jwt(init_context, jwt.clone())
+          .map(AuthProvider::Jwt)
+          .trace(config::Jwt::directive_name().as_str()),
       };
 
       provider.map(|provider| AuthEntry { provider })
     })
     .map(Auth)
-    .trace("auth")
+    .trace(config::Auth::directive_name().as_str())
   }
 }
-fn to_basic(init_context: &InitContext, options: config::BasicProvider) -> Valid<BasicProvider, String> {
-  match options {
-    config::BasicProvider::Htpasswd(data) => {
-      Valid::from(Mustache::parse(&data).map_err(|e| ValidationError::new(e.to_string())))
-        .map(|tmpl| {
-          let htpasswd = tmpl.render(init_context);
 
-          BasicProvider { htpasswd }
-        })
-        .trace("data")
+fn to_basic(init_context: &InitContext, options: config::Basic) -> Valid<BasicProvider, String> {
+  match options {
+    config::Basic::Htpasswd(data) => {
+      Valid::from(Mustache::parse(&data).map_err(|e| ValidationError::new(e.to_string()))).map(|tmpl| {
+        let htpasswd = tmpl.render(init_context);
+
+        BasicProvider { htpasswd }
+      })
     }
   }
 }
 
-fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<JwtProvider, String> {
+fn to_jwt(init_context: &InitContext, options: config::Jwt) -> Valid<JwtProvider, String> {
   let jwks = &options.jwks;
 
   let jwks_valid = match &jwks {
     config::Jwks::Data(data) => Valid::from(Mustache::parse(data).map_err(|e| ValidationError::new(e.to_string())))
       .and_then(|tmpl| {
-        {
-          let data = tmpl.render(init_context);
+        let data = tmpl.render(init_context);
 
-          if data.is_empty() {
-            return Valid::fail("JWKS data is empty".into());
-          }
-
-          let de = &mut serde_json::Deserializer::from_str(&data);
-
-          Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
-            .map(|jwks: JwkSet| Jwks::Local(jwks))
+        if data.is_empty() {
+          return Valid::fail("JWKS data is empty".into());
         }
-        .trace("data")
+
+        let de = &mut serde_json::Deserializer::from_str(&data);
+
+        Valid::from(serde_path_to_error::deserialize(de).map_err(ValidationError::from))
+          .map(|jwks: JwkSet| Jwks::Local(jwks))
       }),
     config::Jwks::Remote { url, max_age } => {
       Valid::from(Mustache::parse(url).map_err(|e| ValidationError::new(e.to_string()))).and_then(|url| {
@@ -100,8 +99,7 @@ fn to_jwt(init_context: &InitContext, options: config::JwtProvider) -> Valid<Jwt
           .map(|url| Jwks::Remote { url, max_age: Duration::from_millis(max_age.get()) })
       })
     }
-  }
-  .trace("jwks");
+  };
 
   jwks_valid.map(|jwks| JwtProvider {
     issuer: options.issuer,

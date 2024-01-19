@@ -19,7 +19,7 @@ mod default {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum BasicProvider {
+pub enum Basic {
   Htpasswd(String),
 }
 
@@ -37,7 +37,7 @@ pub enum Jwks {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct JwtProvider {
+pub struct Jwt {
   #[serde(skip_serializing_if = "is_default")]
   pub issuer: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
@@ -50,8 +50,8 @@ pub struct JwtProvider {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum AuthProvider {
-  Jwt(JwtProvider),
-  Basic(BasicProvider),
+  Jwt(Jwt),
+  Basic(Basic),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -88,7 +88,7 @@ mod tests {
 
   #[test]
   fn jwt_options_parse() -> Result<()> {
-    let config: JwtProvider = serde_json::from_value(json!({
+    let config: Jwt = serde_json::from_value(json!({
       "optionalKid": true,
       "jwks": {
         "remote": {
@@ -99,7 +99,7 @@ mod tests {
 
     assert!(matches!(
       config,
-      JwtProvider { optional_kid: true, jwks: Jwks::Remote { .. }, .. }
+      Jwt { optional_kid: true, jwks: Jwks::Remote { .. }, .. }
     ));
 
     Ok(())
