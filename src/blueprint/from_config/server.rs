@@ -6,7 +6,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
 use super::init_context::InitContext;
-use crate::auth::provider::{to_auth, Auth};
+use super::Auth;
 use crate::config::{self, HttpVersion};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError};
@@ -82,7 +82,7 @@ impl TryFrom<config::Server> for Server {
     validate_hostname((config_server).get_hostname().to_lowercase())
       .zip(http_server)
       .zip(handle_response_headers((config_server).get_response_headers().0))
-      .zip(to_auth(&init_context, &config_server.auth))
+      .zip(Auth::make(&init_context, &config_server.auth))
       .map(|(((hostname, http), response_headers), auth)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),
