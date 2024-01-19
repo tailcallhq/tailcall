@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, KeyValues};
-use crate::lambda::{Expression, Unsafe};
+use crate::lambda::{Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
@@ -71,7 +71,7 @@ pub fn update_call(
 
           if let Some(http) = _field.http.clone() {
             compile_http(config, field, &http).and_then(|expr| match expr.clone() {
-              Expression::Unsafe(Unsafe::Http { mut req_template, group_by, dl_id }) => {
+              Expression::IO(IO::Http { mut req_template, group_by, dl_id }) => {
                 req_template = req_template.clone().root_url(
                   req_template
                     .root_url
@@ -96,7 +96,7 @@ pub fn update_call(
                     .into(),
                 );
 
-                Valid::succeed(Expression::Unsafe(Unsafe::Http { req_template, group_by, dl_id }))
+                Valid::succeed(Expression::IO(IO::Http { req_template, group_by, dl_id }))
               }
               _ => Valid::succeed(expr),
             })
