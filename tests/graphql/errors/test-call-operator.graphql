@@ -18,7 +18,6 @@ type User {
 type Post {
   userId: Int!
   withoutResolver: User @call(query: "userWithoutResolver", args: {id: "{{value.userId}}"})
-  multipleResolvers: User @http(path: "/users/{{value.userId}}") @call(query: "user", args: {id: "{{value.userId}}"})
   withoutOperator: User @call(args: {id: "{{value.userId}}"})
   urlMismatchHttp: User @call(query: "user", args: {})
   argumentMismatchGraphQL: User @call(query: "userWithGraphQLResolver", args: {})
@@ -36,11 +35,6 @@ type Failure
   @error(
     message: "no argument 'id' found"
     trace: ["Post", "headersMismatchGraphQL", "@call", "userWithGraphQLResolver"]
-  )
-type Failure
-  @error(
-    message: "@call directive is not allowed on field because it already has a resolver"
-    trace: ["Post", "multipleResolvers", "@call"]
   )
 type Failure @error(message: "no argument 'id' found", trace: ["Post", "urlMismatchHttp", "@call", "user"])
 type Failure @error(message: "call must have query", trace: ["Post", "withoutOperator", "@call"])

@@ -420,6 +420,9 @@ impl Field {
     if self.grpc.is_some() {
       directives.push(Grpc::trace_name());
     }
+    if self.call.is_some() {
+      directives.push(Call::trace_name());
+    }
     directives
   }
   pub fn has_batched_resolver(&self) -> bool {
