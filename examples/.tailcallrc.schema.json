@@ -91,12 +91,12 @@
       ],
       "properties": {
         "id": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
-      "required": [
-        "id"
-      ],
       "type": "object"
     },
     "BasicProvider": {
@@ -104,12 +104,12 @@
         {
           "additionalProperties": false,
           "properties": {
-            "data": {
+            "htpasswd": {
               "type": "string"
             }
           },
           "required": [
-            "data"
+            "htpasswd"
           ],
           "type": "object"
         }

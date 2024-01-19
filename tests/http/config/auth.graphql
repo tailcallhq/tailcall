@@ -2,7 +2,10 @@ schema
   @server(
     port: 8000
     graphiql: true
-    auth: [{id: "basic", basic: {htpasswd: "{{env.BASIC_AUTH}}"}}, {id: "jwt", jwt: {jwks: {data: "{{env.JWKS_AUTH}}"}}}]
+    auth: [
+      {id: "basic", basic: {htpasswd: "{{env.BASIC_AUTH}}"}}
+      {id: "jwt", jwt: {jwks: {data: "{{env.JWKS_AUTH}}"}}}
+    ]
   ) {
   query: Query
 }

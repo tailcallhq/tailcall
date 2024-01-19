@@ -36,7 +36,6 @@ pub enum AuthProvider {
 
 #[derive(Clone, Debug)]
 pub struct AuthEntry {
-  pub id: String,
   pub provider: AuthProvider,
 }
 
@@ -53,7 +52,7 @@ impl Auth {
         config::AuthProvider::Jwt(jwt) => to_jwt(init_context, jwt.clone()).map(AuthProvider::Jwt).trace("jwt"),
       };
 
-      provider.map(|provider| AuthEntry { id: input.id.clone(), provider })
+      provider.map(|provider| AuthEntry { provider })
     })
     .map(Auth)
     .trace("auth")

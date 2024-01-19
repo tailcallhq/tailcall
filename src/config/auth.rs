@@ -56,8 +56,7 @@ pub enum AuthProvider {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct AuthEntry {
-  // FIXME: should be optional
-  pub id: String,
+  pub id: Option<String>,
   #[serde(flatten)]
   pub provider: AuthProvider,
 }
