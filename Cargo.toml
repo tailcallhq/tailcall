@@ -81,8 +81,7 @@ headers = "0.3.9" # previous version until hyper is updated to 1+
 mime = "0.3.17"
 getrandom = { version = "0.2.12", features = ["js"] } # required to make some other dependencies wasm friendly
 htpasswd-verify = { version = "0.3.0", git = "https://github.com/twistedfall/htpasswd-verify", rev = "ff14703083cbd639f7d05622b398926f3e718d61" } # fork version that is wasm compatible
-#jsonwebtoken = "9.2.0"
-surrealdb-jsonwebtoken = "8.3.0-surreal.1"
+jsonwebtoken = "9.2.0"
 
 
 [dev-dependencies]
