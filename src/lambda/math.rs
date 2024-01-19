@@ -41,7 +41,13 @@ impl Eval for Math {
         Math::Add(lhs, rhs) => {
           let lhs = lhs.eval(ctx, conc).await?;
           let rhs = rhs.eval(ctx, conc).await?;
-
+          println!("args: {:?}", ctx.graphql_ctx.args());
+          println!(
+            "lhs: {:?}, rhs: {:?}, args: {:?}, ",
+            lhs,
+            rhs,
+            ctx.path_value::<&str>(&["args"])
+          );
           try_f64_operation(&lhs, &rhs, ops::Add::add)
             .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
             .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))

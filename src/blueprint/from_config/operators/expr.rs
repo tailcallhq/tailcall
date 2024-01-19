@@ -1,7 +1,8 @@
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, ExprBody, Field};
-use crate::lambda::{Expression, List, Logic, Math, Relation};
+use crate::lambda::{Context, Expression, List, Logic, Math, Relation};
+use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -56,7 +57,18 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
 
     // Safe Expr
-    ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate: false }),
+    ExprBody::Const(value) => value.as_str().and_then(|str| Mustache::parse(str).ok()).map_or_else(
+      || compile_const(CompileConst { config, field, value: &value, validate: false }),
+      |mustache| {
+        Valid::succeed(Expression::Context(
+          mustache
+            .expression_segments()
+            .first()
+            .and_then(|v| v.into())
+            .map_or_else(|| Context::Value, |path| Context::Path(path.to_vec())),
+        ))
+      },
+    ),
 
     // Logic
     ExprBody::If { cond, on_true: then, on_false: els } => compile(ctx, *cond)

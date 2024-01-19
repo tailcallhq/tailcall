@@ -1,0 +1,10 @@
+schema {
+  query: Query
+}
+
+type Query {
+  a: Int @expr(body: {const: 1})
+  b: Int @expr(body: {const: 2})
+  add(a: Int, b: Int): Int @expr(body: {add: [{const: "{{args.a}}"}, {const: "{{args.b}}"}]})
+  multiply: Int @expr(body: {multiply: [{const: "{{value.a}}"}, {const: "{{value.b}}"}]})
+}

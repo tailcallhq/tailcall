@@ -1,0 +1,13 @@
+config: !file tests/http/config/test-expr-mustache.graphql
+name: expr logic
+runner: only
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query {add(a: 1, b: 2)}"
+    response:
+      body:
+        data:
+          multiply: 42.0
