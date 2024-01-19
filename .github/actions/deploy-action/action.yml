@@ -17,9 +17,9 @@ runs:
       shell: bash
       run: npm install -g wrangler
     - run: |
-        echo 'account_id = "${{ secrets.CF_ACCOUNT_ID }}"' > wrangler.toml
+        echo 'account_id = "59eda2a637301830ad43a6e3e4419346"' > wrangler.toml
         wrangler r2 object put configs/${{ inputs.file-path }} --file=${{ inputs.file-path }}
       env:
-        CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-        CF_API_EMAIL: ${{ secrets.CF_API_EMAIL }}
+        CF_API_TOKEN: SvpRCgm6el9LSyQM4rOfQ9TdjqIQqgr47uSxeoaW
+        CF_API_EMAIL: amit@taicall.run
       shell: bash
