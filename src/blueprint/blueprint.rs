@@ -88,6 +88,7 @@ pub struct ObjectTypeDefinition {
   pub fields: Vec<FieldDefinition>,
   pub description: Option<String>,
   pub implements: BTreeSet<String>,
+  pub cache: Option<Cache>,
 }
 
 #[derive(Clone, Debug)]

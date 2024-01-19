@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::{Arc, Mutex};
 
@@ -7,7 +8,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::auth::context::AuthContext;
-use crate::blueprint::Server;
+use crate::blueprint::{Cache, Server};
 use crate::chrono_cache::ChronoCache;
 use crate::config::Upstream;
 use crate::data_loader::DataLoader;
@@ -37,6 +38,7 @@ pub struct RequestContext {
   pub cache_public: Arc<Mutex<Option<bool>>>,
   pub env_vars: Arc<dyn EnvIO>,
   pub cache: ChronoCache<u64, ConstValue>,
+  pub type_cache_config: Arc<HashMap<String, Cache>>,
 }
 
 impl RequestContext {
@@ -115,12 +117,14 @@ impl<Http: HttpIO, Env: EnvIO> From<&AppContext<Http, Env>> for RequestContext {
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: server_ctx.env_vars.clone(),
+      type_cache_config: server_ctx.type_cache_config.clone(),
     }
   }
 }
 
 #[cfg(test)]
 mod test {
+  use std::collections::HashMap;
   use std::sync::{Arc, Mutex};
 
   use cache_control::Cachability;
@@ -155,6 +159,7 @@ mod test {
         cache_public: Arc::new(Mutex::new(None)),
         env_vars: Arc::new(init_env()),
         auth_ctx: AuthContext::default(),
+        type_cache_config: Arc::new(HashMap::new()),
       }
     }
   }

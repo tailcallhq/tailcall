@@ -147,7 +147,7 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
-  to_fields(fields, cache)
+  to_fields(fields, cache.clone())
     .zip(Protected::from_directives(directives.iter()))
     .map(|(fields, protected)| {
       let doc = description.to_owned().map(|pos| pos.node);
@@ -160,6 +160,7 @@ where
         interface,
         implements,
         protected: protected.is_some(),
+        cache: cache.clone(),
         ..Default::default()
       }
     })

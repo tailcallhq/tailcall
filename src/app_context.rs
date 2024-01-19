@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
@@ -6,7 +7,7 @@ use async_graphql_value::ConstValue;
 
 use crate::auth::context::GlobalAuthContext;
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition};
+use crate::blueprint::{Blueprint, Cache, Definition};
 use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -26,6 +27,7 @@ pub struct AppContext<Http, Env> {
   pub cache: ChronoCache<u64, ConstValue>,
   pub env_vars: Arc<Env>,
   pub auth_ctx: Arc<GlobalAuthContext>,
+  pub type_cache_config: Arc<HashMap<String, Cache>>,
 }
 
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
@@ -34,9 +36,15 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
+    let mut type_cache_config = HashMap::new();
 
     for def in blueprint.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
+        let t = def.name.clone();
+        if let Some(ref cache) = def.cache {
+          type_cache_config.insert(t.clone(), cache.clone());
+        }
+
         for field in &mut def.fields {
           if let Some(Expression::IO(expr)) = &mut field.resolver {
             match expr {
@@ -111,6 +119,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
       auth_ctx: Arc::new(auth_ctx),
+      type_cache_config: Arc::new(type_cache_config),
     }
   }
 

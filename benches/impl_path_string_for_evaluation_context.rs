@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 
 use async_graphql::context::SelectionField;
@@ -160,6 +160,7 @@ fn request_context() -> RequestContext {
     cache_public: Arc::new(Mutex::new(None)),
     env_vars: Arc::new(init_env()),
     auth_ctx: AuthContext::default(),
+    type_cache_config: Arc::new(HashMap::new()),
   }
 }
 

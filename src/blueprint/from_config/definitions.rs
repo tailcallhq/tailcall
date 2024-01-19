@@ -230,12 +230,18 @@ fn to_enum_type_definition(name: &str, type_: &config::Type, variants: &BTreeSet
 }
 
 fn to_object_type_definition(name: &str, type_of: &config::Type, config: &Config) -> Valid<Definition, String> {
-  to_fields(name, type_of, config).map(|fields| {
+  let mut hasher = DefaultHasher::new();
+  name.hash(&mut hasher);
+  to_fields(name, type_of, config, hasher.clone()).map(|fields| {
     Definition::ObjectTypeDefinition(ObjectTypeDefinition {
       name: name.to_string(),
       description: type_of.doc.clone(),
       fields,
       implements: type_of.implements.clone(),
+      cache: type_of
+        .cache
+        .as_ref()
+        .map(|cache| Cache { max_age: cache.max_age, hasher }),
     })
   })
 }
@@ -325,7 +331,12 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
   }
 }
 
-fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Valid<Vec<FieldDefinition>, String> {
+fn to_fields(
+  object_name: &str,
+  type_of: &config::Type,
+  config: &Config,
+  hasher: DefaultHasher,
+) -> Valid<Vec<FieldDefinition>, String> {
   let operation_type = if config.schema.mutation.as_deref().eq(&Some(object_name)) {
     GraphQLOperationType::Mutation
   } else {
@@ -339,10 +350,7 @@ fn to_fields(object_name: &str, type_of: &config::Type, config: &Config) -> Vali
       return Valid::fail(format!("Multiple resolvers detected [{}]", directives.join(", ")));
     }
 
-    let mut hasher = DefaultHasher::new();
-    object_name.hash(&mut hasher);
-
-    update_args(hasher)
+    update_args(hasher.clone())
       .and(update_http().trace(config::Http::trace_name().as_str()))
       .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
       .and(update_js().trace(config::JS::trace_name().as_str()))

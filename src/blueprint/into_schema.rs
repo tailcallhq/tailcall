@@ -63,6 +63,58 @@ fn get_cache_key<'a, H: Hasher + Clone>(
   Some(key)
 }
 
+fn write_entity_cache<'a>(ctx: &'a EvaluationContext<'a, ResolverContext<'a>>, type_name: &str, output: &ConstValue) {
+  if let Some(Cache { max_age: ttl, hasher }) = ctx.req_ctx.type_cache_config.get(type_name) {
+    let hasher = hasher.clone();
+    if let Some(key) = get_cache_key(ctx, hasher) {
+      ctx.req_ctx.cache.insert(key, output.clone(), *ttl);
+    }
+  }
+
+  // if let Some(fld_caches) = ctx.req_ctx.field_cache_config.get(type_name) {
+  //   let fields_present_in_response = fld_caches
+  //     .iter()
+  //     .filter_map(|(k, c)| {
+  //       output.get_key(k).map(|r| (r, c))
+  //     });
+  //   for (field, Cache{max_age: ttl, hasher}) in fields_present_in_response {
+  //     let key = hasher.finish();
+  //     ctx.req_ctx.cache.insert(key, field.clone(), *ttl);
+  //   }
+  // }
+}
+
+async fn read_entity_cache<'a>(
+  ctx: &'a EvaluationContext<'a, ResolverContext<'a>>,
+  type_name: &str,
+) -> anyhow::Result<ConstValue> {
+  if let Some(Cache { hasher, .. }) = ctx.req_ctx.type_cache_config.get(type_name) {
+    let hasher = hasher.clone();
+
+    if let Some(key) = get_cache_key(ctx, hasher) {
+      return ctx
+        .req_ctx
+        .cache
+        .get(&key)
+        .ok_or(anyhow::anyhow!("NOT_PRESENT_IN_CACHE"));
+    }
+  }
+
+  Err(anyhow::anyhow!("NOT_PRESENT_IN_CACHE"))
+
+  // if let Some(fld_caches) = ctx.req_ctx.field_cache_config.get(type_name) {
+  //   let fields_present_in_response = fld_caches
+  //     .iter()
+  //     .filter_map(|(k, c)| {
+  //       output.get_key(k).map(|r| (r, c))
+  //     });
+  //   for (field, Cache{max_age: ttl, hasher}) in fields_present_in_response {
+  //     let key = hasher.finish();
+  //     ctx.req_ctx.cache.insert(key, field.clone(), *ttl);
+  //   }
+  // }
+}
+
 fn to_type(def: &Definition) -> dynamic::Type {
   match def {
     Definition::ObjectTypeDefinition(def) => {
@@ -83,9 +135,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
             Some(expr) => {
               let expr = expr.to_owned();
               let cache = cache.clone();
+              let of_type = field.of_type.name().to_string();
               FieldFuture::new(async move {
                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
+                let mut read_from_entity_cache = false;
                 let ttl_and_key =
                   cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
                 let const_value = match ttl_and_key {
@@ -93,6 +147,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
                       // Return value from cache
                       log::info!("Reading from cache. key = {key}");
+                      const_value
+                    } else if let Ok(const_value) = read_entity_cache(&ctx, &of_type).await {
+                      read_from_entity_cache = true;
+                      log::info!("Reading from cache.");
                       const_value
                     } else {
                       let const_value = expr.eval(&ctx, &Concurrent::Sequential).await?;
@@ -102,11 +160,23 @@ fn to_type(def: &Definition) -> dynamic::Type {
                       const_value
                     }
                   }
-                  _ => expr.eval(&ctx, &Concurrent::Sequential).await?,
+                  _ => {
+                    if let Ok(const_value) = read_entity_cache(&ctx, &of_type).await {
+                      read_from_entity_cache = true;
+                      log::info!("Reading to cache.");
+                      const_value
+                    } else {
+                      expr.eval(&ctx, &Concurrent::Sequential).await?
+                    }
+                  }
                 };
 
+                if !read_from_entity_cache {
+                  write_entity_cache(&ctx, &of_type, &const_value);
+                }
+
                 let p = match const_value {
-                  ConstValue::List(a) => FieldValue::list(a),
+                  ConstValue::List(b) => FieldValue::list(b),
                   a => FieldValue::from(a),
                 };
                 Ok(Some(p))
