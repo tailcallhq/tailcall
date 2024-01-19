@@ -80,10 +80,7 @@ async fn read_entity_cache<'a>(
     let hasher = hasher.clone();
 
     if let Some(key) = get_cache_key(ctx, hasher) {
-      return ctx
-        .req_ctx
-        .cache
-        .get(&key);
+      return ctx.req_ctx.cache.get(&key);
     }
   }
 
