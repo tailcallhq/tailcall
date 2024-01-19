@@ -1,4 +1,4 @@
-pub mod chrono_cache;
+pub mod cache;
 mod command;
 mod error;
 mod fmt;
@@ -16,7 +16,7 @@ use crate::HttpIO;
 pub(crate) mod env;
 pub(crate) mod file;
 pub(crate) mod http;
-use chrono_cache::NativeChronoCache;
+use cache::NativeChronoCache;
 pub use env::EnvNative;
 pub use file::NativeFileIO;
 pub use http::NativeHttp;

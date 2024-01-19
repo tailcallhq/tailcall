@@ -10,7 +10,7 @@ use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::auth::context::AuthContext;
-use tailcall::blueprint::Server;
+use tailcall::bluepcache;
 use tailcall::cli::chrono_cache::NativeChronoCache;
 use tailcall::cli::{init_env, init_http, init_http2_only};
 use tailcall::http::RequestContext;

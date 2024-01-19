@@ -27,7 +27,9 @@ impl CloudflareChronoCache {
 }
 // TODO: Needs fix
 #[async_trait::async_trait]
-impl Cache<u64, ConstValue> for CloudflareChronoCache {
+impl Cache for CloudflareChronoCache {
+  type Key = u64;
+  type Value = ConstValue;
   async fn set<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<ConstValue> {
     let kv_store = self.get_kv()?;
     let ttl = ttl.get();

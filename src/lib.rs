@@ -31,6 +31,7 @@ use std::future::Future;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
+use async_graphql_value::ConstValue;
 use http::Response;
 
 pub trait EnvIO: Send + Sync + 'static {
@@ -48,7 +49,11 @@ pub trait FileIO {
 }
 
 #[async_trait::async_trait]
-pub trait Cache<K: Hash + Eq, V>: Send + Sync {
-  async fn set<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> anyhow::Result<V>;
-  async fn get<'a>(&'a self, key: &'a K) -> anyhow::Result<V>;
+pub trait Cache: Send + Sync {
+  type Key: Hash + Eq;
+  type Value;
+  async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> anyhow::Result<Self::Value>;
+  async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
 }
+
+type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;

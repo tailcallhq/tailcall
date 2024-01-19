@@ -13,7 +13,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::{grpc, Cache, EnvIO, HttpIO};
+use crate::{grpc, EnvIO, HttpIO, EntityCache};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -35,7 +35,7 @@ pub struct RequestContext {
   pub min_max_age: Arc<Mutex<Option<i32>>>,
   pub cache_public: Arc<Mutex<Option<bool>>>,
   pub env_vars: Arc<dyn EnvIO>,
-  pub cache: Arc<dyn Cache<u64, ConstValue>>,
+  pub cache: Arc<EntityCache>,
 }
 
 impl RequestContext {
@@ -127,7 +127,7 @@ mod test {
 
   use crate::auth::context::AuthContext;
   use crate::blueprint::Server;
-  use crate::cli::chrono_cache::NativeChronoCache;
+  use crate::cli::cache::NativeChronoCache;
   use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
