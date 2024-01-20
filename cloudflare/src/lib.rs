@@ -1,8 +1,7 @@
+use std::panic;
 use std::rc::Rc;
 
 use anyhow::anyhow;
-
-use std::panic;
 
 mod cache;
 mod env;
