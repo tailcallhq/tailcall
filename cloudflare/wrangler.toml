@@ -16,13 +16,13 @@ binding = 'MY_R2'               # this binding/name is to be used in code
 bucket_name = 'configs'
 preview_bucket_name = 'configs'
 
-[env.dev.build]
+[env.debug.build]
 command = "cargo install -q worker-build && worker-build"
 
-[env.dev.vars]
+[env.debug.vars]
 BUCKET = "MY_R2"
 
-[[env.dev.r2_buckets]]
+[[env.debug.r2_buckets]]
 binding = 'MY_R2'               # this binding/name is to be used in code
 bucket_name = 'configs'
 preview_bucket_name = 'configs'
