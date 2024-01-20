@@ -158,7 +158,6 @@ fn request_context() -> RequestContext {
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),
     env_vars: Arc::new(init_env()),
-    auth_ctx: AuthContext::default(),
     type_cache_config: Arc::new(HashMap::new()),
   }
 }

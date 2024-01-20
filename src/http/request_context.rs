@@ -7,7 +7,6 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use crate::auth::context::AuthContext;
 use crate::blueprint::{Cache, Server};
 use crate::chrono_cache::ChronoCache;
 use crate::config::Upstream;
@@ -35,7 +34,6 @@ pub struct RequestContext {
   pub min_max_age: Arc<Mutex<Option<i32>>>,
   pub cache_public: Arc<Mutex<Option<bool>>>,
   pub env_vars: Arc<dyn EnvIO>,
-  pub cache: ChronoCache<u64, ConstValue>,
   pub type_cache_config: Arc<HashMap<String, Cache>>,
 }
 
@@ -153,7 +151,6 @@ mod test {
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
         env_vars: Arc::new(init_env()),
-        auth_ctx: AuthContext::default(),
         type_cache_config: Arc::new(HashMap::new()),
       }
     }

@@ -25,7 +25,6 @@ pub struct AppContext<Http, Env> {
   pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub env_vars: Arc<Env>,
-  pub auth_ctx: Arc<GlobalAuthContext>,
   pub type_cache_config: Arc<HashMap<String, Cache>>,
 }
 
@@ -113,7 +112,6 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
-      auth_ctx: Arc::new(auth_ctx),
       type_cache_config: Arc::new(type_cache_config),
     }
   }

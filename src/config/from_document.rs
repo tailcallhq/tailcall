@@ -143,23 +143,12 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
-  to_fields(fields, cache.clone())
-    .zip(Protected::from_directives(directives.iter()))
-    .map(|(fields, protected)| {
-      let doc = description.to_owned().map(|pos| pos.node);
-      let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-      let added_fields = to_add_fields_from_directives(directives);
-      config::Type {
-        fields,
-        added_fields,
-        doc,
-        interface,
-        implements,
-        protected: protected.is_some(),
-        cache: cache.clone(),
-        ..Default::default()
-      }
-    })
+  to_fields(fields, cache.clone()).map(|fields| {
+    let doc = description.to_owned().map(|pos| pos.node);
+    let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+    let added_fields = to_add_fields_from_directives(directives);
+    config::Type { fields, added_fields, doc, interface, implements, cache: cache.clone(), ..Default::default() }
+  })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
