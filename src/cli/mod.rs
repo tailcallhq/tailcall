@@ -41,6 +41,6 @@ pub fn init_http2_only(upstream: &Upstream) -> http::NativeHttp {
   http::NativeHttp::init(&upstream.clone().http2_only(true))
 }
 
-pub fn init_chrono_cahe<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
+pub fn init_chrono_cache<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
   NativeChronoCache::new()
 }

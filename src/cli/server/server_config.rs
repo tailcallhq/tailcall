@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::env::EnvNative;
 use crate::cli::http::NativeHttp;
-use crate::cli::{init_chrono_cahe, init_env, init_http, init_http2_only};
+use crate::cli::{init_chrono_cache, init_env, init_http, init_http2_only};
 use crate::http::AppContext;
 
 pub struct ServerConfig {
@@ -17,7 +17,7 @@ impl ServerConfig {
     let h_client = Arc::new(init_http(&blueprint.upstream));
     let h2_client = Arc::new(init_http2_only(&blueprint.upstream));
     let env = init_env();
-    let chrono_cache = init_chrono_cahe();
+    let chrono_cache = init_chrono_cache();
     let server_context = Arc::new(AppContext::new(
       blueprint.clone(),
       h_client,

@@ -5,7 +5,7 @@ use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::{Arc, Once};
-use std::{env, fs, panic};
+use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cahe, init_file, init_http};
+use tailcall::cli::{init_chrono_cache, init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
@@ -196,27 +196,22 @@ impl HttpSpec {
     anyhow::Ok(spec)
   }
 
-  async fn server_context(&self) -> anyhow::Result<Arc<AppContext<impl HttpIO, impl EnvIO>>> {
+  async fn server_context(&self) -> Arc<AppContext<impl HttpIO, impl EnvIO>> {
     let http_client = init_http(&Upstream::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
         let reader = ConfigReader::init(init_file(), http_client);
-        reader.read(&[file]).await?
+        reader.read(&[file]).await.unwrap()
       }
       ConfigSource::Inline(config) => config,
     };
-
-    for (k, v) in &self.env {
-      env::set_var(k, v.clone());
-    }
-
-    let blueprint = Blueprint::try_from(&config)?;
+    let blueprint = Blueprint::try_from(&config).unwrap();
     let client = Arc::new(MockHttpClient { spec: self.clone() });
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
     let env = Arc::new(Env::init(self.env.clone()));
-    let chrono_cache = Arc::new(init_chrono_cahe());
+    let chrono_cache = Arc::new(init_chrono_cache());
     let server_context = AppContext::new(blueprint, client, http2_client, env, chrono_cache);
-    Ok(Arc::new(server_context))
+    Arc::new(server_context)
   }
 }
 
@@ -409,7 +404,7 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
   let method = downstream_assertion.request.0.method.clone();
   let headers = downstream_assertion.request.0.headers.clone();
   let url = downstream_assertion.request.0.url.clone();
-  let server_context = spec.server_context().await?;
+  let server_context = spec.server_context().await;
   let req = headers
     .into_iter()
     .fold(
