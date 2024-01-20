@@ -4,7 +4,6 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 use async_graphql_value::ConstValue;
 
-use crate::auth::context::GlobalAuthContext;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::chrono_cache::ChronoCache;
@@ -22,10 +21,9 @@ pub struct AppContext<Http, Env> {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub cache: ChronoCache<u64, ConstValue>,
+  pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub env_vars: Arc<Env>,
-  pub auth_ctx: Arc<GlobalAuthContext>,
 }
 
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
@@ -96,10 +94,6 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
 
     let schema = blueprint.to_schema();
 
-    let auth = blueprint.server.auth.clone();
-
-    let auth_ctx = GlobalAuthContext::new(auth, h_client.clone());
-
     AppContext {
       schema,
       universal_http_client: h_client,
@@ -110,7 +104,6 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       cache: ChronoCache::new(),
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
-      auth_ctx: Arc::new(auth_ctx),
     }
   }
 
