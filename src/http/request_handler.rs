@@ -32,9 +32,7 @@ fn create_request_context<Http: HttpIO, Env: EnvIO>(
   let upstream = server_ctx.blueprint.upstream.clone();
   let allowed = upstream.get_allowed_headers();
   let headers = create_allowed_headers(req.headers(), &allowed);
-  RequestContext::from(server_ctx)
-    .req_headers(req.headers().clone())
-    .allowed_headers(headers)
+  RequestContext::from(server_ctx).req_headers(headers)
 }
 
 fn update_cache_control_header<Http, Env>(

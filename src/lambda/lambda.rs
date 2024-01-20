@@ -29,10 +29,6 @@ impl<A> Lambda<A> {
   pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
     Lambda::new(Expression::Input(self.box_expr(), path))
   }
-
-  pub fn auth_protected(self) -> Lambda<serde_json::Value> {
-    Lambda::new(Expression::Protected(self.box_expr()))
-  }
 }
 
 impl Lambda<serde_json::Value> {
