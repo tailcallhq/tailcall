@@ -5,7 +5,8 @@
   "scripts": {
     "deploy": "npx wrangler deploy --minify",
     "publish": "npx wrangler publish --minify",
-    "dev": "npx wrangler dev --port 19194 --remote"
+    "test-debug": "npx wrangler dev --port 19194 --remote --env dev",
+    "test-release": "npx wrangler dev --port 19194 --remote"
   },
   "devDependencies": {
     "wrangler": "^3.22.2"

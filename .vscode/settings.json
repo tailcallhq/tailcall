@@ -13,7 +13,5 @@
       "url": "./examples/.tailcallrc.schema.json"
     }
   ],
-  "conventionalCommits.scopes": [
-    "cloudflare"
-  ]
+  "conventionalCommits.scopes": ["cloudflare"]
 }
