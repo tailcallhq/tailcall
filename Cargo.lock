@@ -875,6 +875,7 @@ dependencies = [
  "lazy_static",
  "log",
  "reqwest",
+ "serde_qs",
  "tailcall",
  "wasm-logger",
  "worker",
@@ -3344,6 +3345,17 @@ checksum = "ebd154a240de39fdebcf5775d2675c204d7c13cf39a4c697be6493c8e734337c"
 dependencies = [
  "itoa",
  "serde",
+]
+
+[[package]]
+name = "serde_qs"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0431a35568651e363364210c91983c1da5eb29404d9f0928b67d4ebcfa7d330c"
+dependencies = [
+ "percent-encoding",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
