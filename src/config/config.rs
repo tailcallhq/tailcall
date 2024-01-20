@@ -211,8 +211,6 @@ pub struct Type {
   /// Setting to indicate if the type is cacheable.
   ///
   pub cache: Option<Cache>,
-  #[serde(default)]
-  pub protected: bool,
 }
 
 impl Type {
@@ -246,9 +244,6 @@ pub struct Cache {
   /// Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.
   pub max_age: NonZeroU64,
 }
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct Protected {}
 
 fn merge_types(mut self_types: BTreeMap<String, Type>, other_types: BTreeMap<String, Type>) -> BTreeMap<String, Type> {
   for (name, mut other_type) in other_types {
@@ -391,8 +386,6 @@ pub struct Field {
   /// Sets the cache configuration for a field
   ///
   pub cache: Option<Cache>,
-  #[serde(default)]
-  pub protected: bool,
 }
 
 impl Field {

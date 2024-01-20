@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use async_graphql::http::GraphiQLSource;
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
@@ -13,13 +13,12 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::{EnvIO, HttpIO};
 
 fn graphiql(req: Request<Body>) -> Result<Response<Body>> {
-  let route = req.uri().path().strip_prefix('/').ok_or(anyhow!("invalid prefix"))?;
-  Ok(Response::new(Body::from(
-    GraphiQLSource::build()
-      .title("Tailcall - GraphQL IDE")
-      .endpoint(&format!("{route}/graphql"))
-      .finish(),
-  )))
+  let query = req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
+  let endpoint = &format!("/graphql?{query}");
+  log::info!("GraphiQL endpoint: {}", endpoint);
+  Ok(Response::new(Body::from(playground_source(
+    GraphQLPlaygroundConfig::new(endpoint).title("Tailcall - GraphQL IDE"),
+  ))))
 }
 
 fn not_found() -> Result<Response<Body>> {
@@ -33,9 +32,7 @@ fn create_request_context<Http: HttpIO, Env: EnvIO>(
   let upstream = server_ctx.blueprint.upstream.clone();
   let allowed = upstream.get_allowed_headers();
   let headers = create_allowed_headers(req.headers(), &allowed);
-  RequestContext::from(server_ctx)
-    .req_headers(req.headers().clone())
-    .allowed_headers(headers)
+  RequestContext::from(server_ctx).req_headers(headers)
 }
 
 fn update_cache_control_header<Http, Env>(

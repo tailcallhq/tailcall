@@ -5,10 +5,7 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use super::init_context::InitContext;
-use super::Auth;
 use crate::config::{self, HttpVersion};
-use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError};
 
 #[derive(Clone, Debug, Setters)]
@@ -28,7 +25,6 @@ pub struct Server {
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,
-  pub auth: Auth,
 }
 
 #[derive(Clone, Debug)]
@@ -61,7 +57,7 @@ impl Server {
   }
 }
 
-impl TryFrom<config::Server> for Server {
+impl TryFrom<crate::config::Server> for Server {
   type Error = ValidationError<String>;
 
   fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
@@ -77,13 +73,11 @@ impl TryFrom<config::Server> for Server {
       }
       _ => Valid::succeed(Http::HTTP1),
     };
-    let init_context = InitContext::from(&config_server);
 
     validate_hostname((config_server).get_hostname().to_lowercase())
       .zip(http_server)
       .zip(handle_response_headers((config_server).get_response_headers().0))
-      .zip(Auth::make(&init_context, &config_server.auth))
-      .map(|(((hostname, http), response_headers), auth)| Server {
+      .map(|((hostname, http), response_headers)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),
         enable_graphiql: (config_server).enable_graphiql(),
@@ -99,10 +93,7 @@ impl TryFrom<config::Server> for Server {
         vars: (config_server).get_vars(),
         pipeline_flush: (config_server).get_pipeline_flush(),
         response_headers,
-        auth,
       })
-      .trace(config::Server::trace_name().as_str())
-      .trace("schema")
       .to_result()
   }
 }
@@ -117,6 +108,8 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
         .map_err(|e: AddrParseError| ValidationError::new(format!("Parsing failed because of {}", e))),
     )
     .trace("hostname")
+    .trace("@server")
+    .trace("schema")
   }
 }
 
@@ -133,6 +126,8 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
   })
   .map(|headers| headers.into_iter().collect::<HeaderMap>())
   .trace("responseHeaders")
+  .trace("@server")
+  .trace("schema")
 }
 
 #[cfg(test)]
