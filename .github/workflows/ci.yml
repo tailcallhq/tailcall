@@ -60,7 +60,7 @@ jobs:
           default: true
 
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -104,7 +104,7 @@ jobs:
           toolchain: nightly
           components: rustfmt, clippy
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -414,7 +414,7 @@ jobs:
 
   homebrew-release:
     name: Homebrew Release
-    needs: [draft_release, release]
+    needs: [draft_release, release, semantic_release]
     if: (contains(github.event.head_commit.message, 'feat:') || contains(github.event.head_commit.message, 'fix:')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       contents: write

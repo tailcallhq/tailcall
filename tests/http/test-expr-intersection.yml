@@ -1,0 +1,13 @@
+config: !file tests/http/config/test-expr-intersection.graphql
+name: expr intersection
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { intersection }"
+    response:
+      body:
+        data:
+          intersection:
+            - 3

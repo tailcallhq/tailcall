@@ -5,14 +5,21 @@ on:
     paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
-  pull_request:
+  pull_request_target:
     paths-ignore: ["docs/**", "**.md"]
-    types: [opened, reopened, synchronize, labeled]
+    types: [opened, synchronize, labeled]
     branches:
       - main
 
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to run benchmark on"
+        required: true
+        default: "main"
+
 jobs:
-  macro_benchmark:
+  benchmark:
     name: Macro Benchmarks
     if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
@@ -21,6 +28,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Stable Toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -29,7 +37,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -70,22 +78,70 @@ jobs:
         name: Convert Output to Markdown
         working-directory: ci-benchmark
         run: |
-          node wrk-output-to-md.js wrk-output.txt > body.md
+          node wrk-output-to-md.js wrk-output.txt > wrk-output.md
 
       - id: cat_md
         name: Cat Markdown
         working-directory: ci-benchmark
         run: |
-          cat body.md
+          cat wrk-output.md
 
-      - name: "Upload Artifact"
-        uses: actions/upload-artifact@v4
+      - id: get_comment_body
+        name: Get Comment Body
+        working-directory: ci-benchmark
+        run: |
+          body="$(cat wrk-output.md)"
+          delimiter="$(openssl rand -hex 8)"
+          echo "body<<$delimiter" >> $GITHUB_OUTPUT
+          echo "$body" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
+
+      - name: Create Commit Comment
+        uses: peter-evans/commit-comment@v3
         with:
-          name: body
-          path: body.md
+          sha: ${{github.event.pull_request.head.sha}}
+          body: ${{steps.get_comment_body.outputs.body}}
+
+  lint:
+    name: CI:Lint
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: lint')"
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+      - name: Install Prettier
+        run: npm install --global prettier
+      - name: Install Stable Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+      - name: Cache Rust Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Run lint script
+        run: ./lint.sh --mode=fix
+      - name: Commit and push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: apply lint fixes"
 
   Cache_Benchmarks:
-    name: Cache Micro Benchmarks result
+    name: Micro Benchmarks
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       pull-requests: write
@@ -109,7 +165,7 @@ jobs:
           cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.sha }}
@@ -143,7 +199,7 @@ jobs:
         run: cat benches/change_benchmarks.md
 
       - name: Restore file
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: benches/main_benchmarks.json
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
