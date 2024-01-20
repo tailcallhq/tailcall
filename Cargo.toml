@@ -111,6 +111,11 @@ debug = false
 incremental = false
 overflow-checks = false
 
+[profile.release.package.cloudflare]
+strip = true
+codegen-units = 1
+opt-level = 'z'
+
 [[bench]]
 name = "json_like_bench"
 harness = false
