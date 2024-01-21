@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config, Protected};
+use super::Config;
 use crate::blueprint::TypeLike;
 use crate::directive::DirectiveCodec;
 
@@ -11,11 +11,9 @@ fn pos<A>(a: A) -> Positioned<A> {
 }
 fn config_document(config: &Config) -> ServiceDocument {
   let mut definitions = Vec::new();
-  let directives = vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())];
-
   let schema_definition = SchemaDefinition {
     extend: false,
-    directives,
+    directives: vec![pos(config.server.to_directive()), pos(config.upstream.to_directive())],
     query: config.schema.query.clone().map(|name| pos(Name::new(name))),
     mutation: config.schema.mutation.clone().map(|name| pos(Name::new(name))),
     subscription: config.schema.subscription.clone().map(|name| pos(Name::new(name))),
@@ -190,11 +188,6 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
     field.graphql.as_ref().map(|d| pos(d.to_directive())),
     field.grpc.as_ref().map(|d| pos(d.to_directive())),
     field.expr.as_ref().map(|d| pos(d.to_directive())),
-    if field.protected {
-      Some(pos((Protected {}).to_directive()))
-    } else {
-      None
-    },
   ];
 
   directives.into_iter().flatten().collect()

@@ -2,7 +2,6 @@
 #![allow(clippy::mutable_key_type)]
 mod app_context;
 pub mod async_graphql_hyper;
-pub mod auth;
 pub mod blueprint;
 pub mod cache;
 pub mod chrono_cache;
