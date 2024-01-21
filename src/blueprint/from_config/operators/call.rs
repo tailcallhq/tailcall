@@ -80,8 +80,8 @@ pub fn compile_call(
 
       if let Some(http) = _field.http.clone() {
         compile_http(config, field, &http).and_then(|expr| match expr.clone() {
-          Expression::IO(IO::Http { mut req_template, group_by, dl_id }) => {
-            req_template = req_template.clone().root_url(
+          Expression::IO(IO::Http { req_template, group_by, dl_id }) => Valid::succeed(
+            req_template.clone().root_url(
               req_template
                 .root_url
                 .get_segments()
@@ -103,10 +103,9 @@ pub fn compile_call(
                 })
                 .collect::<Vec<Segment>>()
                 .into(),
-            );
-
-            Valid::succeed(Expression::IO(IO::Http { req_template, group_by, dl_id }))
-          }
+            ),
+          )
+          .map(|req_template| Expression::IO(IO::Http { req_template, group_by, dl_id })),
           _ => Valid::succeed(expr),
         })
       } else if let Some(mut graphql) = _field.graphql.clone() {
