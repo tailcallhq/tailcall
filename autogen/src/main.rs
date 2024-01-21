@@ -6,7 +6,9 @@ use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
-use schemars::schema::{InstanceType, ObjectValidation, RootSchema, Schema, SchemaObject, SingleOrVec};
+use schemars::schema::{
+  ArrayValidation, InstanceType, ObjectValidation, RootSchema, Schema, SchemaObject, SingleOrVec,
+};
 use schemars::JsonSchema;
 use serde_json::{json, Value};
 use tailcall::cli::init_file;
@@ -196,16 +198,16 @@ fn write_description(writer: &mut IndentedWriter<impl Write>, description: Optio
 
 fn write_instance_type(writer: &mut IndentedWriter<impl Write>, typ: &InstanceType) -> std::io::Result<()> {
   match typ {
-    &InstanceType::Integer => writeln!(writer, "Int"),
-    x => writeln!(writer, "{x:?}"),
+    &InstanceType::Integer => write!(writer, "Int"),
+    x => write!(writer, "{x:?}"),
   }
 }
 
 fn write_reference(writer: &mut IndentedWriter<impl Write>, reference: &String) -> std::io::Result<()> {
   let nm = reference.split("/").last().unwrap();
   match nm {
-    "schema" => writeln!(writer, "JsonSchema"),
-    other => writeln!(writer, "{other}"),
+    "schema" => write!(writer, "JsonSchema"),
+    other => write!(writer, "{other}"),
   }
 }
 
@@ -213,11 +215,9 @@ fn write_type(
   writer: &mut IndentedWriter<impl Write>,
   name: String,
   schema: SchemaObject,
-  _defs: &BTreeMap<String, Schema>,
+  defs: &BTreeMap<String, Schema>,
   extra_it: &mut BTreeMap<String, ObjectValidation>,
 ) -> std::io::Result<()> {
-  // if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
-  write!(writer, "{name}: ")?;
   match schema.instance_type {
     Some(SingleOrVec::Single(typ))
       if matches!(
@@ -229,7 +229,8 @@ fn write_type(
           | InstanceType::Integer
       ) =>
     {
-      write_instance_type(writer, &typ)
+      write_instance_type(writer, &typ)?;
+      write!(writer, "!")
     }
     Some(SingleOrVec::Vec(typ))
       if matches!(
@@ -244,34 +245,8 @@ fn write_type(
       write_instance_type(writer, typ.first().unwrap())
     }
     _ => {
-      if let Some(schema) = schema.array.clone().and_then(|arr| {
-        Some(match arr.items? {
-          SingleOrVec::Single(typ) => typ.into_object(),
-          SingleOrVec::Vec(typ) => typ.into_iter().next()?.into_object(),
-        })
-      }) {
-        if let Some(it) = schema.instance_type.clone() {
-          let typ = match it {
-            SingleOrVec::Single(typ) => *typ,
-            SingleOrVec::Vec(typ) => typ.into_iter().next().unwrap(),
-          };
-
-          match typ {
-            InstanceType::Array | InstanceType::Object => {
-              if let Some(name) = schema.reference.clone() {
-                write_reference(writer, &name)
-              } else {
-                writeln!(writer, "JSON")
-              }
-            }
-            x => write_instance_type(writer, &x),
-          }
-        } else if let Some(name) = schema.reference.clone() {
-          write_reference(writer, &name)
-        } else {
-          // println!("{name}: {schema:?}");
-          writeln!(writer, "JSON")
-        }
+      if let Some(arr_valid) = schema.array.clone() {
+        write_array_validation(writer, name, *arr_valid, defs, extra_it)
       } else if let Some(typ) = schema.object.clone() {
         if typ.properties.len() > 0 {
           let upper = name.as_bytes()[0].to_ascii_uppercase();
@@ -279,11 +254,11 @@ fn write_type(
           unsafe {
             name.as_bytes_mut()[0] = upper;
           }
-          writeln!(writer, "{name}")?;
+          write!(writer, "{name}")?;
           extra_it.insert(name, *typ);
           Ok(())
         } else {
-          writeln!(writer, "JSON")
+          write!(writer, "JSON")
         }
         // println!("{name}: {schema:?}");
       } else if let Some(sub_schema) = schema.subschemas.clone().into_iter().next() {
@@ -295,7 +270,7 @@ fn write_type(
           list
         } else {
           // println!("{name}: {schema:?}");
-          writeln!(writer, "JSON")?;
+          write!(writer, "JSON")?;
           return Ok(());
         };
         let first = list.first().unwrap();
@@ -307,10 +282,24 @@ fn write_type(
         write_reference(writer, &name)
       } else {
         // println!("{name}: {schema:?}");
-        writeln!(writer, "JSON")
+        write!(writer, "JSON")
       }
     }
   }
+}
+
+fn write_field(
+  writer: &mut IndentedWriter<impl Write>,
+  name: String,
+  schema: SchemaObject,
+  defs: &BTreeMap<String, Schema>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
+) -> std::io::Result<()> {
+  // if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
+  // if name.as_str() == "path" { println!("{name}: {schema:?}"); }
+  write!(writer, "{name}: ")?;
+  write_type(writer, name, schema, defs, extra_it)?;
+  writeln!(writer, "")
 }
 
 fn write_input_type(
@@ -350,7 +339,7 @@ fn write_input_type(
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
       write_description(writer, description)?;
-      write_type(writer, name, property, defs, extra_it)?;
+      write_field(writer, name, property, defs, extra_it)?;
     }
     writer.unindent();
     writeln!(writer, "}}")?;
@@ -379,7 +368,7 @@ fn write_input_type(
       write_description(writer, description)?;
       if let Some(obj) = property.object {
         for (name, schema) in obj.properties {
-          write_type(writer, name, schema.into_object(), defs, extra_it)?;
+          write_field(writer, name, schema.into_object(), defs, extra_it)?;
         }
       }
     }
@@ -395,7 +384,7 @@ fn write_input_type(
     for property in list {
       if let Some(obj) = property.clone().into_object().object {
         for (name, schema) in obj.properties {
-          write_type(writer, name, schema.into_object(), defs, extra_it)?;
+          write_field(writer, name, schema.into_object(), defs, extra_it)?;
         }
       }
     }
@@ -426,7 +415,7 @@ fn write_property(
     .as_ref()
     .and_then(|metadata| metadata.description.as_ref());
   write_description(writer, description)?;
-  write_type(writer, name, property, defs, extra_it)?;
+  write_field(writer, name, property, defs, extra_it)?;
   Ok(())
 }
 
@@ -439,9 +428,9 @@ fn write_schema(
   written_directives: &mut HashSet<String>,
   extra_it: &mut BTreeMap<String, ObjectValidation>,
 ) -> std::io::Result<()> {
-  if written_directives.contains(&name) {
-    return Ok(());
-  }
+  // if written_directives.contains(&name) {
+  //   return Ok(());
+  // }
   // println!("{name}: {:?}", ());
   let description = schema
     .metadata
@@ -529,6 +518,63 @@ fn write_schema_for_field(
   }
 
   Ok(())
+}
+
+fn write_array_validation(
+  writer: &mut IndentedWriter<impl Write>,
+  name: String,
+  arr_valid: ArrayValidation,
+  defs: &BTreeMap<String, Schema>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
+) -> std::io::Result<()> {
+  let mut is_required = false;
+  write!(writer, "[")?;
+  if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
+    is_required = true;
+    write_type(writer, name, schema.into_object(), defs, extra_it)?;
+  } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
+    write_type(writer, name, schemas[0].clone().into_object(), defs, extra_it)?;
+  } else {
+    println!("{name}: {arr_valid:?}");
+
+    write!(writer, "JSON")?;
+  }
+  if is_required {
+    write!(writer, "]!")
+  } else {
+    write!(writer, "]")
+  }
+  /*
+  .and_then(|arr| {
+        Some(match arr.items? {
+          SingleOrVec::Single(typ) => typ.into_object(),
+          SingleOrVec::Vec(typ) => typ.into_iter().next()?.into_object(),
+        })
+      }) {
+        if let Some(it) = schema.instance_type.clone() {
+          let typ = match it {
+            SingleOrVec::Single(typ) => *typ,
+            SingleOrVec::Vec(typ) => typ.into_iter().next().unwrap(),
+          };
+
+          match typ {
+            InstanceType::Array | InstanceType::Object => {
+              if let Some(name) = schema.reference.clone() {
+                write_reference(writer, &name)
+              } else {
+                writeln!(writer, "JSON")
+              }
+            }
+            x => write_instance_type(writer, &x),
+          }
+        } else if let Some(name) = schema.reference.clone() {
+          write_reference(writer, &name)
+        } else {
+          // println!("{name}: {schema:?}");
+          writeln!(writer, "JSON")
+        }
+      }
+   */
 }
 
 fn write_object_validation(
