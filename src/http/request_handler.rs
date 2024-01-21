@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -13,11 +14,21 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::{EnvIO, HttpIO};
 
 fn graphiql(req: Request<Body>) -> Result<Response<Body>> {
-  let query = req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
-  let endpoint = &format!("/graphql?{query}");
+  let query = req.uri().query();
+  let endpoint = "/graphql";
+  let endpoint = if let Some(query) = query {
+    if query.is_empty() {
+      Cow::Borrowed(endpoint)
+    } else {
+      Cow::Owned(format!("{}?{}", endpoint, query))
+    }
+  } else {
+    Cow::Borrowed(endpoint)
+  };
+
   log::info!("GraphiQL endpoint: {}", endpoint);
   Ok(Response::new(Body::from(playground_source(
-    GraphQLPlaygroundConfig::new(endpoint).title("Tailcall - GraphQL IDE"),
+    GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
   ))))
 }
 
