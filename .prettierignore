@@ -1,2 +1,2 @@
 target/
-.tailcall.schema.json
+*.schema.json
