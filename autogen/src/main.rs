@@ -176,8 +176,7 @@ fn get_file_path() -> PathBuf {
 }
 
 async fn get_updated_json() -> Result<Value> {
-  let schema: RootSchema = schemars::schema_for!(config::Server);
-  // println!("{schema:#?}");
+  let schema: RootSchema = schemars::schema_for!(config::Config);
   let schema = json!(schema);
   Ok(schema)
 }
