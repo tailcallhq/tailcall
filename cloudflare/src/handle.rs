@@ -24,12 +24,12 @@ lazy_static! {
 ///
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   log::info!("{} {:?}", req.method().to_string(), req.url().map(|u| u.to_string()));
-  if req.method() == worker::Method::Get {
-    let response = graphiql()?;
-    return to_response(response).await;
-  }
   let env = Rc::new(env);
   let hyper_req = to_request(req).await?;
+  if hyper_req.method() == hyper::Method::GET {
+    let response = graphiql(&hyper_req)?;
+    return to_response(response).await;
+  }
   let query = hyper_req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
   let query = serde_qs::from_str::<HashMap<String, String>>(query)?;
   let config_path = query

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -12,9 +13,22 @@ use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::{EnvIO, HttpIO};
 
-pub fn graphiql() -> Result<Response<Body>> {
+pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
+  let query = req.uri().query();
+  let endpoint = "/graphql";
+  let endpoint = if let Some(query) = query {
+    if query.is_empty() {
+      Cow::Borrowed(endpoint)
+    } else {
+      Cow::Owned(format!("{}?{}", endpoint, query))
+    }
+  } else {
+    Cow::Borrowed(endpoint)
+  };
+
+  log::info!("GraphiQL endpoint: {}", endpoint);
   Ok(Response::new(Body::from(playground_source(
-    GraphQLPlaygroundConfig::new("/graphql").title("Tailcall - GraphQL IDE"),
+    GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
   ))))
 }
 
@@ -102,7 +116,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike, Http: Http
     hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
       graphql_request::<T, Http, Env>(req, state.as_ref()).await
     }
-    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(),
+    hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(&req),
     _ => not_found(),
   }
 }
