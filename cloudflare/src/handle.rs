@@ -20,7 +20,7 @@ lazy_static! {
   static ref APP_CTX: RwLock<Option<(String, Arc<CloudFlareAppContext>)>> = RwLock::new(None);
 }
 ///
-/// The main fetch handler that handles requests on cloudflare
+/// The handler which handles requests on cloudflare
 ///
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   log::info!("{} {:?}", req.method().to_string(), req.url().map(|u| u.to_string()));
