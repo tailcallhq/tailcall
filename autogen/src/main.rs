@@ -135,7 +135,7 @@ fn write_type(
   schema: SchemaObject,
   _defs: &BTreeMap<String, Schema>,
 ) -> std::io::Result<()> {
-  if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
+  // if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
   write!(writer, "{name}: ")?;
   match schema.instance_type {
     Some(SingleOrVec::Single(typ))
@@ -231,10 +231,10 @@ fn write_input_type(
     name = "JsonSchema".to_string()
   }
 
-  println!("InputType {name}");
-  if name.as_str() == "Auth" {
-    println!("{typ:?}");
-  }
+  // println!("InputType {name}");
+  // if name.as_str() == "Auth" {
+    // println!("{typ:?}");
+  // }
   match name.as_str() {
     "Arg" => return Ok(()),
     _ => {}
@@ -406,7 +406,7 @@ fn write_all_input_types(mut writer: impl Write) -> std::io::Result<()> {
   for (name, input_type) in defs.iter() {
     write_input_type(&mut writer, name.clone(), input_type.clone().into_object(), &defs, &mut scalars)?;
   }
-  println!("{scalars:?}");
+  // println!("{scalars:?}");
   for name in scalars {
     writeln!(writer, "scalar {name}")?;
   }
