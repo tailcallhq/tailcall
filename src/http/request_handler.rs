@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
