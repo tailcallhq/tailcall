@@ -198,7 +198,7 @@ mod tests {
     }
 
     static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
-      let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
+      let mut req_ctx = RequestContext::default().allowed_headers(TEST_HEADERS.clone());
 
       req_ctx.server.vars = TEST_VARS.clone();
       req_ctx.env_vars = Arc::new(Env::init(TEST_ENV_VARS.clone()));
