@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
-use schemars::schema::{InstanceType, RootSchema, Schema, SchemaObject, SingleOrVec};
+use schemars::schema::{InstanceType, ObjectValidation, RootSchema, Schema, SchemaObject, SingleOrVec};
 use schemars::JsonSchema;
 use serde_json::{json, Value};
 use tailcall::cli::init_file;
@@ -18,7 +18,91 @@ static GRAPHQL_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.graphql";
 fn map_type(name: String) -> String {
   match name.as_str() {
     "schema" => "JsonSchema".into(),
-    _ => name
+    _ => name,
+  }
+}
+
+struct LineBreaker<'a> {
+  string: &'a str,
+  break_at: usize,
+  index: usize,
+}
+
+impl<'a> LineBreaker<'a> {
+  fn new(string: &'a str, break_at: usize) -> Self {
+    LineBreaker { string, break_at, index: 0 }
+  }
+}
+
+impl<'a> Iterator for LineBreaker<'a> {
+  type Item = &'a str;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    if self.index >= self.string.len() {
+      return None;
+    }
+
+    let end_index = self
+      .string
+      .chars()
+      .skip(self.index + self.break_at)
+      .enumerate()
+      .find(|(_, ch)| ch.is_whitespace())
+      .map(|(index, _)| self.index + self.break_at + index + 1)
+      .unwrap_or(self.string.len());
+
+    let start_index = self.index;
+    self.index = end_index;
+
+    Some(&self.string[start_index..end_index])
+  }
+}
+
+struct IndentedWriter<W: Write> {
+  writer: W,
+  indentation: usize,
+  line_broke: bool,
+}
+
+impl<W: Write> IndentedWriter<W> {
+  fn new(writer: W) -> Self {
+    IndentedWriter { writer, indentation: 0, line_broke: false }
+  }
+
+  fn indent(&mut self) {
+    self.indentation += 2;
+  }
+
+  fn unindent(&mut self) {
+    self.indentation -= 2;
+  }
+}
+
+impl<W: std::io::Write> Write for IndentedWriter<W> {
+  fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    let mut new_buf = vec![];
+    let mut extra = 0;
+
+    for ch in buf {
+      if self.line_broke && self.indentation > 0 {
+        extra += self.indentation;
+        for _ in 0..self.indentation {
+          new_buf.push(b' ');
+        }
+      }
+      self.line_broke = false;
+
+      new_buf.push(*ch);
+      if ch == &b'\n' {
+        self.line_broke = true;
+      }
+    }
+
+    self.writer.write(&new_buf).map(|a| a - extra)
+  }
+
+  fn flush(&mut self) -> std::io::Result<()> {
+    self.writer.flush()
   }
 }
 
@@ -105,23 +189,27 @@ async fn get_updated_json() -> Result<Value> {
   Ok(schema)
 }
 
-fn write_description(mut writer: impl Write, description: Option<&String>) -> std::io::Result<()> {
+fn write_description(writer: &mut IndentedWriter<impl Write>, description: Option<&String>) -> std::io::Result<()> {
   if let Some(description) = description {
+    let description: String = description.chars().filter(|ch| ch != &'\n').collect();
+    let line_breaker = LineBreaker::new(&description, 80);
     writeln!(writer, "\"\"\"")?;
-    writeln!(writer, "{description}")?;
+    for line in line_breaker {
+      writeln!(writer, "{line}")?;
+    }
     writeln!(writer, "\"\"\"")?;
   }
   Ok(())
 }
 
-fn write_instance_type(mut writer: impl Write, typ: &InstanceType) -> std::io::Result<()> {
+fn write_instance_type(writer: &mut IndentedWriter<impl Write>, typ: &InstanceType) -> std::io::Result<()> {
   match typ {
     &InstanceType::Integer => writeln!(writer, "Int"),
-    x => writeln!(writer, "{x:?}")
+    x => writeln!(writer, "{x:?}"),
   }
 }
 
-fn write_reference(mut writer: impl Write, reference: &String) -> std::io::Result<()> {
+fn write_reference(writer: &mut IndentedWriter<impl Write>, reference: &String) -> std::io::Result<()> {
   let nm = reference.split("/").last().unwrap();
   match nm {
     "schema" => writeln!(writer, "JsonSchema"),
@@ -130,10 +218,11 @@ fn write_reference(mut writer: impl Write, reference: &String) -> std::io::Resul
 }
 
 fn write_type(
-  mut writer: impl Write,
+  writer: &mut IndentedWriter<impl Write>,
   name: String,
   schema: SchemaObject,
   _defs: &BTreeMap<String, Schema>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
 ) -> std::io::Result<()> {
   // if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
   write!(writer, "{name}: ")?;
@@ -148,7 +237,7 @@ fn write_type(
           | InstanceType::Integer
       ) =>
     {
-      write_instance_type(&mut writer, &typ)
+      write_instance_type(writer, &typ)
     }
     Some(SingleOrVec::Vec(typ))
       if matches!(
@@ -160,7 +249,7 @@ fn write_type(
           | InstanceType::Integer
       ) =>
     {
-      write_instance_type(&mut writer, typ.first().unwrap())
+      write_instance_type(writer, typ.first().unwrap())
     }
     _ => {
       if let Some(schema) = schema.array.clone().and_then(|arr| {
@@ -178,20 +267,33 @@ fn write_type(
           match typ {
             InstanceType::Array | InstanceType::Object => {
               if let Some(name) = schema.reference.clone() {
-                write_reference(&mut writer, &name)
+                write_reference(writer, &name)
               } else {
                 writeln!(writer, "JSON")
               }
             }
-            x => write_instance_type(&mut writer, &x),
+            x => write_instance_type(writer, &x),
           }
         } else if let Some(name) = schema.reference.clone() {
-          write_reference(&mut writer, &name)
+          write_reference(writer, &name)
+        } else {
+          // println!("{name}: {schema:?}");
+          writeln!(writer, "JSON")
+        }
+      } else if let Some(typ) = schema.object.clone() {
+        if typ.properties.len() > 0 {
+          let upper = name.as_bytes()[0].to_ascii_uppercase();
+          let mut name = name;
+          unsafe {
+            name.as_bytes_mut()[0] = upper;
+          }
+          writeln!(writer, "{name}")?;
+          extra_it.insert(name, *typ);
+          Ok(())
         } else {
           writeln!(writer, "JSON")
         }
-      } else if let Some(_typ) = schema.object.clone() {
-        writeln!(writer, "JSON")
+        // println!("{name}: {schema:?}");
       } else if let Some(sub_schema) = schema.subschemas.clone().into_iter().next() {
         let list = if let Some(list) = sub_schema.any_of {
           list
@@ -200,18 +302,17 @@ fn write_type(
         } else if let Some(list) = sub_schema.one_of {
           list
         } else {
+          // println!("{name}: {schema:?}");
           writeln!(writer, "JSON")?;
           return Ok(());
         };
         let first = list.first().unwrap();
         match first {
-          Schema::Object(obj) => {
-            write_reference(&mut writer, &obj.reference.clone().unwrap())
-          },
+          Schema::Object(obj) => write_reference(writer, &obj.reference.clone().unwrap()),
           _ => panic!(),
         }
       } else if let Some(name) = schema.reference {
-        write_reference(&mut writer, &name)
+        write_reference(writer, &name)
       } else {
         // println!("{name}: {schema:?}");
         writeln!(writer, "JSON")
@@ -221,11 +322,12 @@ fn write_type(
 }
 
 fn write_input_type(
-  mut writer: impl Write,
+  writer: &mut IndentedWriter<impl Write>,
   mut name: String,
   typ: SchemaObject,
   defs: &BTreeMap<String, Schema>,
-  scalars: &mut Vec<String>
+  scalars: &mut Vec<String>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
 ) -> std::io::Result<()> {
   if name.as_str() == "schema" {
     name = "JsonSchema".to_string()
@@ -233,38 +335,41 @@ fn write_input_type(
 
   // println!("InputType {name}");
   // if name.as_str() == "Auth" {
-    // println!("{typ:?}");
+  // println!("{typ:?}");
   // }
   match name.as_str() {
     "Arg" => return Ok(()),
     _ => {}
   }
 
-
   let description = typ.metadata.as_ref().and_then(|metadata| metadata.description.as_ref());
-  write_description(&mut writer, description)?;
+  write_description(writer, description)?;
   if let Some(obj) = typ.object {
     if obj.properties.is_empty() {
       scalars.push(name);
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
+    writer.indent();
     for (name, property) in obj.properties.into_iter() {
       let property = property.into_object();
       let description = property
         .metadata
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
-      write_description(&mut writer, description)?;
-      write_type(&mut writer, name, property, defs)?;
+      write_description(writer, description)?;
+      write_type(writer, name, property, defs, extra_it)?;
     }
+    writer.unindent();
     writeln!(writer, "}}")?;
   } else if let Some(enm) = typ.enum_values {
     writeln!(writer, "enum {name} {{")?;
+    writer.indent();
     for val in enm {
       let val: String = format!("{val}").chars().filter(|ch| ch != &'"').collect();
       writeln!(writer, "{val}")?;
     }
+    writer.unindent();
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
     if list.is_empty() {
@@ -272,19 +377,21 @@ fn write_input_type(
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
+    writer.indent();
     for property in list {
       let property = property.clone().into_object();
       let description = property
         .metadata
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
-      write_description(&mut writer, description)?;
+      write_description(writer, description)?;
       if let Some(obj) = property.object {
         for (name, schema) in obj.properties {
-          write_type(&mut writer, name, schema.into_object(), defs)?;
+          write_type(writer, name, schema.into_object(), defs, extra_it)?;
         }
       }
     }
+    writer.unindent();
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
     if list.is_empty() {
@@ -292,13 +399,15 @@ fn write_input_type(
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
+    writer.indent();
     for property in list {
       if let Some(obj) = property.clone().into_object().object {
         for (name, schema) in obj.properties {
-          write_type(&mut writer, name, schema.into_object(), defs)?;
+          write_type(writer, name, schema.into_object(), defs, extra_it)?;
         }
       }
     }
+    writer.unindent();
     writeln!(writer, "}}")?;
   } else if let Some(SingleOrVec::Single(item)) = typ.array.and_then(|arr| arr.items) {
     if let Some(name) = item.into_object().reference {
@@ -312,10 +421,11 @@ fn write_input_type(
 }
 
 fn write_property(
-  mut writer: impl Write,
+  writer: &mut IndentedWriter<impl Write>,
   name: String,
   property: Schema,
   defs: &BTreeMap<String, Schema>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
 ) -> std::io::Result<()> {
   // println!("Property: name = {name}");
   let property = property.into_object();
@@ -323,26 +433,29 @@ fn write_property(
     .metadata
     .as_ref()
     .and_then(|metadata| metadata.description.as_ref());
-  write_description(&mut writer, description)?;
-  write_type(&mut writer, name, property, defs)?;
+  write_description(writer, description)?;
+  write_type(writer, name, property, defs, extra_it)?;
   Ok(())
 }
 
 fn write_schema(
-  mut writer: impl Write,
+  mut writer: &mut IndentedWriter<impl Write>,
   mut name: String,
   schema: SchemaObject,
   defs: &BTreeMap<String, Schema>,
   on: &str,
   written_directives: &mut HashSet<String>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
 ) -> std::io::Result<()> {
-  if written_directives.contains(&name) { return Ok(()) }
+  if written_directives.contains(&name) {
+    return Ok(());
+  }
   // println!("{name}: {:?}", ());
   let description = schema
     .metadata
     .as_ref()
     .and_then(|metadata| metadata.description.as_ref());
-  write_description(&mut writer, description)?;
+  write_description(writer, description)?;
   unsafe {
     name.as_bytes_mut().get_mut(0).map(|ch| {
       let lower = (*ch as char).to_ascii_lowercase();
@@ -355,32 +468,52 @@ fn write_schema(
 
     let mut close_param = false;
     if let Some((name, property)) = properties_iter.next() {
-      writeln!(writer, " (")?;
-      write_property(&mut writer, name, property, defs)?;
+      writeln!(writer, "(")?;
+      writer.indent();
+      write_property(writer, name, property, defs, extra_it)?;
       close_param = true;
     }
     for (name, property) in properties_iter {
-      write_property(&mut writer, name, property, defs)?;
+      write_property(writer, name, property, defs, extra_it)?;
     }
     if close_param {
+      writer.unindent();
       write!(writer, ")")?;
     }
   }
-  writeln!(writer, " on {on}")?;
+  writeln!(writer, " on {on}\n")?;
   written_directives.insert(name);
 
   Ok(())
 }
 
-fn write_schema_for<T: JsonSchema>(mut writer: impl Write, name: &str, on: &str, written_directives: &mut HashSet<String>) -> Result<()> {
+fn write_schema_for<T: JsonSchema>(
+  writer: &mut IndentedWriter<impl Write>,
+  name: &str,
+  on: &str,
+  written_directives: &mut HashSet<String>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
+) -> Result<()> {
   let schema: RootSchema = schemars::schema_for!(T);
   let defs = schema.definitions;
-  write_schema(&mut writer, name.to_string(), schema.schema, &defs, on, written_directives)?;
+  write_schema(
+    writer,
+    name.to_string(),
+    schema.schema,
+    &defs,
+    on,
+    written_directives,
+    extra_it,
+  )?;
   writer.flush()?;
   Ok(())
 }
 
-fn write_schema_for_field(mut writer: impl Write, written_directives: &mut HashSet<String>) -> Result<()> {
+fn write_schema_for_field(
+  writer: &mut IndentedWriter<impl Write>,
+  written_directives: &mut HashSet<String>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
+) -> Result<()> {
   let schema = schemars::schema_for!(config::Field);
   // println!("{schema:#?}");
   let defs: BTreeMap<String, Schema> = schema.definitions;
@@ -391,22 +524,66 @@ fn write_schema_for_field(mut writer: impl Write, written_directives: &mut HashS
   for (name, _) in schema.schema.object.unwrap().properties {
     if let Some(schema) = defs1.get(name.as_str()).cloned() {
       let schema = schema.into_object();
-      write_schema(&mut writer, name, schema, &defs, "FIELD_DEFINITION", written_directives)?;
+      write_schema(
+        writer,
+        name,
+        schema,
+        &defs,
+        "FIELD_DEFINITION",
+        written_directives,
+        extra_it,
+      )?;
     }
   }
 
   Ok(())
 }
 
-fn write_all_input_types(mut writer: impl Write) -> std::io::Result<()> {
+fn write_object_validation(
+  writer: &mut IndentedWriter<impl Write>,
+  name: String,
+  obj_valid: ObjectValidation,
+  defs: &BTreeMap<String, Schema>,
+  extra_it: &mut BTreeMap<String, ObjectValidation>,
+) -> std::io::Result<()> {
+  if obj_valid.properties.len() > 0 {
+    writeln!(writer, "input {name} {{")?;
+    writer.indent();
+    for (name, property) in obj_valid.properties {
+      write_property(writer, name, property, defs, extra_it)?;
+    }
+    writer.unindent();
+    writeln!(writer, "}}")
+  } else {
+    Ok(())
+  }
+}
+
+fn write_all_input_types(
+  writer: &mut IndentedWriter<impl Write>,
+  mut extra_it: BTreeMap<String, ObjectValidation>,
+) -> std::io::Result<()> {
   let schema = schemars::schema_for!(config::Config);
 
   let defs = schema.definitions;
   let mut scalars = vec![];
   for (name, input_type) in defs.iter() {
-    write_input_type(&mut writer, name.clone(), input_type.clone().into_object(), &defs, &mut scalars)?;
+    write_input_type(
+      writer,
+      name.clone(),
+      input_type.clone().into_object(),
+      &defs,
+      &mut scalars,
+      &mut extra_it,
+    )?;
   }
-  // println!("{scalars:?}");
+
+  let mut new_extra_it = BTreeMap::new();
+
+  for (name, obj_valid) in extra_it.into_iter() {
+    write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?;
+  }
+
   for name in scalars {
     writeln!(writer, "scalar {name}")?;
   }
@@ -414,19 +591,24 @@ fn write_all_input_types(mut writer: impl Write) -> std::io::Result<()> {
   Ok(())
 }
 
-fn generate_rc_file(mut file: File) -> Result<()> {
+fn generate_rc_file(file: File) -> Result<()> {
+  let mut file = IndentedWriter::new(file);
   let mut written_directives = HashSet::new();
   let wd = &mut written_directives;
-  write_schema_for::<config::Server>(&mut file, "Server", "SCHEMA", wd)?;
-  write_schema_for::<config::Upstream>(&mut file, "Upstream", "SCHEMA", wd)?;
-  write_schema_for::<config::AddField>(&mut file, "AddField", "OBJECT", wd)?;
-  write_schema_for::<config::Cache>(&mut file, "Cache", "OBJECT", wd)?;
 
-  write_schema_for_field(&mut file, wd)?;
+  let mut extra_it = BTreeMap::new();
+  let extra_it_ref = &mut extra_it;
 
-  write_all_input_types(&mut file)?;
+  write_schema_for::<config::Server>(&mut file, "Server", "SCHEMA", wd, extra_it_ref)?;
+  write_schema_for::<config::Upstream>(&mut file, "Upstream", "SCHEMA", wd, extra_it_ref)?;
+  write_schema_for::<config::AddField>(&mut file, "AddField", "OBJECT", wd, extra_it_ref)?;
+  write_schema_for::<config::Cache>(&mut file, "Cache", "OBJECT", wd, extra_it_ref)?;
 
-  writeln!(&mut file, "scalar JSON")?;
+  write_schema_for_field(&mut file, wd, extra_it_ref)?;
+
+  write_all_input_types(&mut file, extra_it)?;
+
+  writeln!(&mut file, "scalar JSON\n")?;
 
   Ok(())
 }
