@@ -6,18 +6,17 @@ mod env;
 mod file;
 mod handle;
 mod http;
-mod r2_address;
 
-pub fn init_env(env: Rc<worker::Env>) -> env::EnvCloudflare {
-  env::EnvCloudflare::init(env)
+pub fn init_env(env: Rc<worker::Env>) -> env::CloudflareEnv {
+  env::CloudflareEnv::init(env)
 }
 
-pub fn init_file(env: Rc<worker::Env>) -> file::CloudflareFileIO {
-  file::CloudflareFileIO::init(env)
+pub fn init_file(env: Rc<worker::Env>, bucket_id: String) -> anyhow::Result<file::CloudflareFileIO> {
+  file::CloudflareFileIO::init(env, bucket_id)
 }
 
-pub fn init_http() -> http::HttpCloudflare {
-  http::HttpCloudflare::init()
+pub fn init_http() -> http::CloudflareHttp {
+  http::CloudflareHttp::init()
 }
 
 #[worker::event(fetch)]

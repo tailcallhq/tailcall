@@ -13,10 +13,6 @@ impl Fmt {
     format!("{}", meta.yellow())
   }
 
-  pub fn success(success: &String) -> String {
-    format!("{}", success.green())
-  }
-
   pub fn display(s: String) {
     println!("{}", s);
   }
