@@ -204,10 +204,15 @@ fn write_instance_type(writer: &mut IndentedWriter<impl Write>, typ: &InstanceTy
 }
 
 fn write_reference(writer: &mut IndentedWriter<impl Write>, reference: &String) -> std::io::Result<()> {
-  let nm = reference.split("/").last().unwrap();
-  match nm {
-    "schema" => write!(writer, "JsonSchema"),
-    other => write!(writer, "{other}"),
+  let mut nm = reference.split("/").last().unwrap().to_string();
+  first_char_to_upper(&mut nm);
+  write!(writer, "{nm}")
+}
+
+fn first_char_to_upper(name: &mut String) {
+  let upper = name.as_bytes()[0].to_ascii_uppercase();
+  unsafe {
+    name.as_bytes_mut()[0] = upper;
   }
 }
 
@@ -249,11 +254,8 @@ fn write_type(
         write_array_validation(writer, name, *arr_valid, defs, extra_it)
       } else if let Some(typ) = schema.object.clone() {
         if typ.properties.len() > 0 {
-          let upper = name.as_bytes()[0].to_ascii_uppercase();
           let mut name = name;
-          unsafe {
-            name.as_bytes_mut()[0] = upper;
-          }
+          first_char_to_upper(&mut name);
           write!(writer, "{name}")?;
           extra_it.insert(name, *typ);
           Ok(())
@@ -304,16 +306,12 @@ fn write_field(
 
 fn write_input_type(
   writer: &mut IndentedWriter<impl Write>,
-  mut name: String,
+  name: String,
   typ: SchemaObject,
   defs: &BTreeMap<String, Schema>,
   scalars: &mut Vec<String>,
   extra_it: &mut BTreeMap<String, ObjectValidation>,
 ) -> std::io::Result<()> {
-  if name.as_str() == "schema" {
-    name = "JsonSchema".to_string()
-  }
-
   // println!("InputType {name}");
   // if name.as_str() == "Auth" {
   // println!("{typ:?}");
@@ -544,37 +542,6 @@ fn write_array_validation(
   } else {
     write!(writer, "]")
   }
-  /*
-  .and_then(|arr| {
-        Some(match arr.items? {
-          SingleOrVec::Single(typ) => typ.into_object(),
-          SingleOrVec::Vec(typ) => typ.into_iter().next()?.into_object(),
-        })
-      }) {
-        if let Some(it) = schema.instance_type.clone() {
-          let typ = match it {
-            SingleOrVec::Single(typ) => *typ,
-            SingleOrVec::Vec(typ) => typ.into_iter().next().unwrap(),
-          };
-
-          match typ {
-            InstanceType::Array | InstanceType::Object => {
-              if let Some(name) = schema.reference.clone() {
-                write_reference(writer, &name)
-              } else {
-                writeln!(writer, "JSON")
-              }
-            }
-            x => write_instance_type(writer, &x),
-          }
-        } else if let Some(name) = schema.reference.clone() {
-          write_reference(writer, &name)
-        } else {
-          // println!("{name}: {schema:?}");
-          writeln!(writer, "JSON")
-        }
-      }
-   */
 }
 
 fn write_object_validation(
@@ -606,9 +573,11 @@ fn write_all_input_types(
   let defs = schema.definitions;
   let mut scalars = vec![];
   for (name, input_type) in defs.iter() {
+    let mut name = name.clone();
+    first_char_to_upper(&mut name);
     write_input_type(
       writer,
-      name.clone(),
+      name,
       input_type.clone().into_object(),
       &defs,
       &mut scalars,
