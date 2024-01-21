@@ -247,7 +247,7 @@ pub struct Cache {
   pub max_age: NonZeroU64,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum RateLimitUnit {
   Second,
@@ -271,7 +271,7 @@ impl RateLimitUnit {
   }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct RateLimit {
   pub unit: RateLimitUnit,

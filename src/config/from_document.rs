@@ -7,8 +7,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::RateLimit;
-use super::JS;
+use super::{RateLimit, JS};
 use crate::config::{self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
@@ -240,27 +239,29 @@ where
     .zip(Omit::from_directives(directives.iter()))
     .zip(Modify::from_directives(directives.iter()))
     .zip(JS::from_directives(directives.iter()))
-    .map(|((((((((http, graphql), cache), grpc), rate_limit), expr), omit), modify), script)| {
-      let const_field = to_const_field(directives);
-      config::Field {
-        type_of,
-        list,
-        required: !nullable,
-        list_type_required,
-        args,
-        doc,
-        modify,
-        omit,
-        http,
-        grpc,
-        script,
-        const_field,
-        graphql,
-        expr,
-        cache: cache.or(parent_cache),
-        rate_limit
-      }
-    })
+    .map(
+      |((((((((http, graphql), cache), grpc), rate_limit), expr), omit), modify), script)| {
+        let const_field = to_const_field(directives);
+        config::Field {
+          type_of,
+          list,
+          required: !nullable,
+          list_type_required,
+          args,
+          doc,
+          modify,
+          omit,
+          http,
+          grpc,
+          script,
+          const_field,
+          graphql,
+          expr,
+          cache: cache.or(parent_cache),
+          rate_limit,
+        }
+      },
+    )
 }
 
 fn to_type_of(type_: &Type) -> String {

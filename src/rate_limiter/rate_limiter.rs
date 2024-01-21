@@ -7,7 +7,8 @@ use std::time::SystemTime;
 use async_graphql_value::ConstValue;
 use serde::Serialize;
 
-use crate::blueprint::{hash_const_value, RateLimit};
+use crate::blueprint::RateLimit;
+use crate::helpers;
 use crate::http::NumRequestsFetched;
 use crate::json::JsonLike;
 
@@ -105,7 +106,7 @@ impl RateLimiter {
       let group_by = group_by.as_ref().map(String::as_str).unwrap_or("");
       let mut hasher = DefaultHasher::new();
       if let Some(val) = const_value.get_key(group_by) {
-        hash_const_value(val, &mut hasher);
+        helpers::value::hash(val, &mut hasher);
       }
       let hash = hasher.finish();
       self.allow(type_name.to_lowercase(), hash.to_string(), rate_limit)
