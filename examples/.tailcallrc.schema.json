@@ -960,6 +960,16 @@
           ],
           "description": "Omits a field from public consumption."
         },
+        "rate_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RateLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "required": {
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
@@ -1231,6 +1241,40 @@
       ],
       "type": "object"
     },
+    "RateLimit": {
+      "properties": {
+        "groupBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "requestsPerUnit": {
+          "format": "uint64",
+          "minimum": 1.0,
+          "type": "integer"
+        },
+        "unit": {
+          "$ref": "#/definitions/RateLimitUnit"
+        }
+      },
+      "required": [
+        "requestsPerUnit",
+        "unit"
+      ],
+      "type": "object"
+    },
+    "RateLimitUnit": {
+      "enum": [
+        "second",
+        "minute",
+        "hour",
+        "day",
+        "month",
+        "year"
+      ],
+      "type": "string"
+    },
     "RootSchema": {
       "properties": {
         "mutation": {
@@ -1447,6 +1491,16 @@
         "interface": {
           "description": "Flag to indicate if the type is an interface.",
           "type": "boolean"
+        },
+        "rate_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RateLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "scalar": {
           "description": "Flag to indicate if the type is a scalar.",
