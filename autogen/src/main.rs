@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -14,6 +14,13 @@ use tailcall::{config, FileIO};
 
 static JSON_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.schema.json";
 static GRAPHQL_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.graphql";
+
+fn map_type(name: String) -> String {
+  match name.as_str() {
+    "schema" => "JsonSchema".into(),
+    _ => name
+  }
+}
 
 #[tokio::main]
 async fn main() {
@@ -114,12 +121,21 @@ fn write_instance_type(mut writer: impl Write, typ: &InstanceType) -> std::io::R
   }
 }
 
+fn write_reference(mut writer: impl Write, reference: &String) -> std::io::Result<()> {
+  let nm = reference.split("/").last().unwrap();
+  match nm {
+    "schema" => writeln!(writer, "JsonSchema"),
+    other => writeln!(writer, "{other}"),
+  }
+}
+
 fn write_type(
   mut writer: impl Write,
   name: String,
   schema: SchemaObject,
   _defs: &BTreeMap<String, Schema>,
 ) -> std::io::Result<()> {
+  if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
   write!(writer, "{name}: ")?;
   match schema.instance_type {
     Some(SingleOrVec::Single(typ))
@@ -162,8 +178,7 @@ fn write_type(
           match typ {
             InstanceType::Array | InstanceType::Object => {
               if let Some(name) = schema.reference.clone() {
-                let nm = name.split("/").last().unwrap();
-                writeln!(writer, "[{nm}]")
+                write_reference(&mut writer, &name)
               } else {
                 writeln!(writer, "JSON")
               }
@@ -171,8 +186,7 @@ fn write_type(
             x => write_instance_type(&mut writer, &x),
           }
         } else if let Some(name) = schema.reference.clone() {
-          let nm = name.split("/").last().unwrap();
-          writeln!(writer, "[{nm}]")
+          write_reference(&mut writer, &name)
         } else {
           writeln!(writer, "JSON")
         }
@@ -190,15 +204,14 @@ fn write_type(
           return Ok(());
         };
         let first = list.first().unwrap();
-        let name = match first {
-          Schema::Object(obj) => obj.reference.as_ref().unwrap().split("/").last().unwrap(),
+        match first {
+          Schema::Object(obj) => {
+            write_reference(&mut writer, &obj.reference.clone().unwrap())
+          },
           _ => panic!(),
-        };
-        writeln!(writer, "{name}")
+        }
       } else if let Some(name) = schema.reference {
-        let nm = name.split("/").last().unwrap();
-
-        writeln!(writer, "{nm}")
+        write_reference(&mut writer, &name)
       } else {
         // println!("{name}: {schema:?}");
         writeln!(writer, "JSON")
@@ -209,11 +222,15 @@ fn write_type(
 
 fn write_input_type(
   mut writer: impl Write,
-  name: String,
+  mut name: String,
   typ: SchemaObject,
   defs: &BTreeMap<String, Schema>,
   scalars: &mut Vec<String>
 ) -> std::io::Result<()> {
+  if name.as_str() == "schema" {
+    name = "JsonSchema".to_string()
+  }
+
   println!("InputType {name}");
   if name.as_str() == "Auth" {
     println!("{typ:?}");
@@ -222,6 +239,7 @@ fn write_input_type(
     "Arg" => return Ok(()),
     _ => {}
   }
+
 
   let description = typ.metadata.as_ref().and_then(|metadata| metadata.description.as_ref());
   write_description(&mut writer, description)?;
@@ -316,7 +334,9 @@ fn write_schema(
   schema: SchemaObject,
   defs: &BTreeMap<String, Schema>,
   on: &str,
+  written_directives: &mut HashSet<String>,
 ) -> std::io::Result<()> {
+  if written_directives.contains(&name) { return Ok(()) }
   // println!("{name}: {:?}", ());
   let description = schema
     .metadata
@@ -347,19 +367,20 @@ fn write_schema(
     }
   }
   writeln!(writer, " on {on}")?;
+  written_directives.insert(name);
 
   Ok(())
 }
 
-fn write_schema_for<T: JsonSchema>(mut writer: impl Write, name: &str, on: &str) -> Result<()> {
+fn write_schema_for<T: JsonSchema>(mut writer: impl Write, name: &str, on: &str, written_directives: &mut HashSet<String>) -> Result<()> {
   let schema: RootSchema = schemars::schema_for!(T);
   let defs = schema.definitions;
-  write_schema(&mut writer, name.to_string(), schema.schema, &defs, on)?;
+  write_schema(&mut writer, name.to_string(), schema.schema, &defs, on, written_directives)?;
   writer.flush()?;
   Ok(())
 }
 
-fn write_schema_for_field(mut writer: impl Write) -> Result<()> {
+fn write_schema_for_field(mut writer: impl Write, written_directives: &mut HashSet<String>) -> Result<()> {
   let schema = schemars::schema_for!(config::Field);
   // println!("{schema:#?}");
   let defs: BTreeMap<String, Schema> = schema.definitions;
@@ -370,7 +391,7 @@ fn write_schema_for_field(mut writer: impl Write) -> Result<()> {
   for (name, _) in schema.schema.object.unwrap().properties {
     if let Some(schema) = defs1.get(name.as_str()).cloned() {
       let schema = schema.into_object();
-      write_schema(&mut writer, name, schema, &defs, "FIELD_DEFINITION")?;
+      write_schema(&mut writer, name, schema, &defs, "FIELD_DEFINITION", written_directives)?;
     }
   }
 
@@ -394,12 +415,14 @@ fn write_all_input_types(mut writer: impl Write) -> std::io::Result<()> {
 }
 
 fn generate_rc_file(mut file: File) -> Result<()> {
-  write_schema_for::<config::Server>(&mut file, "Server", "SCHEMA")?;
-  write_schema_for::<config::Upstream>(&mut file, "Upstream", "SCHEMA")?;
-  write_schema_for::<config::AddField>(&mut file, "AddField", "OBJECT")?;
-  write_schema_for::<config::Cache>(&mut file, "Cache", "OBJECT")?;
+  let mut written_directives = HashSet::new();
+  let wd = &mut written_directives;
+  write_schema_for::<config::Server>(&mut file, "Server", "SCHEMA", wd)?;
+  write_schema_for::<config::Upstream>(&mut file, "Upstream", "SCHEMA", wd)?;
+  write_schema_for::<config::AddField>(&mut file, "AddField", "OBJECT", wd)?;
+  write_schema_for::<config::Cache>(&mut file, "Cache", "OBJECT", wd)?;
 
-  write_schema_for_field(&mut file)?;
+  write_schema_for_field(&mut file, wd)?;
 
   write_all_input_types(&mut file)?;
 

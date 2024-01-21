@@ -8,9 +8,7 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
 use super::JS;
-use crate::config::{
-  self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
-};
+use crate::config::{self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -63,11 +61,9 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
   process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
-
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
   process_schema_directives(schema_definition, config::Upstream::directive_name().as_str())
 }
-
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
   let query = schema_definition.query.as_ref().map(pos_name_to_string);
   let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);
@@ -147,22 +143,12 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
-  to_fields(fields, cache)
-    .zip(Protected::from_directives(directives.iter()))
-    .map(|(fields, protected)| {
-      let doc = description.to_owned().map(|pos| pos.node);
-      let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-      let added_fields = to_add_fields_from_directives(directives);
-      config::Type {
-        fields,
-        added_fields,
-        doc,
-        interface,
-        implements,
-        protected: protected.is_some(),
-        ..Default::default()
-      }
-    })
+  to_fields(fields, cache).map(|fields| {
+    let doc = description.to_owned().map(|pos| pos.node);
+    let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+    let added_fields = to_add_fields_from_directives(directives);
+    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
+  })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
@@ -237,31 +223,27 @@ where
     .zip(Expr::from_directives(directives.iter()))
     .zip(Omit::from_directives(directives.iter()))
     .zip(Modify::from_directives(directives.iter()))
-    .zip(Protected::from_directives(directives.iter()))
     .zip(JS::from_directives(directives.iter()))
-    .map(
-      |((((((((http, graphql), cache), grpc), expr), omit), modify), protected), script)| {
-        let const_field = to_const_field(directives);
-        config::Field {
-          type_of,
-          list,
-          required: !nullable,
-          list_type_required,
-          args,
-          doc,
-          modify,
-          omit,
-          http,
-          grpc,
-          script,
-          const_field,
-          graphql,
-          expr,
-          cache: cache.or(parent_cache),
-          protected: protected.is_some(),
-        }
-      },
-    )
+    .map(|(((((((http, graphql), cache), grpc), expr), omit), modify), script)| {
+      let const_field = to_const_field(directives);
+      config::Field {
+        type_of,
+        list,
+        required: !nullable,
+        list_type_required,
+        args,
+        doc,
+        modify,
+        omit,
+        http,
+        grpc,
+        script,
+        const_field,
+        graphql,
+        expr,
+        cache: cache.or(parent_cache),
+      }
+    })
 }
 
 fn to_type_of(type_: &Type) -> String {

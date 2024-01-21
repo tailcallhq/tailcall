@@ -1,5 +1,6 @@
+use std::env::current_dir;
 use std::fmt::Debug;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
@@ -7,8 +8,6 @@ use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::{DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, ServiceDescriptor};
 use serde_json::Deserializer;
-
-use crate::helpers::config_path::config_path;
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
   let mut deserializer = Deserializer::from_str(input);
@@ -66,7 +65,13 @@ impl ProtobufSet {
   // it could be more convenient to load FileDescriptorSet instead
   // either from file or server reflection
   pub fn from_proto_file(proto_path: &Path) -> Result<Self> {
-    let proto_path = config_path(proto_path)?;
+    let proto_path = if proto_path.is_relative() {
+      let dir = current_dir()?;
+
+      dir.join(proto_path)
+    } else {
+      PathBuf::from(proto_path)
+    };
 
     let parent_dir = proto_path
       .parent()

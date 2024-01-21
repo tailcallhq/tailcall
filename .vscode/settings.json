@@ -1,15 +1,6 @@
 {
   "rust-analyzer.linkedProjects": ["./Cargo.toml", "./cloudflare/Cargo.toml"],
-  "cSpell.words": [
-    "hasher",
-    "Htpasswd",
-    "httpmock",
-    "indexmap",
-    "jwks",
-    "prost",
-    "Sfixed",
-    "thiserror"
-  ],
+  "cSpell.words": ["hasher", "thiserror", "indexmap", "prost", "Sfixed", "httpmock"],
   "files.watcherExclude": {
     "**/target": true
   },
