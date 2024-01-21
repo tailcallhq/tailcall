@@ -15,13 +15,6 @@ use tailcall::{config, FileIO};
 static JSON_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.schema.json";
 static GRAPHQL_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.graphql";
 
-fn map_type(name: String) -> String {
-  match name.as_str() {
-    "schema" => "JsonSchema".into(),
-    _ => name,
-  }
-}
-
 struct LineBreaker<'a> {
   string: &'a str,
   break_at: usize,
@@ -439,7 +432,7 @@ fn write_property(
 }
 
 fn write_schema(
-  mut writer: &mut IndentedWriter<impl Write>,
+  writer: &mut IndentedWriter<impl Write>,
   mut name: String,
   schema: SchemaObject,
   defs: &BTreeMap<String, Schema>,
