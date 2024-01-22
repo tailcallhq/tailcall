@@ -110,7 +110,10 @@ fn parse_segment(input: &str) -> IResult<&str, Segment> {
     Segment::Literal(r.to_string())
   });
 
-  nom::branch::alt((expression, literal))(input)
+  match nom::branch::alt((expression, literal))(input) {
+    Err(_) if !input.is_empty() => Ok((input, Segment::Literal(input.to_string()))),
+    result => result,
+  }
 }
 
 fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
@@ -251,6 +254,15 @@ mod tests {
           "env".to_string(),
           "FOO_BAR".to_string()
         ])])
+      );
+    }
+
+    #[test]
+    fn single_curly_brackets() {
+      let result = Mustache::parse("test:{SHA}string").unwrap();
+      assert_eq!(
+        result,
+        Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())])
       );
     }
   }
