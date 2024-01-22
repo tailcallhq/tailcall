@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Result;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
@@ -10,6 +11,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
+use crate::init_context::InitContext;
 use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
@@ -28,13 +30,13 @@ pub struct AppContext<Http, Env> {
 
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
-  pub fn new(
+  pub fn try_new(
     mut blueprint: Blueprint,
     h_client: Arc<Http>,
     h2_client: Arc<Http>,
     env: Arc<Env>,
     cache: Arc<EntityCache>,
-  ) -> Self {
+  ) -> Result<Self> {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
@@ -100,22 +102,23 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
 
     let schema = blueprint.to_schema();
 
+    let init_context = InitContext::new(&blueprint.server, env.clone(), h2_client.clone());
     let auth = blueprint.server.auth.clone();
 
-    let auth_ctx = GlobalAuthContext::new(auth, h_client.clone());
+    let auth_ctx = GlobalAuthContext::try_new(auth, &init_context)?;
 
-    AppContext {
+    Ok(AppContext {
       schema,
       universal_http_client: h_client,
       http2_only_client: h2_client,
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
-      cache,
       grpc_data_loaders: Arc::new(grpc_data_loaders),
+      cache,
       env_vars: env,
       auth_ctx: Arc::new(auth_ctx),
-    }
+    })
   }
 
   pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {

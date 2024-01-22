@@ -31,7 +31,7 @@ impl Server {
   /// Starts the server in the current Runtime
   pub async fn start(self) -> Result<()> {
     let blueprint = Blueprint::try_from(&self.config).map_err(CLIError::from)?;
-    let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
+    let server_config = Arc::new(ServerConfig::try_new(blueprint.clone())?);
 
     match blueprint.server.http.clone() {
       Http::HTTP2 { cert, key } => start_http_2(server_config, cert, key, self.server_up_sender).await,

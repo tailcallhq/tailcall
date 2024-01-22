@@ -1,5 +1,4 @@
-use std::sync::Arc;
-
+use anyhow::Result;
 use headers::authorization::Bearer;
 use headers::{Authorization, HeaderMapExt};
 use serde::Deserialize;
@@ -8,7 +7,8 @@ use super::jwks_decoder::JwksDecoder;
 use crate::auth::error::Error;
 use crate::auth::verify::Verify;
 use crate::http::RequestContext;
-use crate::{blueprint, HttpIO};
+use crate::init_context::InitContext;
+use crate::{blueprint, EnvIO, HttpIO};
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -29,8 +29,11 @@ pub struct JwtVerifier {
 }
 
 impl JwtVerifier {
-  pub fn new(options: blueprint::JwtProvider, client: Arc<dyn HttpIO>) -> Self {
-    Self { decoder: JwksDecoder::new(&options, client), options }
+  pub fn try_new<Http: HttpIO, Env: EnvIO>(
+    options: blueprint::JwtProvider,
+    init_context: &InitContext<Http, Env>,
+  ) -> Result<Self> {
+    Ok(Self { decoder: JwksDecoder::try_new(&options, init_context)?, options })
   }
 
   fn resolve_token(&self, request: &RequestContext) -> Option<String> {
@@ -97,12 +100,15 @@ pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool
 #[cfg(test)]
 pub mod tests {
   use std::collections::HashSet;
+  use std::ops::Deref;
+  use std::sync::Arc;
 
   use jsonwebtoken::jwk::JwkSet;
   use once_cell::sync::Lazy;
 
   use super::*;
   use crate::http::Response;
+  use crate::mustache::Mustache;
 
   struct MockHttpClient;
 
@@ -110,6 +116,20 @@ pub mod tests {
   impl HttpIO for MockHttpClient {
     async fn execute(&self, _request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
       todo!()
+    }
+  }
+
+  struct MockEnv;
+
+  impl EnvIO for MockEnv {
+    fn get(&self, _key: &str) -> Option<std::borrow::Cow<'_, str>> {
+      todo!()
+    }
+  }
+
+  impl InitContext<MockHttpClient, MockEnv> {
+    fn test_value() -> Self {
+      InitContext { vars: Default::default(), env: Arc::new(MockEnv), http_client: Arc::new(MockHttpClient) }
     }
   }
 
@@ -147,7 +167,7 @@ pub mod tests {
 
   impl blueprint::JwtProvider {
     pub fn test_value() -> Self {
-      let jwks = blueprint::Jwks::Local(JWK_SET.clone());
+      let jwks = blueprint::Jwks::Local(Mustache::parse(&serde_json::to_string(JWK_SET.deref()).unwrap()).unwrap());
 
       Self { issuer: Default::default(), audiences: Default::default(), optional_kid: false, jwks }
     }
@@ -164,9 +184,10 @@ pub mod tests {
   }
 
   #[tokio::test]
-  async fn validate_token_iss() {
+  async fn validate_token_iss() -> Result<()> {
     let jwt_options = blueprint::JwtProvider::test_value();
-    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let init_context = InitContext::test_value();
+    let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
 
     let valid = jwt_provider
       .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -175,7 +196,7 @@ pub mod tests {
     assert!(valid.is_ok());
 
     let jwt_options = blueprint::JwtProvider { issuer: Some("me".to_owned()), ..blueprint::JwtProvider::test_value() };
-    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
 
     let valid = jwt_provider
       .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -185,7 +206,7 @@ pub mod tests {
 
     let jwt_options =
       blueprint::JwtProvider { issuer: Some("another".to_owned()), ..blueprint::JwtProvider::test_value() };
-    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
 
     let error = jwt_provider
       .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -193,12 +214,15 @@ pub mod tests {
       .err();
 
     assert_eq!(error, Some(Error::Invalid));
+
+    Ok(())
   }
 
   #[tokio::test]
-  async fn validate_token_aud() {
+  async fn validate_token_aud() -> Result<()> {
     let jwt_options = blueprint::JwtProvider::test_value();
-    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let init_context = InitContext::test_value();
+    let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
 
     let valid = jwt_provider
       .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -210,7 +234,7 @@ pub mod tests {
       audiences: HashSet::from_iter(["them".to_string()]),
       ..blueprint::JwtProvider::test_value()
     };
-    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
 
     let valid = jwt_provider
       .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -222,7 +246,7 @@ pub mod tests {
       audiences: HashSet::from_iter(["anothem".to_string()]),
       ..blueprint::JwtProvider::test_value()
     };
-    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
 
     let error = jwt_provider
       .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -230,6 +254,8 @@ pub mod tests {
       .err();
 
     assert_eq!(error, Some(Error::Invalid));
+
+    Ok(())
   }
 
   mod iss {

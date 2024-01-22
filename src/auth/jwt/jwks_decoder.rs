@@ -1,10 +1,13 @@
-use std::sync::Arc;
+use anyhow::{bail, Result};
+use jsonwebtoken::jwk::JwkSet;
+use url::Url;
 
 use super::jwks::Jwks;
 use super::jwks_remote::JwksRemote;
 use super::jwt_verify::JwtClaim;
 use crate::auth::error::Error;
-use crate::{blueprint, HttpIO};
+use crate::init_context::InitContext;
+use crate::{blueprint, EnvIO, HttpIO};
 
 pub enum JwksDecoder {
   Local(Jwks),
@@ -12,13 +15,28 @@ pub enum JwksDecoder {
 }
 
 impl JwksDecoder {
-  pub fn new(options: &blueprint::JwtProvider, client: Arc<dyn HttpIO>) -> Self {
+  pub fn try_new<Http: HttpIO, Env: EnvIO>(
+    options: &blueprint::JwtProvider,
+    init_context: &InitContext<Http, Env>,
+  ) -> Result<Self> {
     match &options.jwks {
-      blueprint::Jwks::Local(jwks) => Self::Local(Jwks::from(jwks.clone()).optional_kid(options.optional_kid)),
-      blueprint::Jwks::Remote { url, max_age } => {
-        let decoder = JwksRemote::new(url.clone(), client, *max_age);
+      blueprint::Jwks::Local(jwks) => {
+        let jwks = jwks.render(init_context);
+        if jwks.is_empty() {
+          bail!("JWKS data is empty");
+        }
 
-        Self::Remote(decoder.optional_kid(options.optional_kid))
+        let de = &mut serde_json::Deserializer::from_str(&jwks);
+        let jwks: JwkSet = serde_path_to_error::deserialize(de)?;
+
+        Ok(Self::Local(Jwks::from(jwks).optional_kid(options.optional_kid)))
+      }
+      blueprint::Jwks::Remote { url, max_age } => {
+        let url = url.render(init_context);
+        let url = Url::parse(&url)?;
+        let decoder = JwksRemote::new(url, init_context.http_client.clone(), *max_age);
+
+        Ok(Self::Remote(decoder.optional_kid(options.optional_kid)))
       }
     }
   }

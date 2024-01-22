@@ -1,4 +1,5 @@
-use std::{rc::Rc, borrow::Cow};
+use std::borrow::Cow;
+use std::rc::Rc;
 
 use tailcall::EnvIO;
 use worker::Env;

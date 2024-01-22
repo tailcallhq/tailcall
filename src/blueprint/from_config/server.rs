@@ -5,7 +5,6 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use super::init_context::InitContext;
 use super::Auth;
 use crate::config::{self, HttpVersion};
 use crate::directive::DirectiveCodec;
@@ -77,12 +76,11 @@ impl TryFrom<config::Server> for Server {
       }
       _ => Valid::succeed(Http::HTTP1),
     };
-    let init_context = InitContext::from(&config_server);
 
     validate_hostname((config_server).get_hostname().to_lowercase())
       .zip(http_server)
       .zip(handle_response_headers((config_server).get_response_headers().0))
-      .zip(Auth::make(&init_context, &config_server.auth))
+      .zip(Auth::make(&config_server.auth))
       .map(|(((hostname, http), response_headers), auth)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),

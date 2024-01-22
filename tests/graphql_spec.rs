@@ -310,13 +310,14 @@ async fn test_execution() -> std::io::Result<()> {
         let h_client = Arc::new(init_http(&blueprint.upstream));
         let h2_client = Arc::new(init_http(&blueprint.upstream));
         let chrono_cache = init_chrono_cache();
-        let server_ctx = AppContext::new(
+        let server_ctx = AppContext::try_new(
           blueprint,
           h_client,
           h2_client,
           Arc::new(init_env()),
           Arc::new(chrono_cache),
-        );
+        )
+        .unwrap();
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {

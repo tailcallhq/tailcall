@@ -216,7 +216,7 @@ impl HttpSpec {
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
     let env = Arc::new(Env::init(self.env.clone()));
     let chrono_cache = Arc::new(init_chrono_cache());
-    let server_context = AppContext::new(blueprint, client, http2_client, env, chrono_cache);
+    let server_context = AppContext::try_new(blueprint, client, http2_client, env, chrono_cache)?;
     Ok(Arc::new(server_context))
   }
 }

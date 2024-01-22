@@ -1,11 +1,13 @@
+use anyhow::Result;
 use headers::authorization::Basic;
 use headers::{Authorization, HeaderMapExt};
 use htpasswd_verify::Htpasswd;
 
 use super::error::Error;
 use super::verify::Verify;
-use crate::blueprint;
 use crate::http::RequestContext;
+use crate::init_context::InitContext;
+use crate::{blueprint, EnvIO, HttpIO};
 
 pub struct BasicVerifier {
   verifier: Htpasswd<'static>,
@@ -29,14 +31,46 @@ impl Verify for BasicVerifier {
 }
 
 impl BasicVerifier {
-  pub fn new(options: blueprint::BasicProvider) -> Self {
-    Self { verifier: Htpasswd::new_owned(&options.htpasswd) }
+  pub fn try_new<Http: HttpIO, Env: EnvIO>(
+    options: blueprint::BasicProvider,
+    init_context: &InitContext<Http, Env>,
+  ) -> Result<Self> {
+    let htpasswd = options.htpasswd.render(init_context);
+
+    Ok(Self { verifier: Htpasswd::new_owned(&htpasswd) })
   }
 }
 
 #[cfg(test)]
 pub mod tests {
+  use std::sync::Arc;
+
   use super::*;
+  use crate::http::Response;
+  use crate::mustache::Mustache;
+
+  struct MockHttpClient;
+
+  #[async_trait::async_trait]
+  impl HttpIO for MockHttpClient {
+    async fn execute(&self, _request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
+      todo!()
+    }
+  }
+
+  struct MockEnv;
+
+  impl EnvIO for MockEnv {
+    fn get(&self, _key: &str) -> Option<std::borrow::Cow<'_, str>> {
+      todo!()
+    }
+  }
+
+  impl InitContext<MockHttpClient, MockEnv> {
+    fn test_value() -> Self {
+      InitContext { vars: Default::default(), env: Arc::new(MockEnv), http_client: Arc::new(MockHttpClient) }
+    }
+  }
 
   // testuser1:password123
   // testuser2:mypassword
@@ -58,8 +92,12 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
   }
 
   #[tokio::test]
-  async fn verify_passwords() {
-    let provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
+  async fn verify_passwords() -> Result<()> {
+    let init_context = InitContext::test_value();
+    let provider = BasicVerifier::try_new(
+      blueprint::BasicProvider { htpasswd: Mustache::parse(HTPASSWD_TEST)? },
+      &init_context,
+    )?;
 
     let validation = provider.verify(&RequestContext::default()).await.err();
     assert_eq!(validation, Some(Error::Missing));
@@ -82,5 +120,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
     let validation = provider.verify(&create_basic_auth_request("testuser3", "abc123")).await;
     assert!(validation.is_ok());
+
+    Ok(())
   }
 }

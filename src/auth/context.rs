@@ -1,12 +1,14 @@
 use std::sync::{Arc, Mutex};
 
+use anyhow::Result;
 use futures_util::future::join_all;
 
 use super::error::Error;
 use super::verify::{AuthVerifier, Verify};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
-use crate::HttpIO;
+use crate::init_context::InitContext;
+use crate::{EnvIO, HttpIO};
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
@@ -44,14 +46,14 @@ impl GlobalAuthContext {
 }
 
 impl GlobalAuthContext {
-  pub fn new(auth: Auth, client: Arc<dyn HttpIO>) -> Self {
+  pub fn try_new<Http: HttpIO, Env: EnvIO>(auth: Auth, init_context: &InitContext<Http, Env>) -> Result<Self> {
     let providers = auth
       .0
       .into_iter()
-      .map(|provider| AuthVerifier::from_config(provider.provider, client.clone()))
-      .collect();
+      .map(|provider| AuthVerifier::try_new(provider.provider, init_context))
+      .collect::<Result<_>>()?;
 
-    Self { providers }
+    Ok(Self { providers })
   }
 }
 
@@ -84,6 +86,7 @@ mod tests {
   use crate::auth::jwt::jwt_verify::JwtVerifier;
   use crate::blueprint;
   use crate::http::Response;
+  use crate::mustache::Mustache;
 
   struct MockHttpClient;
 
@@ -94,11 +97,29 @@ mod tests {
     }
   }
 
+  struct MockEnv;
+
+  impl EnvIO for MockEnv {
+    fn get(&self, _key: &str) -> Option<std::borrow::Cow<'_, str>> {
+      todo!()
+    }
+  }
+
+  impl InitContext<MockHttpClient, MockEnv> {
+    fn test_value() -> Self {
+      InitContext { vars: Default::default(), env: Arc::new(MockEnv), http_client: Arc::new(MockHttpClient) }
+    }
+  }
+
   #[tokio::test]
-  async fn validate_request() {
-    let basic_provider = BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
+  async fn validate_request() -> Result<()> {
+    let init_context = InitContext::test_value();
+    let basic_provider = BasicVerifier::try_new(
+      blueprint::BasicProvider { htpasswd: Mustache::parse(HTPASSWD_TEST)? },
+      &init_context,
+    )?;
     let jwt_options = blueprint::JwtProvider::test_value();
-    let jwt_provider = JwtVerifier::new(jwt_options, Arc::new(MockHttpClient));
+    let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
 
     let auth_context =
       GlobalAuthContext { providers: vec![AuthVerifier::Basic(basic_provider), AuthVerifier::Jwt(jwt_provider)] };
@@ -121,5 +142,7 @@ mod tests {
       .validate(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
       .await;
     assert!(validation.is_ok());
+
+    Ok(())
   }
 }

@@ -1,10 +1,11 @@
-use std::sync::Arc;
+use anyhow::Result;
 
 use super::basic::BasicVerifier;
 use super::error::Error;
 use super::jwt::jwt_verify::JwtVerifier;
 use crate::http::RequestContext;
-use crate::{blueprint, HttpIO};
+use crate::init_context::InitContext;
+use crate::{blueprint, EnvIO, HttpIO};
 
 pub(crate) trait Verify {
   async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error>;
@@ -20,10 +21,15 @@ pub enum AuthVerifier {
 }
 
 impl AuthVerifier {
-  pub fn from_config(config: blueprint::AuthProvider, client: Arc<dyn HttpIO>) -> Self {
+  pub fn try_new<Http: HttpIO, Env: EnvIO>(
+    config: blueprint::AuthProvider,
+    init_context: &InitContext<Http, Env>,
+  ) -> Result<Self> {
     match config {
-      blueprint::AuthProvider::Basic(options) => AuthVerifier::Basic(BasicVerifier::new(options)),
-      blueprint::AuthProvider::Jwt(options) => AuthVerifier::Jwt(JwtVerifier::new(options, client)),
+      blueprint::AuthProvider::Basic(options) => {
+        Ok(AuthVerifier::Basic(BasicVerifier::try_new(options, init_context)?))
+      }
+      blueprint::AuthProvider::Jwt(options) => Ok(AuthVerifier::Jwt(JwtVerifier::try_new(options, init_context)?)),
     }
   }
 }
