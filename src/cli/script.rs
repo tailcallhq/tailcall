@@ -9,11 +9,14 @@ pub struct JSEngine {
 }
 
 impl JSEngine {
+  fn create_closure(script: &str) -> String {
+    format!("function (state) {{ let state = state; return {} }}", script)
+  }
   pub fn new(script: &str) -> Self {
     let v8 = mini_v8::MiniV8::new();
-    // TODO: add timeout
-    // TODO: add closure
-    let script = Script::from(script);
+    let script = Self::create_closure(script);
+    let mut script = Script::from(script);
+    script.timeout = Some(std::time::Duration::from_millis(1));
     Self { v8, script }
   }
 }
@@ -67,5 +70,18 @@ pub enum Command {
 impl FromValue for Command {
   fn from_value(_value: Value, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<Self> {
     todo!()
+  }
+}
+
+#[cfg(test)]
+mod tests {
+
+  use crate::cli::script::JSEngine;
+
+  #[test]
+  fn test_closure() {
+    let out = JSEngine::create_closure("function () {state += 1; return state}");
+    println!("{}", out);
+    assert!(out.contains("function (state) { let state = state; return function () {state += 1; return state} }"));
   }
 }
