@@ -118,8 +118,8 @@ mod tests {
     }
 
     impl EnvIO for Env {
-      fn get(&self, key: &str) -> Option<String> {
-        self.env.get(key).cloned()
+      fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+        self.env.get(key).map(|s| s.into())
       }
     }
 

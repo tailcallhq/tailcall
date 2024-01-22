@@ -1,5 +1,6 @@
 extern crate core;
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::panic::AssertUnwindSafe;
 use std::path::PathBuf;
@@ -63,8 +64,8 @@ pub struct Env {
 }
 
 impl EnvIO for Env {
-  fn get(&self, key: &str) -> Option<String> {
-    self.env.get(key).cloned()
+  fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+    self.env.get(key).map(|s| s.into())
   }
 }
 

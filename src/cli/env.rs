@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use crate::EnvIO;
 
@@ -8,8 +8,8 @@ pub struct EnvNative {
 }
 
 impl EnvIO for EnvNative {
-  fn get(&self, key: &str) -> Option<String> {
-    self.vars.get(key).cloned()
+  fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+    self.vars.get(key).map(|s| Cow::Borrowed(s.as_str()))
   }
 }
 

@@ -50,7 +50,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Config> {
   let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("CONFIG var is not set"))?;
   log::debug!("R2 Bucket ID: {}", bucket_id);
-  let file_io = init_file(env.clone(), bucket_id)?;
+  let file_io = init_file(env.clone(), &bucket_id)?;
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
   let config = reader.read(&[file_path]).await?;
@@ -78,13 +78,13 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
   log::info!("Blueprint generated ... ok");
   let h_client = Arc::new(init_http());
   let cache = Arc::new(init_cache(env));
-  let app_ctx = Arc::new(AppContext::new(
+  let app_ctx = Arc::new(AppContext::try_new(
     blueprint,
     h_client.clone(),
     h_client,
     Arc::new(env_io),
     cache,
-  ));
+  )?);
   *APP_CTX.write().unwrap() = Some((file_path.to_string(), app_ctx.clone()));
   log::info!("Initialized new application context");
   Ok(app_ctx)

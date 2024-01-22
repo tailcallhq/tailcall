@@ -49,7 +49,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     value.to_str().ok()
   }
 
-  pub fn env_var(&self, key: &str) -> Option<String> {
+  pub fn env_var(&self, key: &str) -> Option<Cow<'_, str>> {
     self.req_ctx.env_vars.get(key)
   }
 

@@ -27,6 +27,7 @@ pub mod print_schema;
 pub mod try_fold;
 pub mod valid;
 
+use std::borrow::Cow;
 use std::future::Future;
 use std::hash::Hash;
 use std::num::NonZeroU64;
@@ -35,7 +36,7 @@ use async_graphql_value::ConstValue;
 use http::Response;
 
 pub trait EnvIO: Send + Sync + 'static {
-  fn get(&self, key: &str) -> Option<String>;
+  fn get(&self, key: &str) -> Option<Cow<'_, str>>;
 }
 
 #[async_trait::async_trait]

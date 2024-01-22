@@ -13,7 +13,7 @@ pub fn init_env(env: Rc<worker::Env>) -> env::CloudflareEnv {
   env::CloudflareEnv::init(env)
 }
 
-pub fn init_file(env: Rc<worker::Env>, bucket_id: String) -> anyhow::Result<file::CloudflareFileIO> {
+pub fn init_file(env: Rc<worker::Env>, bucket_id: &str) -> anyhow::Result<file::CloudflareFileIO> {
   file::CloudflareFileIO::init(env, bucket_id)
 }
 
