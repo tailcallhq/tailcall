@@ -1,6 +1,7 @@
 ---
 name: With call operator
 config: !file tests/http/config/call.graphql
+runner: only
 
 mock:
   - request:
@@ -15,6 +16,24 @@ mock:
       body:
         - id: 1
           userId: 1
+  - request:
+      url: http://jsonplaceholder.typicode.com/users
+    response:
+      body:
+        - id: 1
+          name: foo
+  # - request:
+  #     url: http://jsonplaceholder.typicode.com/posts?userId=1
+  #   response:
+  #     body:
+  #       - id: 1
+  #         userId: 1
+  #         title: bar
+  #         body: baz
+  #       - id: 2
+  #         userId: 1
+  #         title: qux
+  #         body: quux
 
 assert:
   - request:
@@ -28,3 +47,26 @@ assert:
           posts:
             - user:
                 name: foo
+  # - request:
+  #     method: POST
+  #     url: http://localhost:8080/graphql
+  #     body:
+  #       query: "query { userPosts(id: 1) { title } }"
+  #   response:
+  #     body:
+  #       data:
+  #         userPosts:
+  #           - title: bar
+  #           - title: qux
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { userWithPosts { posts { title } } }"
+    response:
+      body:
+        data:
+          userWithPosts:
+            posts:
+              - title: bar
+              - title: qux

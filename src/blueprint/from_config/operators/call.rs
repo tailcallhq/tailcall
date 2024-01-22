@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, KeyValues};
+use crate::endpoint::Endpoint;
 use crate::lambda::{Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
@@ -105,6 +106,86 @@ pub fn compile_call(
                 .into(),
             ),
           )
+          .and_then(|req_template| {
+            Valid::succeed(
+              req_template.clone().query(
+                req_template
+                  .query
+                  .iter()
+                  .map(|(key, value)| {
+                    let segments = value.get_segments();
+
+                    let segments = segments
+                      .iter()
+                      .map(|segment| match segment {
+                        Segment::Literal(literal) => Segment::Literal(literal.clone()),
+                        Segment::Expression(expression) => {
+                          if expression[0] == "args" {
+                            let value = find_value(&args, &expression[1]).unwrap();
+                            let item = Mustache::parse(value).unwrap();
+
+                            let expression = item.get_segments().first().unwrap().to_owned().to_owned();
+
+                            expression
+                          } else {
+                            Segment::Expression(expression.clone())
+                          }
+                        }
+                      })
+                      .collect::<Vec<Segment>>();
+
+                    let value = Mustache::from(segments);
+
+                    (key.to_owned(), value)
+                  })
+                  .collect(),
+              ),
+            )
+            .map(|req_template| {
+              let query = req_template
+                .endpoint
+                .query
+                .iter()
+                .map(|(key, value)| {
+                  let mustache = Mustache::parse(value).unwrap();
+
+                  let segments = mustache.get_segments();
+
+                  let value = segments
+                    .iter()
+                    .map(|segment| match segment {
+                      Segment::Literal(literal) => literal,
+                      Segment::Expression(expression) => {
+                        if expression[0] == "args" {
+                          find_value(&args, &expression[1]).unwrap()
+                        } else {
+                          value
+                        }
+                      }
+                    })
+                    .collect::<Vec<&String>>()
+                    .first()
+                    .unwrap()
+                    .to_owned();
+
+                  println!("value: {:?}", value);
+
+                  (key.to_owned(), value.to_owned())
+                })
+                .collect();
+
+              println!("query: {:?}", query);
+
+              let endpoint = req_template.endpoint.clone().query(query);
+
+              req_template.endpoint(endpoint)
+            })
+          })
+          .and_then(|req_template| {
+            println!("req_template_h: {:?}", req_template);
+
+            Valid::succeed(req_template)
+          })
           .map(|req_template| Expression::IO(IO::Http { req_template, group_by, dl_id })),
           _ => Valid::succeed(expr),
         })

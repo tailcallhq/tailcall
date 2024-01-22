@@ -7,6 +7,13 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{args.id}}")
+  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
+}
+
+type UserWithPosts {
+  id: Int!
+  name: String!
+  posts: [Post] @call(query: "userPosts", args: {id: "{{value.id}}"})
 }
 
 type User {
@@ -19,9 +26,9 @@ type User {
 }
 
 type Post {
-  id: Int!
+  id: Int
   userId: Int!
-  title: String!
-  body: String!
+  title: String
+  body: String
   user: User @call(query: "user", args: {id: "{{value.userId}}"})
 }
