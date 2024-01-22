@@ -55,4 +55,20 @@ pub trait Cache: Send + Sync {
   async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
 }
 
-type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
+pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
+
+pub trait ScriptServerContext {
+  fn new_request_context(&self) -> anyhow::Result<impl ScriptRequestContext>;
+}
+
+#[async_trait::async_trait]
+pub trait ScriptRequestContext {
+  type Event;
+  type Command;
+  async fn execute(&self, event: Self::Event) -> anyhow::Result<Self::Command>;
+}
+
+#[async_trait::async_trait]
+pub trait Engine {
+  async fn load<'a>(&'a self, script: &'a str) -> anyhow::Result<impl ScriptServerContext>;
+}
