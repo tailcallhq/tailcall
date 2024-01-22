@@ -6,14 +6,13 @@ use indexmap::IndexMap;
 use mimalloc::MiMalloc;
 use once_cell::sync::Lazy;
 use serde_json::{Number, Value};
-use tailcall::auth::context::AuthContext;
 use tailcall::blueprint::Server;
-use tailcall::chrono_cache::ChronoCache;
-use tailcall::cli::{init_env, init_http, init_http2_only};
+use tailcall::cli::{init_chrono_cache, init_env, init_http, init_http2_only};
 use tailcall::config::Config;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
 use tokio::runtime::Runtime;
+
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
@@ -95,21 +94,20 @@ fn create_request_context() -> RequestContext {
 
   let h_client = Arc::new(init_http(&upstream));
   let h2_client = Arc::new(init_http2_only(&upstream.clone()));
+  let cache = Arc::new(init_chrono_cache());
   RequestContext {
     req_headers: HeaderMap::new(),
-    allowed_headers: HeaderMap::new(),
     h_client,
     h2_client,
     server,
+    cache,
     upstream,
     http_data_loaders: Arc::new(vec![]),
     gql_data_loaders: Arc::new(vec![]),
-    cache: ChronoCache::new(),
     grpc_data_loaders: Arc::new(vec![]),
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),
     env_vars: Arc::new(init_env()),
-    auth_ctx: AuthContext::default(),
   }
 }
 

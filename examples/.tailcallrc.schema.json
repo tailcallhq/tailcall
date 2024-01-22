@@ -56,65 +56,6 @@
       ],
       "type": "object"
     },
-    "Auth": {
-      "items": {
-        "$ref": "#/definitions/AuthEntry"
-      },
-      "type": "array"
-    },
-    "AuthEntry": {
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "jwt": {
-              "$ref": "#/definitions/Jwt"
-            }
-          },
-          "required": [
-            "jwt"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "basic": {
-              "$ref": "#/definitions/Basic"
-            }
-          },
-          "required": [
-            "basic"
-          ],
-          "type": "object"
-        }
-      ],
-      "properties": {
-        "id": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      },
-      "type": "object"
-    },
-    "Basic": {
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "htpasswd": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "htpasswd"
-          ],
-          "type": "object"
-        }
-      ]
-    },
     "Batch": {
       "properties": {
         "delay": {
@@ -1030,10 +971,6 @@
           ],
           "description": "Omits a field from public consumption."
         },
-        "protected": {
-          "default": false,
-          "type": "boolean"
-        },
         "required": {
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
@@ -1249,75 +1186,6 @@
       ],
       "type": "object"
     },
-    "Jwks": {
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "data": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "data"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "remote": {
-              "properties": {
-                "maxAge": {
-                  "default": 300000,
-                  "format": "uint64",
-                  "minimum": 1.0,
-                  "type": "integer"
-                },
-                "url": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "url"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "remote"
-          ],
-          "type": "object"
-        }
-      ]
-    },
-    "Jwt": {
-      "properties": {
-        "audiences": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "uniqueItems": true
-        },
-        "issuer": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "jwks": {
-          "$ref": "#/definitions/Jwks"
-        },
-        "optionalKid": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "jwks"
-      ],
-      "type": "object"
-    },
     "KeyValues": {
       "additionalProperties": {
         "type": "string"
@@ -1398,9 +1266,6 @@
             "boolean",
             "null"
           ]
-        },
-        "auth": {
-          "$ref": "#/definitions/Auth"
         },
         "batchRequests": {
           "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`",
@@ -1584,10 +1449,6 @@
         },
         "interface": {
           "description": "Flag to indicate if the type is an interface.",
-          "type": "boolean"
-        },
-        "protected": {
-          "default": false,
           "type": "boolean"
         },
         "scalar": {

@@ -4,7 +4,6 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
 
-use anyhow::Context;
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
 use derive_setters::Setters;
@@ -16,7 +15,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_env, init_http};
+use tailcall::cli::{init_chrono_cache, init_env, init_http};
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
@@ -260,30 +259,24 @@ fn test_config_identity() -> std::io::Result<()> {
 
 // Check server SDL matches expected client SDL
 #[test]
-fn test_server_to_client_sdl() -> anyhow::Result<()> {
+fn test_server_to_client_sdl() -> std::io::Result<()> {
   let specs = GraphQLSpec::cargo_read("tests/graphql");
 
   for spec in specs? {
-    let display_path = spec.path.display();
     let expected = spec.find_source(Tag::ClientSDL);
     let expected = expected.as_str();
     let content = spec.find_source(Tag::ServerSDL);
     let content = content.as_str();
-    let config = Config::from_sdl(content)
-      .to_result()
-      .with_context(|| format!("config creation failed for file {}", display_path))?;
-    let actual = print_schema::print_schema(
-      (Blueprint::try_from(&config).with_context(|| format!("blueprint creation failed for file {}", display_path))?)
-        .to_schema(),
-    );
+    let config = Config::from_sdl(content).to_result().unwrap();
+    let actual = print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
 
     if spec.annotation.as_ref().is_some_and(|a| matches!(a, Annotation::Fail)) {
-      assert_ne!(actual, expected, "ClientSDL: {}", display_path);
+      assert_ne!(actual, expected, "ClientSDL: {}", spec.path.display());
     } else {
-      assert_eq!(actual, expected, "ClientSDL: {}", display_path);
+      assert_eq!(actual, expected, "ClientSDL: {}", spec.path.display());
     }
 
-    log::info!("ClientSDL: {} ... ok", display_path);
+    log::info!("ClientSDL: {} ... ok", spec.path.display());
   }
 
   Ok(())
@@ -309,13 +302,20 @@ async fn test_execution() -> std::io::Result<()> {
           .unwrap();
         let h_client = Arc::new(init_http(&blueprint.upstream));
         let h2_client = Arc::new(init_http(&blueprint.upstream));
-        let server_ctx = AppContext::new(blueprint, h_client, h2_client, Arc::new(init_env()));
+        let chrono_cache = init_chrono_cache();
+        let server_ctx = AppContext::new(
+          blueprint,
+          h_client,
+          h2_client,
+          Arc::new(init_env()),
+          Arc::new(chrono_cache),
+        );
         let schema = &server_ctx.schema;
 
         for q in spec.test_queries {
           let mut headers = HeaderMap::new();
           headers.insert(HeaderName::from_static("authorization"), HeaderValue::from_static("1"));
-          let req_ctx = Arc::new(RequestContext::from(&server_ctx).allowed_headers(headers));
+          let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
           let req = Request::from(q.query.as_str()).data(req_ctx.clone());
           let res = schema.execute(req).await;
           let json = serde_json::to_string(&res).unwrap();

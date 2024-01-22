@@ -53,7 +53,7 @@ reqwest = { version = "0.11", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-async-graphql = { version = "7.0.0", features = [
+async-graphql = { version = "7.0.1", features = [
     "dynamic-schema",
     "dataloader",
     "apollo_tracing",
@@ -71,12 +71,12 @@ cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
 log = { workspace = true }
-env_logger = "0.10.2"
+env_logger = "0.11.0"
 stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
 futures-channel = { version = "0.3.30" }
-futures-timer = { version = "3.0.2" }
+futures-timer = { version = "3.0.2", features = ["wasm-bindgen"] }
 futures-util = { version = "0.3.30" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
@@ -88,11 +88,6 @@ ttl_cache = "0.5.1"
 protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
-headers = "0.3.9" # previous version until hyper is updated to 1+
-mime = "0.3.17"
-getrandom = { version = "0.2.12", features = ["js"] } # required to make some other dependencies wasm friendly
-htpasswd-verify = { version = "0.3.0", git = "https://github.com/twistedfall/htpasswd-verify", rev = "ff14703083cbd639f7d05622b398926f3e718d61" } # fork version that is wasm compatible
-jsonwebtoken = "9.2.0"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["async_tokio"] }
@@ -114,6 +109,8 @@ default = [
     "inquire",
     "unsafe-js"
 ]
+
+
 
 [profile.release]
 opt-level = 3

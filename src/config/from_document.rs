@@ -8,9 +8,7 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
 use super::JS;
-use crate::config::{
-  self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
-};
+use crate::config::{self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream};
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
 
@@ -75,9 +73,11 @@ fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
 
   RootSchema { query, mutation, subscription }
 }
+
 fn pos_name_to_string(pos: &Positioned<Name>) -> String {
   pos.node.to_string()
 }
+
 fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, config::Type>, String> {
   Valid::from_iter(type_definitions, |type_definition| {
     let type_name = pos_name_to_string(&type_definition.node.name);
@@ -113,9 +113,11 @@ fn to_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeM
     )
   })
 }
+
 fn to_scalar_type() -> config::Type {
   config::Type { scalar: true, ..Default::default() }
 }
+
 fn to_union_types(type_definitions: &Vec<&Positioned<TypeDefinition>>) -> Valid<BTreeMap<String, Union>, String> {
   let mut unions = BTreeMap::new();
   for type_definition in type_definitions {
@@ -147,23 +149,14 @@ where
   let implements = object.implements();
   let interface = object.is_interface();
 
-  to_fields(fields, cache)
-    .zip(Protected::from_directives(directives.iter()))
-    .map(|(fields, protected)| {
-      let doc = description.to_owned().map(|pos| pos.node);
-      let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-      let added_fields = to_add_fields_from_directives(directives);
-      config::Type {
-        fields,
-        added_fields,
-        doc,
-        interface,
-        implements,
-        protected: protected.is_some(),
-        ..Default::default()
-      }
-    })
+  to_fields(fields, cache).map(|fields| {
+    let doc = description.to_owned().map(|pos| pos.node);
+    let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+    let added_fields = to_add_fields_from_directives(directives);
+    config::Type { fields, added_fields, doc, interface, implements, ..Default::default() }
+  })
 }
+
 fn to_enum(enum_type: EnumType) -> config::Type {
   let variants = enum_type
     .values
@@ -172,6 +165,7 @@ fn to_enum(enum_type: EnumType) -> config::Type {
     .collect();
   config::Type { variants: Some(variants), ..Default::default() }
 }
+
 fn to_input_object(input_object_type: InputObjectType, cache: Option<Cache>) -> Valid<config::Type, String> {
   to_input_object_fields(&input_object_type.fields, cache).map(|fields| config::Type { fields, ..Default::default() })
 }
@@ -191,27 +185,32 @@ where
   })
   .map(BTreeMap::from_iter)
 }
+
 fn to_fields(
   fields: &Vec<Positioned<FieldDefinition>>,
   cache: Option<Cache>,
 ) -> Valid<BTreeMap<String, config::Field>, String> {
   to_fields_inner(fields, cache, to_field)
 }
+
 fn to_input_object_fields(
   input_object_fields: &Vec<Positioned<InputValueDefinition>>,
   cache: Option<Cache>,
 ) -> Valid<BTreeMap<String, config::Field>, String> {
   to_fields_inner(input_object_fields, cache, to_input_object_field)
 }
+
 fn to_field(field_definition: &FieldDefinition, cache: Option<Cache>) -> Valid<config::Field, String> {
   to_common_field(field_definition, to_args(field_definition), cache)
 }
+
 fn to_input_object_field(
   field_definition: &InputValueDefinition,
   cache: Option<Cache>,
 ) -> Valid<config::Field, String> {
   to_common_field(field_definition, BTreeMap::new(), cache)
 }
+
 fn to_common_field<F>(
   field: &F,
   args: BTreeMap<String, config::Arg>,
@@ -237,31 +236,27 @@ where
     .zip(Expr::from_directives(directives.iter()))
     .zip(Omit::from_directives(directives.iter()))
     .zip(Modify::from_directives(directives.iter()))
-    .zip(Protected::from_directives(directives.iter()))
     .zip(JS::from_directives(directives.iter()))
-    .map(
-      |((((((((http, graphql), cache), grpc), expr), omit), modify), protected), js)| {
-        let const_field = to_const_field(directives);
-        config::Field {
-          type_of,
-          list,
-          required: !nullable,
-          list_type_required,
-          args,
-          doc,
-          modify,
-          omit,
-          http,
-          grpc,
-          js,
-          const_field,
-          graphql,
-          expr,
-          cache: cache.or(parent_cache),
-          protected: protected.is_some(),
-        }
-      },
-    )
+    .map(|(((((((http, graphql), cache), grpc), expr), omit), modify), js)| {
+      let const_field = to_const_field(directives);
+      config::Field {
+        type_of,
+        list,
+        required: !nullable,
+        list_type_required,
+        args,
+        doc,
+        modify,
+        omit,
+        http,
+        grpc,
+        js,
+        const_field,
+        graphql,
+        expr,
+        cache: cache.or(parent_cache),
+      }
+    })
 }
 
 fn to_type_of(type_: &Type) -> String {
@@ -270,6 +265,7 @@ fn to_type_of(type_: &Type) -> String {
     BaseType::List(ty) => to_type_of(ty),
   }
 }
+
 fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
   let mut args: BTreeMap<String, config::Arg> = BTreeMap::new();
 
@@ -281,6 +277,7 @@ fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> 
 
   args
 }
+
 fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
   let type_of = to_type_of(&input_value_definition.ty.node);
   let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
@@ -307,6 +304,7 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     .collect();
   Union { types, doc: doc.clone() }
 }
+
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Const> {
   directives.iter().find_map(|directive| {
     if directive.node.name.node == config::Const::directive_name() {
@@ -333,11 +331,13 @@ fn to_add_fields_from_directives(directives: &[Positioned<ConstDirective>]) -> V
 trait HasName {
   fn name(&self) -> &Positioned<Name>;
 }
+
 impl HasName for FieldDefinition {
   fn name(&self) -> &Positioned<Name> {
     &self.name
   }
 }
+
 impl HasName for InputValueDefinition {
   fn name(&self) -> &Positioned<Name> {
     &self.name
@@ -349,6 +349,7 @@ trait Fieldlike {
   fn description(&self) -> &Option<Positioned<String>>;
   fn directives(&self) -> &[Positioned<ConstDirective>];
 }
+
 impl Fieldlike for FieldDefinition {
   fn type_of(&self) -> &Type {
     &self.ty.node
@@ -360,6 +361,7 @@ impl Fieldlike for FieldDefinition {
     &self.directives
   }
 }
+
 impl Fieldlike for InputValueDefinition {
   fn type_of(&self) -> &Type {
     &self.ty.node
@@ -377,6 +379,7 @@ trait ObjectLike {
   fn implements(&self) -> &Vec<Positioned<Name>>;
   fn is_interface(&self) -> bool;
 }
+
 impl ObjectLike for ObjectType {
   fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
     &self.fields
@@ -388,6 +391,7 @@ impl ObjectLike for ObjectType {
     false
   }
 }
+
 impl ObjectLike for InterfaceType {
   fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
     &self.fields

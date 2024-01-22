@@ -6,15 +6,13 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use crate::auth::context::AuthContext;
 use crate::blueprint::Server;
-use crate::chrono_cache::ChronoCache;
 use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::{grpc, EnvIO, HttpIO};
+use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -27,16 +25,13 @@ pub struct RequestContext {
   pub server: Server,
   pub upstream: Upstream,
   pub req_headers: HeaderMap,
-  // request headers from client that will be sent to upstream
-  pub allowed_headers: HeaderMap,
-  pub auth_ctx: AuthContext,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub min_max_age: Arc<Mutex<Option<i32>>>,
   pub cache_public: Arc<Mutex<Option<bool>>>,
   pub env_vars: Arc<dyn EnvIO>,
-  pub cache: ChronoCache<u64, ConstValue>,
+  pub cache: Arc<EntityCache>,
 }
 
 impl RequestContext {
@@ -84,13 +79,13 @@ impl RequestContext {
     }
   }
 
-  pub fn cache_get(&self, key: &u64) -> Option<ConstValue> {
-    self.cache.get(key)
+  pub async fn cache_get(&self, key: &u64) -> Option<ConstValue> {
+    self.cache.get(key).await.ok()
   }
 
   #[allow(clippy::too_many_arguments)]
-  pub fn cache_insert(&self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Option<ConstValue> {
-    self.cache.insert(key, value, ttl)
+  pub async fn cache_insert(&self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Option<ConstValue> {
+    self.cache.set(key, value, ttl).await.ok()
   }
 
   pub fn is_batching_enabled(&self) -> bool {
@@ -106,12 +101,10 @@ impl<Http: HttpIO, Env: EnvIO> From<&AppContext<Http, Env>> for RequestContext {
       server: server_ctx.blueprint.server.clone(),
       upstream: server_ctx.blueprint.upstream.clone(),
       req_headers: HeaderMap::new(),
-      allowed_headers: HeaderMap::new(),
-      auth_ctx: (&server_ctx.auth_ctx).into(),
       http_data_loaders: server_ctx.http_data_loaders.clone(),
       gql_data_loaders: server_ctx.gql_data_loaders.clone(),
-      grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
       cache: server_ctx.cache.clone(),
+      grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
       min_max_age: Arc::new(Mutex::new(None)),
       cache_public: Arc::new(Mutex::new(None)),
       env_vars: server_ctx.env_vars.clone(),
@@ -126,9 +119,8 @@ mod test {
   use cache_control::Cachability;
   use hyper::HeaderMap;
 
-  use crate::auth::context::AuthContext;
   use crate::blueprint::Server;
-  use crate::chrono_cache::ChronoCache;
+  use crate::cli::cache::NativeChronoCache;
   use crate::cli::{init_env, init_http, init_http2_only};
   use crate::config::{self, Batch};
   use crate::http::RequestContext;
@@ -136,25 +128,24 @@ mod test {
   impl Default for RequestContext {
     fn default() -> Self {
       let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
+      //TODO: default is used only in tests. Drop default and move it to test.
       let server = Server::try_from(server).unwrap();
 
       let h_client = Arc::new(init_http(&upstream));
       let h2_client = Arc::new(init_http2_only(&upstream.clone()));
       RequestContext {
         req_headers: HeaderMap::new(),
-        allowed_headers: HeaderMap::new(),
         h_client,
         h2_client,
         server,
         upstream,
         http_data_loaders: Arc::new(vec![]),
         gql_data_loaders: Arc::new(vec![]),
-        cache: ChronoCache::new(),
+        cache: Arc::new(NativeChronoCache::new()),
         grpc_data_loaders: Arc::new(vec![]),
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
         env_vars: Arc::new(init_env()),
-        auth_ctx: AuthContext::default(),
       }
     }
   }

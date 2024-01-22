@@ -83,11 +83,6 @@ directive @server(
   `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   """
   key: String
-
-  """
-  `auth` specified list of auth providers that could be used to verify access to protected fields (that marked with @protected)
-  """
-  auth: [AuthProvider!]
 ) on SCHEMA
 
 enum HttpVersion {
@@ -313,9 +308,7 @@ directive @cache(
   Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.
   """
   maxAge: Int!
-) on FIELD_DEFINITION | OBJECT
-
-directive @protected on FIELD_DEFINITION | OBJECT
+) on FIELD_DEFINITION
 
 """
 Allows composing operators as simple expressions
@@ -466,54 +459,6 @@ input Batch {
   maxSize: Int
   delay: Int
   headers: [String]
-}
-
-input AuthBasic {
-  htpasswd: String
-}
-
-input AuthJwksRemote {
-  url: String!
-  maxAge: Int
-}
-
-input AuthJwks {
-  """
-  JWKS data loaded from the remote server
-  """
-  remote: AuthJwksRemote
-  """
-  JWKS data as a string or a template
-  """
-  data: String
-}
-
-input AuthJWT {
-  issuer: String
-  audiences: [String!]
-  """
-  Specifies if the kid value inside request's JWT token is required to get validated with the JWKS
-  """
-  optionalKid: Boolean
-  """
-  Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517). If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)
-  """
-  jwks: AuthJwks!
-}
-
-input AuthProvider {
-  """
-  Unique id for the auth provider. For future use
-  """
-  id: String!
-  """
-  Settings for JWT auth provider
-  """
-  jwt: AuthJWT
-  """
-  Settings for Basic auth provider
-  """
-  basic: AuthBasic
 }
 
 scalar JSON

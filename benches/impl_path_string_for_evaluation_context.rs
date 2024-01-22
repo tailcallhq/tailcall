@@ -9,9 +9,8 @@ use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use tailcall::auth::context::AuthContext;
 use tailcall::blueprint::Server;
-use tailcall::chrono_cache::ChronoCache;
+use tailcall::cli::cache::NativeChronoCache;
 use tailcall::cli::{init_env, init_http, init_http2_only};
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
@@ -141,30 +140,29 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 
 fn request_context() -> RequestContext {
   let tailcall::config::Config { server, upstream, .. } = tailcall::config::Config::default();
+  //TODO: default is used only in tests. Drop default and move it to test.
   let server = Server::try_from(server).unwrap();
 
   let h_client = Arc::new(init_http(&upstream));
   let h2_client = Arc::new(init_http2_only(&upstream));
   RequestContext {
     req_headers: HeaderMap::new(),
-    allowed_headers: HeaderMap::new(),
     h_client,
     h2_client,
     server,
     upstream,
     http_data_loaders: Arc::new(vec![]),
     gql_data_loaders: Arc::new(vec![]),
-    cache: ChronoCache::new(),
+    cache: Arc::new(NativeChronoCache::new()),
     grpc_data_loaders: Arc::new(vec![]),
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),
     env_vars: Arc::new(init_env()),
-    auth_ctx: AuthContext::default(),
   }
 }
 
 fn bench_main(c: &mut Criterion) {
-  let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
+  let mut req_ctx = request_context().req_headers(TEST_HEADERS.clone());
 
   req_ctx.server.vars = TEST_VARS.clone();
   let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);

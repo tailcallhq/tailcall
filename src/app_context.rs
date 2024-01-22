@@ -2,18 +2,15 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
-use async_graphql_value::ConstValue;
 
-use crate::auth::context::GlobalAuthContext;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
-use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
-use crate::{grpc, EnvIO, HttpIO};
+use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
@@ -23,14 +20,19 @@ pub struct AppContext<Http, Env> {
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
+  pub cache: Arc<EntityCache>,
   pub env_vars: Arc<Env>,
-  pub auth_ctx: Arc<GlobalAuthContext>,
 }
 
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
-  pub fn new(mut blueprint: Blueprint, h_client: Arc<Http>, h2_client: Arc<Http>, env: Arc<Env>) -> Self {
+  pub fn new(
+    mut blueprint: Blueprint,
+    h_client: Arc<Http>,
+    h2_client: Arc<Http>,
+    env: Arc<Env>,
+    cache: Arc<EntityCache>,
+  ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
@@ -96,10 +98,6 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
 
     let schema = blueprint.to_schema();
 
-    let auth = blueprint.server.auth.clone();
-
-    let auth_ctx = GlobalAuthContext::new(auth, h_client.clone());
-
     AppContext {
       schema,
       universal_http_client: h_client,
@@ -107,10 +105,9 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
-      cache: ChronoCache::new(),
+      cache,
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
-      auth_ctx: Arc::new(auth_ctx),
     }
   }
 
