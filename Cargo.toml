@@ -96,6 +96,7 @@ default = [
     "rustls",
     "rustls-pemfile",
     "inquire",
+    "unsafe-js"
 ]
 
 

@@ -57,18 +57,12 @@ pub trait Cache: Send + Sync {
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
-pub trait ScriptServerContext {
+pub trait ScriptEngine {
   fn new_request_context(&self) -> anyhow::Result<impl ScriptRequestContext>;
 }
 
-#[async_trait::async_trait]
 pub trait ScriptRequestContext {
   type Event;
   type Command;
-  async fn execute(&self, event: Self::Event) -> anyhow::Result<Self::Command>;
-}
-
-#[async_trait::async_trait]
-pub trait Engine {
-  async fn load<'a>(&'a self, script: &'a str) -> anyhow::Result<impl ScriptServerContext>;
+  fn execute(&self, event: Self::Event) -> anyhow::Result<Self::Command>;
 }
