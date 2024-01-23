@@ -195,15 +195,6 @@ fn first_char_to_upper(name: &mut String) {
   }
 }
 
-fn first_char_to_lower(name: &mut String) {
-  unsafe {
-    name.as_bytes_mut().get_mut(0).map(|ch| {
-      let lower = (*ch as char).to_ascii_lowercase();
-      *ch = lower as u8;
-    });
-  }
-}
-
 fn write_type(
   writer: &mut IndentedWriter<impl Write>,
   name: String,
@@ -297,7 +288,7 @@ fn write_input_type(
   name: String,
   typ: SchemaObject,
   defs: &BTreeMap<String, Schema>,
-  scalars: &mut Vec<String>,
+  scalars: &mut HashSet<String>,
   extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
   // println!("InputType {name}");
@@ -313,7 +304,7 @@ fn write_input_type(
   write_description(writer, description)?;
   if let Some(obj) = typ.object {
     if obj.properties.is_empty() {
-      scalars.push(name.to_string());
+      scalars.insert(name.to_string());
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
@@ -340,7 +331,7 @@ fn write_input_type(
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
     if list.is_empty() {
-      scalars.push(name.to_string());
+      scalars.insert(name.to_string());
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
@@ -362,7 +353,7 @@ fn write_input_type(
     writeln!(writer, "}}")?;
   } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
     if list.is_empty() {
-      scalars.push(name.to_string());
+      scalars.insert(name.to_string());
       return Ok(());
     }
     writeln!(writer, "input {name} {{")?;
@@ -380,7 +371,7 @@ fn write_input_type(
     if let Some(name) = item.into_object().reference {
       writeln!(writer, "{name}")?;
     } else {
-      scalars.push(name.to_string());
+      scalars.insert(name.to_string());
     }
   }
 
@@ -571,7 +562,7 @@ fn write_all_input_types(
   let schema = schemars::schema_for!(config::Config);
 
   let defs = schema.definitions;
-  let mut scalars = vec![];
+  let mut scalars = HashSet::new();
   for (name, input_type) in defs.iter() {
     let mut name = name.clone();
     first_char_to_upper(&mut name);
