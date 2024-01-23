@@ -28,6 +28,8 @@ pub mod valid;
 
 use std::hash::Hash;
 use std::num::NonZeroU64;
+use std::ops::Deref;
+use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 use http::Response;
@@ -42,6 +44,12 @@ pub trait HttpIO: Sync + Send + 'static {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>>;
+}
+
+impl<Http: HttpIO> HttpIO for Arc<Http> {
+    fn execute<'life0,'async_trait>(&'life0 self,request:reqwest::Request) ->  core::pin::Pin<Box<dyn core::future::Future<Output = anyhow::Result<Response<hyper::body::Bytes> > > + core::marker::Send+'async_trait> >where 'life0:'async_trait,Self:'async_trait {
+        self.deref().execute(request)
+    }
 }
 
 #[async_trait::async_trait]
