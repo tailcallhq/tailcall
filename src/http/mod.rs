@@ -7,6 +7,7 @@ mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
+mod showcase;
 
 pub use cache::*;
 pub use data_loader::*;
@@ -16,5 +17,6 @@ pub use request_context::RequestContext;
 pub use request_handler::{graphiql, handle_request};
 pub use request_template::RequestTemplate;
 pub use response::*;
+pub use showcase::showcase_get_app_ctx;
 
 pub use crate::app_context::AppContext;
