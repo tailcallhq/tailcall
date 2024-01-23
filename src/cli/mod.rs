@@ -2,6 +2,7 @@ pub mod cache;
 mod command;
 mod error;
 mod fmt;
+mod http_hook;
 mod script;
 pub mod server;
 mod tc;
