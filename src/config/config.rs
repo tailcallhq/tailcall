@@ -208,7 +208,7 @@ pub struct Type {
   pub scalar: bool,
   #[serde(default)]
   ///
-  /// Setting to indicate if the type is cacheable.
+  /// Setting to indicate if the type can be cached.
   ///
   pub cache: Option<Cache>,
 }

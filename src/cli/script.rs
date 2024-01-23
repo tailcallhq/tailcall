@@ -15,7 +15,7 @@ impl JSEngine {
       (function() {{
         {}
         return {{onEvent}}
-      }})    
+      }})
     "#,
       script
     )
