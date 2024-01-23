@@ -1,0 +1,43 @@
+config: !file tests/http/config/showcase.graphql
+name: Showcase GraphQL Request
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/users/1
+      headers:
+        test: test
+    response:
+      body:
+        id: 1
+        name: foo
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/showcase/graphql?config=https%3A%2F%2Fraw.githubusercontent.com%2Ftailcallhq%2Ftailcall%2Fff80f1d100c36de025ef62eac08576431534e265%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql
+      body:
+        query: query { user { name } }
+    response:
+      body:
+        data:
+          user:
+            name: foo
+  - request:
+      method: POST
+      url: http://localhost:8080/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql
+      body:
+        query: query { user { name } }
+    response:
+      body:
+        data: null
+        errors:
+          - message: "Invalid Config URL specified"
+  - request:
+      method: POST
+      url: http://localhost:8080/showcase/graphql?config=https%3A%2F%2Fraw.githubusercontent.com%2Ftailcallhq%2Ftailcall%2Fff80f1d100c36de025ef62eac08576431534e265%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql
+      body:
+        query:
+          foo: bar
+    response:
+      body:
+        data: null
+        errors:
+          - message: "Unexpected GraphQL Request: invalid type: map, expected a string at line 1 column 9"
