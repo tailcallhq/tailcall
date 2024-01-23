@@ -18,11 +18,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
+use tailcall::cli::script::JSEngine;
 use tailcall::cli::{init_chrono_cache, init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
-use tailcall::{EnvIO, HttpIO};
+use tailcall::{Command, EnvIO, Event, HttpIO, ScriptIO};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -196,7 +197,7 @@ impl HttpSpec {
     anyhow::Ok(spec)
   }
 
-  async fn server_context(&self) -> Arc<AppContext<impl HttpIO, impl EnvIO>> {
+  async fn server_context(&self) -> Arc<AppContext<impl HttpIO, impl EnvIO, impl ScriptIO<Event, Command>>> {
     let http_client = init_http(&Upstream::default());
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
@@ -210,7 +211,8 @@ impl HttpSpec {
     let http2_client = Arc::new(MockHttpClient { spec: self.clone() });
     let env = Arc::new(Env::init(self.env.clone()));
     let chrono_cache = Arc::new(init_chrono_cache());
-    let server_context = AppContext::new(blueprint, client, http2_client, env, chrono_cache);
+    let script = blueprint.server.clone().script.map(|s| JSEngine::new(&s));
+    let server_context = AppContext::new(blueprint, client, http2_client, env, chrono_cache, script);
     Arc::new(server_context)
   }
 }
@@ -415,8 +417,8 @@ async fn run(spec: HttpSpec, downstream_assertion: &&DownstreamAssertion) -> any
 
   // TODO: reuse logic from server.rs to select the correct handler
   if server_context.blueprint.server.enable_batch_requests {
-    handle_request::<GraphQLBatchRequest, _, _>(req, server_context).await
+    handle_request::<GraphQLBatchRequest, _, _, _>(req, server_context).await
   } else {
-    handle_request::<GraphQLRequest, _, _>(req, server_context).await
+    handle_request::<GraphQLRequest, _, _, _>(req, server_context).await
   }
 }

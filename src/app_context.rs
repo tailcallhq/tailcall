@@ -10,9 +10,9 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
-use crate::{grpc, EntityCache, EnvIO, HttpIO};
+use crate::{grpc, Command, EntityCache, EnvIO, Event, HttpIO, ScriptIO};
 
-pub struct AppContext<Http, Env> {
+pub struct AppContext<Http, Env, ScriptEngine> {
   pub schema: dynamic::Schema,
   pub universal_http_client: Arc<Http>,
   pub http2_only_client: Arc<Http>,
@@ -22,9 +22,10 @@ pub struct AppContext<Http, Env> {
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub cache: Arc<EntityCache>,
   pub env_vars: Arc<Env>,
+  pub script_engine: Option<Arc<ScriptEngine>>,
 }
 
-impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
+impl<Http: HttpIO, Env: EnvIO, Script: ScriptIO<Event, Command>> AppContext<Http, Env, Script> {
   #[allow(clippy::too_many_arguments)]
   pub fn new(
     mut blueprint: Blueprint,
@@ -32,6 +33,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
     h2_client: Arc<Http>,
     env: Arc<Env>,
     cache: Arc<EntityCache>,
+    script: Option<Script>,
   ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
@@ -108,6 +110,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       cache,
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
+      script_engine: script.map(|script| Arc::new(script)),
     }
   }
 

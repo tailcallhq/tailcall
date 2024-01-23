@@ -5,7 +5,7 @@ use futures_util::future::join_all;
 use futures_util::Future;
 
 use crate::http::Response;
-use crate::{EventHandler, HttpIO};
+use crate::{Command, Event, EventHandler, HttpIO};
 
 #[derive(Clone)]
 pub struct HttpHook {
@@ -13,22 +13,12 @@ pub struct HttpHook {
   handler: Arc<dyn EventHandler<Event, Command> + Send + Sync>,
 }
 
-pub enum Event {
-  Request(reqwest::Request),
-  Response(Vec<Response<hyper::body::Bytes>>),
-}
-
-pub enum Command {
-  Request(Vec<reqwest::Request>),
-  Response(Response<hyper::body::Bytes>),
-}
-
 impl HttpHook {
   pub fn new(
-    http: Arc<dyn HttpIO + Send + Sync>,
-    handler: Arc<dyn EventHandler<Event, Command> + Send + Sync>,
+    http: impl HttpIO + Send + Sync,
+    handler: impl EventHandler<Event, Command> + Send + Sync + 'static,
   ) -> Self {
-    HttpHook { client: http, handler }
+    HttpHook { client: Arc::new(http), handler: Arc::new(handler) }
   }
 
   fn on_command<'a>(

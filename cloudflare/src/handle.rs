@@ -13,9 +13,10 @@ use tailcall::EnvIO;
 
 use crate::env::CloudflareEnv;
 use crate::http::{to_request, to_response, CloudflareHttp};
+use crate::script::CloudflareScript;
 use crate::{init_cache, init_env, init_file, init_http};
 
-type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
+type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv, CloudflareScript>;
 lazy_static! {
   static ref APP_CTX: RwLock<Option<(String, Arc<CloudFlareAppContext>)>> = RwLock::new(None);
 }
@@ -39,7 +40,8 @@ pub async fn fetch(req: worker::Request, env: worker::Env) -> anyhow::Result<wor
 
   log::info!("config-url: {}", config_path);
   let app_ctx = get_app_ctx(env, config_path.as_str()).await?;
-  let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(hyper_req, app_ctx).await?;
+  let resp =
+    handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv, CloudflareScript>(hyper_req, app_ctx).await?;
 
   Ok(to_response(resp).await?)
 }
@@ -84,6 +86,7 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
     h_client,
     Arc::new(env_io),
     cache,
+    None,
   ));
   *APP_CTX.write().unwrap() = Some((file_path.to_string(), app_ctx.clone()));
   log::info!("Initialized new application context");

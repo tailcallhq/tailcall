@@ -4,12 +4,13 @@ use std::sync::Arc;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::env::EnvNative;
 use crate::cli::http::NativeHttp;
+use crate::cli::script::JSEngine;
 use crate::cli::{init_chrono_cache, init_env, init_http, init_http2_only};
 use crate::http::AppContext;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
-  pub server_context: Arc<AppContext<NativeHttp, EnvNative>>,
+  pub app_ctx: Arc<AppContext<NativeHttp, EnvNative, JSEngine>>,
 }
 
 impl ServerConfig {
@@ -24,8 +25,9 @@ impl ServerConfig {
       h2_client,
       Arc::new(env),
       Arc::new(chrono_cache),
+      blueprint.server.clone().script.map(|script| JSEngine::new(&script)),
     ));
-    Self { server_context, blueprint }
+    Self { app_ctx: server_context, blueprint }
   }
 
   pub fn addr(&self) -> SocketAddr {

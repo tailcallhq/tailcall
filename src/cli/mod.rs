@@ -1,27 +1,25 @@
 pub mod cache;
 mod command;
+pub(crate) mod env;
 mod error;
+pub(crate) mod file;
 mod fmt;
+pub(crate) mod http;
 mod http_hook;
-mod script;
+pub mod script;
 pub mod server;
 mod tc;
-
 use std::hash::Hash;
 
+use cache::NativeChronoCache;
+pub use env::EnvNative;
 pub use error::CLIError;
+pub use file::NativeFileIO;
+pub use http::NativeHttp;
 pub use tc::run;
 
 use crate::config::Upstream;
 use crate::HttpIO;
-
-pub(crate) mod env;
-pub(crate) mod file;
-pub(crate) mod http;
-use cache::NativeChronoCache;
-pub use env::EnvNative;
-pub use file::NativeFileIO;
-pub use http::NativeHttp;
 
 // Provides access to env in native rust environment
 pub fn init_env() -> env::EnvNative {

@@ -32,6 +32,7 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 use http::Response;
+use mini_v8::{FromValue, ToValues};
 
 pub trait EnvIO: Send + Sync + 'static {
   fn get(&self, key: &str) -> Option<String>;
@@ -57,10 +58,32 @@ pub trait Cache: Send + Sync {
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
-pub trait ScriptEngine<Event, Command> {
+pub trait ScriptIO<Event, Command> {
   fn event_handler(&self) -> anyhow::Result<impl EventHandler<Event, Command>>;
 }
 
-pub trait EventHandler<Event, Command> {
+pub trait EventHandler<Event, Command>: Send + Sync {
   fn on_event(&self, event: Event) -> anyhow::Result<Command>;
+}
+
+pub enum Event {
+  Request(reqwest::Request),
+  Response(Vec<Response<hyper::body::Bytes>>),
+}
+
+pub enum Command {
+  Request(Vec<reqwest::Request>),
+  Response(Response<hyper::body::Bytes>),
+}
+
+impl ToValues for Event {
+  fn to_values(self, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<mini_v8::Values> {
+    todo!()
+  }
+}
+
+impl FromValue for Command {
+  fn from_value(_value: mini_v8::Value, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<Self> {
+    todo!()
+  }
 }

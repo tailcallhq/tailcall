@@ -12,7 +12,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::{grpc, EntityCache, EnvIO, HttpIO};
+use crate::{grpc, Command, EntityCache, EnvIO, Event, HttpIO, ScriptIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -93,8 +93,10 @@ impl RequestContext {
   }
 }
 
-impl<Http: HttpIO, Env: EnvIO> From<&AppContext<Http, Env>> for RequestContext {
-  fn from(server_ctx: &AppContext<Http, Env>) -> Self {
+impl<Http: HttpIO, Env: EnvIO, Script: ScriptIO<Event, Command>> From<&AppContext<Http, Env, Script>>
+  for RequestContext
+{
+  fn from(server_ctx: &AppContext<Http, Env, Script>) -> Self {
     Self {
       h_client: server_ctx.universal_http_client.clone(),
       h2_client: server_ctx.http2_only_client.clone(),
