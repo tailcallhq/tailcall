@@ -60,7 +60,7 @@ pub async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Resu
   Ok(w_response)
 }
 
-pub fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
+pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
   let method = &*method.to_string().to_uppercase();
   match method {
     "GET" => Ok(hyper::Method::GET),
@@ -78,6 +78,7 @@ pub fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
 
 pub async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
   let body = req.text().await.map_err(to_anyhow)?;
+  log::info!("{:?}", body);
   let method = req.method();
   let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
   let headers = req.headers();

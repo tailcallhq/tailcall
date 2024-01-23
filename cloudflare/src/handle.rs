@@ -22,7 +22,7 @@ lazy_static! {
 ///
 /// The handler which handles requests on cloudflare
 ///
-pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
+pub async fn fetch(req: worker::Request, env: worker::Env) -> anyhow::Result<worker::Response> {
   log::info!("{} {:?}", req.method().to_string(), req.url().map(|u| u.to_string()));
   let env = Rc::new(env);
   let hyper_req = to_request(req).await?;
