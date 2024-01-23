@@ -27,8 +27,8 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
-  compile_wasm:
-    name: Compile WASM
+  test_cf:
+    name: Run Tests (CF)
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
@@ -43,8 +43,11 @@ jobs:
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: Build WASM
-        run: cargo build --lib --release --target wasm32-unknown-unknown
+      - name: Add wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --vers "0.2.86"
+
+      - name: Test CF
+        run: cargo test
         working-directory: ./cloudflare
 
   test:
@@ -142,7 +145,7 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build, compile_wasm]
+    needs: [test, format, draft_release, check_if_build, test_cf]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
