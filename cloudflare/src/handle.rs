@@ -40,9 +40,14 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn get_app_ctx(env: Rc<worker::Env>, req: &Request<Body>) -> anyhow::Result<Result<Arc<CloudFlareAppContext>, Response<Body>>> {
+async fn get_app_ctx(
+  env: Rc<worker::Env>,
+  req: &Request<Body>,
+) -> anyhow::Result<Result<Arc<CloudFlareAppContext>, Response<Body>>> {
   // Read context from cache
-  let file_path = req.uri().query()
+  let file_path = req
+    .uri()
+    .query()
     .and_then(|x| serde_qs::from_str::<HashMap<String, String>>(x).ok())
     .and_then(|x| x.get("config").cloned());
 
@@ -71,10 +76,8 @@ async fn get_app_ctx(env: Rc<worker::Env>, req: &Request<Body>) -> anyhow::Resul
       }
       log::info!("Initialized new application context");
       Ok(Ok(app_ctx))
-    },
-    Err(e) => {
-      Ok(Err(e))
     }
+    Err(e) => Ok(Err(e)),
   }
 }
 

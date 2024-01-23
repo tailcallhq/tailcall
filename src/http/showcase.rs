@@ -6,9 +6,13 @@ use hyper::{Body, Request, Response};
 use serde::de::DeserializeOwned;
 use url::Url;
 
-use crate::{async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse}, blueprint::Blueprint, cli::{init_chrono_cache, init_http}, config::{reader::ConfigReader, Upstream}, EnvIO, FileIO, HttpIO};
-
 use super::AppContext;
+use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::blueprint::Blueprint;
+use crate::cli::{init_chrono_cache, init_http};
+use crate::config::reader::ConfigReader;
+use crate::config::Upstream;
+use crate::{EnvIO, FileIO, HttpIO};
 
 struct DummyFileIO;
 
@@ -52,10 +56,7 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     let reader = ConfigReader::init(file, http.clone());
     reader.read(&[config_url]).await
   } else {
-    let reader = ConfigReader::init(
-      DummyFileIO,
-      init_http(&Upstream::default()),
-    );
+    let reader = ConfigReader::init(DummyFileIO, init_http(&Upstream::default()));
     reader.read(&[config_url]).await
   };
 
