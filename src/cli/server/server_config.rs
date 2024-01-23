@@ -25,7 +25,7 @@ impl ServerConfig {
       h2_client,
       Arc::new(env),
       Arc::new(chrono_cache),
-      blueprint.server.clone().script.map(|script| JSEngine::new(&script)),
+      blueprint.server.clone().script.map(JSEngine::new),
     ));
     Self { app_ctx: server_context, blueprint }
   }

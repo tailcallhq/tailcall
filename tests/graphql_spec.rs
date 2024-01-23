@@ -307,7 +307,7 @@ async fn test_execution() -> std::io::Result<()> {
           .server
           .clone()
           .script
-          .map(|script| tailcall::cli::script::JSEngine::new(&script));
+          .map(tailcall::cli::script::JSEngine::new);
         let server_ctx = AppContext::new(
           blueprint,
           h_client,

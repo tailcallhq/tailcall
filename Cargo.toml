@@ -77,11 +77,14 @@ ttl_cache = "0.5.1"
 protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
+lazy_static = "1.4.0"
+thread_local = "1.1.7"
 
 [dev-dependencies]
 criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
+serial_test = "3.0.0"
 stripmargin = "0.1.1"
 
 [features]

@@ -5,20 +5,17 @@ use futures_util::future::join_all;
 use futures_util::Future;
 
 use crate::http::Response;
-use crate::{Command, Event, EventHandler, HttpIO};
+use crate::{Command, Event, HttpIO, ScriptIO};
 
 #[derive(Clone)]
 pub struct HttpHook {
   client: Arc<dyn HttpIO + Send + Sync>,
-  handler: Arc<dyn EventHandler<Event, Command> + Send + Sync>,
+  script: Arc<dyn ScriptIO<Event, Command> + Send + Sync>,
 }
 
 impl HttpHook {
-  pub fn new(
-    http: impl HttpIO + Send + Sync,
-    handler: impl EventHandler<Event, Command> + Send + Sync + 'static,
-  ) -> Self {
-    HttpHook { client: Arc::new(http), handler: Arc::new(handler) }
+  pub fn new(http: impl HttpIO + Send + Sync, script: impl ScriptIO<Event, Command> + Send + Sync + 'static) -> Self {
+    HttpHook { client: Arc::new(http), script: Arc::new(script) }
   }
 
   fn on_command<'a>(
@@ -33,11 +30,11 @@ impl HttpHook {
             .into_iter()
             .collect::<anyhow::Result<Vec<_>>>()?;
 
-          let command = self.handler.on_event(Event::Response(responses))?;
+          let command = self.script.on_event(Event::Response(responses)).await?;
           Ok(self.on_command(command).await?)
         }
         Command::Response(response) => {
-          let command = self.handler.on_event(Event::Response(vec![response]))?;
+          let command = self.script.on_event(Event::Response(vec![response])).await?;
           Ok(self.on_command(command).await?)
         }
       }
@@ -48,7 +45,7 @@ impl HttpHook {
 #[async_trait::async_trait]
 impl HttpIO for HttpHook {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
-    let command = self.handler.on_event(Event::Request(request))?;
+    let command = self.script.on_event(Event::Request(request)).await?;
     self.on_command(command).await
   }
 }

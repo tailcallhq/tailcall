@@ -1,17 +1,10 @@
-use tailcall::{EventHandler, ScriptIO};
+use tailcall::{Command, Event, ScriptIO};
 
 pub struct CloudflareScript {}
 
-impl<Event, Command> ScriptIO<Event, Command> for CloudflareScript {
-  fn event_handler(&self) -> anyhow::Result<impl EventHandler<Event, Command>> {
-    Ok(CloudflareEventHandler {})
-  }
-}
-
-pub struct CloudflareEventHandler {}
-
-impl<Event, Command> EventHandler<Event, Command> for CloudflareEventHandler {
-  fn on_event(&self, _: Event) -> anyhow::Result<Command> {
-    unimplemented!("on event should not be called in cloudflare env")
+#[async_trait::async_trait]
+impl ScriptIO<Event, Command> for CloudflareScript {
+  async fn on_event(&self, _: Event) -> anyhow::Result<Command> {
+    unimplemented!("evaluate should not be called in cloudflare env")
   }
 }

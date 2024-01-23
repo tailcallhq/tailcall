@@ -58,19 +58,18 @@ pub trait Cache: Send + Sync {
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
+#[async_trait::async_trait]
 pub trait ScriptIO<Event, Command> {
-  fn event_handler(&self) -> anyhow::Result<impl EventHandler<Event, Command>>;
+  async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
 }
 
-pub trait EventHandler<Event, Command>: Send + Sync {
-  fn on_event(&self, event: Event) -> anyhow::Result<Command>;
-}
-
+#[derive(Debug)]
 pub enum Event {
   Request(reqwest::Request),
   Response(Vec<Response<hyper::body::Bytes>>),
 }
 
+#[derive(Debug)]
 pub enum Command {
   Request(Vec<reqwest::Request>),
   Response(Response<hyper::body::Bytes>),
@@ -85,5 +84,48 @@ impl ToValues for Event {
 impl FromValue for Command {
   fn from_value(_value: mini_v8::Value, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<Self> {
     todo!()
+  }
+}
+
+trait JSValue: Send + Sync + 'static {
+  fn to_values(&self) -> mini_v8::Values;
+  fn from_value(value: mini_v8::Value) -> Self;
+}
+
+impl JSValue for Event {
+  fn to_values(&self) -> mini_v8::Values {
+    todo!()
+  }
+
+  fn from_value(_: mini_v8::Value) -> Self {
+    todo!()
+  }
+}
+
+impl JSValue for Command {
+  fn to_values(&self) -> mini_v8::Values {
+    todo!()
+  }
+
+  fn from_value(_value: mini_v8::Value) -> Self {
+    todo!()
+  }
+}
+
+impl JSValue for () {
+  fn to_values(&self) -> mini_v8::Values {
+    mini_v8::Values::new()
+  }
+
+  fn from_value(_: mini_v8::Value) -> Self {}
+}
+
+impl JSValue for f64 {
+  fn to_values(&self) -> mini_v8::Values {
+    mini_v8::Values::from_iter(vec![mini_v8::Value::Number(*self)])
+  }
+
+  fn from_value(value: mini_v8::Value) -> Self {
+    value.as_number().unwrap()
   }
 }
