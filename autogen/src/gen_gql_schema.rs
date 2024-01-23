@@ -3,11 +3,12 @@ use std::fs::File;
 use std::io::Write;
 
 use anyhow::Result;
+use capitalize::Capitalize;
 use schemars::schema::{ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec};
 use tailcall::config;
 
-static GRAPHQL_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.graphql";
-static DIRECTIVE_WHITELIST: [(&'static str, Entity, bool); 12] = [
+static GRAPHQL_SCHEMA_FILE: &str = "../examples/.tailcallrc.graphql";
+static DIRECTIVE_WHITELIST: [(&str, Entity, bool); 12] = [
   ("server", Entity::Schema, false),
   ("upstream", Entity::Schema, false),
   ("http", Entity::FieldDefinition, false),
@@ -21,7 +22,7 @@ static DIRECTIVE_WHITELIST: [(&'static str, Entity, bool); 12] = [
   ("expr", Entity::FieldDefinition, false),
   ("js", Entity::FieldDefinition, false),
 ];
-static OBJECT_WHITELIST: [&'static str; 18] = [
+static OBJECT_WHITELIST: [&str; 18] = [
   "ExprBody",
   "If",
   "Http",
@@ -180,19 +181,10 @@ fn write_reference(
   reference: &String,
   extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-  let mut nm = reference.split("/").last().unwrap().to_string();
-  first_char_to_upper(&mut nm);
+  let nm = reference.split('/').last().unwrap().to_string();
+  let nm = nm.capitalize();
   extra_it.insert(nm.clone(), ExtraTypes::Schema);
   write!(writer, "{nm}")
-}
-
-fn first_char_to_upper(name: &mut String) {
-  unsafe {
-    name.as_bytes_mut().get_mut(0).map(|ch| {
-      let lower = (*ch as char).to_ascii_uppercase();
-      *ch = lower as u8;
-    });
-  }
 }
 
 fn write_type(
@@ -232,9 +224,8 @@ fn write_type(
       if let Some(arr_valid) = schema.array.clone() {
         write_array_validation(writer, name, *arr_valid, defs, extra_it)
       } else if let Some(typ) = schema.object.clone() {
-        if typ.properties.len() > 0 {
-          let mut name = name;
-          first_char_to_upper(&mut name);
+        if !typ.properties.is_empty() {
+          let name = name.capitalize();
           write!(writer, "{name}")?;
           extra_it.insert(name, ExtraTypes::ObjectValidation(*typ));
           Ok(())
@@ -280,7 +271,7 @@ fn write_field(
   // if name.as_str() == "path" { println!("{name}: {schema:?}"); }
   write!(writer, "{name}: ")?;
   write_type(writer, name, schema, defs, extra_it)?;
-  writeln!(writer, "")
+  writeln!(writer)
 }
 
 fn write_input_type(
@@ -542,7 +533,7 @@ fn write_object_validation(
   defs: &BTreeMap<String, Schema>,
   extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-  if obj_valid.properties.len() > 0 {
+  if !obj_valid.properties.is_empty() {
     writeln!(writer, "input {name} {{")?;
     writer.indent();
     for (name, property) in obj_valid.properties {
@@ -564,8 +555,7 @@ fn write_all_input_types(
   let defs = schema.definitions;
   let mut scalars = HashSet::new();
   for (name, input_type) in defs.iter() {
-    let mut name = name.clone();
-    first_char_to_upper(&mut name);
+    let name = name.capitalize();
     write_input_type(
       writer,
       name,
