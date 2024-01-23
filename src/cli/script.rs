@@ -1,8 +1,7 @@
 use anyhow::Ok;
 use mini_v8::{FromValue, Script, ToValues, Value};
-use reqwest::{Request, Response};
 
-use crate::{ScriptEngine, ScriptEventContext};
+use crate::{EventHandler, ScriptEngine};
 
 pub struct JSEngine {
   v8: mini_v8::MiniV8,
@@ -30,21 +29,8 @@ impl JSEngine {
   }
 }
 
-impl ScriptEngine for JSEngine {
-  type Output = EventClosure;
-  fn new_event_context(&self) -> anyhow::Result<impl ScriptEventContext> {
-    let func = self
-      .v8
-      .eval(self.script.clone())
-      .map_err(|e| anyhow::anyhow!("JS Evaluation Error: {}", e.to_string()))?;
-    if let Value::Function(js_function) = func {
-      Ok(JSScriptRequestContext { js_function })
-    } else {
-      Err(anyhow::anyhow!("Expected a JS Function, but got {:?}", func))
-    }
-  }
-
-  fn create_closure(&self) -> anyhow::Result<Self::Output> {
+impl<Event: ToValues, Command: FromValue> ScriptEngine<Event, Command> for JSEngine {
+  fn event_handler(&self) -> anyhow::Result<impl EventHandler<Event, Command>> {
     let value: Value = self
       .v8
       .eval(self.script.clone())
@@ -54,55 +40,16 @@ impl ScriptEngine for JSEngine {
   }
 }
 
-struct JSScriptRequestContext {
-  js_function: mini_v8::Function,
-}
-
-impl ScriptEventContext for JSScriptRequestContext {
-  type Event = Event;
-  type Command = Command;
-  fn evaluate(&self, event: Self::Event) -> anyhow::Result<Self::Command> {
-    let command = self
-      .js_function
-      .call::<Self::Event, Self::Command>(event)
-      .map_err(|e| anyhow::anyhow!("Evaluation Error: {}", e.to_string()))?;
-
-    Ok(command)
-  }
-}
-pub enum Event {
-  Empty,
-  Request(Request),
-  Response(Response),
-}
-
-impl ToValues for Event {
-  fn to_values(self, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<mini_v8::Values> {
-    todo!()
-  }
-}
-
-pub enum Command {
-  Request(Vec<Request>),
-  Response(Response),
-}
-
-impl FromValue for Command {
-  fn from_value(_value: Value, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<Self> {
-    todo!()
-  }
-}
-
 #[derive(Debug)]
 pub struct EventClosure {
   handler: mini_v8::Function,
 }
 
-impl EventClosure {
-  pub fn on_event<A: ToValues>(&self, args: A) -> anyhow::Result<Value> {
+impl<Event: ToValues, Command: FromValue> EventHandler<Event, Command> for EventClosure {
+  fn on_event(&self, event: Event) -> anyhow::Result<Command> {
     self
       .handler
-      .call::<A, Value>(args)
+      .call(event)
       .map_err(|e| anyhow::anyhow!("Evaluation Error: {}", e.to_string()))
   }
 }
@@ -130,19 +77,25 @@ impl TryFrom<Value> for EventClosure {
 
 #[cfg(test)]
 mod tests {
-
+  use mini_v8::{Value, Values};
   use pretty_assertions::assert_eq;
 
-  use crate::{cli::script::JSEngine, ScriptEngine};
+  use crate::cli::script::JSEngine;
+  use crate::{EventHandler, ScriptEngine};
 
   #[test]
   fn test_shared_context() {
     let engine = JSEngine::new("let state = 0; function onEvent() {state += 1; return state}");
-    let closure = engine.create_closure().unwrap();
-    let actual = closure.on_event(()).unwrap().as_number().unwrap();
+    let ctx = engine.event_handler().unwrap();
+
+    // TODO: not idiomatic Rust
+    let actual = EventHandler::<Values, Value>::on_event(&ctx, Values::new())
+      .unwrap()
+      .as_number()
+      .unwrap();
     let expected = 1.0;
     assert_eq!(actual, expected);
-    let actual = closure.on_event(()).unwrap().as_number().unwrap();
+    let actual = ctx.on_event(Values::new()).unwrap().as_number().unwrap();
     let expected = 2.0;
     assert_eq!(actual, expected);
   }
@@ -150,14 +103,20 @@ mod tests {
   #[test]
   fn test_separate_context() {
     let engine = JSEngine::new("let state = 0; function onEvent() {state += 1; return state}");
-    let ctx_1 = engine.create_closure().unwrap();
-    let ctx_2 = engine.create_closure().unwrap();
+    let ctx_1 = engine.event_handler().unwrap();
+    let ctx_2 = engine.event_handler().unwrap();
 
-    let actual_1 = ctx_1.on_event(()).unwrap().as_number().unwrap();
+    let actual_1 = EventHandler::<Values, Value>::on_event(&ctx_1, Values::new())
+      .unwrap()
+      .as_number()
+      .unwrap();
     let expected_1 = 1.0;
     assert_eq!(actual_1, expected_1);
 
-    let actual_2 = ctx_2.on_event(()).unwrap().as_number().unwrap();
+    let actual_2 = EventHandler::<Values, Value>::on_event(&ctx_2, Values::new())
+      .unwrap()
+      .as_number()
+      .unwrap();
     let expected_2 = 1.0;
 
     assert_eq!(actual_2, expected_2);

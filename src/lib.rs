@@ -57,14 +57,10 @@ pub trait Cache: Send + Sync {
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
-pub trait ScriptEngine {
-  type Output;
-  fn new_event_context(&self) -> anyhow::Result<impl ScriptEventContext>;
-  fn create_closure(&self) -> anyhow::Result<Self::Output>;
+pub trait ScriptEngine<Event, Command> {
+  fn event_handler(&self) -> anyhow::Result<impl EventHandler<Event, Command>>;
 }
 
-pub trait ScriptEventContext {
-  type Event;
-  type Command;
-  fn evaluate(&self, event: Self::Event) -> anyhow::Result<Self::Command>;
+pub trait EventHandler<Event, Command> {
+  fn on_event(&self, event: Event) -> anyhow::Result<Command>;
 }
