@@ -221,18 +221,3 @@ fn create_header_map(headers: BTreeMap<String, String>) -> reqwest::header::Head
   }
   header_map
 }
-
-trait JSValue: Send + Sync + 'static {
-  fn to_values(&self) -> mini_v8::Values;
-  fn from_value(value: mini_v8::Value) -> Self;
-}
-
-impl JSValue for Event {
-  fn to_values(&self) -> mini_v8::Values {
-    todo!()
-  }
-
-  fn from_value(_: mini_v8::Value) -> Self {
-    todo!()
-  }
-}
