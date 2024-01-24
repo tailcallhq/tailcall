@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "deploy": "npx wrangler deploy --minify",
-    "publish": "npx wrangler publish --minify",
     "test-debug": "npx wrangler dev --port 19194 --remote --env debug",
     "test-release": "npx wrangler dev --port 19194 --remote"
   },
