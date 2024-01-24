@@ -35,10 +35,6 @@ pub fn compile_call(
   call: &config::Call,
   operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
-  if validate_field_has_resolver(field.name(), field, &config.types).is_succeed() {
-    return Valid::fail("@call directive is not allowed on field because it already has a resolver".to_string());
-  }
-
   Valid::from_option(call.query.clone(), "call must have query".to_string())
     .and_then(|field_name| {
       Valid::from_option(config.find_type("Query"), "Query type not found on config".to_string())
