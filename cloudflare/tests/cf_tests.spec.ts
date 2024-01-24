@@ -12,7 +12,7 @@ describe("fetch", () => {
     await bucket.put("examples/jsonplaceholder_batch.graphql", placeholder_batch)
   })
   test("ide", async () => {
-    let resp = await mf.dispatchFetch("https://fake.host/?config=examples/jsonplaceholder.graphql", {
+    let resp = await mf.dispatchFetch("https://fake.host/", {
       method: "GET",
     })
     let body = await resp.text()
