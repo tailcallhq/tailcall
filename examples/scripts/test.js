@@ -8,19 +8,23 @@ function onEvent(event) {
         },
         body: [
           {
-            id: 1,
-            userId: 1,
+            id: "1",
+            userId: "1",
             title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
             body: "hello world",
           },
           {
-            id: 2,
-            userId: 2,
+            id: "2",
+            userId: "2",
             title: "qui est esse",
             body: "hi",
           },
         ],
       },
+    }
+  } else {
+    return {
+      request: [{...event.request}],
     }
   }
 }

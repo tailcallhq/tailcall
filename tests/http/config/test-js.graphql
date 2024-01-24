@@ -1,4 +1,4 @@
-schema @server(script: {file: "./src/test.js"}) {
+schema @server(script: {path: "tests/http/scripts/test.js"}) {
   query: Query
 }
 
