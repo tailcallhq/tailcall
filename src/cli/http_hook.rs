@@ -5,7 +5,7 @@ use futures_util::future::join_all;
 use futures_util::Future;
 
 use crate::http::Response;
-use crate::{Command, Event, HttpIO, ScriptIO};
+use crate::{Command, Event, HttpIO, JsResponse, ScriptIO};
 
 #[derive(Clone)]
 pub struct HttpHook {
@@ -25,12 +25,16 @@ impl HttpHook {
     Box::pin(async move {
       match command {
         Command::Request(requests) => {
-          let responses = join_all(requests.into_iter().map(|request| self.client.execute(request)))
+          let responses = join_all(requests.into_iter().map(|request| self.client.execute(request.into())))
             .await
             .into_iter()
             .collect::<anyhow::Result<Vec<_>>>()?;
-
-          let command = self.script.on_event(Event::Response(responses)).await?;
+          let command = self
+            .script
+            .on_event(Event::Response(
+              responses.iter().map(JsResponse::from).collect::<Vec<_>>(),
+            ))
+            .await?;
           Ok(self.on_command(command).await?)
         }
         Command::Response(response) => {
@@ -45,7 +49,7 @@ impl HttpHook {
 #[async_trait::async_trait]
 impl HttpIO for HttpHook {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
-    let command = self.script.on_event(Event::Request(request)).await?;
+    let command = self.script.on_event(Event::Request((&request).into())).await?;
     self.on_command(command).await
   }
 }

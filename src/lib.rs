@@ -33,9 +33,10 @@ use std::num::NonZeroU64;
 use async_graphql_value::ConstValue;
 use http::Response;
 use hyper::body::Bytes;
-use mini_v8::{FromValue, MiniV8, ToValue, ToValues, Value as MValue, Value, Values};
+use mini_v8::{Error, FromValue, MiniV8, ToValue, ToValues, Value as MValue, Value, Values};
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::Body;
+use serde_json::Number;
 
 pub trait EnvIO: Send + Sync + 'static {
   fn get(&self, key: &str) -> Option<String>;
@@ -67,36 +68,83 @@ pub trait ScriptIO<Event, Command>: Send + Sync {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Event {
-  Request(reqwest::Request),
-  Response(Vec<Response<Bytes>>),
+  Request(JsRequest),
+  Response(Vec<JsResponse>),
 }
 
-impl PartialEq for Event {
-  fn eq(&self, other: &Self) -> bool {
-    match (self, other) {
-      (Event::Request(req1), Event::Request(req2)) => {
-        req1.url() == req2.url()
-          && req1.method() == req2.method()
-          && req1.headers() == req2.headers()
-          && req1.body().unwrap_or(&Body::from("".as_bytes())).as_bytes()
-            == req2.body().unwrap_or(&Body::from("".as_bytes())).as_bytes()
-      }
-      (Event::Response(res1), Event::Response(res2)) => res1.iter().zip(res2.iter()).all(|(r1, r2)| {
-        let r1 = r1.clone().to_resp_string().unwrap();
-        let r2 = r2.clone().to_resp_string().unwrap();
-        r1.status == r2.status && r1.headers == r2.headers && r1.body == r2.body
-      }),
-      _ => false,
-    }
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct JsResponse {
+  status: u16,
+  headers: BTreeMap<String, String>,
+  body: serde_json::Value,
+}
+
+impl From<JsRequest> for reqwest::Request {
+  fn from(req: JsRequest) -> Self {
+    let mut request = reqwest::Request::new(
+      reqwest::Method::from_bytes(req.method.as_bytes()).unwrap(),
+      req.url.parse().unwrap(),
+    );
+    let headers = create_header_map(req.headers);
+    request.headers_mut().extend(headers);
+    let body = serde_json::to_string(&req.body).unwrap();
+    let _ = request.body_mut().insert(Body::from(body));
+    request
   }
 }
 
-#[derive(Debug)]
+impl From<&reqwest::Request> for JsRequest {
+  fn from(req: &reqwest::Request) -> Self {
+    let url = req.url().to_string();
+    let method = req.method().as_str().to_string();
+    let headers = req
+      .headers()
+      .iter()
+      .map(|(k, v)| (k.to_string(), v.to_str().unwrap().to_string()))
+      .collect();
+    let body = req
+      .body()
+      .map(|b| serde_json::from_slice::<serde_json::Value>(b.as_bytes().unwrap_or_default()).unwrap())
+      .unwrap_or_default();
+    JsRequest { url, method, headers, body }
+  }
+}
+impl From<JsResponse> for Response<Bytes> {
+  fn from(res: JsResponse) -> Self {
+    let status = reqwest::StatusCode::from_u16(res.status).unwrap();
+    let headers = create_header_map(res.headers);
+    let body = serde_json::to_string(&res.body).unwrap();
+    Response { status, headers, body: Bytes::from(body) }
+  }
+}
+
+impl From<&Response<Bytes>> for JsResponse {
+  fn from(res: &Response<Bytes>) -> Self {
+    let status = res.status.as_u16();
+    let headers = res
+      .headers
+      .iter()
+      .map(|(k, v)| (k.to_string(), v.to_str().unwrap().to_string()))
+      .collect();
+    let body = serde_json::from_slice(res.body.as_ref()).unwrap();
+    JsResponse { status, headers, body }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct JsRequest {
+  url: String,
+  method: String,
+  headers: BTreeMap<String, String>,
+  body: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Command {
-  Request(Vec<reqwest::Request>),
-  Response(Response<hyper::body::Bytes>),
+  Request(Vec<JsRequest>),
+  Response(JsResponse),
 }
 
 impl ToValues for Event {
@@ -111,7 +159,7 @@ impl ToValues for Event {
         let arr = mv8.create_array();
 
         for res in responses {
-          arr.push(from_resp(res, mv8.clone())?)?;
+          arr.push(from_resp(res.into(), mv8.clone())?)?;
         }
         let out = mv8.create_object();
         out.set("responses", MValue::Array(arr))?;
@@ -128,88 +176,94 @@ impl ToValue for Response<Bytes> {
 }
 
 fn from_resp(resp: Response<Bytes>, mv8: MiniV8) -> mini_v8::Result<MValue> {
-  let obj = mv8.create_object();
-  let status = resp.status.as_u16() as f64;
-  let headers = mv8.create_object();
-  for (key, value) in resp.headers.iter() {
-    let key = mv8.create_string(key.as_str());
-    let value = mv8.create_string(value.to_str().unwrap());
-    headers.set(key, value)?;
+  let resp = JsResponse::from(&resp);
+  let serde_value = serde_json::to_value(resp).unwrap();
+  let value = ValueWrapper(serde_value);
+  let obj = value.to_value(&mv8)?;
+  Ok(obj)
+}
+pub struct ValueWrapper(pub serde_json::Value);
+impl From<ValueWrapper> for serde_json::Value {
+  fn from(value: ValueWrapper) -> Self {
+    value.0
   }
-  let body = mv8.create_string(String::from_utf8_lossy(resp.body.as_ref()).as_ref());
-  obj.set("status", MValue::Number(status))?;
-  obj.set("headers", MValue::Object(headers))?;
-  obj.set("body", MValue::String(body))?;
-  Ok(MValue::Object(obj))
+}
+impl FromValue for ValueWrapper {
+  fn from_value(value: MValue, _mv8: &MiniV8) -> mini_v8::Result<Self> {
+    let p = match value {
+      Value::Undefined => serde_json::Value::Null,
+      Value::Null => serde_json::Value::Null,
+      Value::Boolean(v) => serde_json::Value::Bool(v),
+      Value::Number(n) => serde_json::Value::Number(Number::from_f64(n).unwrap()),
+
+      Value::String(s) => serde_json::Value::String(s.to_string()),
+      Value::Array(v) => {
+        let list: mini_v8::Result<Vec<serde_json::Value>> =
+          v.elements::<ValueWrapper>().map(|e| e.map(|v| v.into())).collect();
+
+        serde_json::Value::Array(list?)
+      }
+      Value::Function(_) => serde_json::Value::Null,
+      Value::Object(v) => {
+        let props: mini_v8::Result<Vec<(String, serde_json::Value)>> = v
+          .properties::<String, ValueWrapper>(false)?
+          .map(|e| e.map(|(k, v)| (k, v.into())))
+          .collect();
+
+        serde_json::Value::Object(serde_json::Map::from_iter(props?))
+      }
+
+      Value::Date(d) => serde_json::Value::Number(
+        Number::from_f64(d)
+          .ok_or(Error::FromJsConversionError { from: "Date", to: "graphql number as it is out of supported range" })?,
+      ),
+    };
+    Ok(ValueWrapper(p))
+  }
 }
 
-fn from_req(req: reqwest::Request, mv8: MiniV8) -> mini_v8::Result<MValue> {
-  let obj = mv8.create_object();
-  let url = mv8.create_string(req.url().to_string().as_str());
-  let method = mv8.create_string(req.method().clone().as_str());
-  let headers = mv8.create_object();
-  for (key, value) in req.headers().iter() {
-    let key = mv8.create_string(key.as_str());
-    let value = mv8.create_string(value.to_str().unwrap());
-    headers.set(key, value)?;
+impl ToValue for ValueWrapper {
+  fn to_value(self, mv8: &MiniV8) -> mini_v8::Result<MValue> {
+    let p = match self.0 {
+      serde_json::Value::Null => MValue::Null,
+      serde_json::Value::Bool(b) => MValue::Boolean(b),
+      serde_json::Value::Number(n) => MValue::Number(n.as_f64().unwrap_or_default()),
+      serde_json::Value::String(s) => MValue::String(mv8.create_string(s.as_str())),
+      serde_json::Value::Array(a) => {
+        let arr = mv8.create_array();
+        for v in a {
+          arr.push(ValueWrapper(v).to_value(mv8)?)?;
+        }
+        MValue::Array(arr)
+      }
+      serde_json::Value::Object(obj) => {
+        let out = mv8.create_object();
+        for (k, v) in obj {
+          out.set(k, ValueWrapper(v).to_value(mv8)?)?;
+        }
+        MValue::Object(out)
+      }
+    };
+    Ok(p)
   }
-  if let Some(body) = req.body() {
-    let body = mv8.create_string(String::from_utf8_lossy(body.as_bytes().unwrap()).as_ref());
-    obj.set("body", MValue::String(body))?;
-  }
-  obj.set("url", MValue::String(url))?;
-  obj.set("method", MValue::String(method))?;
-  obj.set("headers", MValue::Object(headers))?;
+}
+
+fn from_req(req: JsRequest, mv8: MiniV8) -> mini_v8::Result<MValue> {
+  let serde_value = serde_json::to_value(req).unwrap();
+  let value = ValueWrapper(serde_value);
+  let obj = value.to_value(&mv8)?;
   let out = mv8.create_object();
   out.set("request", obj)?;
   Ok(MValue::Object(out))
 }
 
-fn to_req(value: MValue) -> mini_v8::Result<reqwest::Request> {
-  let obj = value.as_object().expect("value is not an object");
-  let url: String = obj.get::<&str, String>("url")?;
-  let method: String = obj.get::<&str, String>("method")?;
-  let body = obj.get::<&str, String>("body");
-  let mut req = reqwest::Request::new(
-    reqwest::Method::from_bytes(method.as_bytes()).unwrap(),
-    url.parse().unwrap(),
-  );
-  let headers = obj.get::<&str, BTreeMap<String, String>>("headers");
-  if let Ok(headers) = headers {
-    let map = create_header_map(headers);
-    req.headers_mut().extend(map);
-  }
-  let body = body.unwrap_or("".to_string());
-  let _ = req.body_mut().insert(Body::from(body));
-  Ok(req)
-}
-
 impl FromValue for Command {
   fn from_value(value: MValue, _mv8: &MiniV8) -> mini_v8::Result<Self> {
-    match value {
-      Value::Object(obj) => {
-        if let Ok(response) = obj.get::<&str, MValue>("response") {
-          let obj = response.as_object().expect("response is not an object");
-          let status = obj.get::<&str, f64>("status")?;
-          let headers = obj.get::<&str, BTreeMap<String, String>>("headers")?;
-          let map = create_header_map(headers);
-          let body = obj.get::<&str, String>("body")?;
-          let body = Bytes::from(body);
-          let resp = Response { status: reqwest::StatusCode::from_u16(status as u16).unwrap(), headers: map, body };
-          Ok(Command::Response(resp))
-        } else if let Ok(request) = obj.get::<&str, MValue>("request") {
-          let arr = request.as_array().expect("request is not an array").clone();
-          let mut vec = Vec::new();
-          for val in arr.elements() {
-            vec.push(to_req(val?)?);
-          }
-          Ok(Command::Request(vec))
-        } else {
-          unimplemented!("Command::from_value")
-        }
-      }
-      _ => unimplemented!("Command::from_value"),
-    }
+    let serde_value: serde_json::Value = ValueWrapper::from_value(value, _mv8)?.into();
+    log::info!("serde response {:?}", serde_value);
+    let command: Command = serde_json::from_value(serde_value)
+      .map_err(|_e| Error::FromJsConversionError { from: "serde_json::Value", to: "Command" })?;
+    Ok(command)
   }
 }
 fn create_header_map(headers: BTreeMap<String, String>) -> reqwest::header::HeaderMap {
