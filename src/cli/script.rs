@@ -109,15 +109,15 @@ fn on_event_impl<'a>(
   let command = match value {
     Value::Undefined => {
       if let Some(req) = event.request() {
-        Command::Continue(req)
+        Ok(Command::Continue(req))
       } else {
-        unimplemented!("Undefined return value is only supported for requests")
+        anyhow::bail!("Event not handled: {:?}", event)
       }
     }
-    _ => Command::from_value(value, v8).map_err(|e| anyhow::anyhow!("Command decoding failure: {}", e.to_string()))?,
+    _ => Command::from_value(value, v8).map_err(|e| anyhow::anyhow!("Command decoding failure: {}", e.to_string())),
   };
 
-  Ok(command)
+  command
 }
 
 // #[cfg(test)]
