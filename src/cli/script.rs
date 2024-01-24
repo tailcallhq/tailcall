@@ -62,7 +62,7 @@ impl JSEngine {
 #[async_trait::async_trait]
 impl ScriptIO<Event, Command> for JSEngine {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command> {
-    let command = RUNTIME
+    RUNTIME
       .spawn(async move {
         let v8 = V8.with_borrow(|x| x.clone());
         let closure = CLOSURE.with_borrow(|x| x.clone());
@@ -70,8 +70,7 @@ impl ScriptIO<Event, Command> for JSEngine {
         log::info!("JSEngine::on_event");
         command
       })
-      .await?;
-    command
+      .await?
   }
 }
 
