@@ -8,8 +8,6 @@ on:
   pull_request:
     paths-ignore: ["docs/**", "**.md"]
     types: [opened, reopened, synchronize, labeled]
-    branches:
-      - main
 
 jobs:
   macro_benchmark:
