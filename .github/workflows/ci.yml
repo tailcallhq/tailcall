@@ -84,6 +84,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ (env.LINT_MODE == 'fix' && github.event.pull_request.head.sha) || '' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed
