@@ -78,7 +78,9 @@ pub fn compile_call(
         .trace(field_name.as_str());
       }
 
-      if let Some(http) = _field.http.clone() {
+      if let Some(mut http) = _field.http.clone() {
+        http.headers = update_headers(http.headers.0.clone(), &args);
+
         compile_http(config, field, &http).and_then(|expr| match expr.clone() {
           Expression::IO(IO::Http { req_template, group_by, dl_id }) => Valid::succeed(
             req_template.clone().root_url(
@@ -192,17 +194,7 @@ pub fn compile_call(
           graphql.args = Some(KeyValues(updated));
         }
 
-        if graphql.headers.0.len() > 0 {
-          let mut headers = graphql.headers.0.clone();
-
-          for (key, _) in graphql.headers.0.iter() {
-            let value = find_value(&args, &key).unwrap();
-
-            headers.insert(key.clone(), value.to_string());
-          }
-
-          graphql.headers = KeyValues(headers);
-        }
+        graphql.headers = update_headers(graphql.headers.0.clone(), &args);
 
         compile_graphql(config, operation_type, &graphql)
       } else if let Some(grpc) = _field.grpc.clone() {
@@ -213,4 +205,20 @@ pub fn compile_call(
         return Valid::fail(format!("{} field has no resolver", field_name));
       }
     })
+}
+
+fn update_headers(headers: BTreeMap<String, String>, args: &Iter<String, String>) -> KeyValues {
+  if headers.len() == 0 {
+    return KeyValues(headers);
+  }
+
+  let mut headers = headers;
+
+  for (key, _) in headers.clone().into_iter() {
+    let value = find_value(&args, &key).unwrap();
+
+    headers.insert(key.clone(), value.to_string());
+  }
+
+  KeyValues(headers)
 }
