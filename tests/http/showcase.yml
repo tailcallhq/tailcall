@@ -12,18 +12,19 @@ mock:
   - request:
       url: http://example.com/simple.graphql
     response:
-      body: 'schema {
-  query: Query
-}
+      body: '
+        schema {
+        query: Query
+        }
 
-type User {
-  id: Int
-  name: String
-}
+        type User {
+        id: Int
+        name: String
+        }
 
-type Query {
-  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
-}'
+        type Query {
+        user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+        }'
   - request:
       url: http://example.com/invalid.graphql
     response:
@@ -66,9 +67,9 @@ assert:
         query: query { user { name } }
     response:
       body:
-          data: null
-          errors:
-            - message: "Validation Error\n•  --> 1:1\n  |\n1 | dsjfsjdfjdsfjkdskjfjkds\n  | ^---\n  |\n  = expected type_system_definition\n"
+        data: null
+        errors:
+          - message: "Validation Error\n•  --> 1:1\n  |\n1 | dsjfsjdfjdsfjkdskjfjkds\n  | ^---\n  |\n  = expected type_system_definition\n"
   - request:
       method: POST
       url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql

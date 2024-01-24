@@ -34,10 +34,7 @@ impl EnvIO for DummyEnvIO {
 
 pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
   req: &Request<Body>,
-  http: impl HttpIO,
-  env: impl EnvIO,
-  file: Option<impl FileIO>,
-  cache: Arc<EntityCache>,
+  (http, env, file, cache): (Arc<impl HttpIO>, impl EnvIO, Option<impl FileIO>, Arc<EntityCache>),
 ) -> Result<Result<AppContext, Response<Body>>> {
   let url = Url::parse(&req.uri().to_string())?;
   let mut query = url.query_pairs();
@@ -86,11 +83,5 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
   let http = Arc::new(http);
   let env = Arc::new(env);
 
-  Ok(Ok(AppContext::new(
-    blueprint,
-    http.clone(),
-    http,
-    env,
-    cache,
-  )))
+  Ok(Ok(AppContext::new(blueprint, http.clone(), http, env, cache)))
 }
