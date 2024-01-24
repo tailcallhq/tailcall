@@ -15,6 +15,24 @@ type Query {
   userGraphQLHeaders(id: Int!): User
     @graphQL(baseURL: "http://upstream/graphql", name: "user", headers: [{key: "id", value: "{{args.id}}"}])
   userWithPosts: UserWithPosts @http(path: "/users/1")
+  news: NewsData!
+    @grpc(
+      service: "NewsService"
+      method: "GetAllNews"
+      baseURL: "http://localhost:50051"
+      protoPath: "src/grpc/tests/news.proto"
+    )
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type News {
+  id: Int
+  title: String
+  body: String
+  postImage: String
 }
 
 type UserWithPosts {
@@ -42,4 +60,5 @@ type Post {
   userHttpQuery: User @call(query: "userHttpQuery", args: {id: "{{value.userId}}"})
   userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
   userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
+  news: NewsData! @call(query: "news", args: {})
 }
