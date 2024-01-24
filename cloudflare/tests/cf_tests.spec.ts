@@ -8,9 +8,7 @@ describe("fetch", () => {
     let placeholder_batch = (await readFile("../examples/jsonplaceholder_batch.graphql")).toString()
 
     let bucket = await mf.getR2Bucket("MY_R2")
-    // @ts-ignore
     await bucket.put("examples/jsonplaceholder.graphql", placeholder)
-    // @ts-ignore
     await bucket.put("examples/jsonplaceholder_batch.graphql", placeholder_batch)
   })
   test("ide", async () => {
