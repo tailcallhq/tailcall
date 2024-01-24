@@ -32,12 +32,14 @@ impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> Cache for NativeChronoC
   #[allow(clippy::too_many_arguments)]
   async fn set<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> Result<V> {
     let ttl = Duration::from_millis(ttl.get());
-    self
-      .data
-      .write()
-      .unwrap()
-      .insert(key, value, ttl)
-      .ok_or(anyhow!("unable to insert value"))
+    Ok(
+      self
+        .data
+        .write()
+        .unwrap()
+        .insert(key, value.clone(), ttl)
+        .unwrap_or(value),
+    )
   }
 
   async fn get<'a>(&'a self, key: &'a K) -> Result<V> {
