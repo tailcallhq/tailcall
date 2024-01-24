@@ -6,7 +6,7 @@ use anyhow::Result;
 use schemars::schema::{ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec};
 use tailcall::config;
 
-static GRAPHQL_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.graphql";
+static GRAPHQL_SCHEMA_FILE: &'static str = "examples/.tailcallrc.graphql";
 static DIRECTIVE_WHITELIST: [(&'static str, Entity, bool); 12] = [
   ("server", Entity::Schema, false),
   ("upstream", Entity::Schema, false),
