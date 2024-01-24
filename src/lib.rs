@@ -4,7 +4,6 @@ mod app_context;
 pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod cache;
-pub mod chrono_cache;
 #[cfg(feature = "default")]
 pub mod cli;
 pub mod config;
@@ -28,7 +27,10 @@ pub mod try_fold;
 pub mod valid;
 
 use std::future::Future;
+use std::hash::Hash;
+use std::num::NonZeroU64;
 
+use async_graphql_value::ConstValue;
 use http::Response;
 
 pub trait EnvIO: Send + Sync + 'static {
@@ -44,3 +46,13 @@ pub trait FileIO {
   fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> impl Future<Output = anyhow::Result<()>>;
   fn read<'a>(&'a self, file_path: &'a str) -> impl Future<Output = anyhow::Result<String>>;
 }
+
+#[async_trait::async_trait]
+pub trait Cache: Send + Sync {
+  type Key: Hash + Eq;
+  type Value;
+  async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> anyhow::Result<Self::Value>;
+  async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
+}
+
+type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;

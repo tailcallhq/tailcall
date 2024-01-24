@@ -63,11 +63,15 @@ fn get_cache_key<'a, H: Hasher + Clone>(
   Some(key)
 }
 
-fn write_entity_cache<'a>(ctx: &'a EvaluationContext<'a, ResolverContext<'a>>, type_name: &str, output: &ConstValue) {
+async fn write_entity_cache<'a>(
+  ctx: &'a EvaluationContext<'a, ResolverContext<'a>>,
+  type_name: &str,
+  output: &ConstValue,
+) {
   if let Some(Cache { max_age: ttl, hasher }) = ctx.req_ctx.type_cache_config.get(type_name) {
     let hasher = hasher.clone();
     if let Some(key) = get_cache_key(ctx, hasher) {
-      ctx.req_ctx.cache.insert(key, output.clone(), *ttl);
+      ctx.req_ctx.cache.set(key, output.clone(), *ttl).await.ok();
     }
   }
 }
@@ -80,7 +84,7 @@ async fn read_entity_cache<'a>(
     let hasher = hasher.clone();
 
     if let Some(key) = get_cache_key(ctx, hasher) {
-      return ctx.req_ctx.cache.get(&key);
+      return ctx.req_ctx.cache.get(&key).await.ok();
     }
   }
 
@@ -116,7 +120,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                   cache.and_then(|Cache { max_age: ttl, hasher }| Some((ttl, get_cache_key(&ctx, hasher)?)));
                 let const_value = match ttl_and_key {
                   Some((ttl, key)) => {
-                    if let Some(const_value) = ctx.req_ctx.cache_get(&key) {
+                    if let Some(const_value) = ctx.req_ctx.cache_get(&key).await {
                       // Return value from cache
                       log::info!("Reading from cache. key = {key}");
                       const_value
@@ -128,7 +132,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                       let const_value = expr.eval(&ctx, &Concurrent::Sequential).await?;
                       log::info!("Writing to cache. key = {key}");
                       // Write value to cache
-                      ctx.req_ctx.cache_insert(key, const_value.clone(), ttl);
+                      ctx.req_ctx.cache_insert(key, const_value.clone(), ttl).await;
                       const_value
                     }
                   }
@@ -144,7 +148,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 };
 
                 if !read_from_entity_cache {
-                  write_entity_cache(&ctx, &of_type, &const_value);
+                  write_entity_cache(&ctx, &of_type, &const_value).await;
                 }
 
                 let p = match const_value {

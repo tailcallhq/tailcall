@@ -9,7 +9,7 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::GlobalTimeout;
-use crate::blueprint::from_config::Server;
+use crate::blueprint::Server;
 use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
 

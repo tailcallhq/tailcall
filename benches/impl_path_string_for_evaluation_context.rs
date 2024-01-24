@@ -10,7 +10,7 @@ use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::blueprint::Server;
-use tailcall::chrono_cache::ChronoCache;
+use tailcall::cli::cache::NativeChronoCache;
 use tailcall::cli::{init_env, init_http, init_http2_only};
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
@@ -153,7 +153,7 @@ fn request_context() -> RequestContext {
     upstream,
     http_data_loaders: Arc::new(vec![]),
     gql_data_loaders: Arc::new(vec![]),
-    cache: ChronoCache::new(),
+    cache: Arc::new(NativeChronoCache::new()),
     grpc_data_loaders: Arc::new(vec![]),
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),

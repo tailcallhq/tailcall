@@ -1,7 +1,9 @@
+use std::panic;
 use std::rc::Rc;
 
 use anyhow::anyhow;
 
+mod cache;
 mod env;
 mod file;
 mod handle;
@@ -17,6 +19,10 @@ pub fn init_file(env: Rc<worker::Env>, bucket_id: String) -> anyhow::Result<file
 
 pub fn init_http() -> http::CloudflareHttp {
   http::CloudflareHttp::init()
+}
+
+pub fn init_cache(env: Rc<worker::Env>) -> cache::CloudflareChronoCache {
+  cache::CloudflareChronoCache::init(env)
 }
 
 #[worker::event(fetch)]
@@ -36,6 +42,7 @@ async fn fetch(req: worker::Request, env: worker::Env, context: worker::Context)
 fn start() {
   // Initialize Logger
   wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
+  panic::set_hook(Box::new(console_error_panic_hook::hook));
 }
 
 fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {

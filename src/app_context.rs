@@ -3,17 +3,15 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
-use async_graphql_value::ConstValue;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Cache, Definition};
-use crate::chrono_cache::ChronoCache;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
-use crate::{grpc, EnvIO, HttpIO};
+use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
@@ -22,15 +20,21 @@ pub struct AppContext<Http, Env> {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+  pub cache: Arc<EntityCache>,
   pub env_vars: Arc<Env>,
   pub type_cache_config: Arc<HashMap<String, Cache>>,
 }
 
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
-  pub fn new(mut blueprint: Blueprint, h_client: Arc<Http>, h2_client: Arc<Http>, env: Arc<Env>) -> Self {
+  pub fn new(
+    mut blueprint: Blueprint,
+    h_client: Arc<Http>,
+    h2_client: Arc<Http>,
+    env: Arc<Env>,
+    cache: Arc<EntityCache>,
+  ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
     let mut grpc_data_loaders = vec![];
@@ -109,7 +113,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
-      cache: ChronoCache::new(),
+      cache,
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
       type_cache_config: Arc::new(type_cache_config),
