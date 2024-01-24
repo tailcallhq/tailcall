@@ -22,9 +22,5 @@ function onEvent(event) {
         ],
       },
     }
-  } else {
-    return {
-      request: [{...event.request}],
-    }
   }
 }
