@@ -138,6 +138,9 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     ExprBody::Mod(a, b) => {
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Math(Math::Mod(Box::new(a), Box::new(b))))
     }
+    ExprBody::Mean(ref list) => {
+      compile_list(ctx, list.clone()).map(|a| Expression::Math(Math::Mean(a)).parallel_when(expr.has_io()))
+    }
     ExprBody::Add(a, b) => {
       compile_ab(ctx, (*a, *b)).map(|(a, b)| Expression::Math(Math::Add(Box::new(a), Box::new(b))))
     }
@@ -308,6 +311,16 @@ mod tests {
       .await
       .unwrap();
     let expected = json!(42.0);
+    assert_eq!(actual, expected);
+  }
+
+  #[tokio::test]
+  async fn test_math_mean() {
+    let expected = json!(2.5);
+    let actual = Expr::eval(json!({"body": {"mean": [{"const": 1}, {"const": 2}, {"const": 3}, {"const": 4}]}}))
+      .await
+      .unwrap();
+
     assert_eq!(actual, expected);
   }
 

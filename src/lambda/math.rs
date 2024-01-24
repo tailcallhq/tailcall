@@ -20,6 +20,7 @@ pub enum Math {
   Product(Vec<Expression>),
   Subtract(Box<Expression>, Box<Expression>),
   Sum(Vec<Expression>),
+  Mean(Vec<Expression>),
 }
 
 impl Eval for Math {
@@ -106,6 +107,23 @@ impl Eval for Math {
               .or_else(|| try_i64_operation(&lhs, &rhs, ops::Mul::mul))
               .ok_or(EvaluationError::ExprEvalError("product".into()))
           })?
+        }
+        Math::Mean(exprs) => {
+          let results: Vec<_> = exprs.eval(ctx, conc).await?;
+
+          let sum = results.into_iter().try_fold(0i64.into(), |lhs, rhs| {
+            try_f64_operation(&lhs, &rhs, ops::Add::add)
+              .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
+              .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
+              .ok_or(EvaluationError::ExprEvalError("mean-sum".into()))
+          })?;
+
+          let length = exprs.len() as f64;
+
+          try_f64_operation(&sum, &length.into(), ops::Div::div)
+            .or_else(|| try_u64_operation(&sum, &(length as u64).into(), ops::Div::div))
+            .or_else(|| try_i64_operation(&sum, &(length as i64).into(), ops::Div::div))
+            .ok_or(EvaluationError::ExprEvalError("mean-div".into()))?
         }
         Math::Subtract(lhs, rhs) => {
           let lhs = lhs.eval(ctx, conc).await?;

@@ -13,6 +13,7 @@ assert:
           div1
           div2
           inc
+          mean
           dec
           product
           sum
@@ -27,6 +28,7 @@ assert:
           div1: 42.0
           div2: 42.0
           inc: 42.0
+          mean: 42.0
           dec: 42.0
           product: 42.0
           sum: 42.0

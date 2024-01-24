@@ -110,6 +110,8 @@ pub enum ExprBody {
   Subtract(Box<ExprBody>, Box<ExprBody>),
   #[serde(rename = "sum")]
   Sum(Vec<ExprBody>),
+  #[serde(rename = "mean")]
+  Mean(Vec<ExprBody>),
 }
 
 impl ExprBody {
@@ -150,6 +152,7 @@ impl ExprBody {
       ExprBody::Lt(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::Lte(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::Max(l) => l.iter().any(|e| e.has_io()),
+      ExprBody::Mean(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Min(l) => l.iter().any(|e| e.has_io()),
       ExprBody::PathEq(expr1, _, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::PropEq(expr1, _, expr2) => expr1.has_io() || expr2.has_io(),
