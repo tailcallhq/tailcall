@@ -7,16 +7,9 @@ on:
       - main
   pull_request:
     paths-ignore: ["docs/**", "**.md"]
-    types: [opened, synchronize, labeled]
+    types: [opened, reopened, synchronize, labeled]
     branches:
       - main
-
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: "Branch to run benchmark on"
-        required: true
-        default: "main"
 
 jobs:
   macro_benchmark:
@@ -28,7 +21,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
@@ -62,32 +54,21 @@ jobs:
         name: Convert Output to Markdown
         working-directory: ci-benchmark
         run: |
-          node wrk-output-to-md.js wrk-output.txt > wrk-output.md
-
+          node wrk-output-to-md.js wrk-output.txt > body.md
       - id: cat_md
         name: Cat Markdown
         working-directory: ci-benchmark
         run: |
-          cat wrk-output.md
+          cat body.md
 
-      - id: get_comment_body
-        name: Get Comment Body
-        working-directory: ci-benchmark
-        run: |
-          body="$(cat wrk-output.md)"
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Commit Comment
-        uses: peter-evans/commit-comment@v3
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
         with:
-          sha: ${{github.event.pull_request.head.sha}}
-          body: ${{steps.get_comment_body.outputs.body}}
+          name: body
+          path: body.md
 
   Cache_Benchmarks:
-    name: Micro Benchmarks
+    name: Cache Micro Benchmarks result
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       pull-requests: write
