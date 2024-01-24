@@ -54,7 +54,7 @@ impl RequestTemplate {
   }
 
   pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
-    let url = self.create_url(ctx).map(|v| v)?;
+    let url = self.create_url(ctx)?;
     let headers = self.render_headers(ctx);
     let body = self.render_body(ctx);
     Ok(RenderedRequestTemplate { url, headers, body, operation: self.operation.clone() })
