@@ -331,11 +331,16 @@ impl HttpIO for MockHttpClient {
             response.body = Bytes::from_iter(body);
             Ok(response)
         } else {
-            let body = serde_json::to_vec(&mock_response.0.body)?;
+            let body = if let Value::String(x) = mock_response.0.body {
+                string_to_bytes(&x)
+            } else {
+                serde_json::to_vec(&mock_response.0.body)?
+            };
             response.body = Bytes::from_iter(body);
             Ok(response)
         }
     }
+  }
 }
 
 async fn assert_downstream(spec: HttpSpec) {
