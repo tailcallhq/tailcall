@@ -32,7 +32,8 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 use http::Response;
-use mini_v8::{FromValue, ToValues};
+use hyper::body::Bytes;
+use mini_v8::{FromValue, MiniV8, ToValue, ToValues, Value as MValue, Values};
 
 pub trait EnvIO: Send + Sync + 'static {
   fn get(&self, key: &str) -> Option<String>;
@@ -76,13 +77,73 @@ pub enum Command {
 }
 
 impl ToValues for Event {
-  fn to_values(self, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<mini_v8::Values> {
-    todo!()
+  fn to_values(self, mv8: &MiniV8) -> mini_v8::Result<Values> {
+    match self {
+      Event::Request(req) => {
+        let req = from_req(req, mv8.clone())?;
+        let val = Values::from_iter(vec![req]);
+        Ok(val)
+      }
+      Event::Response(responses) => {
+        let mut vec = Vec::new();
+        for res in responses {
+          vec.push(from_resp(res, mv8.clone())?);
+        }
+        Ok(Values::from_iter(vec))
+      }
+    }
   }
 }
 
+impl ToValue for Response<Bytes> {
+  fn to_value(self, mv8: &MiniV8) -> mini_v8::Result<MValue> {
+    from_resp(self, mv8.clone())
+  }
+}
+
+fn from_resp(resp: Response<Bytes>, mv8: MiniV8) -> mini_v8::Result<MValue> {
+  let obj = mv8.create_object();
+  let status = resp.status.as_u16() as f64;
+  let headers = mv8.create_array();
+  for (key, value) in resp.headers.iter() {
+    let key = mv8.create_string(key.as_str());
+    let value = mv8.create_string(value.to_str().unwrap());
+    let pair = mv8.create_array();
+    pair.set(0, MValue::String(key))?;
+    pair.set(1, MValue::String(value))?;
+    headers.push(pair)?;
+  }
+  let body = mv8.create_string(String::from_utf8_lossy(resp.body.as_ref()).as_ref());
+  obj.set("status", MValue::Number(status))?;
+  obj.set("headers", MValue::Array(headers))?;
+  obj.set("body", MValue::String(body))?;
+  Ok(MValue::Object(obj))
+}
+
+fn from_req(req: reqwest::Request, mv8: MiniV8) -> mini_v8::Result<MValue> {
+  let obj = mv8.create_object();
+  let url = mv8.create_string(req.url().to_string().as_str());
+  let method = mv8.create_string(req.method().clone().as_str());
+  let headers = mv8.create_array();
+  for (key, value) in req.headers().iter() {
+    let key = mv8.create_string(key.as_str());
+    let value = mv8.create_string(value.to_str().unwrap());
+    let pair = mv8.create_array();
+    pair.set(0, MValue::String(key))?;
+    pair.set(1, MValue::String(value))?;
+    headers.push(pair)?;
+  }
+  if let Some(body) = req.body() {
+    let body = mv8.create_string(String::from_utf8_lossy(body.as_bytes().unwrap()).as_ref());
+    obj.set("body", MValue::String(body))?;
+  }
+  obj.set("url", MValue::String(url))?;
+  obj.set("method", MValue::String(method))?;
+  Ok(MValue::Object(obj))
+}
+
 impl FromValue for Command {
-  fn from_value(_value: mini_v8::Value, _mv8: &mini_v8::MiniV8) -> mini_v8::Result<Self> {
+  fn from_value(_value: MValue, _mv8: &MiniV8) -> mini_v8::Result<Self> {
     todo!()
   }
 }
