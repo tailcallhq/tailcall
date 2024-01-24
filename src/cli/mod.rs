@@ -34,7 +34,7 @@ pub fn init_file() -> Arc<dyn FileIO> {
   Arc::new(file::NativeFileIO::init())
 }
 
-fn init_hook_http(http: impl HttpIO, script: Option<String>) -> Arc<dyn HttpIO> {
+pub fn init_hook_http(http: impl HttpIO, script: Option<String>) -> Arc<dyn HttpIO> {
   if let Some(script) = script {
     let script_io = JSEngine::new(script);
     Arc::new(http_hook::HttpHook::new(http, script_io))
