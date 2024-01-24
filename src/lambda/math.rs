@@ -63,10 +63,7 @@ impl Eval for Math {
           let lhs = lhs.eval(ctx, conc).await?;
           let rhs = rhs.eval(ctx, conc).await?;
 
-          try_f64_operation(&lhs, &rhs, ops::Div::div)
-            .or_else(|| try_u64_operation(&lhs, &rhs, ops::Div::div))
-            .or_else(|| try_i64_operation(&lhs, &rhs, ops::Div::div))
-            .ok_or(EvaluationError::ExprEvalError("divide".into()))?
+          try_div_operation(&lhs, &rhs, None)?
         }
         Math::Inc(val) => {
           let val = val.eval(ctx, conc).await?;
@@ -111,19 +108,11 @@ impl Eval for Math {
         Math::Mean(exprs) => {
           let results: Vec<_> = exprs.eval(ctx, conc).await?;
 
-          let sum = results.into_iter().try_fold(0i64.into(), |lhs, rhs| {
-            try_f64_operation(&lhs, &rhs, ops::Add::add)
-              .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
-              .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
-              .ok_or(EvaluationError::ExprEvalError("mean-sum".into()))
-          })?;
-
-          let length = exprs.len() as f64;
-
-          try_f64_operation(&sum, &length.into(), ops::Div::div)
-            .or_else(|| try_u64_operation(&sum, &(length as u64).into(), ops::Div::div))
-            .or_else(|| try_i64_operation(&sum, &(length as i64).into(), ops::Div::div))
-            .ok_or(EvaluationError::ExprEvalError("mean-div".into()))?
+          try_sum_operation(&results, Some("sum-mean"))
+            .ok()
+            .ok_or(EvaluationError::ExprEvalError("mean".into()))
+            .map(|sum| try_div_operation(&sum, &exprs.len().into(), Some("mean-div")).ok())?
+            .ok_or(EvaluationError::ExprEvalError("mean".into()))?
         }
         Math::Subtract(lhs, rhs) => {
           let lhs = lhs.eval(ctx, conc).await?;
@@ -137,16 +126,27 @@ impl Eval for Math {
         Math::Sum(exprs) => {
           let results: Vec<_> = exprs.eval(ctx, conc).await?;
 
-          results.into_iter().try_fold(0i64.into(), |lhs, rhs| {
-            try_f64_operation(&lhs, &rhs, ops::Add::add)
-              .or_else(|| try_u64_operation(&lhs, &rhs, ops::Add::add))
-              .or_else(|| try_i64_operation(&lhs, &rhs, ops::Add::add))
-              .ok_or(EvaluationError::ExprEvalError("sum".into()))
-          })?
+          try_sum_operation(&results, None)?
         }
       })
     })
   }
+}
+
+fn try_sum_operation(exprs: &[ConstValue], error: Option<&str>) -> Result<ConstValue, EvaluationError> {
+  exprs.iter().try_fold(0i64.into(), |lhs, rhs| {
+    try_f64_operation(&lhs, rhs, ops::Add::add)
+      .or_else(|| try_u64_operation(&lhs, rhs, ops::Add::add))
+      .or_else(|| try_i64_operation(&lhs, rhs, ops::Add::add))
+      .ok_or(EvaluationError::ExprEvalError(error.unwrap_or("sum").into()))
+  })
+}
+
+fn try_div_operation(lhs: &ConstValue, rhs: &ConstValue, error: Option<&str>) -> Result<ConstValue, EvaluationError> {
+  try_f64_operation(lhs, rhs, ops::Div::div)
+    .or_else(|| try_u64_operation(lhs, rhs, ops::Div::div))
+    .or_else(|| try_i64_operation(lhs, rhs, ops::Div::div))
+    .ok_or(EvaluationError::ExprEvalError(error.unwrap_or("div").into()))
 }
 
 fn try_f64_operation<F>(lhs: &ConstValue, rhs: &ConstValue, f: F) -> Option<ConstValue>
