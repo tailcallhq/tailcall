@@ -2,30 +2,28 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use crate::blueprint::{Blueprint, Http};
-use crate::cli::env::EnvNative;
-use crate::cli::http::NativeHttp;
-use crate::cli::script::JSEngine;
-use crate::cli::{init_chrono_cache, init_env, init_http, init_http2_only};
+use crate::cli::{init_chrono_cache, init_env, init_http, init_http2_only, init_script};
 use crate::http::AppContext;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,
-  pub app_ctx: Arc<AppContext<NativeHttp, EnvNative, JSEngine>>,
+  pub app_ctx: Arc<AppContext>,
 }
 
 impl ServerConfig {
   pub fn new(blueprint: Blueprint) -> Self {
-    let h_client = Arc::new(init_http(&blueprint.upstream));
-    let h2_client = Arc::new(init_http2_only(&blueprint.upstream));
+    let h_client = init_http(&blueprint.upstream, blueprint.server.script.clone());
+    let h2_client = init_http2_only(&blueprint.upstream, blueprint.server.script.clone());
     let env = init_env();
-    let chrono_cache = init_chrono_cache();
+    let chrono_cache = Arc::new(init_chrono_cache());
+    let script = blueprint.server.clone().script.map(init_script);
     let server_context = Arc::new(AppContext::new(
       blueprint.clone(),
       h_client,
       h2_client,
-      Arc::new(env),
-      Arc::new(chrono_cache),
-      blueprint.server.clone().script.map(JSEngine::new),
+      env,
+      chrono_cache,
+      script,
     ));
     Self { app_ctx: server_context, blueprint }
   }

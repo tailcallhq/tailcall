@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use futures_util::future::join_all;
 use url::Url;
 
@@ -6,9 +8,9 @@ use crate::config::{Config, Source};
 use crate::{FileIO, HttpIO};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked assets.
-pub struct ConfigReader<File, Http> {
-  file: File,
-  http: Http,
+pub struct ConfigReader {
+  file: Arc<dyn FileIO>,
+  http: Arc<dyn HttpIO>,
 }
 
 struct FileRead {
@@ -16,8 +18,8 @@ struct FileRead {
   path: String,
 }
 
-impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
-  pub fn init(file: File, http: Http) -> Self {
+impl ConfigReader {
+  pub fn init(file: Arc<dyn FileIO>, http: Arc<dyn HttpIO>) -> Self {
     Self { file, http }
   }
 
@@ -123,7 +125,7 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
+    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
     let c = cr.read_all(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
@@ -146,7 +148,7 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
+    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
     let c = cr.read_all(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
@@ -159,7 +161,7 @@ mod reader_tests {
 
   #[tokio::test]
   async fn test_script_loader() {
-    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default()));
+    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
     let config = reader.read("examples/jsonplaceholder_script.graphql").await.unwrap();
 
     assert_eq!(

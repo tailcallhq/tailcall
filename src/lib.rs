@@ -27,7 +27,6 @@ pub mod try_fold;
 pub mod valid;
 
 use std::collections::BTreeMap;
-use std::future::Future;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
@@ -47,9 +46,10 @@ pub trait HttpIO: Sync + Send + 'static {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>>;
 }
 
+#[async_trait::async_trait]
 pub trait FileIO {
-  fn write<'a>(&'a self, file: &'a str, content: &'a [u8]) -> impl Future<Output = anyhow::Result<()>>;
-  fn read<'a>(&'a self, file_path: &'a str) -> impl Future<Output = anyhow::Result<String>>;
+  async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
+  async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
 }
 
 #[async_trait::async_trait]
@@ -63,7 +63,7 @@ pub trait Cache: Send + Sync {
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
 #[async_trait::async_trait]
-pub trait ScriptIO<Event, Command> {
+pub trait ScriptIO<Event, Command>: Send + Sync {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
 }
 

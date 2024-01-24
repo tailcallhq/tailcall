@@ -12,7 +12,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::{grpc, Command, EntityCache, EnvIO, Event, HttpIO, ScriptIO};
+use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -93,10 +93,8 @@ impl RequestContext {
   }
 }
 
-impl<Http: HttpIO, Env: EnvIO, Script: ScriptIO<Event, Command>> From<&AppContext<Http, Env, Script>>
-  for RequestContext
-{
-  fn from(server_ctx: &AppContext<Http, Env, Script>) -> Self {
+impl From<&AppContext> for RequestContext {
+  fn from(server_ctx: &AppContext) -> Self {
     Self {
       h_client: server_ctx.universal_http_client.clone(),
       h2_client: server_ctx.http2_only_client.clone(),
@@ -132,9 +130,8 @@ mod test {
       let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
       //TODO: default is used only in tests. Drop default and move it to test.
       let server = Server::try_from(server).unwrap();
-
-      let h_client = Arc::new(init_http(&upstream));
-      let h2_client = Arc::new(init_http2_only(&upstream.clone()));
+      let h_client = init_http(&upstream, None);
+      let h2_client = init_http2_only(&upstream.clone(), None);
       RequestContext {
         req_headers: HeaderMap::new(),
         h_client,
@@ -147,7 +144,7 @@ mod test {
         grpc_data_loaders: Arc::new(vec![]),
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
-        env_vars: Arc::new(init_env()),
+        env_vars: init_env(),
       }
     }
   }
