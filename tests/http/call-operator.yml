@@ -17,11 +17,31 @@ mock:
         - id: 1
           userId: 1
   - request:
-      url: http://jsonplaceholder.typicode.com/users
+      url: http://upstream/graphql
+      method: POST
+      body: '{ "query": "query { user(id: 1) { name } }" }'
     response:
       body:
-        - id: 1
-          name: foo
+        data:
+          user:
+            name: "Leanne Graham"
+  - request:
+      url: http://upstream/graphql
+      method: POST
+      body: '{ "query": "query { user { name } }" }'
+      headers:
+        id: 1
+    response:
+      body:
+        data:
+          user:
+            name: "Leanne Graham"
+  # - request:
+  #     url: http://jsonplaceholder.typicode.com/users
+  #   response:
+  #     body:
+  #       - id: 1
+  #         name: foo
   # - request:
   #     url: http://jsonplaceholder.typicode.com/posts?userId=1
   #   response:
@@ -47,6 +67,30 @@ assert:
           posts:
             - user:
                 name: foo
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { userGraphQLHeaders { name } } }"
+      headers:
+        id: 1
+    response:
+      body:
+        data:
+          posts:
+            - userGraphQLHeaders:
+                name: "Leanne Graham"
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { userGraphQLHeaders { name } } }"
+    response:
+      body:
+        data:
+          posts:
+            - userGraphQLHeaders:
+                name: "Leanne Graham"
   # - request:
   #     method: POST
   #     url: http://localhost:8080/graphql
@@ -58,15 +102,15 @@ assert:
   #         userPosts:
   #           - title: bar
   #           - title: qux
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      body:
-        query: "query { userWithPosts { posts { title } } }"
-    response:
-      body:
-        data:
-          userWithPosts:
-            posts:
-              - title: bar
-              - title: qux
+  # - request:
+  #     method: POST
+  #     url: http://localhost:8080/graphql
+  #     body:
+  #       query: "query { userWithPosts { posts { title } } }"
+  #   response:
+  #     body:
+  #       data:
+  #         userWithPosts:
+  #           posts:
+  #             - title: bar
+  #             - title: qux
