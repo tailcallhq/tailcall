@@ -33,7 +33,9 @@ use std::num::NonZeroU64;
 use async_graphql_value::ConstValue;
 use http::Response;
 use hyper::body::Bytes;
-use mini_v8::{FromValue, MiniV8, ToValue, ToValues, Value as MValue, Values};
+use mini_v8::{FromValue, MiniV8, ToValue, ToValues, Value as MValue, Value, Values};
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::Body;
 
 pub trait EnvIO: Send + Sync + 'static {
   fn get(&self, key: &str) -> Option<String>;
@@ -142,10 +144,55 @@ fn from_req(req: reqwest::Request, mv8: MiniV8) -> mini_v8::Result<MValue> {
   Ok(MValue::Object(obj))
 }
 
+fn to_req(value: MValue) -> mini_v8::Result<reqwest::Request> {
+  let obj = value.as_object().unwrap();
+  let url: String = obj.get::<&str, String>("url")?;
+  let method: String = obj.get::<&str, String>("method")?;
+  let body: String = obj.get::<&str, String>("body")?;
+  let mut req = reqwest::Request::new(
+    reqwest::Method::from_bytes(method.as_bytes()).unwrap(),
+    url.parse().unwrap(),
+  );
+  let headers = obj.get::<&str, Vec<Vec<String>>>("headers")?;
+  let map = create_headers(&headers);
+  req.headers_mut().extend(map);
+  let _ = req.body_mut().insert(Body::from(body));
+  Ok(req)
+}
+
 impl FromValue for Command {
-  fn from_value(_value: MValue, _mv8: &MiniV8) -> mini_v8::Result<Self> {
-    todo!()
+  fn from_value(value: MValue, _mv8: &MiniV8) -> mini_v8::Result<Self> {
+    match value {
+      Value::Array(arr) => {
+        let mut vec = Vec::new();
+        for val in arr.elements() {
+          vec.push(to_req(val?)?);
+        }
+        Ok(Command::Request(vec))
+      }
+      Value::Object(obj) => {
+        let status = obj.get::<&str, f64>("status")?;
+        let headers = obj.get::<&str, Vec<Vec<String>>>("headers")?;
+        let map = create_headers(&headers);
+        let body = obj.get::<&str, String>("body")?;
+        let body = Bytes::from(body);
+        let resp = Response { status: reqwest::StatusCode::from_u16(status as u16).unwrap(), headers: map, body };
+        Ok(Command::Response(resp))
+      }
+      _ => unimplemented!("Command::from_value"),
+    }
   }
+}
+fn create_headers(headers: &Vec<Vec<String>>) -> reqwest::header::HeaderMap {
+  let mut header_map = reqwest::header::HeaderMap::new();
+  for pair in headers {
+    let key = pair.first().unwrap();
+    let value = pair.get(1).unwrap();
+    let key = HeaderName::from_bytes(key.as_bytes()).unwrap();
+    let value = HeaderValue::from_str(value.as_str()).unwrap();
+    header_map.insert(key, value);
+  }
+  header_map
 }
 
 trait JSValue: Send + Sync + 'static {
