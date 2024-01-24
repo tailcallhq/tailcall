@@ -28,7 +28,7 @@ jobs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
   test_cf:
-    name: Run Tests (CF)
+    name: Run Tests (WASM)
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
@@ -43,11 +43,16 @@ jobs:
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: Add wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli --vers "0.2.86"
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+
+      - name: Compile CF
+        run: cargo build --lib --target wasm32-unknown-unknown
 
       - name: Test CF
-        run: cargo test
+        run: npm test
         working-directory: ./cloudflare
 
   test:
