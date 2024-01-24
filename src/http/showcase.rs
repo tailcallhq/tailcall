@@ -9,9 +9,8 @@ use url::Url;
 use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::Blueprint;
-use crate::cli::{init_chrono_cache, init_http};
+use crate::cli::init_chrono_cache;
 use crate::config::reader::ConfigReader;
-use crate::config::Upstream;
 use crate::{EnvIO, FileIO, HttpIO};
 
 struct DummyFileIO;
