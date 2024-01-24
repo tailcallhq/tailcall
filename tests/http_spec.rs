@@ -280,7 +280,7 @@ impl HttpIO for MockHttpClient {
         let headers_match = req
           .headers()
           .iter()
-          .filter(|(key, _)| key.to_string() != "content-type")
+          .filter(|(key, _)| *key != "content-type")
           .all(|(key, value)| {
             let header_name = key.to_string();
 
