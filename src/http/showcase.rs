@@ -9,9 +9,8 @@ use url::Url;
 use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::Blueprint;
-use crate::cli::init_chrono_cache;
 use crate::config::reader::ConfigReader;
-use crate::{EnvIO, FileIO, HttpIO};
+use crate::{EntityCache, EnvIO, FileIO, HttpIO};
 
 struct DummyFileIO;
 
@@ -38,6 +37,7 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
   http: impl HttpIO,
   env: impl EnvIO,
   file: Option<impl FileIO>,
+  cache: Arc<EntityCache>,
 ) -> Result<Result<AppContext, Response<Body>>> {
   let url = Url::parse(&req.uri().to_string())?;
   let mut query = url.query_pairs();
@@ -91,6 +91,6 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     http.clone(),
     http,
     env,
-    Arc::new(init_chrono_cache()),
+    Arc::new(cache),
   )))
 }
