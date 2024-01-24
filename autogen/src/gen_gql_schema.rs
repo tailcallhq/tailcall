@@ -197,6 +197,7 @@ fn first_char_to_upper(name: &mut String) {
 
 fn write_type(
   writer: &mut IndentedWriter<impl Write>,
+  parent_name: String,
   name: String,
   schema: SchemaObject,
   defs: &BTreeMap<String, Schema>,
@@ -230,11 +231,12 @@ fn write_type(
     }
     _ => {
       if let Some(arr_valid) = schema.array.clone() {
-        write_array_validation(writer, name, *arr_valid, defs, extra_it)
+        write_array_validation(writer, parent_name.clone(), name, *arr_valid, defs, extra_it)
       } else if let Some(typ) = schema.object.clone() {
         if typ.properties.len() > 0 {
           let mut name = name;
           first_char_to_upper(&mut name);
+          let name = parent_name + &name;
           write!(writer, "{name}")?;
           extra_it.insert(name, ExtraTypes::ObjectValidation(*typ));
           Ok(())
@@ -271,6 +273,7 @@ fn write_type(
 
 fn write_field(
   writer: &mut IndentedWriter<impl Write>,
+  parent_name: String,
   name: String,
   schema: SchemaObject,
   defs: &BTreeMap<String, Schema>,
@@ -279,7 +282,7 @@ fn write_field(
   // if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
   // if name.as_str() == "path" { println!("{name}: {schema:?}"); }
   write!(writer, "{name}: ")?;
-  write_type(writer, name, schema, defs, extra_it)?;
+  write_type(writer, parent_name, name, schema, defs, extra_it)?;
   writeln!(writer, "")
 }
 
@@ -299,6 +302,7 @@ fn write_input_type(
     Some(name) => name,
     None => return Ok(()),
   };
+  let parent_name = name;
 
   let description = typ.metadata.as_ref().and_then(|metadata| metadata.description.as_ref());
   write_description(writer, description)?;
@@ -316,7 +320,7 @@ fn write_input_type(
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
       write_description(writer, description)?;
-      write_field(writer, name, property, defs, extra_it)?;
+      write_field(writer, parent_name.into(), name, property, defs, extra_it)?;
     }
     writer.unindent();
     writeln!(writer, "}}")?;
@@ -345,7 +349,7 @@ fn write_input_type(
       write_description(writer, description)?;
       if let Some(obj) = property.object {
         for (name, schema) in obj.properties {
-          write_field(writer, name, schema.into_object(), defs, extra_it)?;
+          write_field(writer, parent_name.into(), name, schema.into_object(), defs, extra_it)?;
         }
       }
     }
@@ -361,7 +365,7 @@ fn write_input_type(
     for property in list {
       if let Some(obj) = property.clone().into_object().object {
         for (name, schema) in obj.properties {
-          write_field(writer, name, schema.into_object(), defs, extra_it)?;
+          write_field(writer, parent_name.into(), name, schema.into_object(), defs, extra_it)?;
         }
       }
     }
@@ -380,6 +384,7 @@ fn write_input_type(
 
 fn write_property(
   writer: &mut IndentedWriter<impl Write>,
+  parent_name: String,
   name: String,
   property: Schema,
   defs: &BTreeMap<String, Schema>,
@@ -392,7 +397,7 @@ fn write_property(
     .as_ref()
     .and_then(|metadata| metadata.description.as_ref());
   write_description(writer, description)?;
-  write_field(writer, name, property, defs, extra_it)?;
+  write_field(writer, parent_name, name, property, defs, extra_it)?;
   Ok(())
 }
 
@@ -432,6 +437,7 @@ fn write_directive(
     Some(entity) => entity,
     None => return Ok(()),
   };
+  let parent_name = name;
 
   if written_directives.contains(name) {
     return Ok(());
@@ -451,11 +457,11 @@ fn write_directive(
     if let Some((name, property)) = properties_iter.next() {
       writeln!(writer, "(")?;
       writer.indent();
-      write_property(writer, name, property, defs, extra_it)?;
+      write_property(writer, parent_name.into(), name, property, defs, extra_it)?;
       close_param = true;
     }
     for (name, property) in properties_iter {
-      write_property(writer, name, property, defs, extra_it)?;
+      write_property(writer, parent_name.into(), name, property, defs, extra_it)?;
     }
     if close_param {
       writer.unindent();
@@ -511,32 +517,35 @@ fn write_all_directives(
 
 fn write_array_validation(
   writer: &mut IndentedWriter<impl Write>,
+  parent_name: String,
   name: String,
   arr_valid: ArrayValidation,
   defs: &BTreeMap<String, Schema>,
   extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-  let mut is_required = false;
   write!(writer, "[")?;
   if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
-    is_required = true;
-    write_type(writer, name, schema.into_object(), defs, extra_it)?;
+    write_type(writer, parent_name.into(), name, schema.into_object(), defs, extra_it)?;
   } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
-    write_type(writer, name, schemas[0].clone().into_object(), defs, extra_it)?;
+    write_type(
+      writer,
+      parent_name.into(),
+      name,
+      schemas[0].clone().into_object(),
+      defs,
+      extra_it,
+    )?;
   } else {
     println!("{name}: {arr_valid:?}");
 
     write!(writer, "JSON")?;
   }
-  if is_required {
-    write!(writer, "]!")
-  } else {
-    write!(writer, "]")
-  }
+  write!(writer, "]")
 }
 
 fn write_object_validation(
   writer: &mut IndentedWriter<impl Write>,
+  parent_name: String,
   name: String,
   obj_valid: ObjectValidation,
   defs: &BTreeMap<String, Schema>,
@@ -546,7 +555,7 @@ fn write_object_validation(
     writeln!(writer, "input {name} {{")?;
     writer.indent();
     for (name, property) in obj_valid.properties {
-      write_property(writer, name, property, defs, extra_it)?;
+      write_property(writer, parent_name.clone(), name, property, defs, extra_it)?;
     }
     writer.unindent();
     writeln!(writer, "}}")
@@ -596,7 +605,7 @@ fn write_all_input_types(
         }
       }
       ExtraTypes::ObjectValidation(obj_valid) => {
-        write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+        write_object_validation(writer, "".into(), name, obj_valid, &defs, &mut new_extra_it)?
       }
     }
   }
