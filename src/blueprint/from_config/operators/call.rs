@@ -80,29 +80,9 @@ pub fn compile_call(
       if let Some(http) = _field.http.clone() {
         compile_http(config, field, &http).and_then(|expr| match expr.clone() {
           Expression::IO(IO::Http { req_template, group_by, dl_id }) => Valid::succeed(
-            req_template.clone().root_url(
-              req_template
-                .root_url
-                .get_segments()
-                .iter()
-                .map(|segment| match segment {
-                  Segment::Literal(literal) => Segment::Literal(literal.clone()),
-                  Segment::Expression(expression) => {
-                    if expression[0] == "args" {
-                      let value = find_value(&args, &expression[1]).unwrap();
-                      let item = Mustache::parse(value).unwrap();
-
-                      let expression = item.get_segments().first().unwrap().to_owned().to_owned();
-
-                      expression
-                    } else {
-                      Segment::Expression(expression.clone())
-                    }
-                  }
-                })
-                .collect::<Vec<Segment>>()
-                .into(),
-            ),
+            req_template
+              .clone()
+              .root_url(replace_url(&req_template.root_url, &args)),
           )
           .map(|req_template| {
             req_template
@@ -132,7 +112,7 @@ pub fn compile_call(
                 .unwrap()
                 .iter()
                 .map(replace_mustache(&args))
-                .collect::<Vec<(String, Mustache)>>();
+                .collect();
 
               req_template.operation_arguments(Some(operation_arguments))
             } else {
@@ -150,13 +130,55 @@ pub fn compile_call(
           _ => Valid::succeed(expr),
         })
       } else if let Some(grpc) = _field.grpc.clone() {
+        // todo!("needs to be implemented");
         let inputs: CompileGrpc<'_> =
           CompileGrpc { config, operation_type, field, grpc: &grpc, validate_with_schema: false };
-        compile_grpc(inputs)
+        compile_grpc(inputs).and_then(|expr| match expr {
+          Expression::IO(IO::Grpc { req_template, group_by, dl_id }) => {
+            Valid::succeed(req_template.clone().url(replace_url(&req_template.url, &args)))
+              .map(|req_template| {
+                req_template
+                  .clone()
+                  .headers(req_template.headers.iter().map(replace_mustache(&args)).collect())
+              })
+              .map(|req_template| {
+                if let Some(body) = req_template.clone().body {
+                  req_template.clone().body(Some(replace_url(&body, &args)))
+                } else {
+                  req_template
+                }
+              })
+              .map(|req_template| Expression::IO(IO::Grpc { req_template, group_by, dl_id }))
+          }
+          _ => Valid::succeed(expr),
+        })
       } else {
         return Valid::fail(format!("{} field has no resolver", field_name));
       }
     })
+}
+
+fn replace_url(url: &Mustache, args: &Iter<'_, String, String>) -> Mustache {
+  url
+    .get_segments()
+    .iter()
+    .map(|segment| match segment {
+      Segment::Literal(literal) => Segment::Literal(literal.clone()),
+      Segment::Expression(expression) => {
+        if expression[0] == "args" {
+          let value = find_value(&args, &expression[1]).unwrap();
+          let item = Mustache::parse(value).unwrap();
+
+          let expression = item.get_segments().first().unwrap().to_owned().to_owned();
+
+          expression
+        } else {
+          Segment::Expression(expression.clone())
+        }
+      }
+    })
+    .collect::<Vec<Segment>>()
+    .into()
 }
 
 fn replace_mustache<'a, T: Clone>(args: &'a Iter<'a, String, String>) -> impl Fn(&(T, Mustache)) -> (T, Mustache) + 'a {
