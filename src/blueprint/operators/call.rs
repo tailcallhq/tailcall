@@ -166,7 +166,7 @@ fn replace_url(url: &Mustache, args: &Iter<'_, String, String>) -> Mustache {
       Segment::Literal(literal) => Segment::Literal(literal.clone()),
       Segment::Expression(expression) => {
         if expression[0] == "args" {
-          let value = find_value(&args, &expression[1]).unwrap();
+          let value = find_value(args, &expression[1]).unwrap();
           let item = Mustache::parse(value).unwrap();
 
           let expression = item.get_segments().first().unwrap().to_owned().to_owned();
