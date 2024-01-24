@@ -26,6 +26,7 @@ pub mod print_schema;
 pub mod try_fold;
 pub mod valid;
 
+use std::collections::BTreeMap;
 use std::future::Future;
 use std::hash::Hash;
 use std::num::NonZeroU64;
@@ -126,18 +127,15 @@ impl ToValue for Response<Bytes> {
 fn from_resp(resp: Response<Bytes>, mv8: MiniV8) -> mini_v8::Result<MValue> {
   let obj = mv8.create_object();
   let status = resp.status.as_u16() as f64;
-  let headers = mv8.create_array();
+  let headers = mv8.create_object();
   for (key, value) in resp.headers.iter() {
     let key = mv8.create_string(key.as_str());
     let value = mv8.create_string(value.to_str().unwrap());
-    let pair = mv8.create_array();
-    pair.set(0, MValue::String(key))?;
-    pair.set(1, MValue::String(value))?;
-    headers.push(pair)?;
+    headers.set(key, value)?;
   }
   let body = mv8.create_string(String::from_utf8_lossy(resp.body.as_ref()).as_ref());
   obj.set("status", MValue::Number(status))?;
-  obj.set("headers", MValue::Array(headers))?;
+  obj.set("headers", MValue::Object(headers))?;
   obj.set("body", MValue::String(body))?;
   Ok(MValue::Object(obj))
 }
@@ -146,14 +144,11 @@ fn from_req(req: reqwest::Request, mv8: MiniV8) -> mini_v8::Result<MValue> {
   let obj = mv8.create_object();
   let url = mv8.create_string(req.url().to_string().as_str());
   let method = mv8.create_string(req.method().clone().as_str());
-  let headers = mv8.create_array();
+  let headers = mv8.create_object();
   for (key, value) in req.headers().iter() {
     let key = mv8.create_string(key.as_str());
     let value = mv8.create_string(value.to_str().unwrap());
-    let pair = mv8.create_array();
-    pair.set(0, MValue::String(key))?;
-    pair.set(1, MValue::String(value))?;
-    headers.push(pair)?;
+    headers.set(key, value)?;
   }
   if let Some(body) = req.body() {
     let body = mv8.create_string(String::from_utf8_lossy(body.as_bytes().unwrap()).as_ref());
@@ -161,6 +156,7 @@ fn from_req(req: reqwest::Request, mv8: MiniV8) -> mini_v8::Result<MValue> {
   }
   obj.set("url", MValue::String(url))?;
   obj.set("method", MValue::String(method))?;
+  obj.set("headers", MValue::Object(headers))?;
   Ok(MValue::Object(obj))
 }
 
@@ -173,9 +169,9 @@ fn to_req(value: MValue) -> mini_v8::Result<reqwest::Request> {
     reqwest::Method::from_bytes(method.as_bytes()).unwrap(),
     url.parse().unwrap(),
   );
-  let headers = obj.get::<&str, Vec<Vec<String>>>("headers");
+  let headers = obj.get::<&str, BTreeMap<String, String>>("headers");
   if let Ok(headers) = headers {
-    let map = create_headers(&headers);
+    let map = create_header_map(headers);
     req.headers_mut().extend(map);
   }
   let body = body.unwrap_or("".to_string());
@@ -195,8 +191,8 @@ impl FromValue for Command {
       }
       Value::Object(obj) => {
         let status = obj.get::<&str, f64>("status")?;
-        let headers = obj.get::<&str, Vec<Vec<String>>>("headers")?;
-        let map = create_headers(&headers);
+        let headers = obj.get::<&str, BTreeMap<String, String>>("headers")?;
+        let map = create_header_map(headers);
         let body = obj.get::<&str, String>("body")?;
         let body = Bytes::from(body);
         let resp = Response { status: reqwest::StatusCode::from_u16(status as u16).unwrap(), headers: map, body };
@@ -206,11 +202,9 @@ impl FromValue for Command {
     }
   }
 }
-fn create_headers(headers: &Vec<Vec<String>>) -> reqwest::header::HeaderMap {
+fn create_header_map(headers: BTreeMap<String, String>) -> reqwest::header::HeaderMap {
   let mut header_map = reqwest::header::HeaderMap::new();
-  for pair in headers {
-    let key = pair.first().unwrap();
-    let value = pair.get(1).unwrap();
+  for (key, value) in headers.iter() {
     let key = HeaderName::from_bytes(key.as_bytes()).unwrap();
     let value = HeaderValue::from_str(value.as_str()).unwrap();
     header_map.insert(key, value);
