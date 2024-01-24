@@ -1396,7 +1396,7 @@
               "$ref": "#/definitions/KeyValues"
             }
           ],
-          "description": "`responseHeaders` appends headers to all server responses, aiding cross-origin requests or extra headers for downstream services.\n\nThe responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services."
+          "description": "The responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services."
         },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
