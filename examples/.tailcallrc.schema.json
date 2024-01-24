@@ -844,6 +844,21 @@
             "sum"
           ],
           "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mean": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "mean"
+          ],
+          "type": "object"
         }
       ]
     },
