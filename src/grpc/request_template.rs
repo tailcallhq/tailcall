@@ -13,7 +13,7 @@ use crate::helpers::headers::MustacheHeaders;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
-static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
+const GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
 #[derive(Setters, Debug, Clone)]
 pub struct RequestTemplate {
