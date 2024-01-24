@@ -33,17 +33,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
-          override: true
-
-      - name: Add wasm32 target
-        run: rustup target add wasm32-unknown-unknown
+          target: wasm32-unknown-unknown
 
       - name: Build WASM
-        # TODO: probably for pull_requests we can run just `cargo check` to execute if faster
-        run: cargo build --lib --release --target wasm32-unknown-unknown
+        run: cargo check --lib --target wasm32-unknown-unknown
         working-directory: ./cloudflare
 
   test:
@@ -54,26 +49,10 @@ jobs:
       - uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Install Stable Toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          default: true
-
-      - name: Cache Rust Dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Run Cargo Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: llvm-cov
-          args: --all-features --lcov --output-path lcov.info
+        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -98,19 +77,10 @@ jobs:
       - name: Install Prettier
         run: npm install --global prettier
       - name: Install Nightly Toolchain
-        # TODO: migrate to something actual
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
           components: rustfmt, clippy
-      - name: Cache Rust Dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ (env.LINT_MODE == 'fix' && github.event.pull_request.head.sha) || '' }}
@@ -268,7 +238,7 @@ jobs:
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        uses: actions-rs/cargo@v1
+        uses: ClementTsang/cargo-action@v0.0.6
         with:
           use-cross: ${{ matrix.cross }}
           command: build
