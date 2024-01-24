@@ -126,7 +126,17 @@ impl ExprBody {
       ExprBody::Grpc(_) => true,
       ExprBody::GraphQL(_) => true,
       ExprBody::Const(_) => false,
-      ExprBody::If(If { cond, on_true, on_false }) => cond.has_io() || on_true.has_io() || on_false.has_io(),
+      ExprBody::If(If { cond, on_true, on_false }) => {
+        println!("#############HERE################");
+        println!("#############HERE################");
+        println!("#############HERE################");
+        println!("#############HERE################");
+        println!("#############HERE################");
+        println!("#############HERE################");
+        println!("#############HERE################");
+        println!("#############HERE################");
+        cond.has_io() || on_true.has_io() || on_false.has_io()
+      }
       ExprBody::And(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Or(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Cond(default, branches) => {

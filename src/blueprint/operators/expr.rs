@@ -59,11 +59,11 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate: false }),
 
     // Logic
-    ExprBody::If(If { cond, on_true: then, on_false: els }) => compile(ctx, *cond)
+    ExprBody::If(If { ref cond, on_true: ref then, on_false: ref els }) => compile(ctx, *cond.clone())
       .map(Box::new)
-      .zip(compile(ctx, *then).map(Box::new))
-      .zip(compile(ctx, *els).map(Box::new))
-      .map(|((cond, then), els)| Expression::Logic(Logic::If { cond, then, els })),
+      .zip(compile(ctx, *then.clone()).map(Box::new))
+      .zip(compile(ctx, *els.clone()).map(Box::new))
+      .map(|((cond, then), els)| Expression::Logic(Logic::If { cond, then, els }).parallel_when(expr.has_io())),
 
     ExprBody::And(ref list) => {
       compile_list(ctx, list.clone()).map(|a| Expression::Logic(Logic::And(a)).parallel_when(expr.has_io()))
