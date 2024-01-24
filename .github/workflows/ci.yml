@@ -52,6 +52,10 @@ jobs:
         run: cargo build --lib --target wasm32-unknown-unknown
         working-directory: ./cloudflare
 
+      - name: Package Install
+        run: npm install
+        working-directory: ./cloudflare
+
       - name: Test CF
         run: npm test
         working-directory: ./cloudflare
