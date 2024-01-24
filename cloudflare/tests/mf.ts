@@ -27,29 +27,10 @@ mockAgent
 
 export const mf = new Miniflare({
   scriptPath: "./build/worker/shim.mjs",
-  compatibilityDate: "2023-05-18",
   cache: true,
-  cachePersist: false,
-  d1Persist: false,
-  kvPersist: false,
-  r2Persist: false,
   modules: true,
   modulesRules: [{type: "CompiledWasm", include: ["**/*.wasm"], fallthrough: true}],
-  bindings: {
-    BUCKET: "MY_R2",
-    SOME_SECRET: "secret!",
-  },
-  serviceBindings: {
-    async remote() {
-      return new Response("hello world")
-    },
-  },
+  bindings: {BUCKET: "MY_R2"},
   r2Buckets: ["MY_R2"],
-  queueConsumers: {
-    my_queue: {
-      maxBatchTimeout: 1,
-    },
-  },
-  queueProducers: ["my_queue", "my_queue"],
   fetchMock: mockAgent,
 })
