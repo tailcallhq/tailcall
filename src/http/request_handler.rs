@@ -116,7 +116,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     state: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     match *req.method() {
-        hyper::Method::POST if req.uri().path().ends_with("/showcase/graphql") && state.blueprint.server.enable_showcase => {
+        hyper::Method::POST if state.blueprint.server.enable_showcase && req.uri().path().ends_with("/showcase/graphql") => {
             let server_ctx = match showcase_get_app_ctx::<T>(
                 &req,
                 state.universal_http_client.clone(),
