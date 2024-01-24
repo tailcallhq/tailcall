@@ -1,14 +1,18 @@
-use anyhow::anyhow;
+use futures_util::future::join_all;
 use url::Url;
 
 use crate::config::{Config, Source};
 use crate::{FileIO, HttpIO};
 
-const SUPPORTED_EXT: [&str; 5] = ["json", "yml", "yaml", "graphql", "gql"];
-
+/// Reads the configuration from a file or from an HTTP URL and resolves all linked assets.
 pub struct ConfigReader<File, Http> {
   file: File,
   http: Http,
+}
+
+struct FileRead {
+  content: String,
+  path: String,
 }
 
 impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
@@ -16,47 +20,42 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
     Self { file, http }
   }
 
-  pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
-    let files = files.iter().map(|x| x.to_string()).collect::<Vec<String>>();
-    let mut config = Config::default();
-    for file in files {
-      if let Ok(url) = Url::parse(&file) {
-        let response = self
-          .http
-          .execute(reqwest::Request::new(reqwest::Method::GET, url))
-          .await?;
-        let sdl = response.headers.get("content-type");
-        let sdl = match sdl {
-          Some(value) => {
-            let value = value.to_str().map_err(|e| anyhow!("{}", e))?.to_string();
-            match SUPPORTED_EXT.iter().any(|&substring| value.contains(substring)) {
-              true => value,
-              false => file.to_string(),
-            }
-          }
-          None => file.to_string(),
-        };
-        let source = Self::detect_source(&sdl)?;
-        let content = String::from_utf8(response.body.to_vec())?;
-        let conf = Config::from_source(source, &content)?;
-        config = config.clone().merge_right(&conf);
-        continue;
-      }
-      let content = self.file.read(&file).await?;
-      let source = Self::detect_source(&file)?;
-      let conf = Config::from_source(source, &content)?;
-      config = config.clone().merge_right(&conf);
-    }
-    Ok(config)
+  /// Reads a file from the filesystem or from an HTTP URL
+  async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+    // Is an HTTP URL
+    let content = if let Ok(url) = Url::parse(&file.to_string()) {
+      let response = self
+        .http
+        .execute(reqwest::Request::new(reqwest::Method::GET, url))
+        .await?;
+
+      String::from_utf8(response.body.to_vec())?
+    } else {
+      // Is a file path
+      self.file.read(&file.to_string()).await?
+    };
+
+    Ok(FileRead { content, path: file.to_string() })
   }
 
-  fn detect_source(source: &str) -> anyhow::Result<Source> {
-    let source = if let Ok(s) = Source::detect_content_type(source) {
-      s
-    } else {
-      Source::detect(source.trim_end_matches('/'))?
-    };
-    Ok(source)
+  /// Reads all the files in parallel
+  async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
+    let files = files.iter().map(|x| self.read_file(x.to_string()));
+    let content = join_all(files).await.into_iter().collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(content)
+  }
+
+  pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
+    let files = self.read_files(files).await?;
+    let mut config = Config::default();
+    for file in files.iter() {
+      let source = Source::detect(&file.path)?;
+      let schema = &file.content;
+      let new_config = Config::from_source(source, schema)?;
+      config = config.merge_right(&new_config);
+    }
+
+    Ok(config)
   }
 }
 
@@ -80,11 +79,8 @@ mod reader_tests {
 
     let server = start_mock_server();
     let header_serv = server.mock(|when, then| {
-      when.method(httpmock::Method::GET).path("/");
-      then
-        .status(200)
-        .header("content-type", "application/graphql")
-        .body(cfg.to_sdl());
+      when.method(httpmock::Method::GET).path("/bar.graphql");
+      then.status(200).body(cfg.to_sdl());
     });
 
     let mut json = String::new();
@@ -95,16 +91,16 @@ mod reader_tests {
       .await
       .unwrap();
 
-    let foo_json_serv = server.mock(|when, then| {
+    let foo_json_server = server.mock(|when, then| {
       when.method(httpmock::Method::GET).path("/foo.json");
       then.status(200).body(json);
     });
 
     let port = server.port();
     let files: Vec<String> = [
-      "examples/jsonplaceholder.yml",                       // config from local file
-      format!("http://localhost:{port}/").as_str(),         // with content-type header
-      format!("http://localhost:{port}/foo.json").as_str(), // with url extension
+      "examples/jsonplaceholder.yml",                          // config from local file
+      format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
+      format!("http://localhost:{port}/foo.json").as_str(),    // with url extension
     ]
     .iter()
     .map(|x| x.to_string())
@@ -118,7 +114,7 @@ mod reader_tests {
         .collect::<Vec<String>>(),
       c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
     );
-    foo_json_serv.assert(); // checks if the request was actually made
+    foo_json_server.assert(); // checks if the request was actually made
     header_serv.assert();
   }
 
