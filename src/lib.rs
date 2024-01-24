@@ -69,7 +69,27 @@ pub trait ScriptIO<Event, Command> {
 #[derive(Debug)]
 pub enum Event {
   Request(reqwest::Request),
-  Response(Vec<Response<hyper::body::Bytes>>),
+  Response(Vec<Response<Bytes>>),
+}
+
+impl PartialEq for Event {
+  fn eq(&self, other: &Self) -> bool {
+    match (self, other) {
+      (Event::Request(req1), Event::Request(req2)) => {
+        req1.url() == req2.url()
+          && req1.method() == req2.method()
+          && req1.headers() == req2.headers()
+          && req1.body().unwrap_or(&Body::from("".as_bytes())).as_bytes()
+            == req2.body().unwrap_or(&Body::from("".as_bytes())).as_bytes()
+      }
+      (Event::Response(res1), Event::Response(res2)) => res1.iter().zip(res2.iter()).all(|(r1, r2)| {
+        let r1 = r1.clone().to_resp_string().unwrap();
+        let r2 = r2.clone().to_resp_string().unwrap();
+        r1.status == r2.status && r1.headers == r2.headers && r1.body == r2.body
+      }),
+      _ => false,
+    }
+  }
 }
 
 #[derive(Debug)]
@@ -145,17 +165,20 @@ fn from_req(req: reqwest::Request, mv8: MiniV8) -> mini_v8::Result<MValue> {
 }
 
 fn to_req(value: MValue) -> mini_v8::Result<reqwest::Request> {
-  let obj = value.as_object().unwrap();
+  let obj = value.as_object().expect("value is not an object");
   let url: String = obj.get::<&str, String>("url")?;
   let method: String = obj.get::<&str, String>("method")?;
-  let body: String = obj.get::<&str, String>("body")?;
+  let body = obj.get::<&str, String>("body");
   let mut req = reqwest::Request::new(
     reqwest::Method::from_bytes(method.as_bytes()).unwrap(),
     url.parse().unwrap(),
   );
-  let headers = obj.get::<&str, Vec<Vec<String>>>("headers")?;
-  let map = create_headers(&headers);
-  req.headers_mut().extend(map);
+  let headers = obj.get::<&str, Vec<Vec<String>>>("headers");
+  if let Ok(headers) = headers {
+    let map = create_headers(&headers);
+    req.headers_mut().extend(map);
+  }
+  let body = body.unwrap_or("".to_string());
   let _ = req.body_mut().insert(Body::from(body));
   Ok(req)
 }
@@ -237,3 +260,29 @@ impl JSValue for f64 {
     value.as_number().unwrap()
   }
 }
+
+// mod test {
+//
+//   use mini_v8::{FromValue, MiniV8, ToValues, Value};
+//
+//   use crate::{Command, Event};
+//
+//   #[test]
+//   fn test_codec() {
+//     let mv8 = MiniV8::new();
+//     let request = reqwest::Request::new(
+//       reqwest::Method::GET,
+//       reqwest::Url::parse("http://localhost:8000").unwrap(),
+//     );
+//     let event = Event::Request(request);
+//     let value = event.to_values(&mv8).unwrap().into_vec();
+//     let mut array = mv8.create_array();
+//     for val in value {
+//       array.push(val).unwrap();
+//     }
+//     let value = Value::Array(array);
+//     let cmd = Command::from_value(value, &mv8).unwrap();
+//
+//     println!("{:?}", cmd);
+//   }
+// }
