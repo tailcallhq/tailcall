@@ -15,7 +15,7 @@ mimalloc = { version = "0.1.39", default-features = false, optional = true }
 http-cache-reqwest = { version = "0.13.0", features = [
     "manager-moka",
 ], default-features = false, optional = true }
-moka = { version = "0.12.3", default-features = false, features = [
+moka = { version = "0.12.4", default-features = false, features = [
     "future",
 ], optional = true }
 hyper-rustls = { version = "0.25.0", optional = true }
