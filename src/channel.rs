@@ -14,6 +14,21 @@ pub enum Event {
   Response(Vec<JsResponse>),
 }
 
+impl Event {
+  pub fn response(&self) -> Option<Vec<JsResponse>> {
+    match self {
+      Event::Response(res) => Some(res.clone()),
+      _ => None,
+    }
+  }
+  pub fn request(&self) -> Option<JsRequest> {
+    match self {
+      Event::Request(req) => Some(req.clone()),
+      _ => None,
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct JsResponse {
   status: f64,
@@ -87,6 +102,8 @@ pub enum Command {
   Request(Vec<JsRequest>),
   #[serde(rename = "response")]
   Response(JsResponse),
+  #[serde(rename = "continue")]
+  Continue(JsRequest),
 }
 
 impl ToValues for Event {

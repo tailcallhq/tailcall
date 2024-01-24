@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use async_std::task::block_on;
 use lazy_static::lazy_static;
-use mini_v8::{FromValue, MiniV8, ToValues};
+use mini_v8::{FromValue, MiniV8, ToValues, Value};
 
 use crate::channel::{Command, Event};
 use crate::ScriptIO;
@@ -98,6 +98,7 @@ fn on_event_impl<'a>(
     .map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
   let args = event
+    .clone()
     .to_values(v8)
     .map_err(|e| anyhow::anyhow!("Event encoding failure: {}", e.to_string()))?;
 
@@ -105,8 +106,16 @@ fn on_event_impl<'a>(
     .call(args)
     .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
 
-  let command =
-    Command::from_value(value, v8).map_err(|e| anyhow::anyhow!("Command decoding failure: {}", e.to_string()))?;
+  let command = match value {
+    Value::Undefined => {
+      if let Some(req) = event.request() {
+        Command::Continue(req)
+      } else {
+        unimplemented!("Undefined return value is only supported for requests")
+      }
+    }
+    _ => Command::from_value(value, v8).map_err(|e| anyhow::anyhow!("Command decoding failure: {}", e.to_string()))?,
+  };
 
   Ok(command)
 }

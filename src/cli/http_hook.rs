@@ -43,6 +43,10 @@ impl HttpHook {
           let res: Response<Bytes> = response.into();
           Ok(res)
         }
+        Command::Continue(request) => {
+          let res = self.client.execute(request.into()).await?;
+          Ok(res)
+        }
       }
     })
   }
