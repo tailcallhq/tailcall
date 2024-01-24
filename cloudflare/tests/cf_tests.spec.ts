@@ -23,7 +23,7 @@ describe("fetch", () => {
   test("sample_resp", async () => {
     let resp = await mf.dispatchFetch("https://fake.host/graphql?config=examples/jsonplaceholder.graphql", {
       method: "POST",
-      body: '{"operationName":null,"variables":{},"query":"{\\n  user(id: 1) {\\n    id\\n  }\\n}\\n"}',
+      body: '{"query":"{\\n  user(id: 1) {\\n    id\\n  }\\n}\\n"}',
     })
     let body = await resp.text()
     expect(body).toBe('{"data":{"user":{"id":1}}}')
@@ -33,7 +33,7 @@ describe("fetch", () => {
   test("test_batching", async () => {
     let resp = await mf.dispatchFetch("https://fake.host/graphql?config=examples/jsonplaceholder_batch.graphql", {
       method: "POST",
-      body: '{"operationName":null,"variables":{},"query":"{\\n  posts {\\n    id\\n  }\\n}\\n"}',
+      body: '{"query":"{\\n  posts {\\n    id\\n  }\\n}\\n"}',
     })
     let body = await resp.text()
     expect(body).toBe('{"data":{"posts":[{"id":1}]}}')
