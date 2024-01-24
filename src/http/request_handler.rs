@@ -25,7 +25,6 @@ pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     Cow::Borrowed(endpoint)
   };
 
-  log::info!("GraphiQL endpoint: {}", endpoint);
   Ok(Response::new(Body::from(playground_source(
     GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
   ))))
