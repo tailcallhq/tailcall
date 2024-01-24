@@ -1419,6 +1419,13 @@
           ],
           "description": "A link to an external JS file that listens on every HTTP request response event."
         },
+        "showcase": {
+          "description": "`showcase` enables the /showcase/graphql endpoint.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "vars": {
           "allOf": [
             {
