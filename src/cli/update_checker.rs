@@ -4,22 +4,24 @@ use which::which;
 
 enum InstallationMethod {
   Npm,
+  Npx,
   Brew,
   Direct,
 }
 
 fn get_installation_method() -> InstallationMethod {
-  let output = std::process::Command::new("npm").arg("ls").arg("--global").output();
+  if std::env::var("npm_execpath").is_ok() {
+    return InstallationMethod::Npx;
+  }
 
-  if let Ok(output) = output {
-    let output_str = String::from_utf8_lossy(&output.stdout);
-    if output_str.contains("@tailcallhq/tailcall") {
+  if let Ok(output) = std::process::Command::new("npm").arg("ls").arg("--global").output() {
+    if String::from_utf8_lossy(&output.stdout).contains("@tailcallhq/tailcall") {
       return InstallationMethod::Npm;
     }
   }
 
   if let Ok(result) = which("tailcall") {
-    if result.to_str().unwrap().contains("homebrew") {
+    if result.to_str().map_or(false, |s| s.contains("homebrew")) {
       return InstallationMethod::Brew;
     }
   }
@@ -29,9 +31,9 @@ fn get_installation_method() -> InstallationMethod {
 
 pub async fn check_for_update() {
   let name: &str = "tailcallhq/tailcall";
-  let current_version: &str = match option_env!("APP_VERSION") {
-    Some(version) => version,
-    _ => return,
+
+  let Some(current_version) = option_env!("APP_VERSION") else {
+    return;
   };
 
   let informer = update_informer::new(registry::GitHub, name, current_version);
@@ -50,6 +52,10 @@ pub async fn check_for_update() {
       .yellow()
     );
     match installation_method {
+      InstallationMethod::Npx => log::warn!(
+        "{}",
+        "You're running an outdated version, run: npx @tailcallhq/tailcall@latest"
+      ),
       InstallationMethod::Npm => log::warn!("{}", "To upgrade, run: npm update -g @tailcallhq/tailcall"),
       InstallationMethod::Brew => log::warn!("{}", "To upgrade, run: brew upgrade tailcall"),
       InstallationMethod::Direct => log::warn!("{}", "Please update by downloading the latest release from GitHub"),
