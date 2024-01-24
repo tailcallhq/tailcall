@@ -4,6 +4,7 @@ pub use expr::*;
 pub use key_values::*;
 pub use server::*;
 pub use source::*;
+pub use upstream::*;
 mod auth;
 mod config;
 mod expr;
@@ -15,6 +16,7 @@ mod n_plus_one;
 pub mod reader;
 mod server;
 mod source;
+mod upstream;
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
   *val == T::default()

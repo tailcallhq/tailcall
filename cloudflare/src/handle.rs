@@ -48,7 +48,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
 /// Reads the configuration from the CONFIG environment variable.
 ///
 async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Config> {
-  let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("CONFIG var is not set"))?;
+  let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("BUCKET var is not set"))?;
   log::debug!("R2 Bucket ID: {}", bucket_id);
   let file_io = init_file(env.clone(), &bucket_id)?;
   let http_io = init_http();
