@@ -4,9 +4,11 @@ import {mf} from "./mf"
 
 describe("fetch", () => {
   test("loadfiles", async () => {
-    let bucket = await mf.getR2Bucket("MY_R2")
     let placeholder = (await readFile("../examples/jsonplaceholder.graphql")).toString()
     let placeholder_batch = (await readFile("../examples/jsonplaceholder_batch.graphql")).toString()
+
+
+    let bucket = await mf.getR2Bucket("MY_R2")
     await bucket.put("examples/jsonplaceholder.graphql", placeholder)
     await bucket.put("examples/jsonplaceholder_batch.graphql", placeholder_batch)
   })
