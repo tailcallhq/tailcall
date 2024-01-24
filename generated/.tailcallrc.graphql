@@ -87,7 +87,7 @@ directive @server(
   script: Script
 ) on SCHEMA
 
-type Script {
+input Script {
   file: String
   inline: String
 }

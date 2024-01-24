@@ -108,11 +108,14 @@ impl ToValues for Event {
         Ok(val)
       }
       Event::Response(responses) => {
-        let mut vec = Vec::new();
+        let arr = mv8.create_array();
+
         for res in responses {
-          vec.push(from_resp(res, mv8.clone())?);
+          arr.push(from_resp(res, mv8.clone())?)?;
         }
-        Ok(Values::from_iter(vec))
+        let out = mv8.create_object();
+        out.set("responses", MValue::Array(arr))?;
+        Ok(Values::from_iter(vec![MValue::Object(out)]))
       }
     }
   }
@@ -157,7 +160,9 @@ fn from_req(req: reqwest::Request, mv8: MiniV8) -> mini_v8::Result<MValue> {
   obj.set("url", MValue::String(url))?;
   obj.set("method", MValue::String(method))?;
   obj.set("headers", MValue::Object(headers))?;
-  Ok(MValue::Object(obj))
+  let out = mv8.create_object();
+  out.set("request", obj)?;
+  Ok(MValue::Object(out))
 }
 
 fn to_req(value: MValue) -> mini_v8::Result<reqwest::Request> {
@@ -182,21 +187,26 @@ fn to_req(value: MValue) -> mini_v8::Result<reqwest::Request> {
 impl FromValue for Command {
   fn from_value(value: MValue, _mv8: &MiniV8) -> mini_v8::Result<Self> {
     match value {
-      Value::Array(arr) => {
-        let mut vec = Vec::new();
-        for val in arr.elements() {
-          vec.push(to_req(val?)?);
-        }
-        Ok(Command::Request(vec))
-      }
       Value::Object(obj) => {
-        let status = obj.get::<&str, f64>("status")?;
-        let headers = obj.get::<&str, BTreeMap<String, String>>("headers")?;
-        let map = create_header_map(headers);
-        let body = obj.get::<&str, String>("body")?;
-        let body = Bytes::from(body);
-        let resp = Response { status: reqwest::StatusCode::from_u16(status as u16).unwrap(), headers: map, body };
-        Ok(Command::Response(resp))
+        if let Ok(response) = obj.get::<&str, MValue>("response") {
+          let obj = response.as_object().expect("response is not an object");
+          let status = obj.get::<&str, f64>("status")?;
+          let headers = obj.get::<&str, BTreeMap<String, String>>("headers")?;
+          let map = create_header_map(headers);
+          let body = obj.get::<&str, String>("body")?;
+          let body = Bytes::from(body);
+          let resp = Response { status: reqwest::StatusCode::from_u16(status as u16).unwrap(), headers: map, body };
+          Ok(Command::Response(resp))
+        } else if let Ok(request) = obj.get::<&str, MValue>("request") {
+          let arr = request.as_array().expect("request is not an array").clone();
+          let mut vec = Vec::new();
+          for val in arr.elements() {
+            vec.push(to_req(val?)?);
+          }
+          Ok(Command::Request(vec))
+        } else {
+          unimplemented!("Command::from_value")
+        }
       }
       _ => unimplemented!("Command::from_value"),
     }
