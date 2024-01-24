@@ -9,10 +9,29 @@ mock:
       body:
         id: 1
         name: foo
+  - request:
+      url: http://example.com/simple.graphql
+    response:
+      body: 'schema {
+  query: Query
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+type Query {
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+}'
+  - request:
+      url: http://example.com/invalid.graphql
+    response:
+      body: "dsjfsjdfjdsfjkdskjfjkds"
 assert:
   - request:
       method: POST
-      url: http://localhost:8080/showcase/graphql?config=https%3A%2F%2Fraw.githubusercontent.com%2Ftailcallhq%2Ftailcall%2Fff80f1d100c36de025ef62eac08576431534e265%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql
+      url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql
       body:
         query: query { user { name } }
     response:
@@ -20,6 +39,16 @@ assert:
         data:
           user:
             name: foo
+  - request:
+      method: POST
+      url: http://localhost:8080/showcase/graphql
+      body:
+        query: query { user { name } }
+    response:
+      body:
+        data: null
+        errors:
+          - message: "No Config URL specified"
   - request:
       method: POST
       url: http://localhost:8080/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql
@@ -32,7 +61,17 @@ assert:
           - message: "Invalid Config URL specified"
   - request:
       method: POST
-      url: http://localhost:8080/showcase/graphql?config=https%3A%2F%2Fraw.githubusercontent.com%2Ftailcallhq%2Ftailcall%2Fff80f1d100c36de025ef62eac08576431534e265%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql
+      url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Finvalid.graphql
+      body:
+        query: query { user { name } }
+    response:
+      body:
+          data: null
+          errors:
+            - message: "Validation Error\n•  --> 1:1\n  |\n1 | dsjfsjdfjdsfjkdskjfjkds\n  | ^---\n  |\n  = expected type_system_definition\n"
+  - request:
+      method: POST
+      url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql
       body:
         query:
           foo: bar
