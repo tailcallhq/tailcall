@@ -7,6 +7,7 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{args.id}}")
+  users: [User] @http(path: "/users")
 }
 
 type User {
