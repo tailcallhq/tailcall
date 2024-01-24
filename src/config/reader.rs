@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::future::join_all;
+use futures_util::TryFutureExt;
 use url::Url;
 
 use super::Script;
@@ -25,6 +26,7 @@ impl ConfigReader {
 
   /// Reads a file from the filesystem or from an HTTP URL
   async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+    println!("Reading file: {}", file.to_string());
     // Is an HTTP URL
     let content = if let Ok(url) = Url::parse(&file.to_string()) {
       let response = self
@@ -43,7 +45,9 @@ impl ConfigReader {
 
   /// Reads all the files in parallel
   async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
-    let files = files.iter().map(|x| self.read_file(x.to_string()));
+    let files = files
+      .iter()
+      .map(|x| self.read_file(x.to_string()).map_err(|e| e.context(x.to_string())));
     let content = join_all(files).await.into_iter().collect::<anyhow::Result<Vec<_>>>()?;
     Ok(content)
   }

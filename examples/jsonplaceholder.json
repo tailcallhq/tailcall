@@ -3,10 +3,7 @@
   "server": {
     "graphiql": true,
     "hostname": "0.0.0.0",
-    "port": 8000,
-    "script": {
-      "path": "./server.js"
-    }
+    "port": 8000
   },
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
