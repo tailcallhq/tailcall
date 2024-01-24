@@ -17,13 +17,19 @@ mock:
     response:
       body:
         id: 1
-        name: "Ervin Howell"
+        name: "Leanne Graham http headers"
   - request:
       url: http://jsonplaceholder.typicode.com/posts
     response:
       body:
         - id: 1
           userId: 1
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=1
+    response:
+      body:
+        id: 1
+        name: "Leanne Graham http query"
   - request:
       url: http://upstream/graphql
       method: POST
@@ -109,7 +115,18 @@ assert:
         data:
           posts:
             - userHttpHeaders:
-                name: "Ervin Howell"
+                name: "Leanne Graham http headers"
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { userHttpQuery { name } } }"
+    response:
+      body:
+        data:
+          posts:
+            - userHttpQuery:
+                name: "Leanne Graham http query"
   # - request:
   #     method: POST
   #     url: http://localhost:8080/graphql
