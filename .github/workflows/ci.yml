@@ -88,6 +88,9 @@ jobs:
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed
         if: env.LINT_MODE == 'fix'
+        # TODO: works only for internal contributors
+        # to make it for forks we need smth like https://autofix.ci
+        continue-on-error: true
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style: apply lint fixes"
