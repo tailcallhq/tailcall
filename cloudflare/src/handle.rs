@@ -67,15 +67,8 @@ async fn get_app_ctx(
 
   let file = init_file(env, bucket_id)?;
   let http = init_http();
-  let cache = Arc::new(init_cache(env));
 
-  match showcase_get_app_ctx::<GraphQLRequest, _, _, _>(
-    req,
-    http,
-    env_io,
-    Some(file),
-    cache,
-  ).await? {
+  match showcase_get_app_ctx::<GraphQLRequest, _, _, _>(req, http, env_io, Some(file)).await? {
     Ok(app_ctx) => {
       let app_ctx = Arc::new(app_ctx);
       if let Some(file_path) = file_path {
