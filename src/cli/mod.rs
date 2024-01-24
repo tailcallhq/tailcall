@@ -20,8 +20,9 @@ pub use http::NativeHttp;
 pub use tc::run;
 
 use self::script::JSEngine;
+use crate::channel::{Command, Event};
 use crate::config::Upstream;
-use crate::{Command, EnvIO, Event, FileIO, HttpIO, ScriptIO};
+use crate::{EnvIO, FileIO, HttpIO, ScriptIO};
 
 // Provides access to env in native rust environment
 pub fn init_env() -> Arc<dyn EnvIO> {

@@ -4,7 +4,8 @@ use async_std::task::block_on;
 use lazy_static::lazy_static;
 use mini_v8::{FromValue, MiniV8, ToValues};
 
-use crate::{Command, Event, ScriptIO};
+use crate::channel::{Command, Event};
+use crate::ScriptIO;
 
 thread_local! {
 

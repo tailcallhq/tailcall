@@ -1,4 +1,5 @@
-use tailcall::{Command, Event, ScriptIO};
+use tailcall::channel::{Command, Event};
+use tailcall::ScriptIO;
 
 pub struct CloudflareScript {}
 

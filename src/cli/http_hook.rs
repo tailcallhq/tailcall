@@ -5,8 +5,9 @@ use futures_util::future::join_all;
 use futures_util::Future;
 use hyper::body::Bytes;
 
+use crate::channel::{Command, Event, JsResponse};
 use crate::http::Response;
-use crate::{Command, Event, HttpIO, JsResponse, ScriptIO};
+use crate::{HttpIO, ScriptIO};
 
 #[derive(Clone)]
 pub struct HttpHook {
@@ -23,7 +24,6 @@ impl HttpHook {
     &'a self,
     command: Command,
   ) -> Pin<Box<dyn Future<Output = anyhow::Result<Response<hyper::body::Bytes>>> + Send + 'a>> {
-    log::info!("on_command: {:?}", command);
     Box::pin(async move {
       match command {
         Command::Request(requests) => {
