@@ -58,7 +58,6 @@ pub struct Server {
   pub key: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub pipeline_flush: Option<bool>,
-
   /// A link to an external JS file that listens on every HTTP request response event.
   #[serde(default, skip_serializing_if = "is_default")]
   pub script: Option<Script>,
