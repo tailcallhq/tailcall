@@ -1,6 +1,6 @@
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, ExprBody, Field};
+use crate::config::{Config, ExprBody, Field, If};
 use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
@@ -59,7 +59,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     ExprBody::Const(value) => compile_const(CompileConst { config, field, value: &value, validate: false }),
 
     // Logic
-    ExprBody::If { cond, on_true: then, on_false: els } => compile(ctx, *cond)
+    ExprBody::If(If { cond, on_true: then, on_false: els }) => compile(ctx, *cond)
       .map(Box::new)
       .zip(compile(ctx, *then).map(Box::new))
       .zip(compile(ctx, *els).map(Box::new))

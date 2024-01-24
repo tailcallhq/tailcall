@@ -413,7 +413,6 @@ fn input_whitelist_lookup<'a>(name: &'a str, extra_it: &mut BTreeMap<String, Ext
   }
 
   if extra_it.contains_key(name) {
-    println!("found {name}");
     return Some(name);
   }
 
@@ -516,10 +515,8 @@ fn write_array_validation(
   defs: &BTreeMap<String, Schema>,
   extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-  let mut is_required = false;
   write!(writer, "[")?;
   if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
-    is_required = true;
     write_type(writer, name, schema.into_object(), defs, extra_it)?;
   } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
     write_type(writer, name, schemas[0].clone().into_object(), defs, extra_it)?;
@@ -528,11 +525,7 @@ fn write_array_validation(
 
     write!(writer, "JSON")?;
   }
-  if is_required {
-    write!(writer, "]!")
-  } else {
-    write!(writer, "]")
-  }
+  write!(writer, "]")
 }
 
 fn write_object_validation(
@@ -577,9 +570,6 @@ fn write_all_input_types(
   }
 
   let mut new_extra_it = BTreeMap::new();
-
-  println!("{:#?}", extra_it.get("KeyValue"));
-  println!("{:#?}", extra_it.get("Schema"));
 
   for (name, extra_type) in extra_it.into_iter() {
     match extra_type {

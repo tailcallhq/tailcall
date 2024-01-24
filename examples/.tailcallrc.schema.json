@@ -137,7 +137,7 @@
           "description": "Fetch a resources using the http operator",
           "properties": {
             "http": {
-              "$ref": "#/definitions/Http"
+              "$ref": "#/definitions/ExprHttp"
             }
           },
           "required": [
@@ -150,7 +150,7 @@
           "description": "Fetch a resources using the grpc operator",
           "properties": {
             "grpc": {
-              "$ref": "#/definitions/Grpc"
+              "$ref": "#/definitions/ExprGrpc"
             }
           },
           "required": [
@@ -163,7 +163,7 @@
           "description": "Fetch a resources using the graphQL operator",
           "properties": {
             "graphQL": {
-              "$ref": "#/definitions/GraphQL"
+              "$ref": "#/definitions/ExprGraphQL"
             }
           },
           "required": [
@@ -187,38 +187,7 @@
           "description": "Branch based on a condition",
           "properties": {
             "if": {
-              "properties": {
-                "cond": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Condition to evaluate"
-                },
-                "else": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Expression to evaluate if the condition is false"
-                },
-                "then": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Expression to evaluate if the condition is true"
-                }
-              },
-              "required": [
-                "cond",
-                "else",
-                "then"
-              ],
-              "type": "object"
+              "$ref": "#/definitions/ExprIf"
             }
           },
           "required": [
@@ -847,142 +816,7 @@
         }
       ]
     },
-    "Field": {
-      "description": "A field definition containing all the metadata information about resolving a field.",
-      "properties": {
-        "args": {
-          "additionalProperties": {
-            "$ref": "#/definitions/Arg"
-          },
-          "description": "Map of argument name and its definition.",
-          "type": "object"
-        },
-        "cache": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Cache"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Sets the cache configuration for a field"
-        },
-        "const": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Const"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Inserts a constant resolver for the field."
-        },
-        "doc": {
-          "description": "Publicly visible documentation for the field.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "expr": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Expr"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Inserts an Expression resolver for the field."
-        },
-        "graphql": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/GraphQL"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Inserts a GraphQL resolver for the field."
-        },
-        "grpc": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Grpc"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Inserts a GRPC resolver for the field."
-        },
-        "http": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Http"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Inserts an HTTP resolver for the field."
-        },
-        "list": {
-          "description": "Flag to indicate the type is a list.",
-          "type": "boolean"
-        },
-        "list_type_required": {
-          "description": "Flag to indicate if the type inside the list is required.",
-          "type": "boolean"
-        },
-        "modify": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Modify"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Allows modifying existing fields."
-        },
-        "omit": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Omit"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Omits a field from public consumption."
-        },
-        "required": {
-          "description": "Flag to indicate the type is required.",
-          "type": "boolean"
-        },
-        "script": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/JS"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Inserts a Javascript resolver for the field."
-        },
-        "type": {
-          "description": "Refers to the type of the value the field can be resolved to.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "GraphQL": {
+    "ExprGraphQL": {
       "description": "The @graphQL operator allows to specify GraphQL API server request to fetch data from.",
       "properties": {
         "args": {
@@ -1025,7 +859,7 @@
       ],
       "type": "object"
     },
-    "Grpc": {
+    "ExprGrpc": {
       "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
       "properties": {
         "baseURL": {
@@ -1077,7 +911,7 @@
       ],
       "type": "object"
     },
-    "Http": {
+    "ExprHttp": {
       "description": "The @http operator indicates that a field or node is backed by a REST API.\n\nFor instance, if you add the @http operator to the `users` field of the Query type with a path argument of `\"/users\"`, it signifies that the `users` field is backed by a REST API. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
       "properties": {
         "baseURL": {
@@ -1163,6 +997,175 @@
       "required": [
         "path"
       ],
+      "type": "object"
+    },
+    "ExprIf": {
+      "properties": {
+        "cond": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Condition to evaluate"
+        },
+        "else": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Expression to evaluate if the condition is false"
+        },
+        "then": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Expression to evaluate if the condition is true"
+        }
+      },
+      "required": [
+        "cond",
+        "else",
+        "then"
+      ],
+      "type": "object"
+    },
+    "Field": {
+      "description": "A field definition containing all the metadata information about resolving a field.",
+      "properties": {
+        "args": {
+          "additionalProperties": {
+            "$ref": "#/definitions/Arg"
+          },
+          "description": "Map of argument name and its definition.",
+          "type": "object"
+        },
+        "cache": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Cache"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Sets the cache configuration for a field"
+        },
+        "const": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Const"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a constant resolver for the field."
+        },
+        "doc": {
+          "description": "Publicly visible documentation for the field.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expr": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Expr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts an Expression resolver for the field."
+        },
+        "graphql": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ExprGraphQL"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a GraphQL resolver for the field."
+        },
+        "grpc": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ExprGrpc"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a GRPC resolver for the field."
+        },
+        "http": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ExprHttp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts an HTTP resolver for the field."
+        },
+        "list": {
+          "description": "Flag to indicate the type is a list.",
+          "type": "boolean"
+        },
+        "list_type_required": {
+          "description": "Flag to indicate if the type inside the list is required.",
+          "type": "boolean"
+        },
+        "modify": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Modify"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Allows modifying existing fields."
+        },
+        "omit": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Omit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Omits a field from public consumption."
+        },
+        "required": {
+          "description": "Flag to indicate the type is required.",
+          "type": "boolean"
+        },
+        "script": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/JS"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a Javascript resolver for the field."
+        },
+        "type": {
+          "description": "Refers to the type of the value the field can be resolved to.",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "HttpVersion": {
