@@ -22,6 +22,13 @@ type Query {
       baseURL: "http://localhost:50051"
       protoPath: "src/grpc/tests/news.proto"
     )
+  newsWithPortArg(port: Int!): NewsData!
+    @grpc(
+      service: "NewsService"
+      method: "GetAllNews"
+      baseURL: "http://localhost:{{args.port}}"
+      protoPath: "src/grpc/tests/news.proto"
+    )
 }
 
 type NewsData {
@@ -61,4 +68,5 @@ type Post {
   userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
   userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
   news: NewsData! @call(query: "news", args: {})
+  newsWithPortArg: NewsData! @call(query: "news", args: {port: "50051"})
 }

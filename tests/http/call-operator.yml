@@ -180,3 +180,28 @@ assert:
                 news:
                   - id: 1
                   - id: 2
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { newsWithPortArg { news { id } } } }"
+    response:
+      body:
+        data:
+          posts:
+            - newsWithPortArg:
+                news:
+                  - id: 1
+                  - id: 2
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { newsWithPortArg(port: 50051) { news { id } } }"
+    response:
+      body:
+        data:
+          newsWithPortArg:
+            news:
+              - id: 1
+              - id: 2
