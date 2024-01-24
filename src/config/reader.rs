@@ -1,6 +1,7 @@
 use futures_util::future::join_all;
 use url::Url;
 
+use super::Script;
 use crate::config::{Config, Source};
 use crate::{FileIO, HttpIO};
 
@@ -45,13 +46,29 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
     Ok(content)
   }
 
-  pub async fn read<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
+  /// Reads the script file and replaces the path with the content
+  async fn read_script(&self, mut config: Config) -> anyhow::Result<Config> {
+    if let Some(Script::Path(path)) = config.server.script.as_ref() {
+      let script = self.read_file(path).await?.content;
+      config.server.script = Some(Script::File(script));
+    }
+    Ok(config)
+  }
+
+  /// Reads a single file and returns the config
+  pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<Config> {
+    self.read_all(&[file]).await
+  }
+
+  /// Reads all the files and returns a merged config
+  pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
     let files = self.read_files(files).await?;
     let mut config = Config::default();
     for file in files.iter() {
       let source = Source::detect(&file.path)?;
       let schema = &file.content;
       let new_config = Config::from_source(source, schema)?;
+      let new_config = self.read_script(new_config).await?;
       config = config.merge_right(&new_config);
     }
 
@@ -61,11 +78,12 @@ impl<File: FileIO, Http: HttpIO> ConfigReader<File, Http> {
 
 #[cfg(test)]
 mod reader_tests {
+  use pretty_assertions::assert_eq;
   use tokio::io::AsyncReadExt;
 
   use crate::cli::{init_file, init_http};
   use crate::config::reader::ConfigReader;
-  use crate::config::{Config, Type, Upstream};
+  use crate::config::{Config, Script, Type, Upstream};
 
   fn start_mock_server() -> httpmock::MockServer {
     httpmock::MockServer::start()
@@ -106,7 +124,7 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
-    let c = cr.read(&files).await.unwrap();
+    let c = cr.read_all(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
         .iter()
@@ -129,13 +147,24 @@ mod reader_tests {
     .map(|x| x.to_string())
     .collect();
     let cr = ConfigReader::init(init_file(), init_http(&Upstream::default()));
-    let c = cr.read(&files).await.unwrap();
+    let c = cr.read_all(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
         .iter()
         .map(|i| i.to_string())
         .collect::<Vec<String>>(),
       c.types.keys().map(|i| i.to_string()).collect::<Vec<String>>()
+    );
+  }
+
+  #[tokio::test]
+  async fn test_script_loader() {
+    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default()));
+    let config = reader.read("examples/jsonplaceholder_script.graphql").await.unwrap();
+
+    assert_eq!(
+      config.server.script,
+      Some(Script::File("console.log('Hello World!')".to_string())),
     );
   }
 }

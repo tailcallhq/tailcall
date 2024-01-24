@@ -83,7 +83,14 @@ directive @server(
   `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   """
   key: String
+
+  script: Script
 ) on SCHEMA
+
+type Script {
+  file: String
+  inline: String
+}
 
 enum HttpVersion {
   HTTP1

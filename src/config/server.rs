@@ -153,6 +153,7 @@ impl Server {
     self.cert = other.cert.or(self.cert);
     self.key = other.key.or(self.key);
     self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
+    self.script = other.script.or(self.script);
     self
   }
 }

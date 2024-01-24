@@ -55,7 +55,7 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: &str) 
   let file_io = init_file(env.clone(), bucket_id)?;
   let http_io = init_http();
   let reader = ConfigReader::init(file_io, http_io);
-  let config = reader.read(&[file_path]).await?;
+  let config = reader.read(&file_path).await?;
   Ok(config)
 }
 

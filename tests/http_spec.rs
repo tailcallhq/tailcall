@@ -202,7 +202,7 @@ impl HttpSpec {
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
         let reader = ConfigReader::init(init_file(), http_client);
-        reader.read(&[file]).await.unwrap()
+        reader.read_all(&[file]).await.unwrap()
       }
       ConfigSource::Inline(config) => config,
     };
