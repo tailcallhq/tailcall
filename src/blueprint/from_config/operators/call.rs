@@ -1,9 +1,8 @@
 use std::collections::hash_map::Iter;
-use std::collections::BTreeMap;
 
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, Field, GraphQLOperationType, KeyValues};
+use crate::config::{Config, Field, GraphQLOperationType};
 use crate::lambda::{Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
@@ -78,9 +77,7 @@ pub fn compile_call(
         .trace(field_name.as_str());
       }
 
-      if let Some(mut http) = _field.http.clone() {
-        http.headers = update_headers(http.headers.0.clone(), &args);
-
+      if let Some(http) = _field.http.clone() {
         compile_http(config, field, &http).and_then(|expr| match expr.clone() {
           Expression::IO(IO::Http { req_template, group_by, dl_id }) => Valid::succeed(
             req_template.clone().root_url(
@@ -107,96 +104,51 @@ pub fn compile_call(
                 .into(),
             ),
           )
-          .and_then(|req_template| {
-            Valid::succeed(
-              req_template.clone().query(
-                req_template
-                  .query
-                  .iter()
-                  .map(|(key, value)| {
-                    let segments = value.get_segments();
-
-                    let segments = segments
-                      .iter()
-                      .map(|segment| match segment {
-                        Segment::Literal(literal) => Segment::Literal(literal.clone()),
-                        Segment::Expression(expression) => {
-                          if expression[0] == "args" {
-                            let value = find_value(&args, &expression[1]).unwrap();
-                            let item = Mustache::parse(value).unwrap();
-
-                            let expression = item.get_segments().first().unwrap().to_owned().to_owned();
-
-                            expression
-                          } else {
-                            Segment::Expression(expression.clone())
-                          }
-                        }
-                      })
-                      .collect::<Vec<Segment>>();
-
-                    let value = Mustache::from(segments);
-
-                    (key.to_owned(), value)
-                  })
-                  .collect(),
-              ),
-            )
-            .map(|req_template| {
-              let query = req_template
-                .endpoint
-                .query
-                .iter()
-                .map(|(key, value)| {
-                  let mustache = Mustache::parse(value).unwrap();
-
-                  let segments = mustache.get_segments();
-
-                  let value = segments
-                    .iter()
-                    .map(|segment| match segment {
-                      Segment::Literal(literal) => literal,
-                      Segment::Expression(expression) => {
-                        if expression[0] == "args" {
-                          find_value(&args, &expression[1]).unwrap()
-                        } else {
-                          value
-                        }
-                      }
-                    })
-                    .collect::<Vec<&String>>()
-                    .first()
-                    .unwrap()
-                    .to_owned();
-
-                  (key.to_owned(), value.to_owned())
-                })
-                .collect();
-
-              let endpoint = req_template.endpoint.clone().query(query);
-
-              req_template.endpoint(endpoint)
-            })
+          .map(|req_template| {
+            req_template
+              .clone()
+              .query(req_template.clone().query.iter().map(replace_mustache(&args)).collect())
+          })
+          .map(|req_template| {
+            req_template
+              .clone()
+              .headers(req_template.headers.iter().map(replace_mustache(&args)).collect())
           })
           .map(|req_template| Expression::IO(IO::Http { req_template, group_by, dl_id })),
           _ => Valid::succeed(expr),
         })
-      } else if let Some(mut graphql) = _field.graphql.clone() {
-        if let Some(mut _args) = graphql.args {
-          let mut updated: BTreeMap<String, String> = BTreeMap::new();
+      } else if let Some(graphql) = _field.graphql.clone() {
+        compile_graphql(config, operation_type, &graphql).and_then(|expr| match expr {
+          Expression::IO(IO::GraphQLEndpoint { req_template, field_name, batch, dl_id }) => Valid::succeed(
+            req_template
+              .clone()
+              .headers(req_template.headers.iter().map(replace_mustache(&args)).collect()),
+          )
+          .map(|req_template| {
+            if req_template.operation_arguments.is_some() {
+              let operation_arguments = req_template
+                .clone()
+                .operation_arguments
+                .unwrap()
+                .iter()
+                .map(replace_mustache(&args))
+                .collect::<Vec<(String, Mustache)>>();
 
-          for (key, _) in _args.0 {
-            let value = find_value(&args, &key).unwrap();
-
-            updated.insert(key.clone(), value.to_string());
-          }
-
-          graphql.args = Some(KeyValues(updated));
-        }
-
-        graphql.headers = update_headers(graphql.headers.0.clone(), &args);
-
-        compile_graphql(config, operation_type, &graphql)
+              req_template.operation_arguments(Some(operation_arguments))
+            } else {
+              req_template
+            }
+          })
+          .and_then(|req_template| {
+            Valid::succeed(Expression::IO(IO::GraphQLEndpoint {
+              req_template,
+              field_name,
+              batch,
+              dl_id,
+            }))
+          }),
+          _ => Valid::succeed(expr),
+        })
       } else if let Some(grpc) = _field.grpc.clone() {
         let inputs: CompileGrpc<'_> =
           CompileGrpc { config, operation_type, field, grpc: &grpc, validate_with_schema: false };
@@ -207,18 +159,26 @@ pub fn compile_call(
     })
 }
 
-fn update_headers(headers: BTreeMap<String, String>, args: &Iter<String, String>) -> KeyValues {
-  if headers.len() == 0 {
-    return KeyValues(headers);
+fn replace_mustache<'a, T: Clone>(args: &'a Iter<'a, String, String>) -> impl Fn(&(T, Mustache)) -> (T, Mustache) + 'a {
+  |(key, value)| {
+    let value: Mustache = value
+      .expression_segments()
+      .iter()
+      .map(|expression| {
+        if expression[0] == "args" {
+          let value = find_value(args, &expression[1]).unwrap();
+          let item = Mustache::parse(value).unwrap();
+
+          let expression = item.get_segments().first().unwrap().to_owned().to_owned();
+
+          expression
+        } else {
+          Segment::Expression(expression.to_owned().to_owned())
+        }
+      })
+      .collect::<Vec<Segment>>()
+      .into();
+
+    (key.clone().to_owned(), value)
   }
-
-  let mut headers = headers;
-
-  for (key, _) in headers.clone().into_iter() {
-    let value = find_value(&args, &key).unwrap();
-
-    headers.insert(key.clone(), value.to_string());
-  }
-
-  KeyValues(headers)
 }
