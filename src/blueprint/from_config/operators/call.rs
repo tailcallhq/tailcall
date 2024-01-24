@@ -4,7 +4,6 @@ use std::collections::BTreeMap;
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, KeyValues};
-use crate::endpoint::Endpoint;
 use crate::lambda::{Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
@@ -168,23 +167,14 @@ pub fn compile_call(
                     .unwrap()
                     .to_owned();
 
-                  println!("value: {:?}", value);
-
                   (key.to_owned(), value.to_owned())
                 })
                 .collect();
-
-              println!("query: {:?}", query);
 
               let endpoint = req_template.endpoint.clone().query(query);
 
               req_template.endpoint(endpoint)
             })
-          })
-          .and_then(|req_template| {
-            println!("req_template_h: {:?}", req_template);
-
-            Valid::succeed(req_template)
           })
           .map(|req_template| Expression::IO(IO::Http { req_template, group_by, dl_id })),
           _ => Valid::succeed(expr),
@@ -201,6 +191,19 @@ pub fn compile_call(
 
           graphql.args = Some(KeyValues(updated));
         }
+
+        if graphql.headers.0.len() > 0 {
+          let mut headers = graphql.headers.0.clone();
+
+          for (key, _) in graphql.headers.0.iter() {
+            let value = find_value(&args, &key).unwrap();
+
+            headers.insert(key.clone(), value.to_string());
+          }
+
+          graphql.headers = KeyValues(headers);
+        }
+
         compile_graphql(config, operation_type, &graphql)
       } else if let Some(grpc) = _field.grpc.clone() {
         let inputs: CompileGrpc<'_> =
