@@ -45,8 +45,6 @@ pub struct Server {
   /// This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.
   pub vars: KeyValues,
   #[serde(skip_serializing_if = "is_default", default)]
-  /// `responseHeaders` appends headers to all server responses, aiding cross-origin requests or extra headers for downstream services.
-  ///
   /// The responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services.
   pub response_headers: KeyValues,
   #[serde(default, skip_serializing_if = "is_default")]
