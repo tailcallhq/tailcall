@@ -56,7 +56,7 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     let reader = ConfigReader::init(file, http.clone());
     reader.read(&[config_url]).await
   } else {
-    let reader = ConfigReader::init(DummyFileIO, init_http(&Upstream::default()));
+    let reader = ConfigReader::init(DummyFileIO, http.clone());
     reader.read(&[config_url]).await
   };
 
