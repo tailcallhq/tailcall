@@ -65,10 +65,17 @@ async fn get_app_ctx(
   let bucket_id = env_io.get("BUCKET").ok_or(anyhow!("CONFIG var is not set"))?;
   log::debug!("R2 Bucket ID: {}", bucket_id);
 
-  let file = init_file(env, bucket_id)?;
+  let file = init_file(env.clone(), bucket_id)?;
   let http = init_http();
+  let cache = init_cache(env);
 
-  match showcase_get_app_ctx::<GraphQLRequest, _, _, _>(req, http, env_io, Some(file)).await? {
+  match showcase_get_app_ctx::<GraphQLRequest, _, _, _>(
+    req,
+    http,
+    env_io,
+    Some(file),
+    Arc::new(cache),
+  ).await? {
     Ok(app_ctx) => {
       let app_ctx = Arc::new(app_ctx);
       if let Some(file_path) = file_path {
