@@ -11,6 +11,14 @@ mock:
         id: 1
         name: foo
   - request:
+      url: http://jsonplaceholder.typicode.com/users
+      headers:
+        id: 1
+    response:
+      body:
+        id: 1
+        name: "Ervin Howell"
+  - request:
       url: http://jsonplaceholder.typicode.com/posts
     response:
       body:
@@ -91,6 +99,17 @@ assert:
           posts:
             - userGraphQLHeaders:
                 name: "Leanne Graham"
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { userHttpHeaders { name } } }"
+    response:
+      body:
+        data:
+          posts:
+            - userHttpHeaders:
+                name: "Ervin Howell"
   # - request:
   #     method: POST
   #     url: http://localhost:8080/graphql
