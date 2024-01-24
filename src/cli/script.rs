@@ -89,6 +89,7 @@ fn on_event_impl<'a>(
   closure: &'a anyhow::Result<mini_v8::Value>,
   event: Event,
 ) -> anyhow::Result<Command> {
+  log::info!("on_event: {:?}", event);
   let err = &anyhow::anyhow!("expected an 'onEvent' function");
   let on_event = closure
     .as_ref()

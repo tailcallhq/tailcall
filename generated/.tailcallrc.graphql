@@ -89,7 +89,7 @@ directive @server(
 
 input Script {
   file: String
-  inline: String
+  path: String
 }
 
 enum HttpVersion {

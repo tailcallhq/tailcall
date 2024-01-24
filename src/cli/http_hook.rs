@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use futures_util::future::join_all;
 use futures_util::Future;
+use hyper::body::Bytes;
 
 use crate::http::Response;
 use crate::{Command, Event, HttpIO, JsResponse, ScriptIO};
@@ -22,6 +23,7 @@ impl HttpHook {
     &'a self,
     command: Command,
   ) -> Pin<Box<dyn Future<Output = anyhow::Result<Response<hyper::body::Bytes>>> + Send + 'a>> {
+    log::info!("on_command: {:?}", command);
     Box::pin(async move {
       match command {
         Command::Request(requests) => {
@@ -38,8 +40,8 @@ impl HttpHook {
           Ok(self.on_command(command).await?)
         }
         Command::Response(response) => {
-          let command = self.script.on_event(Event::Response(vec![response])).await?;
-          Ok(self.on_command(command).await?)
+          let res: Response<Bytes> = response.into();
+          Ok(res)
         }
       }
     })

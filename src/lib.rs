@@ -76,7 +76,7 @@ pub enum Event {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct JsResponse {
-  status: u16,
+  status: f64,
   headers: BTreeMap<String, String>,
   body: serde_json::Value,
 }
@@ -113,7 +113,7 @@ impl From<&reqwest::Request> for JsRequest {
 }
 impl From<JsResponse> for Response<Bytes> {
   fn from(res: JsResponse) -> Self {
-    let status = reqwest::StatusCode::from_u16(res.status).unwrap();
+    let status = reqwest::StatusCode::from_u16(res.status as u16).unwrap();
     let headers = create_header_map(res.headers);
     let body = serde_json::to_string(&res.body).unwrap();
     Response { status, headers, body: Bytes::from(body) }
@@ -122,7 +122,7 @@ impl From<JsResponse> for Response<Bytes> {
 
 impl From<&Response<Bytes>> for JsResponse {
   fn from(res: &Response<Bytes>) -> Self {
-    let status = res.status.as_u16();
+    let status = res.status.as_u16() as f64;
     let headers = res
       .headers
       .iter()
@@ -143,7 +143,9 @@ pub struct JsRequest {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Command {
+  #[serde(rename = "request")]
   Request(Vec<JsRequest>),
+  #[serde(rename = "response")]
   Response(JsResponse),
 }
 
@@ -194,7 +196,10 @@ impl FromValue for ValueWrapper {
       Value::Undefined => serde_json::Value::Null,
       Value::Null => serde_json::Value::Null,
       Value::Boolean(v) => serde_json::Value::Bool(v),
-      Value::Number(n) => serde_json::Value::Number(Number::from_f64(n).unwrap()),
+      Value::Number(n) => serde_json::Value::Number(Number::from_f64(n).ok_or(Error::FromJsConversionError {
+        from: "number",
+        to: "graphql number as it is out of supported range",
+      })?),
 
       Value::String(s) => serde_json::Value::String(s.to_string()),
       Value::Array(v) => {
@@ -260,7 +265,6 @@ fn from_req(req: JsRequest, mv8: MiniV8) -> mini_v8::Result<MValue> {
 impl FromValue for Command {
   fn from_value(value: MValue, _mv8: &MiniV8) -> mini_v8::Result<Self> {
     let serde_value: serde_json::Value = ValueWrapper::from_value(value, _mv8)?.into();
-    log::info!("serde response {:?}", serde_value);
     let command: Command = serde_json::from_value(serde_value)
       .map_err(|_e| Error::FromJsConversionError { from: "serde_json::Value", to: "Command" })?;
     Ok(command)
@@ -274,4 +278,48 @@ fn create_header_map(headers: BTreeMap<String, String>) -> reqwest::header::Head
     header_map.insert(key, value);
   }
   header_map
+}
+
+#[cfg(test)]
+mod test {
+  use mini_v8::{FromValue, ToValue};
+  use serde_json::json;
+
+  use crate::{Command, ValueWrapper};
+
+  #[test]
+  fn test_json() {
+    let json = json!({
+        "response": {
+            "status": 200,
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "body": {
+                "data": [
+                    {
+                        "id": 1,
+                        "userId": 1,
+                        "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+                        "body": "hello world"
+                    },
+                    {
+                        "id": 2,
+                        "userId": 2,
+                        "title": "qui est esse",
+                        "body": "hi"
+                    },
+                ]
+            }
+
+        }
+    });
+
+    let value = ValueWrapper(json).to_value(&mini_v8::MiniV8::new()).unwrap();
+    let json = ValueWrapper::from_value(value, &mini_v8::MiniV8::new()).unwrap().0;
+
+    let command: Command = serde_json::from_value(json).unwrap();
+
+    println!("{:?}", command);
+  }
 }

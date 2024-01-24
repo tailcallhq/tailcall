@@ -4,40 +4,7 @@ schema
     graphiql: true
     hostname: "0.0.0.0"
     script: {
-      file: """
-      function onEvent (event) {
-        if (event.request.method === "GET" && event.request.url === "http://jsonplaceholder.typicode.com/posts") {
-          return {
-              response: {
-              status: 200,
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: {
-                data: [
-                  {
-                    id: 1,
-                    userId: 1,
-                    title: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
-                    body: "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit " +
-                      "molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
-                  },
-                  {
-                    id: 2,
-                    userId: 2,
-                    title: "qui est esse",
-                    body: "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores " +
-                      "neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam " +
-                      "non debitis possimus qui neque nisi nulla"
-                  },
-                ]
-              }
-
-          }
-        }}
-
-      }
-      """
+      path: "examples/scripts/test.js"
     }
   )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
