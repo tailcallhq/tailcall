@@ -493,7 +493,6 @@ name = "autogen"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "capitalize",
  "env_logger",
  "log",
  "schemars",
@@ -643,12 +642,6 @@ checksum = "c59e92b5a388f549b863a7bea62612c09f24c8393560709a54558a9abdfb3b9c"
 dependencies = [
  "serde",
 ]
-
-[[package]]
-name = "capitalize"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "702cfe2f052c6542d55a9924efef63dd315c168cc4f315a824fb0f47da4e11c8"
 
 [[package]]
 name = "cargo-platform"
