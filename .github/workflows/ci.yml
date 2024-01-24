@@ -31,6 +31,10 @@ jobs:
     name: Run Tests (WASM)
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cloudflare
+
     steps:
       - uses: actions/checkout@v4
 
@@ -50,15 +54,12 @@ jobs:
 
       - name: Compile CF
         run: cargo install -q worker-build && worker-build
-        working-directory: ./cloudflare
 
       - name: Package Install
         run: npm install
-        working-directory: ./cloudflare
 
       - name: Test CF
         run: npm test
-        working-directory: ./cloudflare
 
   test:
     name: Run Tests
