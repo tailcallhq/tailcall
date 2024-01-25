@@ -21,6 +21,7 @@ pub enum Math {
   Subtract(Box<Expression>, Box<Expression>),
   Sum(Vec<Expression>),
   Mean(Vec<Expression>),
+  Median(Vec<Expression>),
 }
 
 impl Eval for Math {
@@ -64,6 +65,34 @@ impl Eval for Math {
           let rhs = rhs.eval(ctx, conc).await?;
 
           try_div_operation(&lhs, &rhs, None)?
+        }
+        Math::Median(exprs) => {
+          let mut results: Vec<_> = exprs.eval(ctx, conc).await?;
+
+          let len = results.len();
+          if len == 0 {
+            return Err(EvaluationError::ExprEvalError("median".into()).into());
+          }
+
+          let width = 2 - len % 2;
+          let idx = (len - width) / 2;
+
+          results.sort_by(|a, b| {
+            let a = a.as_f64_ok().unwrap_or(0f64);
+            let b = b.as_f64_ok().unwrap_or(0f64);
+
+            a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal)
+          });
+
+          let slice = results
+            .get(idx..idx + width)
+            .ok_or(EvaluationError::ExprEvalError("median".into()))?;
+
+          try_sum_operation(slice, Some("median-sum"))
+            .ok()
+            .ok_or(EvaluationError::ExprEvalError("median".into()))
+            .map(|sum| try_div_operation(&sum, &(width as i64).into(), Some("median-div")).ok())?
+            .ok_or(EvaluationError::ExprEvalError("median".into()))?
         }
         Math::Inc(val) => {
           let val = val.eval(ctx, conc).await?;

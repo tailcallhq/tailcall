@@ -112,6 +112,8 @@ pub enum ExprBody {
   Sum(Vec<ExprBody>),
   #[serde(rename = "mean")]
   Mean(Vec<ExprBody>),
+  #[serde(rename = "median")]
+  Median(Vec<ExprBody>),
 }
 
 impl ExprBody {
@@ -140,6 +142,7 @@ impl ExprBody {
       ExprBody::Dec(expr) => expr.has_io(),
       ExprBody::Divide(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::Inc(expr) => expr.has_io(),
+      ExprBody::Median(l) => l.iter().any(|e| e.has_io()),
       ExprBody::Multiply(expr1, expr2) => expr1.has_io() || expr2.has_io(),
       ExprBody::Negate(expr) => expr.has_io(),
       ExprBody::Product(l) => l.iter().any(|e| e.has_io()),
