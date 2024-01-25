@@ -19,6 +19,3 @@ cloudflare/node_modules
 cloudflare/pkg
 
 .wrangler/
-
-# Docker container spec dir for GitHub Codespace
-/.devcontainer/
