@@ -173,7 +173,7 @@ mod reader_tests {
       .await
       .unwrap();
 
-    let path = format!("{}/examples/scripts/test.js", cargo_manifest);
+    let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
     let file = String::from_utf8(tokio::fs::read(&path).await.context(path.to_string()).unwrap()).unwrap();
     assert_eq!(config.server.script, Some(Script::File(file)),);
   }
