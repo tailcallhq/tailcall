@@ -138,13 +138,17 @@ impl RequestTemplate {
 
     let headers = req.headers_mut();
     // We want to set the header value based on encoding
-    headers.insert(
-      reqwest::header::CONTENT_TYPE,
-      match self.encoding {
-        Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
-        Encoding::ApplicationXWwwFormUrlencoded => HeaderValue::from_static("application/x-www-form-urlencoded"),
-      },
-    );
+    // TODO: potential of optimizations.
+    // Can set content-type headers while creating the request template
+    if self.method != reqwest::Method::GET {
+      headers.insert(
+        reqwest::header::CONTENT_TYPE,
+        match self.encoding {
+          Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
+          Encoding::ApplicationXWwwFormUrlencoded => HeaderValue::from_static("application/x-www-form-urlencoded"),
+        },
+      );
+    }
 
     headers.extend(ctx.headers().to_owned());
     req
