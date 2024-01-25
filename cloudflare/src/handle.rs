@@ -65,7 +65,6 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: &str) 
 ///
 async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
-  // let app_ctx = read_app_ctx();
   if let Some(app_ctx) = APP_CTX.get(&file_path) {
     log::info!("Using cached application context");
     return Ok(app_ctx.clone());
