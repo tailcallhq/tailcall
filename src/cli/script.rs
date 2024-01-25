@@ -2,9 +2,9 @@ use std::cell::RefCell;
 
 use async_std::task::block_on;
 use lazy_static::lazy_static;
-use mini_v8::{FromValue, MiniV8, ToValues, Value};
+use mini_v8::{MiniV8, Value, Values};
 
-use crate::channel::{Command, Event};
+use crate::channel::{Command, Event, SerdeV8};
 use crate::ScriptIO;
 
 thread_local! {
@@ -28,7 +28,9 @@ fn create_closure(script: &str) -> String {
     r#"
     (function() {{
       {}
-      return onEvent
+      return function(event) {{
+        return JSON.stringify(onEvent(JSON.parse(event)));
+      }}
     }})();
   "#,
     script
@@ -97,26 +99,27 @@ fn on_event_impl<'a>(
     .and_then(|a| a.as_function().ok_or(err))
     .map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
-  let args = event
-    .clone()
-    .to_values(v8)
+  let args = serde_json::to_value(event.clone())?
+    .to_v8(v8)
     .map_err(|e| anyhow::anyhow!("Event encoding failure: {}", e.to_string()))?;
 
   let value = on_event
-    .call(args)
+    .call(Values::from_vec(vec![args]))
     .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
-
-  
 
   match value {
     Value::Undefined => {
       if let Some(req) = event.request() {
-        Ok(Command::Continue(req))
+        Ok(Command::Continue(req.clone()))
       } else {
         anyhow::bail!("Event not handled: {:?}", event)
       }
     }
-    _ => Command::from_value(value, v8).map_err(|e| anyhow::anyhow!("Command decoding failure: {}", e.to_string())),
+    _ => {
+      let serde_value = serde_json::Value::from_v8(value)?;
+      let command = serde_json::from_value::<Command>(serde_value)?;
+      Ok(command)
+    }
   }
 }
 
