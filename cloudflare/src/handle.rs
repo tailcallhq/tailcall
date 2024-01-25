@@ -1,15 +1,18 @@
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use anyhow::anyhow;
+use dashmap::DashMap;
 use lazy_static::lazy_static;
+use serde_json::Value;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::Config;
-use tailcall::http::{graphiql, handle_request, AppContext};
+use tailcall::config::{Config, Const, Field, Type};
+use tailcall::http::{handle_request, AppContext};
 use tailcall::EnvIO;
+use worker::wasm_bindgen::JsValue;
 
 use crate::env::CloudflareEnv;
 use crate::http::{to_request, to_response, CloudflareHttp};
@@ -17,7 +20,7 @@ use crate::{init_cache, init_env, init_file, init_http};
 
 type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
 lazy_static! {
-  static ref APP_CTX: RwLock<Option<(String, Arc<CloudFlareAppContext>)>> = RwLock::new(None);
+  static ref APP_CTX: DashMap<String, Arc<CloudFlareAppContext>> = DashMap::new();
 }
 ///
 /// The handler which handles requests on cloudflare
@@ -26,8 +29,9 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
   log::info!("{} {:?}", req.method().to_string(), req.url().map(|u| u.to_string()));
   let env = Rc::new(env);
   let hyper_req = to_request(req).await?;
+
   if hyper_req.method() == hyper::Method::GET {
-    let response = graphiql(&hyper_req)?;
+    let response = tailcall::http::graphiql(&hyper_req)?;
     return to_response(response).await;
   }
   let query = hyper_req.uri().query().ok_or(anyhow!("Unable parse extract query"))?;
@@ -38,7 +42,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -
     .clone();
 
   log::info!("config-url: {}", config_path);
-  let app_ctx = get_app_ctx(env, config_path.as_str()).await?;
+  let app_ctx = get_app_ctx(env, config_path).await?;
   let resp = handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(hyper_req, app_ctx).await?;
 
   Ok(to_response(resp).await?)
@@ -61,17 +65,16 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: &str) 
 /// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Arc<CloudFlareAppContext>> {
+async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = read_app_ctx() {
-    if app_ctx.0 == file_path {
-      log::info!("Using cached application context");
-      return Ok(app_ctx.clone().1);
-    }
+  // let app_ctx = read_app_ctx();
+  if let Some(app_ctx) = APP_CTX.get(&file_path) {
+    log::info!("Using cached application context");
+    return Ok(app_ctx.clone());
   }
   // Create new context
   let env_io = init_env(env.clone());
-  let cfg = get_config(&env_io, env.clone(), file_path).await?;
+  let cfg = get_config(&env_io, env.clone(), &file_path).await?;
   log::info!("Configuration read ... ok");
   log::debug!("\n{}", cfg.to_sdl());
   let blueprint = Blueprint::try_from(&cfg)?;
@@ -85,11 +88,7 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
     Arc::new(env_io),
     cache,
   ));
-  *APP_CTX.write().unwrap() = Some((file_path.to_string(), app_ctx.clone()));
+  APP_CTX.insert(file_path.to_string(), app_ctx.clone());
   log::info!("Initialized new application context");
   Ok(app_ctx)
-}
-
-fn read_app_ctx() -> Option<(String, Arc<CloudFlareAppContext>)> {
-  APP_CTX.read().unwrap().clone()
 }

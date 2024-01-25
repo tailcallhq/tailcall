@@ -14,6 +14,7 @@ npm/@tailcallhq
 npm/node_modules
 
 cloudflare/.wrangler
+cloudflare/.mf
 cloudflare/build
 cloudflare/node_modules
 cloudflare/pkg
