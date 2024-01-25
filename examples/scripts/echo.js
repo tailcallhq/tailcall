@@ -1,3 +1,3 @@
 function onEvent(event) {
-  event.request
+  return {continue: event.request}
 }
