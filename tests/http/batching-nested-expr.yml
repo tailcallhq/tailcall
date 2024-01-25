@@ -1,0 +1,51 @@
+---
+config: !file tests/http/config/batching-nested-expr.graphql
+name: Batching inside nested @expr
+
+mock:
+  - request:
+      url: http://jsonplaceholder.typicode.com/posts
+    response:
+      body:
+        - id: 11
+          userId: 1
+        - id: 3
+          userId: 2
+  - request:
+      url: http://jsonplaceholder.typicode.com/users?id=1&id=2
+    response:
+      body:
+        - id: 1
+        - id: 2
+  - request:
+      url: http://jsonplaceholder.typicode.com/users-values-1?id=1&id=2
+    response:
+      body:
+        - {id: 1, value: 1}
+        - {id: 2, value: 6}
+        - {id: 2, value: 7}
+  - request:
+      url: http://jsonplaceholder.typicode.com/users-values-2?id=1&id=2
+    response:
+      body:
+        - {id: 1, value: 2}
+        - {id: 1, value: 3}
+        - {id: 2, value: 8}
+        - {id: 2, value: 9}
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { posts { user { id, values { value } } } }"
+    response:
+      body:
+        data:
+          posts:
+            - user:
+                id: 1
+                values: [{value: 1}, {value: 2}, {value: 3}]
+            - user:
+                id: 2
+                values: [{value: 6}, {value: 7}, {value: 8}, {value: 9}]

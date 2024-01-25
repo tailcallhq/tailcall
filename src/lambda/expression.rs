@@ -1,3 +1,5 @@
+#![deny(clippy::wildcard_enum_match_arm)] // to make sure we handle all of the expression variants
+
 use core::future::Future;
 use std::fmt::Debug;
 use std::pin::Pin;
@@ -97,12 +99,109 @@ impl Eval for Expression {
           left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
         )),
         Expression::IO(operation) => operation.eval(ctx, conc).await,
-
         Expression::Relation(relation) => relation.eval(ctx, conc).await,
         Expression::Logic(logic) => logic.eval(ctx, conc).await,
         Expression::List(list) => list.eval(ctx, conc).await,
         Expression::Math(math) => math.eval(ctx, conc).await,
       }
     })
+  }
+}
+
+impl Expression {
+  pub(crate) fn io_iter(&mut self) -> IOExpressionIterator {
+    IOExpressionIterator { stack: vec![self] }
+  }
+}
+
+pub struct IOExpressionIterator<'a> {
+  stack: Vec<&'a mut Expression>,
+}
+
+impl<'a> Iterator for IOExpressionIterator<'a> {
+  type Item = &'a mut IO;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    while let Some(node) = self.stack.pop() {
+      match node {
+        Expression::Context(_) | Expression::Literal(_) => {}
+        Expression::EqualTo(left, right) => {
+          self.stack.push(right);
+          self.stack.push(left);
+        }
+        Expression::IO(io) => {
+          return Some(io);
+        }
+        Expression::Input(expr, _) | Expression::Concurrency(_, expr) => self.stack.push(expr),
+        Expression::Logic(logic) => match logic {
+          Logic::If { cond, then, els } => {
+            self.stack.push(els);
+            self.stack.push(then);
+            self.stack.push(cond);
+          }
+          Logic::And(exprs) | Logic::Or(exprs) => {
+            self.stack.extend(exprs);
+          }
+          Logic::Cond(exprs) => exprs.iter_mut().for_each(|(left, right)| {
+            self.stack.push(right);
+            self.stack.push(left);
+          }),
+          Logic::DefaultTo(left, right) => {
+            self.stack.push(right);
+            self.stack.push(left);
+          }
+          Logic::IsEmpty(expr) | Logic::Not(expr) => {
+            self.stack.push(expr);
+          }
+        },
+        Expression::Relation(relation) => match relation {
+          Relation::Intersection(exprs) | Relation::Max(exprs) | Relation::Min(exprs) => {
+            self.stack.extend(exprs);
+          }
+          Relation::Equals(left, right)
+          | Relation::Gt(left, right)
+          | Relation::Gte(left, right)
+          | Relation::Lt(left, right)
+          | Relation::Lte(left, right)
+          | Relation::PathEq(left, _, right)
+          | Relation::PropEq(left, _, right) => {
+            self.stack.push(right);
+            self.stack.push(left);
+          }
+          Relation::Difference(exprs_left, exprs_right)
+          | Relation::SymmetricDifference(exprs_left, exprs_right)
+          | Relation::Union(exprs_left, exprs_right) => {
+            self.stack.extend(exprs_right);
+            self.stack.extend(exprs_left);
+          }
+          Relation::SortPath(expr, _) => {
+            self.stack.push(expr);
+          }
+        },
+        Expression::List(list) => match list {
+          List::Concat(exprs) => {
+            self.stack.extend(exprs);
+          }
+        },
+        Expression::Math(math) => match math {
+          Math::Inc(expr) | Math::Negate(expr) | Math::Dec(expr) => {
+            self.stack.push(expr);
+          }
+          Math::Mod(left, right)
+          | Math::Add(left, right)
+          | Math::Divide(left, right)
+          | Math::Multiply(left, right)
+          | Math::Subtract(left, right) => {
+            self.stack.push(right);
+            self.stack.push(left);
+          }
+          Math::Sum(exprs) | Math::Product(exprs) => {
+            self.stack.extend(exprs);
+          }
+        },
+      }
+    }
+
+    None
   }
 }

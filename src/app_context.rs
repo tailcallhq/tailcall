@@ -1,3 +1,5 @@
+#![deny(clippy::wildcard_enum_match_arm)] // to make sure we handle all of the expression variants
+
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
@@ -9,7 +11,7 @@ use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::lambda::{DataLoaderId, Expression, IO};
+use crate::lambda::{DataLoaderId, IO};
 use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
@@ -40,9 +42,9 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
     for def in blueprint.definitions.iter_mut() {
       if let Definition::ObjectTypeDefinition(def) = def {
         for field in &mut def.fields {
-          if let Some(Expression::IO(expr)) = &mut field.resolver {
-            match expr {
-              IO::Http { req_template, group_by, .. } => {
+          if let Some(expr) = &mut field.resolver {
+            expr.io_iter().for_each(|expr| match expr {
+              IO::Http { group_by, dl_id, .. } => {
                 let data_loader = HttpDataLoader::new(
                   h_client.clone(),
                   group_by.clone(),
@@ -50,30 +52,21 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
                 )
                 .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
 
-                field.resolver = Some(Expression::IO(IO::Http {
-                  req_template: req_template.clone(),
-                  group_by: group_by.clone(),
-                  dl_id: Some(DataLoaderId(http_data_loaders.len())),
-                }));
+                let _ = dl_id.insert(DataLoaderId(http_data_loaders.len()));
 
                 http_data_loaders.push(data_loader);
               }
 
-              IO::GraphQLEndpoint { req_template, field_name, batch, .. } => {
+              IO::GraphQLEndpoint { batch, dl_id, .. } => {
                 let graphql_data_loader = GraphqlDataLoader::new(h_client.clone(), *batch)
                   .to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
 
-                field.resolver = Some(Expression::IO(IO::GraphQLEndpoint {
-                  req_template: req_template.clone(),
-                  field_name: field_name.clone(),
-                  batch: *batch,
-                  dl_id: Some(DataLoaderId(gql_data_loaders.len())),
-                }));
+                let _ = dl_id.insert(DataLoaderId(gql_data_loaders.len()));
 
                 gql_data_loaders.push(graphql_data_loader);
               }
 
-              IO::Grpc { req_template, group_by, .. } => {
+              IO::Grpc { req_template, group_by, dl_id } => {
                 let data_loader = GrpcDataLoader {
                   client: h2_client.clone(),
                   operation: req_template.operation.clone(),
@@ -81,16 +74,12 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
                 };
                 let data_loader = data_loader.to_data_loader(blueprint.upstream.batch.clone().unwrap_or_default());
 
-                field.resolver = Some(Expression::IO(IO::Grpc {
-                  req_template: req_template.clone(),
-                  group_by: group_by.clone(),
-                  dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
-                }));
+                let _ = dl_id.insert(DataLoaderId(grpc_data_loaders.len()));
 
                 grpc_data_loaders.push(data_loader);
               }
-              _ => {}
-            }
+              IO::JS(_, _) => {}
+            })
           }
         }
       }
@@ -105,8 +94,8 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       blueprint,
       http_data_loaders: Arc::new(http_data_loaders),
       gql_data_loaders: Arc::new(gql_data_loaders),
-      cache,
       grpc_data_loaders: Arc::new(grpc_data_loaders),
+      cache,
       env_vars: env,
     }
   }
