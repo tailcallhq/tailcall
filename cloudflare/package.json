@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "deploy": "npx wrangler deploy --minify",
-    "test-debug": "npx wrangler dev --port 19194 --remote --env debug",
-    "test-release": "npx wrangler dev --port 19194 --remote",
+    "dev-debug": "npx wrangler dev --port 19194 --env debug",
+    "dev": "npx wrangler dev --port 19194",
     "test": "vitest --run"
   },
   "devDependencies": {
