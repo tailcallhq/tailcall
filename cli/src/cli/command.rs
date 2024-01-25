@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
-
-use crate::config::Source;
+use corex::config::Source;
 
 const VERSION: &str = match option_env!("APP_VERSION") {
   Some(version) => version,

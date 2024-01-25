@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use anyhow::{anyhow, Result};
 use async_graphql_value::ConstValue;
+use corex::Cache;
 use serde_json::Value;
-use tailcall::Cache;
 use worker::kv::KvStore;
 
 use crate::to_anyhow;

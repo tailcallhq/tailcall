@@ -3,12 +3,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
+use corex::config::Batch;
+use corex::http::{DataLoaderRequest, HttpDataLoader, Response};
+use corex::HttpIO;
 use criterion::{criterion_group, criterion_main, Criterion};
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
-use tailcall::HttpIO;
 
 #[derive(Clone)]
 struct MockHttpClient {

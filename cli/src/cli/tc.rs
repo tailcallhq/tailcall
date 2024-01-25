@@ -3,18 +3,18 @@ use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
+use corex::blueprint::{validate_operations, Blueprint, OperationQuery};
+use corex::config::reader::ConfigReader;
+use corex::config::{Config, Upstream};
+use corex::{print_schema, FileIO};
 use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
-use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{init_file, init_http, CLIError};
-use crate::config::reader::ConfigReader;
-use crate::config::{Config, Upstream};
-use crate::{print_schema, FileIO};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -88,7 +88,7 @@ pub async fn init(folder_path: &str) -> Result<()> {
     };
   }
 
-  let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
+  let tailcallrc = include_str!("../../../examples/.tailcallrc.graphql");
 
   let file_path = Path::new(folder_path).join(FILE_NAME);
   let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);

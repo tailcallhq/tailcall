@@ -4,9 +4,8 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
+use corex::Cache;
 use ttl_cache::TtlCache;
-
-use crate::Cache;
 
 const CACHE_CAPACITY: usize = 100000;
 

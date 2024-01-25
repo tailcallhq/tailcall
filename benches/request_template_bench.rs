@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
+use corex::endpoint::Endpoint;
+use corex::has_headers::HasHeaders;
+use corex::http::RequestTemplate;
+use corex::path::PathString;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use serde_json::json;
-use tailcall::endpoint::Endpoint;
-use tailcall::has_headers::HasHeaders;
-use tailcall::http::RequestTemplate;
-use tailcall::path::PathString;
 
 #[derive(Setters)]
 struct Context {

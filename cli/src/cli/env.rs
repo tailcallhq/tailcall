@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::EnvIO;
+use corex::EnvIO;
 
 #[derive(Clone)]
 pub struct EnvNative {

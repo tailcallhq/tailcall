@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::anyhow;
-use tailcall::FileIO;
+use corex::FileIO;
 use worker::Env;
 
 use crate::to_anyhow;

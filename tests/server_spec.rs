@@ -1,9 +1,9 @@
+use cli::cli::server::Server;
+use cli::{init_file, init_http};
+use corex::config::reader::ConfigReader;
+use corex::config::Upstream;
 use reqwest::Client;
 use serde_json::json;
-use tailcall::cli::server::Server;
-use tailcall::cli::{init_file, init_http};
-use tailcall::config::reader::ConfigReader;
-use tailcall::config::Upstream;
 
 async fn test_server(configs: &[&str], url: &str) {
   let http_client = init_http(&Upstream::default());

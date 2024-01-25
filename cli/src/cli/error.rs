@@ -1,10 +1,9 @@
 use std::fmt::{Debug, Display};
 
 use colored::Colorize;
+use corex::valid::ValidationError;
 use derive_setters::Setters;
 use thiserror::Error;
-
-use crate::valid::ValidationError;
 
 #[derive(Debug, Error, Setters)]
 pub struct CLIError {

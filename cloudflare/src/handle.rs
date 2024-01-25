@@ -3,13 +3,13 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use anyhow::anyhow;
+use corex::async_graphql_hyper::GraphQLRequest;
+use corex::blueprint::Blueprint;
+use corex::config::reader::ConfigReader;
+use corex::config::Config;
+use corex::http::{graphiql, handle_request, AppContext};
+use corex::EnvIO;
 use lazy_static::lazy_static;
-use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::blueprint::Blueprint;
-use tailcall::config::reader::ConfigReader;
-use tailcall::config::Config;
-use tailcall::http::{graphiql, handle_request, AppContext};
-use tailcall::EnvIO;
 
 use crate::env::CloudflareEnv;
 use crate::http::{to_request, to_response, CloudflareHttp};

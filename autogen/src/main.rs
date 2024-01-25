@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
+use cli::init_file;
+use corex::config::Config;
+use corex::FileIO;
 use serde_json::{json, Value};
-use tailcall::cli::init_file;
-use tailcall::config::Config;
-use tailcall::FileIO;
 
 static JSON_SCHEMA_FILE: &'static str = "../examples/.tailcallrc.schema.json";
 

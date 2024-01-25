@@ -6,6 +6,13 @@ use std::sync::{Arc, Once};
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use async_graphql::Request;
+use cli::{init_chrono_cache, init_env, init_http};
+use corex::blueprint::Blueprint;
+use corex::config::Config;
+use corex::directive::DirectiveCodec;
+use corex::http::{AppContext, RequestContext};
+use corex::print_schema;
+use corex::valid::{Cause, Valid};
 use derive_setters::Setters;
 use futures_util::future::join_all;
 use hyper::http::{HeaderName, HeaderValue};
@@ -14,13 +21,6 @@ use pretty_assertions::{assert_eq, assert_ne};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_env, init_http};
-use tailcall::config::Config;
-use tailcall::directive::DirectiveCodec;
-use tailcall::http::{AppContext, RequestContext};
-use tailcall::print_schema;
-use tailcall::valid::{Cause, Valid};
 
 static INIT: Once = Once::new();
 

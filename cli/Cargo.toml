@@ -1,0 +1,41 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.79"
+http-cache-reqwest = { version = "0.13.0", features = [
+    "manager-moka",
+], default-features = false }
+moka = { version = "0.12.4", default-features = false, features = [
+    "future",
+]}
+hyper-rustls = { version = "0.25.0"}
+rustls = { version = "0.22.2"}
+rustls-pemfile = { version = "1.0.4"}
+rustls-pki-types = "1.1.0"
+inquire = { version = "0.6.2"}
+tokio = {version = "1.35.1",features = ["fs", "rt-multi-thread","rt"]}
+ttl_cache = "0.5.1"
+async-trait = "0.1.77"
+clap = { version = "4.4.18", features = ["derive"] }
+colored = "2"
+derive_setters = "0.1.6"
+thiserror = "1.0.56"
+env_logger = "0.11.0"
+log = "0.4.20"
+hyper = { version = "0.14", features = ["server"], default-features = false }
+reqwest = { version = "0.11", features = [
+    "json",
+    "rustls-tls",
+], default-features = false }
+reqwest-middleware = "0.2.4"
+stripmargin = "0.1.1"
+corex = {path = "../corex"}
+serde_yaml = "0.9"
+futures-util = { version = "0.3.30" }
+webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
+

@@ -1,11 +1,12 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use crate::blueprint::{Blueprint, Http};
+use corex::blueprint::{Blueprint, Http};
+use corex::http::AppContext;
+
 use crate::cli::env::EnvNative;
 use crate::cli::http::NativeHttp;
 use crate::cli::{init_chrono_cache, init_env, init_http, init_http2_only};
-use crate::http::AppContext;
 
 pub struct ServerConfig {
   pub blueprint: Blueprint,

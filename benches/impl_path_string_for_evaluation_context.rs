@@ -4,17 +4,17 @@ use std::sync::{Arc, Mutex};
 
 use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
+use cli::cache::NativeChronoCache;
+use cli::{init_env, init_http, init_http2_only};
+use corex::blueprint::Server;
+use corex::http::RequestContext;
+use corex::lambda::{EvaluationContext, ResolverContextLike};
+use corex::path::PathString;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use tailcall::blueprint::Server;
-use tailcall::cli::cache::NativeChronoCache;
-use tailcall::cli::{init_env, init_http, init_http2_only};
-use tailcall::http::RequestContext;
-use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path::PathString;
 
 const INPUT_VALUE: &[&[&str]] = &[
   // existing values
@@ -139,7 +139,7 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-  let tailcall::config::Config { server, upstream, .. } = tailcall::config::Config::default();
+  let corex::config::Config { server, upstream, .. } = corex::config::Config::default();
   //TODO: default is used only in tests. Drop default and move it to test.
   let server = Server::try_from(server).unwrap();
 

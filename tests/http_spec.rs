@@ -8,6 +8,13 @@ use std::sync::{Arc, Once};
 use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
+use cli::{init_chrono_cache, init_file, init_http};
+use corex::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use corex::blueprint::Blueprint;
+use corex::config::reader::ConfigReader;
+use corex::config::{Config, Source, Upstream};
+use corex::http::{handle_request, AppContext, Method, Response};
+use corex::{EnvIO, HttpIO};
 use derive_setters::Setters;
 use futures_util::future::join_all;
 use hyper::body::Bytes;
@@ -16,13 +23,6 @@ use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_file, init_http};
-use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, Source, Upstream};
-use tailcall::http::{handle_request, AppContext, Method, Response};
-use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
 static INIT: Once = Once::new();

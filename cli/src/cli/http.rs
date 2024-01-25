@@ -1,14 +1,13 @@
 use std::time::Duration;
 
 use anyhow::Result;
+use corex::config::Upstream;
+use corex::http::Response;
+use corex::HttpIO;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use hyper::body::Bytes;
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-
-use super::HttpIO;
-use crate::config::Upstream;
-use crate::http::Response;
 
 #[derive(Clone)]
 pub struct NativeHttp {

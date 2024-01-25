@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
+use corex::http::Response;
+use corex::HttpIO;
 use hyper::body::Bytes;
 use reqwest::Client;
-use tailcall::http::Response;
-use tailcall::HttpIO;
 
 use crate::to_anyhow;
 
