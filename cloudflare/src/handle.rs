@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use dashmap::DashMap;
+use concurrent_lru::sharded::LruCache;
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
@@ -18,7 +18,7 @@ use crate::{init_cache, init_env, init_file, init_http};
 
 type CloudFlareAppContext = AppContext<CloudflareHttp, CloudflareEnv>;
 lazy_static! {
-  static ref APP_CTX: DashMap<String, Arc<CloudFlareAppContext>> = DashMap::new();
+  static ref APP_CTX: LruCache<String, Arc<CloudFlareAppContext>> = LruCache::new(999);
 }
 ///
 /// The handler which handles requests on cloudflare
@@ -65,9 +65,9 @@ async fn get_config(env_io: &impl EnvIO, env: Rc<worker::Env>, file_path: &str) 
 ///
 async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<Arc<CloudFlareAppContext>> {
   // Read context from cache
-  if let Some(app_ctx) = APP_CTX.get(&file_path) {
+  if let Some(app_ctx) = APP_CTX.get(file_path.clone()) {
     log::info!("Using cached application context");
-    return Ok(app_ctx.clone());
+    return Ok(app_ctx.value().clone());
   }
   // Create new context
   let env_io = init_env(env.clone());
@@ -85,7 +85,7 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: String) -> anyhow::Result<
     Arc::new(env_io),
     cache,
   ));
-  APP_CTX.insert(file_path.to_string(), app_ctx.clone());
+  APP_CTX.get_or_init(file_path.to_string(), 1, |_| app_ctx.clone());
   log::info!("Initialized new application context");
   Ok(app_ctx)
 }
