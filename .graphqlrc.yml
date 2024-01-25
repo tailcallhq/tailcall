@@ -1,5 +1,5 @@
 schema:
   - "./examples/jsonplaceholder.graphql"
-  - "./generated/.tailcallrc.graphql"
+  - "./examples/.tailcallrc.graphql"
   # for tests inside the repo
   - "./tests/graphql_spec.graphql"

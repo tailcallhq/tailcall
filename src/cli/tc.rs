@@ -88,7 +88,7 @@ pub async fn init(folder_path: &str) -> Result<()> {
     };
   }
 
-  let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
+  let tailcallrc = include_str!("../../examples/.tailcallrc.graphql");
 
   let file_path = Path::new(folder_path).join(FILE_NAME);
   let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
