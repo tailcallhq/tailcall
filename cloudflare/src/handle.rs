@@ -5,14 +5,12 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use dashmap::DashMap;
 use lazy_static::lazy_static;
-use serde_json::Value;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, Const, Field, Type};
+use tailcall::config::Config;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::EnvIO;
-use worker::wasm_bindgen::JsValue;
 
 use crate::env::CloudflareEnv;
 use crate::http::{to_request, to_response, CloudflareHttp};
