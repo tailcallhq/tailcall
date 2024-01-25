@@ -132,7 +132,7 @@ fn on_event_impl<'a>(
       if let Some(req) = event.request() {
         Ok(Command::Continue(req.clone()))
       } else {
-        anyhow::bail!("Event not handled: {:?}", event)
+        Err(anyhow::anyhow!("expected a request"))
       }
     }
     _ => {
