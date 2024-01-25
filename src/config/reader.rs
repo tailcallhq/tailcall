@@ -83,7 +83,8 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod reader_tests {
-  use pretty_assertions::assert_eq;
+  use anyhow::Context;
+use pretty_assertions::assert_eq;
   use tokio::io::AsyncReadExt;
 
   use crate::cli::{init_file, init_http};
@@ -164,12 +165,16 @@ mod reader_tests {
 
   #[tokio::test]
   async fn test_script_loader() {
+    let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
-    let config = reader.read("examples/jsonplaceholder_script.graphql").await.unwrap();
 
-    assert_eq!(
-      config.server.script,
-      Some(Script::File("console.log('Hello World!')".to_string())),
-    );
+    let config = reader
+      .read(&format!("{}/examples/jsonplaceholder_script.graphql", cargo_manifest))
+      .await
+      .unwrap();
+
+    let path = format!("{}/examples/scripts/test.js", cargo_manifest);
+    let file = String::from_utf8(tokio::fs::read(&path).await.context(path.to_string()).unwrap()).unwrap();
+    assert_eq!(config.server.script, Some(Script::File(file)),);
   }
 }
