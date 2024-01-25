@@ -1,10 +1,10 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0", script: {path: "examples/scripts/echo.js"})
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
 
-type Query @cache(maxAge: 30000) {
+type Query {
   posts: [Post] @http(path: "/posts")
 }
 
