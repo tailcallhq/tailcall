@@ -10,14 +10,14 @@ use crate::http::Response;
 use crate::{HttpIO, ScriptIO};
 
 #[derive(Clone)]
-pub struct HttpHook {
+pub struct HttpFilter {
   client: Arc<dyn HttpIO + Send + Sync>,
   script: Arc<dyn ScriptIO<Event, Command> + Send + Sync>,
 }
 
-impl HttpHook {
+impl HttpFilter {
   pub fn new(http: impl HttpIO + Send + Sync, script: impl ScriptIO<Event, Command> + Send + Sync + 'static) -> Self {
-    HttpHook { client: Arc::new(http), script: Arc::new(script) }
+    HttpFilter { client: Arc::new(http), script: Arc::new(script) }
   }
 
   fn on_command<'a>(
@@ -53,7 +53,7 @@ impl HttpHook {
 }
 
 #[async_trait::async_trait]
-impl HttpIO for HttpHook {
+impl HttpIO for HttpFilter {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
     let command = self.script.on_event(Event::Request((&request).into())).await?;
     self.on_command(command).await

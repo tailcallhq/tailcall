@@ -1,7 +1,9 @@
-use crate::http::Response;
+use std::collections::BTreeMap;
+
 use hyper::body::Bytes;
 use hyper::header::{HeaderName, HeaderValue};
-use std::collections::BTreeMap;
+
+use crate::http::Response;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]

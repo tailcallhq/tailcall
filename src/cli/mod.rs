@@ -5,7 +5,7 @@ mod error;
 pub(crate) mod file;
 mod fmt;
 pub(crate) mod http;
-mod http_hook;
+mod http_filter;
 pub mod script;
 pub mod serde_v8;
 pub mod server;
@@ -38,7 +38,7 @@ pub fn init_file() -> Arc<dyn FileIO> {
 pub fn init_hook_http(http: impl HttpIO, script: Option<String>) -> Arc<dyn HttpIO> {
   if let Some(script) = script {
     let script_io = JSEngine::new(script);
-    Arc::new(http_hook::HttpHook::new(http, script_io))
+    Arc::new(http_filter::HttpFilter::new(http, script_io))
   } else {
     Arc::new(http)
   }
