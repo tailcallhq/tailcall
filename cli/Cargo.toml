@@ -38,4 +38,3 @@ corex = {path = "../corex"}
 serde_yaml = "0.9"
 futures-util = { version = "0.3.30" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
-

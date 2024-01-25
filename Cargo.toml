@@ -5,9 +5,10 @@ edition = "2021"
 
 [[bin]]
 name = "tailcall"
-path = "src/main.rs"
+path = "cli/src/main.rs"
 
 [dependencies]
+# required for main.rs
 cli = {path = "cli"}
 mimalloc = "0.1.39"
 tokio = {version = "1.35.1",features = ["rt"]}
