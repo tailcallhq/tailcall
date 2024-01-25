@@ -56,10 +56,8 @@ impl Runtime {
 
   fn init(v8: &MiniV8, script: String) -> anyhow::Result<mini_v8::Function> {
     let _ = create_console(v8);
-
-    let value: mini_v8::Value = v8
-      .eval(create_closure(script.as_str()))
-      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let source = create_closure(script.as_str());
+    let value: mini_v8::Value = v8.eval(source).map_err(|e| anyhow::anyhow!(e.to_string()))?;
     let function = value
       .as_function()
       .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?;
