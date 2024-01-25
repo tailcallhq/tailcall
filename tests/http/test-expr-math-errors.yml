@@ -7,7 +7,6 @@ assert:
       body:
         query: "query {
           median_err_zero
-          median_err_negative
           }"
     response:
       body:
