@@ -27,10 +27,14 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
-  compile_wasm:
-    name: Compile WASM
+  test_cf:
+    name: Run Tests (WASM)
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cloudflare
+
     steps:
       - uses: actions/checkout@v4
 
@@ -43,9 +47,19 @@ jobs:
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: Build WASM
-        run: cargo build --lib --release --target wasm32-unknown-unknown
-        working-directory: ./cloudflare
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+
+      - name: Compile CF
+        run: cargo install -q worker-build && worker-build
+
+      - name: Package Install
+        run: npm install
+
+      - name: Test CF
+        run: npm test
 
   test:
     name: Run Tests
@@ -142,7 +156,7 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build, compile_wasm]
+    needs: [test, format, draft_release, check_if_build, test_cf]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
