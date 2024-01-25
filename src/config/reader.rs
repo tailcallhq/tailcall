@@ -84,7 +84,7 @@ impl ConfigReader {
 #[cfg(test)]
 mod reader_tests {
   use anyhow::Context;
-use pretty_assertions::assert_eq;
+  use pretty_assertions::assert_eq;
   use tokio::io::AsyncReadExt;
 
   use crate::cli::{init_file, init_http};
