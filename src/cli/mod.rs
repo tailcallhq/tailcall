@@ -7,6 +7,7 @@ mod fmt;
 pub(crate) mod http;
 mod http_hook;
 pub mod script;
+pub mod serde_v8;
 pub mod server;
 mod tc;
 use std::hash::Hash;
