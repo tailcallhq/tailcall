@@ -14,7 +14,8 @@ pub struct CloudflareFileIO {
 impl CloudflareFileIO {
   pub fn init(env: Rc<Env>, bucket_id: String) -> anyhow::Result<Self> {
     let bucket = env.bucket(bucket_id.as_str()).map_err(|e| anyhow!(e.to_string()))?;
-    Ok(CloudflareFileIO { bucket: Rc::new(bucket) })
+    let bucket = Rc::new(bucket);
+    Ok(CloudflareFileIO { bucket })
   }
 }
 
