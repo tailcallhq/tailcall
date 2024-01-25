@@ -70,9 +70,6 @@ impl Eval for Math {
           let mut results: Vec<_> = exprs.eval(ctx, conc).await?;
 
           let len = results.len();
-          if len == 0 {
-            return Err(EvaluationError::ExprEvalError("median".into()).into());
-          }
 
           let width = 2 - len % 2;
           let idx = (len - width) / 2;
@@ -88,11 +85,17 @@ impl Eval for Math {
             .get(idx..idx + width)
             .ok_or(EvaluationError::ExprEvalError("median".into()))?;
 
-          try_sum_operation(slice, Some("median-sum"))
-            .ok()
-            .ok_or(EvaluationError::ExprEvalError("median".into()))
-            .map(|sum| try_div_operation(&sum, &(width as i64).into(), Some("median-div")).ok())?
-            .ok_or(EvaluationError::ExprEvalError("median".into()))?
+          let value = try_mean_operation(slice, Some("median"))?;
+
+          let as_f64 = value.as_f64_ok().unwrap_or(0f64);
+
+          if as_f64 == 0f64 {
+            return Err(EvaluationError::ExprEvalError("median can not be zero".into()).into());
+          } else if as_f64 < 0f64 {
+            return Err(EvaluationError::ExprEvalError("median can not be negative".into()).into());
+          }
+
+          value
         }
         Math::Inc(val) => {
           let val = val.eval(ctx, conc).await?;
@@ -137,11 +140,7 @@ impl Eval for Math {
         Math::Mean(exprs) => {
           let results: Vec<_> = exprs.eval(ctx, conc).await?;
 
-          try_sum_operation(&results, Some("sum-mean"))
-            .ok()
-            .ok_or(EvaluationError::ExprEvalError("mean".into()))
-            .map(|sum| try_div_operation(&sum, &exprs.len().into(), Some("mean-div")).ok())?
-            .ok_or(EvaluationError::ExprEvalError("mean".into()))?
+          try_mean_operation(&results, None)?
         }
         Math::Subtract(lhs, rhs) => {
           let lhs = lhs.eval(ctx, conc).await?;
@@ -162,12 +161,25 @@ impl Eval for Math {
   }
 }
 
+fn format_error(error: Option<&str>, op: &str) -> String {
+  error.map(|e| format!("{}-{}", e, op)).unwrap_or(op.into())
+}
+
+fn try_mean_operation(exprs: &[ConstValue], error: Option<&str>) -> Result<ConstValue, EvaluationError> {
+  let error = format_error(error, "mean");
+
+  try_sum_operation(exprs, Some(&error))
+    .ok()
+    .map(|sum| try_div_operation(&sum, &exprs.len().into(), Some(&error)))
+    .ok_or(EvaluationError::ExprEvalError(error))?
+}
+
 fn try_sum_operation(exprs: &[ConstValue], error: Option<&str>) -> Result<ConstValue, EvaluationError> {
   exprs.iter().try_fold(0i64.into(), |lhs, rhs| {
     try_f64_operation(&lhs, rhs, ops::Add::add)
       .or_else(|| try_u64_operation(&lhs, rhs, ops::Add::add))
       .or_else(|| try_i64_operation(&lhs, rhs, ops::Add::add))
-      .ok_or(EvaluationError::ExprEvalError(error.unwrap_or("sum").into()))
+      .ok_or(EvaluationError::ExprEvalError(format_error(error, "sum")))
   })
 }
 
@@ -175,7 +187,7 @@ fn try_div_operation(lhs: &ConstValue, rhs: &ConstValue, error: Option<&str>) ->
   try_f64_operation(lhs, rhs, ops::Div::div)
     .or_else(|| try_u64_operation(lhs, rhs, ops::Div::div))
     .or_else(|| try_i64_operation(lhs, rhs, ops::Div::div))
-    .ok_or(EvaluationError::ExprEvalError(error.unwrap_or("div").into()))
+    .ok_or(EvaluationError::ExprEvalError(format_error(error, "div")))
 }
 
 fn try_f64_operation<F>(lhs: &ConstValue, rhs: &ConstValue, f: F) -> Option<ConstValue>
