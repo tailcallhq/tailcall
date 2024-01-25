@@ -14,4 +14,5 @@ type Query {
   product: Int @expr(body: {product: [{const: 7}, {const: 3}, {const: 2}]})
   sum: Int @expr(body: {sum: [{const: 20}, {const: 15}, {const: 7}]})
   mean: Int @expr(body: {mean: [{const: 45}, {const: 39}]})
+  median: Int @expr(body: {median: [{const: 1}, {const: 42}, {const: 100}]})
 }
