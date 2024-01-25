@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use mini_v8::{MiniV8, Value, Values};
 
 use crate::channel::{Command, Event};
-use crate::cli::serde_v8::SerdeV8;
+use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::ScriptIO;
 
 thread_local! {
@@ -14,14 +14,14 @@ thread_local! {
 }
 
 lazy_static! {
-  static ref RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
+  static ref TOKIO_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
     .worker_threads(1)
     .thread_name("mini-v8")
     .build()
     .unwrap();
 }
 
-pub struct JSEngine {}
+pub struct Runtime {}
 
 fn create_closure(script: &str) -> String {
   format!(
@@ -34,10 +34,10 @@ fn create_closure(script: &str) -> String {
     script
   )
 }
-impl JSEngine {
+impl Runtime {
   pub fn new(script: String) -> Self {
     block_on(async {
-      RUNTIME
+      TOKIO_RUNTIME
         .spawn(async move {
           V8.with_borrow_mut(|v8| {
             let closure: anyhow::Result<mini_v8::Function> = Self::init(v8, script);
@@ -90,9 +90,9 @@ fn create_console(v8: &MiniV8) -> anyhow::Result<()> {
 }
 
 #[async_trait::async_trait]
-impl ScriptIO<Event, Command> for JSEngine {
+impl ScriptIO<Event, Command> for Runtime {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command> {
-    RUNTIME
+    TOKIO_RUNTIME
       .spawn(async move {
         let command = CLOSURE.with_borrow(|closure| {
           let v8 = V8.with_borrow(|x| x.clone());

@@ -5,9 +5,7 @@ mod error;
 pub(crate) mod file;
 mod fmt;
 pub(crate) mod http;
-mod http_filter;
-pub mod script;
-pub mod serde_v8;
+pub mod javascript;
 pub mod server;
 mod tc;
 use std::hash::Hash;
@@ -20,7 +18,6 @@ pub use file::NativeFileIO;
 pub use http::NativeHttp;
 pub use tc::run;
 
-use self::script::JSEngine;
 use crate::channel::{Command, Event};
 use crate::config::Upstream;
 use crate::{EnvIO, FileIO, HttpIO, ScriptIO};
@@ -37,8 +34,8 @@ pub fn init_file() -> Arc<dyn FileIO> {
 
 pub fn init_hook_http(http: impl HttpIO, script: Option<String>) -> Arc<dyn HttpIO> {
   if let Some(script) = script {
-    let script_io = JSEngine::new(script);
-    Arc::new(http_filter::HttpFilter::new(http, script_io))
+    let script_io = javascript::Runtime::new(script);
+    Arc::new(javascript::HttpFilter::new(http, script_io))
   } else {
     Arc::new(http)
   }
@@ -60,5 +57,5 @@ pub fn init_chrono_cache<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
   NativeChronoCache::new()
 }
 pub fn init_script(script: String) -> Arc<dyn ScriptIO<Event, Command>> {
-  Arc::new(JSEngine::new(script))
+  Arc::new(javascript::Runtime::new(script))
 }
