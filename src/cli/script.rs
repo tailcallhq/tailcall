@@ -106,7 +106,9 @@ fn on_event_impl<'a>(
     .call(args)
     .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
 
-  let command = match value {
+  
+
+  match value {
     Value::Undefined => {
       if let Some(req) = event.request() {
         Ok(Command::Continue(req))
@@ -115,9 +117,7 @@ fn on_event_impl<'a>(
       }
     }
     _ => Command::from_value(value, v8).map_err(|e| anyhow::anyhow!("Command decoding failure: {}", e.to_string())),
-  };
-
-  command
+  }
 }
 
 // #[cfg(test)]
