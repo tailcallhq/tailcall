@@ -8,7 +8,6 @@ use crate::channel::{Command, Event, SerdeV8};
 use crate::ScriptIO;
 
 thread_local! {
-
   static CLOSURE: RefCell<anyhow::Result<mini_v8::Value>> = const { RefCell::new(Ok(mini_v8::Value::Null))};
   static V8: RefCell<MiniV8> = RefCell::new(MiniV8::new());
 }
@@ -28,9 +27,7 @@ fn create_closure(script: &str) -> String {
     r#"
     (function() {{
       {}
-      return function(event) {{
-        return JSON.stringify(onEvent(JSON.parse(event)));
-      }}
+      return onEvent
     }})();
   "#,
     script
@@ -57,6 +54,8 @@ impl JSEngine {
   }
 
   fn init(v8: &MiniV8, script: String) -> anyhow::Result<mini_v8::Function> {
+    let _ = create_console(v8);
+
     let value: mini_v8::Value = v8
       .eval(create_closure(script.as_str()))
       .map_err(|e| anyhow::anyhow!(e.to_string()))?;
@@ -65,6 +64,28 @@ impl JSEngine {
       .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?;
     Ok(function.clone())
   }
+}
+
+fn create_console(v8: &MiniV8) -> anyhow::Result<()> {
+  let console = v8.create_object();
+  console
+    .set(
+      "log",
+      v8.create_function(|invocation| {
+        let args = invocation
+          .args
+          .iter()
+          .map(|v| serde_json::Value::from_v8(v).unwrap().to_string())
+          .collect::<Vec<_>>()
+          .join(",");
+        log::info!("JS: {}", args);
+        Ok(Value::Undefined)
+      }),
+    )
+    .unwrap();
+
+  v8.global().set("console", console).unwrap();
+  Ok(())
 }
 
 #[async_trait::async_trait]
@@ -78,7 +99,7 @@ impl ScriptIO<Event, Command> for JSEngine {
         });
 
         if let Err(e) = &command {
-          log::error!("JS Runtime Failure:{:?}", e);
+          log::error!("JS Runtime Failure: {:?}", e);
         }
 
         command
@@ -92,17 +113,15 @@ fn on_event_impl<'a>(
   closure: &'a anyhow::Result<mini_v8::Value>,
   event: Event,
 ) -> anyhow::Result<Command> {
-  log::info!("on_event: {:?}", event);
+  log::debug!("event: {:?}", event);
   let err = &anyhow::anyhow!("expected an 'onEvent' function");
   let on_event = closure
     .as_ref()
     .and_then(|a| a.as_function().ok_or(err))
     .map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
-  let args = serde_json::to_value(event.clone())?
-    .to_v8(v8)
-    .map_err(|e| anyhow::anyhow!("Event encoding failure: {}", e.to_string()))?;
-
+  let args = event.clone().to_v8(v8)?;
+  log::debug!("event args: {:?}", args);
   let value = on_event
     .call(Values::from_vec(vec![args]))
     .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
@@ -116,39 +135,8 @@ fn on_event_impl<'a>(
       }
     }
     _ => {
-      let serde_value = serde_json::Value::from_v8(value)?;
-      let command = serde_json::from_value::<Command>(serde_value)?;
+      let command = Command::from_v8(&value)?;
       Ok(command)
     }
   }
 }
-
-// #[cfg(test)]
-// mod tests {
-//   use pretty_assertions::assert_eq;
-//   use serial_test::serial;
-
-//   use crate::cli::script::JSEngine;
-//   use crate::ScriptIO;
-
-//   #[serial]
-//   #[tokio::test]
-//   async fn test_call_once() {
-//     let engine = JSEngine::new("let state = 0; function onEvent() {state += 1; return state}".into());
-//     let actual = ScriptIO::<(), f64>::on_event(&engine, ()).await.unwrap();
-//     let expected = 1.0;
-//     assert_eq!(actual, expected);
-//   }
-
-//   #[serial]
-//   #[tokio::test]
-//   async fn test_call_many() {
-//     let engine = JSEngine::new("let state = 0; function onEvent() {state += 1; return state}".into());
-//     ScriptIO::<(), f64>::on_event(&engine, ()).await.unwrap();
-//     ScriptIO::<(), f64>::on_event(&engine, ()).await.unwrap();
-//     ScriptIO::<(), f64>::on_event(&engine, ()).await.unwrap();
-//     let actual = ScriptIO::<(), f64>::on_event(&engine, ()).await.unwrap();
-//     let expected = 4.0;
-//     assert_eq!(actual, expected);
-//   }
-// }

@@ -26,7 +26,6 @@ impl ConfigReader {
 
   /// Reads a file from the filesystem or from an HTTP URL
   async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
-    println!("Reading file: {}", file.to_string());
     // Is an HTTP URL
     let content = if let Ok(url) = Url::parse(&file.to_string()) {
       let response = self
