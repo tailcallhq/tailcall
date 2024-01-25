@@ -56,6 +56,9 @@ criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
+ttl_cache = "0.5.1"
+tokio = {version = "1.35.1",features = ["fs"]}
+dashmap = "5.5.3"
 
 [features]
 unsafe-js = ["dep:mini-v8"]

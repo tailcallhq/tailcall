@@ -114,45 +114,120 @@ impl<Http: HttpIO, Env: EnvIO> From<&AppContext<Http, Env>> for RequestContext {
 
 #[cfg(test)]
 mod test {
-  use std::sync::{Arc, Mutex};
+  use std::collections::HashMap;
+  use std::num::NonZeroU64;
+  use std::sync::{Arc, Mutex, RwLock};
+  use std::time::Duration;
 
+  use anyhow::anyhow;
+  use async_graphql_value::ConstValue;
+  use async_trait::async_trait;
   use cache_control::Cachability;
+  use hyper::body::Bytes;
   use hyper::HeaderMap;
+  use reqwest::{Client, Request};
+  use ttl_cache::TtlCache;
 
   use crate::blueprint::Server;
-  use crate::cli::cache::NativeChronoCache;
-  use crate::cli::{init_env, init_http, init_http2_only};
-  use crate::config::{self, Batch};
-  use crate::http::RequestContext;
+  use crate::config::{self, Batch, Config};
+  use crate::http::{RequestContext, Response};
+  use crate::{Cache, EnvIO, HttpIO};
 
-  impl Default for RequestContext {
-    fn default() -> Self {
-      let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
-      //TODO: default is used only in tests. Drop default and move it to test.
-      let server = Server::try_from(server).unwrap();
+  fn get_req_ctx() -> RequestContext {
+    let Config { server, upstream, .. } = Config::default();
+    //TODO: default is used only in tests. Drop default and move it to test.
+    let server = Server::try_from(server).unwrap();
+    let test_http = Arc::new(TestHttpIO::init());
+    let h_client = test_http.clone();
+    let h2_client = test_http;
+    RequestContext {
+      req_headers: HeaderMap::new(),
+      h_client,
+      h2_client,
+      server,
+      upstream,
+      http_data_loaders: Arc::new(vec![]),
+      gql_data_loaders: Arc::new(vec![]),
+      cache: Arc::new(TestCache::new()),
+      grpc_data_loaders: Arc::new(vec![]),
+      min_max_age: Arc::new(Mutex::new(None)),
+      cache_public: Arc::new(Mutex::new(None)),
+      env_vars: Arc::new(TestEnv::new()),
+    }
+  }
 
-      let h_client = Arc::new(init_http(&upstream));
-      let h2_client = Arc::new(init_http2_only(&upstream.clone()));
-      RequestContext {
-        req_headers: HeaderMap::new(),
-        h_client,
-        h2_client,
-        server,
-        upstream,
-        http_data_loaders: Arc::new(vec![]),
-        gql_data_loaders: Arc::new(vec![]),
-        cache: Arc::new(NativeChronoCache::new()),
-        grpc_data_loaders: Arc::new(vec![]),
-        min_max_age: Arc::new(Mutex::new(None)),
-        cache_public: Arc::new(Mutex::new(None)),
-        env_vars: Arc::new(init_env()),
-      }
+  struct TestEnv {
+    vars: HashMap<String, String>,
+  }
+  impl TestEnv {
+    fn new() -> Self {
+      Self { vars: std::env::vars().collect() }
+    }
+  }
+  impl EnvIO for TestEnv {
+    fn get(&self, key: &str) -> Option<String> {
+      self.vars.get(key).cloned()
+    }
+  }
+
+  struct TestCache {
+    data: Arc<RwLock<TtlCache<u64, ConstValue>>>,
+  }
+
+  impl TestCache {
+    fn new() -> Self {
+      Self { data: Arc::new(RwLock::new(TtlCache::new(100))) }
+    }
+  }
+
+  #[async_trait]
+  impl Cache for TestCache {
+    type Key = u64;
+    type Value = ConstValue;
+
+    #[allow(clippy::too_many_arguments)]
+    async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> anyhow::Result<Self::Value> {
+      let ttl = Duration::from_millis(ttl.get());
+      self
+        .data
+        .write()
+        .unwrap()
+        .insert(key, value, ttl)
+        .ok_or(anyhow!("unable to insert value"))
+    }
+
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value> {
+      self
+        .data
+        .read()
+        .unwrap()
+        .get(key)
+        .cloned()
+        .ok_or(anyhow!("key not found"))
+    }
+  }
+
+  #[derive(Default)]
+  struct TestHttpIO {
+    client: Client,
+  }
+  impl TestHttpIO {
+    fn init() -> Self {
+      Default::default()
+    }
+  }
+  #[async_trait]
+  impl HttpIO for TestHttpIO {
+    async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
+      let resp = self.client.execute(request).await?;
+      let resp = Response::from_reqwest(resp).await?;
+      Ok(resp)
     }
   }
 
   #[test]
   fn test_update_max_age_less_than_existing() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = get_req_ctx();
     req_ctx.set_min_max_age(120);
     req_ctx.set_min_max_age(60);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
@@ -160,7 +235,7 @@ mod test {
 
   #[test]
   fn test_update_max_age_greater_than_existing() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = get_req_ctx();
     req_ctx.set_min_max_age(60);
     req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(60));
@@ -168,21 +243,21 @@ mod test {
 
   #[test]
   fn test_update_max_age_no_existing_value() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = get_req_ctx();
     req_ctx.set_min_max_age(120);
     assert_eq!(req_ctx.get_min_max_age(), Some(120));
   }
 
   #[test]
   fn test_update_cache_visibility_private() {
-    let req_ctx = RequestContext::default();
+    let req_ctx = get_req_ctx();
     req_ctx.set_cache_visibility(&Some(Cachability::Private));
     assert_eq!(req_ctx.is_cache_public(), Some(false));
   }
 
   #[test]
   fn test_update_cache_visibility_public() {
-    let req_ctx: RequestContext = RequestContext::default();
+    let req_ctx: RequestContext = get_req_ctx();
     req_ctx.set_cache_visibility(&Some(Cachability::Public));
     assert_eq!(req_ctx.is_cache_public(), None);
   }
@@ -195,7 +270,7 @@ mod test {
     upstream.batch = Some(Batch::default());
     let server = Server::try_from(config.server.clone()).unwrap();
 
-    let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
+    let req_ctx: RequestContext = get_req_ctx().upstream(upstream).server(server);
 
     assert!(req_ctx.is_batching_enabled());
   }

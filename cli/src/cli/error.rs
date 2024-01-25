@@ -215,11 +215,11 @@ impl From<Box<dyn std::error::Error>> for CLIError {
 #[cfg(test)]
 mod tests {
 
+  use corex::valid::Cause;
   use pretty_assertions::assert_eq;
   use stripmargin::StripMargin;
 
   use super::*;
-  use crate::valid::Cause;
 
   #[test]
   fn test_no_newline() {

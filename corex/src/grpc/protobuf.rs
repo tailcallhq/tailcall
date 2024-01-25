@@ -200,7 +200,8 @@ mod tests {
   use super::*;
 
   static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
-    let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    root_dir.pop();
     let mut test_dir = root_dir.join(file!());
 
     test_dir.pop();

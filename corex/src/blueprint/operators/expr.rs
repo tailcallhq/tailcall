@@ -164,16 +164,119 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashSet;
-  use std::sync::{Arc, Mutex};
+  use std::collections::{HashMap, HashSet};
+  use std::num::NonZeroU64;
+  use std::sync::{Arc, Mutex, RwLock};
+  use std::time::Duration;
 
+  use anyhow::anyhow;
+  use async_graphql_value::ConstValue;
+  use async_trait::async_trait;
+  use hyper::body::Bytes;
+  use hyper::HeaderMap;
   use pretty_assertions::assert_eq;
+  use reqwest::{Client, Request};
   use serde_json::{json, Number};
+  use ttl_cache::TtlCache;
 
   use super::{compile, CompilationContext};
+  use crate::blueprint::Server;
   use crate::config::{Config, Expr, Field, GraphQLOperationType};
-  use crate::http::RequestContext;
+  use crate::http::{RequestContext, Response};
   use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
+  use crate::{Cache, EnvIO, HttpIO};
+
+  fn get_req_ctx() -> RequestContext {
+    let Config { server, upstream, .. } = Config::default();
+    //TODO: default is used only in tests. Drop default and move it to test.
+    let server = Server::try_from(server).unwrap();
+    let test_http = Arc::new(TestHttpIO::init());
+    let h_client = test_http.clone();
+    let h2_client = test_http;
+    RequestContext {
+      req_headers: HeaderMap::new(),
+      h_client,
+      h2_client,
+      server,
+      upstream,
+      http_data_loaders: Arc::new(vec![]),
+      gql_data_loaders: Arc::new(vec![]),
+      cache: Arc::new(TestCache::new()),
+      grpc_data_loaders: Arc::new(vec![]),
+      min_max_age: Arc::new(Mutex::new(None)),
+      cache_public: Arc::new(Mutex::new(None)),
+      env_vars: Arc::new(TestEnv::new()),
+    }
+  }
+
+  struct TestEnv {
+    vars: HashMap<String, String>,
+  }
+  impl TestEnv {
+    fn new() -> Self {
+      Self { vars: std::env::vars().collect() }
+    }
+  }
+  impl EnvIO for TestEnv {
+    fn get(&self, key: &str) -> Option<String> {
+      self.vars.get(key).cloned()
+    }
+  }
+
+  struct TestCache {
+    data: Arc<RwLock<TtlCache<u64, ConstValue>>>,
+  }
+
+  impl TestCache {
+    fn new() -> Self {
+      Self { data: Arc::new(RwLock::new(TtlCache::new(100))) }
+    }
+  }
+
+  #[async_trait]
+  impl Cache for TestCache {
+    type Key = u64;
+    type Value = ConstValue;
+
+    #[allow(clippy::too_many_arguments)]
+    async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> anyhow::Result<Self::Value> {
+      let ttl = Duration::from_millis(ttl.get());
+      self
+        .data
+        .write()
+        .unwrap()
+        .insert(key, value, ttl)
+        .ok_or(anyhow!("unable to insert value"))
+    }
+
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value> {
+      self
+        .data
+        .read()
+        .unwrap()
+        .get(key)
+        .cloned()
+        .ok_or(anyhow!("key not found"))
+    }
+  }
+
+  #[derive(Default)]
+  struct TestHttpIO {
+    client: Client,
+  }
+  impl TestHttpIO {
+    fn init() -> Self {
+      Default::default()
+    }
+  }
+  #[async_trait]
+  impl HttpIO for TestHttpIO {
+    async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
+      let resp = self.client.execute(request).await?;
+      let resp = Response::from_reqwest(resp).await?;
+      Ok(resp)
+    }
+  }
 
   #[derive(Default)]
   struct Context<'a> {
@@ -209,7 +312,7 @@ mod tests {
       let operation_type = GraphQLOperationType::Query;
       let context = CompilationContext { config: &config, config_field: &field, operation_type: &operation_type };
       let expression = compile(&context, expr.body.clone()).to_result()?;
-      let req_ctx = RequestContext::default();
+      let req_ctx = get_req_ctx();
       let graphql_ctx = Context::default();
       let ctx = EvaluationContext::new(&req_ctx, &graphql_ctx);
       let value = expression.eval(&ctx, &Concurrent::default()).await?;

@@ -95,6 +95,115 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashMap;
+  use std::num::NonZeroU64;
+  use std::sync::{Arc, Mutex, RwLock};
+  use std::time::Duration;
+
+  use anyhow::anyhow;
+  use async_graphql_value::ConstValue;
+  use async_trait::async_trait;
+  use hyper::body::Bytes;
+  use hyper::HeaderMap;
+  use reqwest::{Client, Request};
+  use ttl_cache::TtlCache;
+
+  use crate::blueprint::Server;
+  use crate::config::Config;
+  use crate::http::{RequestContext, Response};
+  use crate::{Cache, EnvIO, HttpIO};
+
+  fn get_req_ctx() -> RequestContext {
+    let Config { server, upstream, .. } = Config::default();
+    //TODO: default is used only in tests. Drop default and move it to test.
+    let server = Server::try_from(server).unwrap();
+    let test_http = Arc::new(TestHttpIO::init());
+    let h_client = test_http.clone();
+    let h2_client = test_http;
+    RequestContext {
+      req_headers: HeaderMap::new(),
+      h_client,
+      h2_client,
+      server,
+      upstream,
+      http_data_loaders: Arc::new(vec![]),
+      gql_data_loaders: Arc::new(vec![]),
+      cache: Arc::new(TestCache::new()),
+      grpc_data_loaders: Arc::new(vec![]),
+      min_max_age: Arc::new(Mutex::new(None)),
+      cache_public: Arc::new(Mutex::new(None)),
+      env_vars: Arc::new(TestEnv::new()),
+    }
+  }
+
+  struct TestEnv {
+    vars: HashMap<String, String>,
+  }
+  impl TestEnv {
+    fn new() -> Self {
+      Self { vars: std::env::vars().collect() }
+    }
+  }
+  impl EnvIO for TestEnv {
+    fn get(&self, key: &str) -> Option<String> {
+      self.vars.get(key).cloned()
+    }
+  }
+
+  struct TestCache {
+    data: Arc<RwLock<TtlCache<u64, ConstValue>>>,
+  }
+
+  impl TestCache {
+    fn new() -> Self {
+      Self { data: Arc::new(RwLock::new(TtlCache::new(100))) }
+    }
+  }
+
+  #[async_trait]
+  impl Cache for TestCache {
+    type Key = u64;
+    type Value = ConstValue;
+
+    #[allow(clippy::too_many_arguments)]
+    async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> anyhow::Result<Self::Value> {
+      let ttl = Duration::from_millis(ttl.get());
+      self
+        .data
+        .write()
+        .unwrap()
+        .insert(key, value, ttl)
+        .ok_or(anyhow!("unable to insert value"))
+    }
+
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value> {
+      self
+        .data
+        .read()
+        .unwrap()
+        .get(key)
+        .cloned()
+        .ok_or(anyhow!("key not found"))
+    }
+  }
+
+  #[derive(Default)]
+  struct TestHttpIO {
+    client: Client,
+  }
+  impl TestHttpIO {
+    fn init() -> Self {
+      Default::default()
+    }
+  }
+  #[async_trait]
+  impl HttpIO for TestHttpIO {
+    async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
+      let resp = self.client.execute(request).await?;
+      let resp = Response::from_reqwest(resp).await?;
+      Ok(resp)
+    }
+  }
 
   mod evaluation_context {
     use std::borrow::Cow;
@@ -110,6 +219,7 @@ mod tests {
 
     use crate::http::RequestContext;
     use crate::lambda::{EvaluationContext, ResolverContextLike};
+    use crate::path::tests::get_req_ctx;
     use crate::path::{PathGraphql, PathString};
     use crate::EnvIO;
 
@@ -198,7 +308,7 @@ mod tests {
     }
 
     static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
-      let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
+      let mut req_ctx = get_req_ctx().req_headers(TEST_HEADERS.clone());
 
       req_ctx.server.vars = TEST_VARS.clone();
       req_ctx.env_vars = Arc::new(Env::init(TEST_ENV_VARS.clone()));
