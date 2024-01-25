@@ -859,6 +859,21 @@
             "mean"
           ],
           "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "median": {
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "median"
+          ],
+          "type": "object"
         }
       ]
     },
