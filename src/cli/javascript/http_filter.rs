@@ -27,24 +27,34 @@ impl HttpFilter {
     Box::pin(async move {
       match command {
         Command::Request(requests) => {
-          let responses = join_all(requests.into_iter().map(|request| self.client.execute(request.into())))
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
+          let responses = join_all(requests.into_iter().flat_map(|req| {
+            let req = req.try_into().ok()?;
+            Some(self.client.execute(req))
+          }))
+          .await
+          .into_iter()
+          .collect::<anyhow::Result<Vec<_>>>()?;
+
           let command = self
             .script
             .on_event(Event::Response(
-              responses.iter().map(JsResponse::from).collect::<Vec<_>>(),
+              responses
+                .iter()
+                .flat_map(|e| {
+                  let res = JsResponse::try_from(e).ok()?;
+                  Some(res)
+                })
+                .collect::<Vec<_>>(),
             ))
             .await?;
           Ok(self.on_command(command).await?)
         }
         Command::Response(response) => {
-          let res: Response<Bytes> = response.into();
-          Ok(res)
+          let res: anyhow::Result<Response<Bytes>> = response.try_into();
+          res
         }
         Command::Continue(request) => {
-          let res = self.client.execute(request.into()).await?;
+          let res = self.client.execute(request.try_into()?).await?;
           Ok(res)
         }
       }
@@ -55,7 +65,7 @@ impl HttpFilter {
 #[async_trait::async_trait]
 impl HttpIO for HttpFilter {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
-    let command = self.script.on_event(Event::Request((&request).into())).await?;
+    let command = self.script.on_event(Event::Request((&request).try_into()?)).await?;
     self.on_command(command).await
   }
 }
