@@ -499,7 +499,6 @@ impl Union {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(rename = "ExprHttp")]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
 /// For instance, if you add the @http operator to the `users` field of the Query type with a path argument of `"/users"`, it signifies that the `users` field is backed by a REST API.
@@ -540,7 +539,6 @@ pub struct Http {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(rename = "ExprGrpc")]
 #[serde(rename_all = "camelCase")]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
 ///
@@ -570,7 +568,6 @@ pub struct Grpc {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(rename = "ExprGraphQL")]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch data from.
 pub struct GraphQL {
   /// Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.
