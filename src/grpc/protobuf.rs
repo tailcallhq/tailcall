@@ -331,7 +331,7 @@ mod tests {
         let service = file.find_service("NewsService")?;
         let operation = service.find_operation("GetNews")?;
 
-        let input = operation.convert_input(r#"{ "id": 1 }"#).map(|v| v)?;
+        let input = operation.convert_input(r#"{ "id": 1 }"#)?;
 
         assert_eq!(input, b"\0\0\0\0\x02\x08\x01");
 
