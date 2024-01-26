@@ -25,7 +25,9 @@ pub fn compile_http(
             }),
         )
         .and(Valid::from_option(
-            http.base_url.as_ref().or(config_set.upstream.base_url.as_ref()),
+            http.base_url
+                .as_ref()
+                .or(config_set.upstream.base_url.as_ref()),
             "No base URL defined".to_string(),
         ))
         .zip(helpers::headers::to_mustache_headers(&http.headers))

@@ -3441,6 +3441,7 @@ dependencies = [
  "prost",
  "prost-reflect",
  "protox",
+ "protox-parse",
  "regex",
  "reqwest",
  "reqwest-middleware",

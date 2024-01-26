@@ -57,8 +57,13 @@ pub fn update_const_field<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_const(CompileConst { config_set, field, value: &const_field.data, validate: true })
-                .map(|resolver| b_field.resolver(Some(resolver)))
+            compile_const(CompileConst {
+                config_set,
+                field,
+                value: &const_field.data,
+                validate: true,
+            })
+            .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
 }

@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::Arc;
 use std::{env, fs};
 
 use anyhow::Result;
@@ -11,7 +12,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{init_file, init_http, CLIError};
+use crate::cli::{init_file, init_http, init_proto_resolver, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
 use crate::{print_schema, FileIO};
@@ -23,12 +24,15 @@ pub async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     logger_init();
-    let file_io: std::sync::Arc<dyn FileIO> = init_file();
+    let file_io: Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
-    let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
+    let config_reader = ConfigReader::init(file_io.clone(), default_http_io.clone());
     match cli.command {
         Command::Start { file_paths } => {
             let config_set = config_reader.read_all(&file_paths).await?;
+            let config_set = config_set
+                .resolve_extensions(file_io.clone(), default_http_io, init_proto_resolver())
+                .await;
             log::info!("N + 1: {}", config_set.n_plus_one().len().to_string());
             let server = Server::new(config_set);
             server.fork_start().await?;
@@ -36,8 +40,9 @@ pub async fn run() -> Result<()> {
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
             let config_set = (config_reader.read_all(&file_paths)).await?;
-            let config_set = config_set.resolve_extensions().await;
-            println!("{:#?}",config_set);
+            let config_set = config_set
+                .resolve_extensions(file_io.clone(), default_http_io, init_proto_resolver())
+                .await;
             let blueprint = Blueprint::try_from(&config_set).map_err(CLIError::from);
 
             match blueprint {

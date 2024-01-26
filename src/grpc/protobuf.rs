@@ -4,10 +4,10 @@ use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
 use prost::bytes::BufMut;
 use prost::Message;
+use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::{
     DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, ServiceDescriptor,
 };
-use prost_reflect::prost_types::FileDescriptorSet;
 use serde_json::Deserializer;
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
@@ -71,7 +71,8 @@ impl ProtobufSet {
     // it could be more convenient to load FileDescriptorSet instead
     // either from file or server reflection
     pub fn from_proto_file(file_descriptor_set: &FileDescriptorSet) -> Result<Self> {
-        let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set.clone())?;
+        let descriptor_pool =
+            DescriptorPool::from_file_descriptor_set(file_descriptor_set.clone())?;
         Ok(Self { descriptor_pool })
     }
 
@@ -192,6 +193,7 @@ impl ProtobufOperation {
 
 #[cfg(test)]
 mod tests {
+    // TODO: Rewrite protobuf tests
     use std::path::PathBuf;
 
     use anyhow::Result;

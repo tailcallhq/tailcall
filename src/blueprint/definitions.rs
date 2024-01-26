@@ -390,7 +390,10 @@ fn to_fields(
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
             .and(update_nested_resolvers())
-            .try_fold(&(config_set, field, type_of, name), FieldDefinition::default())
+            .try_fold(
+                &(config_set, field, type_of, name),
+                FieldDefinition::default(),
+            )
     };
 
     // Process fields that are not marked as `omit`

@@ -1,4 +1,5 @@
 use std::ops::Deref;
+
 use super::TryFoldConfig;
 use crate::config::{ConfigSet, Upstream};
 use crate::try_fold::TryFold;

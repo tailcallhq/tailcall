@@ -6,8 +6,10 @@ pub(crate) mod file;
 mod fmt;
 pub(crate) mod http;
 pub mod javascript;
+mod proto_path_resolver;
 pub mod server;
 mod tc;
+
 use std::hash::Hash;
 use std::sync::Arc;
 
@@ -19,8 +21,9 @@ pub use http::NativeHttp;
 pub use tc::run;
 
 use crate::channel::{Command, Event};
+use crate::cli::proto_path_resolver::NativeProtoPathResolver;
 use crate::config::Upstream;
-use crate::{blueprint, EnvIO, FileIO, HttpIO, ScriptIO};
+use crate::{blueprint, EnvIO, FileIO, HttpIO, ProtoPathResolver, ScriptIO};
 
 // Provides access to env in native rust environment
 pub fn init_env() -> Arc<dyn EnvIO> {
@@ -58,4 +61,8 @@ pub fn init_chrono_cache<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
 }
 pub fn init_script(script: blueprint::Script) -> Arc<dyn ScriptIO<Event, Command>> {
     Arc::new(javascript::Runtime::new(script))
+}
+
+pub fn init_proto_resolver() -> Arc<dyn ProtoPathResolver> {
+    Arc::new(NativeProtoPathResolver::new())
 }

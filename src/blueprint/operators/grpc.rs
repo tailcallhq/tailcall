@@ -1,5 +1,5 @@
-use prost_reflect::FieldDescriptor;
 use prost_reflect::prost_types::FileDescriptorSet;
+use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
@@ -29,7 +29,10 @@ fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
     })
 }
 
-fn to_operation(grpc: &Grpc, file_descriptor_set: &FileDescriptorSet) -> Valid<ProtobufOperation, String> {
+fn to_operation(
+    grpc: &Grpc,
+    file_descriptor_set: &FileDescriptorSet,
+) -> Valid<ProtobufOperation, String> {
     Valid::from(
         ProtobufSet::from_proto_file(file_descriptor_set)
             .map_err(|e| ValidationError::new(e.to_string())),
@@ -121,7 +124,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let validate_with_schema = inputs.validate_with_schema;
 
     to_url(grpc, config_set)
-        .zip(to_operation(grpc, &config_set.extensions.grpc_file_descriptor))
+        .zip(to_operation(
+            grpc,
+            &config_set.extensions.grpc_file_descriptor,
+        ))
         .zip(helpers::headers::to_mustache_headers(&grpc.headers))
         .zip(helpers::body::to_body(grpc.body.as_deref()))
         .and_then(|(((url, operation), headers), body)| {

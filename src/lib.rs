@@ -29,6 +29,7 @@ pub mod valid;
 
 use std::hash::Hash;
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 use http::Response;
@@ -46,7 +47,7 @@ pub trait HttpIO: Sync + Send + 'static {
 }
 
 #[async_trait::async_trait]
-pub trait FileIO {
+pub trait FileIO: Send + Sync {
     async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
     async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
 }
@@ -69,6 +70,16 @@ pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 #[async_trait::async_trait]
 pub trait ScriptIO<Event, Command>: Send + Sync {
     async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
+}
+
+#[async_trait::async_trait]
+pub trait ProtoPathResolver {
+    async fn resolve<'a>(
+        &'a self,
+        path: &'a str,
+        http_io: Arc<dyn HttpIO>,
+        file_io: Arc<dyn FileIO>,
+    ) -> anyhow::Result<(String, String)>;
 }
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {

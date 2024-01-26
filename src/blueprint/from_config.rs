@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, HashMap};
+
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
@@ -10,7 +11,8 @@ use crate::valid::{Valid, ValidationError};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Server::try_from(config_set.server.clone())).map(|server| blueprint.server(server))
+        Valid::from(Server::try_from(config_set.server.clone()))
+            .map(|server| blueprint.server(server))
     });
 
     let schema = to_schema().transform::<Blueprint>(

@@ -75,6 +75,7 @@ async-std = { version = "1.12.0", features = [
 ] }
 ttl_cache = "0.5.1"
 protox = "0.5.1"
+protox-parse = "0.5.0"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
 lazy_static = "1.4.0"
