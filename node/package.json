@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "compile": "wasm-pack build --target bundler --scope tailcallhq",
+    "publish": "wasm-pack publish --scope tailcallhq"
+  }
+}

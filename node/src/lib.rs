@@ -26,7 +26,10 @@ struct GraphQLExecutor {
 #[wasm_bindgen]
 impl GraphQLExecutor {
   #[wasm_bindgen(constructor)]
-  pub fn new(schema: String, source: String) -> Result<GraphQLExecutor, JsValue> {
+  pub fn new(schema: String, mut source: String) -> Result<GraphQLExecutor, JsValue> {
+    if !source.starts_with(".") {
+      source = format!(".{source}");
+    }
     let executor = Self::get_app_ctx(schema, source).map_err(to_jsvalue)?;
     Ok(executor)
   }

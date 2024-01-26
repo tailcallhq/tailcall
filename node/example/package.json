@@ -1,7 +1,6 @@
 {
-  "name": "@tailcallhq/wasm-node",
+  "name": "example",
   "version": "0.1.0",
-  "description": "This is tailcall node dependency",
   "main": "index.js",
   "publishConfig": {
     "access": "public"
@@ -11,7 +10,7 @@
     "serve": "wasm-pack build --target bundler && webpack serve --config webpack.config.js --open"
   },
   "dependencies": {
-    "tc-wasm": "file:../pkg"
+    "tc-node": "file:../pkg"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^11.0.0",

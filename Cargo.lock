@@ -3597,29 +3597,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tc-wasm"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-graphql-value",
- "async-std",
- "async-trait",
- "cfg-if 1.0.0",
- "concurrent_lru",
- "console_error_panic_hook",
- "dashmap",
- "hyper",
- "log",
- "reqwest",
- "serde_json",
- "tailcall",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-logger",
- "wee_alloc",
-]
-
-[[package]]
 name = "tempfile"
 version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4099,6 +4076,29 @@ dependencies = [
  "log",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "wasm-node"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql-value",
+ "async-std",
+ "async-trait",
+ "cfg-if 1.0.0",
+ "concurrent_lru",
+ "console_error_panic_hook",
+ "dashmap",
+ "hyper",
+ "log",
+ "reqwest",
+ "serde_json",
+ "tailcall",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-logger",
+ "wee_alloc",
 ]
 
 [[package]]
