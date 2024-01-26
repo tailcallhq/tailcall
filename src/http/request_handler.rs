@@ -9,6 +9,7 @@ use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
+use super::showcase::ShowcaseResources;
 use super::{showcase_get_app_ctx, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
@@ -117,15 +118,16 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             if state.blueprint.server.enable_showcase
                 && req.uri().path().ends_with("/showcase/graphql") =>
         {
-            let server_ctx = match showcase_get_app_ctx::<T>(
-                &req,
-                state.universal_http_client.clone(),
-                None,
-                None,
-                state.cache.clone(),
-            )
-            .await?
-            {
+            let resources = ShowcaseResources {
+                http: state.universal_http_client.clone(),
+                env: None,  // Disallow access to environment varialbes
+                file: None, // Disallow local file reading
+
+                // TODO: Generically accessible way to create new clean cache
+                cache: state.cache.clone(),
+            };
+
+            let server_ctx = match showcase_get_app_ctx::<T>(&req, resources).await? {
                 Ok(server_ctx) => server_ctx,
                 Err(res) => return Ok(res),
             };
