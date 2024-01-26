@@ -1,10 +1,10 @@
+mod cache;
 mod concurrent;
 mod eval;
 mod evaluation_context;
 mod expression;
 mod graphql_operation_context;
 mod io;
-mod cache;
 mod lambda;
 mod list;
 mod logic;
@@ -12,13 +12,13 @@ mod math;
 mod relation;
 mod resolver_context_like;
 
+pub use cache::*;
 pub use concurrent::*;
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
 pub(crate) use expression::*;
 pub use graphql_operation_context::GraphQLOperationContext;
 pub use io::*;
-pub use cache::*;
 pub use lambda::Lambda;
 pub use list::*;
 pub use logic::*;

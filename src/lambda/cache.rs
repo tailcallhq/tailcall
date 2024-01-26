@@ -1,5 +1,3 @@
-use crate::helpers;
-use crate::json::JsonLike;
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::future::Future;
@@ -10,8 +8,9 @@ use std::pin::Pin;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 
-use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
-
+use super::{Eval, EvaluationContext, Expression, ResolverContextLike};
+use crate::helpers;
+use crate::json::JsonLike;
 
 #[derive(Clone, Debug)]
 pub struct Cache {
@@ -45,25 +44,19 @@ impl Eval for Cache {
     conc: &'a super::Concurrent,
   ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
     Box::pin(async move {
-      // let ttl_and_key = Some((self.max_age, get_cache_key(&ctx, &self.hasher)?));
-      // let cache = ctx.req_ctx.cache.clone();
-      // let source = self.source.eval(ctx, conc).await?;
-      // let value = cache.get_or_insert_with(ttl_and_key, || Ok(source)).await?;
-      // Ok(value)
-
-          if let Some(key) = get_cache_key(ctx, self.hasher.clone()) {
-            if let Some(cache_value) = ctx.req_ctx.cache_get(&key).await {
-              Ok(cache_value.to_owned())
-            } else {
-              let result = self.source.eval(ctx, conc).await;
-              if let Ok(val) = &result {
-                ctx.req_ctx.cache_insert(key, val.clone(), self.max_age);
-              }
-              result
-            }
-          } else {
-            self.source.eval(ctx, conc).await
+      if let Some(key) = get_cache_key(ctx, self.hasher.clone()) {
+        if let Some(cache_value) = ctx.req_ctx.cache_get(&key).await {
+          Ok(cache_value.to_owned())
+        } else {
+          let result = self.source.eval(ctx, conc).await;
+          if let Ok(val) = &result {
+            ctx.req_ctx.cache_insert(key, val.clone(), self.max_age).await;
           }
+          result
+        }
+      } else {
+        self.source.eval(ctx, conc).await
+      }
     })
   }
 }

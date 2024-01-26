@@ -3,7 +3,6 @@ use std::sync::Arc;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
-use crate::blueprint;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
 use crate::data_loader::DataLoader;
@@ -11,7 +10,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{Cache, DataLoaderId, Expression, IO};
-use crate::{grpc, EntityCache, EnvIO, HttpIO};
+use crate::{blueprint, grpc, EntityCache, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
@@ -28,7 +27,7 @@ pub struct AppContext<Http, Env> {
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
   pub fn new(
-    mut blueprint: Blueprint,
+    blueprint: Blueprint,
     h_client: Arc<Http>,
     h2_client: Arc<Http>,
     env: Arc<Env>,
@@ -43,7 +42,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       blueprint,
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
-      cache: cache,
+      cache,
       grpc_data_loaders: Arc::new(vec![]),
       env_vars: env,
     };
@@ -111,8 +110,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       }
 
       IO::GraphQLEndpoint { req_template, field_name, batch, .. } => {
-        let graphql_data_loader = GraphqlDataLoader::new(h_client.clone(), *batch)
-          .to_data_loader(bt);
+        let graphql_data_loader = GraphqlDataLoader::new(h_client.clone(), *batch).to_data_loader(bt);
 
         field.resolver = Some(Expression::IO(IO::GraphQLEndpoint {
           req_template: req_template.clone(),
