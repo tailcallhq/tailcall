@@ -37,7 +37,7 @@ pub enum IO {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-    }
+    },
 }
 
 #[derive(Clone, Copy, Debug)]

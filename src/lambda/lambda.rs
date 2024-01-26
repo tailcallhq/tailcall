@@ -145,5 +145,4 @@ mod tests {
 
         assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")
     }
-
 }
