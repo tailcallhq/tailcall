@@ -5,8 +5,6 @@ use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use crate::cli::env::EnvNative;
-use crate::cli::http::NativeHttp;
 use crate::cli::CLIError;
 use crate::http::handle_request;
 
@@ -16,7 +14,7 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLRequest, NativeHttp, EnvNative>(req, state.server_context.clone())
+        handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
       }))
     }
   });
@@ -25,13 +23,13 @@ pub async fn start_http_1(sc: Arc<ServerConfig>, server_up_sender: Option<onesho
     let state = Arc::clone(&sc);
     async move {
       Ok::<_, anyhow::Error>(service_fn(move |req| {
-        handle_request::<GraphQLBatchRequest, NativeHttp, EnvNative>(req, state.server_context.clone())
+        handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
       }))
     }
   });
   let builder = hyper::Server::try_bind(&addr)
     .map_err(CLIError::from)?
-    .http1_pipeline_flush(sc.server_context.blueprint.server.pipeline_flush);
+    .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
   super::log_launch_and_open_browser(sc.as_ref());
 
   if let Some(sender) = server_up_sender {

@@ -23,19 +23,19 @@ pub async fn run() -> anyhow::Result<()> {
   let cli = Cli::parse();
 
   logger_init();
-  let file_io = init_file();
-  let default_http_io = init_http(&Upstream::default());
+  let file_io: std::sync::Arc<dyn FileIO> = init_file();
+  let default_http_io = init_http(&Upstream::default(), None);
   let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
   match cli.command {
     Command::Start { file_paths } => {
-      let config = config_reader.read(&file_paths).await?;
+      let config = config_reader.read_all(&file_paths).await?;
       log::info!("N + 1: {}", config.n_plus_one().len().to_string());
       let server = Server::new(config);
       server.fork_start().await?;
       Ok(())
     }
     Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
-      let config = (config_reader.read(&file_paths)).await?;
+      let config = (config_reader.read_all(&file_paths)).await?;
       let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
 
       match blueprint {
@@ -66,7 +66,7 @@ pub async fn run() -> anyhow::Result<()> {
     }
     Command::Init { folder_path } => init(&folder_path).await,
     Command::Compose { file_paths, format } => {
-      let config = (config_reader.read(&file_paths).await)?;
+      let config = (config_reader.read_all(&file_paths).await)?;
       Fmt::display(format.encode(&config)?);
       Ok(())
     }

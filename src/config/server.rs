@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::{is_default, KeyValues};
+use crate::config::KeyValues;
+use crate::is_default;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +59,23 @@ pub struct Server {
   pub key: Option<String>,
   #[serde(default, skip_serializing_if = "is_default")]
   pub pipeline_flush: Option<bool>,
+  /// A link to an external JS file that listens on every HTTP request response event.
+  #[serde(default, skip_serializing_if = "is_default")]
+  pub script: Option<Script>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum Script {
+  Path(ScriptOptions),
+  File(ScriptOptions),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ScriptOptions {
+  pub src: String,
+  pub timeout: Option<u64>,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema)]
@@ -143,6 +161,7 @@ impl Server {
     self.cert = other.cert.or(self.cert);
     self.key = other.key.or(self.key);
     self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
+    self.script = other.script.or(self.script);
     self
   }
 }

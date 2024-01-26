@@ -37,7 +37,6 @@ impl NativeHttp {
 
     // Add Http2 Prior Knowledge
     if upstream.get_http_2_only() {
-      log::info!("Enabled Http2 prior knowledge");
       builder = builder.http2_prior_knowledge();
     }
 
@@ -66,7 +65,9 @@ impl HttpIO for NativeHttp {
       *request.version_mut() = reqwest::Version::HTTP_2;
     }
     log::info!("{} {} {:?}", request.method(), request.url(), request.version());
-    let response = self.client.execute(request).await?.error_for_status()?;
-    Ok(Response::from_reqwest(response).await?)
+    log::debug!("request: {:?}", request);
+    let response = self.client.execute(request).await;
+    log::debug!("response: {:?}", response);
+    Ok(Response::from_reqwest(response?.error_for_status()?).await?)
   }
 }

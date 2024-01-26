@@ -143,8 +143,8 @@ fn request_context() -> RequestContext {
   //TODO: default is used only in tests. Drop default and move it to test.
   let server = Server::try_from(server).unwrap();
 
-  let h_client = Arc::new(init_http(&upstream));
-  let h2_client = Arc::new(init_http2_only(&upstream));
+  let h_client = init_http(&upstream, None);
+  let h2_client = init_http2_only(&upstream, None);
   RequestContext {
     req_headers: HeaderMap::new(),
     h_client,
@@ -157,7 +157,7 @@ fn request_context() -> RequestContext {
     grpc_data_loaders: Arc::new(vec![]),
     min_max_age: Arc::new(Mutex::new(None)),
     cache_public: Arc::new(Mutex::new(None)),
-    env_vars: Arc::new(init_env()),
+    env_vars: init_env(),
   }
 }
 

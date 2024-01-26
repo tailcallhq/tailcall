@@ -138,13 +138,17 @@ impl RequestTemplate {
 
     let headers = req.headers_mut();
     // We want to set the header value based on encoding
-    headers.insert(
-      reqwest::header::CONTENT_TYPE,
-      match self.encoding {
-        Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
-        Encoding::ApplicationXWwwFormUrlencoded => HeaderValue::from_static("application/x-www-form-urlencoded"),
-      },
-    );
+    // TODO: potential of optimizations.
+    // Can set content-type headers while creating the request template
+    if self.method != reqwest::Method::GET {
+      headers.insert(
+        reqwest::header::CONTENT_TYPE,
+        match self.encoding {
+          Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
+          Encoding::ApplicationXWwwFormUrlencoded => HeaderValue::from_static("application/x-www-form-urlencoded"),
+        },
+      );
+    }
 
     headers.extend(ctx.headers().to_owned());
     req
@@ -354,6 +358,7 @@ mod tests {
   fn test_header_encoding_application_json() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
+      .method(reqwest::Method::POST)
       .encoding(crate::config::Encoding::ApplicationJson);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();
@@ -363,6 +368,7 @@ mod tests {
   fn test_header_encoding_application_x_www_form_urlencoded() {
     let tmpl = RequestTemplate::new("http://localhost:3000")
       .unwrap()
+      .method(reqwest::Method::POST)
       .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded);
     let ctx = Context::default();
     let req = tmpl.to_request(&ctx).unwrap();

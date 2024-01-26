@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::net::{AddrParseError, IpAddr};
+use std::time::Duration;
 
 use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
@@ -25,6 +26,14 @@ pub struct Server {
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,
+  pub script: Option<Script>,
+}
+
+/// Mimic of mini_v8::Script that's wasm compatible
+#[derive(Clone, Debug)]
+pub struct Script {
+  pub source: String,
+  pub timeout: Option<Duration>,
 }
 
 #[derive(Clone, Debug)]
@@ -77,7 +86,8 @@ impl TryFrom<crate::config::Server> for Server {
     validate_hostname((config_server).get_hostname().to_lowercase())
       .zip(http_server)
       .zip(handle_response_headers((config_server).get_response_headers().0))
-      .map(|((hostname, http), response_headers)| Server {
+      .zip(to_script(&config_server))
+      .map(|(((hostname, http), response_headers), script)| Server {
         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
         enable_cache_control_header: (config_server).enable_cache_control(),
         enable_graphiql: (config_server).enable_graphiql(),
@@ -93,9 +103,29 @@ impl TryFrom<crate::config::Server> for Server {
         vars: (config_server).get_vars(),
         pipeline_flush: (config_server).get_pipeline_flush(),
         response_headers,
+        script,
       })
       .to_result()
   }
+}
+
+fn to_script(server: &config::Server) -> Valid<Option<Script>, String> {
+  server.script.as_ref().map_or_else(
+    || Valid::succeed(None),
+    |script| match script {
+      config::Script::File(script) => Valid::succeed(Some(Script {
+        source: script.src.clone(),
+        timeout: script.timeout.map(Duration::from_millis),
+      })),
+
+      config::Script::Path(_) => {
+        // NOTE:
+        // Making sure that we panic if we try to use Script::Path
+        // Need to convert all Script::Path to Script::File before passing it for BP conversion
+        unreachable!("Script::Path is not supported")
+      }
+    },
+  )
 }
 
 fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {

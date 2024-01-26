@@ -11,7 +11,6 @@ use serde::de::DeserializeOwned;
 use super::request_context::RequestContext;
 use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::{EnvIO, HttpIO};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
   let query = req.uri().query();
@@ -26,7 +25,6 @@ pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     Cow::Borrowed(endpoint)
   };
 
-  log::info!("GraphiQL endpoint: {}", endpoint);
   Ok(Response::new(Body::from(playground_source(
     GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
   ))))
@@ -36,19 +34,16 @@ fn not_found() -> Result<Response<Body>> {
   Ok(Response::builder().status(StatusCode::NOT_FOUND).body(Body::empty())?)
 }
 
-fn create_request_context<Http: HttpIO, Env: EnvIO>(
-  req: &Request<Body>,
-  server_ctx: &AppContext<Http, Env>,
-) -> RequestContext {
+fn create_request_context(req: &Request<Body>, server_ctx: &AppContext) -> RequestContext {
   let upstream = server_ctx.blueprint.upstream.clone();
   let allowed = upstream.get_allowed_headers();
   let headers = create_allowed_headers(req.headers(), &allowed);
   RequestContext::from(server_ctx).req_headers(headers)
 }
 
-fn update_cache_control_header<Http, Env>(
+fn update_cache_control_header(
   response: GraphQLResponse,
-  server_ctx: &AppContext<Http, Env>,
+  server_ctx: &AppContext,
   req_ctx: Arc<RequestContext>,
 ) -> GraphQLResponse {
   if server_ctx.blueprint.server.enable_cache_control_header {
@@ -59,7 +54,7 @@ fn update_cache_control_header<Http, Env>(
   response
 }
 
-pub fn update_response_headers<Http, Env>(resp: &mut hyper::Response<hyper::Body>, server_ctx: &AppContext<Http, Env>) {
+pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_ctx: &AppContext) {
   if !server_ctx.blueprint.server.response_headers.is_empty() {
     resp
       .headers_mut()
@@ -67,9 +62,9 @@ pub fn update_response_headers<Http, Env>(resp: &mut hyper::Response<hyper::Body
   }
 }
 
-pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike, Http: HttpIO, Env: EnvIO>(
+pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
-  server_ctx: &AppContext<Http, Env>,
+  server_ctx: &AppContext,
 ) -> Result<Response<Body>> {
   let req_ctx = Arc::new(create_request_context(&req, server_ctx));
   let bytes = hyper::body::to_bytes(req.into_body()).await?;
@@ -108,14 +103,12 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
   new_headers
 }
 
-pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike, Http: HttpIO, Env: EnvIO>(
+pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
   req: Request<Body>,
-  state: Arc<AppContext<Http, Env>>,
+  state: Arc<AppContext>,
 ) -> Result<Response<Body>> {
   match *req.method() {
-    hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
-      graphql_request::<T, Http, Env>(req, state.as_ref()).await
-    }
+    hyper::Method::POST if req.uri().path().ends_with("/graphql") => graphql_request::<T>(req, state.as_ref()).await,
     hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(&req),
     _ => not_found(),
   }
