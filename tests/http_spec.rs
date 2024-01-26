@@ -340,7 +340,6 @@ impl HttpIO for MockHttpClient {
             Ok(response)
         }
     }
-  }
 }
 
 async fn assert_downstream(spec: HttpSpec) {
