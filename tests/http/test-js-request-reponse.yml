@@ -5,7 +5,7 @@ mock:
   - request:
       url: http://localhost:3000/bye
       method: GET
-      body: "\"\""
+      body: '""'
       headers:
     response:
       body: "hello world"

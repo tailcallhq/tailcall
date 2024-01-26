@@ -29,6 +29,17 @@ lazy_static! {
 
 pub struct Runtime {}
 
+fn create_closure(script: &str) -> String {
+  format!(
+    r#"
+    (function() {{
+      {}
+      return onEvent
+    }})();
+  "#,
+    script
+  )
+}
 impl Runtime {
   pub fn new(script: blueprint::Script) -> Self {
     block_on(async {
@@ -55,7 +66,8 @@ impl Runtime {
 
   fn init(v8: &MiniV8, script: blueprint::Script) -> anyhow::Result<mini_v8::Function> {
     let _ = super::shim::init(v8);
-    let script = Script { source: script.source, timeout: script.timeout, ..Default::default() };
+    let script =
+      Script { source: create_closure(script.source.as_str()), timeout: script.timeout, ..Default::default() };
     let value: mini_v8::Value = v8.eval(script).map_err(|e| anyhow::anyhow!(e.to_string()))?;
     let function = value
       .as_function()
