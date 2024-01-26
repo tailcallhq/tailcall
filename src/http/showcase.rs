@@ -16,13 +16,13 @@ pub struct DummyFileIO;
 
 #[async_trait::async_trait]
 impl FileIO for DummyFileIO {
-  async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> anyhow::Result<()> {
-    Err(anyhow!("DummyFileIO"))
-  }
+    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> anyhow::Result<()> {
+        Err(anyhow!("DummyFileIO"))
+    }
 
-  async fn read<'a>(&'a self, _path: &'a str) -> anyhow::Result<String> {
-    Err(anyhow!("DummyFileIO"))
-  }
+    async fn read<'a>(&'a self, _path: &'a str) -> anyhow::Result<String> {
+        Err(anyhow!("DummyFileIO"))
+    }
 }
 
 pub struct DummyEnvIO;
@@ -34,14 +34,14 @@ impl EnvIO for DummyEnvIO {
 }
 
 pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
-  req: &Request<Body>,
-  http: Arc<dyn HttpIO + Send + Sync>,
-  env: Option<Arc<dyn EnvIO>>,
-  file: Option<Arc<dyn FileIO + Send + Sync>>,
-  cache: Arc<EntityCache>,
+    req: &Request<Body>,
+    http: Arc<dyn HttpIO + Send + Sync>,
+    env: Option<Arc<dyn EnvIO>>,
+    file: Option<Arc<dyn FileIO + Send + Sync>>,
+    cache: Arc<EntityCache>,
 ) -> Result<Result<AppContext, Response<Body>>> {
-  let url = Url::parse(&req.uri().to_string())?;
-  let mut query = url.query_pairs();
+    let url = Url::parse(&req.uri().to_string())?;
+    let mut query = url.query_pairs();
 
     let config_url = if let Some(pair) = query.find(|x| x.0 == "config") {
         pair.1.to_string()
