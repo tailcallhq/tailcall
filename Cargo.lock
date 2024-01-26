@@ -3428,6 +3428,7 @@ dependencies = [
  "hyper-rustls 0.25.0",
  "indexmap",
  "inquire",
+ "lazy_static",
  "log",
  "lru 0.12.1",
  "mimalloc",

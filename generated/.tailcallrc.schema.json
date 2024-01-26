@@ -1257,6 +1257,53 @@
       },
       "type": "object"
     },
+    "Script": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "$ref": "#/definitions/ScriptOptions"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "$ref": "#/definitions/ScriptOptions"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ScriptOptions": {
+      "properties": {
+        "src": {
+          "type": "string"
+        },
+        "timeout": {
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "src"
+      ],
+      "type": "object"
+    },
     "Server": {
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
       "properties": {
@@ -1361,6 +1408,17 @@
             "null"
           ]
         },
+        "script": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Script"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A link to an external JS file that listens on every HTTP request response event."
+        },
         "vars": {
           "allOf": [
             {
@@ -1412,7 +1470,7 @@
             }
           ],
           "default": null,
-          "description": "Setting to indicate if the type is cacheable."
+          "description": "Setting to indicate if the type can be cached."
         },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",
