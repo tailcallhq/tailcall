@@ -26,9 +26,13 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
-  compile_wasm:
-    name: Compile WASM
+  test_cf:
+    name: Run Tests (WASM)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cloudflare
+
     steps:
       - uses: actions/checkout@v4
 
@@ -40,6 +44,16 @@ jobs:
       - name: Build WASM
         run: cargo check --lib --target wasm32-unknown-unknown
         working-directory: ./cloudflare
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+
+      - name: Package Install
+        run: npm install
+
+      - name: Test CF
+        run: npm test
 
   test:
     name: Run Tests
@@ -125,7 +139,7 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build, compile_wasm]
+    needs: [test, format, draft_release, check_if_build, test_cf]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
