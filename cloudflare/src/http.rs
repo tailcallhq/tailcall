@@ -60,7 +60,7 @@ pub async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Resu
   Ok(w_response)
 }
 
-pub fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
+pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
   let method = &*method.to_string().to_uppercase();
   match method {
     "GET" => Ok(hyper::Method::GET),

@@ -6,7 +6,7 @@ use anyhow::anyhow;
 mod cache;
 mod env;
 mod file;
-mod handle;
+pub mod handle;
 mod http;
 
 pub fn init_env(env: Rc<worker::Env>) -> env::CloudflareEnv {
@@ -26,8 +26,8 @@ pub fn init_cache(env: Rc<worker::Env>) -> cache::CloudflareChronoCache {
 }
 
 #[worker::event(fetch)]
-async fn fetch(req: worker::Request, env: worker::Env, context: worker::Context) -> anyhow::Result<worker::Response> {
-  let result = handle::fetch(req, env, context).await;
+async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
+  let result = handle::fetch(req, env).await;
 
   match result {
     Ok(response) => Ok(response),
