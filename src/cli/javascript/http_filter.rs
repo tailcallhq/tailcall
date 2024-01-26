@@ -27,26 +27,18 @@ impl HttpFilter {
     Box::pin(async move {
       match command {
         Command::Request(requests) => {
-          let responses = join_all(requests.into_iter().flat_map(|req| {
+          let requests = requests.into_iter().flat_map(|req| {
             let req = req.try_into().ok()?;
             Some(self.client.execute(req))
-          }))
-          .await
-          .into_iter()
-          .collect::<anyhow::Result<Vec<_>>>()?;
-
-          let command = self
-            .script
-            .on_event(Event::Response(
-              responses
-                .iter()
-                .flat_map(|e| {
-                  let res = JsResponse::try_from(e).ok()?;
-                  Some(res)
-                })
-                .collect::<Vec<_>>(),
-            ))
-            .await?;
+          });
+          let responses = join_all(requests)
+            .await
+            .into_iter()
+            .collect::<anyhow::Result<Vec<_>>>()?
+            .iter()
+            .flat_map(|e| Some(JsResponse::try_from(e).ok()?))
+            .collect::<Vec<_>>();
+          let command = self.script.on_event(Event::Response(responses)).await?;
           Ok(self.on_command(command).await?)
         }
         Command::Response(response) => {
