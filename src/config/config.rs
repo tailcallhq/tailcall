@@ -366,6 +366,12 @@ pub struct Field {
     pub http: Option<Http>,
 
     ///
+    /// Inserts a File resolver for the field.
+    /// 
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub file: Option<File>,
+
+    ///
     /// Inserts a GRPC resolver for the field.
     ///
     #[serde(default, skip_serializing_if = "is_default")]
@@ -403,6 +409,7 @@ pub struct Field {
 impl Field {
     pub fn has_resolver(&self) -> bool {
         self.http.is_some()
+            || self.file.is_some()
             || self.script.is_some()
             || self.const_field.is_some()
             || self.graphql.is_some()
@@ -413,6 +420,9 @@ impl Field {
         let mut directives = Vec::new();
         if self.http.is_some() {
             directives.push(Http::trace_name());
+        }
+        if self.file.is_some() {
+            directives.push(File::trace_name());
         }
         if self.graphql.is_some() {
             directives.push(GraphQL::trace_name());
@@ -553,6 +563,18 @@ pub struct Http {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
     pub encoding: Encoding,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+/// The @file operator indicates that a field or node is backed by a local file.
+///
+/// For instance, if you add the @file operator to the `users` field of the Query type with a source of `./users.json`, it signifies that the `users` field is backed by a JSON file. YAML is also supported.
+/// The path argument specifies the path of the REST API.
+/// In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
+pub struct File {
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The path of the data file.
+    pub src: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

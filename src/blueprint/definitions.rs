@@ -103,12 +103,17 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
                 .http
                 .as_ref()
                 .map(|_| config::Http::directive_name());
+            let next_dir_file = next_field
+                .file
+                .as_ref()
+                .map(|_| config::File::directive_name());
             let next_dir_const = next_field
                 .const_field
                 .as_ref()
                 .map(|_| config::Const::directive_name());
             return path_resolver_error_handler(
                 next_dir_http
+                    .or(next_dir_file)
                     .or(next_dir_const)
                     .unwrap_or(config::JS::directive_name())
                     .as_str(),
@@ -383,6 +388,7 @@ fn to_fields(
         object_name.hash(&mut hasher);
 
         update_args(hasher)
+            .and(update_file().trace(config::File::trace_name().as_str()))
             .and(update_http().trace(config::Http::trace_name().as_str()))
             .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
             .and(update_const_field().trace(config::Const::trace_name().as_str()))

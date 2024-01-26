@@ -56,7 +56,8 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     let operation_type = ctx.operation_type;
     match expr {
         // Io Expr
-        ExprBody::Http(http) => compile_http(config_set, field, &http),
+        ExprBody::Http(http) => compile_http(config, field, &http),
+        ExprBody::File(file) => compile_file(config, field, &file),
         ExprBody::Grpc(grpc) => {
             let grpc = CompileGrpc {
                 config_set,

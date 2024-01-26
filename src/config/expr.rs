@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{GraphQL, Grpc, Http};
+use super::{GraphQL, Grpc, Http, File};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 /// Allows composing operators as simple expressions
@@ -31,6 +31,10 @@ pub enum ExprBody {
     #[serde(rename = "http")]
     Http(Http),
 
+    /// Fetch a resources using the file operator
+    #[serde(rename = "file")]
+    File(File),
+    
     /// Fetch a resources using the grpc operator
     #[serde(rename = "grpc")]
     Grpc(Grpc),
@@ -123,6 +127,7 @@ impl ExprBody {
     pub fn has_io(&self) -> bool {
         match self {
             ExprBody::Http(_) => true,
+            ExprBody::File(_) => true,
             ExprBody::Grpc(_) => true,
             ExprBody::GraphQL(_) => true,
             ExprBody::Const(_) => false,

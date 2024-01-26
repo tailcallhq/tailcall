@@ -1,0 +1,12 @@
+schema {
+  query: Query
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+type Query {
+  users: [User] @file(src: "./tests/http/config/users.json")
+}

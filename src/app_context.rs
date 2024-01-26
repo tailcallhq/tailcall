@@ -88,6 +88,12 @@ impl AppContext {
 
                                 grpc_data_loaders.push(data_loader);
                             }
+
+                            IO::File(path) => {
+                                field.resolver = Some(Expression::IO(IO::File(path.to_owned())));
+                            }
+
+                            _ => {}
                         }
                     }
                 }

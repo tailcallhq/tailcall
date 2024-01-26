@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use std::path::PathBuf;
 
 use super::expression::{Context, Expression};
 use super::{expression, IO};
@@ -72,6 +73,12 @@ impl Lambda<serde_json::Value> {
             group_by: None,
             dl_id: None,
         }))
+    }
+
+    pub fn from_file(
+        path: PathBuf,
+    ) -> Lambda<serde_json::Value> {
+        Lambda::new(Expression::IO(IO::File(path)))
     }
 }
 

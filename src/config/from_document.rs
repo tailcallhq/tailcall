@@ -8,7 +8,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::JS;
+use super::{Http, JS};
 use crate::config::{
     self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream,
 };
@@ -245,34 +245,38 @@ where
     let list = matches!(&base, BaseType::List(_));
     let list_type_required = matches!(&base, BaseType::List(type_of) if !type_of.nullable);
     let doc = description.to_owned().map(|pos| pos.node);
-    config::Http::from_directives(directives.iter())
-        .fuse(GraphQL::from_directives(directives.iter()))
-        .fuse(Cache::from_directives(directives.iter()))
-        .fuse(Grpc::from_directives(directives.iter()))
-        .fuse(Expr::from_directives(directives.iter()))
-        .fuse(Omit::from_directives(directives.iter()))
-        .fuse(Modify::from_directives(directives.iter()))
-        .fuse(JS::from_directives(directives.iter()))
-        .map(|(http, graphql, cache, grpc, expr, omit, modify, script)| {
-            let const_field = to_const_field(directives);
-            config::Field {
-                type_of,
-                list,
-                required: !nullable,
-                list_type_required,
-                args,
-                doc,
-                modify,
-                omit,
-                http,
-                grpc,
-                script,
-                const_field,
-                graphql,
-                expr,
-                cache,
-            }
-        })
+    config::File::from_directives(directives.iter())
+        .zip(Http::from_directives(directives.iter()))
+        .zip(GraphQL::from_directives(directives.iter()))
+        .zip(Cache::from_directives(directives.iter()))
+        .zip(Grpc::from_directives(directives.iter()))
+        .zip(Expr::from_directives(directives.iter()))
+        .zip(Omit::from_directives(directives.iter()))
+        .zip(Modify::from_directives(directives.iter()))
+        .zip(JS::from_directives(directives.iter()))
+        .map(
+            |((((((((file, http), graphql), cache), grpc), expr), omit), modify), script)| {
+                let const_field = to_const_field(directives);
+                config::Field {
+                    type_of,
+                    list,
+                    required: !nullable,
+                    list_type_required,
+                    args,
+                    doc,
+                    modify,
+                    omit,
+                    http,
+                    file,
+                    grpc,
+                    script,
+                    const_field,
+                    graphql,
+                    expr,
+                    cache: cache.or(parent_cache),
+                }
+            },
+        )
 }
 
 fn to_type_of(type_: &Type) -> String {
