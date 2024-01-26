@@ -3,7 +3,6 @@ use std::num::NonZeroU64;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
 use ttl_cache::TtlCache;
 
 use crate::Cache;
@@ -25,30 +24,18 @@ impl<K: Hash + Eq, V: Clone> NativeChronoCache<K, V> {
     NativeChronoCache { data: Arc::new(RwLock::new(TtlCache::new(CACHE_CAPACITY))) }
   }
 }
+
 #[async_trait::async_trait]
 impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> Cache for NativeChronoCache<K, V> {
   type Key = K;
   type Value = V;
   #[allow(clippy::too_many_arguments)]
-  async fn set<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> Result<V> {
+  async fn set<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> Option<V> {
     let ttl = Duration::from_millis(ttl.get());
-    Ok(
-      self
-        .data
-        .write()
-        .unwrap()
-        .insert(key, value.clone(), ttl)
-        .unwrap_or(value),
-    )
+    self.data.write().unwrap().insert(key, value, ttl)
   }
 
-  async fn get<'a>(&'a self, key: &'a K) -> Result<V> {
-    self
-      .data
-      .read()
-      .unwrap()
-      .get(key)
-      .cloned()
-      .ok_or(anyhow!("key not found"))
+  async fn get<'a>(&'a self, key: &'a K) -> Option<V> {
+    self.data.read().unwrap().get(key).cloned()
   }
 }

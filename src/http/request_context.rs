@@ -80,12 +80,12 @@ impl RequestContext {
   }
 
   pub async fn cache_get(&self, key: &u64) -> Option<ConstValue> {
-    self.cache.get(key).await.ok()
+    self.cache.get(key).await
   }
 
   #[allow(clippy::too_many_arguments)]
   pub async fn cache_insert(&self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Option<ConstValue> {
-    self.cache.set(key, value, ttl).await.ok()
+    self.cache.set(key, value, ttl).await
   }
 
   pub fn is_batching_enabled(&self) -> bool {

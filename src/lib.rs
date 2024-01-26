@@ -51,8 +51,8 @@ pub trait FileIO {
 pub trait Cache: Send + Sync {
   type Key: Hash + Eq;
   type Value;
-  async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> anyhow::Result<Self::Value>;
-  async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
+  async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> Option<Self::Value>;
+  async fn get<'a>(&'a self, key: &'a Self::Key) -> Option<Self::Value>;
 }
 
 type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
