@@ -6,7 +6,7 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
 
-use super::{Eval, EvaluationContext, Expression, ResolverContextLike};
+use super::{Eval, EvaluationContext, ResolverContextLike};
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -16,8 +16,6 @@ use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
-#[cfg(feature = "unsafe-js")]
-use crate::javascript;
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
 use crate::{grpc, http};
@@ -39,8 +37,7 @@ pub enum IO {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-    },
-    JS(Box<Expression>, String),
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -114,26 +111,6 @@ impl Eval for IO {
                     set_cache_control(ctx, &res);
 
                     Ok(res.body)
-                }
-                IO::JS(input, script) => {
-                    let result;
-                    #[cfg(not(feature = "unsafe-js"))]
-                    {
-                        let _ = script;
-                        let _ = input;
-                        result = Err(EvaluationError::JSException(
-                            "JS execution is disabled".to_string(),
-                        )
-                        .into());
-                    }
-
-                    #[cfg(feature = "unsafe-js")]
-                    {
-                        let input = input.eval(ctx, _conc).await?;
-                        result = javascript::execute_js(script, input, Some(ctx.timeout))
-                            .map_err(|e| EvaluationError::JSException(e.to_string()).into());
-                    }
-                    result
                 }
             }
         })

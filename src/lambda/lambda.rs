@@ -25,10 +25,6 @@ impl<A> Lambda<A> {
         ))
     }
 
-    pub fn to_js(self, script: String) -> Lambda<serde_json::Value> {
-        Lambda::new(Expression::IO(IO::JS(self.box_expr(), script)))
-    }
-
     pub fn to_input_path(self, path: Vec<String>) -> Lambda<serde_json::Value> {
         Lambda::new(Expression::Input(self.box_expr(), path))
     }
@@ -150,14 +146,4 @@ mod tests {
         assert_eq!(result.as_object().unwrap().get("name").unwrap(), "Hans")
     }
 
-    #[cfg(feature = "unsafe-js")]
-    #[tokio::test]
-    async fn test_js() {
-        let result = Lambda::from(1.0)
-            .to_js("ctx + 100".to_string())
-            .eval()
-            .await;
-        let f64 = result.unwrap().as_f64().unwrap();
-        assert_eq!(f64, 101.0)
-    }
 }
