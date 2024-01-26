@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::net::{AddrParseError, IpAddr};
+use std::time::Duration;
 
 use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
@@ -25,7 +26,13 @@ pub struct Server {
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,
-  pub script: Option<String>,
+  pub script: Option<ScriptOptions>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ScriptOptions {
+  pub src: String,
+  pub timeout: Option<Duration>,
 }
 
 #[derive(Clone, Debug)]
@@ -101,11 +108,14 @@ impl TryFrom<crate::config::Server> for Server {
   }
 }
 
-fn to_script(server: &config::Server) -> Valid<Option<String>, String> {
+fn to_script(server: &config::Server) -> Valid<Option<ScriptOptions>, String> {
   server.script.as_ref().map_or_else(
     || Valid::succeed(None),
     |script| match script {
-      Script::File(script) => Valid::succeed(Some(script.to_owned())),
+      Script::File(script) => Valid::succeed(Some(ScriptOptions {
+        src: script.src.clone(),
+        timeout: script.timeout.map(Duration::from_millis),
+      })),
 
       Script::Path(_) => {
         // NOTE:

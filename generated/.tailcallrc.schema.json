@@ -1260,7 +1260,7 @@
           "additionalProperties": false,
           "properties": {
             "path": {
-              "type": "string"
+              "$ref": "#/definitions/ScriptOptions"
             }
           },
           "required": [
@@ -1272,7 +1272,7 @@
           "additionalProperties": false,
           "properties": {
             "file": {
-              "type": "string"
+              "$ref": "#/definitions/ScriptOptions"
             }
           },
           "required": [
@@ -1281,6 +1281,25 @@
           "type": "object"
         }
       ]
+    },
+    "ScriptOptions": {
+      "properties": {
+        "src": {
+          "type": "string"
+        },
+        "timeout": {
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "src"
+      ],
+      "type": "object"
     },
     "Server": {
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",

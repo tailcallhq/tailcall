@@ -88,8 +88,13 @@ directive @server(
 ) on SCHEMA
 
 input Script {
-  file: String
-  path: String
+  file: ScriptConfig
+  path: ScriptConfig
+}
+
+input ScriptConfig {
+  src: String!
+  timeout: Int
 }
 
 enum HttpVersion {

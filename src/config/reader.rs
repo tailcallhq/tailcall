@@ -4,7 +4,7 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
 
-use super::Script;
+use super::{Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::{FileIO, HttpIO};
 
@@ -53,9 +53,11 @@ impl ConfigReader {
 
   /// Reads the script file and replaces the path with the content
   async fn read_script(&self, mut config: Config) -> anyhow::Result<Config> {
-    if let Some(Script::Path(path)) = config.server.script.as_ref() {
-      let script = self.read_file(path).await?.content;
-      config.server.script = Some(Script::File(script));
+    if let Some(Script::Path(options)) = config.server.script {
+      let timeout = options.timeout;
+      let path = options.src;
+      let script = self.read_file(path.clone()).await?.content;
+      config.server.script = Some(Script::File(ScriptOptions { src: script, timeout }));
     }
     Ok(config)
   }
@@ -89,7 +91,7 @@ mod reader_tests {
 
   use crate::cli::{init_file, init_http};
   use crate::config::reader::ConfigReader;
-  use crate::config::{Config, Script, Type, Upstream};
+  use crate::config::{Config, Script, ScriptOptions, Type, Upstream};
 
   fn start_mock_server() -> httpmock::MockServer {
     httpmock::MockServer::start()
@@ -174,7 +176,10 @@ mod reader_tests {
       .unwrap();
 
     let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
-    let file = String::from_utf8(tokio::fs::read(&path).await.context(path.to_string()).unwrap()).unwrap();
+    let file = ScriptOptions {
+      src: String::from_utf8(tokio::fs::read(&path).await.context(path.to_string()).unwrap()).unwrap(),
+      timeout: None,
+    };
     assert_eq!(config.server.script, Some(Script::File(file)),);
   }
 }

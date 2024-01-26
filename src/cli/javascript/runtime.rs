@@ -2,8 +2,9 @@ use std::cell::RefCell;
 
 use async_std::task::block_on;
 use lazy_static::lazy_static;
-use mini_v8::{MiniV8, Value, Values};
+use mini_v8::{MiniV8, Script, Value, Values};
 
+use crate::blueprint::ScriptOptions;
 use crate::channel::{Command, Event};
 use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::ScriptIO;
@@ -21,7 +22,7 @@ lazy_static! {
       .build();
     match r {
       Ok(r) => r,
-      Err(e) => panic!("Failed to create tokio runtime: {}", e.to_string()),
+      Err(e) => panic!("Failed to create tokio runtime: {}", e),
     }
   };
 }
@@ -40,7 +41,7 @@ fn create_closure(script: &str) -> String {
   )
 }
 impl Runtime {
-  pub fn new(script: String) -> Self {
+  pub fn new(script: ScriptOptions) -> Self {
     block_on(async {
       let b = TOKIO_RUNTIME
         .spawn(async move {
@@ -63,10 +64,12 @@ impl Runtime {
     Self {}
   }
 
-  fn init(v8: &MiniV8, script: String) -> anyhow::Result<mini_v8::Function> {
+  fn init(v8: &MiniV8, script_options: ScriptOptions) -> anyhow::Result<mini_v8::Function> {
     let _ = create_console(v8);
-    let source = create_closure(script.as_str());
-    let value: mini_v8::Value = v8.eval(source).map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let source = create_closure(script_options.src.as_str());
+    let mut script = Script::from(source);
+    script.timeout = script_options.timeout;
+    let value: mini_v8::Value = v8.eval(script).map_err(|e| anyhow::anyhow!(e.to_string()))?;
     let function = value
       .as_function()
       .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?;

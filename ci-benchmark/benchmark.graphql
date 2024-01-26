@@ -1,5 +1,5 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0", script: {path: "examples/scripts/echo.js"})
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0", script: {path: {src: "examples/scripts/echo.js"}})
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
