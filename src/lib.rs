@@ -22,11 +22,11 @@ pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod mustache;
+pub mod native_chrono_cache;
 pub mod path;
 pub mod print_schema;
 pub mod try_fold;
 pub mod valid;
-pub mod native_chrono_cache;
 
 use std::hash::Hash;
 use std::num::NonZeroU64;

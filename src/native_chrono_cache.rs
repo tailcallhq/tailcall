@@ -37,6 +37,11 @@ impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> Cache for NativeChronoC
     }
 
     async fn get<'a>(&'a self, key: &'a K) -> anyhow::Result<V> {
-        self.data.read().unwrap().get(key).cloned().ok_or(anyhow::anyhow!("Key not found"))
+        self.data
+            .read()
+            .unwrap()
+            .get(key)
+            .cloned()
+            .ok_or(anyhow::anyhow!("Key not found"))
     }
 }

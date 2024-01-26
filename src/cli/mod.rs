@@ -10,7 +10,6 @@ mod tc;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use crate::native_chrono_cache::NativeChronoCache;
 pub use env::EnvNative;
 pub use error::CLIError;
 pub use file::NativeFileIO;
@@ -19,6 +18,7 @@ pub use tc::run;
 
 use crate::channel::{Command, Event};
 use crate::config::Upstream;
+use crate::native_chrono_cache::NativeChronoCache;
 use crate::{blueprint, EnvIO, FileIO, HttpIO, ScriptIO};
 
 // Provides access to env in native rust environment
