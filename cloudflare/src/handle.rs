@@ -7,7 +7,7 @@ use anyhow::anyhow;
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::http::{handle_request, showcase_get_app_ctx, AppContext};
+use tailcall::http::{handle_request, showcase_get_app_ctx, AppContext, ShowcaseResources};
 use tailcall::EnvIO;
 
 use crate::env::CloudflareEnv;
@@ -71,12 +71,14 @@ async fn get_app_ctx(
         .ok_or(anyhow!("CONFIG var is not set"))?;
     log::debug!("R2 Bucket ID: {}", bucket_id);
 
-    let file = init_file(env.clone(), bucket_id)?;
-    let http = init_http();
-    let cache = init_cache(env);
+    let resources = ShowcaseResources {
+        http: init_http(),
+        file: Some(init_file(env.clone(), bucket_id)?),
+        env: Some(env_io),
+        cache: init_cache(env),
+    };
 
-    match showcase_get_app_ctx::<GraphQLRequest>(req, http, Some(env_io), Some(file), cache).await?
-    {
+    match showcase_get_app_ctx::<GraphQLRequest>(req, resources).await? {
         Ok(app_ctx) => {
             let app_ctx = Arc::new(app_ctx);
             if let Some(file_path) = file_path {

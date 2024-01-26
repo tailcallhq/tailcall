@@ -17,6 +17,6 @@ pub use request_context::RequestContext;
 pub use request_handler::{graphiql, handle_request};
 pub use request_template::RequestTemplate;
 pub use response::*;
-pub use showcase::showcase_get_app_ctx;
+pub use showcase::*;
 
 pub use crate::app_context::AppContext;

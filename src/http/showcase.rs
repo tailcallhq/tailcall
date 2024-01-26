@@ -12,7 +12,7 @@ use crate::blueprint::Blueprint;
 use crate::config::reader::ConfigReader;
 use crate::{EntityCache, EnvIO, FileIO, HttpIO};
 
-pub struct DummyFileIO;
+struct DummyFileIO;
 
 #[async_trait::async_trait]
 impl FileIO for DummyFileIO {
@@ -25,7 +25,7 @@ impl FileIO for DummyFileIO {
     }
 }
 
-pub struct DummyEnvIO;
+struct DummyEnvIO;
 
 impl EnvIO for DummyEnvIO {
     fn get(&self, _key: &str) -> Option<String> {
@@ -33,15 +33,21 @@ impl EnvIO for DummyEnvIO {
     }
 }
 
+pub struct ShowcaseResources {
+    pub http: Arc<dyn HttpIO + Send + Sync>,
+    pub env: Option<Arc<dyn EnvIO>>,
+    pub file: Option<Arc<dyn FileIO + Send + Sync>>,
+    pub cache: Arc<EntityCache>,
+}
+
 pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,
-    http: Arc<dyn HttpIO + Send + Sync>,
-    env: Option<Arc<dyn EnvIO>>,
-    file: Option<Arc<dyn FileIO + Send + Sync>>,
-    cache: Arc<EntityCache>,
+    resources: ShowcaseResources,
 ) -> Result<Result<AppContext, Response<Body>>> {
     let url = Url::parse(&req.uri().to_string())?;
     let mut query = url.query_pairs();
+
+    let http = resources.http;
 
     let config_url = if let Some(pair) = query.find(|x| x.0 == "config") {
         pair.1.to_string()
@@ -52,7 +58,7 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         return Ok(Err(GraphQLResponse::from(response).to_response()?));
     };
 
-    let config = if let Some(file) = file {
+    let config = if let Some(file) = resources.file {
         let reader = ConfigReader::init(file, http.clone());
         reader.read(config_url).await
     } else {
@@ -84,14 +90,14 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    let env = env.unwrap_or_else(|| Arc::new(DummyEnvIO));
+    let env = resources.env.unwrap_or_else(|| Arc::new(DummyEnvIO));
 
     Ok(Ok(AppContext::new(
         blueprint,
         http.clone(),
         http,
         env,
-        cache,
+        resources.cache,
         None,
     )))
 }
