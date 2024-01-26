@@ -65,7 +65,7 @@ stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
 futures-channel = { version = "0.3.30" }
-futures-timer = { version = "3.0.2",features = ["wasm-bindgen"] }
+futures-timer = { version = "3.0.2", features = ["wasm-bindgen"] }
 futures-util = { version = "0.3.30" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
@@ -78,13 +78,11 @@ protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
 lazy_static = "1.4.0"
-thread_local = "1.1.7"
 
 [dev-dependencies]
 criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
-serial_test = "3.0.0"
 stripmargin = "0.1.1"
 
 [features]
@@ -99,7 +97,7 @@ default = [
     "rustls",
     "rustls-pemfile",
     "inquire",
-    "unsafe-js"
+    "unsafe-js",
 ]
 
 
