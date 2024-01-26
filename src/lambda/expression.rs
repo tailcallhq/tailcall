@@ -109,99 +109,91 @@ impl Eval for Expression {
 }
 
 impl Expression {
-  pub(crate) fn io_iter(&mut self) -> IOExpressionIterator {
-    IOExpressionIterator { stack: vec![self] }
-  }
-}
+  pub(crate) fn for_each_mut<F: FnMut(&mut Expression)>(&mut self, f: &mut F) {
+    f(self);
 
-pub struct IOExpressionIterator<'a> {
-  stack: Vec<&'a mut Expression>,
-}
-
-impl<'a> Iterator for IOExpressionIterator<'a> {
-  type Item = &'a mut IO;
-
-  fn next(&mut self) -> Option<Self::Item> {
-    while let Some(node) = self.stack.pop() {
-      match node {
-        Expression::Context(_) | Expression::Literal(_) => {}
-        Expression::EqualTo(left, right) => {
-          self.stack.push(right);
-          self.stack.push(left);
-        }
-        Expression::IO(io) => {
-          return Some(io);
-        }
-        Expression::Input(expr, _) | Expression::Concurrency(_, expr) => self.stack.push(expr),
-        Expression::Logic(logic) => match logic {
-          Logic::If { cond, then, els } => {
-            self.stack.push(els);
-            self.stack.push(then);
-            self.stack.push(cond);
-          }
-          Logic::And(exprs) | Logic::Or(exprs) => {
-            self.stack.extend(exprs);
-          }
-          Logic::Cond(exprs) => exprs.iter_mut().for_each(|(left, right)| {
-            self.stack.push(right);
-            self.stack.push(left);
-          }),
-          Logic::DefaultTo(left, right) => {
-            self.stack.push(right);
-            self.stack.push(left);
-          }
-          Logic::IsEmpty(expr) | Logic::Not(expr) => {
-            self.stack.push(expr);
-          }
-        },
-        Expression::Relation(relation) => match relation {
-          Relation::Intersection(exprs) | Relation::Max(exprs) | Relation::Min(exprs) => {
-            self.stack.extend(exprs);
-          }
-          Relation::Equals(left, right)
-          | Relation::Gt(left, right)
-          | Relation::Gte(left, right)
-          | Relation::Lt(left, right)
-          | Relation::Lte(left, right)
-          | Relation::PathEq(left, _, right)
-          | Relation::PropEq(left, _, right) => {
-            self.stack.push(right);
-            self.stack.push(left);
-          }
-          Relation::Difference(exprs_left, exprs_right)
-          | Relation::SymmetricDifference(exprs_left, exprs_right)
-          | Relation::Union(exprs_left, exprs_right) => {
-            self.stack.extend(exprs_right);
-            self.stack.extend(exprs_left);
-          }
-          Relation::SortPath(expr, _) => {
-            self.stack.push(expr);
-          }
-        },
-        Expression::List(list) => match list {
-          List::Concat(exprs) => {
-            self.stack.extend(exprs);
-          }
-        },
-        Expression::Math(math) => match math {
-          Math::Inc(expr) | Math::Negate(expr) | Math::Dec(expr) => {
-            self.stack.push(expr);
-          }
-          Math::Mod(left, right)
-          | Math::Add(left, right)
-          | Math::Divide(left, right)
-          | Math::Multiply(left, right)
-          | Math::Subtract(left, right) => {
-            self.stack.push(right);
-            self.stack.push(left);
-          }
-          Math::Sum(exprs) | Math::Product(exprs) => {
-            self.stack.extend(exprs);
-          }
-        },
+    match self {
+      Expression::Context(_) | Expression::Literal(_) | Expression::IO(_) => {}
+      Expression::EqualTo(left, right) => {
+        left.for_each_mut(f);
+        right.for_each_mut(f);
       }
+      Expression::Input(expr, _) | Expression::Concurrency(_, expr) => expr.for_each_mut(f),
+      Expression::Logic(logic) => match logic {
+        Logic::If { cond, then, els } => {
+          cond.for_each_mut(f);
+          then.for_each_mut(f);
+          els.for_each_mut(f);
+        }
+        Logic::And(exprs) | Logic::Or(exprs) => {
+          for expr in exprs {
+            expr.for_each_mut(f)
+          }
+        }
+        Logic::Cond(exprs) => exprs.iter_mut().for_each(|(left, right)| {
+          left.for_each_mut(f);
+          right.for_each_mut(f);
+        }),
+        Logic::DefaultTo(left, right) => {
+          left.for_each_mut(f);
+          right.for_each_mut(f);
+        }
+        Logic::IsEmpty(expr) | Logic::Not(expr) => {
+          expr.for_each_mut(f);
+        }
+      },
+      Expression::Relation(relation) => match relation {
+        Relation::Intersection(exprs) | Relation::Max(exprs) | Relation::Min(exprs) => {
+          for expr in exprs {
+            expr.for_each_mut(f);
+          }
+        }
+        Relation::Equals(left, right)
+        | Relation::Gt(left, right)
+        | Relation::Gte(left, right)
+        | Relation::Lt(left, right)
+        | Relation::Lte(left, right)
+        | Relation::PathEq(left, _, right)
+        | Relation::PropEq(left, _, right) => {
+          left.for_each_mut(f);
+          right.for_each_mut(f);
+        }
+        Relation::Difference(exprs_left, exprs_right)
+        | Relation::SymmetricDifference(exprs_left, exprs_right)
+        | Relation::Union(exprs_left, exprs_right) => {
+          for expr in exprs_left.iter_mut().chain(exprs_right.iter_mut()) {
+            expr.for_each_mut(f);
+          }
+        }
+        Relation::SortPath(expr, _) => {
+          expr.for_each_mut(f);
+        }
+      },
+      Expression::List(list) => match list {
+        List::Concat(exprs) => {
+          for expr in exprs {
+            expr.for_each_mut(f)
+          }
+        }
+      },
+      Expression::Math(math) => match math {
+        Math::Inc(expr) | Math::Negate(expr) | Math::Dec(expr) => {
+          expr.for_each_mut(f);
+        }
+        Math::Mod(left, right)
+        | Math::Add(left, right)
+        | Math::Divide(left, right)
+        | Math::Multiply(left, right)
+        | Math::Subtract(left, right) => {
+          left.for_each_mut(f);
+          right.for_each_mut(f);
+        }
+        Math::Sum(exprs) | Math::Product(exprs) => {
+          for expr in exprs {
+            expr.for_each_mut(f);
+          }
+        }
+      },
     }
-
-    None
   }
 }
