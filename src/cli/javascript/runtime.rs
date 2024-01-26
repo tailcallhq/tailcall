@@ -14,11 +14,16 @@ thread_local! {
 }
 
 lazy_static! {
-  static ref TOKIO_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
-    .worker_threads(1)
-    .thread_name("mini-v8")
-    .build()
-    .unwrap();
+  static ref TOKIO_RUNTIME: tokio::runtime::Runtime = {
+    let r = tokio::runtime::Builder::new_multi_thread()
+      .worker_threads(1)
+      .thread_name("mini-v8")
+      .build();
+    match r {
+      Ok(r) => r,
+      Err(e) => panic!("Failed to create tokio runtime: {}", e.to_string()),
+    }
+  };
 }
 
 pub struct Runtime {}
@@ -37,7 +42,7 @@ fn create_closure(script: &str) -> String {
 impl Runtime {
   pub fn new(script: String) -> Self {
     block_on(async {
-      TOKIO_RUNTIME
+      let b = TOKIO_RUNTIME
         .spawn(async move {
           V8.with_borrow_mut(|v8| {
             let closure: anyhow::Result<mini_v8::Function> = Self::init(v8, script);
@@ -47,8 +52,12 @@ impl Runtime {
             let _ = CLOSURE.replace(closure.map(mini_v8::Value::Function));
           })
         })
-        .await
-        .unwrap()
+        .await;
+
+      match b {
+        Ok(_) => (),
+        Err(e) => log::error!("JS Initialization Failure: {}", e.to_string()),
+      }
     });
 
     Self {}
@@ -74,16 +83,24 @@ fn create_console(v8: &MiniV8) -> anyhow::Result<()> {
         let args = invocation
           .args
           .iter()
-          .map(|v| serde_json::Value::from_v8(v).unwrap().to_string())
+          .flat_map(|v| {
+            let p = serde_json::Value::from_v8(v).map_err(|e| {
+              log::error!("JS: {}", e.to_string());
+              e
+            });
+            Some(p.ok()?.to_string())
+          })
           .collect::<Vec<_>>()
           .join(",");
         log::info!("JS: {}", args);
         Ok(Value::Undefined)
       }),
     )
-    .unwrap();
+    .map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
-  v8.global().set("console", console).unwrap();
+  v8.global()
+    .set("console", console)
+    .map_err(|e| anyhow::anyhow!(e.to_string()))?;
   Ok(())
 }
 
