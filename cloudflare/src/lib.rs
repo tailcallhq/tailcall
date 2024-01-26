@@ -11,7 +11,6 @@ mod env;
 mod file;
 pub mod handle;
 mod http;
-mod script;
 
 pub fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
   Arc::new(env::CloudflareEnv::init(env))
