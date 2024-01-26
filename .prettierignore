@@ -1,1 +1,3 @@
 target/
+generated/
+*.schema.json

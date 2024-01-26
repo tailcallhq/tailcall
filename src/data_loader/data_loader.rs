@@ -177,7 +177,10 @@ where
         #[cfg(feature = "tracing")]
         let task = task.instrument(info_span!("immediate_load")).in_current_span();
 
+        #[cfg(not(target_arch = "wasm32"))]
         tokio::spawn(Box::pin(task));
+        #[cfg(target_arch = "wasm32")]
+        async_std::task::spawn_local(Box::pin(task));
       }
       Action::StartFetch => {
         let inner = self.inner.clone();
@@ -198,7 +201,10 @@ where
         };
         #[cfg(feature = "tracing")]
         let task = task.instrument(info_span!("start_fetch")).in_current_span();
+        #[cfg(not(target_arch = "wasm32"))]
         tokio::spawn(Box::pin(task));
+        #[cfg(target_arch = "wasm32")]
+        async_std::task::spawn_local(Box::pin(task));
       }
       Action::Delay => {}
     }

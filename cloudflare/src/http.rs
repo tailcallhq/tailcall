@@ -21,7 +21,7 @@ impl Default for CloudflareHttp {
 impl CloudflareHttp {
   pub fn init() -> Self {
     let client = Client::new();
-    Self { client: client }
+    Self { client }
   }
 }
 
@@ -31,12 +31,16 @@ impl HttpIO for CloudflareHttp {
   // This is because there is little control over the underlying HTTP client
   async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
     let client = self.client.clone();
+    let method = request.method().clone();
+    let url = request.url().clone();
     // TODO: remove spawn local
-    spawn_local(async move {
+    let res = spawn_local(async move {
       let response = client.execute(request).await?.error_for_status()?;
       Response::from_reqwest(response).await
     })
-    .await
+    .await?;
+    log::info!("{} {} {}", method, url, res.status.as_u16());
+    Ok(res)
   }
 }
 
@@ -56,7 +60,7 @@ pub async fn to_response(response: hyper::Response<hyper::Body>) -> anyhow::Resu
   Ok(w_response)
 }
 
-pub fn to_method(method: worker::Method) -> anyhow::Result<hyper::Method> {
+pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
   let method = &*method.to_string().to_uppercase();
   match method {
     "GET" => Ok(hyper::Method::GET),

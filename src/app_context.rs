@@ -2,17 +2,16 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
-use async_graphql_value::ConstValue;
 
+use crate::blueprint;
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{self, Blueprint, Definition};
-use crate::chrono_cache::ChronoCache;
+use crate::blueprint::{Blueprint, Definition};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::lambda::{Cache, DataLoaderId, Expression, Unsafe};
-use crate::{grpc, EnvIO, HttpIO};
+use crate::lambda::{Cache, DataLoaderId, Expression, IO};
+use crate::{grpc, EntityCache, EnvIO, HttpIO};
 
 pub struct AppContext<Http, Env> {
   pub schema: dynamic::Schema,
@@ -21,14 +20,20 @@ pub struct AppContext<Http, Env> {
   pub blueprint: Blueprint,
   pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
   pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-  pub cache: ChronoCache<u64, ConstValue>,
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+  pub cache: Arc<EntityCache>,
   pub env_vars: Arc<Env>,
 }
 
 impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   #[allow(clippy::too_many_arguments)]
-  pub fn new(blueprint: Blueprint, h_client: Arc<Http>, h2_client: Arc<Http>, env: Arc<Env>) -> Self {
+  pub fn new(
+    mut blueprint: Blueprint,
+    h_client: Arc<Http>,
+    h2_client: Arc<Http>,
+    env: Arc<Env>,
+    cache: Arc<EntityCache>,
+  ) -> Self {
     let mut bp = blueprint.clone();
 
     let mut ctx = AppContext {
@@ -38,7 +43,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
       blueprint,
       http_data_loaders: Arc::new(vec![]),
       gql_data_loaders: Arc::new(vec![]),
-      cache: ChronoCache::new(),
+      cache: cache,
       grpc_data_loaders: Arc::new(vec![]),
       env_vars: env,
     };
@@ -61,7 +66,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   // return true means field is modified
   fn check_resolver_of_field(&mut self, field: &mut blueprint::FieldDefinition, expr: &Expression) -> bool {
     match expr {
-      Expression::Unsafe(expr_unsafe) => self.check_unsafe_expr(expr_unsafe, field),
+      Expression::IO(expr_unsafe) => self.check_unsafe_expr(expr_unsafe, field),
       Expression::Cache(cache) => {
         let modified = self.check_resolver_of_field(field, cache.source());
         if modified {
@@ -80,21 +85,21 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
   }
 
   // return true means field is modified
-  fn check_unsafe_expr(&mut self, expr_unsafe: &Unsafe, field: &mut blueprint::FieldDefinition) -> bool {
+  fn check_unsafe_expr(&mut self, expr_unsafe: &IO, field: &mut blueprint::FieldDefinition) -> bool {
     let bt = self.blueprint.upstream.batch.clone().unwrap_or_default();
-    let universal_http_client = self.universal_http_client.clone();
-    let http2_only_client = self.http2_only_client.clone();
+    let h_client = self.universal_http_client.clone();
+    let h2_client = self.http2_only_client.clone();
     let mut modified = false;
     match expr_unsafe {
-      Unsafe::Http { req_template, group_by, .. } => {
+      IO::Http { req_template, group_by, .. } => {
         let data_loader = HttpDataLoader::new(
-          universal_http_client.clone(),
+          h_client.clone(),
           group_by.clone(),
           matches!(&field.of_type, ListType { .. }),
         )
         .to_data_loader(bt);
 
-        field.resolver = Some(Expression::Unsafe(Unsafe::Http {
+        field.resolver = Some(Expression::IO(IO::Http {
           req_template: req_template.clone(),
           group_by: group_by.clone(),
           dl_id: Some(DataLoaderId(self.http_data_loaders.len())),
@@ -105,10 +110,11 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
         http_data_loaders.push(data_loader);
       }
 
-      Unsafe::GraphQLEndpoint { req_template, field_name, batch, .. } => {
-        let graphql_data_loader = GraphqlDataLoader::new(universal_http_client.clone(), *batch).to_data_loader(bt);
+      IO::GraphQLEndpoint { req_template, field_name, batch, .. } => {
+        let graphql_data_loader = GraphqlDataLoader::new(h_client.clone(), *batch)
+          .to_data_loader(bt);
 
-        field.resolver = Some(Expression::Unsafe(Unsafe::GraphQLEndpoint {
+        field.resolver = Some(Expression::IO(IO::GraphQLEndpoint {
           req_template: req_template.clone(),
           field_name: field_name.clone(),
           batch: *batch,
@@ -120,15 +126,15 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
         gql_data_loaders.push(graphql_data_loader);
       }
 
-      Unsafe::Grpc { req_template, group_by, .. } => {
+      IO::Grpc { req_template, group_by, .. } => {
         let data_loader = GrpcDataLoader {
-          client: http2_only_client.clone(),
+          client: h2_client.clone(),
           operation: req_template.operation.clone(),
           group_by: group_by.clone(),
         };
         let data_loader = data_loader.to_data_loader(bt);
 
-        field.resolver = Some(Expression::Unsafe(Unsafe::Grpc {
+        field.resolver = Some(Expression::IO(IO::Grpc {
           req_template: req_template.clone(),
           group_by: group_by.clone(),
           dl_id: Some(DataLoaderId(self.grpc_data_loaders.len())),
@@ -138,7 +144,7 @@ impl<Http: HttpIO, Env: EnvIO> AppContext<Http, Env> {
         let grpc_data_loaders = Arc::get_mut(&mut self.grpc_data_loaders).unwrap();
         grpc_data_loaders.push(data_loader);
       }
-      _ => (),
+      _ => {}
     }
     modified
   }
