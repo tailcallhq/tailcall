@@ -75,40 +75,6 @@ jobs:
           files: lcov.info
           fail_ci_if_error: true
 
-  format:
-    name: Run Formatter and Lint Check
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: write
-    env:
-      LINT_MODE: "${{ contains(github.event.pull_request.labels.*.name, 'ci: lint') && 'fix' || 'check' }}"
-    steps:
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.11.0"
-      - name: Install Prettier
-        run: npm install --global prettier
-      - name: Install Nightly Toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ (env.LINT_MODE == 'fix' && github.event.pull_request.head.sha) || '' }}
-      - name: Run Lint Script
-        run: ./lint.sh --mode=$LINT_MODE
-      - name: Commit and push if changed
-        if: env.LINT_MODE == 'fix'
-        # TODO: works only for internal contributors
-        # to make it for forks we need smth like https://autofix.ci
-        continue-on-error: true
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "style: apply lint fixes"
-
   draft_release:
     name: Draft Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -139,7 +105,7 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build, test_cf]
+    needs: [test, draft_release, check_if_build, test_cf]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}

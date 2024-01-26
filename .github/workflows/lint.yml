@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled]
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Run Formatter and Lint Check
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    env:
+      LINT_MODE: "${{ contains(github.event.pull_request.labels.*.name, 'ci: lint') && 'fix' || 'check' }}"
+    steps:
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+      - name: Install Prettier
+        run: npm install --global prettier
+      - name: Install Nightly Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt, clippy
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ (env.LINT_MODE == 'fix' && github.event.pull_request.head.sha) || '' }}
+      - name: Run Lint Script
+        run: ./lint.sh --mode=$LINT_MODE
+      - name: Commit and push if changed
+        if: env.LINT_MODE == 'fix'
+        uses: autofix-ci/action@a8f4efa9081c2a36336356dd9154636f565f347b
