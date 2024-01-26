@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::config::{self, HttpVersion, Script};
+use crate::config::{self, HttpVersion};
 use crate::valid::{Valid, ValidationError};
 
 #[derive(Clone, Debug, Setters)]
@@ -26,12 +26,13 @@ pub struct Server {
   pub response_headers: HeaderMap,
   pub http: Http,
   pub pipeline_flush: bool,
-  pub script: Option<ScriptOptions>,
+  pub script: Option<Script>,
 }
 
+/// Mimic of mini_v8::Script that's wasm compatible
 #[derive(Clone, Debug)]
-pub struct ScriptOptions {
-  pub src: String,
+pub struct Script {
+  pub source: String,
   pub timeout: Option<Duration>,
 }
 
@@ -108,16 +109,16 @@ impl TryFrom<crate::config::Server> for Server {
   }
 }
 
-fn to_script(server: &config::Server) -> Valid<Option<ScriptOptions>, String> {
+fn to_script(server: &config::Server) -> Valid<Option<Script>, String> {
   server.script.as_ref().map_or_else(
     || Valid::succeed(None),
     |script| match script {
-      Script::File(script) => Valid::succeed(Some(ScriptOptions {
-        src: script.src.clone(),
+      config::Script::File(script) => Valid::succeed(Some(Script {
+        source: script.src.clone(),
         timeout: script.timeout.map(Duration::from_millis),
       })),
 
-      Script::Path(_) => {
+      config::Script::Path(_) => {
         // NOTE:
         // Making sure that we panic if we try to use Script::Path
         // Need to convert all Script::Path to Script::File before passing it for BP conversion

@@ -4,7 +4,7 @@ use async_std::task::block_on;
 use lazy_static::lazy_static;
 use mini_v8::{MiniV8, Script, Value, Values};
 
-use crate::blueprint::ScriptOptions;
+use crate::blueprint::{self};
 use crate::channel::{Command, Event};
 use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::ScriptIO;
@@ -41,7 +41,7 @@ fn create_closure(script: &str) -> String {
   )
 }
 impl Runtime {
-  pub fn new(script: ScriptOptions) -> Self {
+  pub fn new(script: blueprint::Script) -> Self {
     block_on(async {
       let b = TOKIO_RUNTIME
         .spawn(async move {
@@ -64,9 +64,9 @@ impl Runtime {
     Self {}
   }
 
-  fn init(v8: &MiniV8, script_options: ScriptOptions) -> anyhow::Result<mini_v8::Function> {
+  fn init(v8: &MiniV8, script_options: blueprint::Script) -> anyhow::Result<mini_v8::Function> {
     let _ = create_console(v8);
-    let source = create_closure(script_options.src.as_str());
+    let source = create_closure(script_options.source.as_str());
     let mut script = Script::from(source);
     script.timeout = script_options.timeout;
     let value: mini_v8::Value = v8.eval(script).map_err(|e| anyhow::anyhow!(e.to_string()))?;
