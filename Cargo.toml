@@ -100,7 +100,7 @@ default = [
 
 
 [workspace]
-members = [".", "autogen", "cloudflare", "wasm"]
+members = [".", "autogen", "cloudflare", "tc-wasm"]
 
 [profile.release]
 opt-level = 3
