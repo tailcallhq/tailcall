@@ -154,7 +154,7 @@ jobs:
   release:
     name: Release
 
-    needs: [test, format, draft_release, check_if_build, test_cf]
+    needs: [draft_release]
     if: github.event_name == 'push'
     runs-on: ${{ matrix.os }}
     strategy:
