@@ -63,6 +63,11 @@ fn to_jsvalue<T: Display>(val: T) -> JsValue {
   JsValue::from_str(val.to_string().as_str())
 }
 
+#[wasm_bindgen(start)]
+fn main() {
+  console_error_panic_hook::set_once();
+}
+
 /*fn main() {
     extern crate cfg_if;
     extern crate wasm_bindgen;
