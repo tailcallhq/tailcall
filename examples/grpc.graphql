@@ -1,22 +1,14 @@
 # for test upstream server see [repo](https://github.com/tailcallhq/node-grpc)
-schema @server(port: 8000, graphiql: true) @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10}) {
+schema
+  @server(port: 8000, graphiql: true)
+  @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10}) {
   query: Query
 }
 
 type Query {
-  news: NewsData!
-    @grpc(
-      service: "NewsService"
-      method: "GetAllNews"
-      protoPath: "src/grpc/tests/news.proto"
-    )
+  news: NewsData! @grpc(service: "NewsService", method: "GetAllNews", protoPath: "src/grpc/tests/news.proto")
   newsById(news: NewsInput!): News!
-    @grpc(
-      service: "NewsService"
-      method: "GetNews"
-      body: "{{args.news}}"
-      protoPath: "src/grpc/tests/news.proto"
-    )
+    @grpc(service: "NewsService", method: "GetNews", body: "{{args.news}}", protoPath: "src/grpc/tests/news.proto")
   newsByIdBatch(news: NewsInput!): News!
     @grpc(
       service: "NewsService"
