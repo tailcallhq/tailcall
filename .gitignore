@@ -19,3 +19,10 @@ cloudflare/node_modules
 cloudflare/pkg
 
 .wrangler/
+
+/lambda/deploy/tailcall.zip
+/lambda/deploy/.terraform*
+/lambda/deploy/terraform*
+/lambda/deploy/*.graphql
+/lambda/deploy/tmp/
+!/lambda/deploy/example.graphql

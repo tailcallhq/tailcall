@@ -1,6 +1,6 @@
 use tailcall::EnvIO;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct LambdaEnv;
 
 impl EnvIO for LambdaEnv {

@@ -1,9 +1,10 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use hyper::body::Bytes;
 use reqwest::Client;
 use tailcall::http::Response;
 use tailcall::HttpIO;
-use tokio::task::spawn_local;
 
 #[derive(Clone)]
 pub struct LambdaHttp {
@@ -28,11 +29,8 @@ impl HttpIO for LambdaHttp {
         let client = self.client.clone();
         let method = request.method().clone();
         let url = request.url().clone();
-        let res = spawn_local(async move {
-            let response = client.execute(request).await?.error_for_status()?;
-            Response::from_reqwest(response).await
-        })
-        .await??;
+        let response = client.execute(request).await?.error_for_status()?;
+        let res = Response::from_reqwest(response).await?;
         tracing::info!("{} {} {}", method, url, res.status.as_u16());
         Ok(res)
     }
@@ -45,6 +43,14 @@ pub fn to_response(
 }
 
 pub fn to_request(req: lambda_http::Request) -> hyper::Request<hyper::Body> {
-    let body = hyper::Body::from(req.body().as_ref().to_owned());
-    hyper::Request::new(body)
+    let builder = hyper::Request::builder()
+        .method(req.method())
+        .uri(req.uri())
+        .body(hyper::Body::from(req.body().as_ref().to_vec()));
+
+    builder.unwrap()
+}
+
+pub fn init_http() -> Arc<LambdaHttp> {
+    Arc::new(LambdaHttp::init())
 }
