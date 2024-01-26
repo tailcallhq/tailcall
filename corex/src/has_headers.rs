@@ -3,11 +3,11 @@ use hyper::HeaderMap;
 use crate::lambda::{EvaluationContext, ResolverContextLike};
 
 pub trait HasHeaders {
-  fn headers(&self) -> &HeaderMap;
+    fn headers(&self) -> &HeaderMap;
 }
 
 impl<'a, Ctx: ResolverContextLike<'a>> HasHeaders for EvaluationContext<'a, Ctx> {
-  fn headers(&self) -> &HeaderMap {
-    self.headers()
-  }
+    fn headers(&self) -> &HeaderMap {
+        self.headers()
+    }
 }

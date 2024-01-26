@@ -21,24 +21,24 @@ pub use http::NativeHttp;
 
 // Provides access to env in native rust environment
 pub fn init_env() -> env::EnvNative {
-  env::EnvNative::init()
+    env::EnvNative::init()
 }
 
 // Provides access to file system in native rust environment
 pub fn init_file() -> file::NativeFileIO {
-  file::NativeFileIO::init()
+    file::NativeFileIO::init()
 }
 
 // Provides access to http in native rust environment
 pub fn init_http(upstream: &Upstream) -> http::NativeHttp {
-  http::NativeHttp::init(upstream)
+    http::NativeHttp::init(upstream)
 }
 
 // Provides access to http in native rust environment
 pub fn init_http2_only(upstream: &Upstream) -> http::NativeHttp {
-  http::NativeHttp::init(&upstream.clone().http2_only(true))
+    http::NativeHttp::init(&upstream.clone().http2_only(true))
 }
 
 pub fn init_chrono_cache<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
-  NativeChronoCache::new()
+    NativeChronoCache::new()
 }
