@@ -21,7 +21,7 @@ use crate::http::WasmHttp;
 
 #[wasm_bindgen]
 struct GraphQLExecutor {
-  app_ctx: Arc<AppContext<WasmHttp, WasmEnv>>,
+  app_ctx: Arc<AppContext>,
 }
 #[wasm_bindgen]
 impl GraphQLExecutor {
@@ -39,7 +39,7 @@ impl GraphQLExecutor {
     let req = hyper::Request::post("http://fake.host/graphql")
       .body(hyper::body::Body::from(body))
       .map_err(to_jsvalue)?;
-    let resp = handle_request::<GraphQLRequest, WasmHttp, WasmEnv>(req, self.app_ctx.clone())
+    let resp = handle_request::<GraphQLRequest>(req, self.app_ctx.clone())
       .await
       .map_err(to_jsvalue)?;
     log::debug!("{:#?}", resp);
@@ -58,6 +58,7 @@ impl GraphQLExecutor {
       http_clone,
       Arc::new(WasmEnv::new()),
       Arc::new(WasmCache::init()),
+      None,
     ));
     Ok(GraphQLExecutor { app_ctx })
   }
