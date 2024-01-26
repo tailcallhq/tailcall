@@ -29,17 +29,6 @@ lazy_static! {
 
 pub struct Runtime {}
 
-fn create_closure(script: &str) -> String {
-  format!(
-    r#"
-    (function() {{
-      {}
-      return onEvent
-    }})();
-  "#,
-    script
-  )
-}
 impl Runtime {
   pub fn new(script: blueprint::Script) -> Self {
     block_on(async {
@@ -64,47 +53,15 @@ impl Runtime {
     Self {}
   }
 
-  fn init(v8: &MiniV8, script_options: blueprint::Script) -> anyhow::Result<mini_v8::Function> {
-    let _ = create_console(v8);
-    let source = create_closure(script_options.source.as_str());
-    let mut script = Script::from(source);
-    script.timeout = script_options.timeout;
+  fn init(v8: &MiniV8, script: blueprint::Script) -> anyhow::Result<mini_v8::Function> {
+    let _ = super::shim::init(v8);
+    let script = Script { source: script.source, timeout: script.timeout, ..Default::default() };
     let value: mini_v8::Value = v8.eval(script).map_err(|e| anyhow::anyhow!(e.to_string()))?;
     let function = value
       .as_function()
       .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?;
     Ok(function.clone())
   }
-}
-
-fn create_console(v8: &MiniV8) -> anyhow::Result<()> {
-  let console = v8.create_object();
-  console
-    .set(
-      "log",
-      v8.create_function(|invocation| {
-        let args = invocation
-          .args
-          .iter()
-          .flat_map(|v| {
-            let p = serde_json::Value::from_v8(v).map_err(|e| {
-              log::error!("JS: {}", e.to_string());
-              e
-            });
-            Some(p.ok()?.to_string())
-          })
-          .collect::<Vec<_>>()
-          .join(",");
-        log::info!("JS: {}", args);
-        Ok(Value::Undefined)
-      }),
-    )
-    .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-
-  v8.global()
-    .set("console", console)
-    .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-  Ok(())
 }
 
 #[async_trait::async_trait]

@@ -36,7 +36,7 @@ impl HttpFilter {
             .into_iter()
             .collect::<anyhow::Result<Vec<_>>>()?
             .iter()
-            .flat_map(|e| Some(JsResponse::try_from(e).ok()?))
+            .flat_map(|e| JsResponse::try_from(e).ok())
             .collect::<Vec<_>>();
           let command = self.script.on_event(Event::Response(responses)).await?;
           Ok(self.on_command(command).await?)
