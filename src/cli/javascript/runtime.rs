@@ -30,15 +30,7 @@ lazy_static! {
 pub struct Runtime {}
 
 fn create_closure(script: &str) -> String {
-  format!(
-    r#"
-    (function() {{
-      {}
-      return onEvent
-    }})();
-  "#,
-    script
-  )
+  format!("(function() {{{} return onEvent}})();", script)
 }
 impl Runtime {
   pub fn new(script: blueprint::Script) -> Self {
