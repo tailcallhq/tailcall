@@ -102,7 +102,7 @@ default = [
 
 
 [workspace]
-members = [".", "autogen", "cloudflare"]
+members = [".", "autogen", "cloudflare", "lambda"]
 
 [profile.release]
 opt-level = 3
