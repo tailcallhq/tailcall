@@ -38,4 +38,4 @@ jobs:
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed
         if: env.LINT_MODE == 'fix'
-        uses: autofix-ci/action@a8f4efa9081c2a36336356dd9154636f565f347b
+        uses: autofix-ci/action@ea32e3a12414e6d3183163c3424a7d7a8631ad84
