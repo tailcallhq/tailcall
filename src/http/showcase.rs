@@ -14,12 +14,13 @@ use crate::{EntityCache, EnvIO, FileIO, HttpIO};
 
 pub struct DummyFileIO;
 
+#[async_trait::async_trait]
 impl FileIO for DummyFileIO {
-  async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+  async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> anyhow::Result<()> {
     Err(anyhow!("DummyFileIO"))
   }
 
-  async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+  async fn read<'a>(&'a self, _path: &'a str) -> anyhow::Result<String> {
     Err(anyhow!("DummyFileIO"))
   }
 }
