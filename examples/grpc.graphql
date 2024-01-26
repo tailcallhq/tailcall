@@ -1,5 +1,5 @@
 # for test upstream server see [repo](https://github.com/tailcallhq/node-grpc)
-schema @server(port: 8000, graphiql: true) @upstream(httpCache: true, batch: {delay: 10}) {
+schema @server(port: 8000, graphiql: true) @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10}) {
   query: Query
 }
 
@@ -8,14 +8,12 @@ type Query {
     @grpc(
       service: "NewsService"
       method: "GetAllNews"
-      baseURL: "http://localhost:50051"
       protoPath: "src/grpc/tests/news.proto"
     )
   newsById(news: NewsInput!): News!
     @grpc(
       service: "NewsService"
       method: "GetNews"
-      baseURL: "http://localhost:50051"
       body: "{{args.news}}"
       protoPath: "src/grpc/tests/news.proto"
     )
@@ -23,20 +21,10 @@ type Query {
     @grpc(
       service: "NewsService"
       method: "GetMultipleNews"
-      baseURL: "http://localhost:50051"
       body: "{{args.news}}"
       protoPath: "src/grpc/tests/news.proto"
       groupBy: ["news", "id"]
     )
-}
-input NewsInput {
-  id: Int
-  title: String
-  body: String
-  postImage: String
-}
-type NewsData {
-  news: [News]!
 }
 
 type News {
@@ -44,4 +32,12 @@ type News {
   title: String
   body: String
   postImage: String
+}
+
+input NewsInput {
+  id: Int
+}
+
+type NewsData {
+  news: [News]!
 }
