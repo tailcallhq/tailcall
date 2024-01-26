@@ -3,8 +3,8 @@ use clap::{Parser, Subcommand};
 use crate::config::Source;
 
 const VERSION: &str = match option_env!("APP_VERSION") {
-    Some(version) => version,
-    _ => "0.1.0-dev",
+  Some(version) => version,
+  _ => "0.1.0-dev",
 };
 const ABOUT: &str = r"
    __        _ __           ____
@@ -16,53 +16,53 @@ const ABOUT: &str = r"
 #[derive(Parser)]
 #[command(name ="tailcall",author, version = VERSION, about, long_about = Some(ABOUT))]
 pub struct Cli {
-    #[command(subcommand)]
-    pub command: Command,
+  #[command(subcommand)]
+  pub command: Command,
 }
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Starts the GraphQL server on the configured port
-    Start {
-        /// Path for the configuration files or http(s) link to config files separated by spaces if more than one
-        #[arg(required = true)]
-        file_paths: Vec<String>,
-    },
+  /// Starts the GraphQL server on the configured port
+  Start {
+    /// Path for the configuration files or http(s) link to config files separated by spaces if more than one
+    #[arg(required = true)]
+    file_paths: Vec<String>,
+  },
 
-    /// Validate a composition spec
-    Check {
-        /// Path for the configuration files separated by spaces if more than one
-        #[arg(required = true)]
-        file_paths: Vec<String>,
+  /// Validate a composition spec
+  Check {
+    /// Path for the configuration files separated by spaces if more than one
+    #[arg(required = true)]
+    file_paths: Vec<String>,
 
-        /// N plus one queries
-        #[arg(short, long)]
-        n_plus_one_queries: bool,
+    /// N plus one queries
+    #[arg(short, long)]
+    n_plus_one_queries: bool,
 
-        /// Display schema
-        #[arg(short, long)]
-        schema: bool,
+    /// Display schema
+    #[arg(short, long)]
+    schema: bool,
 
-        /// Operations to check
-        #[arg(short, long, value_delimiter=',', num_args = 1..)]
-        operations: Vec<String>,
-    },
+    /// Operations to check
+    #[arg(short, long, value_delimiter=',', num_args = 1..)]
+    operations: Vec<String>,
+  },
 
-    /// Merge multiple configuration file into one
-    Compose {
-        /// Path for the configuration files separated by spaces if more than one
-        #[arg(required = true)]
-        file_paths: Vec<String>,
+  /// Merge multiple configuration file into one
+  Compose {
+    /// Path for the configuration files separated by spaces if more than one
+    #[arg(required = true)]
+    file_paths: Vec<String>,
 
-        /// Format of the result. Accepted values: JSON|YML|GQL.
-        #[clap(short, long, default_value = "gql")]
-        format: Source,
-    },
+    /// Format of the result. Accepted values: JSON|YML|GQL.
+    #[clap(short, long, default_value = "gql")]
+    format: Source,
+  },
 
-    /// Initialize a new project
-    Init {
-        // default is current directory
-        #[arg(default_value = ".")]
-        folder_path: String,
-    },
+  /// Initialize a new project
+  Init {
+    // default is current directory
+    #[arg(default_value = ".")]
+    folder_path: String,
+  },
 }

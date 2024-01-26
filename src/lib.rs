@@ -34,43 +34,35 @@ use async_graphql_value::ConstValue;
 use http::Response;
 
 pub trait EnvIO: Send + Sync + 'static {
-    fn get(&self, key: &str) -> Option<String>;
+  fn get(&self, key: &str) -> Option<String>;
 }
 
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send + 'static {
-    async fn execute(
-        &self,
-        request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>>;
+  async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>>;
 }
 
 #[async_trait::async_trait]
 pub trait FileIO {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
+  async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
+  async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
 }
 
 #[async_trait::async_trait]
 pub trait Cache: Send + Sync {
-    type Key: Hash + Eq;
-    type Value;
-    async fn set<'a>(
-        &'a self,
-        key: Self::Key,
-        value: Self::Value,
-        ttl: NonZeroU64,
-    ) -> anyhow::Result<Self::Value>;
-    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
+  type Key: Hash + Eq;
+  type Value;
+  async fn set<'a>(&'a self, key: Self::Key, value: Self::Value, ttl: NonZeroU64) -> anyhow::Result<Self::Value>;
+  async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
 }
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
 #[async_trait::async_trait]
 pub trait ScriptIO<Event, Command>: Send + Sync {
-    async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
+  async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
 }
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
-    *val == T::default()
+  *val == T::default()
 }

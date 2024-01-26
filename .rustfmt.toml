@@ -1,4 +1,6 @@
 unstable_features = true
-struct_lit_width = 60
+max_width = 120
+struct_lit_width = 120
+tab_spaces = 2
 imports_granularity = "Module"
 group_imports = "StdExternalCrate"
