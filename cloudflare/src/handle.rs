@@ -23,10 +23,6 @@ lazy_static! {
 pub async fn fetch(req: worker::Request, env: worker::Env, _: worker::Context) -> anyhow::Result<worker::Response> {
   log::info!("{} {:?}", req.method().to_string(), req.url().map(|u| u.to_string()));
   let req = to_request(req).await?;
-  if req.method() == hyper::Method::GET {
-    let response = graphiql(&req)?;
-    return to_response(response).await;
-  }
   let env = Rc::new(env);
   let app_ctx = match get_app_ctx(env, &req).await? {
     Ok(app_ctx) => app_ctx,
