@@ -17,12 +17,11 @@ pub fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
 }
 
-pub fn init_file(env: Rc<worker::Env>, bucket_id: String) -> anyhow::Result<Arc<dyn FileIO>> {
-    #[allow(clippy::arc_with_non_send_sync)]
+pub fn init_file(env: Rc<worker::Env>, bucket_id: String) -> anyhow::Result<Arc<dyn FileIO + Send + Sync>> {
     Ok(Arc::new(file::CloudflareFileIO::init(env, bucket_id)?))
 }
 
-pub fn init_http() -> Arc<dyn HttpIO> {
+pub fn init_http() -> Arc<dyn HttpIO + Send + Sync> {
     Arc::new(http::CloudflareHttp::init())
 }
 
@@ -49,9 +48,9 @@ pub fn init_runtime(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
 async fn fetch(
     req: worker::Request,
     env: worker::Env,
-    _: worker::Context,
+    ctx: worker::Context,
 ) -> anyhow::Result<worker::Response> {
-    let result = handle::fetch(req, env).await;
+    let result = handle::fetch(req, env, ctx).await;
 
     match result {
         Ok(response) => Ok(response),

@@ -37,7 +37,7 @@ pub async fn fetch(
         Err(e) => return Ok(to_response(e).await?),
     };
     let resp =
-        handle_request::<GraphQLRequest, CloudflareHttp, CloudflareEnv>(req, app_ctx).await?;
+        handle_request::<GraphQLRequest>(req, app_ctx).await?;
     Ok(to_response(resp).await?)
 }
 
@@ -48,7 +48,7 @@ pub async fn fetch(
 async fn get_app_ctx(
     env: Rc<worker::Env>,
     req: &Request<Body>,
-) -> anyhow::Result<Result<Arc<CloudFlareAppContext>, Response<Body>>> {
+) -> anyhow::Result<Result<Arc<AppContext>, Response<Body>>> {
     // Read context from cache
     let file_path = req
         .uri()
@@ -66,7 +66,7 @@ async fn get_app_ctx(
     }
 
     // Create new context
-    let env_io = CloudflareEnv::init(env.clone());
+    let env_io = Arc::new(CloudflareEnv::init(env.clone()));
     let bucket_id = env_io
         .get("BUCKET")
         .ok_or(anyhow!("CONFIG var is not set"))?;
@@ -76,9 +76,12 @@ async fn get_app_ctx(
     let http = init_http();
     let cache = init_cache(env);
 
-    match showcase_get_app_ctx::<GraphQLRequest, _, _, _>(
+    match showcase_get_app_ctx::<GraphQLRequest>(
         req,
-        (http, env_io, Some(file), Arc::new(cache)),
+        http,
+        Some(env_io),
+        Some(file),
+        cache,
     )
     .await?
     {
