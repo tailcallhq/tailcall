@@ -32,7 +32,10 @@ pub fn init_file() -> Arc<dyn FileIO + Send + Sync> {
     Arc::new(file::NativeFileIO::init())
 }
 
-pub fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> Arc<dyn HttpIO + Send + Sync> {
+pub fn init_hook_http(
+    http: impl HttpIO,
+    script: Option<blueprint::Script>,
+) -> Arc<dyn HttpIO + Send + Sync> {
     if let Some(script) = script {
         let script_io = javascript::Runtime::new(script);
         Arc::new(javascript::HttpFilter::new(http, script_io))
@@ -42,13 +45,19 @@ pub fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> A
 }
 
 // Provides access to http in native rust environment
-pub fn init_http(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn HttpIO + Send + Sync> {
+pub fn init_http(
+    upstream: &Upstream,
+    script: Option<blueprint::Script>,
+) -> Arc<dyn HttpIO + Send + Sync> {
     let http_io = http::NativeHttp::init(upstream);
     init_hook_http(http_io, script)
 }
 
 // Provides access to http in native rust environment
-pub fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn HttpIO + Send + Sync> {
+pub fn init_http2_only(
+    upstream: &Upstream,
+    script: Option<blueprint::Script>,
+) -> Arc<dyn HttpIO + Send + Sync> {
     let http_io = http::NativeHttp::init(&upstream.clone().http2_only(true));
     init_hook_http(http_io, script)
 }

@@ -113,14 +113,19 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     state: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     match *req.method() {
-        hyper::Method::POST if state.blueprint.server.enable_showcase && req.uri().path().ends_with("/showcase/graphql") => {
+        hyper::Method::POST
+            if state.blueprint.server.enable_showcase
+                && req.uri().path().ends_with("/showcase/graphql") =>
+        {
             let server_ctx = match showcase_get_app_ctx::<T>(
                 &req,
                 state.universal_http_client.clone(),
                 None,
                 None,
                 state.cache.clone(),
-            ).await? {
+            )
+            .await?
+            {
                 Ok(server_ctx) => server_ctx,
                 Err(res) => return Ok(res),
             };
@@ -129,7 +134,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         }
         hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
             graphql_request::<T>(req, state.as_ref()).await
-        },
+        }
         hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(&req),
         _ => not_found(),
     }

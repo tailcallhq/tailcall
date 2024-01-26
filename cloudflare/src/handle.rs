@@ -7,11 +7,11 @@ use anyhow::anyhow;
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::http::{graphiql, handle_request, showcase_get_app_ctx, AppContext};
+use tailcall::http::{handle_request, showcase_get_app_ctx, AppContext};
 use tailcall::EnvIO;
 
 use crate::env::CloudflareEnv;
-use crate::http::{to_request, to_response, CloudflareHttp};
+use crate::http::{to_request, to_response};
 use crate::{init_cache, init_file, init_http};
 
 lazy_static! {
@@ -36,8 +36,7 @@ pub async fn fetch(
         Ok(app_ctx) => app_ctx,
         Err(e) => return Ok(to_response(e).await?),
     };
-    let resp =
-        handle_request::<GraphQLRequest>(req, app_ctx).await?;
+    let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
     Ok(to_response(resp).await?)
 }
 
@@ -76,14 +75,7 @@ async fn get_app_ctx(
     let http = init_http();
     let cache = init_cache(env);
 
-    match showcase_get_app_ctx::<GraphQLRequest>(
-        req,
-        http,
-        Some(env_io),
-        Some(file),
-        cache,
-    )
-    .await?
+    match showcase_get_app_ctx::<GraphQLRequest>(req, http, Some(env_io), Some(file), cache).await?
     {
         Ok(app_ctx) => {
             let app_ctx = Arc::new(app_ctx);

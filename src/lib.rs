@@ -48,7 +48,20 @@ pub trait HttpIO: Sync + Send + 'static {
 }
 
 impl<Http: HttpIO> HttpIO for Arc<Http> {
-    fn execute<'life0,'async_trait>(&'life0 self,request:reqwest::Request) ->  core::pin::Pin<Box<dyn core::future::Future<Output = anyhow::Result<Response<hyper::body::Bytes> > > + core::marker::Send+'async_trait> >where 'life0:'async_trait,Self:'async_trait {
+    fn execute<'life0, 'async_trait>(
+        &'life0 self,
+        request: reqwest::Request,
+    ) -> core::pin::Pin<
+        Box<
+            dyn core::future::Future<Output = anyhow::Result<Response<hyper::body::Bytes>>>
+                + core::marker::Send
+                + 'async_trait,
+        >,
+    >
+    where
+        'life0: 'async_trait,
+        Self: 'async_trait,
+    {
         self.deref().execute(request)
     }
 }
