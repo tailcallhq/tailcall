@@ -4,7 +4,10 @@ use cache::LambdaCache;
 use env::LambdaEnv;
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Error, Request, Response};
-use tailcall::{async_graphql_hyper::GraphQLRequest, blueprint::Blueprint, config::Config, http::{handle_request, AppContext}};
+use tailcall::async_graphql_hyper::GraphQLRequest;
+use tailcall::blueprint::Blueprint;
+use tailcall::config::Config;
+use tailcall::http::{handle_request, AppContext};
 
 mod cache;
 mod env;
@@ -13,7 +16,7 @@ mod http;
 async fn function_handler(req: Request) -> Result<Response<hyper::Body>, Error> {
     let config = Config::default();
     let blueprint = Blueprint::try_from(&config)?;
-    
+
     let h_client = Arc::new(http::LambdaHttp::init());
     let app_ctx = Arc::new(AppContext::new(
         blueprint,

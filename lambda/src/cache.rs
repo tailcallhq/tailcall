@@ -1,11 +1,14 @@
-use std::{collections::HashMap, hash::Hash, num::NonZeroU64, sync::Arc};
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::num::NonZeroU64;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use tailcall::Cache;
 use tokio::sync::RwLock;
 
 /// tailcall Cache for Lambda
-/// 
+///
 /// Lambda has no great way to access a KV cache, so this implementation just puts everything in a HashMap (without considering the ttl), under the assumption that the Lambda will not live long enough for the cache to get too big.
 #[derive(Clone)]
 pub struct LambdaCache<K, V> {
@@ -14,9 +17,7 @@ pub struct LambdaCache<K, V> {
 
 impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> Default for LambdaCache<K, V> {
     fn default() -> Self {
-        LambdaCache {
-            data: Arc::new(RwLock::new(HashMap::new()))
-        }
+        LambdaCache { data: Arc::new(RwLock::new(HashMap::new())) }
     }
 }
 

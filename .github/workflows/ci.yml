@@ -34,7 +34,7 @@ jobs:
     defaults:
       run:
         working-directory: ./lambda
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -43,16 +43,16 @@ jobs:
         with:
           toolchain: stable
           override: true
-      
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install cargo-lambda
         run: pip install cargo-lambda
-      
+
       - name: Build
         run: cargo lambda build --release
 
