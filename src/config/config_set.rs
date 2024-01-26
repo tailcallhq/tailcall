@@ -6,16 +6,16 @@ use crate::config::Config;
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default)]
-struct ConfigSet {
+pub struct ConfigSet {
     pub config: Config,
     pub extensions: Extensions,
 }
 
-/// Extensions is meta information that is required before we can generate the blueprint.
-/// Typically this information can not be inferred without performing an IO operation, ie.
-/// reading a file, making an HTTP call etc.
+/// Extensions are meta-information required before we can generate the blueprint.
+/// Typically, this information cannot be inferred without performing an IO operation, i.e.,
+/// reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default)]
-struct Extensions {
+pub struct Extensions {
     pub grpc_file_descriptor: FileDescriptorSet,
 
     /// Contains the contents of the JS file
@@ -36,7 +36,7 @@ impl From<Config> for ConfigSet {
 }
 
 impl ConfigSet {
-    async fn resolve_extensions(self) -> Self {
+    pub async fn resolve_extensions(self) -> Self {
         todo!()
     }
 }

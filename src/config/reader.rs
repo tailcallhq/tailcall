@@ -4,7 +4,7 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
 
-use super::{Script, ScriptOptions};
+use super::{ConfigSet, Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::{FileIO, HttpIO};
 
@@ -67,12 +67,12 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<Config> {
+    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigSet> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<Config> {
+    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigSet> {
         let files = self.read_files(files).await?;
         let mut config = Config::default();
         for file in files.iter() {
@@ -83,7 +83,7 @@ impl ConfigReader {
             config = config.merge_right(&new_config);
         }
 
-        Ok(config)
+        Ok(ConfigSet::from(config))
     }
 }
 

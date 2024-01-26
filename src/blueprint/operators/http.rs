@@ -1,6 +1,6 @@
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, Field};
+use crate::config::Field;
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, Lambda, IO};
@@ -9,7 +9,7 @@ use crate::valid::{Valid, ValidationError};
 use crate::{config, helpers};
 
 pub fn compile_http(
-    config: &config::Config,
+    config_set: &config::ConfigSet,
     field: &config::Field,
     http: &config::Http,
 ) -> Valid<Expression, String> {
@@ -20,12 +20,12 @@ pub fn compile_http(
                 "GroupBy can only be applied if batching is enabled".to_string(),
             )
             .when(|| {
-                (config.upstream.get_delay() < 1 || config.upstream.get_max_size() < 1)
+                (config_set.upstream.get_delay() < 1 || config_set.upstream.get_max_size() < 1)
                     && !http.group_by.is_empty()
             }),
         )
         .and(Valid::from_option(
-            http.base_url.as_ref().or(config.upstream.base_url.as_ref()),
+            http.base_url.as_ref().or(config_set.upstream.base_url.as_ref()),
             "No base URL defined".to_string(),
         ))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
@@ -39,8 +39,8 @@ pub fn compile_http(
                 .iter()
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect();
-            let output_schema = to_json_schema_for_field(field, config);
-            let input_schema = to_json_schema_for_args(&field.args, config);
+            let output_schema = to_json_schema_for_field(field, config_set);
+            let input_schema = to_json_schema_for_args(&field.args, config_set);
 
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
@@ -69,16 +69,16 @@ pub fn compile_http(
 }
 
 pub fn update_http<'a>(
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config, field, type_of, _), b_field| {
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+        |(config_set, field, type_of, _), b_field| {
             let Some(http) = &field.http else {
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config, field, http)
+            compile_http(config_set, field, http)
                 .map(|resolver| b_field.resolver(Some(resolver)))
-                .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
+                .and_then(|b_field| b_field.validate_field(type_of, config_set).map_to(b_field))
         },
     )
 }
