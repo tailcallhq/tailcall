@@ -155,7 +155,7 @@ jobs:
     name: Release
 
     needs: [draft_release]
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
