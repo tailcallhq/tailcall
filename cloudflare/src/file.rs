@@ -22,8 +22,11 @@ impl CloudflareFileIO {
     }
 }
 
-// TODO: avoid the unsafe impl
+// Multi-threading is not enabled in Cloudflare,
+// so this doesn't matter, and makes API compliance
+// way easier.
 unsafe impl Sync for CloudflareFileIO {}
+unsafe impl Send for CloudflareFileIO {}
 
 async fn get(bucket: Rc<worker::Bucket>, path: String) -> anyhow::Result<String> {
     let maybe_object = bucket

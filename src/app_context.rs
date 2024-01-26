@@ -15,8 +15,8 @@ use crate::{grpc, EntityCache, EnvIO, HttpIO, ScriptIO};
 
 pub struct AppContext {
     pub schema: dynamic::Schema,
-    pub universal_http_client: Arc<dyn HttpIO>,
-    pub http2_only_client: Arc<dyn HttpIO>,
+    pub universal_http_client: Arc<dyn HttpIO + Send + Sync>,
+    pub http2_only_client: Arc<dyn HttpIO + Send + Sync>,
     pub blueprint: Blueprint,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -30,8 +30,8 @@ impl AppContext {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         mut blueprint: Blueprint,
-        h_client: Arc<dyn HttpIO>,
-        h2_client: Arc<dyn HttpIO>,
+        h_client: Arc<dyn HttpIO + Send + Sync>,
+        h2_client: Arc<dyn HttpIO + Send + Sync>,
         env: Arc<dyn EnvIO>,
         cache: Arc<EntityCache>,
         script: Option<Arc<dyn ScriptIO<Event, Command>>>,

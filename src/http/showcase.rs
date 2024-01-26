@@ -35,13 +35,16 @@ impl EnvIO for DummyEnvIO {
 
 pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
   req: &Request<Body>,
-  (http, env, file, cache): (Arc<impl HttpIO>, impl EnvIO, Option<impl FileIO>, Arc<EntityCache>),
+  http: Arc<dyn HttpIO + Send + Sync>,
+  env: Option<Arc<dyn EnvIO>>,
+  file: Option<Arc<dyn FileIO + Send + Sync>>,
+  cache: Arc<EntityCache>,
 ) -> Result<Result<AppContext, Response<Body>>> {
   let url = Url::parse(&req.uri().to_string())?;
   let mut query = url.query_pairs();
 
     let config_url = if let Some(pair) = query.find(|x| x.0 == "config") {
-        pair.1
+        pair.1.to_string()
     } else {
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("No Config URL specified", None);
@@ -51,10 +54,10 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 
     let config = if let Some(file) = file {
         let reader = ConfigReader::init(file, http.clone());
-        reader.read(&[config_url]).await
+        reader.read(config_url).await
     } else {
-        let reader = ConfigReader::init(DummyFileIO, http.clone());
-        reader.read(&[config_url]).await
+        let reader = ConfigReader::init(Arc::new(DummyFileIO), http.clone());
+        reader.read(config_url).await
     };
 
     let config = match config {
@@ -81,8 +84,7 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    let http = Arc::new(http);
-    let env = Arc::new(env);
+    let env = env.unwrap_or_else(|| Arc::new(DummyEnvIO));
 
     Ok(Ok(AppContext::new(
         blueprint,
@@ -90,5 +92,6 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         http,
         env,
         cache,
+        None,
     )))
 }

@@ -10,8 +10,8 @@ use crate::{FileIO, HttpIO};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked assets.
 pub struct ConfigReader {
-    file: Arc<dyn FileIO>,
-    http: Arc<dyn HttpIO>,
+    file: Arc<dyn FileIO + Send>,
+    http: Arc<dyn HttpIO + Send + Sync>,
 }
 
 struct FileRead {
@@ -20,7 +20,7 @@ struct FileRead {
 }
 
 impl ConfigReader {
-    pub fn init(file: Arc<dyn FileIO>, http: Arc<dyn HttpIO>) -> Self {
+    pub fn init(file: Arc<dyn FileIO + Send + Sync>, http: Arc<dyn HttpIO + Send + Sync>) -> Self {
         Self { file, http }
     }
 

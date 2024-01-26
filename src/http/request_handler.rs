@@ -9,10 +9,8 @@ use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
-use super::showcase::{DummyEnvIO, DummyFileIO};
 use super::{showcase_get_app_ctx, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::{EnvIO, HttpIO};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
@@ -119,7 +117,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             let server_ctx = match showcase_get_app_ctx::<T>(
                 &req,
                 state.universal_http_client.clone(),
-                DummyEnvIO,
+                None,
                 None,
                 state.cache.clone(),
             ).await? {

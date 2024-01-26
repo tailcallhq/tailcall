@@ -54,7 +54,7 @@ impl<Http: HttpIO> HttpIO for Arc<Http> {
 }
 
 #[async_trait::async_trait]
-pub trait FileIO {
+pub trait FileIO: Send + Sync {
     async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
     async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
 }
