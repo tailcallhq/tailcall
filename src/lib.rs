@@ -62,3 +62,7 @@ pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 pub trait ScriptIO<Event, Command>: Send + Sync {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
 }
+
+fn is_default<T: Default + Eq>(val: &T) -> bool {
+  *val == T::default()
+}

@@ -5,6 +5,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use reqwest::Request;
 
 use crate::http::Response;
+use crate::is_default;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -27,7 +28,8 @@ pub struct JsRequest {
   url: String,
   method: String,
   headers: BTreeMap<String, String>,
-  body: serde_json::Value,
+  #[serde(skip_serializing_if = "is_default")]
+  body: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -35,7 +37,7 @@ pub struct JsRequest {
 pub struct JsResponse {
   status: f64,
   headers: BTreeMap<String, String>,
-  body: serde_json::Value,
+  body: Option<serde_json::Value>,
 }
 
 // Response implementations
@@ -87,18 +89,16 @@ impl TryFrom<&reqwest::Request> for JsRequest {
   fn try_from(req: &Request) -> Result<Self, Self::Error> {
     let url = req.url().to_string();
     let method = req.method().as_str().to_string();
-    let mut headers = BTreeMap::new();
-    for (key, value) in req.headers().iter() {
-      let key = key.to_string();
-      let value = value.to_str()?.to_string();
-      headers.insert(key, value);
-    }
-    if let Some(body) = req.body() {
-      let body = serde_json::from_slice(body.as_bytes().unwrap_or_default())?;
-      Ok(JsRequest { url, method, headers, body })
-    } else {
-      Ok(JsRequest { url, method, headers, body: serde_json::Value::Null })
-    }
+    let headers = req
+      .headers()
+      .iter()
+      .map(|(key, value)| (key.to_string(), value.to_str().unwrap_or_default().to_string()))
+      .collect::<BTreeMap<String, String>>();
+    let body = req
+      .body()
+      .and_then(|body| body.as_bytes())
+      .and_then(|body| serde_json::from_slice(body).ok());
+    Ok(JsRequest { url, method, headers, body })
   }
 }
 

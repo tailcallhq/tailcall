@@ -11,9 +11,10 @@ use serde_json::Value;
 use super::{Expr, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
-use crate::config::{is_default, KeyValues};
+use crate::config::KeyValues;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
+use crate::is_default;
 use crate::json::JsonSchema;
 use crate::valid::Valid;
 

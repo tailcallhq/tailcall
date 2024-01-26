@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::{is_default, KeyValues};
+use crate::config::KeyValues;
+use crate::is_default;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
