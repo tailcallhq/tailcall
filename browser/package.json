@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "compile": "wasm-pack build ../node --target web --scope tailcallhq --no-typescript --out-name wasm_browser --out-dir ../browser/pkg",
-    "publish": "wasm-pack publish ../node --scope tailcallhq --target web"
+    "compile": "chmod +x ./builder.sh && ./builder.sh compile",
+    "publish": "npm run compile && ./builder.sh publish"
   }
 }
