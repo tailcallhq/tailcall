@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{
-    init_chrono_cache, init_env, init_file, init_http, init_proto_resolver, init_script,
+    init_chrono_cache, init_env, init_file, init_http, init_proto_resolver,
 };
 use tailcall::config::{Config, ConfigSet, Upstream};
 use tailcall::directive::DirectiveCodec;

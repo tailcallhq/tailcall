@@ -18,9 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{
-    init_chrono_cache, init_file, init_hook_http, init_http, init_proto_resolver, init_script,
-};
+use tailcall::cli::{init_chrono_cache, init_file, init_hook_http, init_http, init_proto_resolver};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
