@@ -1,19 +1,27 @@
+#[cfg(feature = "js")]
 use std::cell::RefCell;
 
+#[cfg(feature = "js")]
 use async_std::task::block_on;
+#[cfg(feature = "js")]
 use lazy_static::lazy_static;
+#[cfg(feature = "js")]
 use mini_v8::{MiniV8, Script, Value, Values};
 
+#[cfg(feature = "js")]
 use crate::blueprint::{self};
+#[cfg(feature = "js")]
 use crate::channel::{Command, Event};
+#[cfg(feature = "js")]
 use crate::cli::javascript::serde_v8::SerdeV8;
+#[cfg(feature = "js")]
 use crate::ScriptIO;
-
+#[cfg(feature = "js")]
 thread_local! {
   static CLOSURE: RefCell<anyhow::Result<mini_v8::Value>> = const { RefCell::new(Ok(mini_v8::Value::Null))};
   static V8: RefCell<MiniV8> = RefCell::new(MiniV8::new());
 }
-
+#[cfg(feature = "js")]
 lazy_static! {
   static ref TOKIO_RUNTIME: tokio::runtime::Runtime = {
     let r = tokio::runtime::Builder::new_multi_thread()
@@ -26,12 +34,13 @@ lazy_static! {
     }
   };
 }
-
+#[cfg(feature = "js")]
 pub struct Runtime {}
-
+#[cfg(feature = "js")]
 fn create_closure(script: &str) -> String {
   format!("(function() {{{} return onEvent}})();", script)
 }
+#[cfg(feature = "js")]
 impl Runtime {
   pub fn new(script: blueprint::Script) -> Self {
     block_on(async {
@@ -67,7 +76,7 @@ impl Runtime {
     Ok(function.clone())
   }
 }
-
+#[cfg(feature = "js")]
 #[async_trait::async_trait]
 impl ScriptIO<Event, Command> for Runtime {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command> {
@@ -87,7 +96,7 @@ impl ScriptIO<Event, Command> for Runtime {
       .await?
   }
 }
-
+#[cfg(feature = "js")]
 fn on_event_impl<'a>(
   v8: &'a MiniV8,
   closure: &'a anyhow::Result<mini_v8::Value>,

@@ -87,17 +87,19 @@ stripmargin = "0.1.1"
 
 [features]
 unsafe-js = ["dep:mini-v8"]
-default = [
-    "tokio/fs",
+js = ["dep:mini-v8"]
+non-js = ["tokio/fs",
     "tokio/rt-multi-thread",
-    "mimalloc",
-    "http-cache-reqwest",
-    "moka",
-    "hyper-rustls",
-    "rustls",
-    "rustls-pemfile",
-    "inquire",
-    "unsafe-js",
+    "dep:mimalloc",
+    "dep:http-cache-reqwest",
+    "dep:moka",
+    "dep:hyper-rustls",
+    "dep:rustls",
+    "dep:rustls-pemfile",
+    "dep:inquire"]
+default = [
+    "non-js",
+    "js"
 ]
 
 

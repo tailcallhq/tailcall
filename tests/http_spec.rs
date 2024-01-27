@@ -18,7 +18,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_file, init_hook_http, init_http, init_script};
+#[cfg(feature = "js")]
+use tailcall::cli::init_script;
+use tailcall::cli::{init_chrono_cache, init_file, init_hook_http, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
@@ -197,7 +199,11 @@ impl HttpSpec {
   }
 
   async fn server_context(&self) -> Arc<AppContext> {
-    let http_client = init_http(&Upstream::default(), None);
+    let http_client = init_http(
+      &Upstream::default(),
+      #[cfg(feature = "js")]
+      None,
+    );
     let config = match self.config.clone() {
       ConfigSource::File(file) => {
         let reader = ConfigReader::init(init_file(), http_client);
@@ -206,12 +212,25 @@ impl HttpSpec {
       ConfigSource::Inline(config) => config,
     };
     let blueprint = Blueprint::try_from(&config).unwrap();
-    let client = init_hook_http(MockHttpClient::new(self.clone()), blueprint.server.script.clone());
+    let client = init_hook_http(
+      MockHttpClient::new(self.clone()),
+      #[cfg(feature = "js")]
+      blueprint.server.script.clone(),
+    );
     let http2_client = Arc::new(MockHttpClient::new(self.clone()));
     let env = Arc::new(Env::init(self.env.clone()));
     let chrono_cache = Arc::new(init_chrono_cache());
+    #[cfg(feature = "js")]
     let script = blueprint.server.clone().script.map(init_script);
-    let server_context = AppContext::new(blueprint, client, http2_client, env, chrono_cache, script);
+    let server_context = AppContext::new(
+      blueprint,
+      client,
+      http2_client,
+      env,
+      chrono_cache,
+      #[cfg(feature = "js")]
+      script,
+    );
     Arc::new(server_context)
   }
 }

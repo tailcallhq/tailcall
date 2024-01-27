@@ -5,7 +5,7 @@ pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod cache;
 pub mod channel;
-#[cfg(feature = "default")]
+#[cfg(feature = "non-js")]
 pub mod cli;
 pub mod config;
 pub mod data_loader;
@@ -57,7 +57,7 @@ pub trait Cache: Send + Sync {
 }
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
-
+#[cfg(feature = "js")]
 #[async_trait::async_trait]
 pub trait ScriptIO<Event, Command>: Send + Sync {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command>;

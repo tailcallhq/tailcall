@@ -1,7 +1,10 @@
+#[cfg(feature = "js")]
 use mini_v8::MiniV8;
 
+#[cfg(feature = "js")]
 use crate::cli::javascript::serde_v8::SerdeV8;
 
+#[cfg(feature = "js")]
 pub fn init(v8: &MiniV8) -> anyhow::Result<()> {
   let console = v8.create_object();
   console
@@ -14,6 +17,7 @@ pub fn init(v8: &MiniV8) -> anyhow::Result<()> {
   Ok(())
 }
 
+#[cfg(feature = "js")]
 fn console_log(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v8::Error> {
   let args = invocation
     .args

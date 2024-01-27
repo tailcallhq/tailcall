@@ -131,7 +131,14 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+    let cr = ConfigReader::init(
+      init_file(),
+      init_http(
+        &Upstream::default(),
+        #[cfg(feature = "js")]
+        None,
+      ),
+    );
     let c = cr.read_all(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "Test", "User"]
@@ -154,7 +161,14 @@ mod reader_tests {
     .iter()
     .map(|x| x.to_string())
     .collect();
-    let cr = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+    let cr = ConfigReader::init(
+      init_file(),
+      init_http(
+        &Upstream::default(),
+        #[cfg(feature = "js")]
+        None,
+      ),
+    );
     let c = cr.read_all(&files).await.unwrap();
     assert_eq!(
       ["Post", "Query", "User"]
@@ -168,7 +182,14 @@ mod reader_tests {
   #[tokio::test]
   async fn test_script_loader() {
     let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+    let reader = ConfigReader::init(
+      init_file(),
+      init_http(
+        &Upstream::default(),
+        #[cfg(feature = "js")]
+        None,
+      ),
+    );
 
     let config = reader
       .read(&format!("{}/examples/jsonplaceholder_script.graphql", cargo_manifest))
