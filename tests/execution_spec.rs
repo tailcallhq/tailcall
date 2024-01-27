@@ -1,7 +1,6 @@
 extern crate core;
 
 use std::collections::{BTreeMap, HashMap};
-use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::{Arc, Once};
@@ -14,7 +13,6 @@ use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
-use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -89,12 +87,8 @@ struct UpstreamResponse(APIResponse);
 struct DownstreamRequest(APIRequest);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct DownstreamResponse(APIResponse);
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 struct DownstreamAssertion {
     request: DownstreamRequest,
-    response: DownstreamResponse,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -113,7 +107,9 @@ struct Mock {
 #[derive(Serialize, Deserialize, Clone, Setters, Debug)]
 #[serde(rename_all = "camelCase")]
 struct AssertSpec {
+    #[serde(default)]
     mock: Vec<Mock>,
+    
     assert: Vec<DownstreamAssertion>,
 }
 
@@ -121,12 +117,10 @@ struct AssertSpec {
 struct ExecutionSpec {
     path: PathBuf,
     name: String,
+    safe_name: String,
 
     server: Vec<Config>,
     assert: Option<AssertSpec>,
-
-    // Annotations for the runner
-    runner: Option<Annotation>,
 }
 
 impl ExecutionSpec {
@@ -158,29 +152,6 @@ impl ExecutionSpec {
             dir_path.to_str().unwrap_or_default()
         );
         Ok(files)
-    }
-
-    fn filter_specs(specs: Vec<ExecutionSpec>) -> Vec<ExecutionSpec> {
-        let mut only_specs = Vec::new();
-        let mut filtered_specs = Vec::new();
-
-        for spec in specs {
-            match spec.runner {
-                Some(Annotation::Skip) => {
-                    log::warn!("{} {} ... skipped", spec.name, spec.path.display())
-                }
-                Some(Annotation::Only) => only_specs.push(spec),
-                Some(Annotation::Fail) => filtered_specs.push(spec),
-                None => filtered_specs.push(spec),
-            }
-        }
-
-        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
-        if !only_specs.is_empty() {
-            only_specs
-        } else {
-            filtered_specs
-        }
     }
 
     fn from_source(path: &Path, contents: String) -> anyhow::Result<Self> {
@@ -298,9 +269,9 @@ impl ExecutionSpec {
         let spec = ExecutionSpec {
             path: path.to_owned(),
             name: name.unwrap_or_else(|| path.file_name().unwrap().to_str().unwrap().to_string()),
+            safe_name: path.file_name().unwrap().to_str().unwrap().to_string(),
             server,
             assert,
-            runner: None,
         };
 
         anyhow::Ok(spec)
@@ -432,97 +403,34 @@ impl HttpIO for MockHttpClient {
 
 async fn assert_spec(spec: ExecutionSpec) {
     if let Some(assert_spec) = spec.assert.as_ref() {
-        for assertion in assert_spec.assert.iter() {
-            if let Some(Annotation::Fail) = spec.runner {
-                let response = run_assert(spec.clone(), &assertion, spec.server.first().unwrap())
-                    .await
-                    .unwrap();
-                let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-                let result = panic::catch_unwind(AssertUnwindSafe(|| {
-                    assert_eq!(
-                        body,
-                        serde_json::to_string(&assertion.response.0.body).unwrap(),
-                        "File: {} {}",
-                        spec.name,
-                        spec.path.display()
-                    );
-                }));
+        for (i, assertion) in assert_spec.assert.iter().enumerate() {
+            let response = run_assert(spec.clone(), &assertion, spec.server.first().unwrap())
+                .await
+                .context(spec.path.to_str().unwrap().to_string())
+                .unwrap();
 
-                match result {
-                    Ok(_) => {
-                        panic!(
-                            "Expected spec: {} {} to fail but it passed",
-                            spec.name,
-                            spec.path.display()
-                        );
-                    }
-                    Err(_) => {
-                        log::info!(
-                            "{} {} ... failed (expected)",
-                            spec.name,
-                            spec.path.display()
-                        );
-                    }
-                }
-            } else {
-                let response = run_assert(spec.clone(), &assertion, spec.server.first().unwrap())
-                    .await
-                    .context(spec.path.to_str().unwrap().to_string())
-                    .unwrap();
-                let actual_status = response.status().clone().as_u16();
-                let actual_headers = response.headers().clone();
-                let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-
-                // Assert Status
-                assert_eq!(
-                    actual_status,
-                    assertion.response.0.status,
-                    "File: {} {}",
-                    spec.name,
-                    spec.path.display()
-                );
-
-                // Assert Body
-                assert_eq!(
-                    to_json_pretty(actual_body).unwrap(),
-                    serde_json::to_string_pretty(&assertion.response.0.body).unwrap(),
-                    "File: {} {}",
-                    spec.name,
-                    spec.path.display()
-                );
-
-                // Assert Headers
-                for (key, value) in assertion.response.0.headers.iter() {
-                    match actual_headers.get(key) {
-                        None => panic!("Expected header {} to be present", key),
-                        Some(actual_value) => {
-                            assert_eq!(
-                                actual_value,
-                                value,
-                                "File: {} {}",
-                                spec.name,
-                                spec.path.display()
-                            )
-                        }
-                    }
-                }
+            let mut headers: BTreeMap<String, String> = BTreeMap::new();
+            
+            for (key, value) in response.headers() {
+                headers.insert(key.to_string(), value.to_str().unwrap().to_string());
             }
+
+            let response: APIResponse = APIResponse {
+                status: response.status().clone().as_u16(),
+                headers,
+                body: serde_json::from_slice(&hyper::body::to_bytes(response.into_body()).await.unwrap()).unwrap(),
+            };
+
+            insta::assert_yaml_snapshot!(format!("{}_assert_{}", spec.safe_name, i), response);
         }
     }
 
     log::info!("{} {} ... ok", spec.name, spec.path.display());
 }
 
-fn to_json_pretty(bytes: Bytes) -> anyhow::Result<String> {
-    let body_str = String::from_utf8(bytes.to_vec())?;
-    let json: Value = serde_json::from_str(&body_str)?;
-    Ok(serde_json::to_string_pretty(&json)?)
-}
-
 #[tokio::test]
 async fn execution_spec() -> anyhow::Result<()> {
     let spec = ExecutionSpec::cargo_read("tests/execution")?;
-    let spec = ExecutionSpec::filter_specs(spec);
     let tasks: Vec<_> = spec.into_iter().map(assert_spec).collect();
     join_all(tasks).await;
     Ok(())

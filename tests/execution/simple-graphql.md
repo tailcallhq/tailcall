@@ -34,20 +34,10 @@ assert:
       url: http://localhost:8080/graphql
       body:
         query: query { user { name } }
-    response:
-      body:
-        data:
-          user:
-            name: foo
   - request:
       method: POST
       url: http://localhost:8080/graphql
       body:
         query:
           foo: bar
-    response:
-      body:
-        data: null
-        errors:
-          - message: "Unexpected GraphQL Request: invalid type: map, expected a string at line 1 column 9"
 ```
