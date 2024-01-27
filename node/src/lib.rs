@@ -62,7 +62,6 @@ impl GraphQLExecutor {
             http_clone,
             Arc::new(WasmEnv::new()),
             Arc::new(WasmCache::init()),
-            None,
         ));
         Ok(GraphQLExecutor { app_ctx })
     }
