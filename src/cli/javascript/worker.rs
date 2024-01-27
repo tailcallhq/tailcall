@@ -44,11 +44,24 @@ impl Worker {
     pub async fn on_event(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         let js_request = JsRequest::try_from(&request)?;
         let js_request_v8 = js_request.to_v8(&self.v8)?;
+        let (tx, mut rx) = tokio::sync::broadcast::channel::<mini_v8::Value>(1);
+
+        let cb: mini_v8::Value = mini_v8::Value::Function(self.v8.create_function({
+            move |invocation| {
+                let response = invocation.args.get(0);
+                tx.send(response).unwrap();
+                Ok(mini_v8::Value::Undefined)
+            }
+        }));
         // Initiate an async call
-        let result = self
-            .closure
-            .call::<Values, Value>(Values::from_iter(vec![js_request_v8]))
+        self.closure
+            .call::<Values, Value>(Values::from_iter(vec![js_request_v8, cb]))
             .or_anyhow("failed to dispatch request to js-worker: ")?;
+
+        let result = rx
+            .recv()
+            .await
+            .or_anyhow("failed to receive response from js-worker")?;
 
         // Check if the result is a response
         let js_response = JsResponse::from_v8(&result)?;
@@ -60,12 +73,13 @@ impl Worker {
 
 #[cfg(test)]
 mod test {
+    use pretty_assertions::assert_eq;
     use url::Url;
 
     use super::*;
     use crate::blueprint::Script;
+    use crate::cli::javascript::shim::fetch::FETCH;
     use crate::cli::NativeHttp;
-    use pretty_assertions::assert_eq;
 
     fn new_worker(script: &str) -> anyhow::Result<Worker> {
         let v8 = mini_v8::MiniV8::new();
@@ -78,18 +92,22 @@ mod test {
         Worker::new(script, &v8, http)
     }
 
+    fn new_get_request(url: &str) -> anyhow::Result<reqwest::Request> {
+        Ok(reqwest::Request::new(
+            reqwest::Method::GET,
+            Url::parse(url)?,
+        ))
+    }
+
     #[tokio::test]
     async fn test_ok_response() {
         let script = r#"
-            function onEvent(request) {
-                return {status: 200}
+            function onEvent(request, cb) {
+                return cb({status: 200})
             }
         "#;
         let worker = new_worker(script).unwrap();
-        let request = reqwest::Request::new(
-            reqwest::Method::GET,
-            Url::parse("http://jsonplaceholder.typicode.com/users/1").unwrap(),
-        );
+        let request = new_get_request("https://jsonplaceholder.typicode.com/users/1").unwrap();
         let response = worker.on_event(request).await.unwrap();
         assert_eq!(response.status.as_u16(), 200);
     }
@@ -97,21 +115,38 @@ mod test {
     #[tokio::test]
     async fn test_url() {
         let script = r#"
-            function onEvent(request) {
-                return {body: {url: request.url}}
+            function onEvent(request, cb) {
+                return cb({body: {url: request.url}})
             }
         "#;
         let worker = new_worker(script).unwrap();
-        let request = reqwest::Request::new(
-            reqwest::Method::GET,
-            Url::parse("http://jsonplaceholder.typicode.com/users/1").unwrap(),
-        );
+        let request = new_get_request("https://jsonplaceholder.typicode.com/users/1").unwrap();
         let response = worker.on_event(request).await.unwrap();
         let body = String::from_utf8(response.body.to_vec()).unwrap();
         assert_eq!(response.status.as_u16(), 200);
         assert_eq!(
             body,
-            r#"{"url":"http://jsonplaceholder.typicode.com/users/1"}"#
+            r#"{"url":"https://jsonplaceholder.typicode.com/users/1"}"#
         );
+    }
+
+    #[tokio::test]
+    async fn test_fetch() {
+        let script = format!(
+            r#"
+            function onEvent(request, cb) {{
+                return {} (request.url, (response) => {{
+                    console.log(response)
+                    cb(response)
+                }})
+            }}
+        "#,
+            FETCH
+        );
+
+        let worker = new_worker(script.as_str()).unwrap();
+        let request = new_get_request("https://jsonplaceholder.typicode.com/users/1").unwrap();
+        let response = worker.on_event(request).await.unwrap();
+        assert_eq!(response.status.as_u16(), 200);
     }
 }
