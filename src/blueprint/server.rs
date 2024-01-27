@@ -30,10 +30,31 @@ pub struct Server {
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Script {
+    /// The source of the script.
     pub source: String,
+    /// The maximum runtime duration of the script's execution. This cannot be set within a nested
+    /// evaluation, i.e. it cannot be set when calling `MiniV8::eval` from within a `Function`
+    /// created with `MiniV8::create_function` or `MiniV8::create_function_mut`.
+    ///
+    /// V8 can only cancel script evaluation while running actual JavaScript code. If Rust code is
+    /// being executed when the timeout is triggered, the execution will continue until the
+    /// evaluation has returned to running JavaScript code.
     pub timeout: Option<Duration>,
+    /// The script's origin.
+    pub origin: Option<ScriptOrigin>,
+}
+
+/// The origin, within a file, of a JavaScript script.
+#[derive(Clone, Debug, Default)]
+pub struct ScriptOrigin {
+    /// The name of the file this script belongs to.
+    pub name: String,
+    /// The line at which this script starts.
+    pub line_offset: i32,
+    /// The column at which this script starts.
+    pub column_offset: i32,
 }
 
 #[derive(Clone, Debug)]
@@ -119,8 +140,10 @@ fn to_script(server: &config::Server) -> Valid<Option<Script>, String> {
         || Valid::succeed(None),
         |script| match script {
             config::Script::File(script) => Valid::succeed(Some(Script {
-                source: script.src.clone(),
+                source: script.source.clone(),
                 timeout: script.timeout.map(Duration::from_millis),
+                // TODO: We should set this for better tracing
+                origin: None,
             })),
 
             config::Script::Path(_) => {

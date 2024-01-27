@@ -59,9 +59,9 @@ impl ConfigReader {
     async fn read_script(&self, mut config: Config) -> anyhow::Result<Config> {
         if let Some(Script::Path(options)) = config.server.script {
             let timeout = options.timeout;
-            let path = options.src;
+            let path = options.source;
             let script = self.read_file(path.clone()).await?.content;
-            config.server.script = Some(Script::File(ScriptOptions { src: script, timeout }));
+            config.server.script = Some(Script::File(ScriptOptions { source: script, timeout }));
         }
         Ok(config)
     }
@@ -190,7 +190,7 @@ mod reader_tests {
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
         let file = ScriptOptions {
-            src: String::from_utf8(
+            source: String::from_utf8(
                 tokio::fs::read(&path)
                     .await
                     .context(path.to_string())

@@ -74,7 +74,7 @@ pub enum Script {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptOptions {
-    pub src: String,
+    pub source: String,
     pub timeout: Option<u64>,
 }
 
