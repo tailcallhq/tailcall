@@ -9,9 +9,11 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "name": "foo"
-      }
+      "users": [
+        {
+          "id": 1
+        }
+      ]
     }
   }
 }

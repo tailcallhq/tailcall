@@ -9,9 +9,12 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "name": "foo"
-      }
+      "concat": [
+        1,
+        2,
+        3,
+        4
+      ]
     }
   }
 }

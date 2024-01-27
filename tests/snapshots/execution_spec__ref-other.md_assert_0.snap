@@ -8,11 +8,12 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
-    "errors": [
-      {
-        "message": "Unexpected GraphQL Request: invalid type: map, expected a string at line 1 column 9"
+    "data": {
+      "firstUser": {
+        "user1": {
+          "name": "Leanne Graham"
+        }
       }
-    ]
+    }
   }
 }

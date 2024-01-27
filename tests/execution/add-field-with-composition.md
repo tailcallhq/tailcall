@@ -1,4 +1,4 @@
-# Simple GraphQL Request
+# Add field with composition
 
 #### server:
 ```graphql
@@ -7,11 +7,22 @@ schema {
 }
 
 type User {
-  id: Int
-  name: String
+  address: Address
 }
 
-type Query {
+type Address {
+  street: String
+  geo: Geo
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query
+  @addField(name: "lat", path: ["user", "address", "geo", "lat"])
+  @addField(name: "lng", path: ["user", "address", "geo", "lng"]) {
   user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
@@ -22,13 +33,16 @@ mock:
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      test: test
+    headers: {}
     body: null
   response:
     status: 200
     headers: {}
     body:
+      address:
+        geo:
+          lat: '-37.3159'
+          lng: '81.1496'
       id: 1
       name: foo
 assert:
@@ -37,13 +51,12 @@ assert:
     url: http://localhost:8080/graphql
     headers: {}
     body:
-      query: query { user { name } }
+      query: query { lat }
 - request:
     method: POST
     url: http://localhost:8080/graphql
     headers: {}
     body:
-      query:
-        foo: bar
+      query: query { lng }
 env: {}
 ```

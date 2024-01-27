@@ -9,9 +9,14 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "name": "foo"
-      }
+      "users_list": [
+        {
+          "name": "Leanne Graham"
+        },
+        {
+          "name": "Ervin Howell"
+        }
+      ]
     }
   }
 }

@@ -9,9 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "name": "foo"
-      }
+      "username": "Leanne Graham"
     }
   }
 }

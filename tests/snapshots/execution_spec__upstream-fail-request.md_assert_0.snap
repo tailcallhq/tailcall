@@ -11,7 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Unexpected GraphQL Request: invalid type: map, expected a string at line 1 column 9"
+        "locations": [
+          {
+            "column": 9,
+            "line": 1
+          }
+        ],
+        "message": "IOException: Status code error"
       }
     ]
   }

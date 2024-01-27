@@ -1,4 +1,4 @@
-# Simple GraphQL Request
+# Nested objects
 
 #### server:
 ```graphql
@@ -7,8 +7,17 @@ schema {
 }
 
 type User {
-  id: Int
-  name: String
+  address: Address
+}
+
+type Address {
+  street: String
+  geo: Geo
+}
+
+type Geo {
+  lat: String
+  lng: String
 }
 
 type Query {
@@ -22,13 +31,15 @@ mock:
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      test: test
+    headers: {}
     body: null
   response:
     status: 200
     headers: {}
     body:
+      address:
+        geo:
+          lat: '-37.3159'
       id: 1
       name: foo
 assert:
@@ -37,13 +48,6 @@ assert:
     url: http://localhost:8080/graphql
     headers: {}
     body:
-      query: query { user { name } }
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query:
-        foo: bar
+      query: query { user { address { geo { lat } } } }
 env: {}
 ```

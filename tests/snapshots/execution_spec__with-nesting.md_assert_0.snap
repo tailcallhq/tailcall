@@ -10,7 +10,17 @@ expression: response
   "body": {
     "data": {
       "user": {
-        "name": "foo"
+        "posts": [
+          {
+            "title": "title1"
+          },
+          {
+            "title": "title2"
+          },
+          {
+            "title": "title3"
+          }
+        ]
       }
     }
   }

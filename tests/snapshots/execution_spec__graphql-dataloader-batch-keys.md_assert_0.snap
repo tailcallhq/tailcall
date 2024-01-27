@@ -1,0 +1,59 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "a": [
+      {
+        "b": {
+          "y": 1
+        },
+        "bid": 1,
+        "c": {
+          "x": 1
+        },
+        "cid": 1,
+        "id": 1
+      },
+      {
+        "b": {
+          "y": 1
+        },
+        "bid": 1,
+        "c": {
+          "x": 1
+        },
+        "cid": 1,
+        "id": 2
+      },
+      {
+        "b": {
+          "y": 1
+        },
+        "bid": 2,
+        "c": {
+          "x": 1
+        },
+        "cid": 2,
+        "id": 3
+      },
+      {
+        "b": {
+          "y": 1
+        },
+        "bid": 2,
+        "c": {
+          "x": 1
+        },
+        "cid": 2,
+        "id": 4
+      }
+    ],
+    "data": null
+  }
+}

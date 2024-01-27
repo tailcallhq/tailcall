@@ -9,9 +9,9 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "name": "foo"
-      }
+      "intersection": [
+        3
+      ]
     }
   }
 }

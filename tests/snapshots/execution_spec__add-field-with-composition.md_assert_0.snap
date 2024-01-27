@@ -9,9 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "name": "foo"
-      }
+      "lat": "-37.3159"
     }
   }
 }

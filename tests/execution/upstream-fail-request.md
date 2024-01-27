@@ -22,15 +22,12 @@ mock:
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      test: test
+    headers: {}
     body: null
   response:
-    status: 200
+    status: 503
     headers: {}
-    body:
-      id: 1
-      name: foo
+    body: {}
 assert:
 - request:
     method: POST
@@ -38,12 +35,5 @@ assert:
     headers: {}
     body:
       query: query { user { name } }
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query:
-        foo: bar
 env: {}
 ```

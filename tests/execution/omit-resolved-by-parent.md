@@ -1,4 +1,4 @@
-# Simple GraphQL Request
+# Resolved by parent
 
 #### server:
 ```graphql
@@ -6,13 +6,16 @@ schema {
   query: Query
 }
 
-type User {
-  id: Int
-  name: String
+type Address {
+  street: String
 }
 
 type Query {
   user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+}
+
+type User @addField(name: "address", path: ["address", "street"]) {
+  address: Address @modify(omit: true)
 }
 ```
 
@@ -22,13 +25,14 @@ mock:
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      test: test
+    headers: {}
     body: null
   response:
     status: 200
     headers: {}
     body:
+      address:
+        street: Kulas Light
       id: 1
       name: foo
 assert:
@@ -37,13 +41,6 @@ assert:
     url: http://localhost:8080/graphql
     headers: {}
     body:
-      query: query { user { name } }
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query:
-        foo: bar
+      query: query { user { address } }
 env: {}
 ```

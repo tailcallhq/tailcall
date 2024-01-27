@@ -1,0 +1,32 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "foos": [
+        {
+          "bar": {
+            "fooId": "1",
+            "id": 1
+          },
+          "id": 1,
+          "name": "foo1"
+        },
+        {
+          "bar": {
+            "fooId": "2",
+            "id": 2
+          },
+          "id": 2,
+          "name": "foo2"
+        }
+      ]
+    }
+  }
+}

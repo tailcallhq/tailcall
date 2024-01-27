@@ -1,4 +1,4 @@
-# Simple GraphQL Request
+# Add field modify
 
 #### server:
 ```graphql
@@ -6,9 +6,18 @@ schema {
   query: Query
 }
 
-type User {
-  id: Int
+type User
+  @addField(name: "street", path: ["address", "street"])
+  @addField(name: "city", path: ["address", "city"])
+  @addField(name: "zipcode", path: ["address", "zipcode"]) {
   name: String
+  address: Address
+}
+
+type Address {
+  street: String
+  city: String
+  zipcode: String
 }
 
 type Query {
@@ -22,13 +31,16 @@ mock:
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      test: test
+    headers: {}
     body: null
   response:
     status: 200
     headers: {}
     body:
+      address:
+        city: Gwenborough
+        street: Kulas Light
+        zipcode: 92998-3874
       id: 1
       name: foo
 assert:
@@ -37,13 +49,6 @@ assert:
     url: http://localhost:8080/graphql
     headers: {}
     body:
-      query: query { user { name } }
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query:
-        foo: bar
+      query: query { user { name street city zipcode } }
 env: {}
 ```

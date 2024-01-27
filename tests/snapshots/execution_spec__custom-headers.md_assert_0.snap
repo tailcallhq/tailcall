@@ -5,13 +5,13 @@ expression: response
 {
   "status": 200,
   "headers": {
-    "content-type": "application/json"
+    "content-type": "application/json",
+    "x-id": "1",
+    "x-name": "John Doe"
   },
   "body": {
     "data": {
-      "user": {
-        "name": "foo"
-      }
+      "greet": "Hello World!"
     }
   }
 }

@@ -1,4 +1,4 @@
-# Simple GraphQL Request
+# Modified field
 
 #### server:
 ```graphql
@@ -7,8 +7,7 @@ schema {
 }
 
 type User {
-  id: Int
-  name: String
+  name: String @modify(name: "fullname")
 }
 
 type Query {
@@ -22,28 +21,20 @@ mock:
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      test: test
+    headers: {}
     body: null
   response:
     status: 200
     headers: {}
     body:
       id: 1
-      name: foo
+      name: Leanne Graham
 assert:
 - request:
     method: POST
     url: http://localhost:8080/graphql
     headers: {}
     body:
-      query: query { user { name } }
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query:
-        foo: bar
+      query: query { user { fullname } }
 env: {}
 ```
