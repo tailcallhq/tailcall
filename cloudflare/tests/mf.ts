@@ -6,7 +6,7 @@ const mockAgent = new MockAgent()
 mockAgent.get("https://cloudflare.com").intercept({path: "/"}).reply(200, "cloudflare!")
 mockAgent
   .get("http://localhost:50051")
-  .intercept({path: "/NewsService/GetAllNews"})
+  .intercept({path: "/NewsService/GetAllNews", headers: {"content-type": "application/grpc"}})
   .reply(
     200,
     [
