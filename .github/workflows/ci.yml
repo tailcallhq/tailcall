@@ -153,9 +153,8 @@ jobs:
 
   release:
     name: Release
-
-    #    needs: [draft_release]
-    #    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    needs: [test, format, draft_release, check_if_build, test_cf]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
