@@ -15,8 +15,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_env, init_http, init_script};
-use tailcall::config::Config;
+use tailcall::cli::{init_chrono_cache, init_env, init_file, init_http, init_proto_resolver, init_script};
+use tailcall::config::{Config, ConfigSet, Upstream};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
@@ -278,9 +278,12 @@ fn test_config_identity() -> std::io::Result<()> {
 }
 
 // Check server SDL matches expected client SDL
-#[test]
-fn test_server_to_client_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_server_to_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql");
+    let http_io = init_http(&Upstream::default(), None);
+    let file_io = init_file();
+    let resolver = init_proto_resolver();
 
     for spec in specs? {
         let expected = spec.find_source(Tag::ClientSDL);
@@ -288,8 +291,9 @@ fn test_server_to_client_sdl() -> std::io::Result<()> {
         let content = spec.find_source(Tag::ServerSDL);
         let content = content.as_str();
         let config = Config::from_sdl(content).to_result().unwrap();
+        let config_set = ConfigSet::from(config).resolve_extensions(file_io.clone(),http_io.clone(),resolver.clone()).await;
         let actual =
-            print_schema::print_schema((Blueprint::try_from(&config).unwrap()).to_schema());
+            print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
 
         if spec
             .annotation
@@ -320,8 +324,8 @@ async fn test_execution() -> std::io::Result<()> {
                     .to_result()
                     .unwrap();
                 config.server.query_validation = Some(false);
-
-                let blueprint = Valid::from(Blueprint::try_from(&config))
+                let config_set = ConfigSet::from(config);
+                let blueprint = Valid::from(Blueprint::try_from(&config_set))
                     .trace(spec.path.to_str().unwrap_or_default())
                     .to_result()
                     .unwrap();
@@ -373,19 +377,21 @@ async fn test_execution() -> std::io::Result<()> {
 }
 
 // Standardize errors on Client SDL
-#[test]
-fn test_failures_in_client_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
+
+    let http_io = init_http(&Upstream::default(), None);
+    let file_io = init_file();
+    let resolver = init_proto_resolver();
 
     for spec in specs? {
         let content = spec.find_source(Tag::ServerSDL);
         let expected = spec.sdl_errors;
         let content = content.as_str();
-        let config = Config::from_sdl(content);
+        let config_set = ConfigSet::from(Config::from_sdl(content).to_result().unwrap_or_default()).resolve_extensions(file_io.clone(), http_io.clone(), resolver.clone()).await;
 
-        let actual = config
-            .and_then(|config| Valid::from(Blueprint::try_from(&config)))
-            .to_result();
+        let actual = Blueprint::try_from(&config_set);
         match actual {
             Err(cause) => {
                 let actual: Vec<SDLError> =

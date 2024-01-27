@@ -200,6 +200,8 @@ mod tests {
     use once_cell::sync::Lazy;
     use prost_reflect::Value;
     use serde_json::json;
+    use crate::cli::{init_file, init_http, init_proto_resolver};
+    use crate::config::{Config, Field, Grpc, Type, Upstream};
 
     use super::*;
 
@@ -218,6 +220,17 @@ mod tests {
 
         test_file.push(name);
         test_file
+    }
+
+    async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
+        let file_io = init_file();
+        let http_io = init_http(&Upstream::default(), None);
+        let resolver = init_proto_resolver();
+        let mut config = Config::default();
+        let mut grpc  = Grpc::default();
+        grpc.proto_path = get_test_file(name).to_str().ok_or(anyhow!("Failed to parse or load proto file"))?.to_string();
+        config.types.insert("foo".to_string(), Type::default().fields(vec![("bar", Field::default().grpc(grpc))]));
+        Ok(crate::config::get_descriptor_set(&config, file_io, http_io, resolver).await?)
     }
 
     #[test]
@@ -249,23 +262,21 @@ mod tests {
         );
     }
 
-    #[test]
-    fn unknown_file() -> Result<()> {
-        let proto_file = get_test_file("_unknown.proto");
-        let error = ProtobufSet::from_proto_file(&proto_file).unwrap_err();
+    #[tokio::test]
+    async fn unknown_file() -> Result<()> {
+        let error = get_proto_file("_unknown.proto").await.unwrap_err();
 
         assert_eq!(
             error.to_string(),
-            format!("Failed to parse or load proto file")
+            "No such file or directory (os error 2)".to_string()
         );
 
         Ok(())
     }
 
-    #[test]
-    fn service_not_found() -> Result<()> {
-        let proto_file = get_test_file("greetings.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn service_not_found() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
         let error = file.find_service("_unknown").unwrap_err();
 
         assert_eq!(
@@ -276,10 +287,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn method_not_found() -> Result<()> {
-        let proto_file = get_test_file("greetings.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn method_not_found() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
         let service = file.find_service("Greeter")?;
         let error = service.find_operation("_unknown").unwrap_err();
 
@@ -288,10 +298,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn greetings_proto_file() -> Result<()> {
-        let proto_file = get_test_file("greetings.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn greetings_proto_file() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
         let service = file.find_service("Greeter")?;
         let operation = service.find_operation("SayHello")?;
 
@@ -309,10 +318,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn news_proto_file() -> Result<()> {
-        let proto_file = get_test_file("news.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn news_proto_file() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
         let service = file.find_service("NewsService")?;
         let operation = service.find_operation("GetNews")?;
 
@@ -334,10 +342,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn news_proto_file_multiple_messages() -> Result<()> {
-        let proto_file = get_test_file("news.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn news_proto_file_multiple_messages() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
         let service = file.find_service("NewsService")?;
         let multiple_operation = service.find_operation("GetMultipleNews")?;
 

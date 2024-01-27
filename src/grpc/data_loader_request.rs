@@ -57,15 +57,16 @@ mod tests {
 
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::HeaderMap;
-    use once_cell::sync::Lazy;
     use pretty_assertions::assert_eq;
     use url::Url;
+    use crate::cli::{init_file, init_http, init_proto_resolver};
+    use crate::config::{Config, Field, Grpc, Type, Upstream};
 
     use super::DataLoaderRequest;
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 
-    static PROTOBUF_OPERATION: Lazy<ProtobufOperation> = Lazy::new(|| {
+    async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut test_file = root_dir.join(file!());
 
@@ -73,19 +74,28 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
-        let protobuf_set = ProtobufSet::from_proto_file(&test_file).unwrap();
+        let file_io = init_file();
+        let http_io = init_http(&Upstream::default(), None);
+        let resolver = init_proto_resolver();
+        let mut config = Config::default();
+        let mut grpc  = Grpc::default();
+        grpc.proto_path = test_file.to_str().unwrap().to_string();
+        config.types.insert("foo".to_string(), Type::default().fields(vec![("bar", Field::default().grpc(grpc))]));
+
+        let protobuf_set = ProtobufSet::from_proto_file(&crate::config::get_descriptor_set(&config, file_io, http_io, resolver).await.unwrap()).unwrap();
+
         let service = protobuf_set.find_service("Greeter").unwrap();
 
         service.find_operation("SayHello").unwrap()
-    });
+    }
 
-    #[test]
-    fn dataloader_req_empty_headers() {
+    #[tokio::test]
+    async fn dataloader_req_empty_headers() {
         let batch_headers = BTreeSet::default();
         let tmpl = RenderedRequestTemplate {
             url: Url::parse("http://localhost:3000/").unwrap(),
             headers: HeaderMap::new(),
-            operation: PROTOBUF_OPERATION.clone(),
+            operation: get_protobuf_op().await,
             body: "{}".to_owned(),
         };
 
@@ -95,8 +105,8 @@ mod tests {
         assert_eq!(dl_req_1, dl_req_2);
     }
 
-    #[test]
-    fn dataloader_req_batch_headers() {
+    #[tokio::test]
+    async fn dataloader_req_batch_headers() {
         let batch_headers = BTreeSet::from_iter(["test-header".to_owned()]);
         let tmpl_1 = RenderedRequestTemplate {
             url: Url::parse("http://localhost:3000/").unwrap(),
@@ -104,7 +114,7 @@ mod tests {
                 HeaderName::from_static("test-header"),
                 HeaderValue::from_static("value1"),
             )]),
-            operation: PROTOBUF_OPERATION.clone(),
+            operation: get_protobuf_op().await,
             body: "{}".to_owned(),
         };
         let tmpl_2 = tmpl_1.clone();
