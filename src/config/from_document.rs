@@ -8,7 +8,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{Http, JS};
+use super::{File, JS};
 use crate::config::{
     self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream,
 };
@@ -245,8 +245,8 @@ where
     let list = matches!(&base, BaseType::List(_));
     let list_type_required = matches!(&base, BaseType::List(type_of) if !type_of.nullable);
     let doc = description.to_owned().map(|pos| pos.node);
-    config::File::from_directives(directives.iter())
-        .zip(Http::from_directives(directives.iter()))
+    config::Http::from_directives(directives.iter())
+        .zip(File::from_directives(directives.iter()))
         .zip(GraphQL::from_directives(directives.iter()))
         .zip(Cache::from_directives(directives.iter()))
         .zip(Grpc::from_directives(directives.iter()))
@@ -255,7 +255,7 @@ where
         .zip(Modify::from_directives(directives.iter()))
         .zip(JS::from_directives(directives.iter()))
         .map(
-            |((((((((file, http), graphql), cache), grpc), expr), omit), modify), script)| {
+            |((((((((http, file), graphql), cache), grpc), expr), omit), modify), script)| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
