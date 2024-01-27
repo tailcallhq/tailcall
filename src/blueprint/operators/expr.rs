@@ -559,10 +559,10 @@ mod tests {
     async fn test_relation_difference() {
         let expected = json!([1]);
         let actual = Expr::eval(
-      json!({"body": {"difference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"difference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(actual, expected);
     }
@@ -811,10 +811,10 @@ mod tests {
     async fn test_relation_max() {
         let expected = json!(923.83);
         let actual = Expr::eval(
-      json!({"body": {"max": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"max": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
+        )
+        .await
+        .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!("z");
@@ -838,10 +838,10 @@ mod tests {
     async fn test_relation_min() {
         let expected = json!(-423);
         let actual = Expr::eval(
-      json!({"body": {"min": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"min": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
+        )
+        .await
+        .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!("abc");

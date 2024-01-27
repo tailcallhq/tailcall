@@ -2,10 +2,12 @@ use mini_v8::{MiniV8, Value};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Number;
+
 pub trait SerdeV8: Sized {
     fn to_v8(self, mv8: &MiniV8) -> anyhow::Result<Value>;
     fn from_v8(value: &Value) -> anyhow::Result<Self>;
 }
+
 fn v8_serde(value: mini_v8::Value) -> anyhow::Result<serde_json::Value> {
     let serde_value: serde_json::Value = match value {
         Value::Undefined => serde_json::Value::Null,
@@ -41,6 +43,7 @@ fn v8_serde(value: mini_v8::Value) -> anyhow::Result<serde_json::Value> {
 
     Ok(serde_value)
 }
+
 fn serde_v8(value: serde_json::Value, v8: &mini_v8::MiniV8) -> anyhow::Result<mini_v8::Value> {
     let value: mini_v8::Value = match value {
         serde_json::Value::Null => Value::Null,
@@ -66,6 +69,7 @@ fn serde_v8(value: serde_json::Value, v8: &mini_v8::MiniV8) -> anyhow::Result<mi
     };
     Ok(value)
 }
+
 impl<A: Serialize + DeserializeOwned> SerdeV8 for A {
     fn to_v8(self, mv8: &MiniV8) -> anyhow::Result<Value> {
         let json = serde_json::to_value(&self)?;

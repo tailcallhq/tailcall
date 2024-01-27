@@ -557,8 +557,8 @@ mod tests {
         #[test]
         fn test_from_endpoint_template_few_null_value() {
             let endpoint = crate::endpoint::Endpoint::new(
-        "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
-      );
+                "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
+            );
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
               "args": {
@@ -576,12 +576,12 @@ mod tests {
         #[test]
         fn test_from_endpoint_template_few_null_value_mixed() {
             let endpoint = crate::endpoint::Endpoint::new(
-        "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
-      )
-      .query(vec![
-        ("e".to_string(), "{{args.e}}".to_string()),
-        ("f".to_string(), "{{args.f}}".to_string()),
-      ]);
+                "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
+            )
+            .query(vec![
+                ("e".to_string(), "{{args.e}}".to_string()),
+                ("f".to_string(), "{{args.f}}".to_string()),
+            ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
               "args": {

@@ -8,10 +8,12 @@ use crate::blueprint::{self};
 use crate::channel::{Command, Event};
 use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::ScriptIO;
+
 thread_local! {
   static CLOSURE: RefCell<anyhow::Result<mini_v8::Value>> = const { RefCell::new(Ok(mini_v8::Value::Null))};
   static V8: RefCell<MiniV8> = RefCell::new(MiniV8::new());
 }
+
 lazy_static! {
     static ref TOKIO_RUNTIME: tokio::runtime::Runtime = {
         let r = tokio::runtime::Builder::new_multi_thread()
@@ -24,7 +26,9 @@ lazy_static! {
         }
     };
 }
+
 pub struct Runtime {}
+
 fn create_closure(script: &str) -> String {
     format!("(function() {{{} return onEvent}})();", script)
 }
@@ -68,6 +72,7 @@ impl Runtime {
         Ok(function.clone())
     }
 }
+
 #[async_trait::async_trait]
 impl ScriptIO<Event, Command> for Runtime {
     async fn on_event(&self, event: Event) -> anyhow::Result<Command> {
@@ -87,6 +92,7 @@ impl ScriptIO<Event, Command> for Runtime {
             .await?
     }
 }
+
 fn on_event_impl<'a>(
     v8: &'a MiniV8,
     closure: &'a anyhow::Result<mini_v8::Value>,

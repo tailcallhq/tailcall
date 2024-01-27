@@ -8,11 +8,13 @@ use hyper::body::Bytes;
 use crate::channel::{Command, Event, JsResponse};
 use crate::http::Response;
 use crate::{HttpIO, ScriptIO};
+
 #[derive(Clone)]
 pub struct HttpFilter {
     client: Arc<dyn HttpIO + Send + Sync>,
     script: Arc<dyn ScriptIO<Event, Command> + Send + Sync>,
 }
+
 impl HttpFilter {
     pub fn new(
         http: impl HttpIO + Send + Sync,
@@ -20,6 +22,7 @@ impl HttpFilter {
     ) -> Self {
         HttpFilter { client: Arc::new(http), script: Arc::new(script) }
     }
+
     fn on_command<'a>(
         &'a self,
         command: Command,
@@ -54,6 +57,7 @@ impl HttpFilter {
         })
     }
 }
+
 #[async_trait::async_trait]
 impl HttpIO for HttpFilter {
     async fn execute(

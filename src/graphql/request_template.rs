@@ -188,19 +188,19 @@ mod tests {
     #[test]
     fn test_query_with_args() {
         let tmpl = RequestTemplate::new(
-      "http://localhost:3000".to_string(),
-      &GraphQLOperationType::Mutation,
-      "create",
-      Some(
+            "http://localhost:3000".to_string(),
+            &GraphQLOperationType::Mutation,
+            "create",
+            Some(
                 serde_json::from_str(
                     r#"[{"key": "id", "value": "{{foo.bar}}"}, {"key": "struct", "value": "{{foo}}"}]"#,
                 )
-          .unwrap(),
-      )
-      .as_ref(),
-      vec![],
-    )
-    .unwrap();
+                .unwrap(),
+            )
+            .as_ref(),
+            vec![],
+        )
+        .unwrap();
         let ctx = Context {
             value: Value::from_json(json!({
               "foo": {

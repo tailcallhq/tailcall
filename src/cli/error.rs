@@ -349,7 +349,7 @@ mod tests {
                      |  • Base URL needs to be specified
                      |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
                      |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
-      .strip_margin();
+            .strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
@@ -365,7 +365,7 @@ mod tests {
                      |Caused by:
                      |  • Base URL needs to be specified
                      |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
-      .strip_margin();
+            .strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
