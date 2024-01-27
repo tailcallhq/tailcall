@@ -93,7 +93,11 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
     let h2_client = init_http2();
     let cache = init_cache(env);
     let app_ctx = Arc::new(AppContext::new(
-        blueprint, h_client, h2_client, env_io, cache, None,
+        blueprint,
+        h_client.clone(),
+        h_client,
+        env_io,
+        cache,
     ));
     *APP_CTX.write().unwrap() = Some((file_path.to_string(), app_ctx.clone()));
     log::info!("Initialized new application context");

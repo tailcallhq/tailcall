@@ -75,6 +75,9 @@ fn validate_schema(
             // TODO: add validation for input schema - should compare result grpc.body to schema
             let fields = field_schema.field;
             let _args = field_schema.args;
+            // TODO: all of the fields in protobuf are optional actually
+            // and if we want to mark some fields as required in GraphQL
+            // JsonSchema won't match and the validation will fail
             fields.compare(&output_schema, name)
         })
 }
