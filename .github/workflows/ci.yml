@@ -185,7 +185,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
-            features: --no-default-features --features non-js
+            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -200,7 +200,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
-            features: --no-default-features --features non-js
+            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -208,7 +208,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
-            features: --no-default-features --features non-js
+            features: --no-default-features --features cli
             libc: glibc
             cross: true
 
@@ -234,7 +234,7 @@ jobs:
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-gnu
-            features: --no-default-features --features non-js
+            features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
 
@@ -242,7 +242,7 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
-            features: --no-default-features --features non-js
+            features: --no-default-features --features cli
             libc: msvc
             ext: ".exe"
 
@@ -250,7 +250,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
-            features: --no-default-features --features non-js
+            features: --no-default-features --features cli
             cross: true
             libc: glibc
             ext: ".exe"

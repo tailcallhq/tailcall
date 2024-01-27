@@ -87,8 +87,15 @@ stripmargin = "0.1.1"
 
 [features]
 unsafe-js = ["dep:mini-v8"]
+
+# Feature Flag to enable V8.
+# V8 currently is not support on all platforms so we control it via this feature flag.
 js = ["dep:mini-v8"]
-non-js = [
+
+# Feature Flag to core CLI features.
+# This is created to control what we expose for WASM.
+# Will be deprecated once we move CLI to it's own crate and WASM builds won't depend on it.
+cli = [
     "tokio/fs",
     "tokio/rt-multi-thread",
     "dep:mimalloc",
@@ -99,7 +106,11 @@ non-js = [
     "dep:rustls-pemfile",
     "dep:inquire",
 ]
-default = ["non-js", "js"]
+
+# Feature flag to enable all default features.
+# This is used by default locally while developing and on CI.
+# We generally want to interface via CLI and have V8 enabled, while running tests.
+default = ["cli", "js"]
 
 
 [workspace]
