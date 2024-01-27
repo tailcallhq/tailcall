@@ -1,10 +1,9 @@
 use mini_v8::MiniV8;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    cli::{javascript::serde_v8::SerdeV8, CLIError},
-    ToAnyHow,
-};
+use crate::cli::javascript::serde_v8::SerdeV8;
+use crate::cli::CLIError;
+use crate::ToAnyHow;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct JSError {
@@ -42,7 +41,7 @@ fn console_log(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v
 
 fn console_err(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v8::Error> {
     let err = get_console_error(invocation);
-    eprintln!("{}", err.to_string());
+    eprintln!("{}", err);
     Ok(mini_v8::Value::Undefined)
 }
 

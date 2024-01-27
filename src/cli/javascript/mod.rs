@@ -2,6 +2,7 @@ mod http_filter;
 mod runtime;
 mod serde_v8;
 mod shim;
+mod worker;
 pub use std::sync::Arc;
 
 pub use http_filter::HttpFilter;
