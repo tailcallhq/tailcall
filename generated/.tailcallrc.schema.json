@@ -1284,7 +1284,7 @@
     },
     "ScriptOptions": {
       "properties": {
-        "src": {
+        "source": {
           "type": "string"
         },
         "timeout": {
@@ -1297,7 +1297,7 @@
         }
       },
       "required": [
-        "src"
+        "source"
       ],
       "type": "object"
     },
