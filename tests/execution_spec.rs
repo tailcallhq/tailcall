@@ -18,8 +18,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_hook_http, init_script};
-use tailcall::config::{Config, Source};
+use tailcall::cli::{init_chrono_cache, init_file, init_hook_http, init_http, init_script};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::{EnvIO, HttpIO};
 use url::Url;
@@ -109,8 +110,11 @@ struct Mock {
 struct AssertSpec {
     #[serde(default)]
     mock: Vec<Mock>,
-    
+
     assert: Vec<DownstreamAssertion>,
+    
+    #[serde(default)]
+    env: HashMap<String, String>,
 }
 
 #[derive(Clone, Setters, Debug)]
@@ -124,7 +128,7 @@ struct ExecutionSpec {
 }
 
 impl ExecutionSpec {
-    fn cargo_read(path: &str) -> anyhow::Result<Vec<ExecutionSpec>> {
+    async fn cargo_read(path: &str) -> anyhow::Result<Vec<ExecutionSpec>> {
         let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
         let mut files = Vec::new();
 
@@ -137,7 +141,7 @@ impl ExecutionSpec {
                 if let Some(ext) = path.extension().and_then(|x| x.to_str()) {
                     if ext == "md" {
                         let contents = fs::read_to_string(&path)?;
-                        let spec: ExecutionSpec = Self::from_source(&path, contents)
+                        let spec: ExecutionSpec = Self::from_source(&path, contents).await
                             .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
 
                         files.push(spec.path(path));
@@ -154,7 +158,7 @@ impl ExecutionSpec {
         Ok(files)
     }
 
-    fn from_source(path: &Path, contents: String) -> anyhow::Result<Self> {
+    async fn from_source(path: &Path, contents: String) -> anyhow::Result<Self> {
         INIT.call_once(|| {
             env_logger::builder()
                 .filter(Some("execution_spec"), log::LevelFilter::Info)
@@ -222,7 +226,13 @@ impl ExecutionSpec {
 
                             match name {
                                 "server:" => {
-                                    server.push(Config::from_source(source, &content)?);
+                                    let config = Config::default();
+
+                                    let new_config = Config::from_source(source, &content)?;
+                                    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+                                    let new_config = reader.read_script(new_config).await?;
+
+                                    server.push(config.merge_right(&new_config));
                                 }
                                 "assert:" => {
                                     assert = match source {
@@ -277,14 +287,14 @@ impl ExecutionSpec {
         anyhow::Ok(spec)
     }
 
-    async fn server_context(&self, config: &Config) -> Arc<AppContext> {
+    async fn server_context(&self, config: &Config, env: HashMap<String, String>) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
         let client = init_hook_http(
             MockHttpClient::new(self.clone()),
             blueprint.server.script.clone(),
         );
         let http2_client = Arc::new(MockHttpClient::new(self.clone()));
-        let env = Arc::new(Env::init(HashMap::new()));
+        let env = Arc::new(Env::init(env));
         let chrono_cache = Arc::new(init_chrono_cache());
         let script = blueprint.server.clone().script.map(init_script);
         let server_context =
@@ -402,9 +412,11 @@ impl HttpIO for MockHttpClient {
 }
 
 async fn assert_spec(spec: ExecutionSpec) {
+    log::info!("{} {} ...", spec.name, spec.path.display());
+
     if let Some(assert_spec) = spec.assert.as_ref() {
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
-            let response = run_assert(spec.clone(), &assertion, spec.server.first().unwrap())
+            let response = run_assert(spec.clone(), assert_spec.clone(), &assertion, spec.server.first().unwrap())
                 .await
                 .context(spec.path.to_str().unwrap().to_string())
                 .unwrap();
@@ -421,7 +433,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 body: serde_json::from_slice(&hyper::body::to_bytes(response.into_body()).await.unwrap()).unwrap(),
             };
 
-            insta::assert_yaml_snapshot!(format!("{}_assert_{}", spec.safe_name, i), response);
+            insta::assert_json_snapshot!(format!("{}_assert_{}", spec.safe_name, i), response);
         }
     }
 
@@ -430,7 +442,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
 #[tokio::test]
 async fn execution_spec() -> anyhow::Result<()> {
-    let spec = ExecutionSpec::cargo_read("tests/execution")?;
+    let spec = ExecutionSpec::cargo_read("tests/execution").await?;
     let tasks: Vec<_> = spec.into_iter().map(assert_spec).collect();
     join_all(tasks).await;
     Ok(())
@@ -438,6 +450,7 @@ async fn execution_spec() -> anyhow::Result<()> {
 
 async fn run_assert(
     spec: ExecutionSpec,
+    assert: AssertSpec,
     downstream_assertion: &&DownstreamAssertion,
     config: &Config,
 ) -> anyhow::Result<hyper::Response<Body>> {
@@ -446,7 +459,7 @@ async fn run_assert(
     let method = downstream_assertion.request.0.method.clone();
     let headers = downstream_assertion.request.0.headers.clone();
     let url = downstream_assertion.request.0.url.clone();
-    let server_context = spec.server_context(config).await;
+    let server_context = spec.server_context(&config, assert.env.clone()).await;
     let req = headers
         .into_iter()
         .fold(

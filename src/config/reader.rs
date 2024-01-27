@@ -56,7 +56,7 @@ impl ConfigReader {
     }
 
     /// Reads the script file and replaces the path with the content
-    async fn read_script(&self, mut config: Config) -> anyhow::Result<Config> {
+    pub async fn read_script(&self, mut config: Config) -> anyhow::Result<Config> {
         if let Some(Script::Path(options)) = config.server.script {
             let timeout = options.timeout;
             let path = options.src;

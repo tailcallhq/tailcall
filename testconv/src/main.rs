@@ -17,6 +17,7 @@ impl From<http::HttpSpec> for execution::AssertSpec {
         Self {
             mock: value.mock.clone(),
             assert: value.assert.clone().into_iter().map(|x| x.into()).collect(),
+            env: value.env.clone(),
         }
     }
 }
@@ -119,7 +120,7 @@ fn main() {
 
                 let snap = format!(
                     "---\nsource: tests/execution_spec.rs\nexpression: response\n---\n{}",
-                    serde_yaml::to_string(&res).expect("Failed to serialize assert.response"),
+                    serde_json::to_string_pretty(&res).expect("Failed to serialize assert.response"),
                 );
 
                 f.write_all(snap.as_bytes()).expect("Failed to write exception spec");
