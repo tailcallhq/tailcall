@@ -40,6 +40,7 @@ pub fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> A
 
     #[cfg(not(feature = "js"))]
     log::warn!("JS capabilities are disabled in this build");
+    let _ = script;
 
     Arc::new(http)
 }
