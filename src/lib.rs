@@ -17,8 +17,6 @@ pub mod grpc;
 pub mod has_headers;
 pub mod helpers;
 pub mod http;
-#[cfg(feature = "unsafe-js")]
-pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod mustache;
