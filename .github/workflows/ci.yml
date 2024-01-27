@@ -186,6 +186,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         build:
           [
@@ -213,6 +214,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
+            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -227,6 +229,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
+            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -234,6 +237,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
+            features: --no-default-features --features cli
             libc: glibc
             cross: true
 
@@ -259,6 +263,7 @@ jobs:
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-gnu
+            features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
 
@@ -266,6 +271,7 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
+            features: --no-default-features --features cli
             libc: msvc
             ext: ".exe"
 
@@ -273,6 +279,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
+            features: --no-default-features --features cli
             cross: true
             libc: glibc
             ext: ".exe"
@@ -301,7 +308,7 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: ${{matrix.features}} --release --target ${{ matrix.target }}
 
       - name: Install Node.js
         if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')

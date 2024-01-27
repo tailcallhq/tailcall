@@ -95,7 +95,6 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
         h_client,
         env_io,
         cache,
-        None,
     ));
     *APP_CTX.write().unwrap() = Some((file_path.to_string(), app_ctx.clone()));
     log::info!("Initialized new application context");
