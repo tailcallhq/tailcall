@@ -174,7 +174,7 @@ mod tests {
     use serde_json::{json, Number};
 
     use super::{compile, CompilationContext};
-    use crate::config::{Config, ConfigSet, Expr, Field, GraphQLOperationType};
+    use crate::config::{ConfigSet, Expr, Field, GraphQLOperationType};
     use crate::http::RequestContext;
     use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
 

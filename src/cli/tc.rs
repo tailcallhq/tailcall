@@ -26,13 +26,11 @@ pub async fn run() -> Result<()> {
     logger_init();
     let file_io: Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
-    let config_reader = ConfigReader::init(file_io.clone(), default_http_io.clone());
+    let proto_path_resolver = init_proto_resolver();
+    let config_reader = ConfigReader::init(file_io.clone(), default_http_io.clone(), proto_path_resolver);
     match cli.command {
         Command::Start { file_paths } => {
             let config_set = config_reader.read_all(&file_paths).await?;
-            let config_set = config_set
-                .resolve_extensions(file_io.clone(), default_http_io, init_proto_resolver())
-                .await;
             log::info!("N + 1: {}", config_set.n_plus_one().len().to_string());
             let server = Server::new(config_set);
             server.fork_start().await?;
@@ -40,9 +38,6 @@ pub async fn run() -> Result<()> {
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
             let config_set = (config_reader.read_all(&file_paths)).await?;
-            let config_set = config_set
-                .resolve_extensions(file_io.clone(), default_http_io, init_proto_resolver())
-                .await;
             let blueprint = Blueprint::try_from(&config_set).map_err(CLIError::from);
 
             match blueprint {
