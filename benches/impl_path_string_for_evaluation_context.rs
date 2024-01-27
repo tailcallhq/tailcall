@@ -10,10 +10,10 @@ use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::blueprint::Server;
+use tailcall::cache::NativeChronoCache;
 use tailcall::cli::{init_env, init_http, init_http2_only};
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::native_chrono_cache::NativeChronoCache;
 use tailcall::path::PathString;
 
 const INPUT_VALUE: &[&[&str]] = &[

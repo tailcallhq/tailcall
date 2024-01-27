@@ -22,7 +22,6 @@ pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod mustache;
-pub mod native_chrono_cache;
 pub mod path;
 pub mod print_schema;
 pub mod try_fold;
@@ -61,8 +60,8 @@ pub trait Cache: Send + Sync {
         key: Self::Key,
         value: Self::Value,
         ttl: NonZeroU64,
-    ) -> anyhow::Result<()>;
-    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
+    ) -> anyhow::Result<Option<Self::Value>>;
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Option<Self::Value>>;
 }
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;

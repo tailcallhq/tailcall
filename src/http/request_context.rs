@@ -79,13 +79,18 @@ impl RequestContext {
         }
     }
 
-    pub async fn cache_get(&self, key: &u64) -> Option<ConstValue> {
-        self.cache.get(key).await.ok()
+    pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<ConstValue>> {
+        self.cache.get(key).await
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn cache_insert(&self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Option<()> {
-        self.cache.set(key, value, ttl).await.ok()
+    pub async fn cache_insert(
+        &self,
+        key: u64,
+        value: ConstValue,
+        ttl: NonZeroU64,
+    ) -> anyhow::Result<Option<ConstValue>> {
+        self.cache.set(key, value, ttl).await
     }
 
     pub fn is_batching_enabled(&self) -> bool {
@@ -121,10 +126,10 @@ mod test {
     use hyper::HeaderMap;
 
     use crate::blueprint::Server;
+    use crate::cache::NativeChronoCache;
     use crate::cli::{init_env, init_http, init_http2_only};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
-    use crate::native_chrono_cache::NativeChronoCache;
 
     impl Default for RequestContext {
         fn default() -> Self {
