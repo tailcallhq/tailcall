@@ -192,7 +192,9 @@ mod tests {
       &GraphQLOperationType::Mutation,
       "create",
       Some(
-        serde_json::from_str(r#"[{"key": "id", "value": "{{foo.bar}}"}, {"key": "struct", "value": "{{foo}}"}]"#)
+                serde_json::from_str(
+                    r#"[{"key": "id", "value": "{{foo.bar}}"}, {"key": "struct", "value": "{{foo}}"}]"#,
+                )
           .unwrap(),
       )
       .as_ref(),

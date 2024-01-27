@@ -397,13 +397,15 @@ async fn assert_downstream(spec: HttpSpec) {
             for (key, value) in assertion.response.0.headers.iter() {
                 match actual_headers.get(key) {
                     None => panic!("Expected header {} to be present", key),
-                    Some(actual_value) => assert_eq!(
-                        actual_value,
-                        value,
-                        "File: {} {}",
-                        spec.name,
-                        spec.path.display()
-                    ),
+                    Some(actual_value) => {
+                        assert_eq!(
+                            actual_value,
+                            value,
+                            "File: {} {}",
+                            spec.name,
+                            spec.path.display()
+                        )
+                    }
                 }
             }
         }

@@ -818,8 +818,9 @@ mod tests {
         assert_eq!(actual, expected);
 
         let expected = json!("z");
-        let actual =
-      Expr::eval(json!({"body": {"max": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}))
+        let actual = Expr::eval(
+            json!({"body": {"max": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}),
+        )
         .await
         .unwrap();
         assert_eq!(actual, expected);
@@ -844,8 +845,9 @@ mod tests {
         assert_eq!(actual, expected);
 
         let expected = json!("abc");
-        let actual =
-      Expr::eval(json!({"body": {"min": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}))
+        let actual = Expr::eval(
+            json!({"body": {"min": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}),
+        )
         .await
         .unwrap();
         assert_eq!(actual, expected);
