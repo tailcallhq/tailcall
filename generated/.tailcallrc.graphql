@@ -83,7 +83,19 @@ directive @server(
   `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   """
   key: String
+
+  script: Script
 ) on SCHEMA
+
+input Script {
+  file: ScriptConfig
+  path: ScriptConfig
+}
+
+input ScriptConfig {
+  src: String!
+  timeout: Int
+}
 
 enum HttpVersion {
   HTTP1
@@ -318,16 +330,6 @@ directive @expr(
   Root of the expression AST
   """
   body: ExprBody!
-) on FIELD_DEFINITION
-
-"""
-Allows executing arbitrary javascript code
-"""
-directive @js(
-  """
-  A javascript expression that returns a JSON value
-  """
-  script: String!
 ) on FIELD_DEFINITION
 
 """
