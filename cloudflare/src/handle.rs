@@ -94,8 +94,8 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
     let cache = init_cache(env);
     let app_ctx = Arc::new(AppContext::new(
         blueprint,
-        h_client.clone(),
         h_client,
+        h2_client,
         env_io,
         cache,
     ));
