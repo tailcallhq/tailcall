@@ -14,29 +14,29 @@ async fn import_all(
     http_io: Arc<dyn HttpIO>,
     resolver: Arc<dyn ProtoPathResolver>,
 ) -> Result<()> {
-    let (name, source) = resolver
+    let source = resolver
         .resolve(&proto_path, http_io.clone(), file_io.clone())
         .await?;
 
     let mut queue = VecDeque::new();
-    let parent_proto = protox_parse::parse(&name, &source)?;
+    let parent_proto = protox_parse::parse(&proto_path, &source)?;
     queue.push_back(parent_proto.clone());
 
     while let Some(file) = queue.pop_front() {
         for import in file.dependency.iter() {
-            let (name, source) = resolver
+            let source = resolver
                 .resolve(import, http_io.clone(), file_io.clone())
                 .await?;
-            if map.get(&name).is_some() {
+            if map.get(import).is_some() {
                 continue;
             }
-            let fdp = protox_parse::parse(&name, &source)?;
+            let fdp = protox_parse::parse(import, &source)?;
             queue.push_back(fdp.clone());
-            map.insert(name, fdp);
+            map.insert(import.clone(), fdp);
         }
     }
 
-    map.insert(name.to_string(), parent_proto);
+    map.insert(proto_path, parent_proto);
 
     Ok(())
 }

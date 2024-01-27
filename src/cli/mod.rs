@@ -6,7 +6,7 @@ pub(crate) mod file;
 mod fmt;
 pub(crate) mod http;
 pub mod javascript;
-mod path_resolver;
+mod proto_resolver;
 pub mod server;
 mod tc;
 
@@ -21,7 +21,7 @@ pub use http::NativeHttp;
 pub use tc::run;
 
 use crate::channel::{Command, Event};
-use crate::cli::path_resolver::NativeProtoPathResolver;
+use crate::cli::proto_resolver::NativeProtoPathResolver;
 use crate::config::Upstream;
 use crate::{blueprint, EnvIO, FileIO, HttpIO, ProtoPathResolver, ScriptIO};
 

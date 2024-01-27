@@ -79,7 +79,7 @@ pub trait ProtoPathResolver {
         path: &'a str,
         http_io: Arc<dyn HttpIO>,
         file_io: Arc<dyn FileIO>,
-    ) -> anyhow::Result<(String, String)>;
+    ) -> anyhow::Result<String>;
 }
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {

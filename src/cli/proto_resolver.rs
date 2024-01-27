@@ -23,14 +23,13 @@ impl ProtoPathResolver for NativeProtoPathResolver {
         path: &'a str,
         http_io: Arc<dyn HttpIO>,
         file_io: Arc<dyn FileIO>,
-    ) -> anyhow::Result<(String, String)> {
+    ) -> anyhow::Result<String> {
         if let Ok(file) = GoogleFileResolver::new().open_file(path) {
-            return Ok((
-                path.to_string(),
+            return Ok(
                 file.source()
-                    .context("Unable to extract content of google well-known protofile")?
+                    .context("Unable to extract content of google well-known proto file")?
                     .to_string(),
-            ));
+            );
         }
 
         let proto_path = PathBuf::from(path);
@@ -56,6 +55,6 @@ impl ProtoPathResolver for NativeProtoPathResolver {
             }
             Err(_) => file_io.read(&proto_path).await?,
         };
-        Ok((path.to_string(), source))
+        Ok(source)
     }
 }
