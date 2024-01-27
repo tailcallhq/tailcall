@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use colored::Colorize;
 use update_informer::{registry, Check};
 use which::which;
@@ -34,44 +36,48 @@ fn get_installation_method() -> InstallationMethod {
 }
 
 pub async fn check_for_update() {
-    let name: &str = "tailcallhq/tailcall";
+    tokio::task::spawn_blocking(|| {
+        let name: &str = "tailcallhq/tailcall";
+        let Some(current_version) = option_env!("APP_VERSION") else {
+            return;
+        };
 
-    let Some(current_version) = option_env!("APP_VERSION") else {
-        return;
-    };
+        let informer =
+            update_informer::new(registry::GitHub, name, current_version).interval(Duration::ZERO);
 
-    let informer = update_informer::new(registry::GitHub, name, current_version);
-
-    if let Some(latest_version) = informer.check_version().ok().flatten() {
-        let github_release_url = format!(
-            "https://github.com/tailcallhq/tailcall/releases/tag/{}",
-            latest_version
-        );
-        let installation_method = get_installation_method();
-        log::warn!(
-            "{}",
-            format!(
-                "A new release of tailcall is available: {} {} {}",
-                current_version.to_string().cyan(),
-                "➜".white(),
-                latest_version.to_string().cyan()
-            )
-            .yellow()
-        );
-        match installation_method {
-            InstallationMethod::Npx => log::warn!(
+        if let Some(latest_version) = informer.check_version().ok().flatten() {
+            let github_release_url = format!(
+                "https://github.com/tailcallhq/tailcall/releases/tag/{}",
+                latest_version
+            );
+            let installation_method = get_installation_method();
+            log::warn!(
                 "{}",
-                "You're running an outdated version, run: npx @tailcallhq/tailcall@latest"
-            ),
-            InstallationMethod::Npm => {
-                log::warn!("{}", "To upgrade, run: npm update -g @tailcallhq/tailcall")
+                format!(
+                    "A new release of tailcall is available: {} {} {}",
+                    current_version.to_string().cyan(),
+                    "➜".white(),
+                    latest_version.to_string().cyan()
+                )
+                .yellow()
+            );
+            match installation_method {
+                InstallationMethod::Npx => log::warn!(
+                    "{}",
+                    "You're running an outdated version, run: npx @tailcallhq/tailcall@latest"
+                ),
+                InstallationMethod::Npm => {
+                    log::warn!("{}", "To upgrade, run: npm update -g @tailcallhq/tailcall")
+                }
+                InstallationMethod::Brew => {
+                    log::warn!("{}", "To upgrade, run: brew upgrade tailcall")
+                }
+                InstallationMethod::Direct => log::warn!(
+                    "{}",
+                    "Please update by downloading the latest release from GitHub"
+                ),
             }
-            InstallationMethod::Brew => log::warn!("{}", "To upgrade, run: brew upgrade tailcall"),
-            InstallationMethod::Direct => log::warn!(
-                "{}",
-                "Please update by downloading the latest release from GitHub"
-            ),
+            log::warn!("{}", github_release_url.to_string().yellow());
         }
-        log::warn!("{}", github_release_url.to_string().yellow());
-    }
+    });
 }

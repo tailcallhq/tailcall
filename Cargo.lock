@@ -3813,6 +3813,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f8811797a24ff123db3c6e1087aa42551d03d772b3724be421ad063da1f5f3f"
 dependencies = [
  "directories",
+ "reqwest",
  "semver",
  "serde",
  "serde_json",
