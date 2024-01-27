@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <title>hello-wasm example</title>
+</head>
+<body>
+
+<div id="content"></div>
+
+<script type="module">
+  import init, { GraphQLExecutor } from "../pkg/wasm_browser.js";
+  init().then(async () => {
+    try {
+      const schema =
+        "schema\n" +
+        '  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")\n' +
+        '  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {\n' +
+        "  query: Query\n" +
+        "}\n" +
+        "\n" +
+        "type Query {\n" +
+        '  posts: [Post] @http(path: "/posts")\n' +
+        '  users: [User] @http(path: "/users")\n' +
+        '  user(id: Int!): User @http(path: "/users/{{args.id}}")\n' +
+        "}\n" +
+        "\n" +
+        "type User {\n" +
+        "  id: Int!\n" +
+        "  name: String!\n" +
+        "  username: String!\n" +
+        "  email: String!\n" +
+        "  phone: String\n" +
+        "  website: String\n" +
+        "}\n" +
+        "\n" +
+        "type Post {\n" +
+        "  id: Int!\n" +
+        "  userId: Int!\n" +
+        "  title: String!\n" +
+        "  body: String!\n" +
+        '  user: User @http(path: "/users/{{value.userId}}")\n' +
+        "}\n"
+      const source = ".graphql"
+      const executor = new GraphQLExecutor(schema, source)
+
+      // Execute a query
+      const query = "{ user(id: 2) { id } }"
+      let res = await executor.execute(query);
+      document.getElementById("content").textContent = JSON.stringify(JSON.parse(res), null, 2)
+    } catch (error) {
+      alert("an error occurred: " + error)
+    }
+  });
+</script>
+</body>
+</html>

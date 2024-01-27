@@ -9,6 +9,10 @@ keywords = [
 "rust",
 "http"
 ]
+repository = "https://github.com/tailcallhq/tailcall"
+authors = ["Sandipsinh Rathod"]
+license = "Apache-2.0"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

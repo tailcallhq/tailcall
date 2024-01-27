@@ -1,0 +1,19 @@
+{
+  "name": "tc-browser-example",
+  "version": "0.1.0",
+  "description": "An example for using tailcall browser dependency",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tailcallhq/tailcall.git"
+  },
+  "author": "Sandipsinh Rathod",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tailcallhq/tailcall/issues"
+  },
+  "homepage": "https://github.com/tailcallhq/tailcall#readme"
+}

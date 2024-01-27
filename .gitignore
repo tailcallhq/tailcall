@@ -18,4 +18,7 @@ cloudflare/build
 cloudflare/node_modules
 cloudflare/pkg
 
+node/pkg
+browser/pkg
+
 .wrangler/
