@@ -37,11 +37,23 @@ pub struct JsRequest {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JsResponse {
-    status: f64,
+    #[serde(
+        default = "default_http_status",
+        skip_serializing_if = "is_default_status"
+    )]
+    status: f64, // TODO: make this u16 once we derive the codecs for v8::Value
     #[serde(default, skip_serializing_if = "is_default")]
     headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
     body: Option<serde_json::Value>,
+}
+
+fn default_http_status() -> f64 {
+    200.0
+}
+
+fn is_default_status(status: &f64) -> bool {
+    *status == default_http_status()
 }
 
 // Response implementations
@@ -76,7 +88,6 @@ impl TryFrom<&Response<Bytes>> for JsResponse {
 // Request implementations
 impl TryFrom<JsRequest> for reqwest::Request {
     type Error = anyhow::Error;
-
     fn try_from(req: JsRequest) -> Result<Self, Self::Error> {
         let mut request = reqwest::Request::new(req.method.to_hyper(), req.url.parse()?);
         let headers = create_header_map(req.headers)?;

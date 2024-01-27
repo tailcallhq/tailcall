@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use hyper::body::Bytes;
@@ -66,8 +65,9 @@ mod test {
     use super::*;
     use crate::blueprint::Script;
     use crate::cli::NativeHttp;
+    use pretty_assertions::assert_eq;
 
-    fn test_worker(script: &str) -> anyhow::Result<Worker> {
+    fn new_worker(script: &str) -> anyhow::Result<Worker> {
         let v8 = mini_v8::MiniV8::new();
         let http = NativeHttp::default();
         let script = Script {
@@ -79,21 +79,39 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_create_closure() {
+    async fn test_ok_response() {
         let script = r#"
             function onEvent(request) {
-                console.log(request)
                 return {status: 200}
             }
         "#;
-        let worker = test_worker(script).unwrap();
-        let response = worker
-            .on_event(reqwest::Request::new(
-                reqwest::Method::GET,
-                Url::parse("http://jsonplaceholder.typicode.com/users/1").unwrap(),
-            ))
-            .await
-            .unwrap();
+        let worker = new_worker(script).unwrap();
+        let request = reqwest::Request::new(
+            reqwest::Method::GET,
+            Url::parse("http://jsonplaceholder.typicode.com/users/1").unwrap(),
+        );
+        let response = worker.on_event(request).await.unwrap();
         assert_eq!(response.status.as_u16(), 200);
+    }
+
+    #[tokio::test]
+    async fn test_url() {
+        let script = r#"
+            function onEvent(request) {
+                return {body: {url: request.url}}
+            }
+        "#;
+        let worker = new_worker(script).unwrap();
+        let request = reqwest::Request::new(
+            reqwest::Method::GET,
+            Url::parse("http://jsonplaceholder.typicode.com/users/1").unwrap(),
+        );
+        let response = worker.on_event(request).await.unwrap();
+        let body = String::from_utf8(response.body.to_vec()).unwrap();
+        assert_eq!(response.status.as_u16(), 200);
+        assert_eq!(
+            body,
+            r#"{"url":"http://jsonplaceholder.typicode.com/users/1"}"#
+        );
     }
 }
