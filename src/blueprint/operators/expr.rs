@@ -57,7 +57,9 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     match expr {
         // Io Expr
         ExprBody::Http(http) => compile_http(config, field, &http),
-        ExprBody::File(file) => compile_file(config, field, &file),
+        ExprBody::File(file) => {
+            compile_file(CompileFile { config, field, file: &file, validate: false })
+        }
         ExprBody::Grpc(grpc) => {
             let grpc = CompileGrpc {
                 config_set,

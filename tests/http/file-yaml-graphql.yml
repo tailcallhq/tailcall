@@ -1,5 +1,5 @@
-config: !file tests/http/config/file-json.graphql
-name: GraphQL Request from JSON file source
+config: !file tests/http/config/file-yaml.graphql
+name: GraphQL Request from YAML file source
 mock:
 assert:
   - request:

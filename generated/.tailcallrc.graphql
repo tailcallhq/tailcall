@@ -522,6 +522,37 @@ input Grpc {
   and their values. Note: content-type is automatically set to application/grpc
   """
   headers: KeyValues
+}
+
+"""
+@file
+The @file operator indicates that a field or node is backed by a local file.
+
+For instance, if you add the @file operator to the `users` field of the Query type with a source of `./users.json`, it signifies that the `users` field is backed by a JSON file. YAML is also supported.
+The path argument specifies the path of the REST API.
+In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
+"""
+directive @file(
+  """
+  The path of the data file.
+  """
+  src: String!
+) on FIELD_DEFINITION
+
+"""
+@grpc
+The @grpc operator indicates that a field or node is backed by a gRPC API.
+
+For instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API.
+The `service` argument specifies the name of the gRPC service.
+The `method` argument specifies the name of the gRPC method.
+In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.
+"""
+directive @grpc(
+  """
+  This refers to the gRPC service you're going to call. For instance `NewsService`.
+  """
+  service: String!
   """
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
@@ -536,7 +567,7 @@ input Grpc {
   This refers to the gRPC service you're going to call. For instance `NewsService`.
   """
   service: String!
-}
+) on FIELD_DEFINITION
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
 if you add the @http operator to the `users` field of the Query type with a path 

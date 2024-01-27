@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{GraphQL, Grpc, Http, File};
+use super::{File, GraphQL, Grpc, Http};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 /// Allows composing operators as simple expressions
@@ -34,7 +34,7 @@ pub enum ExprBody {
     /// Fetch a resources using the file operator
     #[serde(rename = "file")]
     File(File),
-    
+
     /// Fetch a resources using the grpc operator
     #[serde(rename = "grpc")]
     Grpc(Grpc),

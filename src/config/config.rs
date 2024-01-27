@@ -367,7 +367,7 @@ pub struct Field {
 
     ///
     /// Inserts a File resolver for the field.
-    /// 
+    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub file: Option<File>,
 

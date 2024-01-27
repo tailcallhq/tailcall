@@ -1,15 +1,10 @@
 use core::future::Future;
-use std::collections::HashMap;
-use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
-use lazy_static::lazy_static;
 use reqwest::Request;
-use tokio::io::AsyncReadExt;
-use tokio::sync::RwLock;
 
 use super::{Eval, EvaluationContext, ResolverContextLike};
 use crate::config::group_by::GroupBy;
@@ -23,7 +18,6 @@ use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
-use crate::valid::ValidationError;
 use crate::{grpc, http};
 
 #[derive(Clone, Debug)]
@@ -45,11 +39,6 @@ pub enum IO {
         dl_id: Option<DataLoaderId>,
     },
     JS(Box<Expression>, String),
-    File(PathBuf),
-}
-
-lazy_static! {
-    static ref FILE_CACHE: RwLock<HashMap<PathBuf, ConstValue>> = RwLock::new(HashMap::new());
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -143,37 +132,6 @@ impl Eval for IO {
                             .map_err(|e| EvaluationError::JSException(e.to_string()).into());
                     }
                     result
-                },
-                IO::File(path) => {
-                    let cache_path = {
-                        FILE_CACHE.read().await.get(path).cloned()
-                    };
-
-                    if let Some(file) = cache_path {
-                        Ok(file.to_owned())
-                    } else {
-                        let mut file = tokio::fs::File::open(path).await?;
-                        let mut str = String::new();
-                        file.read_to_string(&mut str).await?;
-
-                        let ext = path.extension()
-                            .map(|x| x.to_string_lossy().to_string())
-                            .unwrap_or("".to_string());
-
-                        let x = if ext == "json" {
-                            serde_json::from_str::<async_graphql::Value>(&str)?
-                        } else if ext == "yml" || ext == "yaml" {
-                            serde_yaml::from_str::<async_graphql::Value>(&str)?
-                        } else {
-                            return Err(ValidationError::new(format!("File extension {:?} unrecognized", ext)).into())
-                        };
-
-                        {
-                            FILE_CACHE.write().await.insert(path.to_owned(), x.clone());
-                        }
-
-                        Ok(x)
-                    }
                 }
             }
         })

@@ -147,6 +147,19 @@
         },
         {
           "additionalProperties": false,
+          "description": "Fetch a resources using the file operator",
+          "properties": {
+            "file": {
+              "$ref": "#/definitions/File"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
           "description": "Fetch a resources using the grpc operator",
           "properties": {
             "grpc": {
@@ -900,6 +913,17 @@
           ],
           "description": "Inserts an Expression resolver for the field."
         },
+        "file": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a File resolver for the field."
+        },
         "graphql": {
           "anyOf": [
             {
@@ -981,6 +1005,19 @@
         "type": {
           "description": "Refers to the type of the value the field can be resolved to.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "File": {
+      "description": "The @file operator indicates that a field or node is backed by a local file.\n\nFor instance, if you add the @file operator to the `users` field of the Query type with a source of `./users.json`, it signifies that the `users` field is backed by a JSON file. YAML is also supported. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
+      "properties": {
+        "src": {
+          "description": "The path of the data file.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "type": "object"
