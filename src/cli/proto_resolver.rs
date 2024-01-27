@@ -25,11 +25,10 @@ impl ProtoPathResolver for NativeProtoPathResolver {
         file_io: Arc<dyn FileIO>,
     ) -> anyhow::Result<String> {
         if let Ok(file) = GoogleFileResolver::new().open_file(path) {
-            return Ok(
-                file.source()
-                    .context("Unable to extract content of google well-known proto file")?
-                    .to_string(),
-            );
+            return Ok(file
+                .source()
+                .context("Unable to extract content of google well-known proto file")?
+                .to_string());
         }
 
         let proto_path = PathBuf::from(path);

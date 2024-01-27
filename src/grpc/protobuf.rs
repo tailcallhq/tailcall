@@ -200,10 +200,10 @@ mod tests {
     use once_cell::sync::Lazy;
     use prost_reflect::Value;
     use serde_json::json;
-    use crate::cli::{init_file, init_http, init_proto_resolver};
-    use crate::config::{Config, Field, Grpc, Type, Upstream};
 
     use super::*;
+    use crate::cli::{init_file, init_http, init_proto_resolver};
+    use crate::config::{Config, Field, Grpc, Type, Upstream};
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -227,10 +227,16 @@ mod tests {
         let http_io = init_http(&Upstream::default(), None);
         let resolver = init_proto_resolver();
         let mut config = Config::default();
-        let mut grpc  = Grpc::default();
-        grpc.proto_path = get_test_file(name).to_str().ok_or(anyhow!("Failed to parse or load proto file"))?.to_string();
-        config.types.insert("foo".to_string(), Type::default().fields(vec![("bar", Field::default().grpc(grpc))]));
-        Ok(crate::config::get_descriptor_set(&config, file_io, http_io, resolver).await?)
+        let mut grpc = Grpc::default();
+        grpc.proto_path = get_test_file(name)
+            .to_str()
+            .ok_or(anyhow!("Failed to parse or load proto file"))?
+            .to_string();
+        config.types.insert(
+            "foo".to_string(),
+            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+        );
+        crate::config::get_descriptor_set(&config, file_io, http_io, resolver).await
     }
 
     #[test]

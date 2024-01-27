@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
 use tailcall::{EnvIO, FileIO, HttpIO, ProtoPathResolver};
+
 use crate::proto_resolver::CloudflareProtoPathResolver;
 
 mod cache;

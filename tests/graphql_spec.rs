@@ -15,7 +15,9 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_env, init_file, init_http, init_proto_resolver, init_script};
+use tailcall::cli::{
+    init_chrono_cache, init_env, init_file, init_http, init_proto_resolver, init_script,
+};
 use tailcall::config::{Config, ConfigSet, Upstream};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
@@ -291,7 +293,9 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let content = spec.find_source(Tag::ServerSDL);
         let content = content.as_str();
         let config = Config::from_sdl(content).to_result().unwrap();
-        let config_set = ConfigSet::from(config).resolve_extensions(file_io.clone(),http_io.clone(),resolver.clone()).await;
+        let config_set = ConfigSet::from(config)
+            .resolve_extensions(file_io.clone(), http_io.clone(), resolver.clone())
+            .await;
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
 
@@ -389,7 +393,9 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let content = spec.find_source(Tag::ServerSDL);
         let expected = spec.sdl_errors;
         let content = content.as_str();
-        let config_set = ConfigSet::from(Config::from_sdl(content).to_result().unwrap_or_default()).resolve_extensions(file_io.clone(), http_io.clone(), resolver.clone()).await;
+        let config_set = ConfigSet::from(Config::from_sdl(content).to_result().unwrap_or_default())
+            .resolve_extensions(file_io.clone(), http_io.clone(), resolver.clone())
+            .await;
 
         let actual = Blueprint::try_from(&config_set);
         match actual {

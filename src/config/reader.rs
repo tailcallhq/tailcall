@@ -21,7 +21,11 @@ struct FileRead {
 }
 
 impl ConfigReader {
-    pub fn init(file: Arc<dyn FileIO>, http: Arc<dyn HttpIO>, resolver: Arc<dyn ProtoPathResolver>) -> Self {
+    pub fn init(
+        file: Arc<dyn FileIO>,
+        http: Arc<dyn HttpIO>,
+        resolver: Arc<dyn ProtoPathResolver>,
+    ) -> Self {
         Self { file, http, resolver }
     }
 
@@ -84,7 +88,9 @@ impl ConfigReader {
             config = config.merge_right(&new_config);
         }
         let config_set = ConfigSet::from(config);
-        let config_set = config_set.resolve_extensions(self.file.clone(), self.http.clone(),self.resolver.clone()).await;
+        let config_set = config_set
+            .resolve_extensions(self.file.clone(), self.http.clone(), self.resolver.clone())
+            .await;
         Ok(config_set)
     }
 }
@@ -105,7 +111,6 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
         let path_resolver = init_proto_resolver();
@@ -160,11 +165,9 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
         let path_resolver = init_proto_resolver();
-
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -190,11 +193,9 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
         let path_resolver = init_proto_resolver();
-
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(file_io, http_io, path_resolver);

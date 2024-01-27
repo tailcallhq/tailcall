@@ -27,7 +27,11 @@ pub async fn run() -> Result<()> {
     let file_io: Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
     let proto_path_resolver = init_proto_resolver();
-    let config_reader = ConfigReader::init(file_io.clone(), default_http_io.clone(), proto_path_resolver);
+    let config_reader = ConfigReader::init(
+        file_io.clone(),
+        default_http_io.clone(),
+        proto_path_resolver,
+    );
     match cli.command {
         Command::Start { file_paths } => {
             let config_set = config_reader.read_all(&file_paths).await?;

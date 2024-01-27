@@ -59,10 +59,10 @@ mod tests {
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
     use url::Url;
-    use crate::cli::{init_file, init_http, init_proto_resolver};
-    use crate::config::{Config, Field, Grpc, Type, Upstream};
 
     use super::DataLoaderRequest;
+    use crate::cli::{init_file, init_http, init_proto_resolver};
+    use crate::config::{Config, Field, Grpc, Type, Upstream};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 
@@ -78,11 +78,19 @@ mod tests {
         let http_io = init_http(&Upstream::default(), None);
         let resolver = init_proto_resolver();
         let mut config = Config::default();
-        let mut grpc  = Grpc::default();
+        let mut grpc = Grpc::default();
         grpc.proto_path = test_file.to_str().unwrap().to_string();
-        config.types.insert("foo".to_string(), Type::default().fields(vec![("bar", Field::default().grpc(grpc))]));
+        config.types.insert(
+            "foo".to_string(),
+            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+        );
 
-        let protobuf_set = ProtobufSet::from_proto_file(&crate::config::get_descriptor_set(&config, file_io, http_io, resolver).await.unwrap()).unwrap();
+        let protobuf_set = ProtobufSet::from_proto_file(
+            &crate::config::get_descriptor_set(&config, file_io, http_io, resolver)
+                .await
+                .unwrap(),
+        )
+        .unwrap();
 
         let service = protobuf_set.find_service("Greeter").unwrap();
 

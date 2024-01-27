@@ -8,19 +8,20 @@ describe("fetch", () => {
     let placeholder_batch = (await readFile("../examples/jsonplaceholder_batch.graphql")).toString()
     let grpc = (await readFile("../examples/grpc.graphql")).toString()
     let newsProto = (await readFile("../src/grpc/tests/news.proto")).toString()
-    let wellKnownEmpty = "syntax = \"proto3\";\n" +
+    let wellKnownEmpty =
+      'syntax = "proto3";\n' +
       "\n" +
       "package google.protobuf;\n" +
       "\n" +
-      "option csharp_namespace = \"Google.Protobuf.WellKnownTypes\";\n" +
-      "option go_package = \"github.com/golang/protobuf/ptypes/empty\";\n" +
-      "option java_package = \"com.google.protobuf\";\n" +
-      "option java_outer_classname = \"EmptyProto\";\n" +
+      'option csharp_namespace = "Google.Protobuf.WellKnownTypes";\n' +
+      'option go_package = "github.com/golang/protobuf/ptypes/empty";\n' +
+      'option java_package = "com.google.protobuf";\n' +
+      'option java_outer_classname = "EmptyProto";\n' +
       "option java_multiple_files = true;\n" +
-      "option objc_class_prefix = \"GPB\";\n" +
+      'option objc_class_prefix = "GPB";\n' +
       "option cc_enable_arenas = true;" +
       "" +
-      "message Empty {}";
+      "message Empty {}"
 
     let bucket = await mf.getR2Bucket("MY_R2")
     await bucket.put("examples/jsonplaceholder.graphql", placeholder)
@@ -67,27 +68,27 @@ describe("fetch", () => {
     })
     let body = await resp.json()
     let expected = {
-      "data": {
-        "news": {
-          "news": [
+      data: {
+        news: {
+          news: [
             {
-              "id": 1
+              id: 1,
             },
             {
-              "id": 2
+              id: 2,
             },
             {
-              "id": 3
+              id: 3,
             },
             {
-              "id": 4
+              id: 4,
             },
             {
-              "id": 5
-            }
-          ]
-        }
-      }
+              id: 5,
+            },
+          ],
+        },
+      },
     }
     expect(body).toEqual(expected)
     expect(resp.status).toBe(200)
