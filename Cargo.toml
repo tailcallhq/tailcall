@@ -88,7 +88,8 @@ stripmargin = "0.1.1"
 [features]
 unsafe-js = ["dep:mini-v8"]
 js = ["dep:mini-v8"]
-non-js = ["tokio/fs",
+non-js = [
+    "tokio/fs",
     "tokio/rt-multi-thread",
     "dep:mimalloc",
     "dep:http-cache-reqwest",
@@ -96,11 +97,9 @@ non-js = ["tokio/fs",
     "dep:hyper-rustls",
     "dep:rustls",
     "dep:rustls-pemfile",
-    "dep:inquire"]
-default = [
-    "non-js",
-    "js"
+    "dep:inquire",
 ]
+default = ["non-js", "js"]
 
 
 [workspace]

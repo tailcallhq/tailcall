@@ -32,15 +32,15 @@ pub fn init_file() -> Arc<dyn FileIO> {
     Arc::new(file::NativeFileIO::init())
 }
 
-pub fn init_hook_http(http: impl HttpIO, _script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
+pub fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     #[cfg(feature = "js")]
-    if let Some(script) = _script {
-        let script_io = javascript::Runtime::new(script);
-        Arc::new(javascript::HttpFilter::new(http, script_io))
-    } else {
-        Arc::new(http)
+    if let Some(script) = script {
+        return javascript::init_http(http, script);
     }
+
     #[cfg(not(feature = "js"))]
+    log::warn!("JS capabilities are disabled in this build");
+
     Arc::new(http)
 }
 
@@ -58,10 +58,4 @@ pub fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -
 
 pub fn init_chrono_cache<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
     NativeChronoCache::new()
-}
-#[cfg(feature = "js")]
-pub fn init_script(
-    script: blueprint::Script,
-) -> Arc<dyn crate::ScriptIO<crate::channel::Event, crate::channel::Command>> {
-    Arc::new(javascript::Runtime::new(script))
 }

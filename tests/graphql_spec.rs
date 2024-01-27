@@ -328,21 +328,12 @@ async fn test_execution() -> std::io::Result<()> {
                 let h_client = init_http(&blueprint.upstream, None);
                 let h2_client = init_http(&blueprint.upstream, None);
                 let chrono_cache = init_chrono_cache();
-                #[cfg(feature = "js")]
-                let script = blueprint
-                    .server
-                    .script
-                    .clone()
-                    .map(tailcall::cli::init_script);
-                #[cfg(not(feature = "js"))]
-                let script = None;
                 let server_ctx = AppContext::new(
                     blueprint,
                     h_client,
                     h2_client,
                     init_env(),
                     Arc::new(chrono_cache),
-                    script,
                 );
                 let schema = &server_ctx.schema;
 
