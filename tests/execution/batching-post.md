@@ -1,6 +1,7 @@
 # Batching post
 
 #### server:
+
 ```graphql
 schema
   @server(port: 8000, queryValidation: false)
@@ -31,36 +32,37 @@ type User {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/posts?id=1
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-    - id: 1
-      userId: 1
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-      id: 1
-      name: Leanne Graham
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/posts?id=1
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        - id: 1
+          userId: 1
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        id: 1
+        name: Leanne Graham
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { posts { user { name } } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { posts { user { name } } }
 env: {}
 ```

@@ -1,6 +1,7 @@
 # expr logic
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -41,14 +42,15 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock: []
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { andTrue1 andTrue2 andFalse3 andFalse1 andFalse2 isEmptyTrue1 isEmptyTrue2 isEmptyTrue3 isEmptyTrue4 isEmptyFalse1 isEmptyFalse2 isEmptyFalse3 notTrue notFalse1 notFalse2 orFalse1 orFalse2 orTrue1 orTrue2 orTrue3 condZero condOne condTwo defaultToZero defaultToTrue }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { andTrue1 andTrue2 andFalse3 andFalse1 andFalse2 isEmptyTrue1 isEmptyTrue2 isEmptyTrue3 isEmptyTrue4 isEmptyFalse1 isEmptyFalse2 isEmptyFalse3 notTrue notFalse1 notFalse2 orFalse1 orFalse2 orTrue1 orTrue2 orTrue3 condZero condOne condTwo defaultToZero defaultToTrue }
 env: {}
 ```

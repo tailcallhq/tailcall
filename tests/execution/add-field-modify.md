@@ -1,6 +1,7 @@
 # Add field modify
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -26,29 +27,30 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-      address:
-        city: Gwenborough
-        street: Kulas Light
-        zipcode: 92998-3874
-      id: 1
-      name: foo
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        address:
+          city: Gwenborough
+          street: Kulas Light
+          zipcode: 92998-3874
+        id: 1
+        name: foo
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { user { name street city zipcode } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { user { name street city zipcode } }
 env: {}
 ```

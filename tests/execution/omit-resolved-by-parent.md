@@ -1,6 +1,7 @@
 # Resolved by parent
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -20,27 +21,28 @@ type User @addField(name: "address", path: ["address", "street"]) {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-      address:
-        street: Kulas Light
-      id: 1
-      name: foo
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        address:
+          street: Kulas Light
+        id: 1
+        name: foo
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { user { address } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { user { address } }
 env: {}
 ```

@@ -1,6 +1,7 @@
 # Sending a batched graphql request
 
 #### server:
+
 ```json
 {
   "server": {
@@ -42,39 +43,40 @@
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-    headers:
-      test: test
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-      id: 1
-      name: foo
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1
+      headers:
+        test: test
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        id: 1
+        name: foo
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-    - query: query { user { id } }
-    - query: query { user { name } }
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { user { id } }
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: FOO
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        - query: query { user { id } }
+        - query: query { user { name } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { user { id } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: FOO
 env: {}
 ```

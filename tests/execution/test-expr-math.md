@@ -1,6 +1,7 @@
 # expr logic
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -21,14 +22,15 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock: []
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { add subtract multiply mod div1 div2 inc dec product sum }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { add subtract multiply mod div1 div2 inc dec product sum }
 env: {}
 ```

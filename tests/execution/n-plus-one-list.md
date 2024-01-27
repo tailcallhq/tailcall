@@ -1,6 +1,7 @@
 # n + 1 Request List
 
 #### server:
+
 ```graphql
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
@@ -25,44 +26,45 @@ type Bar {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://example.com/bars
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-    - fooId: 1
-      id: 1
-    - fooId: 1
-      id: 2
-    - fooId: 2
-      id: 3
-    - fooId: 2
-      id: 4
-- request:
-    method: GET
-    url: http://example.com/foos?id=1&id=2
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-    - id: 1
-      name: foo1
-    - id: 2
-      name: foo2
+  - request:
+      method: GET
+      url: http://example.com/bars
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        - fooId: 1
+          id: 1
+        - fooId: 1
+          id: 2
+        - fooId: 2
+          id: 3
+        - fooId: 2
+          id: 4
+  - request:
+      method: GET
+      url: http://example.com/foos?id=1&id=2
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        - id: 1
+          name: foo1
+        - id: 2
+          name: foo2
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { bars { foo { id } fooId id } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { bars { foo { id } fooId id } }
 env: {}
 ```

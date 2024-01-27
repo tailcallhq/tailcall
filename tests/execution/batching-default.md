@@ -1,6 +1,7 @@
 # Batching default
 
 #### server:
+
 ```graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 10}) {
   query: Query
@@ -26,38 +27,39 @@ type User {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-    - id: 11
-      userId: 1
-    - id: 3
-      userId: 2
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-    - id: 1
-    - id: 2
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        - id: 11
+          userId: 1
+        - id: 3
+          userId: 2
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        - id: 1
+        - id: 2
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { posts { user { id } userId } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { posts { user { id } userId } }
 env: {}
 ```

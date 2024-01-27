@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use tailcall::config::Config;
-
-use derive_setters::Setters;
 
 use crate::common::{DownstreamRequest, DownstreamResponse, Mock, UpstreamRequest};
 

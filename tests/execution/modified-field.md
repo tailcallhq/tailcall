@@ -1,6 +1,7 @@
 # Modified field
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -16,25 +17,26 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-      id: 1
-      name: Leanne Graham
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users/1
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        id: 1
+        name: Leanne Graham
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { user { fullname } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { user { fullname } }
 env: {}
 ```

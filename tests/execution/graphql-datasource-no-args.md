@@ -1,6 +1,7 @@
 # Graphql datasource
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -17,27 +18,28 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: POST
-    url: http://upstream/graphql
-    headers: {}
-    body: '{ "query": "query { users { name } }" }'
-  response:
-    status: 200
-    headers: {}
-    body:
-      data:
-        users:
-        - name: Leanne Graham
-        - name: Ervin Howell
+  - request:
+      method: POST
+      url: http://upstream/graphql
+      headers: {}
+      body: '{ "query": "query { users { name } }" }'
+    response:
+      status: 200
+      headers: {}
+      body:
+        data:
+          users:
+            - name: Leanne Graham
+            - name: Ervin Howell
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { users_list { name } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { users_list { name } }
 env: {}
 ```

@@ -1,6 +1,7 @@
 # Resolve with headers
 
 #### server:
+
 ```graphql
 schema @upstream(allowedHeaders: ["authorization"]) {
   query: Query
@@ -19,27 +20,28 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/posts/1
-    headers: {}
-    body: null
-  response:
-    status: 200
-    headers:
-      authorization: '1'
-    body:
-      id: 1
-      title: post title
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/posts/1
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers:
+        authorization: "1"
+      body:
+        id: 1
+        title: post title
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers:
-      authorization: '1'
-    body:
-      query: query { post1 { title } }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers:
+        authorization: "1"
+      body:
+        query: query { post1 { title } }
 env: {}
 ```

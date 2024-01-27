@@ -1,6 +1,7 @@
 # expr intersection
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -12,14 +13,15 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock: []
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { intersection }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { intersection }
 env: {}
 ```

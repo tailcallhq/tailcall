@@ -1,6 +1,7 @@
 # Mutation
 
 #### server:
+
 ```graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
@@ -35,26 +36,27 @@ type User {
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: POST
-    url: http://jsonplaceholder.typicode.com/posts
-    headers: {}
-    body: '{"body":"post-body","title":"post-title","userId":1}'
-  response:
-    status: 200
-    headers: {}
-    body:
-      body: post-body
-      title: post-title
-      userId: 1
+  - request:
+      method: POST
+      url: http://jsonplaceholder.typicode.com/posts
+      headers: {}
+      body: '{"body":"post-body","title":"post-title","userId":1}'
+    response:
+      status: 200
+      headers: {}
+      body:
+        body: post-body
+        title: post-title
+        userId: 1
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: 'mutation { insertPost(input: { body: "post-body", title: "post-title", userId: 1 }) { body } }'
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: 'mutation { insertPost(input: { body: "post-body", title: "post-title", userId: 1 }) { body } }'
 env: {}
 ```

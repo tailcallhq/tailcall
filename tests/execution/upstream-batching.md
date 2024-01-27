@@ -1,6 +1,7 @@
 # Sending requests to be batched by the upstream server
 
 #### server:
+
 ```json
 {
   "server": {},
@@ -33,9 +34,7 @@
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com",
-            "groupBy": [
-              "id"
-            ]
+            "groupBy": ["id"]
           },
           "cache": null
         }
@@ -60,28 +59,29 @@
 ```
 
 #### assert:
+
 ```yml
 mock:
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users?id=1&id=2
-    headers:
-      test: test
-    body: null
-  response:
-    status: 200
-    headers: {}
-    body:
-    - id: 1
-      name: foo
-    - id: 2
-      name: bar
+  - request:
+      method: GET
+      url: http://jsonplaceholder.typicode.com/users?id=1&id=2
+      headers:
+        test: test
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        - id: 1
+          name: foo
+        - id: 2
+          name: bar
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: 'query { u1: user(id: 1) { id } u2: user(id: 2) { id } }'
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: "query { u1: user(id: 1) { id } u2: user(id: 2) { id } }"
 env: {}
 ```

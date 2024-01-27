@@ -1,4 +1,5 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,7 @@ pub struct DownstreamAssertion {
 pub struct AssertSpec {
     #[serde(default)]
     pub mock: Vec<Mock>,
-    
+
     pub assert: Vec<DownstreamAssertion>,
 
     #[serde(default)]

@@ -112,7 +112,7 @@ struct AssertSpec {
     mock: Vec<Mock>,
 
     assert: Vec<DownstreamAssertion>,
-    
+
     #[serde(default)]
     env: HashMap<String, String>,
 }
@@ -141,7 +141,8 @@ impl ExecutionSpec {
                 if let Some(ext) = path.extension().and_then(|x| x.to_str()) {
                     if ext == "md" {
                         let contents = fs::read_to_string(&path)?;
-                        let spec: ExecutionSpec = Self::from_source(&path, contents).await
+                        let spec: ExecutionSpec = Self::from_source(&path, contents)
+                            .await
                             .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
 
                         files.push(spec.path(path));
@@ -168,8 +169,7 @@ impl ExecutionSpec {
         let ast = markdown::to_mdast(&contents, &ParseOptions::default()).unwrap();
         let mut children = ast
             .children()
-            .unwrap_or_else(|| panic!("Failed to parse {:?}: empty file unexpected",
-                path))
+            .unwrap_or_else(|| panic!("Failed to parse {:?}: empty file unexpected", path))
             .iter()
             .peekable();
 
@@ -229,7 +229,10 @@ impl ExecutionSpec {
                                     let config = Config::default();
 
                                     let new_config = Config::from_source(source, &content)?;
-                                    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+                                    let reader = ConfigReader::init(
+                                        init_file(),
+                                        init_http(&Upstream::default(), None),
+                                    );
                                     let new_config = reader.read_script(new_config).await?;
 
                                     server.push(config.merge_right(&new_config));
@@ -287,7 +290,11 @@ impl ExecutionSpec {
         anyhow::Ok(spec)
     }
 
-    async fn server_context(&self, config: &Config, env: HashMap<String, String>) -> Arc<AppContext> {
+    async fn server_context(
+        &self,
+        config: &Config,
+        env: HashMap<String, String>,
+    ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
         let client = init_hook_http(
             MockHttpClient::new(self.clone()),
@@ -416,13 +423,18 @@ async fn assert_spec(spec: ExecutionSpec) {
 
     if let Some(assert_spec) = spec.assert.as_ref() {
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
-            let response = run_assert(spec.clone(), assert_spec.clone(), &assertion, spec.server.first().unwrap())
-                .await
-                .context(spec.path.to_str().unwrap().to_string())
-                .unwrap();
+            let response = run_assert(
+                spec.clone(),
+                assert_spec.clone(),
+                &assertion,
+                spec.server.first().unwrap(),
+            )
+            .await
+            .context(spec.path.to_str().unwrap().to_string())
+            .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
-            
+
             for (key, value) in response.headers() {
                 headers.insert(key.to_string(), value.to_str().unwrap().to_string());
             }
@@ -430,7 +442,10 @@ async fn assert_spec(spec: ExecutionSpec) {
             let response: APIResponse = APIResponse {
                 status: response.status().clone().as_u16(),
                 headers,
-                body: serde_json::from_slice(&hyper::body::to_bytes(response.into_body()).await.unwrap()).unwrap(),
+                body: serde_json::from_slice(
+                    &hyper::body::to_bytes(response.into_body()).await.unwrap(),
+                )
+                .unwrap(),
             };
 
             insta::assert_json_snapshot!(format!("{}_assert_{}", spec.safe_name, i), response);
@@ -459,7 +474,7 @@ async fn run_assert(
     let method = downstream_assertion.request.0.method.clone();
     let headers = downstream_assertion.request.0.headers.clone();
     let url = downstream_assertion.request.0.url.clone();
-    let server_context = spec.server_context(&config, assert.env.clone()).await;
+    let server_context = spec.server_context(config, assert.env.clone()).await;
     let req = headers
         .into_iter()
         .fold(

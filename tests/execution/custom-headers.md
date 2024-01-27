@@ -1,6 +1,7 @@
 # Custom Headers
 
 #### server:
+
 ```json
 {
   "server": {
@@ -37,14 +38,15 @@
 ```
 
 #### assert:
+
 ```yml
 mock: []
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { greet }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { greet }
 env: {}
 ```

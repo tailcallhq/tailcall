@@ -1,6 +1,7 @@
 # expr concat
 
 #### server:
+
 ```graphql
 schema {
   query: Query
@@ -12,14 +13,15 @@ type Query {
 ```
 
 #### assert:
+
 ```yml
 mock: []
 assert:
-- request:
-    method: POST
-    url: http://localhost:8080/graphql
-    headers: {}
-    body:
-      query: query { concat }
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: query { concat }
 env: {}
 ```
