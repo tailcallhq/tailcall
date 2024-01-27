@@ -7,6 +7,7 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use crate::config::Config;
 use crate::{FileIO, HttpIO, ProtoPathResolver};
 
+#[allow(clippy::too_many_arguments)]
 async fn import_all(
     map: &mut HashMap<String, FileDescriptorProto>,
     proto_path: String,

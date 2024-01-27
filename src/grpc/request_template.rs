@@ -123,8 +123,10 @@ mod tests {
         let http_io = init_http(&Upstream::default(), None);
         let resolver = init_proto_resolver();
         let mut config = Config::default();
-        let mut grpc = Grpc::default();
-        grpc.proto_path = test_file.to_str().unwrap().to_string();
+        let grpc = Grpc {
+            proto_path: test_file.to_str().unwrap().to_string(),
+            ..Default::default()
+        };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
