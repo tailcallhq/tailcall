@@ -15,8 +15,6 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-#[cfg(feature = "js")]
-use tailcall::cli::init_script;
 use tailcall::cli::{init_chrono_cache, init_env, init_http};
 use tailcall::config::Config;
 use tailcall::directive::DirectiveCodec;
@@ -302,26 +300,19 @@ async fn test_execution() -> std::io::Result<()> {
           .trace(spec.path.to_str().unwrap_or_default())
           .to_result()
           .unwrap();
-        let h_client = init_http(
-          &blueprint.upstream,
-          #[cfg(feature = "js")]
-          None,
-        );
-        let h2_client = init_http(
-          &blueprint.upstream,
-          #[cfg(feature = "js")]
-          None,
-        );
+        let h_client = init_http(&blueprint.upstream, None);
+        let h2_client = init_http(&blueprint.upstream, None);
         let chrono_cache = init_chrono_cache();
         #[cfg(feature = "js")]
-        let script = blueprint.server.script.clone().map(init_script);
+        let script = blueprint.server.script.clone().map(tailcall::cli::init_script);
+        #[cfg(not(feature = "js"))]
+        let script = None;
         let server_ctx = AppContext::new(
           blueprint,
           h_client,
           h2_client,
           init_env(),
           Arc::new(chrono_cache),
-          #[cfg(feature = "js")]
           script,
         );
         let schema = &server_ctx.schema;

@@ -1,43 +1,22 @@
-#[cfg(feature = "js")]
 use std::pin::Pin;
-#[cfg(feature = "js")]
 use std::sync::Arc;
 
-#[cfg(feature = "js")]
 use futures_util::future::join_all;
-#[cfg(feature = "js")]
 use futures_util::Future;
-#[cfg(feature = "js")]
 use hyper::body::Bytes;
 
-#[cfg(feature = "js")]
 use crate::channel::{Command, Event, JsResponse};
-#[cfg(feature = "js")]
 use crate::http::Response;
-#[cfg(feature = "js")]
-use crate::HttpIO;
-#[cfg(feature = "js")]
-use crate::ScriptIO;
-#[cfg(feature = "js")]
+use crate::{HttpIO, ScriptIO};
 #[derive(Clone)]
 pub struct HttpFilter {
   client: Arc<dyn HttpIO + Send + Sync>,
-  #[cfg(feature = "js")]
   script: Arc<dyn ScriptIO<Event, Command> + Send + Sync>,
 }
-#[cfg(feature = "js")]
 impl HttpFilter {
-  pub fn new(
-    http: impl HttpIO + Send + Sync,
-    #[cfg(feature = "js")] script: impl ScriptIO<Event, Command> + Send + Sync + 'static,
-  ) -> Self {
-    HttpFilter {
-      client: Arc::new(http),
-      #[cfg(feature = "js")]
-      script: Arc::new(script),
-    }
+  pub fn new(http: impl HttpIO + Send + Sync, script: impl ScriptIO<Event, Command> + Send + Sync + 'static) -> Self {
+    HttpFilter { client: Arc::new(http), script: Arc::new(script) }
   }
-  #[cfg(feature = "js")]
   fn on_command<'a>(
     &'a self,
     command: Command,
@@ -71,7 +50,6 @@ impl HttpFilter {
     })
   }
 }
-#[cfg(feature = "js")]
 #[async_trait::async_trait]
 impl HttpIO for HttpFilter {
   async fn execute(&self, request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {

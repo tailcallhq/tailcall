@@ -130,16 +130,8 @@ mod test {
       let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
       //TODO: default is used only in tests. Drop default and move it to test.
       let server = Server::try_from(server).unwrap();
-      let h_client = init_http(
-        &upstream,
-        #[cfg(feature = "js")]
-        None,
-      );
-      let h2_client = init_http2_only(
-        &upstream.clone(),
-        #[cfg(feature = "js")]
-        None,
-      );
+      let h_client = init_http(&upstream, None);
+      let h2_client = init_http2_only(&upstream.clone(), None);
       RequestContext {
         req_headers: HeaderMap::new(),
         h_client,

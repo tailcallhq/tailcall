@@ -57,7 +57,6 @@ pub trait Cache: Send + Sync {
 }
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
-#[cfg(feature = "js")]
 #[async_trait::async_trait]
 pub trait ScriptIO<Event, Command>: Send + Sync {
   async fn on_event(&self, event: Event) -> anyhow::Result<Command>;

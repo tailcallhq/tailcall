@@ -5,16 +5,13 @@ use async_graphql::Response;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition};
-#[cfg(feature = "js")]
 use crate::channel::{Command, Event};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
-#[cfg(feature = "js")]
-use crate::ScriptIO;
-use crate::{grpc, EntityCache, EnvIO, HttpIO};
+use crate::{grpc, EntityCache, EnvIO, HttpIO, ScriptIO};
 
 pub struct AppContext {
   pub schema: dynamic::Schema,
@@ -26,7 +23,6 @@ pub struct AppContext {
   pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
   pub cache: Arc<EntityCache>,
   pub env_vars: Arc<dyn EnvIO>,
-  #[cfg(feature = "js")]
   pub script_engine: Option<Arc<dyn ScriptIO<Event, Command>>>,
 }
 
@@ -38,7 +34,7 @@ impl AppContext {
     h2_client: Arc<dyn HttpIO>,
     env: Arc<dyn EnvIO>,
     cache: Arc<EntityCache>,
-    #[cfg(feature = "js")] script: Option<Arc<dyn ScriptIO<Event, Command>>>,
+    script: Option<Arc<dyn ScriptIO<Event, Command>>>,
   ) -> Self {
     let mut http_data_loaders = vec![];
     let mut gql_data_loaders = vec![];
@@ -115,7 +111,6 @@ impl AppContext {
       cache,
       grpc_data_loaders: Arc::new(grpc_data_loaders),
       env_vars: env,
-      #[cfg(feature = "js")]
       script_engine: script,
     }
   }
