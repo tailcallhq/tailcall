@@ -4,7 +4,7 @@ use hyper::body::Bytes;
 use hyper::header::{HeaderName, HeaderValue};
 use reqwest::Request;
 
-use crate::http::Response;
+use crate::http::{Method, Response};
 use crate::is_default;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -26,9 +26,11 @@ pub enum Command {
 #[serde(rename_all = "camelCase")]
 pub struct JsRequest {
     url: String,
-    method: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    method: Method,
+    #[serde(default, skip_serializing_if = "is_default")]
     headers: BTreeMap<String, String>,
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(default, skip_serializing_if = "is_default")]
     body: Option<serde_json::Value>,
 }
 
@@ -36,7 +38,9 @@ pub struct JsRequest {
 #[serde(rename_all = "camelCase")]
 pub struct JsResponse {
     status: f64,
+    #[serde(default, skip_serializing_if = "is_default")]
     headers: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "is_default")]
     body: Option<serde_json::Value>,
 }
 
@@ -74,10 +78,7 @@ impl TryFrom<JsRequest> for reqwest::Request {
     type Error = anyhow::Error;
 
     fn try_from(req: JsRequest) -> Result<Self, Self::Error> {
-        let mut request = reqwest::Request::new(
-            reqwest::Method::from_bytes(req.method.as_bytes())?,
-            req.url.parse()?,
-        );
+        let mut request = reqwest::Request::new(req.method.to_hyper(), req.url.parse()?);
         let headers = create_header_map(req.headers)?;
         request.headers_mut().extend(headers);
         let body = serde_json::to_string(&req.body)?;
@@ -91,7 +92,7 @@ impl TryFrom<&reqwest::Request> for JsRequest {
 
     fn try_from(req: &Request) -> Result<Self, Self::Error> {
         let url = req.url().to_string();
-        let method = req.method().as_str().to_string();
+        let method = Method::from(req.method().as_str());
         let headers = req
             .headers()
             .iter()

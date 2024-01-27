@@ -16,7 +16,7 @@ pub enum Method {
 }
 
 impl Method {
-    pub fn to_hyper(self) -> hyper::Method {
+    pub fn to_hyper(&self) -> hyper::Method {
         match self {
             Method::GET => hyper::Method::GET,
             Method::POST => hyper::Method::POST,
@@ -27,6 +27,23 @@ impl Method {
             Method::OPTIONS => hyper::Method::OPTIONS,
             Method::CONNECT => hyper::Method::CONNECT,
             Method::TRACE => hyper::Method::TRACE,
+        }
+    }
+}
+
+impl From<&str> for Method {
+    fn from(s: &str) -> Self {
+        match s {
+            "GET" => Method::GET,
+            "POST" => Method::POST,
+            "PUT" => Method::PUT,
+            "PATCH" => Method::PATCH,
+            "DELETE" => Method::DELETE,
+            "HEAD" => Method::HEAD,
+            "OPTIONS" => Method::OPTIONS,
+            "CONNECT" => Method::CONNECT,
+            "TRACE" => Method::TRACE,
+            _ => Method::GET,
         }
     }
 }

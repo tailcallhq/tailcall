@@ -25,6 +25,7 @@ pub mod print_schema;
 pub mod try_fold;
 pub mod valid;
 
+use std::fmt::Display;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
@@ -71,4 +72,16 @@ pub trait ScriptIO<Event, Command>: Send + Sync {
 
 fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
+}
+
+trait ToAnyHow<T> {
+    type Output;
+    fn or_anyhow(self, prefix: &str) -> anyhow::Result<Self::Output>;
+}
+
+impl<A, E: Display> ToAnyHow<()> for Result<A, E> {
+    type Output = A;
+    fn or_anyhow(self, prefix: &str) -> anyhow::Result<A> {
+        self.map_err(|e| anyhow::anyhow!("{}: {}", prefix, e.to_string()))
+    }
 }
