@@ -26,71 +26,74 @@ use crate::try_fold::TryFold;
 pub type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
 
 pub(crate) trait TypeLike {
-  fn name(&self) -> &str;
-  fn list(&self) -> bool;
-  fn non_null(&self) -> bool;
-  fn list_type_required(&self) -> bool;
+    fn name(&self) -> &str;
+    fn list(&self) -> bool;
+    fn non_null(&self) -> bool;
+    fn list_type_required(&self) -> bool;
 }
 
 impl TypeLike for Field {
-  fn name(&self) -> &str {
-    &self.type_of
-  }
+    fn name(&self) -> &str {
+        &self.type_of
+    }
 
-  fn list(&self) -> bool {
-    self.list
-  }
+    fn list(&self) -> bool {
+        self.list
+    }
 
-  fn non_null(&self) -> bool {
-    self.required
-  }
+    fn non_null(&self) -> bool {
+        self.required
+    }
 
-  fn list_type_required(&self) -> bool {
-    self.list_type_required
-  }
+    fn list_type_required(&self) -> bool {
+        self.list_type_required
+    }
 }
 
 impl TypeLike for Arg {
-  fn name(&self) -> &str {
-    &self.type_of
-  }
+    fn name(&self) -> &str {
+        &self.type_of
+    }
 
-  fn list(&self) -> bool {
-    self.list
-  }
+    fn list(&self) -> bool {
+        self.list
+    }
 
-  fn non_null(&self) -> bool {
-    self.required
-  }
+    fn non_null(&self) -> bool {
+        self.required
+    }
 
-  fn list_type_required(&self) -> bool {
-    false
-  }
+    fn list_type_required(&self) -> bool {
+        false
+    }
 }
 
 pub(crate) fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
 where
-  T: TypeLike,
+    T: TypeLike,
 {
-  let name = field.name();
-  let list = field.list();
-  let list_type_required = field.list_type_required();
-  let non_null = if let Some(non_null) = override_non_null {
-    non_null
-  } else {
-    field.non_null()
-  };
+    let name = field.name();
+    let list = field.list();
+    let list_type_required = field.list_type_required();
+    let non_null = if let Some(non_null) = override_non_null {
+        non_null
+    } else {
+        field.non_null()
+    };
 
-  if list {
-    Type::ListType {
-      of_type: Box::new(Type::NamedType { name: name.to_string(), non_null: list_type_required }),
-      non_null,
+    if list {
+        Type::ListType {
+            of_type: Box::new(Type::NamedType {
+                name: name.to_string(),
+                non_null: list_type_required,
+            }),
+            non_null,
+        }
+    } else {
+        Type::NamedType { name: name.to_string(), non_null }
     }
-  } else {
-    Type::NamedType { name: name.to_string(), non_null }
-  }
 }
 
 pub fn is_scalar(type_name: &str) -> bool {
-  ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
+    ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }
