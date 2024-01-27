@@ -65,7 +65,7 @@ stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
 futures-channel = { version = "0.3.30" }
-futures-timer = { version = "3.0.2",features = ["wasm-bindgen"] }
+futures-timer = { version = "3.0.2", features = ["wasm-bindgen"] }
 futures-util = { version = "0.3.30" }
 lru = { version = "0.12.1" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
@@ -79,6 +79,7 @@ prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
 which = "5.0.0"
 update-informer = { version = "1.1.0", default-features = false, features = ["github"] }
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -98,6 +99,7 @@ default = [
     "rustls",
     "rustls-pemfile",
     "inquire",
+    "unsafe-js",
 ]
 
 
