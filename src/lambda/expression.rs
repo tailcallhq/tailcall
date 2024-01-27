@@ -39,9 +39,6 @@ pub enum EvaluationError {
     #[error("IOException: {0}")]
     IOException(String),
 
-    #[error("JSException: {0}")]
-    JSException(String),
-
     #[error("APIValidationError: {0:?}")]
     APIValidationError(Vec<String>),
 
