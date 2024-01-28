@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_file, init_hook_http, init_http, init_script};
+use tailcall::cli::{init_chrono_cache, init_file, init_hook_http, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
@@ -303,9 +303,8 @@ impl ExecutionSpec {
         let http2_client = Arc::new(MockHttpClient::new(self.clone()));
         let env = Arc::new(Env::init(env));
         let chrono_cache = Arc::new(init_chrono_cache());
-        let script = blueprint.server.clone().script.map(init_script);
         let server_context =
-            AppContext::new(blueprint, client, http2_client, env, chrono_cache, script);
+            AppContext::new(blueprint, client, http2_client, env, chrono_cache);
         Arc::new(server_context)
     }
 }
