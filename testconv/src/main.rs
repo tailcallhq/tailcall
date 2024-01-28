@@ -16,6 +16,8 @@ mod http;
 
 const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
 const BAD_GRAPHQL_MSG: &str = "This test has invalid GraphQL that wasn't caught by http_spec before conversion. It is skipped right now, but it should be fixed at some point.";
+const CACHE_NOSER_MSG: &str =
+    "Skipped until [#1058](https://github.com/tailcallhq/tailcall/pull/1058) is merged.";
 
 impl From<http::DownstreamAssertion> for execution::DownstreamAssertion {
     fn from(value: http::DownstreamAssertion) -> Self {
@@ -45,6 +47,8 @@ async fn main() {
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 
     let mut files_already_processed: HashSet<String> = HashSet::new();
+
+    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
 
     for x in read_dir(http_dir).expect("Could not read http directory") {
         let x = x.unwrap();
@@ -77,38 +81,47 @@ async fn main() {
 
             let has_fail_annotation = matches!(old.runner, Some(Annotation::Fail));
             let bad_graphql_skip: bool = match &old.config {
-                ConfigSource::File(x) => {
-                    let reader =
-                        ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
-                    reader.read(x).await.is_err()
-                }
+                ConfigSource::File(x) => reader.read(x).await.is_err(),
                 ConfigSource::Inline(_) => false,
             };
+            let cache_noser_skip: bool = match &old.config {
+                ConfigSource::File(x) => tokio::fs::read_to_string(x)
+                    .await
+                    .unwrap()
+                    .contains("@cache("),
+                ConfigSource::Inline(x) => x.contains("@cache("),
+            };
 
-            let mut description_suffix = String::new();
+            let mut description = old
+                .description
+                .as_ref()
+                .unwrap_or(&"".to_string())
+                .to_owned();
             if has_fail_annotation {
-                description_suffix += TEST_ANNOTATION_MSG;
+                if !description.is_empty() {
+                    description += "\n";
+                }
+                description += TEST_ANNOTATION_MSG;
             }
             if bad_graphql_skip {
-                if has_fail_annotation {
-                    description_suffix += "\n";
+                if !description.is_empty() {
+                    description += "\n";
                 }
-                description_suffix += BAD_GRAPHQL_MSG;
+                description += BAD_GRAPHQL_MSG;
+            }
+            if cache_noser_skip {
+                if !description.is_empty() {
+                    description += "\n";
+                }
+                description += CACHE_NOSER_MSG;
             }
 
             let mut spec = format!("# {}\n", old.name);
-            if let Some(description) = &old.description {
-                let mut description = description.to_owned();
-                if !description_suffix.is_empty() {
-                    description += "\n";
-                    description += &description_suffix;
-                }
+            if !description.is_empty() {
                 spec += &format!("\n{}\n", description);
-            } else if !description_suffix.is_empty() {
-                spec += &format!("\n{}\n", description_suffix);
             }
 
-            if bad_graphql_skip {
+            if bad_graphql_skip || cache_noser_skip {
                 spec += "\n##### skip\n";
             } else if let Some(runner) = &old.runner {
                 if runner.to_owned() != Annotation::Fail {
@@ -277,17 +290,15 @@ async fn main() {
     println!("Running prettier...");
 
     let prettier = std::process::Command::new("prettier")
-        .args([
-            "-c",
-            ".prettierrc",
-            "--write",
-            "tests/execution/*.md"
-        ])
+        .args(["-c", ".prettierrc", "--write", "tests/execution/*.md"])
         .output()
         .expect("Failed to run prettier");
 
     if !prettier.status.success() {
-        panic!("prettier exited with an error:\n{}", String::from_utf8_lossy(&prettier.stdout));
+        panic!(
+            "prettier exited with an error:\n{}",
+            String::from_utf8_lossy(&prettier.stdout)
+        );
     }
 
     println!("All done!");
