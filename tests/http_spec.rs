@@ -10,8 +10,9 @@ use std::{fs, panic};
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
 use futures_util::future::join_all;
+use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
-use hyper::{Body, Request};
+use hyper::Request;
 use pretty_assertions::assert_eq;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
@@ -270,7 +271,7 @@ impl HttpIO for MockHttpClient {
         let mock = mocks
             .iter()
             .find(|Mock { request: mock_req, response: _ }| {
-                let method_match = req.method() == mock_req.0.method.clone().to_hyper();
+                let method_match = req.method() == mock_req.0.method.clone().to_reqwest();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let req_body = match req.body() {
                     Some(body) => {
@@ -332,7 +333,14 @@ async fn assert_downstream(spec: HttpSpec) {
     for assertion in spec.assert.iter() {
         if let Some(Annotation::Fail) = spec.runner {
             let response = run(spec.clone(), &assertion).await.unwrap();
-            let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+            let body = response
+                .into_body()
+                .frame()
+                .await
+                .unwrap()
+                .unwrap()
+                .into_data()
+                .unwrap();
             let result = panic::catch_unwind(AssertUnwindSafe(|| {
                 assert_eq!(
                     body,
@@ -366,7 +374,14 @@ async fn assert_downstream(spec: HttpSpec) {
                 .unwrap();
             let actual_status = response.status().clone().as_u16();
             let actual_headers = response.headers().clone();
-            let actual_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+            let actual_body = response
+                .into_body()
+                .frame()
+                .await
+                .unwrap()
+                .unwrap()
+                .into_data()
+                .unwrap();
 
             // Assert Status
             assert_eq!(
@@ -424,7 +439,7 @@ async fn http_spec_e2e() -> anyhow::Result<()> {
 async fn run(
     spec: HttpSpec,
     downstream_assertion: &&DownstreamAssertion,
-) -> anyhow::Result<hyper::Response<Body>> {
+) -> anyhow::Result<hyper::Response<Full<Bytes>>> {
     let query_string =
         serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
     let method = downstream_assertion.request.0.method.clone();
@@ -435,11 +450,11 @@ async fn run(
         .into_iter()
         .fold(
             Request::builder()
-                .method(method.to_hyper())
+                .method(hyper::Method::from_str(method.to_reqwest().as_ref()).unwrap())
                 .uri(url.as_str()),
             |acc, (key, value)| acc.header(key, value),
         )
-        .body(Body::from(query_string))?;
+        .body(Full::new(Bytes::from(query_string)))?;
 
     // TODO: reuse logic from server.rs to select the correct handler
     if server_context.blueprint.server.enable_batch_requests {

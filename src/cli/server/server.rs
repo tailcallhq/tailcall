@@ -35,7 +35,7 @@ impl Server {
 
         match blueprint.server.http.clone() {
             Http::HTTP2 { cert, key } => {
-                start_http_2(server_config, cert, key, self.server_up_sender).await
+                start_http_2(server_config, Some(cert), Some(key), self.server_up_sender).await
             }
             Http::HTTP1 => start_http_1(server_config, self.server_up_sender).await,
         }

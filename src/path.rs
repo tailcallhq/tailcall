@@ -105,10 +105,9 @@ mod tests {
 
         use async_graphql::SelectionField;
         use async_graphql_value::{ConstValue as Value, Name, Number};
-        use hyper::header::HeaderValue;
-        use hyper::HeaderMap;
         use indexmap::IndexMap;
         use once_cell::sync::Lazy;
+        use reqwest::header::{HeaderMap, HeaderValue};
 
         use crate::http::RequestContext;
         use crate::lambda::{EvaluationContext, ResolverContextLike};

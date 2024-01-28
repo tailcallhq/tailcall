@@ -55,10 +55,9 @@ mod tests {
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::HeaderMap;
     use once_cell::sync::Lazy;
     use pretty_assertions::assert_eq;
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
     use url::Url;
 
     use super::DataLoaderRequest;

@@ -1,8 +1,6 @@
 use anyhow::Result;
 use derive_setters::Setters;
-use reqwest::header::CONTENT_TYPE;
-use reqwest::header::HeaderMap;
-use reqwest::header::HeaderValue;
+use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Method;
 use url::Url;
 
@@ -102,10 +100,10 @@ mod tests {
     use std::path::PathBuf;
 
     use derive_setters::Setters;
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::{HeaderMap, Method};
     use once_cell::sync::Lazy;
     use pretty_assertions::assert_eq;
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+    use reqwest::Method;
 
     use super::RequestTemplate;
     use crate::config::GraphQLOperationType;

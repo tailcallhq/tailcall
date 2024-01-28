@@ -75,7 +75,7 @@ impl Deref for DataLoaderRequest {
 
 #[cfg(test)]
 mod tests {
-    use hyper::header::{HeaderName, HeaderValue};
+    use reqwest::header::{HeaderName, HeaderValue};
 
     use super::*;
     fn create_request_with_headers(url: &str, headers: Vec<(&str, &str)>) -> reqwest::Request {

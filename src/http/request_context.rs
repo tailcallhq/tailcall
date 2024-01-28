@@ -123,7 +123,7 @@ mod test {
     use std::sync::{Arc, Mutex};
 
     use cache_control::Cachability;
-    use hyper::HeaderMap;
+    use reqwest::header::HeaderMap;
 
     use crate::blueprint::Server;
     use crate::cli::cache::NativeChronoCache;

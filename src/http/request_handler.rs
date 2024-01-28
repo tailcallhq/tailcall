@@ -2,18 +2,20 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
+use http_body_util::{BodyExt, Full};
+use hyper::body::Bytes;
 use hyper::{Request, Response, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
-use super::{AppContext, Body};
+use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
-pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
+pub fn graphiql(req: &Request<Full<Bytes>>) -> Result<Response<Full<Bytes>>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
     let endpoint = if let Some(query) = query {
@@ -26,18 +28,18 @@ pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
         Cow::Borrowed(endpoint)
     };
 
-    Ok(Response::new(Body::from(playground_source(
+    Ok(Response::new(Full::new(Bytes::from(playground_source(
         GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
-    ))))
+    )))))
 }
 
-fn not_found() -> Result<Response<Body>> {
+fn not_found() -> Result<Response<Full<Bytes>>> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(Body::empty())?)
+        .body(Full::new(Bytes::new()))?)
 }
 
-fn create_request_context(req: &Request<Body>, server_ctx: &AppContext) -> RequestContext {
+fn create_request_context(req: &Request<Full<Bytes>>, server_ctx: &AppContext) -> RequestContext {
     let upstream = server_ctx.blueprint.upstream.clone();
     let allowed = upstream.get_allowed_headers();
     let headers = create_allowed_headers(to_reqwest_hmap(req.headers()), &allowed);
@@ -47,7 +49,10 @@ fn create_request_context(req: &Request<Body>, server_ctx: &AppContext) -> Reque
 fn to_reqwest_hmap(hyper_headers: &hyper::HeaderMap) -> HeaderMap {
     let mut reqwest_headers = HeaderMap::new();
     for (key, value) in hyper_headers.iter() {
-        if let (Ok(name), Ok(value_str)) = (HeaderName::from_bytes(key.as_str().as_bytes()), HeaderValue::from_str(value.to_str().unwrap_or_default())) {
+        if let (Ok(name), Ok(value_str)) = (
+            HeaderName::from_bytes(key.as_str().as_bytes()),
+            HeaderValue::from_str(value.to_str().unwrap_or_default()),
+        ) {
             reqwest_headers.insert(name, value_str);
         }
     }
@@ -67,7 +72,7 @@ fn update_cache_control_header(
     response
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<Body>, server_ctx: &AppContext) {
+pub fn update_response_headers(resp: &mut hyper::Response<Full<Bytes>>, server_ctx: &AppContext) {
     if !server_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
             .extend(server_ctx.blueprint.server.response_headers.clone());
@@ -75,11 +80,18 @@ pub fn update_response_headers(resp: &mut hyper::Response<Body>, server_ctx: &Ap
 }
 
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Full<Bytes>>,
     server_ctx: &AppContext,
-) -> Result<Response<Body>> {
+) -> Result<Response<Full<Bytes>>> {
     let req_ctx = Arc::new(create_request_context(&req, server_ctx));
-    let bytes = req.into_body();
+    let bytes = req
+        .into_body()
+        .frame()
+        .await
+        .context("unable to extract frame")??
+        .into_data()
+        .map_err(|e| anyhow!("{:?}", e))?;
+
     let request = serde_json::from_slice::<T>(&bytes);
     match request {
         Ok(request) => {
@@ -120,9 +132,9 @@ fn create_allowed_headers(headers: HeaderMap, allowed: &BTreeSet<String>) -> Hea
 }
 
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Full<Bytes>>,
     state: Arc<AppContext>,
-) -> Result<Response<Body>> {
+) -> Result<Response<Full<Bytes>>> {
     match *req.method() {
         hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
             graphql_request::<T>(req, state.as_ref()).await

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use derive_setters::Setters;
-use reqwest::header::{HeaderMap,HeaderValue};
+use reqwest::header::{HeaderMap, HeaderValue};
 use url::Url;
 
 use crate::config::Encoding;
@@ -219,9 +219,8 @@ mod tests {
     use std::borrow::Cow;
 
     use derive_setters::Setters;
-    use hyper::header::HeaderName;
-    use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
+    use reqwest::header::{HeaderMap, HeaderName};
     use serde_json::json;
 
     use super::RequestTemplate;
@@ -480,7 +479,7 @@ mod tests {
     }
 
     mod endpoint {
-        use hyper::HeaderMap;
+        use reqwest::header::HeaderMap;
         use serde_json::json;
 
         use crate::http::request_template::tests::Context;

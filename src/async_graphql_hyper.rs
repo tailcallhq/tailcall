@@ -2,11 +2,12 @@ use std::any::Any;
 
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor};
+use http_body_util::Full;
+use hyper::body::Bytes;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use crate::http::Body;
 
 #[async_trait::async_trait]
 pub trait GraphQLRequestLike {
@@ -111,7 +112,7 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    pub fn to_response(self) -> Result<Response<Body>> {
+    pub fn to_response(self) -> Result<Response<Full<Bytes>>> {
         let mut response = Response::builder()
             .status(StatusCode::OK)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())

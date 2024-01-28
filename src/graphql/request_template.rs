@@ -41,7 +41,7 @@ impl RequestTemplate {
         ctx: &C,
     ) -> reqwest::Request {
         let headers = req.headers_mut();
-        let config_headers = self.create_headers(ctx)   ;
+        let config_headers = self.create_headers(ctx);
 
         if !config_headers.is_empty() {
             headers.extend(config_headers);
@@ -120,8 +120,8 @@ impl RequestTemplate {
 #[cfg(test)]
 mod tests {
     use async_graphql::Value;
-    use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
+    use reqwest::header::HeaderMap;
     use serde_json::json;
 
     use crate::config::GraphQLOperationType;

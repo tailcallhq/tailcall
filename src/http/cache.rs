@@ -49,12 +49,12 @@ mod tests {
 
     use std::time::Duration;
 
-    use hyper::HeaderMap;
+    use reqwest::header::HeaderMap;
 
     use crate::http::Response;
 
     fn cache_control_header(i: i32) -> HeaderMap {
-        let mut headers = reqwest::header::HeaderMap::default();
+        let mut headers = HeaderMap::default();
         headers.append("Cache-Control", format!("max-age={}", i).parse().unwrap());
         headers
     }
