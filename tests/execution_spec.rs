@@ -32,7 +32,6 @@ static INIT: Once = Once::new();
 enum Annotation {
     Skip,
     Only,
-    Fail,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -125,6 +124,9 @@ struct ExecutionSpec {
 
     server: Vec<Config>,
     assert: Option<AssertSpec>,
+
+    // Annotations for the runner
+    runner: Option<Annotation>,
 }
 
 impl ExecutionSpec {
@@ -159,6 +161,28 @@ impl ExecutionSpec {
         Ok(files)
     }
 
+    fn filter_specs(specs: Vec<ExecutionSpec>) -> Vec<ExecutionSpec> {
+        let mut only_specs = Vec::new();
+        let mut filtered_specs = Vec::new();
+
+        for spec in specs {
+            match spec.runner {
+                Some(Annotation::Skip) => {
+                    log::warn!("{} {} ... skipped", spec.name, spec.path.display())
+                }
+                Some(Annotation::Only) => only_specs.push(spec),
+                None => filtered_specs.push(spec),
+            }
+        }
+
+        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+        if !only_specs.is_empty() {
+            only_specs
+        } else {
+            filtered_specs
+        }
+    }
+
     async fn from_source(path: &Path, contents: String) -> anyhow::Result<Self> {
         INIT.call_once(|| {
             env_logger::builder()
@@ -174,8 +198,9 @@ impl ExecutionSpec {
             .peekable();
 
         let mut name: Option<String> = None;
-        let mut server: Vec<Config> = Vec::with_capacity(2);
+        let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut assert: Option<AssertSpec> = None;
+        let mut runner: Option<Annotation> = None;
 
         while let Some(node) = children.next() {
             match node {
@@ -203,6 +228,34 @@ impl ExecutionSpec {
                         if let Some(Node::Paragraph(_)) = children.peek() {
                             let _ = children.next();
                         }
+                    } else if heading.depth == 5 {
+                        // Parse annotation
+                        if runner.is_none() {
+                            if let Some(Node::Text(text)) = heading.children.first() {
+                                runner = Some(match text.value.as_str() {
+                                    "skip" => Annotation::Skip,
+                                    "only" => Annotation::Only,
+                                    _ => {
+                                        return Err(anyhow!(
+                                            "Unexpected runner annotation {:?} in {:?}",
+                                            text.value,
+                                            path,
+                                        ))
+                                    }
+                                });
+                            } else {
+                                return Err(anyhow!(
+                                    "Unexpected content of level 3 heading in {:?}: {:#?}",
+                                    path,
+                                    heading
+                                ));
+                            }
+                        } else {
+                            return Err(anyhow!(
+                                "Unexpected double-declaration of runner annotation in {:?}",
+                                path
+                            ));
+                        }
                     } else if heading.depth == 4 {
                         // Parse following code hblock
                         let (content, lang) = if let Some(Node::Code(code)) = children.next() {
@@ -226,16 +279,8 @@ impl ExecutionSpec {
 
                             match name {
                                 "server:" => {
-                                    let config = Config::default();
-
-                                    let new_config = Config::from_source(source, &content)?;
-                                    let reader = ConfigReader::init(
-                                        init_file(),
-                                        init_http(&Upstream::default(), None),
-                                    );
-                                    let new_config = reader.read_script(new_config).await?;
-
-                                    server.push(config.merge_right(&new_config));
+                                    // Server configs are only parsed if the test isn't skipped.
+                                    server.push((source, content));
                                 }
                                 "assert:" => {
                                     assert = match source {
@@ -279,12 +324,41 @@ impl ExecutionSpec {
             ));
         }
 
+        // Only parse configs if test isn't skipped.
+        let server = if !matches!(runner, Some(Annotation::Skip)) {
+            let mut s: Vec<Config> = Vec::with_capacity(server.len());
+
+            for (source, content) in server.into_iter() {
+                let config = Config::default();
+
+                let new_config = Config::from_source(source, &content)
+                    .expect(&format!("Couldn't parse GraphQL in {:#?}", path));
+
+                let reader = ConfigReader::init(
+                    init_file(),
+                    init_http(&Upstream::default(), None),
+                );
+                
+                let new_config = match reader.read_script(new_config).await {
+                    Ok(x) => x,
+                    Err(e) => return Err(anyhow!("Couldn't read scripts of GraphQL in {:#?}: {}", path, e))
+                };
+
+                s.push(config.merge_right(&new_config));
+            }
+
+            s
+        } else {
+            Vec::with_capacity(0) // Test is gonna be skipped anyways, so this doesn't matter.
+        };
+
         let spec = ExecutionSpec {
             path: path.to_owned(),
             name: name.unwrap_or_else(|| path.file_name().unwrap().to_str().unwrap().to_string()),
             safe_name: path.file_name().unwrap().to_str().unwrap().to_string(),
             server,
             assert,
+            runner,
         };
 
         anyhow::Ok(spec)
@@ -446,7 +520,9 @@ async fn assert_spec(spec: ExecutionSpec) {
                 .unwrap(),
             };
 
-            insta::assert_json_snapshot!(format!("{}_assert_{}", spec.safe_name, i), response);
+            let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
+
+            insta::assert_json_snapshot!(snapshot_name, response);
         }
     }
 
@@ -456,6 +532,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 #[tokio::test]
 async fn execution_spec() -> anyhow::Result<()> {
     let spec = ExecutionSpec::cargo_read("tests/execution").await?;
+    let spec = ExecutionSpec::filter_specs(spec);
     let tasks: Vec<_> = spec.into_iter().map(assert_spec).collect();
     join_all(tasks).await;
     Ok(())
