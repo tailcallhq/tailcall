@@ -1,4 +1,4 @@
-import {GraphQLExecutor} from "tc-node"
+import {GraphQLExecutor} from "@tailcallhq/wasm-node"
 async function run() {
   try {
     const schema =

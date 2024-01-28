@@ -10,7 +10,7 @@
     "serve": "wasm-pack build --target bundler && webpack serve --config webpack.config.js --open"
   },
   "dependencies": {
-    "tc-node": "file:../pkg"
+    "@tailcallhq/wasm-node": "file:../pkg"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^11.0.0",
