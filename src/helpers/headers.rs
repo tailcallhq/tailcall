@@ -1,4 +1,4 @@
-use hyper::header::HeaderName;
+use reqwest::header::HeaderName;
 
 use crate::config::KeyValues;
 use crate::mustache::Mustache;

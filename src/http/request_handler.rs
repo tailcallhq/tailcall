@@ -5,11 +5,12 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use hyper::{Request, Response, StatusCode};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
-use super::AppContext;
+use super::{AppContext, Body};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
@@ -39,8 +40,18 @@ fn not_found() -> Result<Response<Body>> {
 fn create_request_context(req: &Request<Body>, server_ctx: &AppContext) -> RequestContext {
     let upstream = server_ctx.blueprint.upstream.clone();
     let allowed = upstream.get_allowed_headers();
-    let headers = create_allowed_headers(req.headers(), &allowed);
+    let headers = create_allowed_headers(to_reqwest_hmap(req.headers()), &allowed);
     RequestContext::from(server_ctx).req_headers(headers)
+}
+
+fn to_reqwest_hmap(hyper_headers: &hyper::HeaderMap) -> HeaderMap {
+    let mut reqwest_headers = HeaderMap::new();
+    for (key, value) in hyper_headers.iter() {
+        if let (Ok(name), Ok(value_str)) = (HeaderName::from_bytes(key.as_str().as_bytes()), HeaderValue::from_str(value.to_str().unwrap_or_default())) {
+            reqwest_headers.insert(name, value_str);
+        }
+    }
+    reqwest_headers
 }
 
 fn update_cache_control_header(
@@ -56,7 +67,7 @@ fn update_cache_control_header(
     response
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, server_ctx: &AppContext) {
+pub fn update_response_headers(resp: &mut hyper::Response<Body>, server_ctx: &AppContext) {
     if !server_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
             .extend(server_ctx.blueprint.server.response_headers.clone());
@@ -68,7 +79,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     server_ctx: &AppContext,
 ) -> Result<Response<Body>> {
     let req_ctx = Arc::new(create_request_context(&req, server_ctx));
-    let bytes = hyper::body::to_bytes(req.into_body()).await?;
+    let bytes = req.into_body();
     let request = serde_json::from_slice::<T>(&bytes);
     match request {
         Ok(request) => {
@@ -97,7 +108,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
-fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
+fn create_allowed_headers(headers: HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
     let mut new_headers = HeaderMap::new();
     for (k, v) in headers.iter() {
         if allowed.contains(k.as_str()) {

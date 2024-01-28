@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use reqwest::header::{HeaderMap,HeaderValue};
 use url::Url;
 
 use crate::config::Encoding;
@@ -189,7 +188,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
             .iter()
             .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
             .collect::<anyhow::Result<Vec<_>>>()?;
-        let method = endpoint.method.clone().to_hyper();
+        let method = endpoint.method.clone().to_reqwest();
         let headers = endpoint
             .headers
             .iter()

@@ -1,8 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use reqwest::header::{HeaderMap, HeaderValue};
 
 use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
@@ -42,14 +41,14 @@ impl RequestTemplate {
         ctx: &C,
     ) -> reqwest::Request {
         let headers = req.headers_mut();
-        let config_headers = self.create_headers(ctx);
+        let config_headers = self.create_headers(ctx)   ;
 
         if !config_headers.is_empty() {
             headers.extend(config_headers);
         }
         headers.insert(
             reqwest::header::CONTENT_TYPE,
-            HeaderValue::from_static("application/json"),
+            reqwest::header::HeaderValue::from_static("application/json"),
         );
         headers.extend(ctx.headers().to_owned());
         req
@@ -59,7 +58,7 @@ impl RequestTemplate {
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
-        let mut req = reqwest::Request::new(POST.to_hyper(), url::Url::parse(self.url.as_str())?);
+        let mut req = reqwest::Request::new(POST.to_reqwest(), url::Url::parse(self.url.as_str())?);
         req = self.set_headers(req, ctx);
         req = self.set_body(req, ctx);
         Ok(req)

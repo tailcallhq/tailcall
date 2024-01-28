@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
-use hyper::HeaderMap;
+use reqwest::header::HeaderMap;
 
 use crate::blueprint::Server;
 use crate::config::Upstream;

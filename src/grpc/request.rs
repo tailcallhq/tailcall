@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
-use hyper::{HeaderMap, Method};
+use reqwest::header::HeaderMap;
 use reqwest::Request;
 use url::Url;
 
@@ -10,7 +10,7 @@ use crate::http::Response;
 use crate::HttpIO;
 
 pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
-    let mut req = Request::new(Method::POST, url);
+    let mut req = Request::new(reqwest::Method::POST, url);
     req.headers_mut().extend(headers.clone());
     req.body_mut().replace(body.into());
 

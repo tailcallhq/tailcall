@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use hyper::body::Bytes;
-use hyper::header::{HeaderName, HeaderValue};
+use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::Request;
 
 use crate::http::Response;
