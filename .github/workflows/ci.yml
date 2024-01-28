@@ -324,6 +324,20 @@ jobs:
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
 
+      - name: NPM Publish in wasm-browser
+        if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: |
+          cd browser
+          npm run publish
+          cd ..
+
+      - name: NPM Publish wasm-node
+        if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: |
+          cd node
+          npm run publish
+          cd ..
+
   semantic_release:
     name: Semantic Release
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
