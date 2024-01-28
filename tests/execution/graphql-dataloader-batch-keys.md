@@ -1,5 +1,7 @@
 # Graphql datasource
 
+**This test had an assertion with a fail annotation that testconv could not convert.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))
+
 #### server:
 
 ```graphql

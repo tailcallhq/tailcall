@@ -5,7 +5,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use tailcall::config::Config;
 
-use crate::common::{DownstreamRequest, Mock};
+use crate::common::{Annotation, DownstreamRequest, Mock};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DownstreamAssertion {
@@ -32,4 +32,7 @@ pub struct ExecutionSpec {
 
     pub server: Vec<Config>,
     pub assert: Option<AssertSpec>,
+
+    // Annotations for the runner
+    pub runner: Option<Annotation>,
 }

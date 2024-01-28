@@ -3,9 +3,13 @@ use std::fs::{self, canonicalize, read_dir, File};
 use std::io::Write;
 use std::path::PathBuf;
 
+use crate::common::Annotation;
+
 mod common;
 mod execution;
 mod http;
+
+const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv could not convert.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
 
 impl From<http::DownstreamAssertion> for execution::DownstreamAssertion {
     fn from(value: http::DownstreamAssertion) -> Self {
@@ -64,9 +68,33 @@ fn main() {
 
             let old = serde_yaml::from_reader::<File, http::HttpSpec>(f).unwrap();
 
+            let has_fail_annotation = matches!(old.runner, Some(Annotation::Fail));
+
             let mut spec = format!("# {}\n", old.name);
             if let Some(description) = &old.description {
+                let mut description = description.to_owned();
+                if has_fail_annotation {
+                    description += "\n";
+                    description += TEST_ANNOTATION_MSG;
+                }
                 spec += &format!("{}\n", description);
+            } else if has_fail_annotation {
+                spec += &format!("{}\n", TEST_ANNOTATION_MSG);
+            }
+
+            if let Some(runner) = &old.runner {
+                if runner.to_owned() != Annotation::Fail {
+                    spec += &format!(
+                        "\n##### {}\n\n",
+                        match runner {
+                            Annotation::Only => "only",
+                            Annotation::Skip => "skip",
+                            Annotation::Fail => unreachable!(),
+                        }
+                    )
+                } else {
+                    println!("Cannot automatically convert fail annotation in {:#?}. Please run the test suite and accept the failing snapshot instead. A comment has been added to its .md file.", path);
+                }
             }
 
             spec += &format!("\n#### server:\n\n```");
@@ -153,6 +181,4 @@ fn main() {
             println!("skipping unexpected file: {:?}", path);
         }
     }
-
-    println!("Hello, world!");
 }

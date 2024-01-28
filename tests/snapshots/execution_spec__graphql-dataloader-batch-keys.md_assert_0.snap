@@ -8,52 +8,17 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "a": [
+    "data": null,
+    "errors": [
       {
-        "b": {
-          "y": 1
-        },
-        "bid": 1,
-        "c": {
-          "x": 1
-        },
-        "cid": 1,
-        "id": 1
-      },
-      {
-        "b": {
-          "y": 1
-        },
-        "bid": 1,
-        "c": {
-          "x": 1
-        },
-        "cid": 1,
-        "id": 2
-      },
-      {
-        "b": {
-          "y": 1
-        },
-        "bid": 2,
-        "c": {
-          "x": 1
-        },
-        "cid": 2,
-        "id": 3
-      },
-      {
-        "b": {
-          "y": 1
-        },
-        "bid": 2,
-        "c": {
-          "x": 1
-        },
-        "cid": 2,
-        "id": 4
+        "locations": [
+          {
+            "column": 9,
+            "line": 1
+          }
+        ],
+        "message": "IOException: No mock found for request: POST http://upstream/graphql in /home/mogery/tailcall/tests/execution/graphql-dataloader-batch-keys.md"
       }
-    ],
-    "data": null
+    ]
   }
 }

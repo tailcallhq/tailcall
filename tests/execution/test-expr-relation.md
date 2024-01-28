@@ -1,0 +1,177 @@
+# expr logic
+
+This test has invalid GraphQL that wasn't caught by http_spec before conversion. It is skipped right now, but it should be fixed at some point.
+
+##### skip
+
+#### server:
+
+```graphql
+schema @upstream(baseURL: "http://example.com") {
+  query: Query
+}
+
+type Query {
+  intersection: [Int] @expr(body: {intersection: [{const: [1, 2, 3]}, {const: [3, 4, 5]}]})
+  difference: [Int] @expr(body: {difference: [[{const: 1}, {const: 2}, {const: 3}], [{const: 2}, {const: 3}]]})
+  symmetricDifference1: [Int]
+    @expr(body: {symmetricDifference: [[{const: 1}, {const: 2}, {const: 3}], [{const: 2}, {const: 3}]]})
+  symmetricDifference2: [Int]
+    @expr(body: {symmetricDifference: [[{const: 2}, {const: 3}], [{const: 1}, {const: 2}, {const: 3}]]})
+  union: [Int] @expr(body: {union: [[{const: 1}, {const: 2}], [{const: 2}, {const: 3}]]})
+
+  equalsTrue1: Boolean @expr(body: {eq: [{const: [1, 2, 3]}, {const: [1, 2, 3]}]})
+  equalsTrue2: Boolean @expr(body: {eq: [{const: "abc"}, {const: "abc"}]})
+  equalsTrue3: Boolean @expr(body: {eq: [{const: "abc"}, {const: "abc"}]})
+  equalsFalse1: Boolean @expr(body: {eq: [{const: [1, 2, 3]}, {const: [1, 2]}]})
+  equalsFalse2: Boolean @expr(body: {eq: [{const: "abc"}, {const: 1}]})
+  equalsFalse3: Boolean @expr(body: {eq: [{const: "abc"}, {const: "ac"}]})
+
+  gtTrue1: Boolean @expr(body: {gt: [{const: [1, 2, 3]}, {const: [1, 2]}]})
+  gtTrue2: Boolean @expr(body: {gt: [{const: "bc"}, {const: "ab"}]})
+  gtTrue3: Boolean @expr(body: {gt: [{const: 4}, {const: -1}]})
+  gtFalse1: Boolean @expr(body: {gt: [{const: [1, 2, 3]}, {const: [2, 2]}]})
+  gtFalse2: Boolean @expr(body: {gt: [{const: "abc"}, {const: "z"}]})
+  gtFalse3: Boolean @expr(body: {gt: [{const: 0}, {const: 3.74}]})
+
+  ltFalse1: Boolean @expr(body: {lt: [{const: [1, 2, 3]}, {const: [1, 2]}]})
+  ltFalse2: Boolean @expr(body: {lt: [{const: "bc"}, {const: "ab"}]})
+  ltFalse3: Boolean @expr(body: {lt: [{const: 4}, {const: -1}]})
+  ltTrue1: Boolean @expr(body: {lt: [{const: [1, 2, 3]}, {const: [2, 2]}]})
+  ltTrue2: Boolean @expr(body: {lt: [{const: "abc"}, {const: "z"}]})
+  ltTrue3: Boolean @expr(body: {lt: [{const: 0}, {const: 3.74}]})
+
+  gteTrue1: Boolean @expr(body: {gte: [{const: [1, 2, 3]}, {const: [1, 2, 3]}]})
+  gteTrue2: Boolean @expr(body: {gte: [{const: "bc"}, {const: "ab"}]})
+  gteTrue3: Boolean @expr(body: {gte: [{const: 4}, {const: 4}]})
+  gteFalse1: Boolean @expr(body: {gte: [{const: [1, 2, 3]}, {const: [2, 2]}]})
+  gteFalse2: Boolean @expr(body: {gte: [{const: "abc"}, {const: "z"}]})
+  gteFalse3: Boolean @expr(body: {gte: [{const: 0}, {const: 3.74}]})
+
+  lteTrue1: Boolean @expr(body: {lte: [{const: [1, 2, 3]}, {const: [1, 2, 3]}]})
+  lteFalse1: Boolean @expr(body: {lte: [{const: "bc"}, {const: "ab"}]})
+  lteTrue2: Boolean @expr(body: {lte: [{const: 4}, {const: 4}]})
+  lteTrue3: Boolean @expr(body: {lte: [{const: [1, 2, 3]}, {const: [2, 2]}]})
+  lteTrue4: Boolean @expr(body: {lte: [{const: "abc"}, {const: "z"}]})
+  lteTrue5: Boolean @expr(body: {lte: [{const: 0}, {const: 3.74}]})
+
+  max1: Int @expr(body: {max: [{const: 1}, {const: 23}, {const: -423}, {const: 0}, {const: 923.83}]})
+  max2: Int @expr(body: {max: [{const: "abc"}, {const: "z"}, {const: "bcd"}, {const: "foo"}]})
+  max3: [Int] @expr(body: {max: [{const: [2, 3]}, {const: [0, 1, 2]}, {const: [-1, 0, 0, 0]}, {const: [1]}]})
+
+  min1: Int @expr(body: {min: [{const: 1}, {const: 23}, {const: -423}, {const: 0}, {const: 923.83}]})
+  min2: Int @expr(body: {min: [{const: "abc"}, {const: "z"}, {const: "bcd"}, {const: "foo"}]})
+  min3: [Int] @expr(body: {min: [{const: [2, 3]}, {const: [0, 1, 2]}, {const: [-1, 0, 0, 0]}, {const: [1]}]})
+
+  sortPath: [Int] @expr(body: {sortPath: [{const: [4, 2, 3]}, []]})
+  pathEq1: Boolean @expr(body: {pathEq: [10, [], 10]})
+  pathEq2: Boolean @expr(body: {pathEq: ["ab", [], "bcd"]})
+
+  user: User @http(path: "/user")
+}
+
+type User {
+  id: Int
+  email: String
+  friend: User
+}
+```
+
+#### assert:
+
+```yml
+mock:
+  - request:
+      method: GET
+      url: http://example.com/user
+      headers: {}
+      body: null
+    response:
+      status: 200
+      headers: {}
+      body:
+        email: abc@bcd.com
+        friend:
+          email: bcd@abc.com
+          friend: null
+          id: 2
+        id: 1
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      headers: {}
+      body:
+        query: |-
+          query { intersection difference symmetricDifference1 symmetricDifference2
+          equalsTrue1 equalsTrue2 equalsTrue3 equalsFalse1 equalsFalse2 equalsFalse3
+          gtTrue1 gtTrue2 gtTrue3 gtFalse1 gtFalse2 gtFalse3
+          ltFalse1 ltFalse2 ltFalse3 ltTrue1 ltTrue2 ltTrue3
+          gteTrue1 gteTrue2 gteTrue3 gteFalse1 gteFalse2 gteFalse3
+          lteTrue1 lteFalse1 lteTrue2 lteTrue3 lteTrue4 lteTrue5
+          max1 max2 max3
+          min1 min2 min3
+          sortPath pathEq1 pathEq2 }
+    response:
+      status: 200
+      headers: {}
+      body:
+        data:
+          difference:
+            - 1
+          equalsFalse1: false
+          equalsFalse2: false
+          equalsFalse3: false
+          equalsTrue1: true
+          equalsTrue2: true
+          equalsTrue3: true
+          gtFalse1: false
+          gtFalse2: false
+          gtFalse3: false
+          gtTrue1: true
+          gtTrue2: true
+          gtTrue3: true
+          gteFalse1: false
+          gteFalse2: false
+          gteFalse3: false
+          gteTrue1: true
+          gteTrue2: true
+          gteTrue3: true
+          intersection:
+            - 3
+          ltFalse1: false
+          ltFalse2: false
+          ltFalse3: false
+          ltTrue1: true
+          ltTrue2: true
+          ltTrue3: true
+          lteFalse1: false
+          lteTrue1: true
+          lteTrue2: true
+          lteTrue3: true
+          lteTrue4: true
+          lteTrue5: true
+          max1: 923.83
+          max2: z
+          max3:
+            - 2
+            - 3
+          min1: -423
+          min2: abc
+          min3:
+            - -1
+            - 0
+            - 0
+            - 0
+          pathEqFalse: false
+          pathEqTrue: true
+          sortPath:
+            - 2
+            - 3
+            - 4
+          symmetricDifference1:
+            - 1
+          symmetricDifference2:
+            - 1
+assert: []
+env: {}
+```

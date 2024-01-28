@@ -5,6 +5,14 @@ use serde::{Deserialize, Serialize};
 use tailcall::http::Method;
 use url::Url;
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum Annotation {
+    Skip,
+    Only,
+    Fail,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct APIRequest {
