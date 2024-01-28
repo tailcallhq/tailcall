@@ -12,6 +12,7 @@ enum Foo {
 type Post {
   id: Int!
   user: User
+  userId: Int!
 }
 
 type Query {

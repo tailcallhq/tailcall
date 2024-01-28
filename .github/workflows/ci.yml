@@ -9,8 +9,6 @@ on:
     types: [opened, reopened, synchronize]
   pull_request_target:
     types: [opened, reopened, synchronize]
-  release:
-    types: [published]
 permissions:
   contents: read
 jobs:
@@ -29,10 +27,14 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
-  compile_wasm:
-    name: Compile WASM
+  test_cf:
+    name: Run Tests (WASM)
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cloudflare
+
     steps:
       - uses: actions/checkout@v4
 
@@ -45,13 +47,20 @@ jobs:
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: Build WASM
-        run: cargo build --lib --release --target wasm32-unknown-unknown
-        working-directory: ./cloudflare
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+
+      - name: Package Install
+        run: npm install
+
+      - name: Test CF
+        run: npm test
 
   test:
     name: Run Tests
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +73,7 @@ jobs:
           default: true
 
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -88,13 +97,13 @@ jobs:
 
   format:
     name: Run Formatter and Lint Check
-    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20.11.0"
       - name: Install Prettier
         run: npm install --global prettier
       - name: Install Nightly Toolchain
@@ -103,7 +112,7 @@ jobs:
           toolchain: nightly
           components: rustfmt, clippy
       - name: Cache Rust Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -116,7 +125,7 @@ jobs:
 
   draft_release:
     name: Draft Release
-    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'pull_request_target') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -144,10 +153,11 @@ jobs:
 
   release:
     name: Release
-    needs: [test, format, draft_release, check_if_build, compile_wasm]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') || (github.event_name == 'release' && github.event.action == 'published')
+    needs: [test, format, draft_release, check_if_build, test_cf]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         build:
           [
@@ -175,6 +185,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
+            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -189,6 +200,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
+            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -196,6 +208,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
+            features: --no-default-features --features cli
             libc: glibc
             cross: true
 
@@ -221,6 +234,7 @@ jobs:
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-gnu
+            features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
 
@@ -228,6 +242,7 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
+            features: --no-default-features --features cli
             libc: msvc
             ext: ".exe"
 
@@ -235,6 +250,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
+            features: --no-default-features --features cli
             cross: true
             libc: glibc
             ext: ".exe"
@@ -243,7 +259,7 @@ jobs:
       pull-requests: write
     env:
       GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
-      APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
+      APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
 
     steps:
       - name: Checkout Current Branch (Fast)
@@ -257,29 +273,29 @@ jobs:
 
       - name: Build
         env:
-          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name}}
+          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: ${{matrix.features}} --release --target ${{ matrix.target }}
 
       - name: Install Node.js
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20.11.0
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: |
           cd npm
           npm install
 
       - name: Run generate.js script
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
         run: |
           cd npm
           npm run gen -- --target ${{matrix.target}} --version ${{ env.APP_VERSION }} --build ${{matrix.build}} --ext ${{ matrix.ext || '' }} --libc ${{ matrix.libc }}
@@ -287,7 +303,7 @@ jobs:
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
 
       - name: NPM Publish
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
@@ -307,10 +323,30 @@ jobs:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
+
+  semantic_release:
+    name: Semantic Release
+    if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: [draft_release, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
+    steps:
+      - name: Publish Release
+        uses: test-room-7/action-publish-release-drafts@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          tag-name: ${{needs.draft_release.outputs.create_release_name }}
   publish_npm_root:
     name: Publish NPM main package
     needs: [draft_release, release]
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Current Branch (Fast)
@@ -318,7 +354,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20.11.0
           registry-url: https://registry.npmjs.org
       - name: Install dependencies
         run: |
@@ -326,7 +362,7 @@ jobs:
           npm install
       - name: Run generate-root.js script
         env:
-          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name}}
+          APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
         run: |
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }}
@@ -340,5 +376,60 @@ jobs:
           access: public
 
         env:
-          APP_VERSION: ${{ (github.event_name == 'release' && github.event.action == 'published') && github.event.release.tag_name || needs.draft_release.outputs.create_release_name }}
+          APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  build-and-push-image:
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}/tc-server
+    needs: [draft_release, release]
+    if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
+    permissions:
+      contents: read
+      packages: write
+      #
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      # Uses the `docker/login-action` action to log in to the Container registry registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
+      - name: Log in to the Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUBTOKEN }}
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
+      - name: Extract Metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
+      # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
+      # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
+      - name: Build and Push the Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+  homebrew-release:
+    name: Homebrew Release
+    needs: [draft_release, release, semantic_release]
+    if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: tailcallhq/homebrew-tailcall
+          ref: main
+          token: ${{ secrets.HOMEBREW_ACCESS }}
+
+      - name: Update Homebrew Formula
+        run: ./update-formula.sh ${{needs.draft_release.outputs.create_release_name }}

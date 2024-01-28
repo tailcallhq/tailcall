@@ -4,9 +4,9 @@ use super::Config;
 
 #[derive(Clone)]
 pub enum Source {
-  Json,
-  Yml,
-  GraphQL,
+    Json,
+    Yml,
+    GraphQL,
 }
 
 const JSON_EXT: &str = "json";
@@ -19,50 +19,42 @@ const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 pub struct UnsupportedFileFormat(String);
 
 impl std::str::FromStr for Source {
-  type Err = UnsupportedFileFormat;
+    type Err = UnsupportedFileFormat;
 
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    match s.to_lowercase().as_str() {
-      "json" => Ok(Source::Json),
-      "yml" | "yaml" => Ok(Source::Yml),
-      "graphql" | "gql" => Ok(Source::GraphQL),
-      _ => Err(UnsupportedFileFormat(s.to_string())),
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "json" => Ok(Source::Json),
+            "yml" | "yaml" => Ok(Source::Yml),
+            "graphql" | "gql" => Ok(Source::GraphQL),
+            _ => Err(UnsupportedFileFormat(s.to_string())),
+        }
     }
-  }
 }
 
 impl Source {
-  pub fn ext(&self) -> &'static str {
-    match self {
-      Source::Json => JSON_EXT,
-      Source::Yml => YML_EXT,
-      Source::GraphQL => GRAPHQL_EXT,
+    pub fn ext(&self) -> &'static str {
+        match self {
+            Source::Json => JSON_EXT,
+            Source::Yml => YML_EXT,
+            Source::GraphQL => GRAPHQL_EXT,
+        }
     }
-  }
 
-  fn ends_with(&self, file: &str) -> bool {
-    file.ends_with(&format!(".{}", self.ext()))
-  }
-
-  pub fn detect(name: &str) -> Result<Source, UnsupportedFileFormat> {
-    ALL
-      .into_iter()
-      .find(|format| format.ends_with(name))
-      .ok_or(UnsupportedFileFormat(name.to_string()))
-  }
-  pub fn detect_content_type(content_type: &str) -> Result<Source, UnsupportedFileFormat> {
-    let content_type = content_type.split('/').last().unwrap();
-    ALL
-      .into_iter()
-      .find(|format| format.ext().eq(content_type))
-      .ok_or(UnsupportedFileFormat(content_type.to_string()))
-  }
-
-  pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
-    match self {
-      Source::Yml => Ok(config.to_yaml()?),
-      Source::GraphQL => Ok(config.to_sdl()),
-      Source::Json => Ok(config.to_json(true)?),
+    fn ends_with(&self, file: &str) -> bool {
+        file.ends_with(&format!(".{}", self.ext()))
     }
-  }
+
+    pub fn detect(name: &str) -> Result<Source, UnsupportedFileFormat> {
+        ALL.into_iter()
+            .find(|format| format.ends_with(name))
+            .ok_or(UnsupportedFileFormat(name.to_string()))
+    }
+
+    pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
+        match self {
+            Source::Yml => Ok(config.to_yaml()?),
+            Source::GraphQL => Ok(config.to_sdl()),
+            Source::Json => Ok(config.to_json(true)?),
+        }
+    }
 }

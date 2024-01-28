@@ -1,10 +1,12 @@
 pub use config::*;
+pub use expr::*;
 pub use key_values::*;
 pub use resolver::*;
 pub use server::*;
 pub use source::*;
-
+pub use upstream::*;
 mod config;
+mod expr;
 mod from_document;
 pub mod group_by;
 mod into_document;
@@ -14,7 +16,4 @@ pub mod reader;
 mod resolver;
 mod server;
 mod source;
-
-fn is_default<T: Default + Eq>(val: &T) -> bool {
-  *val == T::default()
-}
+mod upstream;

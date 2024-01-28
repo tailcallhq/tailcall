@@ -13,7 +13,8 @@
         "inline-many-list.graphql",
         "test-grpc.graphql",
         "test-add-link-to-empty-config.graphql",
-        "test-expr-success.graphql"
+        "test-expr-success.graphql",
+        "omit-many.graphql"
       ],
       "options": {
         "printWidth": 200

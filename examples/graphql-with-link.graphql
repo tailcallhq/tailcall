@@ -1,9 +1,13 @@
-schema @server @upstream(baseURL: "http://localhost:8000/graphql") @link(src: "examples/link-enum.graphql", type: Config) {
+schema
+  @server
+  @upstream(baseURL: "http://localhost:8000/graphql")
+  @link(src: "examples/link-enum.graphql", type: Config) {
   query: Query
 }
 
 type Post {
   id: Int!
+  userId: Int!
   user: User @graphQL(args: [{key: "id", value: "{{value.userId}}"}], name: "user")
 }
 

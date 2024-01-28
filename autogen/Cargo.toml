@@ -1,0 +1,17 @@
+[package]
+name = "autogen"
+version = "0.1.0"
+edition = "2021"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.79"
+env_logger = "0.11.1"
+log = "0.4.20"
+schemars = "0.8.16"
+serde = "1.0.196"
+serde_json = "1.0.112"
+tailcall = { path = "../" }
+tokio = { version = "1.35.1", features = ["full"] }

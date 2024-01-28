@@ -10,12 +10,7 @@ type User {
 
 type Query {
   user1: User @const(data: {name: "John"}) @http(path: "/users/1")
-  user2: User @const(data: {name: "John"}) @unsafe(script: "return {id: 1, name: 'foo'}")
-  user3: User @http(path: "/users/1") @unsafe(script: "return {id: 1, name: 'foo'}")
 }
 
 #> client-sdl
-type Failure
-  @error(message: "Multiple resolvers detected [@http, @const]", trace: ["Query", "user1"])
-  @error(message: "Multiple resolvers detected [@unsafe, @const]", trace: ["Query", "user2"])
-  @error(message: "Multiple resolvers detected [@http, @unsafe]", trace: ["Query", "user3"])
+type Failure @error(message: "Multiple resolvers detected [@http, @const]", trace: ["Query", "user1"])
