@@ -545,8 +545,9 @@ async fn main() -> anyhow::Result<()> {
     let explicit = std::env::args().nth(1);
     log::info!("EXP: {:#?}", explicit);
     let spec = if let Some(explicit) = explicit {
-        let path = PathBuf::from(&explicit).canonicalize().unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}",
-            explicit));
+        let path = PathBuf::from(&explicit)
+            .canonicalize()
+            .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", explicit));
 
         let contents = fs::read_to_string(&path)?;
         let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)

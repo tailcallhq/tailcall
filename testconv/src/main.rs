@@ -3,6 +3,11 @@ use std::fs::{self, canonicalize, read_dir, File};
 use std::io::Write;
 use std::path::PathBuf;
 
+use http::ConfigSource;
+use tailcall::cli::{init_file, init_http};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::Upstream;
+
 use crate::common::Annotation;
 
 mod common;
@@ -10,6 +15,7 @@ mod execution;
 mod http;
 
 const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
+const BAD_GRAPHQL_MSG: &str = "This test has invalid GraphQL that wasn't caught by http_spec before conversion. It is skipped right now, but it should be fixed at some point.";
 
 impl From<http::DownstreamAssertion> for execution::DownstreamAssertion {
     fn from(value: http::DownstreamAssertion) -> Self {
@@ -27,7 +33,8 @@ impl From<http::HttpSpec> for execution::AssertSpec {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let http_dir =
         canonicalize(PathBuf::from("tests/http")).expect("Could not find http directory");
 
@@ -69,23 +76,44 @@ fn main() {
             let old = serde_yaml::from_reader::<File, http::HttpSpec>(f).unwrap();
 
             let has_fail_annotation = matches!(old.runner, Some(Annotation::Fail));
+            let bad_graphql_skip: bool = match &old.config {
+                ConfigSource::File(x) => {
+                    let reader =
+                        ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+                    reader.read(x).await.is_err()
+                }
+                ConfigSource::Inline(_) => false,
+            };
+
+            let mut description_suffix = String::new();
+            if has_fail_annotation {
+                description_suffix += TEST_ANNOTATION_MSG;
+            }
+            if bad_graphql_skip {
+                if has_fail_annotation {
+                    description_suffix += "\n";
+                }
+                description_suffix += BAD_GRAPHQL_MSG;
+            }
 
             let mut spec = format!("# {}\n", old.name);
             if let Some(description) = &old.description {
                 let mut description = description.to_owned();
-                if has_fail_annotation {
+                if !description_suffix.is_empty() {
                     description += "\n";
-                    description += TEST_ANNOTATION_MSG;
+                    description += &description_suffix;
                 }
-                spec += &format!("{}\n", description);
-            } else if has_fail_annotation {
-                spec += &format!("{}\n", TEST_ANNOTATION_MSG);
+                spec += &format!("\n{}\n", description);
+            } else if !description_suffix.is_empty() {
+                spec += &format!("\n{}\n", description_suffix);
             }
 
-            if let Some(runner) = &old.runner {
+            if bad_graphql_skip {
+                spec += "\n##### skip\n";
+            } else if let Some(runner) = &old.runner {
                 if runner.to_owned() != Annotation::Fail {
                     spec += &format!(
-                        "\n##### {}\n\n",
+                        "\n##### {}\n",
                         match runner {
                             Annotation::Only => "only",
                             Annotation::Skip => "skip",
