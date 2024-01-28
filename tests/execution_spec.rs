@@ -8,7 +8,6 @@ use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
-use futures_util::future::join_all;
 use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
@@ -116,17 +115,19 @@ struct AssertSpec {
     env: HashMap<String, String>,
 }
 
-#[derive(Clone, Setters, Debug)]
+#[derive(Clone, Setters)]
 struct ExecutionSpec {
     path: PathBuf,
     name: String,
     safe_name: String,
 
-    server: Vec<Config>,
+    server: Vec<(Source, String)>,
     assert: Option<AssertSpec>,
 
     // Annotations for the runner
     runner: Option<Annotation>,
+
+    check_identity: bool,
 }
 
 impl ExecutionSpec {
@@ -199,6 +200,7 @@ impl ExecutionSpec {
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut assert: Option<AssertSpec> = None;
         let mut runner: Option<Annotation> = None;
+        let mut check_identity = false;
 
         while let Some(node) = children.next() {
             match node {
@@ -243,7 +245,7 @@ impl ExecutionSpec {
                                 });
                             } else {
                                 return Err(anyhow!(
-                                    "Unexpected content of level 3 heading in {:?}: {:#?}",
+                                    "Unexpected content of level 5 heading in {:?}: {:#?}",
                                     path,
                                     heading
                                 ));
@@ -252,6 +254,27 @@ impl ExecutionSpec {
                             return Err(anyhow!(
                                 "Unexpected double-declaration of runner annotation in {:?}",
                                 path
+                            ));
+                        }
+                    } else if heading.depth == 6 {
+                        if let Some(Node::Text(text)) = heading.children.first() {
+                            match text.value.as_str() {
+                                "check identity" => {
+                                    check_identity = true;
+                                }
+                                _ => {
+                                    return Err(anyhow!(
+                                        "Unexpected flag {:?} in {:?}",
+                                        text.value,
+                                        path,
+                                    ))
+                                }
+                            };
+                        } else {
+                            return Err(anyhow!(
+                                "Unexpected content of level 6 heading in {:?}: {:#?}",
+                                path,
+                                heading
                             ));
                         }
                     } else if heading.depth == 4 {
@@ -322,37 +345,6 @@ impl ExecutionSpec {
             ));
         }
 
-        // Only parse configs if test isn't skipped.
-        let server = if !matches!(runner, Some(Annotation::Skip)) {
-            let mut s: Vec<Config> = Vec::with_capacity(server.len());
-
-            for (source, content) in server.into_iter() {
-                let config = Config::default();
-
-                let new_config = Config::from_source(source, &content)
-                    .unwrap_or_else(|_| panic!("Couldn't parse GraphQL in {:#?}", path));
-
-                let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
-
-                let new_config = match reader.read_script(new_config).await {
-                    Ok(x) => x,
-                    Err(e) => {
-                        return Err(anyhow!(
-                            "Couldn't read scripts of GraphQL in {:#?}: {}",
-                            path,
-                            e
-                        ))
-                    }
-                };
-
-                s.push(config.merge_right(&new_config));
-            }
-
-            s
-        } else {
-            Vec::with_capacity(0) // Test is gonna be skipped anyways, so this doesn't matter.
-        };
-
         let spec = ExecutionSpec {
             path: path.to_owned(),
             name: name.unwrap_or_else(|| path.file_name().unwrap().to_str().unwrap().to_string()),
@@ -360,6 +352,7 @@ impl ExecutionSpec {
             server,
             assert,
             runner,
+            check_identity,
         };
 
         anyhow::Ok(spec)
@@ -492,13 +485,93 @@ impl HttpIO for MockHttpClient {
 }
 
 async fn assert_spec(spec: ExecutionSpec) {
+    // Parse and validate all server configs + check for identity
+    log::info!("{} {} ...", spec.name, spec.path.display());
+
+    let mut server: Vec<Config> = Vec::with_capacity(spec.server.len());
+
+    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+
+    for (i, (source, content)) in spec.server.iter().enumerate() {
+        let config = Config::from_source(source.to_owned(), content).unwrap_or_else(|e| {
+            panic!(
+                "Couldn't parse GraphQL in server definition #{} of {:#?}: {}",
+                i + 1,
+                spec.path,
+                e
+            )
+        });
+
+        let config = Config::default().merge_right(&config);
+
+        log::info!("\tserver #{} parse ok", i + 1);
+
+        // TODO: we should probably figure out a way to do this for every test
+        // but GraphQL identity checking is very hard, since a lot depends on the code style
+        // the re-serializing check gives us some of the advantages of the identity check too,
+        // but we are missing out on some by having it only enabled for either new tests that request it
+        // or old graphql_spec tests that were explicitly written with it in mind
+        if spec.check_identity {
+            if matches!(source, Source::GraphQL) {
+                let identity = config.to_sdl();
+
+                if identity != content.as_ref() {
+                    panic!(
+                        "Identity check failed for {:#?}\n\noriginal:\n{}\n\nserialized:\n{}",
+                        spec.path, content, identity
+                    );
+                } else {
+                    log::info!("\tserver #{} identity ok", i + 1);
+                }
+            } else {
+                panic!(
+                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
+                    spec.path
+                );
+            }
+        }
+
+        // round-trip: Re-serialize in SDL, re-parse, and check identity
+        let inter = config.to_sdl();
+
+        let roundtrip = Config::from_sdl(&inter).to_result().unwrap_or_else(|e| {
+            panic!(
+                "Couldn't parse round-trip GraphQL in server definition #{} of {:#?}: {}",
+                i + 1,
+                spec.path,
+                e
+            )
+        });
+
+        let roundtrip = Config::default().merge_right(&roundtrip);
+
+        if config != roundtrip {
+            panic!("Parsed config of {:#?} didn't match SDL round-trip config.\n\toriginal: {:?}\n\tround-trip: {:?}\n\nintermediate format:\n{}", spec.path, config, roundtrip, inter);
+        }
+
+        log::info!("\tserver #{} round-trip ok", i + 1);
+
+        // TODO: We have to read scripts after identity checking until #1059 is fixed.
+        let config = reader.read_script(config).await.unwrap_or_else(|e| {
+            panic!(
+                "Couldn't read scripts of GraphQL in server definition #{} of {:#?}: {}",
+                i + 1,
+                spec.path,
+                e
+            )
+        });
+
+        server.push(config);
+    }
+
+    // Run assert specs
     if let Some(assert_spec) = spec.assert.as_ref() {
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
             let response = run_assert(
                 spec.clone(),
                 assert_spec.clone(),
                 &assertion,
-                spec.server.first().unwrap(),
+                server.first().unwrap(),
             )
             .await
             .context(spec.path.to_str().unwrap().to_string())
@@ -522,6 +595,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
             insta::assert_json_snapshot!(snapshot_name, response);
+            log::info!("\tassert #{} ok", i + 1);
         }
     } else {
         panic!(
@@ -530,8 +604,6 @@ async fn assert_spec(spec: ExecutionSpec) {
             spec.path.display()
         );
     }
-
-    log::info!("{} {} ... ok", spec.name, spec.path.display());
 }
 
 #[tokio::main]
@@ -542,8 +614,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Explicitly only run one test if specified in command line args
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
-    let explicit = std::env::args().nth(1);
-    log::info!("EXP: {:#?}", explicit);
+    let explicit = std::env::args().skip(1).find(|x| x != "--color=auto");
     let spec = if let Some(explicit) = explicit {
         let path = PathBuf::from(&explicit)
             .canonicalize()
@@ -560,8 +631,10 @@ async fn main() -> anyhow::Result<()> {
         ExecutionSpec::filter_specs(spec)
     };
 
-    let tasks: Vec<_> = spec.into_iter().map(assert_spec).collect();
-    join_all(tasks).await;
+    for spec in spec.into_iter() {
+        assert_spec(spec).await;
+    }
+
     Ok(())
 }
 
