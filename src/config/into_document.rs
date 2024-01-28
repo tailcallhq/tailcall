@@ -182,11 +182,18 @@ fn config_document(config: &Config) -> ServiceDocument {
             extend: false,
             description: None,
             name: pos(Name::new(type_name.clone())),
-            directives: type_def
-                .added_fields
-                .iter()
-                .map(|added_field| pos(added_field.to_directive()))
-                .collect::<Vec<_>>(),
+            directives: [
+                type_def
+                    .added_fields
+                    .iter()
+                    .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+                    .collect::<Vec<_>>(),
+                if let Some(cache) = &type_def.cache {
+                    vec![pos(cache.to_directive())]
+                } else {
+                    vec![]
+                },
+            ].concat(),
             kind,
         })));
     }
@@ -219,6 +226,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
         field.graphql.as_ref().map(|d| pos(d.to_directive())),
         field.grpc.as_ref().map(|d| pos(d.to_directive())),
         field.expr.as_ref().map(|d| pos(d.to_directive())),
+        field.cache.as_ref().map(|d| pos(d.to_directive())),
     ];
 
     directives.into_iter().flatten().collect()
