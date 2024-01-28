@@ -120,14 +120,26 @@ fn main() {
                     .expect("Failed to open execution snapshot");
 
                 let mut res = assert.response;
+
+                res.0.headers = res
+                    .0
+                    .headers
+                    .into_iter()
+                    .map(|(k, v)| (k.to_lowercase(), v.to_owned()))
+                    .collect();
+
                 if !res.0.headers.contains_key("content-type") {
                     res.0
                         .headers
                         .insert("content-type".to_string(), "application/json".to_string());
                 }
 
+                res.0
+                    .headers
+                    .sort_by(|a, _, b, _| a.partial_cmp(b).unwrap());
+
                 let snap = format!(
-                    "---\nsource: tests/execution_spec.rs\nexpression: response\n---\n{}",
+                    "---\nsource: tests/execution_spec.rs\nexpression: response\n---\n{}\n",
                     serde_json::to_string_pretty(&res)
                         .expect("Failed to serialize assert.response"),
                 );

@@ -303,8 +303,7 @@ impl ExecutionSpec {
         let http2_client = Arc::new(MockHttpClient::new(self.clone()));
         let env = Arc::new(Env::init(env));
         let chrono_cache = Arc::new(init_chrono_cache());
-        let server_context =
-            AppContext::new(blueprint, client, http2_client, env, chrono_cache);
+        let server_context = AppContext::new(blueprint, client, http2_client, env, chrono_cache);
         Arc::new(server_context)
     }
 }

@@ -1,5 +1,6 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use tailcall::http::Method;
 use url::Url;
@@ -22,7 +23,7 @@ pub struct APIResponse {
     #[serde(default = "default_status")]
     pub status: u16,
     #[serde(default)]
-    pub headers: HashMap<String, String>,
+    pub headers: IndexMap<String, String>,
     #[serde(default)]
     pub body: serde_json::Value,
 }

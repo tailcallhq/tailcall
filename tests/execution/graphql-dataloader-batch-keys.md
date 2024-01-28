@@ -37,30 +37,36 @@ type B {
 ```yml
 mock:
   - request:
-      url: http://upstream/graphql
       method: POST
+      url: http://upstream/graphql
+      headers: {}
       body: '[{"query": "a {id, bid, cid}"}]'
     response:
+      status: 200
+      headers: {}
       body:
         data:
           a:
-            - id: 1
-              bid: 1
+            - bid: 1
               cid: 1
-            - id: 2
-              bid: 1
+              id: 1
+            - bid: 1
               cid: 1
-            - id: 3
-              bid: 2
+              id: 2
+            - bid: 2
               cid: 2
-            - id: 4
-              bid: 2
+              id: 3
+            - bid: 2
               cid: 2
+              id: 4
   - request:
-      url: http://upstream/graphql
       method: POST
+      url: http://upstream/graphql
+      headers: {}
       body: '[{"query": "b {y}"},{"query": "c {x}"}]'
     response:
+      status: 200
+      headers: {}
       body:
         - data:
             b:
@@ -69,10 +75,13 @@ mock:
             c:
               x: 1
   - request:
-      url: http://upstream/graphql
       method: POST
+      url: http://upstream/graphql
+      headers: {}
       body: '[{"query": "c {x}"},{"query": "b {y}"}]'
     response:
+      status: 200
+      headers: {}
       body:
         - data:
             c:
