@@ -9,7 +9,7 @@ mod common;
 mod execution;
 mod http;
 
-const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv could not convert.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
+const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
 
 impl From<http::DownstreamAssertion> for execution::DownstreamAssertion {
     fn from(value: http::DownstreamAssertion) -> Self {
@@ -93,7 +93,7 @@ fn main() {
                         }
                     )
                 } else {
-                    println!("Cannot automatically convert fail annotation in {:#?}. Please run the test suite and accept the failing snapshot instead. A comment has been added to its .md file.", path);
+                    println!("Automatically converting fail annotation in {:#?}. This builds the test suite, so this might take a while.", path);
                 }
             }
 
@@ -126,17 +126,19 @@ fn main() {
                     .expect("Failed to serialize AssertSpec")
             );
 
+            let md_path = PathBuf::from(format!("{}.md", file_stem));
+
             let mut f = File::options()
                 .create(true)
                 .write(true)
                 .truncate(true)
-                .open(execution_dir.join(PathBuf::from(format!("{}.md", file_stem))))
+                .open(execution_dir.join(&md_path))
                 .expect("Failed to open execution spec");
 
             f.write_all(spec.as_bytes())
                 .expect("Failed to open execution spec");
 
-            for (i, assert) in old.assert.into_iter().enumerate() {
+            for (i, assert) in old.assert.iter().enumerate() {
                 let mut f = File::options()
                     .create(true)
                     .write(true)
@@ -147,7 +149,7 @@ fn main() {
                     ))))
                     .expect("Failed to open execution snapshot");
 
-                let mut res = assert.response;
+                let mut res = assert.response.to_owned();
 
                 res.0.headers = res
                     .0
@@ -174,6 +176,68 @@ fn main() {
 
                 f.write_all(snap.as_bytes())
                     .expect("Failed to write exception spec");
+            }
+
+            if has_fail_annotation {
+                let test = std::process::Command::new("cargo")
+                    .env("INSTA_FORCE_PASS", "1")
+                    .args([
+                        "test",
+                        "--no-fail-fast",
+                        "-p",
+                        "tailcall",
+                        "--test",
+                        "execution_spec",
+                        "--",
+                        execution_dir.join(&md_path).to_str().unwrap(),
+                    ])
+                    .output()
+                    .expect("Failed to run cargo test");
+
+                if !test.status.success() {
+                    panic!(
+                        "Running cargo test (needed for fail annotation conversion) failed:\n{}",
+                        String::from_utf8_lossy(&test.stderr)
+                    );
+                }
+
+                let mut patched = 0;
+
+                for i in 0..old.assert.len() {
+                    let old = snapshots_dir.join(PathBuf::from(format!(
+                        "execution_spec__{}.md_assert_{}.snap",
+                        file_stem, i
+                    )));
+
+                    let new = snapshots_dir.join(PathBuf::from(format!(
+                        "execution_spec__{}.md_assert_{}.snap.new",
+                        file_stem, i
+                    )));
+
+                    if new.exists() {
+                        std::fs::rename(new, &old).unwrap();
+
+                        let snap = fs::read_to_string(&old)
+                            .expect("Failed to read back snapshot for patching");
+
+                        let lines = snap
+                            .split("\n")
+                            .filter(|x| !x.starts_with("assertion_line"))
+                            .collect::<Vec<&str>>()
+                            .join("\n");
+
+                        std::fs::write(&old, lines).expect("Failed to write back patched snapshot");
+
+                        patched += 1;
+                    }
+                }
+
+                if patched == 0 {
+                    panic!(
+                        "Spec {:?} has a fail annotation but all tests passed.",
+                        path
+                    );
+                }
             }
 
             files_already_processed.insert(file_stem);
