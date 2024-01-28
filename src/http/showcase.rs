@@ -98,6 +98,5 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         http,
         env,
         resources.cache,
-        None,
     )))
 }
