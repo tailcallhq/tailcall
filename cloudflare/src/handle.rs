@@ -12,7 +12,7 @@ use tailcall::http::{graphiql, handle_request, AppContext};
 use tailcall::EnvIO;
 
 use crate::http::{to_request, to_response};
-use crate::{init_cache, init_env, init_file, init_http, init_http2, init_proto_resolver};
+use crate::{init_cache, init_env, init_file, init_http, init_proto_resolver};
 
 lazy_static! {
     static ref APP_CTX: RwLock<Option<(String, Arc<AppContext>)>> = RwLock::new(None);
@@ -90,12 +90,11 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
     let blueprint = Blueprint::try_from(&cfg)?;
     log::info!("Blueprint generated ... ok");
     let h_client = init_http();
-    let h2_client = init_http2();
     let cache = init_cache(env);
     let app_ctx = Arc::new(AppContext::new(
         blueprint,
+        h_client.clone(),
         h_client,
-        h2_client,
         env_io,
         cache,
     ));

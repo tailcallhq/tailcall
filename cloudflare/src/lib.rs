@@ -13,7 +13,6 @@ mod env;
 mod file;
 pub mod handle;
 mod http;
-mod http2;
 mod proto_resolver;
 
 pub fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
@@ -30,9 +29,6 @@ pub fn init_proto_resolver() -> Arc<dyn ProtoPathResolver> {
 
 pub fn init_http() -> Arc<dyn HttpIO> {
     Arc::new(http::CloudflareHttp::init())
-}
-pub fn init_http2() -> Arc<dyn HttpIO> {
-    Arc::new(http2::CloudflareHttp2::init())
 }
 
 pub fn init_cache(env: Rc<worker::Env>) -> Arc<dyn tailcall::Cache<Key = u64, Value = ConstValue>> {
