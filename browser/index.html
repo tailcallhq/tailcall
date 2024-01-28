@@ -10,7 +10,7 @@
 
 <script type="module">
   import init, { GraphQLExecutor } from "./pkg/wasm_browser.js";
-  init().then(async () => {
+  await init();
     try {
       const schema =
         "schema\n" +
@@ -51,7 +51,6 @@
     } catch (error) {
       alert("an error occurred: " + error)
     }
-  });
 </script>
 </body>
 </html>
