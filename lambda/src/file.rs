@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use tokio::io::AsyncReadExt;
-
 use tailcall::FileIO;
+use tokio::io::AsyncReadExt;
 
 #[derive(Clone, Copy)]
 pub struct LambdaFileIO;

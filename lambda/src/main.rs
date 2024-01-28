@@ -22,7 +22,9 @@ lazy_static! {
 }
 
 async fn function_handler(event: Request) -> Result<Response<hyper::Body>, Error> {
-    let app_ctx = APP_CTX.read().await
+    let app_ctx = APP_CTX
+        .read()
+        .await
         .clone()
         .expect("AppContext not initialized yet, please wait");
     let resp = handle_request::<GraphQLRequest>(to_request(event), app_ctx).await?;

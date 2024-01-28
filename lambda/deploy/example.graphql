@@ -1,12 +1,12 @@
 schema {
-    query: Query
+  query: Query
 }
-    
+
 type User {
-    id: Int
-    name: String
+  id: Int
+  name: String
 }
-    
+
 type Query {
-    user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
