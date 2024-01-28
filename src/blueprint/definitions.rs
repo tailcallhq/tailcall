@@ -384,7 +384,6 @@ fn to_fields(
         update_args(hasher)
             .and(update_http().trace(config::Http::trace_name().as_str()))
             .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-            .and(update_js().trace(config::JS::trace_name().as_str()))
             .and(update_const_field().trace(config::Const::trace_name().as_str()))
             .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
