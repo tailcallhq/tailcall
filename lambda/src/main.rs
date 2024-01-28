@@ -55,7 +55,6 @@ async fn main() -> Result<(), Error> {
         http,
         Arc::new(LambdaEnv),
         Arc::new(LambdaCache::new()),
-        None,
     ));
 
     APP_CTX.write().await.replace(app_ctx);
