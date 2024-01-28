@@ -273,4 +273,22 @@ async fn main() {
             println!("skipping unexpected file: {:?}", path);
         }
     }
+
+    println!("Running prettier...");
+
+    let prettier = std::process::Command::new("prettier")
+        .args([
+            "-c",
+            ".prettierrc",
+            "--write",
+            "tests/execution/*.md"
+        ])
+        .output()
+        .expect("Failed to run prettier");
+
+    if !prettier.status.success() {
+        panic!("prettier exited with an error:\n{}", String::from_utf8_lossy(&prettier.stdout));
+    }
+
+    println!("All done!");
 }
