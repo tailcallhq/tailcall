@@ -23,14 +23,15 @@ rustls = { version = "0.22.2", optional = true }
 rustls-pemfile = { version = "1.0.4", optional = true }
 rustls-pki-types = "1.1.0"
 inquire = { version = "0.6.2", optional = true }
+hyper-util = { version = "0.1", features = ["tokio"], optional = true }
+
 
 # dependencies safe for wasm:
 
 schemars = { version = "0.8.16", features = ["derive"] }
-hyper = { version = "1.1.0", features = ["server","http2","http1"], default-features = false }
+hyper = { version = "1.1.0", features = ["server"], default-features = false }
 http-body-util = "0.1.0"
 bytes = "1.5.0"
-hyper-util = { version = "0.1", features = ["full"] }
 tokio = { version = "1.35.1", features = ["rt", "time"] }
 anyhow = "1.0.79"
 derive_setters = "0.1.6"
@@ -107,6 +108,9 @@ cli = [
     "dep:rustls",
     "dep:rustls-pemfile",
     "dep:inquire",
+    "hyper/http1",
+    "hyper/http2",
+    "hyper-util"
 ]
 
 # Feature flag to enable all default features.

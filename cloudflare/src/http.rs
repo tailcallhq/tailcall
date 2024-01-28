@@ -1,5 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_std::task::spawn_local;
+use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
 use reqwest::Client;
 use tailcall::http::Response;
@@ -44,12 +45,16 @@ impl HttpIO for CloudflareHttp {
     }
 }
 
-pub async fn to_response(
-    response: hyper::Response<hyper::Body>,
-) -> anyhow::Result<worker::Response> {
+pub async fn to_response(response: hyper::Response<Full<Bytes>>) -> Result<worker::Response> {
     let status = response.status().as_u16();
     let headers = response.headers().clone();
-    let bytes = hyper::body::to_bytes(response).await?;
+    let bytes = response
+        .into_body()
+        .frame()
+        .await
+        .context("unable to extract frame")??
+        .into_data()
+        .map_err(|e| anyhow!("{:?}", e))?;
     let body = worker::ResponseBody::Body(bytes.to_vec());
     let mut w_response = worker::Response::from_body(body).map_err(to_anyhow)?;
     w_response = w_response.with_status(status);
@@ -80,7 +85,7 @@ pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
     }
 }
 
-pub async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<Full<Bytes>>> {
     let body = req.text().await.map_err(to_anyhow)?;
     let method = req.method();
     let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
@@ -91,5 +96,5 @@ pub async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Reque
     for (k, v) in headers {
         builder = builder.header(k, v);
     }
-    Ok(builder.body(hyper::body::Body::from(body))?)
+    Ok(builder.body(Full::new(Bytes::from(body)))?)
 }
