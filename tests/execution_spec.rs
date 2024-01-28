@@ -131,7 +131,9 @@ struct ExecutionSpec {
 
 impl ExecutionSpec {
     async fn cargo_read(path: &str) -> anyhow::Result<Vec<ExecutionSpec>> {
-        let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
+        let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join(path)
+            .canonicalize()?;
         let mut files = Vec::new();
 
         for entry in fs::read_dir(&dir_path)? {
@@ -184,11 +186,7 @@ impl ExecutionSpec {
     }
 
     async fn from_source(path: &Path, contents: String) -> anyhow::Result<Self> {
-        INIT.call_once(|| {
-            env_logger::builder()
-                .filter(Some("execution_spec"), log::LevelFilter::Info)
-                .init();
-        });
+        INIT.call_once(|| {});
 
         let ast = markdown::to_mdast(&contents, &ParseOptions::default()).unwrap();
         let mut children = ast
@@ -332,16 +330,19 @@ impl ExecutionSpec {
                 let config = Config::default();
 
                 let new_config = Config::from_source(source, &content)
-                    .expect(&format!("Couldn't parse GraphQL in {:#?}", path));
+                    .unwrap_or_else(|_| panic!("Couldn't parse GraphQL in {:#?}", path));
 
-                let reader = ConfigReader::init(
-                    init_file(),
-                    init_http(&Upstream::default(), None),
-                );
-                
+                let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+
                 let new_config = match reader.read_script(new_config).await {
                     Ok(x) => x,
-                    Err(e) => return Err(anyhow!("Couldn't read scripts of GraphQL in {:#?}: {}", path, e))
+                    Err(e) => {
+                        return Err(anyhow!(
+                            "Couldn't read scripts of GraphQL in {:#?}: {}",
+                            path,
+                            e
+                        ))
+                    }
                 };
 
                 s.push(config.merge_right(&new_config));
@@ -491,8 +492,6 @@ impl HttpIO for MockHttpClient {
 }
 
 async fn assert_spec(spec: ExecutionSpec) {
-    log::info!("{} {} ...", spec.name, spec.path.display());
-
     if let Some(assert_spec) = spec.assert.as_ref() {
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
             let response = run_assert(
@@ -524,15 +523,42 @@ async fn assert_spec(spec: ExecutionSpec) {
 
             insta::assert_json_snapshot!(snapshot_name, response);
         }
+    } else {
+        panic!(
+            "Couldn't determine type of test {} ({})",
+            spec.name,
+            spec.path.display()
+        );
     }
 
     log::info!("{} {} ... ok", spec.name, spec.path.display());
 }
 
-#[tokio::test]
-async fn execution_spec() -> anyhow::Result<()> {
-    let spec = ExecutionSpec::cargo_read("tests/execution").await?;
-    let spec = ExecutionSpec::filter_specs(spec);
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    env_logger::builder()
+        .filter(Some("execution_spec"), log::LevelFilter::Info)
+        .init();
+
+    // Explicitly only run one test if specified in command line args
+    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
+    let explicit = std::env::args().nth(1);
+    log::info!("EXP: {:#?}", explicit);
+    let spec = if let Some(explicit) = explicit {
+        let path = PathBuf::from(&explicit).canonicalize().unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}",
+            explicit));
+
+        let contents = fs::read_to_string(&path)?;
+        let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
+            .await
+            .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+
+        vec![spec]
+    } else {
+        let spec = ExecutionSpec::cargo_read("tests/execution").await?;
+        ExecutionSpec::filter_specs(spec)
+    };
+
     let tasks: Vec<_> = spec.into_iter().map(assert_spec).collect();
     join_all(tasks).await;
     Ok(())
