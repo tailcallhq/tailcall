@@ -7,7 +7,8 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::blueprint::Server;
-use crate::config::Upstream;
+use crate::blueprint::Upstream;
+// use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
@@ -126,9 +127,12 @@ mod test {
     use hyper::HeaderMap;
 
     use crate::blueprint::Server;
+    use crate::blueprint::Upstream;
     use crate::cli::cache::NativeChronoCache;
     use crate::cli::{init_env, init_http, init_http2_only};
-    use crate::config::{self, Batch};
+    use crate::config::{self};
+    // use crate::config::Batch;
+    use crate::blueprint::Batch;
     use crate::http::RequestContext;
 
     impl Default for RequestContext {
@@ -136,6 +140,7 @@ mod test {
             let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
             //TODO: default is used only in tests. Drop default and move it to test.
             let server = Server::try_from(server).unwrap();
+            let upstream = Upstream::default();
             let h_client = init_http(&upstream, None);
             let h2_client = init_http2_only(&upstream.clone(), None);
             RequestContext {
@@ -196,7 +201,7 @@ mod test {
     fn test_is_batching_enabled_default() {
         // create ctx with default batch
         let config = config::Config::default();
-        let mut upstream = config.upstream.clone();
+        let mut upstream = Upstream::default();
         upstream.batch = Some(Batch::default());
         let server = Server::try_from(config.server.clone()).unwrap();
 
