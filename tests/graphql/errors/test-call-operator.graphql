@@ -37,5 +37,5 @@ type Failure
     trace: ["Post", "headersMismatchGraphQL", "@call", "userWithGraphQLResolver"]
   )
 type Failure @error(message: "no argument 'id' found", trace: ["Post", "urlMismatchHttp", "@call", "user"])
-type Failure @error(message: "call must have query", trace: ["Post", "withoutOperator", "@call"])
+type Failure @error(message: "call must have query or mutation", trace: ["Post", "withoutOperator", "@call"])
 type Failure @error(message: "userWithoutResolver field has no resolver", trace: ["Post", "withoutResolver", "@call"])

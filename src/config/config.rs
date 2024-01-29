@@ -569,10 +569,18 @@ pub struct Http {
 ///
 /// For instance, if you have a `user(id: Int!): User @http(path: "/users/{{args.id}}")` field on the `Query` type, you can reference it from another field on the `Query` type using the `@call` operator.
 /// So, on `Post.user` you can declare `user: User @call(query: "user", args: {id: "{{value.userId}}"})`, and this will replace the `{{args.id}}` used in the `@http` operator with the value of `userId` from the `Post` type.
+///
+/// In case you have a `user(input: UserInput!): User @http(path: "/users")` field on the `Mutation` type, you can reference it from another field on the `Mutation` type.
+/// So, on `Post.user` you can declare `user: User @call(mutation: "user", args: {input: "{{value.userInput}}"})`, and this will replace the `{{args.input}}` used in the `@http` operator with the value of `userInput` from the `Post` type.
 pub struct Call {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The name of the field on the `Query` type that you want to call. For instance `user`.
     pub query: Option<String>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The name of the field on the `Mutation` type that you want to call. For instance `createUser`.
+    pub mutation: Option<String>,
+
     /// The arguments of the field on the `Query` type that you want to call. For instance `{id: "{{value.userId}}"}`.
     pub args: HashMap<String, String>,
 }
