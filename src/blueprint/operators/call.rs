@@ -154,7 +154,7 @@ pub fn compile_call(
                 Valid::succeed(
                     http.req_template
                         .clone()
-                        .root_url(replace_url(&http.req_template.root_url, &args)),
+                        .root_url(replace_mustache_value(&http.req_template.root_url, &args)),
                 )
                 .map(|req_template| {
                     req_template.clone().query(
@@ -236,7 +236,7 @@ pub fn compile_call(
                 Valid::succeed(
                     grpc.req_template
                         .clone()
-                        .url(replace_url(&grpc.req_template.url, &args)),
+                        .url(replace_mustache_value(&grpc.req_template.url, &args)),
                 )
                 .map(|req_template| {
                     req_template.clone().headers(
@@ -248,11 +248,11 @@ pub fn compile_call(
                     )
                 })
                 .map(|req_template| {
-                    if let Some(body) = req_template.clone().body {
-                        req_template.clone().body(Some(replace_url(&body, &args)))
-                    } else {
+                    req_template.clone().body(
                         req_template
-                    }
+                            .body
+                            .map(|body| replace_mustache_value(&body, &args)),
+                    )
                 })
                 .map(|req_template| {
                     Expression::IO(IO::Grpc {
@@ -268,8 +268,9 @@ pub fn compile_call(
     })
 }
 
-fn replace_url(url: &Mustache, args: &Iter<'_, String, String>) -> Mustache {
-    url.get_segments()
+fn replace_mustache_value(value: &Mustache, args: &Iter<'_, String, String>) -> Mustache {
+    value
+        .get_segments()
         .iter()
         .map(|segment| match segment {
             Segment::Literal(literal) => Segment::Literal(literal.clone()),
@@ -293,24 +294,8 @@ fn replace_url(url: &Mustache, args: &Iter<'_, String, String>) -> Mustache {
 fn replace_mustache<'a, T: Clone>(
     args: &'a Iter<'a, String, String>,
 ) -> impl Fn(&(T, Mustache)) -> (T, Mustache) + 'a {
-    |(key, value)| {
-        let value: Mustache = value
-            .expression_segments()
-            .iter()
-            .map(|expression| {
-                if expression[0] == "args" {
-                    let value = find_value(args, &expression[1]).unwrap();
-                    let item = Mustache::parse(value).unwrap();
-
-                    let expression = item.get_segments().first().unwrap().to_owned().to_owned();
-
-                    expression
-                } else {
-                    Segment::Expression(expression.to_owned().to_owned())
-                }
-            })
-            .collect::<Vec<Segment>>()
-            .into();
+    move |(key, value)| {
+        let value: Mustache = replace_mustache_value(&value, &args);
 
         (key.clone().to_owned(), value)
     }
