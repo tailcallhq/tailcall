@@ -230,7 +230,7 @@ mod tests {
         let grpc = Grpc {
             proto_path: get_test_file(name)
                 .to_str()
-                .ok_or(anyhow!("Failed to parse or load proto file"))?
+                .context("Failed to parse or load proto file")?
                 .to_string(),
             ..Default::default()
         };

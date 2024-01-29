@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_chrono_cache, init_env, init_file, init_http, init_proto_resolver};
-use tailcall::config::{Config, ConfigSet, Upstream};
+use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
@@ -281,9 +281,6 @@ fn test_config_identity() -> std::io::Result<()> {
 #[tokio::test]
 async fn test_server_to_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql");
-    let http_io = init_http(&Upstream::default(), None);
-    let file_io = init_file();
-    let resolver = init_proto_resolver();
 
     for spec in specs? {
         let expected = spec.find_source(Tag::ClientSDL);
@@ -291,8 +288,14 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let content = spec.find_source(Tag::ServerSDL);
         let content = content.as_str();
         let config = Config::from_sdl(content).to_result().unwrap();
+        println!("{:?}", spec.path);
+        let upstream = config.upstream.clone();
         let config_set = ConfigSet::from(config)
-            .resolve_extensions(file_io.clone(), http_io.clone(), resolver.clone())
+            .resolve_extensions(
+                init_file(),
+                init_http(&upstream, None),
+                init_proto_resolver(),
+            )
             .await;
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
@@ -377,23 +380,28 @@ async fn test_execution() -> std::io::Result<()> {
 }
 
 // Standardize errors on Client SDL
-#[tokio::test]
-async fn test_failures_in_client_sdl() -> std::io::Result<()> {
+#[test]
+fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
-
-    let http_io = init_http(&Upstream::default(), None);
-    let file_io = init_file();
-    let resolver = init_proto_resolver();
 
     for spec in specs? {
         let content = spec.find_source(Tag::ServerSDL);
         let expected = spec.sdl_errors;
         let content = content.as_str();
-        let config_set = ConfigSet::from(Config::from_sdl(content).to_result().unwrap_or_default())
-            .resolve_extensions(file_io.clone(), http_io.clone(), resolver.clone())
-            .await;
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let actual = Config::from_sdl(content)
+            .and_then(|config| {
+                let upstream = config.upstream.clone();
+                let config_set = ConfigSet::from(config);
+                let config_set = rt.block_on(config_set.resolve_extensions(
+                    init_file(),
+                    init_http(&upstream, None),
+                    init_proto_resolver(),
+                ));
+                Valid::from(Blueprint::try_from(&config_set))
+            })
+            .to_result();
 
-        let actual = Blueprint::try_from(&config_set);
         match actual {
             Err(cause) => {
                 let actual: Vec<SDLError> =
