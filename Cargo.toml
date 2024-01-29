@@ -67,7 +67,7 @@ fnv = "1.0.7"
 futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.2", features = ["wasm-bindgen"] }
 futures-util = { version = "0.3.30" }
-lru = { version = "0.12.1" }
+lru = { version = "0.12.2" }
 webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
 async-std = { version = "1.12.0", features = [
     "wasm-bindgen-futures",
