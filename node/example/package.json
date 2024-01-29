@@ -1,21 +1,22 @@
 {
   "name": "example",
   "version": "0.1.0",
+  "description": "Example impl for tc nodejs dependency",
   "main": "index.js",
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
-    "build": "wasm-pack build --target bundler && webpack --config webpack.config.js",
-    "serve": "wasm-pack build --target bundler && webpack serve --config webpack.config.js --open"
+    "run": "node index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tailcallhq/tailcall.git"
+  },
+  "author": "Sandipsinh Rathod",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/tailcallhq/tailcall/issues"
+  },
+  "homepage": "https://github.com/tailcallhq/tailcall#readme",
   "dependencies": {
     "@tailcallhq/wasm-node": "file:../pkg"
-  },
-  "devDependencies": {
-    "copy-webpack-plugin": "^11.0.0",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1"
   }
 }

@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "compile": "wasm-pack build --target bundler --scope tailcallhq",
-    "publish": "npm run compile && wasm-pack publish --target bundler"
+    "compile": "wasm-pack build --target nodejs --scope tailcallhq",
+    "publish": "npm run compile && wasm-pack publish --target nodejs"
   }
 }

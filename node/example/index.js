@@ -1,5 +1,7 @@
-import {GraphQLExecutor} from "@tailcallhq/wasm-node"
+const tc = require("@tailcallhq/wasm-node")
+
 async function run() {
+  await tc.main()
   try {
     const schema =
       "schema\n" +
@@ -31,15 +33,14 @@ async function run() {
       '  user: User @http(path: "/users/{{value.userId}}")\n' +
       "}\n"
     const source = ".graphql"
-    const executor = new GraphQLExecutor(schema, source)
+    const executor = new tc.GraphQLExecutor(schema, source)
 
     // Execute a query
     const query = "{ user(id: 2) { id } }"
-    return JSON.parse(await executor.execute(query))
+    console.log(await executor.execute(query))
   } catch (error) {
-    return {err: '"Error executing GraphQL query:" + error'}
+    console.log("Error executing GraphQL query:" + error)
   }
 }
 
-let res = await run()
-document.getElementById("content").textContent = JSON.stringify(res, null, 2)
+run()
