@@ -1,0 +1,19 @@
+#> server-sdl
+schema {
+  query: Query
+}
+
+type User {
+  name: String
+}
+
+type Query {
+  user: User @file(src: "./doesntexist.json")
+}
+
+#> client-sdl
+type Failure
+  @error(
+    message: "file not found: \"./doesntexist.json\""
+    trace: ["Query", "user", "@file"]
+  )
