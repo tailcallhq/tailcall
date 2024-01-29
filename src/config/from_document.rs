@@ -118,9 +118,7 @@ fn to_types(
             )
             .some(),
             TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-            TypeKind::InputObject(input_object_type) => {
-                to_input_object(input_object_type).some()
-            }
+            TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
             TypeKind::Union(_) => Valid::none(),
             TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
         }
@@ -197,9 +195,7 @@ fn to_enum(enum_type: EnumType) -> config::Type {
         .collect();
     config::Type { variants: Some(variants), ..Default::default() }
 }
-fn to_input_object(
-    input_object_type: InputObjectType,
-) -> Valid<config::Type, String> {
+fn to_input_object(input_object_type: InputObjectType) -> Valid<config::Type, String> {
     to_input_object_fields(&input_object_type.fields)
         .map(|fields| config::Type { fields, ..Default::default() })
 }
@@ -228,14 +224,10 @@ fn to_input_object_fields(
 ) -> Valid<BTreeMap<String, config::Field>, String> {
     to_fields_inner(input_object_fields, to_input_object_field)
 }
-fn to_field(
-    field_definition: &FieldDefinition,
-) -> Valid<config::Field, String> {
+fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
     to_common_field(field_definition, to_args(field_definition))
 }
-fn to_input_object_field(
-    field_definition: &InputValueDefinition,
-) -> Valid<config::Field, String> {
+fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
     to_common_field(field_definition, BTreeMap::new())
 }
 fn to_common_field<F>(
