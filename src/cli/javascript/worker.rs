@@ -19,12 +19,9 @@ fn create_closure(script: &str) -> String {
 }
 
 impl Worker {
-    pub async fn new(
-        script: blueprint::Script,
-        sync_v8: &SyncV8,
-        http: impl HttpIO,
-    ) -> anyhow::Result<Self> {
-        super::shim::init(sync_v8, Arc::new(http)).await?;
+    pub async fn new(script: blueprint::Script, http: impl HttpIO) -> anyhow::Result<Self> {
+        let sync_v8 = SyncV8::new();
+        super::shim::init(&sync_v8, Arc::new(http)).await?;
         let v8 = sync_v8.clone();
         let closure = sync_v8
             .clone()
@@ -49,7 +46,7 @@ impl Worker {
     }
 
     pub async fn on_event(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        let (tx, mut rx) = tokio::sync::broadcast::channel::<mini_v8::Value>(1024);
+        let (tx, mut rx) = tokio::sync::broadcast::channel::<serde_json::Value>(1024);
         let sync_v8 = self.sync_v8.clone();
         let js_request = JsRequest::try_from(&request)?;
         let on_event_js = self.on_event_js.clone();
@@ -62,7 +59,8 @@ impl Worker {
                     move |invocation| {
                         // FIXME: get arg.get(0) as error
                         let response = invocation.args.get(1);
-                        tx.send(response).unwrap();
+                        let json = serde_json::Value::from_v8(&response).unwrap();
+                        tx.send(json).unwrap();
                         Ok(mini_v8::Value::Undefined)
                     }
                 }));
@@ -85,9 +83,19 @@ impl Worker {
             .or_anyhow("failed to receive response from js-worker")?;
         // Check if the result is a response
 
-        let js_response = JsResponse::from_v8(&result)?;
+        let js_response: JsResponse = serde_json::from_value(result)?;
         let response = Response::<Bytes>::try_from(js_response)?;
         Ok(response)
+    }
+}
+
+#[async_trait::async_trait]
+impl HttpIO for Worker {
+    async fn execute(
+        &self,
+        request: reqwest::Request,
+    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
+        self.on_event(request).await
     }
 }
 
@@ -104,14 +112,13 @@ mod test {
     use crate::cli::NativeHttp;
 
     async fn new_worker(script: &str) -> anyhow::Result<Worker> {
-        let v8 = SyncV8::new();
         let http = NativeHttp::default();
         let script = Script {
             source: script.to_string(),
             timeout: None,
             ..Default::default()
         };
-        Worker::new(script, &v8, http).await
+        Worker::new(script, http).await
     }
 
     fn new_get_request(url: &str) -> anyhow::Result<reqwest::Request> {

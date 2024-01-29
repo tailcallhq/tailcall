@@ -140,7 +140,7 @@ fn to_script(server: &config::Server) -> Valid<Option<Script>, String> {
         || Valid::succeed(None),
         |script| match script {
             config::Script::File(script) => Valid::succeed(Some(Script {
-                source: script.source.clone(),
+                source: script.src.clone(),
                 timeout: script.timeout.map(Duration::from_millis),
                 // TODO: We should set this for better tracing
                 origin: None,
