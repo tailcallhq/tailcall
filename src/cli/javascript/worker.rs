@@ -161,7 +161,7 @@ mod test {
         let script = format!(
             r#"
             function onEvent(request, cb) {{
-                return {} (request.url, (response) => {{
+                return {} (request.url, (err, response) => {{
                     console.log(response)
                     cb(null, response)
                 }})
