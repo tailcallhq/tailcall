@@ -1,0 +1,27 @@
+#> server-sdl
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  users: [User] @file(src: "./tests/http/config/users.json")
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+#> client-sdl
+type Query {
+  users: [User]
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+schema {
+  query: Query
+}
