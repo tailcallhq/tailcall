@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use std::thread::ThreadId;
 
-use log::kv::ToValue;
 use mini_v8::{FromValue, ToValues, Values};
 
 use crate::ToAnyHow;

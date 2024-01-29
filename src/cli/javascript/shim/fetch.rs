@@ -1,4 +1,4 @@
-use mini_v8::{Invocation, Values};
+use mini_v8::{Invocation, Value, Values};
 
 use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::cli::javascript::sync_v8::SyncV8;
@@ -32,7 +32,7 @@ fn fake_http_response() -> serde_json::Value {
 
 struct JSFetchInvocation {
     url: String,
-    callback: Box<dyn FnOnce(serde_json::Value)>,
+    callback: Box<dyn FnOnce(serde_json::Value, serde_json::Value)>,
 }
 
 impl JSFetchInvocation {
@@ -53,12 +53,22 @@ impl JSFetchInvocation {
         let v8 = v8.clone();
         Ok(Self {
             url,
-            callback: Box::new(move |response: serde_json::Value| {
-                let response = response.to_v8(&v8).unwrap();
-                callback
-                    .call::<Values, ()>(Values::from_iter(vec![response]))
-                    .unwrap();
-            }),
+            callback: Box::new(
+                move |error: serde_json::Value, response: serde_json::Value| {
+                    if !error.is_null() {
+                        let error = error.to_v8(&v8).unwrap();
+                        callback
+                            .call::<Values, ()>(Values::from_iter(vec![error]))
+                            .unwrap();
+                        return;
+                    }
+
+                    let response = response.to_v8(&v8).unwrap();
+                    callback
+                        .call::<Values, ()>(Values::from_iter(vec![Value::Null, response]))
+                        .unwrap();
+                },
+            ),
         })
     }
 }
@@ -66,7 +76,7 @@ impl JSFetchInvocation {
 fn fetch(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v8::Error> {
     let invocation = JSFetchInvocation::try_from(&invocation).unwrap();
     let response = fake_http_response();
-    (invocation.callback)(response);
+    (invocation.callback)(serde_json::Value::Null, response);
     Ok(mini_v8::Value::Undefined)
 }
 
@@ -117,8 +127,8 @@ mod tests {
         let executor = TestV8::new();
 
         let script = r#"
-            fetch("https://example.com", (err, response) => {
-                console.log("in js", response)
+            __tailcall__fetch__("https://example.com", (err, response) => {
+                console.log("in js", response)                
             })
         "#;
         let actual = executor.eval(script).unwrap();
