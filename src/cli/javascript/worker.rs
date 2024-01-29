@@ -93,7 +93,9 @@ impl Worker {
 
 #[cfg(test)]
 mod test {
+    use hyper::body::Buf;
     use pretty_assertions::assert_eq;
+    use serde_json::{json, Value};
     use url::Url;
 
     use super::*;
@@ -155,9 +157,7 @@ mod test {
         let script = format!(
             r#"
             function onEvent(request, cb) {{
-                console.log("on event called!", request, cb)                
                 return {} (request.url, (err, response) => {{
-                    console.log(response)
                     cb(null, response)
                 }})
             }}
@@ -166,8 +166,18 @@ mod test {
         );
 
         let worker = new_worker(script.as_str()).await.unwrap();
-        let request = new_get_request("https://jsonplaceholder.typicode.com/users/1").unwrap();
+        let request = new_get_request("https://jsonplaceholder.typicode.com/posts/1").unwrap();
         let response = worker.on_event(request).await.unwrap();
+        
         assert_eq!(response.status.as_u16(), 200);
+
+        let actual = serde_json::from_slice::<Value>(response.body.chunk()).unwrap();
+        let expected = json!({
+            "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto",
+            "id": 1.0,
+            "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+            "userId": 1.0,
+        });
+        assert_eq!(actual, expected);
     }
 }
