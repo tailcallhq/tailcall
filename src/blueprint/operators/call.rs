@@ -1,17 +1,13 @@
 use std::collections::hash_map::Iter;
 
 use crate::blueprint::*;
-use crate::config;
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field, GraphQLOperationType};
-use crate::graphql;
-use crate::grpc;
-use crate::http;
-use crate::lambda::DataLoaderId;
-use crate::lambda::{Expression, IO};
+use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
+use crate::{config, graphql, grpc, http};
 
 fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option<&'a String> {
     args.clone()
@@ -168,7 +164,7 @@ pub fn compile_call(
                     })
                     .map(|req_template| {
                         Expression::IO(IO::Http {
-                            req_template: req_template,
+                            req_template,
                             dl_id: http.dl_id,
                             group_by: http.group_by,
                         })
