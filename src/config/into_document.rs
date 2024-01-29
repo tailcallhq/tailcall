@@ -182,19 +182,17 @@ fn config_document(config: &Config) -> ServiceDocument {
             extend: false,
             description: None,
             name: pos(Name::new(type_name.clone())),
-            directives: [
-                type_def
-                    .added_fields
-                    .iter()
-                    .map(|added_field: &super::AddField| pos(added_field.to_directive()))
-                    .collect::<Vec<_>>(),
-                if let Some(cache) = &type_def.cache {
-                    vec![pos(cache.to_directive())]
-                } else {
-                    vec![]
-                },
-            ]
-            .concat(),
+            directives: type_def
+                .added_fields
+                .iter()
+                .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+                .chain(
+                    type_def
+                        .cache
+                        .as_ref()
+                        .map(|cache| pos(cache.to_directive())),
+                )
+                .collect::<Vec<_>>(),
             kind,
         })));
     }
