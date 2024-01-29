@@ -90,6 +90,17 @@ assert:
       method: POST
       url: http://localhost:8080/graphql
       body:
+        query: "query { posts { user1 { name } } }"
+    response:
+      body:
+        data:
+          posts:
+            - user1:
+                name: foo
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
         query: "query { posts { userGraphQLHeaders { name } } }"
       headers:
         id: 1

@@ -8,6 +8,7 @@ type Query {
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{args.id}}")
   userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
+  user1: User @http(path: "/users/1")
   userHttpHeaders(id: ID!): User @http(path: "/users", headers: [{key: "id", value: "{{args.id}}"}])
   userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}])
   userGraphQL(id: Int): User
@@ -62,6 +63,7 @@ type Post {
   userId: Int!
   title: String
   body: String
+  user1: User @call(query: "user1", args: {})
   user: User @call(query: "user", args: {id: "{{value.userId}}"})
   userHttpHeaders: User @call(query: "userHttpHeaders", args: {id: "{{value.userId}}"})
   userHttpQuery: User @call(query: "userHttpQuery", args: {id: "{{value.userId}}"})
