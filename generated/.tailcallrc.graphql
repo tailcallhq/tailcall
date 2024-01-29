@@ -333,7 +333,7 @@ directive @call(
   # """
   # The name of the field that has the resolver to be called.
   # """
-  # mutation: String!
+  mutation: String!
   """
   The arguments to be replace the values on the actual resolver.
   """
