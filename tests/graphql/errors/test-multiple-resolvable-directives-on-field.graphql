@@ -16,4 +16,3 @@ type Query {
 #> client-sdl
 type Failure @error(message: "Multiple resolvers detected [@http, @const]", trace: ["Query", "user1"])
 type Failure @error(message: "Multiple resolvers detected [@http, @call]", trace: ["Query", "user2"])
-```
