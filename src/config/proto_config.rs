@@ -57,7 +57,7 @@ pub async fn get_descriptor_set(
             let proto_path = fld
                 .grpc
                 .clone()
-                .map(|g| g.proto_path.clone())
+                .map(|g| g.proto_path)
                 .or_else(|| {
                     fld.expr.as_ref().and_then(|e| match &e.body {
                         ExprBody::Grpc(grpc) => Some(grpc.proto_path.clone()),
