@@ -18,7 +18,7 @@ http-cache-reqwest = { version = "0.13.0", features = [
 moka = { version = "0.12.4", default-features = false, features = [
     "future",
 ], optional = true }
-hyper-rustls = { version = "0.25.0", optional = true }
+#hyper-rustls = { version = "0.25.0", optional = true }
 rustls = { version = "0.22.2", optional = true }
 rustls-pemfile = { version = "1.0.4", optional = true }
 rustls-pki-types = "1.1.0"
@@ -31,7 +31,6 @@ tokio-rustls = { version = "0.25.0", default-features = false , optional = true}
 schemars = { version = "0.8.16", features = ["derive"] }
 hyper = { version = "1.1.0", features = ["server"], default-features = false }
 http-body-util = "0.1.0"
-bytes = "1.5.0"
 tokio = { version = "1.35.1", features = ["rt", "time"] }
 anyhow = "1.0.79"
 derive_setters = "0.1.6"
@@ -104,14 +103,13 @@ cli = [
     "dep:mimalloc",
     "dep:http-cache-reqwest",
     "dep:moka",
-    "dep:hyper-rustls",
     "dep:rustls",
     "dep:rustls-pemfile",
     "dep:inquire",
     "hyper/http1",
     "hyper/http2",
     "hyper-util",
-    "tokio-rustls"
+    "dep:tokio-rustls"
 ]
 
 # Feature flag to enable all default features.
