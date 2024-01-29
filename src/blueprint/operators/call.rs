@@ -120,13 +120,7 @@ pub fn compile_call(
             format!("{} field not found", field_name),
         )
         .zip(Valid::succeed(field_name))
-        .and_then(|(field, field_name)| {
-            if field.has_resolver() {
-                Valid::succeed((field, field_name, call.args.iter()))
-            } else {
-                Valid::fail(format!("{} field has no resolver", field_name))
-            }
-        })
+        .and_then(|(field, field_name)| Valid::succeed((field, field_name, call.args.iter())))
     })
     .and_then(|(_field, field_name, args)| {
         let empties: Vec<(&String, &config::Arg)> = _field
@@ -295,7 +289,7 @@ fn replace_mustache<'a, T: Clone>(
     args: &'a Iter<'a, String, String>,
 ) -> impl Fn(&(T, Mustache)) -> (T, Mustache) + 'a {
     move |(key, value)| {
-        let value: Mustache = replace_mustache_value(&value, &args);
+        let value: Mustache = replace_mustache_value(value, args);
 
         (key.clone().to_owned(), value)
     }
