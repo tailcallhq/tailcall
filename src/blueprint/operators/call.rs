@@ -90,11 +90,7 @@ impl TryFrom<Expression> for Grpc {
 fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
-    } else if let Some(mutation) = &call.mutation {
-        Some(("Mutation".to_string(), mutation.clone()))
-    } else {
-        None
-    }
+    } else { call.mutation.as_ref().map(|mutation| ("Mutation".to_string(), mutation.clone())) }
 }
 
 pub fn compile_call(
