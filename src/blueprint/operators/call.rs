@@ -170,6 +170,13 @@ pub fn compile_call(
                     )
                 })
                 .map(|req_template| {
+                    req_template.clone().body_path(
+                        req_template
+                            .body_path
+                            .map(|body_path| replace_mustache_value(&body_path, &args)),
+                    )
+                })
+                .map(|req_template| {
                     Expression::IO(IO::Http {
                         req_template,
                         dl_id: http.dl_id,

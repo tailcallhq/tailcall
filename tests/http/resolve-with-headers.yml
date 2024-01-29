@@ -6,6 +6,8 @@ mock:
   - request:
       url: http://jsonplaceholder.typicode.com/posts/1
       method: GET
+      headers:
+        authorization: 1
     response:
       headers:
         authorization: 1

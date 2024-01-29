@@ -1,7 +1,6 @@
 ---
 name: With call operator
 config: !file tests/http/config/call.graphql
-runner: only
 
 mock:
   - request:

@@ -28,8 +28,5 @@ type User {
   id: Int
   name: String
   post: Post
-    @call(
-      mutation: "insertPost"
-      args: {input: "{ \"body\": \"body\", \"title\": \"title1\", \"userId\": \"{{value.id}}\" }"}
-    )
+    @call(mutation: "insertPost", args: {input: "{\"body\":\"user-body\",\"title\":\"user-title\",\"userId\":1}"})
 }
