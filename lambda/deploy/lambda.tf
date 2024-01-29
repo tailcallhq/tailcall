@@ -28,7 +28,7 @@ resource "aws_iam_role" "iam_for_lambda" {
 }
 
 resource "local_sensitive_file" "bootstrap" {
-    content_base64 = filebase64("../../target/lambda/lambda/bootstrap")
+    content_base64 = filebase64("../../target/lambda/aws-lambda/bootstrap")
     filename       = "tmp/bootstrap"
 }
 
