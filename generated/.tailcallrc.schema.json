@@ -96,6 +96,36 @@
       ],
       "type": "object"
     },
+    "Call": {
+      "description": "For instance, if you have a `user(id: Int!): User @http(path: \"/users/{{args.id}}\")` field on the `Query` type, you can reference it from another field on the `Query` type using the `@call` operator. So, on `Post.user` you can declare `user: User @call(query: \"user\", args: {id: \"{{value.userId}}\"})`, and this will replace the `{{args.id}}` used in the `@http` operator with the value of `userId` from the `Post` type.\n\nIn case you have a `user(input: UserInput!): User @http(path: \"/users\")` field on the `Mutation` type, you can reference it from another field on the `Mutation` type. So, on `Post.user` you can declare `user: User @call(mutation: \"user\", args: {input: \"{{value.userInput}}\"})`, and this will replace the `{{args.input}}` used in the `@http` operator with the value of `userInput` from the `Post` type.",
+      "properties": {
+        "args": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The arguments of the field on the `Query` type that you want to call. For instance `{id: \"{{value.userId}}\"}`.",
+          "type": "object"
+        },
+        "mutation": {
+          "description": "The name of the field on the `Mutation` type that you want to call. For instance `createUser`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "query": {
+          "description": "The name of the field on the `Query` type that you want to call. For instance `user`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "args"
+      ],
+      "type": "object"
+    },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
       "properties": {
@@ -168,6 +198,19 @@
           },
           "required": [
             "graphQL"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Reuses a resolver pre-defined on type `Query`",
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "required": [
+            "call"
           ],
           "type": "object"
         },
@@ -867,6 +910,17 @@
             }
           ],
           "description": "Sets the cache configuration for a field"
+        },
+        "call": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Call"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inserts a call resolver for the field."
         },
         "const": {
           "anyOf": [

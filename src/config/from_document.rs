@@ -10,7 +10,8 @@ use async_graphql::Name;
 
 use super::JS;
 use crate::config::{
-    self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream,
+    self, Cache, Call, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union,
+    Upstream,
 };
 use crate::directive::DirectiveCodec;
 use crate::valid::Valid;
@@ -272,8 +273,9 @@ where
         .zip(Omit::from_directives(directives.iter()))
         .zip(Modify::from_directives(directives.iter()))
         .zip(JS::from_directives(directives.iter()))
+        .zip(Call::from_directives(directives.iter()))
         .map(
-            |(((((((http, graphql), cache), grpc), expr), omit), modify), script)| {
+            |((((((((http, graphql), cache), grpc), expr), omit), modify), script), call)| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
@@ -291,6 +293,7 @@ where
                     graphql,
                     expr,
                     cache: cache.or(parent_cache),
+                    call,
                 }
             },
         )

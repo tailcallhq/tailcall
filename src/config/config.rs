@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -366,6 +366,12 @@ pub struct Field {
     pub http: Option<Http>,
 
     ///
+    /// Inserts a call resolver for the field.
+    ///
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub call: Option<Call>,
+
+    ///
     /// Inserts a GRPC resolver for the field.
     ///
     #[serde(default, skip_serializing_if = "is_default")]
@@ -425,6 +431,9 @@ impl Field {
         }
         if self.grpc.is_some() {
             directives.push(Grpc::trace_name());
+        }
+        if self.call.is_some() {
+            directives.push(Call::trace_name());
         }
         directives
     }
@@ -553,6 +562,27 @@ pub struct Http {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
     pub encoding: Encoding,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+// The @call operator is used to reference a resolver operator (`@http`, `@grpc`, `@graphQL`) from a field on `Query` type.
+///
+/// For instance, if you have a `user(id: Int!): User @http(path: "/users/{{args.id}}")` field on the `Query` type, you can reference it from another field on the `Query` type using the `@call` operator.
+/// So, on `Post.user` you can declare `user: User @call(query: "user", args: {id: "{{value.userId}}"})`, and this will replace the `{{args.id}}` used in the `@http` operator with the value of `userId` from the `Post` type.
+///
+/// In case you have a `user(input: UserInput!): User @http(path: "/users")` field on the `Mutation` type, you can reference it from another field on the `Mutation` type.
+/// So, on `Post.user` you can declare `user: User @call(mutation: "user", args: {input: "{{value.userInput}}"})`, and this will replace the `{{args.input}}` used in the `@http` operator with the value of `userInput` from the `Post` type.
+pub struct Call {
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The name of the field on the `Query` type that you want to call. For instance `user`.
+    pub query: Option<String>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The name of the field on the `Mutation` type that you want to call. For instance `createUser`.
+    pub mutation: Option<String>,
+
+    /// The arguments of the field on the `Query` type that you want to call. For instance `{id: "{{value.userId}}"}`.
+    pub args: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

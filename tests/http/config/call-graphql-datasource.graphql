@@ -6,8 +6,8 @@ schema
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
 }
 
 type User {

@@ -1,0 +1,72 @@
+schema
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
+  userHttpHeaders(id: ID!): User @http(path: "/users", headers: [{key: "id", value: "{{args.id}}"}])
+  userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}])
+  userGraphQL(id: Int): User
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
+  userGraphQLHeaders(id: Int!): User
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", headers: [{key: "id", value: "{{args.id}}"}])
+  userWithPosts: UserWithPosts @http(path: "/users/1")
+  news: NewsData!
+    @grpc(
+      service: "NewsService"
+      method: "GetAllNews"
+      baseURL: "http://localhost:50051"
+      protoPath: "src/grpc/tests/news.proto"
+    )
+  newsWithPortArg(port: Int!): NewsData!
+    @grpc(
+      service: "NewsService"
+      method: "GetAllNews"
+      baseURL: "http://localhost:{{args.port}}"
+      protoPath: "src/grpc/tests/news.proto"
+    )
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type News {
+  id: Int
+  title: String
+  body: String
+  postImage: String
+}
+
+type UserWithPosts {
+  id: Int!
+  name: String!
+  posts: [Post] @call(query: "userPosts", args: {id: "{{value.id}}"})
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int
+  userId: Int!
+  title: String
+  body: String
+  user: User @call(query: "user", args: {id: "{{value.userId}}"})
+  userHttpHeaders: User @call(query: "userHttpHeaders", args: {id: "{{value.userId}}"})
+  userHttpQuery: User @call(query: "userHttpQuery", args: {id: "{{value.userId}}"})
+  userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
+  userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
+  news: NewsData! @call(query: "news", args: {})
+  newsWithPortArg: NewsData! @call(query: "news", args: {port: "50051"})
+}

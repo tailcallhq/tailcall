@@ -323,6 +323,24 @@ directive @cache(
 ) on FIELD_DEFINITION
 
 """
+The @call operator is used to reference a resolver operator (available resolvers are `@http`, `@grpc` and `@graphQL`).
+"""
+directive @call(
+  """
+  The name of the field that has the resolver to be called.
+  """
+  query: String!
+  # """
+  # The name of the field that has the resolver to be called.
+  # """
+  # mutation: String!
+  """
+  The arguments to be replace the values on the actual resolver.
+  """
+  args: JSON
+) on FIELD_DEFINITION
+
+"""
 Allows composing operators as simple expressions
 """
 directive @expr(
