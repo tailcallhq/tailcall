@@ -185,7 +185,13 @@ fn config_document(config: &Config) -> ServiceDocument {
             directives: type_def
                 .added_fields
                 .iter()
-                .map(|added_field| pos(added_field.to_directive()))
+                .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+                .chain(
+                    type_def
+                        .cache
+                        .as_ref()
+                        .map(|cache| pos(cache.to_directive())),
+                )
                 .collect::<Vec<_>>(),
             kind,
         })));
@@ -219,6 +225,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
         field.graphql.as_ref().map(|d| pos(d.to_directive())),
         field.grpc.as_ref().map(|d| pos(d.to_directive())),
         field.expr.as_ref().map(|d| pos(d.to_directive())),
+        field.cache.as_ref().map(|d| pos(d.to_directive())),
     ];
 
     directives.into_iter().flatten().collect()
