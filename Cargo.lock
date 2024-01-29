@@ -3539,6 +3539,7 @@ dependencies = [
  "stripmargin",
  "thiserror",
  "tokio",
+ "tokio-rustls 0.25.0",
  "ttl_cache",
  "url",
  "webbrowser",

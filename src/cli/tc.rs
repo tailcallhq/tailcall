@@ -19,7 +19,7 @@ use crate::{print_schema, FileIO};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     logger_init();

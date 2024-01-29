@@ -1326,11 +1326,15 @@
           ]
         },
         "cert": {
-          "description": "`cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TlsCert"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "`cert` contains a path to key and certificate. @default None"
         },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
@@ -1358,13 +1362,6 @@
           "description": "`introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.",
           "type": [
             "boolean",
-            "null"
-          ]
-        },
-        "key": {
-          "description": "`key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
             "null"
           ]
         },
@@ -1443,6 +1440,19 @@
             "integer",
             "null"
           ]
+        }
+      },
+      "type": "object"
+    },
+    "TlsCert": {
+      "properties": {
+        "cert": {
+          "description": "`cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS).",
+          "type": "string"
+        },
+        "key": {
+          "description": "`key` sets the path to key for running the server over HTTP2 (HTTPS).",
+          "type": "string"
         }
       },
       "type": "object"

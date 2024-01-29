@@ -24,7 +24,7 @@ rustls-pemfile = { version = "1.0.4", optional = true }
 rustls-pki-types = "1.1.0"
 inquire = { version = "0.6.2", optional = true }
 hyper-util = { version = "0.1", features = ["tokio"], optional = true }
-
+tokio-rustls = { version = "0.25.0", default-features = false , optional = true}
 
 # dependencies safe for wasm:
 
@@ -110,7 +110,8 @@ cli = [
     "dep:inquire",
     "hyper/http1",
     "hyper/http2",
-    "hyper-util"
+    "hyper-util",
+    "tokio-rustls"
 ]
 
 # Feature flag to enable all default features.

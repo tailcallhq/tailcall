@@ -12,12 +12,15 @@ use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
 use tokio::fs::File;
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
+use tokio_rustls::server::TlsStream;
+use tokio_rustls::TlsAcceptor;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
+use crate::config::TlsCert;
 use crate::http::handle_request;
 
 async fn load_cert(filename: String) -> Result<Vec<CertificateDer<'static>>, std::io::Error> {
@@ -67,19 +70,67 @@ where
     }
 }
 
-pub async fn start_http_2(
+#[async_trait::async_trait]
+pub trait TcpIO: Clone {
+    type T: hyper::rt::Read + hyper::rt::Write + Unpin;
+    async fn get_io(&self, option: Option<TlsAcceptor>, stream: TcpStream) -> Result<Self::T>;
+}
+
+#[derive(Clone, Default)]
+pub struct NoTlsTcpIO;
+#[derive(Clone, Default)]
+pub struct TlsTcpIO;
+#[async_trait::async_trait]
+impl TcpIO for NoTlsTcpIO {
+    type T = TokioIo<TcpStream>;
+
+    async fn get_io(&self, _: Option<TlsAcceptor>, stream: TcpStream) -> Result<Self::T> {
+        Ok(TokioIo::new(stream))
+    }
+}
+#[async_trait::async_trait]
+impl TcpIO for TlsTcpIO {
+    type T = TokioIo<TlsStream<TcpStream>>;
+
+    async fn get_io(
+        &self,
+        tls_acceptor: Option<TlsAcceptor>,
+        stream: TcpStream,
+    ) -> Result<Self::T> {
+        Ok(TokioIo::new(
+            tls_acceptor
+                .ok_or(CLIError::new("Unable to create stream"))?
+                .accept(stream)
+                .await?,
+        ))
+    }
+}
+
+pub async fn start_http_2<T: TcpIO>(
     sc: Arc<ServerConfig>,
-    cert: Option<String>,
-    key: Option<String>,
+    cert: Option<TlsCert>,
     server_up_sender: Option<oneshot::Sender<()>>,
-) -> Result<()> {
+    tcp_io: T,
+) -> Result<()>
+where
+    <T as TcpIO>::T: Send + 'static,
+{
     let addr = sc.addr();
     let listener = TcpListener::bind(addr).await?;
 
-    if cert.is_some() && key.is_some() {
+    let mut tls_acceptor = None;
+
+    if cert.is_some() {
         // TODO add support for tls
-        let _ = load_cert(cert.unwrap()).await?;
-        let _ = load_private_key(key.unwrap()).await?;
+        let tls_cert = cert.unwrap();
+        let certs = load_cert(tls_cert.cert).await?;
+        let key = load_private_key(tls_cert.key).await?;
+        let server_config = rustls::ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(certs, key)
+            .map_err(CLIError::from)?;
+        // server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
+        tls_acceptor = Some(tokio_rustls::TlsAcceptor::from(Arc::new(server_config)));
     }
 
     super::log_launch_and_open_browser(sc.as_ref());
@@ -92,8 +143,8 @@ pub async fn start_http_2(
     if sc.blueprint.server.enable_batch_requests {
         loop {
             let (stream, _) = listener.accept().await?;
-            let io = TokioIo::new(stream);
             let sc = sc.clone();
+            let io = tcp_io.get_io(tls_acceptor.clone(), stream).await?;
             tokio::spawn(async move {
                 let server = hyper::server::conn::http2::Builder::new(LocalExec)
                     .serve_connection(
@@ -118,8 +169,8 @@ pub async fn start_http_2(
     } else {
         loop {
             let (stream, _) = listener.accept().await?;
-            let io = TokioIo::new(stream);
             let sc = sc.clone();
+            let io = tcp_io.get_io(tls_acceptor.clone(), stream).await?;
             tokio::spawn(async move {
                 let server = hyper::server::conn::http2::Builder::new(LocalExec)
                     .serve_connection(

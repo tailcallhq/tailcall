@@ -4,7 +4,7 @@ use anyhow::Result;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
-use super::http_2::start_http_2;
+use super::http_2::{start_http_2, NoTlsTcpIO, TlsTcpIO};
 use super::server_config::ServerConfig;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::CLIError;
@@ -34,8 +34,14 @@ impl Server {
         let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
         match blueprint.server.http.clone() {
-            Http::HTTP2 { cert, key } => {
-                start_http_2(server_config, Some(cert), Some(key), self.server_up_sender).await
+            Http::HTTP2 { certs } => {
+                if certs.is_some() {
+                    let tcp_io = TlsTcpIO;
+                    start_http_2(server_config, certs, self.server_up_sender, tcp_io).await
+                } else {
+                    let tcp_io = NoTlsTcpIO;
+                    start_http_2(server_config, certs, self.server_up_sender, tcp_io).await
+                }
             }
             Http::HTTP1 => start_http_1(server_config, self.server_up_sender).await,
         }

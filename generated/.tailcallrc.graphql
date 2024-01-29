@@ -75,14 +75,9 @@ directive @server(
   version: HttpVersion
 
   """
-  `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
+  `cert` contains a path to key and certificate. @default None
   """
-  cert: String
-
-  """
-  `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-  """
-  key: String
+  cert: TlsCert
 
   script: Script
 ) on SCHEMA
@@ -446,6 +441,18 @@ enum Encoding {
 
 input Proxy {
   url: String
+}
+
+input TlsCert {
+  """
+  `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
+  """
+  cert: String!
+
+  """
+  `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
+  """
+  key: String!
 }
 
 input KeyValue {

@@ -52,11 +52,8 @@ pub struct Server {
     /// `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`.
     pub version: Option<HttpVersion>,
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
-    pub cert: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-    pub key: Option<String>,
+    /// `cert` contains a path to key and certificate. @default None
+    pub cert: Option<TlsCert>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub pipeline_flush: Option<bool>,
     /// A link to an external JS file that listens on every HTTP request response event.
@@ -69,6 +66,16 @@ pub struct Server {
 pub enum Script {
     Path(ScriptOptions),
     File(ScriptOptions),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+pub struct TlsCert {
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS).
+    pub cert: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `key` sets the path to key for running the server over HTTP2 (HTTPS).
+    pub key: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -161,7 +168,6 @@ impl Server {
         self.response_headers = KeyValues(response_headers);
         self.version = other.version.or(self.version);
         self.cert = other.cert.or(self.cert);
-        self.key = other.key.or(self.key);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
         self

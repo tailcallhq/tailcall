@@ -32,7 +32,7 @@ impl ServerConfig {
 
     pub fn http_version(&self) -> String {
         match self.blueprint.server.http {
-            Http::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
+            Http::HTTP2 { certs: _ } => "HTTP/2".to_string(),
             _ => "HTTP/1.1".to_string(),
         }
     }

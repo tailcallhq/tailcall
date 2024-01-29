@@ -3,8 +3,7 @@ schema
     port: 8803
     version: HTTP2
     hostname: "localhost"
-    cert: "./tests/server/config/example.crt"
-    key: "./tests/server/config/example-nokey.key"
+    cert: {cert: "./tests/server/config/example.crt", key: "./tests/server/config/example-nokey.key"}
   ) {
   query: Query
 }

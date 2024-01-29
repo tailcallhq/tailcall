@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::config::{self, HttpVersion};
+use crate::config::{self, HttpVersion, TlsCert};
 use crate::valid::{Valid, ValidationError};
 
 #[derive(Clone, Debug, Setters)]
@@ -39,7 +39,7 @@ pub struct Script {
 #[derive(Clone, Debug)]
 pub enum Http {
     HTTP1,
-    HTTP2 { cert: String, key: String },
+    HTTP2 { certs: Option<TlsCert> },
 }
 
 impl Default for Server {
@@ -66,22 +66,14 @@ impl Server {
     }
 }
 
-impl TryFrom<crate::config::Server> for Server {
+impl TryFrom<config::Server> for Server {
     type Error = ValidationError<String>;
 
     fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
-                let cert = Valid::from_option(
-                    config_server.cert.clone(),
-                    "Certificate is required for HTTP2".to_string(),
-                );
-                let key = Valid::from_option(
-                    config_server.key.clone(),
-                    "Key is required for HTTP2".to_string(),
-                );
-
-                cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
+                let certs = config_server.cert.clone();
+                Valid::succeed(Http::HTTP2 { certs })
             }
             _ => Valid::succeed(Http::HTTP1),
         };
