@@ -23,6 +23,7 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
     logger_init();
+    #[cfg(not(target_arch = "wasm32"))]
     update_checker::check_for_update().await;
     let file_io: std::sync::Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
