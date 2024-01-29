@@ -1,0 +1,36 @@
+---
+config: !file tests/http/config/call-mutation.graphql
+name: Call mutation
+
+mock:
+  - request:
+      method: POST
+      url: http://jsonplaceholder.typicode.com/posts
+      body: '{"body":"post-body","title":"post-title","userId":1}'
+    response:
+      body:
+        title: "post-title"
+        body: "post-body"
+        userId: 1
+
+assert:
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: 'mutation { insertPost(input: { body: "post-body", title: "post-title", userId: 1 }) { body } }'
+    response:
+      body:
+        data:
+          insertPost:
+            body: "post-body"
+  - request:
+      method: POST
+      url: http://localhost:8080/graphql
+      body:
+        query: "query { firstUser { post } }"
+    response:
+      body:
+        data:
+          firstUser:
+            post: "body"
