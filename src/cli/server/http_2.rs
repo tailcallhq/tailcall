@@ -121,15 +121,19 @@ where
     let mut tls_acceptor = None;
 
     if cert.is_some() {
-        // TODO add support for tls
         let tls_cert = cert.unwrap();
         let certs = load_cert(tls_cert.cert).await?;
         let key = load_private_key(tls_cert.key).await?;
-        let server_config = rustls::ServerConfig::builder()
+        let mut server_config = rustls::ServerConfig::builder()
             .with_no_client_auth()
             .with_single_cert(certs, key)
             .map_err(CLIError::from)?;
-        // server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
+        server_config.alpn_protocols = vec![
+            b"h2".to_vec(),
+            b"http/1.1".to_vec(),
+            b"http/1.0".to_vec(),
+            b"http/0.9".to_vec(),
+        ];
         tls_acceptor = Some(tokio_rustls::TlsAcceptor::from(Arc::new(server_config)));
     }
 
