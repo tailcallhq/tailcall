@@ -24,7 +24,8 @@ RUN sed -i 's/"cloudflare",\s*//;s/, "cloudflare"//g' Cargo.toml
 RUN chmod +x docker.sh && ./docker.sh
 
 # Compile the project
-RUN RUST_BACKTRACE=1 cargo build --release
+ENV RUST_BACKTRACE=1
+RUN cargo build --release
 
 # Runner stage
 FROM fedora:34 AS runner
