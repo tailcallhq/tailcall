@@ -292,7 +292,13 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let config = Config::from_sdl(content).to_result().unwrap();
         let upstream = config.upstream.clone();
         let config_set = ConfigSet::from(config);
-        let config_set = config_set.resolve_extensions(file_io.clone(), init_http(&upstream, None), resolver.clone()).await;
+        let config_set = config_set
+            .resolve_extensions(
+                file_io.clone(),
+                init_http(&upstream, None),
+                resolver.clone(),
+            )
+            .await;
         println!("{:?}", spec.path);
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());

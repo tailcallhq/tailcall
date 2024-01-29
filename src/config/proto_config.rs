@@ -4,8 +4,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-use crate::config::Config;
+use crate::config::{Config, ExprBody};
 use crate::{FileIO, HttpIO, ProtoPathResolver};
+
+const NULL_STR: &str = "\0\0\0\0\0\0\0";
 
 #[allow(clippy::too_many_arguments)]
 async fn import_all(
@@ -52,17 +54,30 @@ pub async fn get_descriptor_set(
     let mut hashmap = HashMap::new();
     for (_, typ) in config.types.iter() {
         for (_, fld) in typ.fields.iter() {
-            if let Some(grpc) = &fld.grpc {
-                let proto_path = grpc.proto_path.clone();
-                import_all(
-                    &mut hashmap,
-                    proto_path,
-                    file_io.clone(),
-                    http_io.clone(),
-                    resolver.clone(),
-                )
-                .await?;
+            let proto_path = fld
+                .grpc
+                .clone()
+                .map(|g| g.proto_path.clone())
+                .or_else(|| {
+                    fld.expr.as_ref().and_then(|e| match &e.body {
+                        ExprBody::Grpc(grpc) => Some(grpc.proto_path.clone()),
+                        _ => None,
+                    })
+                })
+                .unwrap_or_else(|| NULL_STR.to_string());
+
+            if NULL_STR.eq(&proto_path) {
+                continue;
             }
+
+            import_all(
+                &mut hashmap,
+                proto_path,
+                file_io.clone(),
+                http_io.clone(),
+                resolver.clone(),
+            )
+            .await?;
         }
     }
     for (_, v) in hashmap {
