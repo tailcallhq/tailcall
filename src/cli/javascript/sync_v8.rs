@@ -1,27 +1,34 @@
-use std::sync::Arc;
 use std::thread::ThreadId;
 
-use mini_v8::{FromValue, ToValues, Values};
+
+use mini_v8::{FromValue, ToValues};
 
 use crate::ToAnyHow;
 
 #[derive(Clone)]
 pub struct SyncV8 {
     v8: mini_v8::MiniV8,
-    runtime: Arc<tokio::runtime::Runtime>,
+    runtime: &'static tokio::runtime::Runtime,
     thread_id: ThreadId,
+}
+
+lazy_static::lazy_static! {
+    static ref TOKIO_RUNTIME: tokio::runtime::Runtime = {
+        let r = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .thread_name("mini-v8")
+            .build();
+        match r {
+            Ok(r) => r,
+            Err(e) => panic!("Failed to create tokio runtime: {}", e),
+        }
+    };
 }
 
 impl SyncV8 {
     pub fn new() -> Self {
         let v8 = mini_v8::MiniV8::new();
-        let runtime = Arc::new(
-            tokio::runtime::Builder::new_multi_thread()
-                .worker_threads(1)
-                .thread_name("mini-v8")
-                .build()
-                .unwrap(),
-        );
+        let runtime = &TOKIO_RUNTIME;
         let (rx, tx) = std::sync::mpsc::channel::<ThreadId>();
 
         runtime.spawn(async move {
@@ -31,43 +38,36 @@ impl SyncV8 {
         Self { v8, runtime, thread_id }
     }
 
-    pub fn borrow<F>(&self, f: F) -> anyhow::Result<()>
+    pub async fn borrow<F>(&self, f: F) -> anyhow::Result<()>
     where
         F: FnOnce(&mini_v8::MiniV8) -> anyhow::Result<()> + 'static,
     {
-        let runtime = self.runtime.clone();
         let f = SpawnBlock::new(f, self.clone());
-
-        runtime.spawn(async move {
-            f.call();
-        });
-
-        Ok(())
+        self.borrow_ret(|_| {
+            f.call()?;
+            Ok(())
+        })
+        .await
     }
 
-    pub fn borrow_ret<R, F>(&self, f: F) -> anyhow::Result<R>
+    pub async fn borrow_ret<R, F>(&self, f: F) -> anyhow::Result<R>
     where
         F: FnOnce(&mini_v8::MiniV8) -> anyhow::Result<R> + 'static,
-        R: Send + 'static,
+        R: Clone + Send + 'static,
     {
-        let runtime = self.runtime.clone();
         let f = SpawnBlock::new(f, self.clone());
-        let (tx, rx) = std::sync::mpsc::channel::<anyhow::Result<R>>();
-        runtime.spawn(async move { tx.send(f.call()) });
-        rx.recv().unwrap()
-    }
-
-    pub fn create_function<F, A, R>(&self, _f: F) -> Box<dyn Fn(A) -> anyhow::Result<R>>
-    where
-        F: Fn(&A) -> anyhow::Result<R> + Send + 'static,
-        A: Send + 'static,
-        R: Send + 'static,
-    {
-        todo!()
+        let (tx, mut rx) = tokio::sync::broadcast::channel::<R>(1024);
+        self.runtime
+            .spawn(async move { tx.send(f.call().unwrap()) });
+        rx.recv().await.or_anyhow("failed to receive result")
     }
 
     pub fn as_sync_function(&self, f: mini_v8::Function) -> SyncV8Function {
         SyncV8Function { callback: f, sync_v8: self.clone() }
+    }
+
+    fn on_v8_thread(&self) -> bool {
+        self.thread_id == std::thread::current().id()
     }
 }
 
@@ -105,20 +105,17 @@ pub struct SyncV8Function {
 }
 
 impl SyncV8Function {
-    pub fn call<R: FromValue + 'static>(&self, args: impl ToValues + 'static) -> anyhow::Result<R> {
-        let (tx, rx) = std::sync::mpsc::channel::<anyhow::Result<R>>();
-        let callback = self.callback.clone();
-        self.sync_v8.borrow(move |mv8| {
-            let r = callback
-                .call::<Values, R>(
-                    args.to_values(mv8)
-                        .or_anyhow("args could not be encoded to values")?,
-                )
-                .or_anyhow("function call failed");
-            tx.send(r).unwrap();
-            Ok(())
-        })?;
-        rx.recv().unwrap()
+    pub fn call<R: FromValue + Clone + 'static>(
+        &self,
+        args: impl ToValues + 'static,
+    ) -> anyhow::Result<R> {
+        if self.sync_v8.on_v8_thread() {
+            self.callback
+                .call(args)
+                .or_anyhow("args could not be encoded to values")
+        } else {
+            panic!("SyncV8Function::call called from wrong thread")
+        }
     }
 }
 

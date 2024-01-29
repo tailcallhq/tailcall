@@ -17,8 +17,8 @@ impl From<JSError> for CLIError {
     }
 }
 
-pub fn init(v8: &SyncV8) -> anyhow::Result<()> {
-    v8.borrow_ret(|v8| {
+pub async fn init(v8: &SyncV8) -> anyhow::Result<()> {
+    v8.borrow(|v8| {
         let console = v8.create_object();
         console
             .set("log", v8.create_function(console_log))
@@ -34,6 +34,7 @@ pub fn init(v8: &SyncV8) -> anyhow::Result<()> {
 
         Ok(())
     })
+    .await
 }
 
 fn console_log(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v8::Error> {
