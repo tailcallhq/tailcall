@@ -54,30 +54,24 @@ pub async fn get_descriptor_set(
     let mut hashmap = HashMap::new();
     for (_, typ) in config.types.iter() {
         for (_, fld) in typ.fields.iter() {
-            let proto_path = fld
-                .grpc
-                .clone()
-                .map(|g| g.proto_path)
-                .or_else(|| {
-                    fld.expr.as_ref().and_then(|e| match &e.body {
-                        ExprBody::Grpc(grpc) => Some(grpc.proto_path.clone()),
-                        _ => None,
-                    })
-                })
-                .unwrap_or_else(|| NULL_STR.to_string());
+            let proto_path = if let Some(grpc) = &fld.grpc {
+                &grpc.proto_path
+            } else if let Some(ExprBody::Grpc(grpc)) = fld.expr.as_ref().map(|e| &e.body) {
+                &grpc.proto_path
+            } else {
+                NULL_STR
+            };
 
-            if NULL_STR.eq(&proto_path) {
-                continue;
+            if proto_path != NULL_STR {
+                import_all(
+                    &mut hashmap,
+                    proto_path.to_string(),
+                    file_io.clone(),
+                    http_io.clone(),
+                    resolver.clone(),
+                )
+                .await?;
             }
-
-            import_all(
-                &mut hashmap,
-                proto_path,
-                file_io.clone(),
-                http_io.clone(),
-                resolver.clone(),
-            )
-            .await?;
         }
     }
     for (_, v) in hashmap {
