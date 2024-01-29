@@ -1,16 +1,17 @@
-use std::thread::ThreadId;
-
-
-use mini_v8::{FromValue, ToValues};
-
 use crate::ToAnyHow;
+use mini_v8::{FromValue, ToValues};
+use std::thread::ThreadId;
+use tokio::runtime::Handle;
 
 #[derive(Clone)]
 pub struct SyncV8 {
     v8: mini_v8::MiniV8,
     runtime: &'static tokio::runtime::Runtime,
     thread_id: ThreadId,
+    current: Handle,
 }
+unsafe impl Send for SyncV8 {}
+unsafe impl Sync for SyncV8 {}
 
 lazy_static::lazy_static! {
     static ref TOKIO_RUNTIME: tokio::runtime::Runtime = {
@@ -30,12 +31,16 @@ impl SyncV8 {
         let v8 = mini_v8::MiniV8::new();
         let runtime = &TOKIO_RUNTIME;
         let (rx, tx) = std::sync::mpsc::channel::<ThreadId>();
-
+        let current = Handle::current();
         runtime.spawn(async move {
             rx.send(std::thread::current().id()).unwrap();
         });
         let thread_id = tx.recv().unwrap();
-        Self { v8, runtime, thread_id }
+        Self { v8, runtime, thread_id, current }
+    }
+
+    pub fn current(&self) -> Handle {
+        self.current.clone()
     }
 
     pub async fn borrow<F>(&self, f: F) -> anyhow::Result<()>
@@ -55,6 +60,9 @@ impl SyncV8 {
         F: FnOnce(&mini_v8::MiniV8) -> anyhow::Result<R> + 'static,
         R: Clone + Send + 'static,
     {
+        if self.on_v8_thread() {
+            panic!("SyncV8::borrow_ret called from v8 thread")
+        }
         let f = SpawnBlock::new(f, self.clone());
         let (tx, mut rx) = tokio::sync::broadcast::channel::<R>(1024);
         self.runtime
@@ -114,7 +122,7 @@ impl SyncV8Function {
                 .call(args)
                 .or_anyhow("args could not be encoded to values")
         } else {
-            panic!("SyncV8Function::call called from wrong thread")
+            panic!("SyncV8Function::call called from a non-v8 thread")
         }
     }
 }

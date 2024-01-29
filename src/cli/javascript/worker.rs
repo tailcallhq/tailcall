@@ -11,7 +11,6 @@ use crate::{blueprint, HttpIO, ToAnyHow};
 
 pub struct Worker {
     sync_v8: SyncV8,
-    http: Arc<dyn HttpIO>,
     on_event_js: SyncV8Function,
 }
 
@@ -25,7 +24,7 @@ impl Worker {
         sync_v8: &SyncV8,
         http: impl HttpIO,
     ) -> anyhow::Result<Self> {
-        super::shim::init(sync_v8).await?;
+        super::shim::init(sync_v8, Arc::new(http)).await?;
         let v8 = sync_v8.clone();
         let closure = sync_v8
             .clone()
@@ -46,11 +45,7 @@ impl Worker {
                 Ok(v8.as_sync_function(closure))
             })
             .await?;
-        Ok(Self {
-            sync_v8: sync_v8.clone(),
-            http: Arc::new(http),
-            on_event_js: closure,
-        })
+        Ok(Self { sync_v8: sync_v8.clone(), on_event_js: closure })
     }
 
     pub async fn on_event(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
@@ -128,7 +123,6 @@ mod test {
     async fn test_ok_response() {
         let script = r#"
             function onEvent(request, cb) {
-                console.log("on event called!", request, cb)
                 return cb(null, {status: 200})
             }
         "#;
@@ -161,6 +155,7 @@ mod test {
         let script = format!(
             r#"
             function onEvent(request, cb) {{
+                console.log("on event called!", request, cb)                
                 return {} (request.url, (err, response) => {{
                     console.log(response)
                     cb(null, response)

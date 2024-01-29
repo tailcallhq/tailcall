@@ -2,7 +2,6 @@ pub mod http_1;
 pub mod http_2;
 pub mod server;
 pub mod server_config;
-
 pub use server::Server;
 
 use self::server_config::ServerConfig;
