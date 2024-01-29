@@ -268,12 +268,13 @@ fn update_args<'a>(
     hasher: DefaultHasher,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
     TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(_, field, _, name), _| {
+        move |(_, field, typ, name), _| {
             let mut hasher = hasher.clone();
             name.hash(&mut hasher);
             let cache = field
                 .cache
                 .as_ref()
+                .or(typ.cache.as_ref())
                 .map(|config::Cache { max_age }| Cache { max_age: *max_age, hasher });
 
             // TODO! assert type name
@@ -384,7 +385,6 @@ fn to_fields(
         update_args(hasher)
             .and(update_http().trace(config::Http::trace_name().as_str()))
             .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-            .and(update_js().trace(config::JS::trace_name().as_str()))
             .and(update_const_field().trace(config::Const::trace_name().as_str()))
             .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))

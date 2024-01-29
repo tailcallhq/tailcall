@@ -5,7 +5,7 @@ pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod cache;
 pub mod channel;
-#[cfg(feature = "default")]
+#[cfg(feature = "cli")]
 pub mod cli;
 pub mod config;
 pub mod data_loader;
@@ -17,8 +17,6 @@ pub mod grpc;
 pub mod has_headers;
 pub mod helpers;
 pub mod http;
-#[cfg(feature = "unsafe-js")]
-pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod mustache;
