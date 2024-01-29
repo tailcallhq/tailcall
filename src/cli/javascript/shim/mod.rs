@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
-use crate::HttpIO;
-
 use super::sync_v8::SyncV8;
+use crate::HttpIO;
 
 mod console;
 pub mod fetch;

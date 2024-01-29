@@ -1,15 +1,15 @@
 use std::sync::Arc;
-use std::thread;
 
-use async_std::sync;
+
+
 use hyper::Method;
 use mini_v8::{Invocation, Value, Values};
-use tokio::runtime::Runtime;
+
 use url::Url;
 
 use crate::channel::JsResponse;
 use crate::cli::javascript::serde_v8::SerdeV8;
-use crate::cli::javascript::sync_v8::{self, SyncV8, SyncV8Function};
+use crate::cli::javascript::sync_v8::{SyncV8, SyncV8Function};
 use crate::{HttpIO, ToAnyHow};
 
 pub const FETCH: &str = "__tailcall__fetch__";
@@ -19,7 +19,13 @@ pub async fn init(sync_v8: &SyncV8, http: Arc<dyn HttpIO>) -> anyhow::Result<()>
         .clone()
         .borrow(move |v8| {
             let fetch = v8.create_function(move |invocation| {
-                async_fetch(sync_v8.clone(), http.clone(), invocation)
+                let sync_v8 = sync_v8.clone();
+                let http: Arc<dyn HttpIO> = http.clone();
+                let args = JSFetchArgs::try_from(&sync_v8, &invocation).unwrap();
+                sync_v8
+                    .current()
+                    .spawn(async move { fetch(sync_v8, http, args).await });
+                Ok(mini_v8::Value::Undefined)
             });
             v8.global()
                 .set(FETCH, fetch)
@@ -91,14 +97,4 @@ async fn fetch(sync_v8: SyncV8, http: Arc<dyn HttpIO>, args: JSFetchArgs) -> any
         }
     };
     Ok(())
-}
-
-fn async_fetch(
-    sync_v8: SyncV8,
-    http: Arc<dyn HttpIO>,
-    invocation: mini_v8::Invocation,
-) -> Result<mini_v8::Value, mini_v8::Error> {
-    let args = JSFetchArgs::try_from(&sync_v8, &invocation).unwrap();
-    sync_v8.current().spawn(async move { fetch(sync_v8, http, args).await });
-    Ok(mini_v8::Value::Undefined)
 }

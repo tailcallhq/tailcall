@@ -1,7 +1,9 @@
-use crate::ToAnyHow;
-use mini_v8::{FromValue, ToValues};
 use std::thread::ThreadId;
+
+use mini_v8::{FromValue, ToValues};
 use tokio::runtime::Handle;
+
+use crate::ToAnyHow;
 
 #[derive(Clone)]
 pub struct SyncV8 {
