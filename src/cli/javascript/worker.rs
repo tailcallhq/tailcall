@@ -1,17 +1,18 @@
 use std::sync::Arc;
 
 use hyper::body::Bytes;
-use mini_v8::{MiniV8, Value, Values};
+use mini_v8::Values;
 
 use super::serde_v8::SerdeV8;
+use super::sync_v8::{SyncV8, SyncV8Function};
 use crate::channel::{JsRequest, JsResponse};
 use crate::http::Response;
 use crate::{blueprint, HttpIO, ToAnyHow};
 
-struct Worker {
-    v8: MiniV8,
+pub struct Worker {
+    sync_v8: SyncV8,
     http: Arc<dyn HttpIO>,
-    closure: mini_v8::Function,
+    on_event_js: SyncV8Function,
 }
 
 fn create_closure(script: &str) -> String {
@@ -19,45 +20,58 @@ fn create_closure(script: &str) -> String {
 }
 
 impl Worker {
-    fn new(
+    pub fn new(
         script: blueprint::Script,
-        v8: &mini_v8::MiniV8,
+        sync_v8: &SyncV8,
         http: impl HttpIO,
     ) -> anyhow::Result<Self> {
-        let _ = super::shim::init(v8);
-        let script = mini_v8::Script {
-            source: create_closure(script.source.as_str()),
-            timeout: script.timeout,
-            ..Default::default()
-        };
-        let value: mini_v8::Value = v8
-            .eval(script)
-            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-        let closure = value
-            .as_function()
-            .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?
-            .clone();
+        let _ = super::shim::init(sync_v8);
+        let v8 = sync_v8.clone();
+        let closure = sync_v8.clone().borrow_ret(move |mv8| {
+            let script = mini_v8::Script {
+                source: create_closure(script.source.as_str()),
+                timeout: script.timeout,
+                ..Default::default()
+            };
+            let value: mini_v8::Value = mv8
+                .eval(script)
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+            let closure = value
+                .as_function()
+                .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?
+                .clone();
 
-        Ok(Self { v8: v8.clone(), http: Arc::new(http), closure })
+            Ok(v8.as_sync_function(closure))
+        })?;
+        Ok(Self {
+            sync_v8: sync_v8.clone(),
+            http: Arc::new(http),
+            on_event_js: closure,
+        })
     }
 
     pub async fn on_event(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        let js_request = JsRequest::try_from(&request)?;
-        let js_request_v8 = js_request.to_v8(&self.v8)?;
         let (tx, mut rx) = tokio::sync::broadcast::channel::<mini_v8::Value>(1);
+        let sync_v8 = self.sync_v8.clone();
+        let js_request = JsRequest::try_from(&request)?;
+        let on_event_js = self.on_event_js.clone();
+        sync_v8.borrow(move |mv8| {
+            let js_request_v8 = js_request.to_v8(mv8)?;
+            let cb: mini_v8::Value = mini_v8::Value::Function(mv8.create_function({
+                move |invocation| {
+                    let response = invocation.args.get(0);
+                    tx.send(response).unwrap();
+                    Ok(mini_v8::Value::Undefined)
+                }
+            }));
+            // Initiate an async call
+            let args: Values = Values::from_iter(vec![js_request_v8, cb]);
+            on_event_js
+                .call(args)
+                .or_anyhow("failed to dispatch request to js-worker: ")?;
 
-        let cb: mini_v8::Value = mini_v8::Value::Function(self.v8.create_function({
-            move |invocation| {
-                let response = invocation.args.get(0);
-                tx.send(response).unwrap();
-                Ok(mini_v8::Value::Undefined)
-            }
-        }));
-        // Initiate an async call
-        self.closure
-            .call::<Values, Value>(Values::from_iter(vec![js_request_v8, cb]))
-            .or_anyhow("failed to dispatch request to js-worker: ")?;
-
+            Ok(())
+        })?;
         let result = rx
             .recv()
             .await
@@ -82,7 +96,7 @@ mod test {
     use crate::cli::NativeHttp;
 
     fn new_worker(script: &str) -> anyhow::Result<Worker> {
-        let v8 = mini_v8::MiniV8::new();
+        let v8 = SyncV8::new();
         let http = NativeHttp::default();
         let script = Script {
             source: script.to_string(),

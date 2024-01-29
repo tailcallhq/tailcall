@@ -1,15 +1,19 @@
-use mini_v8::{Invocation, MiniV8, Values};
+use mini_v8::{Invocation, Values};
 
 use crate::cli::javascript::serde_v8::SerdeV8;
+use crate::cli::javascript::sync_v8::SyncV8;
 use crate::ToAnyHow;
 
 pub const FETCH: &str = "__tailcall__fetch__";
-pub fn init(v8: &MiniV8) -> anyhow::Result<()> {
-    let fetch = v8.create_function(fetch);
-    v8.global()
-        .set(FETCH, fetch)
-        .or_anyhow(format!("Could not set {} in global v8 object", FETCH).as_str())?;
-    Ok(())
+pub fn init(v8: &SyncV8) -> anyhow::Result<()> {
+    v8.borrow_ret(|v8| {
+        let fetch = v8.create_function(fetch);
+        v8.global()
+            .set(FETCH, fetch)
+            .or_anyhow(format!("Could not set {} in global v8 object", FETCH).as_str())?;
+
+        Ok(())
+    })
 }
 
 fn fake_http_response() -> serde_json::Value {
@@ -70,15 +74,16 @@ fn fetch(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v8::Err
 mod tests {
     use crate::cli::javascript::serde_v8::SerdeV8;
     use crate::cli::javascript::shim::console;
+    use crate::cli::javascript::sync_v8::SyncV8;
     use crate::ToAnyHow;
 
     struct TestV8 {
-        v8: mini_v8::MiniV8,
+        v8: SyncV8,
     }
 
     impl TestV8 {
         fn new() -> Self {
-            let v8 = mini_v8::MiniV8::new();
+            let v8 = SyncV8::new();
             console::init(&v8).unwrap();
             super::init(&v8).unwrap();
             Self { v8 }
@@ -97,11 +102,13 @@ mod tests {
             "#,
                 script
             );
-            let value = self
-                .v8
-                .eval(script)
-                .or_anyhow("Failed to eval test script")?;
-            serde_json::Value::from_v8(&value)
+            self.v8.borrow_ret(move |v8| {
+                let value = v8
+                    .eval(script.as_str())
+                    .or_anyhow("Failed to eval test script")?;
+
+                serde_json::Value::from_v8(&value)
+            })
         }
     }
 

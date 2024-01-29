@@ -9,6 +9,8 @@ use crate::channel::{Command, Event};
 use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::ScriptIO;
 
+use super::sync_v8::SyncV8;
+
 thread_local! {
   static CLOSURE: RefCell<anyhow::Result<mini_v8::Value>> = const { RefCell::new(Ok(mini_v8::Value::Null))};
   static V8: RefCell<MiniV8> = RefCell::new(MiniV8::new());
@@ -56,7 +58,7 @@ impl Runtime {
         Self {}
     }
 
-    fn init(v8: &MiniV8, script: blueprint::Script) -> anyhow::Result<mini_v8::Function> {
+    fn init(v8: &SyncV8, script: blueprint::Script) -> anyhow::Result<mini_v8::Function> {
         let _ = super::shim::init(v8);
         let script = Script {
             source: create_closure(script.source.as_str()),
