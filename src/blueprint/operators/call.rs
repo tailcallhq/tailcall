@@ -2,7 +2,12 @@ use std::collections::hash_map::Iter;
 
 use crate::blueprint::*;
 use crate::config;
+use crate::config::group_by::GroupBy;
 use crate::config::{Config, Field, GraphQLOperationType};
+use crate::graphql;
+use crate::grpc;
+use crate::http;
+use crate::lambda::DataLoaderId;
 use crate::lambda::{Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
@@ -26,6 +31,64 @@ pub fn update_call(
                 .and_then(|resolver| Valid::succeed(b_field.resolver(Some(resolver))))
         },
     )
+}
+
+struct Http {
+    pub req_template: http::RequestTemplate,
+    pub group_by: Option<GroupBy>,
+    pub dl_id: Option<DataLoaderId>,
+}
+
+struct GraphQLEndpoint {
+    pub req_template: graphql::RequestTemplate,
+    pub field_name: String,
+    pub batch: bool,
+    pub dl_id: Option<DataLoaderId>,
+}
+
+struct Grpc {
+    pub req_template: grpc::RequestTemplate,
+    pub group_by: Option<GroupBy>,
+    pub dl_id: Option<DataLoaderId>,
+}
+
+impl TryFrom<Expression> for Http {
+    type Error = String;
+
+    fn try_from(expr: Expression) -> Result<Self, Self::Error> {
+        match expr {
+            Expression::IO(IO::Http { req_template, group_by, dl_id }) => {
+                Ok(Http { req_template, group_by, dl_id })
+            }
+            _ => Err("not an http expression".to_string()),
+        }
+    }
+}
+
+impl TryFrom<Expression> for GraphQLEndpoint {
+    type Error = String;
+
+    fn try_from(expr: Expression) -> Result<Self, Self::Error> {
+        match expr {
+            Expression::IO(IO::GraphQLEndpoint { req_template, field_name, batch, dl_id }) => {
+                Ok(GraphQLEndpoint { req_template, field_name, batch, dl_id })
+            }
+            _ => Err("not a graphql expression".to_string()),
+        }
+    }
+}
+
+impl TryFrom<Expression> for Grpc {
+    type Error = String;
+
+    fn try_from(expr: Expression) -> Result<Self, Self::Error> {
+        match expr {
+            Expression::IO(IO::Grpc { req_template, group_by, dl_id }) => {
+                Ok(Grpc { req_template, group_by, dl_id })
+            }
+            _ => Err("not a grpc expression".to_string()),
+        }
+    }
 }
 
 pub fn compile_call(
@@ -76,11 +139,13 @@ pub fn compile_call(
             }
 
             if let Some(http) = _field.http.clone() {
-                compile_http(config, field, &http).and_then(|expr| match expr.clone() {
-                    Expression::IO(IO::Http { req_template, group_by, dl_id }) => Valid::succeed(
-                        req_template
+                compile_http(config, field, &http).and_then(|expr| {
+                    let http = Http::try_from(expr).unwrap();
+
+                    Valid::succeed(
+                        http.req_template
                             .clone()
-                            .root_url(replace_url(&req_template.root_url, &args)),
+                            .root_url(replace_url(&http.req_template.root_url, &args)),
                     )
                     .map(|req_template| {
                         req_template.clone().query(
@@ -101,19 +166,22 @@ pub fn compile_call(
                                 .collect(),
                         )
                     })
-                    .map(|req_template| Expression::IO(IO::Http { req_template, group_by, dl_id })),
-                    _ => Valid::succeed(expr),
+                    .map(|req_template| {
+                        Expression::IO(IO::Http {
+                            req_template: req_template,
+                            dl_id: http.dl_id,
+                            group_by: http.group_by,
+                        })
+                    })
                 })
             } else if let Some(graphql) = _field.graphql.clone() {
-                compile_graphql(config, operation_type, &graphql).and_then(|expr| match expr {
-                    Expression::IO(IO::GraphQLEndpoint {
-                        req_template,
-                        field_name,
-                        batch,
-                        dl_id,
-                    }) => Valid::succeed(
-                        req_template.clone().headers(
-                            req_template
+                compile_graphql(config, operation_type, &graphql).and_then(|expr| {
+                    let graphql = GraphQLEndpoint::try_from(expr).unwrap();
+
+                    Valid::succeed(
+                        graphql.req_template.clone().headers(
+                            graphql
+                                .req_template
                                 .headers
                                 .iter()
                                 .map(replace_mustache(&args))
@@ -138,12 +206,11 @@ pub fn compile_call(
                     .and_then(|req_template| {
                         Valid::succeed(Expression::IO(IO::GraphQLEndpoint {
                             req_template,
-                            field_name,
-                            batch,
-                            dl_id,
+                            field_name: graphql.field_name,
+                            batch: graphql.batch,
+                            dl_id: graphql.dl_id,
                         }))
-                    }),
-                    _ => Valid::succeed(expr),
+                    })
                 })
             } else if let Some(grpc) = _field.grpc.clone() {
                 // todo!("needs to be implemented");
@@ -154,11 +221,13 @@ pub fn compile_call(
                     grpc: &grpc,
                     validate_with_schema: false,
                 };
-                compile_grpc(inputs).and_then(|expr| match expr {
-                    Expression::IO(IO::Grpc { req_template, group_by, dl_id }) => Valid::succeed(
-                        req_template
+                compile_grpc(inputs).and_then(|expr| {
+                    let grpc = Grpc::try_from(expr).unwrap();
+
+                    Valid::succeed(
+                        grpc.req_template
                             .clone()
-                            .url(replace_url(&req_template.url, &args)),
+                            .url(replace_url(&grpc.req_template.url, &args)),
                     )
                     .map(|req_template| {
                         req_template.clone().headers(
@@ -176,8 +245,13 @@ pub fn compile_call(
                             req_template
                         }
                     })
-                    .map(|req_template| Expression::IO(IO::Grpc { req_template, group_by, dl_id })),
-                    _ => Valid::succeed(expr),
+                    .map(|req_template| {
+                        Expression::IO(IO::Grpc {
+                            req_template,
+                            group_by: grpc.group_by,
+                            dl_id: grpc.dl_id,
+                        })
+                    })
                 })
             } else {
                 return Valid::fail(format!("{} field has no resolver", field_name));
@@ -230,5 +304,37 @@ fn replace_mustache<'a, T: Clone>(
             .into();
 
         (key.clone().to_owned(), value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn try_from_http_fail() {
+        let expr = Expression::Literal("test".into());
+
+        let http = Http::try_from(expr);
+
+        assert!(http.is_err());
+    }
+
+    #[test]
+    fn try_from_graphql_fail() {
+        let expr = Expression::Literal("test".into());
+
+        let graphql = GraphQLEndpoint::try_from(expr);
+
+        assert!(graphql.is_err());
+    }
+
+    #[test]
+    fn try_from_grpc_fail() {
+        let expr = Expression::Literal("test".into());
+
+        let grpc = Grpc::try_from(expr);
+
+        assert!(grpc.is_err());
     }
 }
