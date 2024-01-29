@@ -193,7 +193,8 @@ fn config_document(config: &Config) -> ServiceDocument {
                 } else {
                     vec![]
                 },
-            ].concat(),
+            ]
+            .concat(),
             kind,
         })));
     }
