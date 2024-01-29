@@ -157,7 +157,7 @@ mod test {
         let script = format!(
             r#"
             function onEvent(request, cb) {{
-                return {} (request.url, (err, response) => {{
+                return {} (request, (err, response) => {{
                     cb(null, response)
                 }})
             }}
@@ -168,7 +168,7 @@ mod test {
         let worker = new_worker(script.as_str()).await.unwrap();
         let request = new_get_request("https://jsonplaceholder.typicode.com/posts/1").unwrap();
         let response = worker.on_event(request).await.unwrap();
-        
+
         assert_eq!(response.status.as_u16(), 200);
 
         let actual = serde_json::from_slice::<Value>(response.body.chunk()).unwrap();

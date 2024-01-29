@@ -1,18 +1,15 @@
 use std::sync::Arc;
 
 
-
-use hyper::Method;
 use mini_v8::{Invocation, Value, Values};
 
-use url::Url;
 
-use crate::channel::JsResponse;
+use crate::channel::{JsRequest, JsResponse};
 use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::cli::javascript::sync_v8::{SyncV8, SyncV8Function};
 use crate::{HttpIO, ToAnyHow};
 
-pub const FETCH: &str = "__tailcall__fetch__";
+pub const FETCH: &str = "__fetch__";
 pub async fn init(sync_v8: &SyncV8, http: Arc<dyn HttpIO>) -> anyhow::Result<()> {
     let sync_v8 = sync_v8.clone();
     sync_v8
@@ -38,30 +35,25 @@ pub async fn init(sync_v8: &SyncV8, http: Arc<dyn HttpIO>) -> anyhow::Result<()>
 
 #[derive(Clone)]
 struct JSFetchArgs {
-    url: String,
+    request: JsRequest,
     callback: SyncV8Function,
 }
 
 impl JSFetchArgs {
     fn try_from(sync_v8: &SyncV8, value: &Invocation) -> anyhow::Result<Self> {
-        let url = value.args.get(0);
-        let url = url.as_string().ok_or(anyhow::anyhow!(
-            "First argument to fetch must be a string, got {:?}",
-            url
-        ))?;
+        let request = JsRequest::from_v8(&value.args.get(0))?;
 
         let callback = value.args.get(1).as_function().cloned();
         let callback = callback.ok_or(anyhow::anyhow!(
             "Second argument to fetch must be a function"
         ))?;
 
-        let url = url.to_string();
-        Ok(Self { url, callback: sync_v8.as_sync_function(callback) })
+        Ok(Self { request, callback: sync_v8.as_sync_function(callback) })
     }
 }
 
 async fn fetch(sync_v8: SyncV8, http: Arc<dyn HttpIO>, args: JSFetchArgs) -> anyhow::Result<()> {
-    let request = reqwest::Request::new(Method::GET, Url::parse(args.url.as_str()).unwrap());
+    let request = reqwest::Request::try_from(args.request)?;
     let response = sync_v8
         .current()
         .spawn(async move { http.clone().execute(request).await })
