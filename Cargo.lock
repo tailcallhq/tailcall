@@ -2001,9 +2001,9 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.12.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2994eeba8ed550fd9b47a0b38f0242bc3344e496483c6180b69139cc2fa5d1d7"
+checksum = "db2c024b41519440580066ba82aab04092b333e09066a5eb86c7c4890df31f22"
 dependencies = [
  "hashbrown 0.14.3",
 ]
@@ -2115,9 +2115,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.12.4"
+version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad9dc9808102655926a6086abd0b9965ebefd4a39ef0d184f074c34ba5049ec6"
+checksum = "b1911e88d5831f748a4097a43862d129e3c6fca831eecac9b8db6d01d93c9de2"
 dependencies = [
  "async-lock 2.8.0",
  "async-trait",
@@ -3124,9 +3124,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.112"
+version = "1.0.113"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d1bd37ce2324cf3bf85e5a25f96eb4baf0d5aa6eba43e7ae8958870c4ec48ed"
+checksum = "69801b70b1c3dac963ecb03a364ba0ceda9cf60c71cfe475e99864759c8b8a79"
 dependencies = [
  "itoa",
  "ryu",
@@ -3434,7 +3434,7 @@ dependencies = [
  "inquire",
  "lazy_static",
  "log",
- "lru 0.12.1",
+ "lru 0.12.2",
  "mimalloc",
  "mini-v8",
  "moka",
