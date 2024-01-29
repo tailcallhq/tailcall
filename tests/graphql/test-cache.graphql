@@ -1,0 +1,25 @@
+#> server-sdl
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  user: User @http(path: "/foo") @cache(maxAge: 300)
+}
+
+type User {
+  name: String
+}
+
+#> client-sdl
+type Query {
+  user: User
+}
+
+type User {
+  name: String
+}
+
+schema {
+  query: Query
+}
