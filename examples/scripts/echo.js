@@ -16,10 +16,7 @@ function onEvent(request, cb) {
 //// USER LAND CODE
 ////
 async function main(request) {
-  const response = await fetch("https://jsonplaceholder.typicode.com/posts", request)
-  const date = new Date();
-  console.log({date})
-  const body = await response.json()
-  const newBody = body.map((post) => ({...post, title: "Hello Shashi!!!"}))
-  return {...response, body: newBody}
+  const resp = await fetch(request.url, request)
+  const body = await resp.json()
+  return {...resp, body: body}
 }

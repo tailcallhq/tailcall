@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use mini_v8::{MiniV8, Value};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -13,9 +15,11 @@ fn v8_serde(value: mini_v8::Value) -> anyhow::Result<serde_json::Value> {
         Value::Undefined => serde_json::Value::Null,
         Value::Null => serde_json::Value::Null,
         Value::Boolean(v) => serde_json::Value::Bool(v),
-        Value::Number(n) => serde_json::Value::Number(
-            Number::from_f64(n).ok_or(anyhow::anyhow!("error converting number"))?,
-        ),
+        Value::Number(n) => serde_json::Value::Number(if n.is_sign_positive() {
+            Number::from(n as u64)
+        } else {
+            Number::from_f64(n).ok_or(anyhow::anyhow!("error converting number"))?
+        }),
         Value::String(s) => serde_json::Value::String(s.to_string()),
         Value::Array(v) => {
             let mut arr = Vec::new();
@@ -48,7 +52,17 @@ fn serde_v8(value: serde_json::Value, v8: &mini_v8::MiniV8) -> anyhow::Result<mi
     let value: mini_v8::Value = match value {
         serde_json::Value::Null => Value::Null,
         serde_json::Value::Bool(b) => Value::Boolean(b),
-        serde_json::Value::Number(n) => Value::Number(n.as_f64().unwrap_or_default()),
+        serde_json::Value::Number(n) => Value::Number({
+            if n.is_u64() {
+                n.as_f64().unwrap_or_default()
+            } else if n.is_i64() {
+                n.as_i64().unwrap_or_default() as f64
+            } else if n.is_f64() {
+                n.as_u64().unwrap_or_default() as f64
+            } else {
+                return Err(anyhow::anyhow!("error converting number"));
+            }
+        }),
         serde_json::Value::String(s) => Value::String(v8.create_string(s.as_str())),
         serde_json::Value::Array(a) => {
             let arr = v8.create_array();
@@ -70,7 +84,7 @@ fn serde_v8(value: serde_json::Value, v8: &mini_v8::MiniV8) -> anyhow::Result<mi
     Ok(value)
 }
 
-impl<A: Serialize + DeserializeOwned> SerdeV8 for A {
+impl<A: Serialize + DeserializeOwned + Debug> SerdeV8 for A {
     fn to_v8(self, mv8: &MiniV8) -> anyhow::Result<Value> {
         let json = serde_json::to_value(&self)?;
         log::debug!("json: {}", json);

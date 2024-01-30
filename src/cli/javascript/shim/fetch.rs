@@ -16,7 +16,12 @@ pub async fn init(sync_v8: &SyncV8, http: Arc<dyn HttpIO>) -> anyhow::Result<()>
             let fetch = v8.create_function(move |invocation| {
                 let sync_v8 = sync_v8.clone();
                 let http: Arc<dyn HttpIO> = http.clone();
-                let args = JSFetchArgs::try_from(&sync_v8, &invocation).unwrap();
+                let args = JSFetchArgs::try_from(&sync_v8, &invocation).map_err(|_| {
+                    mini_v8::Error::ToJsConversionError {
+                        from: "MiniV8 Invocation",
+                        to: "JSFetchArgs",
+                    }
+                })?;
                 sync_v8
                     .current()
                     .spawn(async move { fetch(sync_v8, http, args).await });

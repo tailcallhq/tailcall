@@ -60,7 +60,9 @@ impl Worker {
                         // FIXME: get arg.get(0) as error
                         let response = invocation.args.get(1);
                         let json = serde_json::Value::from_v8(&response).unwrap();
-                        tx.send(json).unwrap();
+                        tx.send(json).map_err(|e| {
+                            mini_v8::Error::ExternalError(anyhow::anyhow!(e.to_string()).into())
+                        })?;
                         Ok(mini_v8::Value::Undefined)
                     }
                 }));
