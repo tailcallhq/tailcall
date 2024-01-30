@@ -123,6 +123,7 @@ struct ExecutionSpec {
 
     server: Vec<(Source, String)>,
     assert: Option<AssertSpec>,
+    merged: Option<String>,
 
     // Annotations for the runner
     runner: Option<Annotation>,
@@ -200,6 +201,7 @@ impl ExecutionSpec {
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut assert: Option<AssertSpec> = None;
         let mut runner: Option<Annotation> = None;
+        let mut merged: Option<String> = None;
         let mut check_identity = false;
 
         while let Some(node) = children.next() {
@@ -304,11 +306,25 @@ impl ExecutionSpec {
                                     server.push((source, content));
                                 }
                                 "assert:" => {
-                                    assert = match source {
-                                        Source::Json => anyhow::Ok(serde_json::from_str(&content)?),
-                                        Source::Yml => anyhow::Ok(serde_yaml::from_str(&content)?),
-                                        _ => Err(anyhow!("Unexpected language in assert block in {:?} (only JSON and YAML are supported)", path)),
-                                    }?;
+                                    if assert.is_none() {
+                                        assert = match source {
+                                            Source::Json => Ok(serde_json::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            _ => Err(anyhow!("Unexpected language in assert block in {:?} (only JSON and YAML are supported)", path)),
+                                        }?;
+                                    } else {
+                                        return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
+                                    }
+                                }
+                                "merged:" => {
+                                    if merged.is_none() {
+                                        merged = match source {
+                                            Source::GraphQL => Ok(Some(content)),
+                                            _ => Err(anyhow!("Unexpected language in merged block in {:?} (only GraphQL is supported)", path))
+                                        }?;
+                                    } else {
+                                        return Err(anyhow!("Unexpected number of merged blocks in {:?} (only one is allowed)", path));
+                                    }
                                 }
                                 _ => {
                                     return Err(anyhow!(
@@ -341,7 +357,20 @@ impl ExecutionSpec {
 
         if server.is_empty() {
             return Err(anyhow!(
-                "You must define a GraphQL Config in an execution test."
+                "Unexpected blocks in {:?}: You must define a GraphQL Config in an execution test.",
+                path,
+            ));
+        }
+
+        let unique_block_count = [assert.is_some(), merged.is_some()]
+            .into_iter()
+            .filter(|x| *x == true)
+            .count();
+
+        if unique_block_count >= 2 { // TODO: add client
+            return Err(anyhow!(
+                "Unexpected blocks in {:?}: You may only define one of these types of blocks: assert, merged, client",
+                path,
             ));
         }
 
@@ -349,8 +378,11 @@ impl ExecutionSpec {
             path: path.to_owned(),
             name: name.unwrap_or_else(|| path.file_name().unwrap().to_str().unwrap().to_string()),
             safe_name: path.file_name().unwrap().to_str().unwrap().to_string(),
+
             server,
             assert,
+            merged,
+
             runner,
             check_identity,
         };
@@ -569,8 +601,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         server.push(config);
     }
 
-    // Run assert specs
-    if let Some(assert_spec) = spec.assert.as_ref() {
+    if let Some(assert_spec) = spec.assert.as_ref() { // assert: Run assert specs
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
             let response = run_assert(
                 spec.clone(),
@@ -602,6 +633,42 @@ async fn assert_spec(spec: ExecutionSpec) {
             insta::assert_json_snapshot!(snapshot_name, response);
             log::info!("\tassert #{} ok", i + 1);
         }
+    } else if let Some(expected_sdl) = spec.merged.as_ref() { // merged: Run merged specs
+        let expected_sdl = expected_sdl.as_str();
+
+        let actual = server
+            .iter()
+            .fold(Config::default(), |acc, c| acc.merge_right(c));
+        let actual_sdl = actual.to_sdl();
+
+        if actual_sdl != expected_sdl {
+            log::error!("\tmerged FAIL");
+            panic!(
+                "The actual merge SDL and the expected merge SDL didn't match.\n\nexpected:\n{}\n\nactual:\n{}",
+                expected_sdl,
+                actual_sdl,
+            );
+        }
+
+        let expected = match Config::from_sdl(expected_sdl).to_result() {
+            Ok(x) => x,
+            Err(e) => panic!(
+                "Failed to parse the expected merge SDL in {:?}: {}",
+                spec.path,
+                e,
+            ),
+        };
+
+        if actual != expected {
+            log::error!("\tmerged FAIL");
+            panic!(
+                "The actual merge (parsed) and the expected merge (prased) didn't match.\n\nexpected:\n{:#?}\n\nactual:\n{:#?}",
+                expected,
+                actual,
+            );
+        }
+
+        log::info!("\tmerged ok");
     } else {
         panic!(
             "Couldn't determine type of test {} ({})",
