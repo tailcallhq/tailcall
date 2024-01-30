@@ -33,4 +33,7 @@ type Query {
 
   defaultToZero: Int @expr(body: {defaultTo: [{const: null}, {const: 0}]})
   defaultToTrue: Boolean @expr(body: {defaultTo: [{const: ""}, {const: true}]})
+
+  ifZero: Int @expr(body: {if: {cond: {const: true}, then: {const: 0}, else: {const: 1}}})
+  ifOne: Int @expr(body: {if: {cond: {const: false}, then: {const: 0}, else: {const: 1}}})
 }

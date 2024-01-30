@@ -31,6 +31,8 @@ assert:
           condTwo
           defaultToZero
           defaultToTrue
+          ifZero
+          ifOne
           }"
     response:
       body:
@@ -60,3 +62,5 @@ assert:
           condTwo: 2
           defaultToZero: 0
           defaultToTrue: true
+          ifZero: 0
+          ifOne: 1
