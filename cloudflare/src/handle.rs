@@ -4,10 +4,12 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use anyhow::anyhow;
-use hyper::{Body, Request, Response};
+use hyper::{Body, Method, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::http::{handle_request, showcase_get_app_ctx, AppContext, ShowcaseResources};
+use tailcall::http::{
+    graphiql, handle_request, showcase_get_app_ctx, AppContext, ShowcaseResources,
+};
 use tailcall::EnvIO;
 
 use crate::env::CloudflareEnv;
@@ -31,12 +33,22 @@ pub async fn fetch(
         req.url().map(|u| u.to_string())
     );
     let req = to_request(req).await?;
+
+    // Quick exit to GraphiQL
+    //
+    // Has to be done here, since when using GraphiQL, a config query parameter is not specified,
+    // and get_app_ctx will fail without it.
+    if req.method() == Method::GET {
+        return Ok(to_response(graphiql(&req)?).await?);
+    }
+
     let env = Rc::new(env);
     let app_ctx = match get_app_ctx(env, &req).await? {
         Ok(app_ctx) => app_ctx,
         Err(e) => return Ok(to_response(e).await?),
     };
     let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+    println!("{:#?}", resp);
     Ok(to_response(resp).await?)
 }
 
@@ -79,10 +91,7 @@ async fn get_app_ctx(
     };
 
     match showcase_get_app_ctx::<GraphQLRequest>(req, resources).await? {
-        Ok(mut app_ctx) => {
-            // Cloudflare should always ha GraphiQL enabled.
-            app_ctx.blueprint.server.enable_graphiql = true;
-
+        Ok(app_ctx) => {
             let app_ctx = Arc::new(app_ctx);
             if let Some(file_path) = file_path {
                 *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
