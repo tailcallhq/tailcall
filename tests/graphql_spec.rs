@@ -15,7 +15,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_env, init_file, init_http};
+use tailcall::cli::{init_in_memory_cache, init_env, init_file, init_http};
 use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
@@ -294,7 +294,6 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let config_set = config_set
             .resolve_extensions(file_io.clone(), init_http(&upstream, None))
             .await;
-        println!("{:?}", spec.path);
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
 
@@ -334,7 +333,7 @@ async fn test_execution() -> std::io::Result<()> {
                     .unwrap();
                 let h_client = init_http(&blueprint.upstream, None);
                 let h2_client = init_http(&blueprint.upstream, None);
-                let chrono_cache = init_chrono_cache();
+                let chrono_cache = init_in_memory_cache();
                 let server_ctx = AppContext::new(
                     blueprint,
                     h_client,

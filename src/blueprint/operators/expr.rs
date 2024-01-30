@@ -1,6 +1,6 @@
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{ExprBody, Field};
+use crate::config::{ExprBody, Field, If};
 use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
@@ -75,11 +75,15 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
         }
 
         // Logic
-        ExprBody::If { cond, on_true: then, on_false: els } => compile(ctx, *cond)
-            .map(Box::new)
-            .zip(compile(ctx, *then).map(Box::new))
-            .zip(compile(ctx, *els).map(Box::new))
-            .map(|((cond, then), els)| Expression::Logic(Logic::If { cond, then, els })),
+        ExprBody::If(If { ref cond, on_true: ref then, on_false: ref els }) => {
+            compile(ctx, *cond.clone())
+                .map(Box::new)
+                .zip(compile(ctx, *then.clone()).map(Box::new))
+                .zip(compile(ctx, *els.clone()).map(Box::new))
+                .map(|((cond, then), els)| {
+                    Expression::Logic(Logic::If { cond, then, els }).parallel_when(expr.has_io())
+                })
+        }
 
         ExprBody::And(ref list) => compile_list(ctx, list.clone())
             .map(|a| Expression::Logic(Logic::And(a)).parallel_when(expr.has_io())),

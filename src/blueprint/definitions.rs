@@ -268,12 +268,13 @@ fn update_args<'a>(
     hasher: DefaultHasher,
 ) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
     TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(_, field, _, name), _| {
+        move |(_, field, typ, name), _| {
             let mut hasher = hasher.clone();
             name.hash(&mut hasher);
             let cache = field
                 .cache
                 .as_ref()
+                .or(typ.cache.as_ref())
                 .map(|config::Cache { max_age }| Cache { max_age: *max_age, hasher });
 
             // TODO! assert type name

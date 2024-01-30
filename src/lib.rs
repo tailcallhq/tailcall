@@ -58,8 +58,8 @@ pub trait Cache: Send + Sync {
         key: Self::Key,
         value: Self::Value,
         ttl: NonZeroU64,
-    ) -> anyhow::Result<Self::Value>;
-    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Self::Value>;
+    ) -> anyhow::Result<()>;
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Option<Self::Value>>;
 }
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
