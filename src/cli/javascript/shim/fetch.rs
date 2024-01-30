@@ -39,7 +39,7 @@ pub async fn init(sync_v8: &SyncV8, http: Arc<dyn HttpIO>) -> anyhow::Result<()>
 #[derive(Clone)]
 struct JSFetchArgs {
     request: JsRequest,
-    callback: SyncV8Function,
+    callback: Arc<SyncV8Function>,
 }
 
 impl JSFetchArgs {
@@ -51,7 +51,10 @@ impl JSFetchArgs {
             "Second argument to fetch must be a function"
         ))?;
 
-        Ok(Self { request, callback: sync_v8.as_sync_function(callback) })
+        Ok(Self {
+            request,
+            callback: Arc::new(sync_v8.as_sync_function(callback)),
+        })
     }
 }
 

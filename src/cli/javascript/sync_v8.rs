@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::thread::ThreadId;
 
 use mini_v8::{FromValue, ToValues};
@@ -7,7 +8,7 @@ use crate::ToAnyHow;
 
 #[derive(Clone)]
 pub struct SyncV8 {
-    v8: mini_v8::MiniV8,
+    v8: Arc<mini_v8::MiniV8>,
     runtime: &'static tokio::runtime::Runtime,
     thread_id: ThreadId,
     current: Handle,
@@ -30,7 +31,7 @@ lazy_static::lazy_static! {
 
 impl SyncV8 {
     pub fn new() -> Self {
-        let v8 = mini_v8::MiniV8::new();
+        let v8 = Arc::new(mini_v8::MiniV8::new());
         let runtime = &TOKIO_RUNTIME;
         let (rx, tx) = std::sync::mpsc::channel::<ThreadId>();
         let current = Handle::current();

@@ -11,7 +11,7 @@ use crate::{blueprint, HttpIO, ToAnyHow};
 
 pub struct Worker {
     sync_v8: SyncV8,
-    on_event_js: SyncV8Function,
+    on_event_js: Arc<SyncV8Function>,
 }
 
 fn create_closure(script: &str) -> String {
@@ -41,7 +41,7 @@ impl Worker {
                 Ok(v8.as_sync_function(closure))
             })
             .await?;
-        Ok(Self { sync_v8, on_event_js: closure })
+        Ok(Self { sync_v8, on_event_js: Arc::new(closure) })
     }
 
     pub async fn on_event(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
