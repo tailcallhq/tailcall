@@ -377,8 +377,8 @@ async fn test_execution() -> std::io::Result<()> {
 }
 
 // Standardize errors on Client SDL
-#[test]
-fn test_failures_in_client_sdl() -> std::io::Result<()> {
+#[tokio::test]
+async fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
     let file_io = init_file();
 
@@ -386,18 +386,18 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let content = spec.find_source(Tag::ServerSDL);
         let expected = spec.sdl_errors;
         let content = content.as_str();
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let actual = Config::from_sdl(content)
-            .and_then(|config| {
+        let config = Config::from_sdl(content).to_result();
+        let actual = match config {
+            Ok(config) => {
                 let upstream = config.upstream.clone();
                 let config_set = ConfigSet::from(config);
-                let config_set = rt.block_on(
-                    config_set.resolve_extensions(file_io.clone(), init_http(&upstream, None)),
-                );
-                Valid::from(Blueprint::try_from(&config_set))
-            })
-            .to_result();
-
+                let config_set = config_set.resolve_extensions(file_io.clone(), init_http(&upstream, None)).await;
+                Valid::from(Blueprint::try_from(&config_set)).to_result().map(|_|())
+            }
+            Err(e) => {
+                Err(e)
+            }
+        };
         match actual {
             Err(cause) => {
                 let actual: Vec<SDLError> =
