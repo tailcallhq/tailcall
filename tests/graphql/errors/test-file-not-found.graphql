@@ -12,8 +12,4 @@ type Query {
 }
 
 #> client-sdl
-type Failure
-  @error(
-    message: "file not found: \"./doesntexist.json\""
-    trace: ["Query", "user", "@file"]
-  )
+type Failure @error(message: "file not found: \"./doesntexist.json\"", trace: ["Query", "user", "@file"])

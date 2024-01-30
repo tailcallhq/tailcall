@@ -12,8 +12,4 @@ type Query {
 }
 
 #> client-sdl
-type Failure
-  @error(
-    message: "@file must have parameter src"
-    trace: ["Query", "user", "@file"]
-  )
+type Failure @error(message: "@file must have parameter src", trace: ["Query", "user", "@file"])
