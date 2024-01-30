@@ -1,9 +1,5 @@
 # Caching
 
-Skipped until [#1058](https://github.com/tailcallhq/tailcall/pull/1058) is merged.
-
-##### skip
-
 #### server:
 
 ```graphql

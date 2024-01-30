@@ -19,6 +19,8 @@ expression: response
       "condZero": 0,
       "defaultToTrue": true,
       "defaultToZero": 0,
+      "ifOne": 1,
+      "ifZero": 0,
       "isEmptyFalse1": false,
       "isEmptyFalse2": false,
       "isEmptyFalse3": false,

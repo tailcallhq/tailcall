@@ -16,8 +16,6 @@ mod http;
 
 const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
 const BAD_GRAPHQL_MSG: &str = "This test has invalid GraphQL that wasn't caught by http_spec before conversion. It is skipped right now, but it should be fixed at some point.";
-const CACHE_NOSER_MSG: &str =
-    "Skipped until [#1058](https://github.com/tailcallhq/tailcall/pull/1058) is merged.";
 
 impl From<http::DownstreamAssertion> for execution::DownstreamAssertion {
     fn from(value: http::DownstreamAssertion) -> Self {
@@ -84,13 +82,6 @@ async fn main() {
                 ConfigSource::File(x) => reader.read(x).await.is_err(),
                 ConfigSource::Inline(_) => false,
             };
-            let cache_noser_skip: bool = match &old.config {
-                ConfigSource::File(x) => tokio::fs::read_to_string(x)
-                    .await
-                    .unwrap()
-                    .contains("@cache("),
-                ConfigSource::Inline(x) => x.contains("@cache("),
-            };
 
             let mut description = old
                 .description
@@ -109,19 +100,13 @@ async fn main() {
                 }
                 description += BAD_GRAPHQL_MSG;
             }
-            if cache_noser_skip {
-                if !description.is_empty() {
-                    description += "\n";
-                }
-                description += CACHE_NOSER_MSG;
-            }
 
             let mut spec = format!("# {}\n", old.name);
             if !description.is_empty() {
                 spec += &format!("\n{}\n", description);
             }
 
-            if bad_graphql_skip || cache_noser_skip {
+            if bad_graphql_skip {
                 spec += "\n##### skip\n";
             } else if let Some(runner) = &old.runner {
                 if runner.to_owned() != Annotation::Fail {
