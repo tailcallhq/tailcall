@@ -124,6 +124,21 @@ directive @grpc(
 ) on FIELD_DEFINITION
 
 """
+@file
+The @file operator indicates that a field or node is backed by a local file.
+
+For instance, if you add the @file operator to the `users` field of the Query type with a source of `./users.json`, it signifies that the `users` field is backed by a JSON file. YAML is also supported.
+The path argument specifies the path of the REST API.
+In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
+"""
+directive @file(
+  """
+  The path of the data file.
+  """
+  src: String!
+) on FIELD_DEFINITION
+
+"""
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
 if you add the @http operator to the `users` field of the Query type with a path 
 argument of `"/users"`, it signifies that the `users` field is backed by a REST API. 
@@ -568,6 +583,20 @@ directive @grpc(
   """
   service: String!
 ) on FIELD_DEFINITION
+"""
+@file
+The @file operator indicates that a field or node is backed by a local file.
+
+For instance, if you add the @file operator to the `users` field of the Query type with a source of `./users.json`, it signifies that the `users` field is backed by a JSON file. YAML is also supported.
+The path argument specifies the path of the REST API.
+In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
+"""
+input File {
+  """
+  The path of the data file.
+  """
+  src: String!
+}
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
 if you add the @http operator to the `users` field of the Query type with a path 
