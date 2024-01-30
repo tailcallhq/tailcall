@@ -17,7 +17,7 @@ expression: response
             "line": 1
           }
         ],
-        "message": "IOException: No mock found for request: POST http://upstream/graphql in /home/mogery/tailcall/tests/execution/graphql-dataloader-batch-keys.md"
+        "message": "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-dataloader-batch-keys.md"
       }
     ]
   }

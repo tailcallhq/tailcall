@@ -449,7 +449,12 @@ impl HttpIO for MockHttpClient {
                 "No mock found for request: {:?} {} in {}",
                 req.method(),
                 req.url(),
-                format!("{}", self.spec.path.to_str().unwrap())
+                self.spec
+                    .path
+                    .strip_prefix(std::env::current_dir()?)
+                    .unwrap_or(&self.spec.path)
+                    .to_str()
+                    .unwrap()
             ))?;
 
         // Clone the response from the mock to avoid borrowing issues.
