@@ -70,7 +70,7 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(config) => config,
         Err(e) => {
             let mut response = async_graphql::Response::default();
-            let server_error = if e.to_string() == "DummyFileIO" {
+            let server_error = if format!("{:?}", e.source()) == "Some(\"DummyFileIO\")" {
                 ServerError::new("Invalid Config URL specified", None)
             } else {
                 ServerError::new(format!("{}", e), None)
