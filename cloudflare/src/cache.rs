@@ -30,12 +30,7 @@ impl CloudflareChronoCache {
 impl Cache for CloudflareChronoCache {
     type Key = u64;
     type Value = ConstValue;
-    async fn set<'a>(
-        &'a self,
-        key: u64,
-        value: ConstValue,
-        ttl: NonZeroU64,
-    ) -> Result<Option<Self::Value>> {
+    async fn set<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<()> {
         let kv_store = self.get_kv()?;
         let ttl = ttl.get();
         async_std::task::spawn_local(async move {
@@ -45,8 +40,7 @@ impl Cache for CloudflareChronoCache {
                 .expiration_ttl(ttl)
                 .execute()
                 .await
-                .map_err(to_anyhow)?;
-            Ok(Some(value))
+                .map_err(to_anyhow)
         })
         .await
     }

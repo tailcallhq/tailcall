@@ -58,7 +58,7 @@ pub trait Cache: Send + Sync {
         key: Self::Key,
         value: Self::Value,
         ttl: NonZeroU64,
-    ) -> anyhow::Result<Option<Self::Value>>;
+    ) -> anyhow::Result<()>;
     async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Option<Self::Value>>;
 }
 

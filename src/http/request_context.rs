@@ -89,7 +89,7 @@ impl RequestContext {
         key: u64,
         value: ConstValue,
         ttl: NonZeroU64,
-    ) -> anyhow::Result<Option<ConstValue>> {
+    ) -> anyhow::Result<()> {
         self.cache.set(key, value, ttl).await
     }
 
@@ -126,7 +126,7 @@ mod test {
     use hyper::HeaderMap;
 
     use crate::blueprint::Server;
-    use crate::cache::NativeChronoCache;
+    use crate::cache::InMemoryCache;
     use crate::cli::{init_env, init_http, init_http2_only};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
@@ -146,7 +146,7 @@ mod test {
                 upstream,
                 http_data_loaders: Arc::new(vec![]),
                 gql_data_loaders: Arc::new(vec![]),
-                cache: Arc::new(NativeChronoCache::new()),
+                cache: Arc::new(InMemoryCache::default()),
                 grpc_data_loaders: Arc::new(vec![]),
                 min_max_age: Arc::new(Mutex::new(None)),
                 cache_public: Arc::new(Mutex::new(None)),
