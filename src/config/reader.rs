@@ -4,14 +4,15 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
 
-use super::{ConfigSet, Script, ScriptOptions};
+use super::{ConfigSet, ConfigSetResolver, Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::{FileIO, HttpIO};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked assets.
 pub struct ConfigReader {
-    file: Arc<dyn FileIO>,
-    http: Arc<dyn HttpIO>,
+    file_io: Arc<dyn FileIO>,
+    http_io: Arc<dyn HttpIO>,
+    resolver: ConfigSetResolver,
 }
 
 struct FileRead {
@@ -20,8 +21,9 @@ struct FileRead {
 }
 
 impl ConfigReader {
-    pub fn init(file: Arc<dyn FileIO>, http: Arc<dyn HttpIO>) -> Self {
-        Self { file, http }
+    pub fn init(file_io: Arc<dyn FileIO>, http_io: Arc<dyn HttpIO>) -> Self {
+        let resolver = ConfigSetResolver::init(file_io.clone(), http_io.clone());
+        Self { file_io, http_io, resolver }
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
@@ -29,14 +31,14 @@ impl ConfigReader {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             let response = self
-                .http
+                .http_io
                 .execute(reqwest::Request::new(reqwest::Method::GET, url))
                 .await?;
 
             String::from_utf8(response.body.to_vec())?
         } else {
             // Is a file path
-            self.file.read(&file.to_string()).await?
+            self.file_io.read(&file.to_string()).await?
         };
 
         Ok(FileRead { content, path: file.to_string() })
@@ -82,10 +84,7 @@ impl ConfigReader {
             let new_config = self.read_script(new_config).await?;
             config = config.merge_right(&new_config);
         }
-        let config_set = ConfigSet::from(config);
-        let config_set = config_set
-            .resolve_extensions(self.file.clone(), self.http.clone())
-            .await;
+        let config_set = self.resolver.make(config).await?;
         Ok(config_set)
     }
 }

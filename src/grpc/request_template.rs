@@ -108,7 +108,7 @@ mod tests {
     use super::RequestTemplate;
     use crate::cli::{init_file, init_http};
     use crate::config::{
-        Config, Field, GraphQLOperationType, Grpc, ProtoPathResolver, Type, Upstream,
+        Config, ConfigSetResolver, Field, GraphQLOperationType, Grpc, Type, Upstream,
     };
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::mustache::Mustache;
@@ -123,7 +123,7 @@ mod tests {
 
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let resolver = ProtoPathResolver::init(file_io, http_io);
+        let resolver = ConfigSetResolver::init(file_io, http_io);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: test_file.to_str().unwrap().to_string(),
@@ -134,9 +134,15 @@ mod tests {
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
 
-        let protobuf_set =
-            ProtobufSet::from_proto_file(&resolver.get_descriptor_set(&config).await.unwrap())
-                .unwrap();
+        let protobuf_set = ProtobufSet::from_proto_file(
+            &resolver
+                .make(config)
+                .await
+                .unwrap()
+                .extensions
+                .grpc_file_descriptor,
+        )
+        .unwrap();
 
         let service = protobuf_set.find_service("Greeter").unwrap();
 

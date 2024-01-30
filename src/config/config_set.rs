@@ -1,10 +1,8 @@
 use std::ops::Deref;
-use std::sync::Arc;
 
 use prost_reflect::prost_types::FileDescriptorSet;
 
-use crate::config::{Config, ProtoPathResolver};
-use crate::{FileIO, HttpIO};
+use crate::config::Config;
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default)]
@@ -34,21 +32,5 @@ impl Deref for ConfigSet {
 impl From<Config> for ConfigSet {
     fn from(config: Config) -> Self {
         ConfigSet { config, ..Default::default() }
-    }
-}
-
-impl ConfigSet {
-    pub async fn resolve_extensions(
-        self,
-        file_io: Arc<dyn FileIO>,
-        http_io: Arc<dyn HttpIO>,
-    ) -> Self {
-        let resolver = ProtoPathResolver::init(file_io, http_io);
-        let grpc_file_descriptor = resolver
-            .get_descriptor_set(&self.config)
-            .await
-            .unwrap_or_default();
-        let extensions = Extensions { grpc_file_descriptor, ..self.extensions };
-        Self { extensions, ..self }
     }
 }
