@@ -104,31 +104,25 @@ fn to_types(
 ) -> Valid<BTreeMap<String, config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
-        let directives = &type_definition.node.directives;
-        Cache::from_directives(directives.iter())
-            .and_then(|cache| match type_definition.node.kind.clone() {
-                TypeKind::Object(object_type) => to_object_type(
-                    &object_type,
-                    &type_definition.node.description,
-                    &type_definition.node.directives,
-                    cache,
-                )
-                .some(),
-                TypeKind::Interface(interface_type) => to_object_type(
-                    &interface_type,
-                    &type_definition.node.description,
-                    &type_definition.node.directives,
-                    cache,
-                )
-                .some(),
-                TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-                TypeKind::InputObject(input_object_type) => {
-                    to_input_object(input_object_type, cache).some()
-                }
-                TypeKind::Union(_) => Valid::none(),
-                TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
-            })
-            .map(|option| (type_name, option))
+        match type_definition.node.kind.clone() {
+            TypeKind::Object(object_type) => to_object_type(
+                &object_type,
+                &type_definition.node.description,
+                &type_definition.node.directives,
+            )
+            .some(),
+            TypeKind::Interface(interface_type) => to_object_type(
+                &interface_type,
+                &type_definition.node.description,
+                &type_definition.node.directives,
+            )
+            .some(),
+            TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
+            TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
+            TypeKind::Union(_) => Valid::none(),
+            TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
+        }
+        .map(|option| (type_name, option))
     })
     .map(|vec| {
         BTreeMap::from_iter(
@@ -168,7 +162,6 @@ fn to_object_type<T>(
     object: &T,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
-    cache: Option<Cache>,
 ) -> Valid<config::Type, String>
 where
     T: ObjectLike,
@@ -177,19 +170,22 @@ where
     let implements = object.implements();
     let interface = object.is_interface();
 
-    to_fields(fields, cache).map(|fields| {
-        let doc = description.to_owned().map(|pos| pos.node);
-        let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-        let added_fields = to_add_fields_from_directives(directives);
-        config::Type {
-            fields,
-            added_fields,
-            doc,
-            interface,
-            implements,
-            ..Default::default()
-        }
-    })
+    Cache::from_directives(directives.iter())
+        .zip(to_fields(fields))
+        .map(|(cache, fields)| {
+            let doc = description.to_owned().map(|pos| pos.node);
+            let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+            let added_fields = to_add_fields_from_directives(directives);
+            config::Type {
+                fields,
+                added_fields,
+                doc,
+                interface,
+                implements,
+                cache,
+                ..Default::default()
+            }
+        })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
     let variants = enum_type
@@ -199,57 +195,44 @@ fn to_enum(enum_type: EnumType) -> config::Type {
         .collect();
     config::Type { variants: Some(variants), ..Default::default() }
 }
-fn to_input_object(
-    input_object_type: InputObjectType,
-    cache: Option<Cache>,
-) -> Valid<config::Type, String> {
-    to_input_object_fields(&input_object_type.fields, cache)
+fn to_input_object(input_object_type: InputObjectType) -> Valid<config::Type, String> {
+    to_input_object_fields(&input_object_type.fields)
         .map(|fields| config::Type { fields, ..Default::default() })
 }
 
 fn to_fields_inner<T, F>(
     fields: &Vec<Positioned<T>>,
-    cache: Option<Cache>,
     transform: F,
 ) -> Valid<BTreeMap<String, config::Field>, String>
 where
-    F: Fn(&T, Option<Cache>) -> Valid<config::Field, String>,
+    F: Fn(&T) -> Valid<config::Field, String>,
     T: HasName,
 {
     Valid::from_iter(fields, |field| {
         let field_name = pos_name_to_string(field.node.name());
-        transform(&field.node, cache.clone()).map(|field| (field_name, field))
+        transform(&field.node).map(|field| (field_name, field))
     })
     .map(BTreeMap::from_iter)
 }
 fn to_fields(
     fields: &Vec<Positioned<FieldDefinition>>,
-    cache: Option<Cache>,
 ) -> Valid<BTreeMap<String, config::Field>, String> {
-    to_fields_inner(fields, cache, to_field)
+    to_fields_inner(fields, to_field)
 }
 fn to_input_object_fields(
     input_object_fields: &Vec<Positioned<InputValueDefinition>>,
-    cache: Option<Cache>,
 ) -> Valid<BTreeMap<String, config::Field>, String> {
-    to_fields_inner(input_object_fields, cache, to_input_object_field)
+    to_fields_inner(input_object_fields, to_input_object_field)
 }
-fn to_field(
-    field_definition: &FieldDefinition,
-    cache: Option<Cache>,
-) -> Valid<config::Field, String> {
-    to_common_field(field_definition, to_args(field_definition), cache)
+fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
+    to_common_field(field_definition, to_args(field_definition))
 }
-fn to_input_object_field(
-    field_definition: &InputValueDefinition,
-    cache: Option<Cache>,
-) -> Valid<config::Field, String> {
-    to_common_field(field_definition, BTreeMap::new(), cache)
+fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
+    to_common_field(field_definition, BTreeMap::new())
 }
 fn to_common_field<F>(
     field: &F,
     args: BTreeMap<String, config::Arg>,
-    parent_cache: Option<Cache>,
 ) -> Valid<config::Field, String>
 where
     F: Fieldlike,
@@ -290,7 +273,7 @@ where
                     const_field,
                     graphql,
                     expr,
-                    cache: cache.or(parent_cache),
+                    cache,
                 }
             },
         )
