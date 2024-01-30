@@ -79,7 +79,10 @@ async fn get_app_ctx(
     };
 
     match showcase_get_app_ctx::<GraphQLRequest>(req, resources).await? {
-        Ok(app_ctx) => {
+        Ok(mut app_ctx) => {
+            // Cloudflare should always ha GraphiQL enabled.
+            app_ctx.blueprint.server.enable_graphiql = true;
+
             let app_ctx = Arc::new(app_ctx);
             if let Some(file_path) = file_path {
                 *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
