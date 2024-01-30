@@ -362,12 +362,13 @@ impl ExecutionSpec {
             ));
         }
 
+        // TODO: add client
         let unique_block_count = [assert.is_some(), merged.is_some()]
             .into_iter()
-            .filter(|x| *x == true)
+            .filter(|x| *x)
             .count();
 
-        if unique_block_count >= 2 { // TODO: add client
+        if unique_block_count >= 2 {
             return Err(anyhow!(
                 "Unexpected blocks in {:?}: You may only define one of these types of blocks: assert, merged, client",
                 path,
@@ -601,7 +602,8 @@ async fn assert_spec(spec: ExecutionSpec) {
         server.push(config);
     }
 
-    if let Some(assert_spec) = spec.assert.as_ref() { // assert: Run assert specs
+    if let Some(assert_spec) = spec.assert.as_ref() {
+        // assert: Run assert specs
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
             let response = run_assert(
                 spec.clone(),
@@ -633,7 +635,8 @@ async fn assert_spec(spec: ExecutionSpec) {
             insta::assert_json_snapshot!(snapshot_name, response);
             log::info!("\tassert #{} ok", i + 1);
         }
-    } else if let Some(expected_sdl) = spec.merged.as_ref() { // merged: Run merged specs
+    } else if let Some(expected_sdl) = spec.merged.as_ref() {
+        // merged: Run merged specs
         let expected_sdl = expected_sdl.as_str();
 
         let actual = server
@@ -654,8 +657,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             Ok(x) => x,
             Err(e) => panic!(
                 "Failed to parse the expected merge SDL in {:?}: {}",
-                spec.path,
-                e,
+                spec.path, e,
             ),
         };
 

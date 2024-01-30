@@ -38,8 +38,8 @@ async fn main() {
     let http_dir =
         canonicalize(PathBuf::from("tests/http")).expect("Could not find http directory");
 
-    let merge_dir =
-        canonicalize(PathBuf::from("tests/graphql/merge")).expect("Could not find graphql/merge directory");
+    let merge_dir = canonicalize(PathBuf::from("tests/graphql/merge"))
+        .expect("Could not find graphql/merge directory");
 
     let execution_dir =
         canonicalize(PathBuf::from("tests/execution")).expect("Could not find execution directory");
@@ -300,13 +300,16 @@ async fn main() {
                 .as_str()
                 == "graphql"
         {
-            let spec = "\n".to_string() + read_to_string(&path).expect("Failed to read graphql/merge spec").as_str();
+            let spec = "\n".to_string()
+                + read_to_string(&path)
+                    .expect("Failed to read graphql/merge spec")
+                    .as_str();
 
             let mut md_spec = format!("# {}\n\n", path.file_name().unwrap().to_string_lossy());
 
             let mut server_cnt = 0;
             let mut merged_cnt = 0;
-            
+
             for part in spec.split("\n#> ").skip(1) {
                 let (typ, content) = part.split_once("\n").unwrap();
 
@@ -318,7 +321,7 @@ async fn main() {
                     "server-sdl" => {
                         md_spec += &format!("#### server:\n\n```graphql\n{}\n```\n\n", content);
                         server_cnt += 1;
-                    },
+                    }
                     "merged-sdl" => {
                         md_spec += &format!("#### merged:\n\n```graphql\n{}\n```\n\n", content);
                         merged_cnt += 1;
@@ -332,7 +335,10 @@ async fn main() {
             }
 
             if merged_cnt != 1 {
-                panic!("Unexpected number of merged SDL declarations in {:?} (only one is allowed)", path);
+                panic!(
+                    "Unexpected number of merged SDL declarations in {:?} (only one is allowed)",
+                    path
+                );
             }
 
             let md_path = PathBuf::from(format!("{}.md", file_stem));
