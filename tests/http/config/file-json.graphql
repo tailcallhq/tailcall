@@ -9,4 +9,5 @@ type User {
 
 type Query {
   users: [User] @file(src: "./tests/http/config/users.json")
+  expr_users: [User] @expr(body: {file: {src: "./tests/http/config/users.json"}})
 }
