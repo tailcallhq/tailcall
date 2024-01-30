@@ -1,4 +1,3 @@
-pub mod cache;
 mod command;
 pub(crate) mod env;
 mod error;
@@ -12,13 +11,13 @@ mod tc;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use cache::NativeChronoCache;
 pub use env::EnvNative;
 pub use error::CLIError;
 pub use file::NativeFileIO;
 pub use http::NativeHttp;
 pub use tc::run;
 
+use crate::cache::InMemoryCache;
 use crate::config::Upstream;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
@@ -57,6 +56,6 @@ pub fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -
     init_hook_http(http_io, script)
 }
 
-pub fn init_chrono_cache<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
-    NativeChronoCache::new()
+pub fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {
+    InMemoryCache::new()
 }
