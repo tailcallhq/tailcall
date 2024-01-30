@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::fs::{self, canonicalize, read_dir, File};
+use std::fs::{self, canonicalize, read_dir, read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -37,6 +37,9 @@ impl From<http::HttpSpec> for execution::AssertSpec {
 async fn main() {
     let http_dir =
         canonicalize(PathBuf::from("tests/http")).expect("Could not find http directory");
+
+    let merge_dir =
+        canonicalize(PathBuf::from("tests/graphql/merge")).expect("Could not find graphql/merge directory");
 
     let execution_dir =
         canonicalize(PathBuf::from("tests/execution")).expect("Could not find execution directory");
@@ -162,7 +165,7 @@ async fn main() {
                 .expect("Failed to open execution spec");
 
             f.write_all(spec.as_bytes())
-                .expect("Failed to open execution spec");
+                .expect("Failed to write execution spec");
 
             for (i, assert) in old.assert.iter().enumerate() {
                 let mut f = File::options()
@@ -269,6 +272,84 @@ async fn main() {
             files_already_processed.insert(file_stem);
         } else if path.is_file() {
             println!("skipping unexpected file: {:?}", path);
+        }
+    }
+
+    for x in read_dir(merge_dir).expect("Could not read graphql/merge directory") {
+        let x = x.unwrap();
+
+        let path = x.path();
+        let file_stem = path
+            .file_stem()
+            .unwrap()
+            .to_string_lossy()
+            .to_owned()
+            .to_string();
+
+        if files_already_processed.contains(&file_stem) {
+            panic!("File name collision: {}", file_stem);
+        }
+
+        if path.is_file()
+            && path
+                .extension()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string()
+                .as_str()
+                == "graphql"
+        {
+            let spec = "\n".to_string() + read_to_string(&path).expect("Failed to read graphql/merge spec").as_str();
+
+            let mut md_spec = format!("# {}\n\n", path.file_name().unwrap().to_string_lossy());
+
+            let mut server_cnt = 0;
+            let mut merged_cnt = 0;
+            
+            for part in spec.split("\n#> ").skip(1) {
+                let (typ, content) = part.split_once("\n").unwrap();
+
+                // CRLF support
+                let typ = typ.trim();
+                let content = content.trim().to_string();
+
+                match typ {
+                    "server-sdl" => {
+                        md_spec += &format!("#### server:\n\n```graphql\n{}\n```\n\n", content);
+                        server_cnt += 1;
+                    },
+                    "merged-sdl" => {
+                        md_spec += &format!("#### merged:\n\n```graphql\n{}\n```\n\n", content);
+                        merged_cnt += 1;
+                    }
+                    _ => panic!("Unsupported part type in {:?}: {}", path, typ),
+                };
+            }
+
+            if server_cnt < 1 {
+                panic!("Unexpected number of server SDL declarations in {:?} (at least one is required, two are recommended)", path);
+            }
+
+            if merged_cnt != 1 {
+                panic!("Unexpected number of merged SDL declarations in {:?} (only one is allowed)", path);
+            }
+
+            let md_path = PathBuf::from(format!("{}.md", file_stem));
+
+            let mut f = File::options()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(execution_dir.join(&md_path))
+                .expect("Failed to open execution spec");
+
+            f.write_all(md_spec.as_bytes())
+                .expect("Failed to write execution spec");
+
+            files_already_processed.insert(file_stem);
+        } else if path.is_file() {
+            println!("Skipping unexpected file: {:?}", path);
         }
     }
 
