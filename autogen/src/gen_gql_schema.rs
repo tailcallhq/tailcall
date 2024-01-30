@@ -249,7 +249,6 @@ fn write_type(
                 } else {
                     write!(writer, "JSON")
                 }
-                // println!("{name}: {schema:?}");
             } else if let Some(sub_schema) = schema.subschemas.clone().into_iter().next() {
                 let list = if let Some(list) = sub_schema.any_of {
                     list
@@ -258,7 +257,6 @@ fn write_type(
                 } else if let Some(list) = sub_schema.one_of {
                     list
                 } else {
-                    // println!("{name}: {schema:?}");
                     write!(writer, "JSON")?;
                     return Ok(());
                 };
@@ -272,7 +270,6 @@ fn write_type(
             } else if let Some(name) = schema.reference {
                 write_reference(writer, &name, extra_it)
             } else {
-                // println!("{name}: {schema:?}");
                 write!(writer, "JSON")
             }
         }
@@ -286,8 +283,6 @@ fn write_field(
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    // if name.as_str() == "input" { println!("{name:?}: {schema:?}") };
-    // if name.as_str() == "path" { println!("{name}: {schema:?}"); }
     write!(writer, "{name}: ")?;
     write_type(writer, name, schema, defs, extra_it)?;
     writeln!(writer, "")
@@ -301,10 +296,6 @@ fn write_input_type(
     scalars: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    // println!("InputType {name}");
-    // if name.as_str() == "Auth" {
-    // println!("{typ:?}");
-    // }
     let name = match input_whitelist_lookup(&name, extra_it) {
         Some(name) => name,
         None => return Ok(()),
@@ -398,7 +389,6 @@ fn write_property(
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    // println!("Property: name = {name}");
     let property = property.into_object();
     let description = property
         .metadata
@@ -488,32 +478,13 @@ fn write_directive(
     Ok(())
 }
 
-// fn write_directive_for<T: JsonSchema>(
-//   writer: &mut IndentedWriter<impl Write>,
-//   name: &str,
-//   written_directives: &mut HashSet<String>,
-//   extra_it: &mut BTreeMap<String, ExtraTypes>,
-// ) -> Result<()> {
-//   let schema: RootSchema = schemars::schema_for!(T);
-//   let defs = schema.definitions;
-//   write_directive(
-//     writer,
-//     name.to_string(),
-//     schema.schema,
-//     &defs,
-//     written_directives,
-//     extra_it,
-//   )?;
-//   Ok(())
-// }
-
 fn write_all_directives(
     writer: &mut IndentedWriter<impl Write>,
     written_directives: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> Result<()> {
     let schema = schemars::schema_for!(config::Config);
-    // println!("{schema:#?}");
+
     let defs: BTreeMap<String, Schema> = schema.definitions;
     let dirs: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     for (name, schema) in dirs.into_iter() {
@@ -638,13 +609,6 @@ fn generate_rc_file(file: File) -> Result<()> {
     let mut written_directives = HashSet::new();
 
     let mut extra_it = BTreeMap::new();
-
-    // write_schema_for::<config::Server>(&mut file, "Server", Entity::Schema, wd, extra_it_ref)?;
-    // write_schema_for::<config::Upstream>(&mut file, "Upstream", Entity::Schema, wd, extra_it_ref)?;
-    // write_schema_for::<config::AddField>(&mut file, "AddField", Entity::Object, wd, extra_it_ref)?;
-    // write_schema_for::<config::Cache>(&mut file, "Cache", Entity::Object, wd, extra_it_ref)?;
-
-    // write_schema_for_field(&mut file, wd, extra_it_ref)?;
 
     write_all_directives(&mut file, &mut written_directives, &mut extra_it)?;
     write_all_input_types(&mut file, extra_it)?;
