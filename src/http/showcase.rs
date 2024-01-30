@@ -127,9 +127,7 @@ mod tests {
         let file = DummyFileIO;
 
         assert!(file.read("./README.md").await.is_err());
-        assert!(
-            file.write("./README.md", b"hello world").await.is_err()
-        );
+        assert!(file.write("./README.md", b"hello world").await.is_err());
     }
 
     #[tokio::test]
