@@ -100,3 +100,52 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         resources.cache,
     )))
 }
+
+#[cfg(test)]
+mod tests {
+    use hyper::Request;
+    use serde_json::json;
+    use std::sync::Arc;
+
+    use crate::{async_graphql_hyper::GraphQLRequest, cli::{init_env, init_file, init_http, init_in_memory_cache}, config::Upstream, http::{handle_request, showcase::{DummyEnvIO, DummyFileIO}, showcase_get_app_ctx, ShowcaseResources}, EnvIO as _, FileIO as _};
+
+    #[test]
+    fn dummy_env_works() {
+        let env = DummyEnvIO;
+
+        assert_eq!(env.get("PATH").is_none(), true);
+    }
+
+    #[tokio::test]
+    async fn dummy_file_works() {
+        let file = DummyFileIO;
+
+        assert_eq!(file.read("./README.md").await.is_err(), true);
+        assert_eq!(file.write("./README.md", b"hello world").await.is_err(), true);
+    }
+
+    #[tokio::test]
+    async fn works_with_file() {
+        let req = Request::builder()
+            .method("POST")
+            .uri("http://upstream/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
+            .body(hyper::Body::from(json!({
+                "query": "query { user { name } }"
+            }).to_string()))
+            .unwrap();
+
+        let app = showcase_get_app_ctx::<GraphQLRequest>(
+            &req,
+            ShowcaseResources {
+                http: init_http(&Upstream::default(), None),
+                env: Some(init_env()),
+                file: Some(init_file()),
+                cache: Arc::new(init_in_memory_cache()),
+            },
+        ).await.unwrap().unwrap();
+
+        let res = handle_request::<GraphQLRequest>(req, Arc::new(app)).await.unwrap();
+
+        println!("{:#?}", res);
+    }
+}
