@@ -24,7 +24,6 @@ impl Worker {
         super::shim::init(&sync_v8, Arc::new(http)).await?;
         let v8 = sync_v8.clone();
         let closure = sync_v8
-            .clone()
             .borrow_ret(move |mv8| {
                 let script = mini_v8::Script {
                     source: create_closure(script.source.as_str()),
@@ -42,7 +41,7 @@ impl Worker {
                 Ok(v8.as_sync_function(closure))
             })
             .await?;
-        Ok(Self { sync_v8: sync_v8.clone(), on_event_js: closure })
+        Ok(Self { sync_v8, on_event_js: closure })
     }
 
     pub async fn on_event(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {

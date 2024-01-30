@@ -35,9 +35,10 @@ impl SyncV8 {
         let (rx, tx) = std::sync::mpsc::channel::<ThreadId>();
         let current = Handle::current();
         runtime.spawn(async move {
-            rx.send(std::thread::current().id()).unwrap();
+            rx.send(std::thread::current().id())
+                .expect("failed to send thread id")
         });
-        let thread_id = tx.recv().unwrap();
+        let thread_id = tx.recv().expect("failed to receive thread id");
         Self { v8, runtime, thread_id, current }
     }
 
@@ -49,8 +50,9 @@ impl SyncV8 {
     where
         F: FnOnce(&mini_v8::MiniV8) -> anyhow::Result<()> + 'static,
     {
-        let f = SpawnBlock::new(f, self.clone());
-        self.borrow_ret(|_| {
+        let sync_v8 = self.clone();
+        self.borrow_ret(move |_| {
+            let f = SpawnBlock::new(f, sync_v8.clone());
             f.call()?;
             Ok(())
         })
@@ -62,22 +64,22 @@ impl SyncV8 {
         F: FnOnce(&mini_v8::MiniV8) -> anyhow::Result<R> + 'static,
         R: Clone + Send + 'static,
     {
-        if self.on_v8_thread() {
-            panic!("SyncV8::borrow_ret called from v8 thread")
-        }
         let f = SpawnBlock::new(f, self.clone());
         let (tx, mut rx) = tokio::sync::broadcast::channel::<R>(1024);
-        self.runtime
-            .spawn(async move { tx.send(f.call().unwrap()) });
+        self.runtime.spawn(async move {
+            let r = f.call()?;
+            tx.send(r).map_err(|e| anyhow::anyhow!(e.to_string()))
+        });
         rx.recv().await.or_anyhow("failed to receive result")
     }
 
     pub fn as_sync_function(&self, f: mini_v8::Function) -> SyncV8Function {
+        self.assert_on_v8();
         SyncV8Function { callback: f, sync_v8: self.clone() }
     }
 
-    fn on_v8_thread(&self) -> bool {
-        self.thread_id == std::thread::current().id()
+    fn assert_on_v8(&self) -> () {
+        assert_eq!(self.thread_id, std::thread::current().id())
     }
 }
 
@@ -95,11 +97,7 @@ impl<R> SpawnBlock<R> {
     }
 
     fn call(self) -> anyhow::Result<R> {
-        let current_thread = std::thread::current();
-        let thread_id = current_thread.id();
-        if thread_id != self.v8.thread_id {
-            panic!("SpawnBlock called from wrong thread");
-        }
+        self.v8.assert_on_v8();
         let v8 = self.v8.clone();
         (self.inner)(&v8.v8)
     }
@@ -119,13 +117,10 @@ impl SyncV8Function {
         &self,
         args: impl ToValues + 'static,
     ) -> anyhow::Result<R> {
-        if self.sync_v8.on_v8_thread() {
-            self.callback
-                .call(args)
-                .or_anyhow("args could not be encoded to values")
-        } else {
-            panic!("SyncV8Function::call called from a non-v8 thread")
-        }
+        self.sync_v8.assert_on_v8();
+        self.callback
+            .call(args)
+            .or_anyhow("args could not be encoded to values")
     }
 }
 

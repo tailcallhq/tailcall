@@ -15,11 +15,13 @@ fn v8_serde(value: mini_v8::Value) -> anyhow::Result<serde_json::Value> {
         Value::Undefined => serde_json::Value::Null,
         Value::Null => serde_json::Value::Null,
         Value::Boolean(v) => serde_json::Value::Bool(v),
-        Value::Number(n) => serde_json::Value::Number(if n.is_sign_positive() {
-            Number::from(n as u64)
-        } else {
-            Number::from_f64(n).ok_or(anyhow::anyhow!("error converting number"))?
-        }),
+        Value::Number(n) => {
+            serde_json::Value::Number(if n.is_sign_positive() && n.fract() == 0.0 {
+                Number::from(n as u64)
+            } else {
+                Number::from_f64(n).ok_or(anyhow::anyhow!("error converting number"))?
+            })
+        }
         Value::String(s) => serde_json::Value::String(s.to_string()),
         Value::Array(v) => {
             let mut arr = Vec::new();

@@ -63,8 +63,8 @@ async fn fetch(sync_v8: SyncV8, http: Arc<dyn HttpIO>, args: JSFetchArgs) -> any
         .await?;
     match response {
         Ok(response) => {
-            let js_response = JsResponse::try_from(&response).unwrap();
-            let response = serde_json::to_value(js_response).unwrap();
+            let js_response = JsResponse::try_from(&response)?;
+            let response = serde_json::to_value(js_response)?;
             sync_v8
                 .clone()
                 .borrow(move |mv8| {
