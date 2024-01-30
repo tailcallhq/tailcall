@@ -327,10 +327,12 @@ impl HttpIO for MockHttpClient {
             response.headers.insert(header_name, header_value);
         }
 
-        if let Some(body) = mock_response.0.text_body { // Return plaintext body if specified
+        if let Some(body) = mock_response.0.text_body {
+            // Return plaintext body if specified
             let body = string_to_bytes(&body);
             response.body = Bytes::from_iter(body);
-        } else if is_grpc { // Special Handling for GRPC
+        } else if is_grpc {
+            // Special Handling for GRPC
             let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
             response.body = Bytes::from_iter(body);
         } else {
