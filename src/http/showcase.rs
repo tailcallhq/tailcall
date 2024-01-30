@@ -103,25 +103,33 @@ pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod tests {
-    use hyper::Request;
-    use serde_json::json;
     use std::sync::Arc;
 
-    use crate::{async_graphql_hyper::GraphQLRequest, cli::{init_env, init_file, init_http, init_in_memory_cache}, config::Upstream, http::{handle_request, showcase::{DummyEnvIO, DummyFileIO}, showcase_get_app_ctx, ShowcaseResources}, EnvIO as _, FileIO as _};
+    use hyper::Request;
+    use serde_json::json;
+
+    use crate::async_graphql_hyper::GraphQLRequest;
+    use crate::cli::{init_env, init_file, init_http, init_in_memory_cache};
+    use crate::config::Upstream;
+    use crate::http::showcase::{DummyEnvIO, DummyFileIO};
+    use crate::http::{handle_request, showcase_get_app_ctx, ShowcaseResources};
+    use crate::{EnvIO as _, FileIO as _};
 
     #[test]
     fn dummy_env_works() {
         let env = DummyEnvIO;
 
-        assert_eq!(env.get("PATH").is_none(), true);
+        assert!(env.get("PATH").is_none());
     }
 
     #[tokio::test]
     async fn dummy_file_works() {
         let file = DummyFileIO;
 
-        assert_eq!(file.read("./README.md").await.is_err(), true);
-        assert_eq!(file.write("./README.md", b"hello world").await.is_err(), true);
+        assert!(file.read("./README.md").await.is_err());
+        assert!(
+            file.write("./README.md", b"hello world").await.is_err()
+        );
     }
 
     #[tokio::test]
@@ -142,9 +150,14 @@ mod tests {
                 file: Some(init_file()),
                 cache: Arc::new(init_in_memory_cache()),
             },
-        ).await.unwrap().unwrap();
+        )
+        .await
+        .unwrap()
+        .unwrap();
 
-        let res = handle_request::<GraphQLRequest>(req, Arc::new(app)).await.unwrap();
+        let res = handle_request::<GraphQLRequest>(req, Arc::new(app))
+            .await
+            .unwrap();
 
         println!("{:#?}", res);
     }
