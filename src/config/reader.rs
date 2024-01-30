@@ -6,13 +6,12 @@ use url::Url;
 
 use super::{ConfigSet, Script, ScriptOptions};
 use crate::config::{Config, Source};
-use crate::{FileIO, HttpIO, ProtoPathResolver};
+use crate::{FileIO, HttpIO};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked assets.
 pub struct ConfigReader {
     file: Arc<dyn FileIO>,
     http: Arc<dyn HttpIO>,
-    resolver: Arc<dyn ProtoPathResolver>,
 }
 
 struct FileRead {
@@ -21,12 +20,8 @@ struct FileRead {
 }
 
 impl ConfigReader {
-    pub fn init(
-        file: Arc<dyn FileIO>,
-        http: Arc<dyn HttpIO>,
-        resolver: Arc<dyn ProtoPathResolver>,
-    ) -> Self {
-        Self { file, http, resolver }
+    pub fn init(file: Arc<dyn FileIO>, http: Arc<dyn HttpIO>) -> Self {
+        Self { file, http }
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
@@ -89,7 +84,7 @@ impl ConfigReader {
         }
         let config_set = ConfigSet::from(config);
         let config_set = config_set
-            .resolve_extensions(self.file.clone(), self.http.clone(), self.resolver.clone())
+            .resolve_extensions(self.file.clone(), self.http.clone())
             .await;
         Ok(config_set)
     }
@@ -101,7 +96,7 @@ mod reader_tests {
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
 
-    use crate::cli::{init_file, init_http, init_proto_resolver};
+    use crate::cli::{init_file, init_http};
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Script, ScriptOptions, Type, Upstream};
 
@@ -113,7 +108,6 @@ mod reader_tests {
     async fn test_all() {
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let path_resolver = init_proto_resolver();
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -147,7 +141,7 @@ mod reader_tests {
         .iter()
         .map(|x| x.to_string())
         .collect();
-        let cr = ConfigReader::init(file_io, http_io, path_resolver);
+        let cr = ConfigReader::init(file_io, http_io);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "Test", "User"]
@@ -167,7 +161,6 @@ mod reader_tests {
     async fn test_local_files() {
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let path_resolver = init_proto_resolver();
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -177,7 +170,7 @@ mod reader_tests {
         .iter()
         .map(|x| x.to_string())
         .collect();
-        let cr = ConfigReader::init(file_io, http_io, path_resolver);
+        let cr = ConfigReader::init(file_io, http_io);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "User"]
@@ -195,10 +188,9 @@ mod reader_tests {
     async fn test_script_loader() {
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let path_resolver = init_proto_resolver();
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-        let reader = ConfigReader::init(file_io, http_io, path_resolver);
+        let reader = ConfigReader::init(file_io, http_io);
 
         let config = reader
             .read(&format!(

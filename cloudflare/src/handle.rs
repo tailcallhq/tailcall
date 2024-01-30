@@ -12,7 +12,7 @@ use tailcall::http::{graphiql, handle_request, AppContext};
 use tailcall::EnvIO;
 
 use crate::http::{to_request, to_response};
-use crate::{init_cache, init_env, init_file, init_http, init_proto_resolver};
+use crate::{init_cache, init_env, init_file, init_http};
 
 lazy_static! {
     static ref APP_CTX: RwLock<Option<(String, Arc<AppContext>)>> = RwLock::new(None);
@@ -63,9 +63,8 @@ async fn get_config(
     log::debug!("R2 Bucket ID: {}", bucket_id);
     let file_io = init_file(env.clone(), bucket_id)?;
     let http_io = init_http();
-    let proto_resolver = init_proto_resolver();
 
-    let reader = ConfigReader::init(file_io, http_io, proto_resolver);
+    let reader = ConfigReader::init(file_io, http_io);
     let config = reader.read(&file_path).await?;
     Ok(config)
 }

@@ -12,7 +12,7 @@ use super::command::{Cli, Command};
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{init_file, init_http, init_proto_resolver, CLIError};
+use crate::cli::{init_file, init_http, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
 use crate::{print_schema, FileIO};
@@ -26,12 +26,7 @@ pub async fn run() -> Result<()> {
     logger_init();
     let file_io: Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
-    let proto_path_resolver = init_proto_resolver();
-    let config_reader = ConfigReader::init(
-        file_io.clone(),
-        default_http_io.clone(),
-        proto_path_resolver,
-    );
+    let config_reader = ConfigReader::init(file_io.clone(), default_http_io.clone());
     match cli.command {
         Command::Start { file_paths } => {
             let config_set = config_reader.read_all(&file_paths).await?;

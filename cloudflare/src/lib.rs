@@ -4,16 +4,13 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
-use tailcall::{EnvIO, FileIO, HttpIO, ProtoPathResolver};
-
-use crate::proto_resolver::CloudflareProtoPathResolver;
+use tailcall::{EnvIO, FileIO, HttpIO};
 
 mod cache;
 mod env;
 mod file;
 pub mod handle;
 mod http;
-mod proto_resolver;
 
 pub fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
@@ -21,10 +18,6 @@ pub fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
 
 pub fn init_file(env: Rc<worker::Env>, bucket_id: String) -> anyhow::Result<Arc<dyn FileIO>> {
     Ok(Arc::new(file::CloudflareFileIO::init(env, bucket_id)?))
-}
-
-pub fn init_proto_resolver() -> Arc<dyn ProtoPathResolver> {
-    Arc::new(CloudflareProtoPathResolver::init())
 }
 
 pub fn init_http() -> Arc<dyn HttpIO> {

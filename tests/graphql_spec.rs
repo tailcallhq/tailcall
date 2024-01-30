@@ -15,7 +15,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_chrono_cache, init_env, init_file, init_http, init_proto_resolver};
+use tailcall::cli::{init_chrono_cache, init_env, init_file, init_http};
 use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
@@ -282,7 +282,6 @@ fn test_config_identity() -> std::io::Result<()> {
 async fn test_server_to_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql");
     let file_io = init_file();
-    let resolver = init_proto_resolver();
 
     for spec in specs? {
         let expected = spec.find_source(Tag::ClientSDL);
@@ -293,11 +292,7 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let upstream = config.upstream.clone();
         let config_set = ConfigSet::from(config);
         let config_set = config_set
-            .resolve_extensions(
-                file_io.clone(),
-                init_http(&upstream, None),
-                resolver.clone(),
-            )
+            .resolve_extensions(file_io.clone(), init_http(&upstream, None))
             .await;
         println!("{:?}", spec.path);
         let actual =
@@ -387,7 +382,6 @@ async fn test_execution() -> std::io::Result<()> {
 fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
     let file_io = init_file();
-    let resolver = init_proto_resolver();
 
     for spec in specs? {
         let content = spec.find_source(Tag::ServerSDL);
@@ -398,11 +392,9 @@ fn test_failures_in_client_sdl() -> std::io::Result<()> {
             .and_then(|config| {
                 let upstream = config.upstream.clone();
                 let config_set = ConfigSet::from(config);
-                let config_set = rt.block_on(config_set.resolve_extensions(
-                    file_io.clone(),
-                    init_http(&upstream, None),
-                    resolver.clone(),
-                ));
+                let config_set = rt.block_on(
+                    config_set.resolve_extensions(file_io.clone(), init_http(&upstream, None)),
+                );
                 Valid::from(Blueprint::try_from(&config_set))
             })
             .to_result();

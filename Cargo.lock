@@ -807,6 +807,7 @@ dependencies = [
  "hyper",
  "lazy_static",
  "log",
+ "protox",
  "reqwest",
  "serde_json",
  "serde_qs",

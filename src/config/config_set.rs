@@ -3,9 +3,8 @@ use std::sync::Arc;
 
 use prost_reflect::prost_types::FileDescriptorSet;
 
-use crate::config::proto_config::get_descriptor_set;
-use crate::config::Config;
-use crate::{FileIO, HttpIO, ProtoPathResolver};
+use crate::config::{Config, ProtoPathResolver};
+use crate::{FileIO, HttpIO};
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default)]
@@ -43,9 +42,10 @@ impl ConfigSet {
         self,
         file_io: Arc<dyn FileIO>,
         http_io: Arc<dyn HttpIO>,
-        resolver: Arc<dyn ProtoPathResolver>,
     ) -> Self {
-        let grpc_file_descriptor = get_descriptor_set(&self.config, file_io, http_io, resolver)
+        let resolver = ProtoPathResolver::init(file_io, http_io);
+        let grpc_file_descriptor = resolver
+            .get_descriptor_set(&self.config)
             .await
             .unwrap_or_default();
         let extensions = Extensions { grpc_file_descriptor, ..self.extensions };

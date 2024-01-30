@@ -202,8 +202,8 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::cli::{init_file, init_http, init_proto_resolver};
-    use crate::config::{Config, Field, Grpc, Type, Upstream};
+    use crate::cli::{init_file, init_http};
+    use crate::config::{Config, Field, Grpc, ProtoPathResolver, Type, Upstream};
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -225,7 +225,7 @@ mod tests {
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let resolver = init_proto_resolver();
+        let resolver = ProtoPathResolver::init(file_io, http_io);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: get_test_file(name)
@@ -238,7 +238,7 @@ mod tests {
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
-        crate::config::get_descriptor_set(&config, file_io, http_io, resolver).await
+        resolver.get_descriptor_set(&config).await
     }
 
     #[test]

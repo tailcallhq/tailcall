@@ -7,7 +7,6 @@ mod fmt;
 pub(crate) mod http;
 #[cfg(feature = "js")]
 pub mod javascript;
-mod proto_resolver;
 pub mod server;
 mod tc;
 
@@ -21,9 +20,8 @@ pub use file::NativeFileIO;
 pub use http::NativeHttp;
 pub use tc::run;
 
-use crate::cli::proto_resolver::NativeProtoPathResolver;
 use crate::config::Upstream;
-use crate::{blueprint, EnvIO, FileIO, HttpIO, ProtoPathResolver};
+use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
 // Provides access to env in native rust environment
 pub fn init_env() -> Arc<dyn EnvIO> {
@@ -62,8 +60,4 @@ pub fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -
 
 pub fn init_chrono_cache<K: Hash + Eq, V: Clone>() -> NativeChronoCache<K, V> {
     NativeChronoCache::new()
-}
-
-pub fn init_proto_resolver() -> Arc<dyn ProtoPathResolver> {
-    Arc::new(NativeProtoPathResolver::new())
 }
