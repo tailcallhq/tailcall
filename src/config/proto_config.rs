@@ -162,7 +162,6 @@ mod test_proto_config {
         Ok(())
     }
     fn path_to_file_name(path: &Path) -> Option<String> {
-        // credit https://github.com/andrewhickman/protox/
         let components: Vec<_> = path.components().collect();
 
         // Find the index of the "src" component
