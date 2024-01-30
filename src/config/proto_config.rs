@@ -44,6 +44,8 @@ impl ProtoPathResolver {
         }
         Ok(set)
     }
+
+    // Performs simple BFS to include all the imported files in FileDescriptorSet
     async fn import_all(&mut self, proto_path: String) -> Result<()> {
         let source = self.resolve(&proto_path).await?;
 
@@ -67,6 +69,8 @@ impl ProtoPathResolver {
 
         Ok(())
     }
+
+    // This function performs file/http IO and
     async fn resolve(&self, path: &str) -> Result<String> {
         if let Ok(file) = GoogleFileResolver::new().open_file(path) {
             return Ok(file
