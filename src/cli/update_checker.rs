@@ -46,16 +46,14 @@ pub async fn check_for_update() {
             .interval(Duration::from_secs(60 * 60 * 24));
 
         if let Some(latest_version) = informer.check_version().ok().flatten() {
-            let github_release_url = format!(
-                "https://github.com/tailcallhq/tailcall/releases/tag/{}",
-                latest_version
-            );
+            let github_release_url =
+                format!("https://github.com/{name}/releases/tag/{latest_version}",);
             let installation_method = get_installation_method();
             log::warn!(
                 "{}",
                 format!(
                     "A new release of tailcall is available: {} {} {}",
-                    current_version.to_string().cyan(),
+                    current_version.cyan(),
                     "➜".white(),
                     latest_version.to_string().cyan()
                 )
@@ -63,21 +61,19 @@ pub async fn check_for_update() {
             );
             match installation_method {
                 InstallationMethod::Npx => log::warn!(
-                    "{}",
                     "You're running an outdated version, run: npx @tailcallhq/tailcall@latest"
                 ),
                 InstallationMethod::Npm => {
-                    log::warn!("{}", "To upgrade, run: npm update -g @tailcallhq/tailcall")
+                    log::warn!("To upgrade, run: npm update -g @tailcallhq/tailcall")
                 }
                 InstallationMethod::Brew => {
-                    log::warn!("{}", "To upgrade, run: brew upgrade tailcall")
+                    log::warn!("To upgrade, run: brew upgrade tailcall")
                 }
-                InstallationMethod::Direct => log::warn!(
-                    "{}",
-                    "Please update by downloading the latest release from GitHub"
-                ),
+                InstallationMethod::Direct => {
+                    log::warn!("Please update by downloading the latest release from GitHub")
+                }
             }
-            log::warn!("{}", github_release_url.to_string().yellow());
+            log::warn!("{}", github_release_url.yellow());
         }
     });
 }
