@@ -12,7 +12,7 @@ mock:
   - request:
       url: http://example.com/simple.graphql
     response:
-      body: '
+      textBody: '
         schema {
         query: Query
         }
@@ -69,7 +69,7 @@ assert:
       body:
         data: null
         errors:
-          - message: "Validation Error\n•  --> 1:1\n  |\n1 | dsjfsjdfjdsfjkdskjfjkds\n  | ^---\n  |\n  = expected type_system_definition\n"
+          - message: "Validation Error\n•  --> 1:1\n  |\n1 | \"dsjfsjdfjdsfjkdskjfjkds\"\n  | ^---\n  |\n  = expected type_system_definition\n"
   - request:
       method: POST
       url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql
