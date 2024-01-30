@@ -96,7 +96,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                     });
                                 let const_value = match ttl_and_key {
                                     Some((ttl, key)) => {
-                                        if let Some(const_value) = ctx.req_ctx.cache_get(&key).await
+                                        if let Some(const_value) =
+                                            ctx.req_ctx.cache_get(&key).await?
                                         {
                                             // Return value from cache
                                             log::info!("Reading from cache. key = {key}");
@@ -108,7 +109,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                             // Write value to cache
                                             ctx.req_ctx
                                                 .cache_insert(key, const_value.clone(), ttl)
-                                                .await;
+                                                .await?;
                                             const_value
                                         }
                                     }
