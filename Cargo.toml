@@ -77,7 +77,9 @@ ttl_cache = "0.5.1"
 protox = "0.5.1"
 prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
+update-informer = { version = "1.1.0", default-features = false, features = ["github", "reqwest"], optional = true }
 lazy_static = "1.4.0"
+which = { version = "6.0.0", optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -104,6 +106,8 @@ cli = [
     "dep:rustls",
     "dep:rustls-pemfile",
     "dep:inquire",
+    "dep:which",
+    "dep:update-informer",
 ]
 
 # Feature flag to enable all default features.
