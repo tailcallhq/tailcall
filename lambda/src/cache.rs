@@ -3,7 +3,6 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
 use tailcall::Cache;
 use tokio::sync::RwLock;
 
@@ -32,20 +31,13 @@ impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> Cache for LambdaCache<K
     type Key = K;
     type Value = V;
     #[allow(clippy::too_many_arguments)]
-    async fn set<'a>(&'a self, key: K, value: V, _ttl: NonZeroU64) -> Result<V> {
-        self.data
-            .write()
-            .await
-            .insert(key, value)
-            .ok_or(anyhow!("unable to insert value"))
+    async fn set<'a>(&'a self, key: K, value: V, _ttl: NonZeroU64) -> anyhow::Result<()> {
+        self.data.write().await.insert(key, value);
+
+        Ok(())
     }
 
-    async fn get<'a>(&'a self, key: &'a K) -> Result<V> {
-        self.data
-            .read()
-            .await
-            .get(key)
-            .cloned()
-            .ok_or(anyhow!("key not found"))
+    async fn get<'a>(&'a self, key: &'a K) -> anyhow::Result<Option<Self::Value>> {
+        Ok(self.data.read().await.get(key).cloned())
     }
 }
