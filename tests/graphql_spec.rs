@@ -391,12 +391,14 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
             Ok(config) => {
                 let upstream = config.upstream.clone();
                 let config_set = ConfigSet::from(config);
-                let config_set = config_set.resolve_extensions(file_io.clone(), init_http(&upstream, None)).await;
-                Valid::from(Blueprint::try_from(&config_set)).to_result().map(|_|())
+                let config_set = config_set
+                    .resolve_extensions(file_io.clone(), init_http(&upstream, None))
+                    .await;
+                Valid::from(Blueprint::try_from(&config_set))
+                    .to_result()
+                    .map(|_| ())
             }
-            Err(e) => {
-                Err(e)
-            }
+            Err(e) => Err(e),
         };
         match actual {
             Err(cause) => {
