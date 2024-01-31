@@ -1,8 +1,9 @@
-use crate::config::{self};
-use crate::valid::{Valid, ValidationError};
 use std::collections::BTreeSet;
+
 use derive_setters::Setters;
-use crate::config::Batch;
+
+use crate::config::{self, Batch};
+use crate::valid::{Valid, ValidationError};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
 pub struct Proxy {
@@ -73,7 +74,7 @@ impl Upstream {
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only
     }
-}    
+}
 
 impl Default for Upstream {
     fn default() -> Self {
@@ -89,24 +90,22 @@ impl TryFrom<crate::config::Upstream> for Upstream {
         get_batch(&config_upstream)
             .zip(get_base_url(&config_upstream))
             .zip(get_proxy(&config_upstream))
-            .map(|((batch, base_url), proxy)| {
-                Upstream {
-                    pool_idle_timeout: (config_upstream).get_pool_idle_timeout(),
-                    pool_max_idle_per_host: (config_upstream).get_pool_max_idle_per_host(),
-                    keep_alive_interval: (config_upstream).get_keep_alive_interval(),
-                    keep_alive_timeout: (config_upstream).get_keep_alive_timeout(),
-                    keep_alive_while_idle: (config_upstream).get_keep_alive_while_idle(),
-                    proxy,
-                    connect_timeout: (config_upstream).get_connect_timeout(),
-                    timeout: (config_upstream).get_timeout(),
-                    tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
-                    user_agent: (config_upstream).get_user_agent(),
-                    allowed_headers: (config_upstream).get_allowed_headers(),
-                    base_url,
-                    http_cache: (config_upstream).get_enable_http_cache(),
-                    batch,
-                    http2_only: (config_upstream).get_http_2_only(),
-                }
+            .map(|((batch, base_url), proxy)| Upstream {
+                pool_idle_timeout: (config_upstream).get_pool_idle_timeout(),
+                pool_max_idle_per_host: (config_upstream).get_pool_max_idle_per_host(),
+                keep_alive_interval: (config_upstream).get_keep_alive_interval(),
+                keep_alive_timeout: (config_upstream).get_keep_alive_timeout(),
+                keep_alive_while_idle: (config_upstream).get_keep_alive_while_idle(),
+                proxy,
+                connect_timeout: (config_upstream).get_connect_timeout(),
+                timeout: (config_upstream).get_timeout(),
+                tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
+                user_agent: (config_upstream).get_user_agent(),
+                allowed_headers: (config_upstream).get_allowed_headers(),
+                base_url,
+                http_cache: (config_upstream).get_enable_http_cache(),
+                batch,
+                http2_only: (config_upstream).get_http_2_only(),
             })
             .to_result()
     }
@@ -116,7 +115,7 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
     upstream.batch.as_ref().map_or_else(
         || Valid::succeed(None),
         |batch| match batch {
-            config::Batch { max_size, delay, headers } => Valid::succeed(Some(Batch {
+            config::Batch { max_size: _, delay: _, headers: _ } => Valid::succeed(Some(Batch {
                 max_size: (upstream).get_max_size(),
                 delay: (upstream).get_delay(),
                 headers: batch.headers.clone(),
@@ -136,9 +135,7 @@ fn get_base_url(upstream: &config::Upstream) -> Valid<Option<String>, String> {
 
 fn get_proxy(upstream: &config::Upstream) -> Valid<Option<Proxy>, String> {
     if let Some(ref proxy) = upstream.proxy {
-        Valid::succeed(Some(Proxy {
-            url: proxy.url.clone(),
-        }))
+        Valid::succeed(Some(Proxy { url: proxy.url.clone() }))
     } else {
         Valid::succeed(None)
     }

@@ -18,9 +18,9 @@ pub use file::NativeFileIO;
 pub use http::NativeHttp;
 pub use tc::run;
 
-use crate::cache::InMemoryCache;
 // use crate::config::Upstream;
 use crate::blueprint::Upstream;
+use crate::cache::InMemoryCache;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
 // Provides access to env in native rust environment

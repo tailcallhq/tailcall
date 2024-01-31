@@ -17,11 +17,10 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::Blueprint;
+use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source};
-use tailcall::blueprint::Upstream;
 // use tailcall::config::Upstream
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::{EnvIO, HttpIO};

@@ -6,8 +6,7 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use crate::blueprint::Server;
-use crate::blueprint::Upstream;
+use crate::blueprint::{Server, Upstream};
 // use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -126,8 +125,7 @@ mod test {
     use cache_control::Cachability;
     use hyper::HeaderMap;
 
-    use crate::blueprint::Server;
-    use crate::blueprint::Upstream;
+    use crate::blueprint::{Server, Upstream};
     use crate::cache::InMemoryCache;
     use crate::cli::{init_env, init_http, init_http2_only};
     use crate::config::{self, Batch};
@@ -199,11 +197,9 @@ mod test {
     fn test_is_batching_enabled_default() {
         // create ctx with default batch
         let config = config::Config::default();
-        let mut upstream = config.upstream.clone();
-        upstream.batch = Some(Batch::default());
         let server = Server::try_from(config.server.clone()).unwrap();
-        let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
-
+        let mut upstream = Upstream::try_from(config.upstream.clone()).unwrap();
+        upstream.batch = Some(Batch::default());
         let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 
         assert!(req_ctx.is_batching_enabled());

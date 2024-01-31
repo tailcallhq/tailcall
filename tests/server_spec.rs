@@ -1,9 +1,9 @@
 use reqwest::Client;
 use serde_json::json;
+use tailcall::blueprint::Upstream;
 use tailcall::cli::server::Server;
 use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
-use tailcall::blueprint::Upstream;
 // use tailcall::config::Upstream
 
 async fn test_server(configs: &[&str], url: &str) {

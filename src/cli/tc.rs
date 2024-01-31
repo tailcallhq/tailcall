@@ -9,13 +9,12 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
+use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{init_file, init_http, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::Config;
-use crate::blueprint::Upstream;
 // use crate::config::Upstream;
 use crate::{print_schema, FileIO};
 
