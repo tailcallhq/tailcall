@@ -78,9 +78,10 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
         ExprBody::If(If { ref cond, on_true: ref then, on_false: ref els }) => {
             compile(ctx, *cond.clone())
                 .map(Box::new)
-                .zip(compile(ctx, *then.clone()).map(Box::new))
-                .zip(compile(ctx, *els.clone()).map(Box::new))
-                .map(|((cond, then), els)| {
+                .fuse(compile(ctx, *then.clone()).map(Box::new))
+                .fuse(compile(ctx, *els.clone()).map(Box::new))
+                .collect()
+                .map(|(cond, then, els)| {
                     Expression::Logic(Logic::If { cond, then, els }).parallel_when(expr.has_io())
                 })
         }

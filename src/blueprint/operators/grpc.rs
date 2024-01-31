@@ -125,10 +125,11 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let validate_with_schema = inputs.validate_with_schema;
 
     to_url(grpc, config)
-        .zip(to_operation(grpc))
-        .zip(helpers::headers::to_mustache_headers(&grpc.headers))
-        .zip(helpers::body::to_body(grpc.body.as_deref()))
-        .and_then(|(((url, operation), headers), body)| {
+        .fuse(to_operation(grpc))
+        .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
+        .fuse(helpers::body::to_body(grpc.body.as_deref()))
+        .collect()
+        .and_then(|(url, operation, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config, field);
                 if grpc.group_by.is_empty() {
