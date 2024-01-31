@@ -24,11 +24,10 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 pub async fn run() -> Result<()> {
     let cli = Cli::parse();
     logger_init();
-    let file_io: Arc<dyn FileIO> = init_file();
     update_checker::check_for_update().await;
-    let file_io: std::sync::Arc<dyn FileIO> = init_file();
+    let file_io: Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
-    let config_reader = ConfigReader::init(file_io.clone(), default_http_io.clone());
+    let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
     match cli.command {
         Command::Start { file_paths } => {
             let config_set = config_reader.read_all(&file_paths).await?;
