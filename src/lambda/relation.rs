@@ -320,7 +320,7 @@ fn get_path_for_const_value_owned(
 ) -> Option<ConstValue> {
     for path in path.iter() {
         const_value = match const_value {
-            ConstValue::Object(mut obj) => obj.remove(path.as_ref())?,
+            ConstValue::Object(mut obj) => obj.swap_remove(path.as_ref())?,
             _ => None?,
         }
     }

@@ -11,6 +11,21 @@ pub struct Expr {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(rename = "ExprIf")]
+pub struct If {
+    /// Condition to evaluate
+    pub cond: Box<ExprBody>,
+
+    /// Expression to evaluate if the condition is true
+    #[serde(rename = "then")]
+    pub on_true: Box<ExprBody>,
+
+    /// Expression to evaluate if the condition is false
+    #[serde(rename = "else")]
+    pub on_false: Box<ExprBody>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub enum ExprBody {
     /// Fetch a resources using the http operator
     #[serde(rename = "http")]
@@ -34,18 +49,7 @@ pub enum ExprBody {
     // Logic
     /// Branch based on a condition
     #[serde(rename = "if")]
-    If {
-        /// Condition to evaluate
-        cond: Box<ExprBody>,
-
-        /// Expression to evaluate if the condition is true
-        #[serde(rename = "then")]
-        on_true: Box<ExprBody>,
-
-        /// Expression to evaluate if the condition is false
-        #[serde(rename = "else")]
-        on_false: Box<ExprBody>,
-    },
+    If(If),
     #[serde(rename = "and")]
     And(Vec<ExprBody>),
     #[serde(rename = "or")]
@@ -127,7 +131,7 @@ impl ExprBody {
             ExprBody::GraphQL(_) => true,
             ExprBody::Call(_) => true,
             ExprBody::Const(_) => false,
-            ExprBody::If { cond, on_true, on_false } => {
+            ExprBody::If(If { cond, on_true, on_false }) => {
                 cond.has_io() || on_true.has_io() || on_false.has_io()
             }
             ExprBody::And(l) => l.iter().any(|e| e.has_io()),

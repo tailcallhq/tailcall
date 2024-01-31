@@ -2,7 +2,7 @@ use std::collections::hash_map::Iter;
 
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, Field, GraphQLOperationType};
+use crate::config::{Field, GraphQLOperationType};
 use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
@@ -16,8 +16,8 @@ fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option
 
 pub fn update_call(
     operation_type: &GraphQLOperationType,
-) -> TryFold<'_, (&Config, &Field, &config::Type, &str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'_, (&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, _), b_field| {
             let Some(call) = &field.call else {
                 return Valid::succeed(b_field);
@@ -99,7 +99,7 @@ fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
 
 pub fn compile_call(
     field: &Field,
-    config: &Config,
+    config_set: &ConfigSet,
     call: &config::Call,
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
@@ -109,7 +109,7 @@ pub fn compile_call(
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config.find_type(&type_name),
+            config_set.config.find_type(&type_name),
             format!("{} type not found on config", type_name),
         )
         .zip(Valid::succeed(field_name))
@@ -142,7 +142,7 @@ pub fn compile_call(
         }
 
         if let Some(http) = _field.http.clone() {
-            compile_http(config, field, &http).and_then(|expr| {
+            compile_http(config_set, field, &http).and_then(|expr| {
                 let http = Http::try_from(expr).unwrap();
 
                 Valid::succeed(
@@ -185,7 +185,7 @@ pub fn compile_call(
                 })
             })
         } else if let Some(graphql) = _field.graphql.clone() {
-            compile_graphql(config, operation_type, &graphql).and_then(|expr| {
+            compile_graphql(config_set, operation_type, &graphql).and_then(|expr| {
                 let graphql = GraphQLEndpoint::try_from(expr).unwrap();
 
                 Valid::succeed(
@@ -225,7 +225,7 @@ pub fn compile_call(
         } else if let Some(grpc) = _field.grpc.clone() {
             // todo!("needs to be implemented");
             let inputs: CompileGrpc<'_> = CompileGrpc {
-                config,
+                config_set,
                 operation_type,
                 field,
                 grpc: &grpc,
