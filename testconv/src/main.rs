@@ -352,14 +352,14 @@ async fn main() {
 
             let mut md_spec = format!("# {}\n\n", path.file_name().unwrap().to_string_lossy());
 
-            let mut server_cnt = 0;
+            let mut server: Vec<String> = Vec::with_capacity(2);
             let mut merged: Option<String> = None;
 
             for (typ, content) in graphql_iter_spec_part(&spec) {
                 match typ.as_str() {
                     "server-sdl" => {
                         md_spec += &format!("#### server:\n\n```graphql\n{}\n```\n\n", content);
-                        server_cnt += 1;
+                        server.push(content);
                     }
                     "merged-sdl" => {
                         if merged.is_none() {
@@ -375,7 +375,7 @@ async fn main() {
                 };
             }
 
-            if server_cnt < 1 {
+            if server.len() < 1 {
                 panic!("Unexpected number of server SDL declarations in {:?} (at least one is required, two are recommended)", path);
             }
 
@@ -403,6 +403,10 @@ async fn main() {
             let snap = format!("---\nsource: tests/execution_spec.rs\nexpression: merged\n---\n{}\n", merged.unwrap());
 
             write(target, snap).unwrap();
+
+            if server.len() == 1 {
+                generate_client_snapshot_sdl(&file_stem, &server[0], &reader).await;
+            }
 
             files_already_processed.insert(file_stem);
         } else if path.is_file() {

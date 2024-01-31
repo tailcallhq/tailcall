@@ -590,7 +590,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         server.push(config);
     }
 
-    if spec.assert.is_some() {
+    if server.len() == 1 {
         let config = &server[0];
 
         // client: Check if client spec matches snapshot
