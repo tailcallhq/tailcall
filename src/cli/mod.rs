@@ -8,9 +8,11 @@ pub(crate) mod http;
 pub mod javascript;
 pub mod server;
 mod tc;
+
 use std::hash::Hash;
 use std::sync::Arc;
 
+pub(crate) mod update_checker;
 pub use env::EnvNative;
 pub use error::CLIError;
 pub use file::NativeFileIO;

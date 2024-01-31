@@ -1,10 +1,9 @@
-use std::path::Path;
-
+use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, Field, GraphQLOperationType, Grpc};
+use crate::config::{Config, ConfigSet, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
@@ -30,9 +29,12 @@ fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
     })
 }
 
-fn to_operation(grpc: &Grpc) -> Valid<ProtobufOperation, String> {
+fn to_operation(
+    grpc: &Grpc,
+    file_descriptor_set: &FileDescriptorSet,
+) -> Valid<ProtobufOperation, String> {
     Valid::from(
-        ProtobufSet::from_proto_file(Path::new(&grpc.proto_path))
+        ProtobufSet::from_proto_file(file_descriptor_set)
             .map_err(|e| ValidationError::new(e.to_string())),
     )
     .and_then(|set| {
@@ -110,27 +112,30 @@ fn validate_group_by(
 }
 
 pub struct CompileGrpc<'a> {
-    pub config: &'a config::Config,
-    pub operation_type: &'a config::GraphQLOperationType,
-    pub field: &'a config::Field,
-    pub grpc: &'a config::Grpc,
+    pub config_set: &'a ConfigSet,
+    pub operation_type: &'a GraphQLOperationType,
+    pub field: &'a Field,
+    pub grpc: &'a Grpc,
     pub validate_with_schema: bool,
 }
 
 pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
-    let config = inputs.config;
+    let config_set = inputs.config_set;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
 
-    to_url(grpc, config)
-        .zip(to_operation(grpc))
+    to_url(grpc, config_set)
+        .zip(to_operation(
+            grpc,
+            &config_set.extensions.grpc_file_descriptor,
+        ))
         .zip(helpers::headers::to_mustache_headers(&grpc.headers))
         .zip(helpers::body::to_body(grpc.body.as_deref()))
         .and_then(|(((url, operation), headers), body)| {
             let validation = if validate_with_schema {
-                let field_schema = json_schema_from_field(config, field);
+                let field_schema = json_schema_from_field(config_set, field);
                 if grpc.group_by.is_empty() {
                     validate_schema(field_schema, &operation, field.name()).unit()
                 } else {
@@ -163,22 +168,22 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config, field, type_of, _name), b_field| {
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+        |(config_set, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);
             };
 
             compile_grpc(CompileGrpc {
-                config,
+                config_set,
                 operation_type,
                 field,
                 grpc,
                 validate_with_schema: true,
             })
             .map(|resolver| b_field.resolver(Some(resolver)))
-            .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
+            .and_then(|b_field| b_field.validate_field(type_of, config_set).map_to(b_field))
         },
     )
 }
