@@ -114,12 +114,12 @@ impl TryFrom<crate::config::Upstream> for Upstream {
 fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
     upstream.batch.as_ref().map_or_else(
         || Valid::succeed(None),
-        |batch| match batch {
-            config::Batch { max_size: _, delay: _, headers: _ } => Valid::succeed(Some(Batch {
+        |batch| {
+            Valid::succeed(Some(Batch {
                 max_size: (upstream).get_max_size(),
                 delay: (upstream).get_delay(),
                 headers: batch.headers.clone(),
-            })),
+            }))
         },
     )
 }
