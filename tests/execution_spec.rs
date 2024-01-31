@@ -9,7 +9,7 @@ use std::{fs, panic};
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
 use hyper::body::Bytes;
-use hyper::{Body, Request};
+use hyper::{Body, HeaderMap, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -17,10 +17,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache};
+use tailcall::cli::{init_env, init_file, init_hook_http, init_http, init_in_memory_cache};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Source, Upstream};
-use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::http::{handle_request, AppContext, Method, RequestContext, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::valid::{Cause, ValidationError};
 use tailcall::{EnvIO, HttpIO};
@@ -152,6 +152,7 @@ struct ExecutionSpec {
 
     server: Vec<(Source, String)>,
     assert: Option<AssertSpec>,
+    query: Vec<String>,
 
     // Annotations for the runner
     runner: Option<Annotation>,
@@ -230,6 +231,7 @@ impl ExecutionSpec {
         let mut name: Option<String> = None;
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut assert: Option<AssertSpec> = None;
+        let mut query: Vec<String> = Vec::new();
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut check_merge = false;
@@ -353,6 +355,13 @@ impl ExecutionSpec {
                                         return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
+                                "query:" => {
+                                    if matches!(source, Source::GraphQL) {
+                                        query.push(content);
+                                    } else {
+                                        return Err(anyhow!("Unexpected query block language in {:?} (only graphql is allowed)", path));
+                                    }
+                                }
                                 _ => {
                                     return Err(anyhow!(
                                         "Unexpected component {:?} in {:?}: {:#?}",
@@ -390,11 +399,14 @@ impl ExecutionSpec {
         }
 
         // TODO: add query
-        let unique_block_count = [assert.is_some()].into_iter().filter(|x| *x).count();
+        let unique_block_count = [assert.is_some(), !query.is_empty()]
+            .into_iter()
+            .filter(|x| *x)
+            .count();
 
         if unique_block_count >= 2 {
             return Err(anyhow!(
-                "Unexpected blocks in {:?}: You may only define one of these types of blocks: assert, merged, query",
+                "Unexpected blocks in {:?}: You may only define either one assert block, or one or more query blocks.",
                 path,
             ));
         }
@@ -406,6 +418,7 @@ impl ExecutionSpec {
 
             server,
             assert,
+            query,
 
             runner,
             check_identity,
@@ -695,15 +708,10 @@ async fn assert_spec(spec: ExecutionSpec) {
     if let Some(assert_spec) = spec.assert.as_ref() {
         // assert: Run assert specs
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
-            let response = run_assert(
-                spec.clone(),
-                assert_spec.clone(),
-                &assertion,
-                server.first().unwrap(),
-            )
-            .await
-            .context(spec.path.to_str().unwrap().to_string())
-            .unwrap();
+            let response = run_assert(&spec, assert_spec, &assertion, server.first().unwrap())
+                .await
+                .context(spec.path.to_str().unwrap().to_string())
+                .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
@@ -728,6 +736,20 @@ async fn assert_spec(spec: ExecutionSpec) {
             if will_insta_panic {
                 log::info!("\tassert #{} ok", i + 1);
             }
+        }
+    } else if !spec.query.is_empty() {
+        if server.len() != 1 {
+            panic!("Unexpected number of servers in {:?} (exactly one is allowed if there are queries present)", spec.path);
+        }
+
+        for (i, query) in spec.query.iter().enumerate() {
+            let response = run_query(&server[0], query)
+                .await
+                .expect("Failed to run query");
+
+            let snapshot_name = format!("{}_query_{}", spec.safe_name, i);
+
+            insta::assert_json_snapshot!(snapshot_name, response);
         }
     } else if server.len() >= 2 || spec.check_merge {
         // merged: Run merged specs
@@ -781,8 +803,8 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn run_assert(
-    spec: ExecutionSpec,
-    assert: AssertSpec,
+    spec: &ExecutionSpec,
+    assert: &AssertSpec,
     downstream_assertion: &&DownstreamAssertion,
     config: &ConfigSet,
 ) -> anyhow::Result<hyper::Response<Body>> {
@@ -808,4 +830,28 @@ async fn run_assert(
     } else {
         handle_request::<GraphQLRequest>(req, server_context).await
     }
+}
+
+async fn run_query(config: &ConfigSet, query: &str) -> anyhow::Result<async_graphql::Response> {
+    let blueprint = Blueprint::try_from(config)?;
+    let h_client = init_http(&blueprint.upstream, None);
+    let app = AppContext::new(
+        blueprint,
+        h_client.clone(),
+        h_client,
+        init_env(),
+        Arc::new(init_in_memory_cache()),
+    );
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("authorization"),
+        HeaderValue::from_static("1"),
+    );
+
+    let req_ctx = Arc::new(RequestContext::from(&app).req_headers(headers));
+    let req = async_graphql::Request::from(query).data(req_ctx.clone());
+    let res = app.schema.execute(req).await;
+
+    Ok(res)
 }
