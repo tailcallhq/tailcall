@@ -48,7 +48,6 @@ pub async fn fetch(
         Err(e) => return Ok(to_response(e).await?),
     };
     let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
-    println!("{:#?}", resp);
     Ok(to_response(resp).await?)
 }
 
@@ -78,6 +77,7 @@ async fn get_app_ctx(
 
     // Create new context
     let env_io = Arc::new(CloudflareEnv::init(env.clone()));
+  
     let bucket_id = env_io
         .get("BUCKET")
         .ok_or(anyhow!("CONFIG var is not set"))?;

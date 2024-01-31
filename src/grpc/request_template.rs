@@ -103,15 +103,16 @@ mod tests {
     use derive_setters::Setters;
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::{HeaderMap, Method};
-    use once_cell::sync::Lazy;
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;
-    use crate::config::GraphQLOperationType;
+    use crate::cli::{init_file, init_http};
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type, Upstream};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::mustache::Mustache;
 
-    static PROTOBUF_OPERATION: Lazy<ProtobufOperation> = Lazy::new(|| {
+    async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut test_file = root_dir.join(file!());
 
@@ -119,11 +120,33 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
-        let protobuf_set = ProtobufSet::from_proto_file(&test_file).unwrap();
+        let file_io = init_file();
+        let http_io = init_http(&Upstream::default(), None);
+        let reader = ConfigReader::init(file_io, http_io);
+        let mut config = Config::default();
+        let grpc = Grpc {
+            proto_path: test_file.to_str().unwrap().to_string(),
+            ..Default::default()
+        };
+        config.types.insert(
+            "foo".to_string(),
+            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+        );
+
+        let protobuf_set = ProtobufSet::from_proto_file(
+            &reader
+                .resolve(config)
+                .await
+                .unwrap()
+                .extensions
+                .grpc_file_descriptor,
+        )
+        .unwrap();
+
         let service = protobuf_set.find_service("Greeter").unwrap();
 
         service.find_operation("SayHello").unwrap()
-    });
+    }
 
     #[derive(Setters)]
     struct Context {
@@ -149,15 +172,15 @@ mod tests {
         }
     }
 
-    #[test]
-    fn request_with_empty_body() {
+    #[tokio::test]
+    async fn request_with_empty_body() {
         let tmpl = RequestTemplate {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![(
                 HeaderName::from_static("test-header"),
                 Mustache::parse("value").unwrap(),
             )],
-            operation: PROTOBUF_OPERATION.clone(),
+            operation: get_protobuf_op().await,
             body: None,
             operation_type: GraphQLOperationType::Query,
         };
@@ -186,12 +209,12 @@ mod tests {
         }
     }
 
-    #[test]
-    fn request_with_body() {
+    #[tokio::test]
+    async fn request_with_body() {
         let tmpl = RequestTemplate {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![],
-            operation: PROTOBUF_OPERATION.clone(),
+            operation: get_protobuf_op().await,
             body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
             operation_type: GraphQLOperationType::Query,
         };
