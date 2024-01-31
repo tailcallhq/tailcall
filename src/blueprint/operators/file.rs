@@ -4,13 +4,13 @@ use std::path::PathBuf;
 
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, Field};
+use crate::config::Field;
 use crate::lambda::Expression;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
 pub struct CompileFile<'a> {
-    pub config: &'a config::Config,
+    pub config_set: &'a config::ConfigSet,
     pub field: &'a config::Field,
     pub file: &'a crate::config::File,
     pub validate: bool,
@@ -57,7 +57,7 @@ pub fn compile_file(inputs: CompileFile<'_>) -> Valid<Expression, String> {
     };
 
     compile_const(CompileConst {
-        config: inputs.config,
+        config_set: inputs.config_set,
         field: inputs.field,
         value: &value,
         validate: inputs.validate,
@@ -65,14 +65,14 @@ pub fn compile_file(inputs: CompileFile<'_>) -> Valid<Expression, String> {
 }
 
 pub fn update_file<'a>(
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config, field, _, _), b_field| {
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        |(config_set, field, _, _), b_field| {
             let Some(file) = &field.file else {
                 return Valid::succeed(b_field);
             };
 
-            compile_file(CompileFile { config, field, file, validate: true })
+            compile_file(CompileFile { config_set, field, file, validate: true })
                 .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
