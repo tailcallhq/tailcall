@@ -21,6 +21,7 @@ use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::print_schema::print_schema;
 use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
@@ -123,7 +124,6 @@ struct ExecutionSpec {
 
     server: Vec<(Source, String)>,
     assert: Option<AssertSpec>,
-    merged: Option<String>,
 
     // Annotations for the runner
     runner: Option<Annotation>,
@@ -201,7 +201,6 @@ impl ExecutionSpec {
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut assert: Option<AssertSpec> = None;
         let mut runner: Option<Annotation> = None;
-        let mut merged: Option<String> = None;
         let mut check_identity = false;
 
         while let Some(node) = children.next() {
@@ -316,16 +315,6 @@ impl ExecutionSpec {
                                         return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
-                                "merged:" => {
-                                    if merged.is_none() {
-                                        merged = match source {
-                                            Source::GraphQL => Ok(Some(content)),
-                                            _ => Err(anyhow!("Unexpected language in merged block in {:?} (only GraphQL is supported)", path))
-                                        }?;
-                                    } else {
-                                        return Err(anyhow!("Unexpected number of merged blocks in {:?} (only one is allowed)", path));
-                                    }
-                                }
                                 _ => {
                                     return Err(anyhow!(
                                         "Unexpected component {:?} in {:?}: {:#?}",
@@ -362,15 +351,15 @@ impl ExecutionSpec {
             ));
         }
 
-        // TODO: add client
-        let unique_block_count = [assert.is_some(), merged.is_some()]
+        // TODO: add query
+        let unique_block_count = [assert.is_some()]
             .into_iter()
             .filter(|x| *x)
             .count();
 
         if unique_block_count >= 2 {
             return Err(anyhow!(
-                "Unexpected blocks in {:?}: You may only define one of these types of blocks: assert, merged, client",
+                "Unexpected blocks in {:?}: You may only define one of these types of blocks: assert, merged, query",
                 path,
             ));
         }
@@ -382,7 +371,6 @@ impl ExecutionSpec {
 
             server,
             assert,
-            merged,
 
             runner,
             check_identity,
@@ -602,6 +590,16 @@ async fn assert_spec(spec: ExecutionSpec) {
         server.push(config);
     }
 
+    if spec.assert.is_some() {
+        let config = &server[0];
+
+        // client: Check if client spec matches snapshot
+        let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
+        let snapshot_name = format!("{}_client", spec.safe_name);
+        insta::assert_snapshot!(snapshot_name, client);
+        log::info!("\tclient ok");
+    }
+
     if let Some(assert_spec) = spec.assert.as_ref() {
         // assert: Run assert specs
         for (i, assertion) in assert_spec.assert.iter().enumerate() {
@@ -632,51 +630,21 @@ async fn assert_spec(spec: ExecutionSpec) {
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
+            log::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
-            log::info!("\tassert #{} ok", i + 1);
         }
-    } else if let Some(expected_sdl) = spec.merged.as_ref() {
-        // merged: Run merged specs
-        let expected_sdl = expected_sdl.as_str();
-
-        let actual = server
-            .iter()
-            .fold(Config::default(), |acc, c| acc.merge_right(c));
-        let actual_sdl = actual.to_sdl();
-
-        if actual_sdl != expected_sdl {
-            log::error!("\tmerged FAIL");
-            panic!(
-                "The actual merge SDL and the expected merge SDL didn't match.\n\nexpected:\n{}\n\nactual:\n{}",
-                expected_sdl,
-                actual_sdl,
-            );
-        }
-
-        let expected = match Config::from_sdl(expected_sdl).to_result() {
-            Ok(x) => x,
-            Err(e) => panic!(
-                "Failed to parse the expected merge SDL in {:?}: {}",
-                spec.path, e,
-            ),
-        };
-
-        if actual != expected {
-            log::error!("\tmerged FAIL");
-            panic!(
-                "The actual merge (parsed) and the expected merge (prased) didn't match.\n\nexpected:\n{:#?}\n\nactual:\n{:#?}",
-                expected,
-                actual,
-            );
-        }
-
-        log::info!("\tmerged ok");
     } else {
-        panic!(
-            "Couldn't determine type of test {} ({})",
-            spec.name,
-            spec.path.display()
-        );
+        // merged: Run merged specs
+        log::info!("\tmerged... (snapshot)");
+
+        let client = server
+            .iter()
+            .fold(Config::default(), |acc, c| acc.merge_right(c))
+            .to_sdl();
+
+        let snapshot_name = format!("{}_merged", spec.safe_name);
+
+        insta::assert_snapshot!(snapshot_name, client);
     }
 }
 
