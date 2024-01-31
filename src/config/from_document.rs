@@ -255,7 +255,7 @@ where
         .zip(Omit::from_directives(directives.iter()))
         .zip(Modify::from_directives(directives.iter()))
         .zip(JS::from_directives(directives.iter()))
-        .flattened()
+        .flatten_all()
         .map(|(http, graphql, cache, grpc, expr, omit, modify, script)| {
             let const_field = to_const_field(directives);
             config::Field {

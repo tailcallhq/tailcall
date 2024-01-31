@@ -481,7 +481,7 @@ impl<Level: Nat, A, E> ZippedValid<A, E, Level>
 where
     A: Tupleness<Level>,
 {
-    pub fn flattened<Cv: Debug, Ct: Tuple + ReverseTuple, Cm: Nat>(
+    pub fn flatten_all<Cv: Debug, Ct: Tuple + ReverseTuple, Cm: Nat>(
         self,
     ) -> Valid<<<<Ct as ReverseTuple>::Reversed as Append<Cv>>::Result as Flatten>::Result, E>
     where
@@ -492,6 +492,21 @@ where
     {
         Valid(self.0.map(|v| {
             let tup: Cons<_, _, _, Level> = v.into();
+            tup.reverse().flatten()
+        }))
+    }
+
+    pub fn flatten<CustomLevel: Nat, Cv: Debug, Ct: Tuple + ReverseTuple, Cm: Nat>(
+        self,
+    ) -> Valid<<<<Ct as ReverseTuple>::Reversed as Append<Cv>>::Result as Flatten>::Result, E>
+    where
+        Ct: TupleEqual<EmptyTuple, Result = False>,
+        <Ct as ReverseTuple>::Reversed: Append<Cv>,
+        Cons<Cv, Ct, Cm, CustomLevel>: From<A> + Flatten,
+        <Cons<Cv, Ct, CustomLevel, Cm> as ReverseTuple>::Reversed: Flatten,
+    {
+        Valid(self.0.map(|v| {
+            let tup: Cons<_, _, _, CustomLevel> = v.into();
             tup.reverse().flatten()
         }))
     }
@@ -628,24 +643,34 @@ impl<A, E, Level: Nat> ZippedValid<A, E, Level> {
 
 #[cfg(test)]
 mod tests {
-    use crate::valid::Valid;
+    use crate::valid::{Two, Valid};
 
     #[test]
-    fn test_flattened_3() {
+    fn test_flatten_all_3() {
         let valid1: Valid<_, String> = Valid::succeed(10);
         let valid2 = Valid::succeed(20);
         let valid3 = Valid::succeed(30);
         let zipped = valid1.zip2(valid2).zip(valid3);
-        assert_eq!(Valid(Ok((10, 20, 30))), zipped.flattened());
+        assert_eq!(Valid(Ok((10, 20, 30))), zipped.flatten_all());
     }
 
     #[test]
-    fn test_flattened_4() {
+    fn test_flatten_all_4() {
         let valid1: Valid<_, String> = Valid::succeed(10);
         let valid2 = Valid::succeed(20);
         let valid3 = Valid::succeed(30);
         let valid4 = Valid::succeed(40);
         let zipped = valid1.zip2(valid2).zip(valid3).zip(valid4);
-        assert_eq!(Valid(Ok((10, 20, 30, 40))), zipped.flattened());
+        assert_eq!(Valid(Ok((10, 20, 30, 40))), zipped.flatten_all());
+    }
+
+    #[test]
+    fn test_flatten() {
+        let result: Valid<_, String> = Valid::succeed(1)
+            .zip2(Valid::succeed(2))
+            .zip(Valid::succeed(3))
+            .zip(Valid::succeed(4))
+            .flatten::<Two, _, _, _>();
+        assert_eq!(Valid(Ok(((1, 2), 3, 4))), result);
     }
 }
