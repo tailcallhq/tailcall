@@ -205,7 +205,7 @@ impl HttpSpec {
         let http_client = init_http(&Upstream::default(), None);
         let config = match self.config.clone() {
             ConfigSource::File(file) => {
-                let reader = ConfigReader::init(file_io, http_client);
+                let reader = ConfigReader::init(Some(file_io), http_client);
                 reader.read_all(&[file]).await.unwrap()
             }
             ConfigSource::Inline(config) => ConfigSet::from(config),

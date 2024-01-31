@@ -122,7 +122,7 @@ mod tests {
 
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let reader = ConfigReader::init(file_io, http_io);
+        let reader = ConfigReader::init(Some(file_io), http_io);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: test_file.to_str().unwrap().to_string(),

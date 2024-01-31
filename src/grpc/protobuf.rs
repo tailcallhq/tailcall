@@ -226,7 +226,7 @@ mod tests {
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let reader = ConfigReader::init(file_io, http_io);
+        let reader = ConfigReader::init(Some(file_io), http_io);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: get_test_file(name)

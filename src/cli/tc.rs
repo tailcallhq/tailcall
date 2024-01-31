@@ -27,7 +27,7 @@ pub async fn run() -> Result<()> {
     update_checker::check_for_update().await;
     let file_io: Arc<dyn FileIO + Send + Sync> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
-    let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
+    let config_reader = ConfigReader::init(Some(file_io.clone()), default_http_io);
     match cli.command {
         Command::Start { file_paths } => {
             let config_set = config_reader.read_all(&file_paths).await?;

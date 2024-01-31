@@ -86,7 +86,7 @@ mod tests {
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
-        let reader = ConfigReader::init(file_io, http_io);
+        let reader = ConfigReader::init(Some(file_io), http_io);
         let config_set = reader.resolve(config).await.unwrap();
 
         let protobuf_set =

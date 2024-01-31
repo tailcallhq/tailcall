@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -16,7 +16,7 @@ const NULL_STR: &str = "\0\0\0\0\0\0\0";
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
 pub struct ConfigReader {
-    file_io: Arc<dyn FileIO + Send>,
+    file_io: Option<Arc<dyn FileIO + Send + Sync>>,
     http_io: Arc<dyn HttpIO + Send + Sync>,
 }
 
@@ -28,7 +28,7 @@ struct FileRead {
 
 impl ConfigReader {
     pub fn init(
-        file_io: Arc<dyn FileIO + Send + Sync>,
+        file_io: Option<Arc<dyn FileIO + Send + Sync>>,
         http_io: Arc<dyn HttpIO + Send + Sync>,
     ) -> Self {
         Self { file_io, http_io }
@@ -44,10 +44,11 @@ impl ConfigReader {
                 .await?;
 
             String::from_utf8(response.body.to_vec())?
+        } else if let Some(file_io) = &self.file_io {
+            // Is a file path and file IO is enabled
+            file_io.read(&file.to_string()).await?
         } else {
-            // Is a file path
-
-            self.file_io.read(&file.to_string()).await?
+            return Err(anyhow!("Cannot read file {:#?}", file.to_string()));
         };
 
         Ok(FileRead { content, path: file.to_string() })
@@ -196,7 +197,7 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(init_file(), init_http(&Default::default(), None));
+        let reader = ConfigReader::init(Some(init_file()), init_http(&Default::default(), None));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -222,7 +223,7 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(init_file(), init_http(&Default::default(), None));
+        let reader = ConfigReader::init(Some(init_file()), init_http(&Default::default(), None));
         let helper_map = reader
             .resolve_descriptors(HashMap::new(), test_file)
             .await?;
@@ -312,7 +313,7 @@ mod reader_tests {
         .iter()
         .map(|x| x.to_string())
         .collect();
-        let cr = ConfigReader::init(file_io, http_io);
+        let cr = ConfigReader::init(Some(file_io), http_io);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "Test", "User"]
@@ -341,7 +342,7 @@ mod reader_tests {
         .iter()
         .map(|x| x.to_string())
         .collect();
-        let cr = ConfigReader::init(file_io, http_io);
+        let cr = ConfigReader::init(Some(file_io), http_io);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "User"]
@@ -361,7 +362,7 @@ mod reader_tests {
         let http_io = init_http(&Upstream::default(), None);
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-        let reader = ConfigReader::init(file_io, http_io);
+        let reader = ConfigReader::init(Some(file_io), http_io);
 
         let config = reader
             .read(&format!(
