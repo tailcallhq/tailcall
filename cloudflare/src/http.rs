@@ -44,9 +44,7 @@ impl HttpIO for CloudflareHttp {
     }
 }
 
-pub async fn to_response(
-    response: hyper::Response<hyper::Body>,
-) -> anyhow::Result<worker::Response> {
+pub async fn to_response(response: hyper::Response<hyper::Body>) -> Result<worker::Response> {
     let status = response.status().as_u16();
     let headers = response.headers().clone();
     let bytes = hyper::body::to_bytes(response).await?;
@@ -80,7 +78,7 @@ pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
     }
 }
 
-pub async fn to_request(mut req: worker::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<hyper::Body>> {
     let body = req.text().await.map_err(to_anyhow)?;
     let method = req.method();
     let uri = req.url().map_err(to_anyhow)?.as_str().to_string();

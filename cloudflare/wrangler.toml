@@ -6,7 +6,7 @@ compatibility_date = "2023-03-22"
 account_id = "59eda2a637301830ad43a6e3e4419346"
 
 [build]
-command = "cargo install -q worker-build && worker-build --release"
+command = "cargo install -q worker-build && worker-build"
 
 # the path to config must start with the binding name of respective r2 bucket.
 [vars]
