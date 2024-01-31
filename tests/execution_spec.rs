@@ -357,10 +357,7 @@ impl ExecutionSpec {
         }
 
         // TODO: add query
-        let unique_block_count = [assert.is_some()]
-            .into_iter()
-            .filter(|x| *x)
-            .count();
+        let unique_block_count = [assert.is_some()].into_iter().filter(|x| *x).count();
 
         if unique_block_count >= 2 {
             return Err(anyhow!(

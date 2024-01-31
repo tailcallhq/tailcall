@@ -38,24 +38,21 @@ impl From<http::HttpSpec> for execution::AssertSpec {
 #[inline]
 fn is_path_file_ext(path: &Path, ext: &str) -> bool {
     path.is_file()
-    && path
-        .extension()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_string()
-        .as_str()
-        == ext
+        && path
+            .extension()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
+            .as_str()
+            == ext
 }
 
 fn graphql_iter_spec_part(spec: &str) -> impl Iterator<Item = (String, String)> + '_ {
     spec.split("\n#> ").skip(1).map(|part| {
-        let (typ, content) = part.split_once("\n").unwrap();
+        let (typ, content) = part.split_once('\n').unwrap();
 
-        (
-            typ.trim().to_string(),
-            content.trim().to_string(),
-        )
+        (typ.trim().to_string(), content.trim().to_string())
     })
 }
 
@@ -64,8 +61,11 @@ async fn generate_client_snapshot(file_stem: &str, config: &Config) {
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 
     let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
-    
-    let snap = format!("---\nsource: tests/execution_spec.rs\nexpression: client\n---\n{}\n", client);
+
+    let snap = format!(
+        "---\nsource: tests/execution_spec.rs\nexpression: client\n---\n{}\n",
+        client
+    );
 
     let target = snapshots_dir.join(PathBuf::from(format!(
         "execution_spec__{}.md_client.snap",
@@ -103,12 +103,7 @@ async fn main() {
         let x = x.unwrap();
 
         let path = x.path();
-        let file_stem = path
-            .file_stem()
-            .unwrap()
-            .to_string_lossy()
-            .to_owned()
-            .to_string();
+        let file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
 
         if files_already_processed.contains(&file_stem) {
             panic!("File name collision: {}", file_stem);
@@ -151,7 +146,7 @@ async fn main() {
             if bad_graphql_skip {
                 spec += "\n##### skip\n";
             } else if let Some(runner) = &old.runner {
-                if runner.to_owned() != Annotation::Fail {
+                if *runner != Annotation::Fail {
                     spec += &format!(
                         "\n##### {}\n",
                         match runner {
@@ -165,7 +160,7 @@ async fn main() {
                 }
             }
 
-            spec += &format!("\n#### server:\n\n```");
+            spec += "\n#### server:\n\n```";
             spec += &match &old.config {
                 http::ConfigSource::File(path) => {
                     let path = PathBuf::from(path);
@@ -177,7 +172,7 @@ async fn main() {
                         "{}\n{}{}```\n\n",
                         ext,
                         content,
-                        if content.ends_with("\n") { "" } else { "\n" },
+                        if content.ends_with('\n') { "" } else { "\n" },
                     )
                 }
                 http::ConfigSource::Inline(content) => {
@@ -304,7 +299,7 @@ async fn main() {
                             .expect("Failed to read back snapshot for patching");
 
                         let lines = snap
-                            .split("\n")
+                            .split('\n')
                             .filter(|x| !x.starts_with("assertion_line"))
                             .collect::<Vec<&str>>()
                             .join("\n");
@@ -333,12 +328,7 @@ async fn main() {
         let x = x.unwrap();
 
         let path = x.path();
-        let file_stem = path
-            .file_stem()
-            .unwrap()
-            .to_string_lossy()
-            .to_owned()
-            .to_string();
+        let file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
 
         if files_already_processed.contains(&file_stem) {
             panic!("File name collision: {}", file_stem);
@@ -375,7 +365,7 @@ async fn main() {
                 };
             }
 
-            if server.len() < 1 {
+            if server.is_empty() {
                 panic!("Unexpected number of server SDL declarations in {:?} (at least one is required, two are recommended)", path);
             }
 
@@ -398,13 +388,16 @@ async fn main() {
 
             f.write_all(md_spec.as_bytes())
                 .expect("Failed to write execution spec");
-            
+
             let target = snapshots_dir.join(PathBuf::from(format!(
                 "execution_spec__{}.md_merged.snap",
                 file_stem,
             )));
 
-            let snap = format!("---\nsource: tests/execution_spec.rs\nexpression: merged\n---\n{}\n", merged.unwrap());
+            let snap = format!(
+                "---\nsource: tests/execution_spec.rs\nexpression: merged\n---\n{}\n",
+                merged.unwrap()
+            );
 
             write(target, snap).unwrap();
 
