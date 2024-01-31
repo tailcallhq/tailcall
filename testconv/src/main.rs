@@ -257,7 +257,10 @@ async fn main() {
                         generate_client_snapshot_sdl(&file_stem, &sdl, &reader).await;
                     }
                     http::ConfigSource::Inline(config) => {
-                        let config = reader.resolve(config.to_owned()).await.expect("Failed to resolve config");
+                        let config = reader
+                            .resolve(config.to_owned())
+                            .await
+                            .expect("Failed to resolve config");
                         generate_client_snapshot(&file_stem, &config).await;
                     }
                 };
