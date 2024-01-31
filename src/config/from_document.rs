@@ -36,16 +36,16 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     let types = to_types(&type_definitions);
     let unions = to_union_types(&type_definitions);
     let schema = schema_definition(&doc).map(to_root_schema);
-
     schema_definition(&doc)
         .and_then(|sd| {
             server(sd)
-                .zip(upstream(sd))
-                .zip(types)
-                .zip(unions)
-                .zip(schema)
+                .tupled()
+                .zip_fuse(upstream(sd))
+                .zip_fuse(types)
+                .zip_fuse(unions)
+                .zip_fuse(schema)
         })
-        .map(|((((server, upstream), types), unions), schema)| Config {
+        .map(|(server, upstream, types, unions, schema)| Config {
             server,
             upstream,
             types,

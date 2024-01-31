@@ -1,3 +1,4 @@
+use super::append::Append;
 use super::ValidationError;
 use crate::valid::Cause;
 
@@ -66,6 +67,17 @@ impl<A, E> Valid<A, E> {
                 Err(e2) => Valid(Err(e1.combine(e2))),
             },
         }
+    }
+
+    pub fn tupled(self) -> Valid<(A,), E> {
+        self.map(|a| (a,))
+    }
+
+    pub fn zip_fuse<A1>(self, other: Valid<A1, E>) -> Valid<A::Out, E>
+    where
+        A: Append<A1>,
+    {
+        self.zip(other).map(|(a, a1)| a.fuse(a1))
     }
 
     pub fn trace(self, message: &str) -> Valid<A, E> {
