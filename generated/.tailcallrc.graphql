@@ -186,6 +186,25 @@ directive @http(
   query: KeyValues
 ) on FIELD_DEFINITION
 
+"""
+The @call operator is used to reference a resolver operator (available resolvers are `@http`, `@grpc` and `@graphQL`).
+"""
+directive @call(
+  """
+  The name of the field that has the resolver to be called.
+  """
+  query: String!
+  """
+  The name of the field that has the resolver to be called.
+  """
+  mutation: String!
+  """
+  The arguments to be replace the values on the actual resolver.
+  """
+  args: JSON
+) on FIELD_DEFINITION
+
+
 directive @js(
   script: String!
 ) on FIELD_DEFINITION
@@ -409,6 +428,7 @@ input ExprBody {
   http: Http
   grpc: Grpc
   graphQL: GraphQL
+  call: Call
   const: JSON
   if: ExprIf
   and: [ExprBody]
@@ -600,24 +620,6 @@ input Http {
   query: KeyValues
 }
 
-"""
-The @call operator is used to reference a resolver operator (available resolvers are `@http`, `@grpc` and `@graphQL`).
-"""
-directive @call(
-  """
-  The name of the field that has the resolver to be called.
-  """
-  query: String!
-  """
-  The name of the field that has the resolver to be called.
-  """
-  mutation: String!
-  """
-  The arguments to be replace the values on the actual resolver.
-  """
-  args: JSON
-) on FIELD_DEFINITION
-
 enum HttpVersion {
   HTTP1
   HTTP2
@@ -635,11 +637,6 @@ enum Method {
   OPTIONS
   CONNECT
   TRACE
-}
-input Call {
-  query: String!
-  mutation: String!
-  args: JSON
 }
 input Modify {
   name: String
@@ -671,10 +668,10 @@ enum Encoding {
   ApplicationXWwwFormUrlencoded
 }
 input ExprBody {
-  call: Call
   http: Http
   grpc: Grpc
   graphQL: GraphQL
+  call: Call
   const: JSON
   if: ExprIf
   and: [ExprBody]
