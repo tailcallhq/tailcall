@@ -19,6 +19,14 @@ pub trait PathString {
 }
 
 ///
+/// The PathUrlEncoded trait provides a method for accessing values from a JSON-like structure.
+/// The returned value is a url encoded string.
+///
+pub trait PathUrlEncoded {
+    fn path_urlencoded<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
+}
+
+///
 /// The PathGraphql trait provides a method for accessing values from a JSON-like structure.
 /// The returned value is encoded as a GraphQL Value.
 ///
@@ -35,6 +43,18 @@ impl PathString for serde_json::Value {
     }
 }
 
+impl PathUrlEncoded for serde_json::Value {
+    fn path_urlencoded<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+        self.get_path(path).map(|a| {
+            serde_urlencoded::to_string(a)
+                .map(Cow::Owned)
+                .unwrap_or(match a {
+                    serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
+                    _ => Cow::Owned(a.to_string()),
+                })
+        })
+    }
+}
 fn convert_value(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
     match value {
         async_graphql::Value::String(s) => Some(Cow::Borrowed(s.as_str())),
@@ -46,6 +66,50 @@ fn convert_value(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
     }
 }
 
+fn convert_urlencoded(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
+    match value {
+        async_graphql::Value::String(s) => Some(serde_urlencoded::to_string(s).unwrap_or_default()),
+        async_graphql::Value::Number(n) => Some(n.to_string()),
+        async_graphql::Value::Boolean(b) => Some(b.to_string()),
+        async_graphql::Value::Object(map) => {
+            Some(serde_urlencoded::to_string(json!(map).to_string()).unwrap_or_default())
+        }
+        async_graphql::Value::List(list) => {
+            Some(serde_urlencoded::to_string(json!(list).to_string()).unwrap_or_default())
+        }
+        _ => None,
+    }
+    .map(Cow::Owned)
+}
+
+impl<'a, Ctx: ResolverContextLike<'a>> PathUrlEncoded for EvaluationContext<'a, Ctx> {
+    fn path_urlencoded<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+        let ctx = self;
+
+        if path.is_empty() {
+            return None;
+        }
+
+        if path.len() == 1 {
+            return match path[0].as_ref() {
+                "value" => convert_urlencoded(ctx.path_value(&[] as &[T])?),
+                "args" => Some(json!(ctx.graphql_ctx.args()?).to_string().into()),
+                "vars" => Some(json!(ctx.vars()).to_string().into()),
+                _ => None,
+            };
+        }
+
+        path.split_first()
+            .and_then(|(head, tail)| match head.as_ref() {
+                "value" => convert_urlencoded(ctx.path_value(tail)?),
+                "args" => convert_urlencoded(ctx.arg(tail)?),
+                "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
+                "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
+                "env" => ctx.env_var(tail[0].as_ref()).map(|v| v.into()),
+                _ => None,
+            })
+    }
+}
 impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         let ctx = self;

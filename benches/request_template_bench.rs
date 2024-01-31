@@ -7,7 +7,7 @@ use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
 use tailcall::http::RequestTemplate;
-use tailcall::path::PathString;
+use tailcall::path::{PathString, PathUrlEncoded};
 
 #[derive(Setters)]
 struct Context {
@@ -23,6 +23,11 @@ impl Default for Context {
 impl PathString for Context {
     fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
         self.value.path_string(parts)
+    }
+}
+impl PathUrlEncoded for Context {
+    fn path_urlencoded<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+        self.value.path_urlencoded(path)
     }
 }
 impl HasHeaders for Context {
@@ -60,9 +65,63 @@ fn benchmark_to_request(c: &mut Criterion) {
     });
 }
 
+use tailcall::mustache::Mustache;
+fn benchmark_set_body(c: &mut Criterion) {
+    let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
+        .unwrap()
+        .body_path(Some(Mustache::parse("{{foo.bar}}").unwrap()));
+    let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
+    c.bench_function("with_string", |b| {
+        b.iter(|| {
+            let _ = black_box(tmpl.to_request(&ctx));
+        })
+    });
+
+    let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
+        .unwrap()
+        .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#).unwrap()));
+    let ctx = Context::default().value(json!({"baz": "baz"}));
+    c.bench_function("with_json_template", |b| {
+        b.iter(|| {
+            let _ = black_box(tmpl.to_request(&ctx));
+        })
+    });
+
+    let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
+        .unwrap()
+        .body_path(Some(Mustache::parse("{{foo}}").unwrap()));
+    let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
+    c.bench_function("with_json_body", |b| {
+        b.iter(|| {
+            let _ = black_box(tmpl.to_request(&ctx));
+        })
+    });
+
+    let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
+        .unwrap()
+        .body_path(Some(Mustache::parse("{{a}}").unwrap()));
+    let ctx =
+        Context::default().value(json!({"a": {"special chars": "a !@#$%^&*()<>?:{}-=1[];',./"}}));
+    c.bench_function("with_json_body_nested", |b| {
+        b.iter(|| {
+            let _ = black_box(tmpl.to_request(&ctx));
+        })
+    });
+
+    let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
+        .unwrap()
+        .body_path(Some(Mustache::parse(r#"{"foo": "bar"}"#).unwrap()));
+    let ctx = Context::default().value(json!({}));
+    c.bench_function("with_mustache_literal", |b| {
+        b.iter(|| {
+            let _ = black_box(tmpl.to_request(&ctx));
+        })
+    });
+}
+
 criterion_group! {
     name = benches;
     config = Criterion::default();
-    targets = benchmark_to_request
+    targets = benchmark_to_request, benchmark_set_body
 }
 criterion_main!(benches);

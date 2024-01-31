@@ -10,7 +10,7 @@ use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::mustache::Mustache;
-use crate::path::PathString;
+use crate::path::{PathString, PathUrlEncoded};
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -30,7 +30,7 @@ pub struct RequestTemplate {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: PathString + PathUrlEncoded>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
@@ -78,7 +78,7 @@ impl RequestTemplate {
     }
 
     /// Creates a HeaderMap for the context
-    fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: PathString + PathUrlEncoded>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         for (k, v) in &self.headers {
@@ -91,7 +91,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathString + HasHeaders>(
+    pub fn to_request<C: PathString + HasHeaders + PathUrlEncoded>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -106,7 +106,7 @@ impl RequestTemplate {
     }
 
     /// Sets the body for the request
-    fn set_body<C: PathString + HasHeaders>(
+    fn set_body<C: PathString + PathUrlEncoded + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -117,15 +117,8 @@ impl RequestTemplate {
                     req.body_mut().replace(body_path.render(ctx).into());
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
-                    // TODO: this is a performance bottleneck
-                    // We first encode everything to string and then back to form-urlencoded
-                    let body: String = body_path.render(ctx);
-                    let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
-                        Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
-                        Err(_) => body,
-                    };
-
-                    req.body_mut().replace(form_data.into());
+                    req.body_mut()
+                        .replace(body_path.render_urlencoded(ctx).into());
                 }
             }
         }
@@ -133,7 +126,7 @@ impl RequestTemplate {
     }
 
     /// Sets the headers for the request
-    fn set_headers<C: PathString + HasHeaders>(
+    fn set_headers<C: PathString + HasHeaders + PathUrlEncoded>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -228,7 +221,7 @@ mod tests {
     use super::RequestTemplate;
     use crate::has_headers::HasHeaders;
     use crate::mustache::Mustache;
-    use crate::path::PathString;
+    use crate::path::{PathString, PathUrlEncoded};
 
     #[derive(Setters)]
     struct Context {
@@ -246,6 +239,11 @@ mod tests {
             self.value.path_string(parts)
         }
     }
+    impl crate::path::PathUrlEncoded for Context {
+        fn path_urlencoded<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+            self.value.path_urlencoded(parts)
+        }
+    }
     impl crate::has_headers::HasHeaders for Context {
         fn headers(&self) -> &HeaderMap {
             &self.headers
@@ -253,7 +251,10 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: PathString + HasHeaders + PathUrlEncoded>(
+            &self,
+            ctx: &C,
+        ) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()

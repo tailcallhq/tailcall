@@ -1,6 +1,6 @@
 use nom::{Finish, IResult};
 
-use crate::path::{PathGraphql, PathString};
+use crate::path::{PathGraphql, PathString, PathUrlEncoded};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
@@ -62,6 +62,26 @@ impl Mustache {
                 .map(|segment| match segment {
                     Segment::Literal(text) => text.to_string(),
                     Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
+                })
+                .collect(),
+        }
+    }
+    pub fn render_urlencoded(&self, value: &impl PathUrlEncoded) -> String {
+        match self {
+            Mustache(segments) => segments
+                .iter()
+                .map(|segment| match segment {
+                    Segment::Literal(text) => {
+                        match serde_json::from_str::<serde_json::Value>(text) {
+                            Ok(parsed_json) => {
+                                serde_urlencoded::to_string(parsed_json).unwrap_or_default()
+                            }
+                            Err(_) => text.to_string(),
+                        }
+                    }
+                    Segment::Expression(parts) => {
+                        value.path_urlencoded(parts).unwrap_or_default().to_string()
+                    }
                 })
                 .collect(),
         }
