@@ -3574,6 +3574,7 @@ dependencies = [
 name = "testconv"
 version = "0.1.0"
 dependencies = [
+ "async-graphql",
  "derive_setters",
  "indexmap",
  "serde",

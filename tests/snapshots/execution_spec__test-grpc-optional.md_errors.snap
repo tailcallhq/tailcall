@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "expected type to be required",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData"
+    ],
+    "description": null
+  }
+]

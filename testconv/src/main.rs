@@ -3,14 +3,16 @@ use std::fs::{self, canonicalize, read_dir, read_to_string, write, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Upstream};
+use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 
-use crate::common::Annotation;
+use crate::common::{Annotation, SDLError};
 
 mod common;
 mod execution;
@@ -91,6 +93,9 @@ async fn main() {
 
     let client_dir =
         canonicalize(PathBuf::from("tests/graphql")).expect("Could not find graphql directory");
+
+    let errors_dir = canonicalize(PathBuf::from("tests/graphql/errors"))
+        .expect("Could not find graphql/errors directory");
 
     let execution_dir =
         canonicalize(PathBuf::from("tests/execution")).expect("Could not find execution directory");
@@ -496,6 +501,113 @@ async fn main() {
             );
 
             write(target, snap).expect("Failed to write client snapshot");
+
+            files_already_processed.insert(file_stem);
+        } else if path.is_file() {
+            println!("Skipping unexpected file: {:?}", path);
+        }
+    }
+
+    for x in read_dir(errors_dir).expect("Could not read graphql/errors directory") {
+        let x = x.unwrap();
+
+        let path = x.path();
+        let mut file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
+
+        if files_already_processed.contains(&file_stem) {
+            println!(
+                "File name collision: {}. Adding -error to the end.",
+                file_stem
+            );
+            file_stem += "-error";
+            if files_already_processed.contains(&file_stem) {
+                panic!("File name collision: {}", file_stem);
+            }
+        }
+
+        if is_path_file_ext(&path, "graphql") {
+            let spec = "\n".to_string()
+                + read_to_string(&path)
+                    .expect("Failed to read graphql/errors spec")
+                    .as_str();
+
+            let mut server: Option<String> = None;
+            let mut errors: Vec<SDLError> = Vec::new();
+
+            for (typ, content) in graphql_iter_spec_part(&spec) {
+                match typ.as_str() {
+                    "server-sdl" => {
+                        if server.is_none() {
+                            server = Some(content);
+                        } else {
+                            panic!(
+                                "Unexpected number of server SDL declarations in {:?} (only one is allowed)",
+                                path
+                            );
+                        }
+                    }
+                    "client-sdl" => {
+                        if content.contains("@error") {
+                            let doc =
+                                async_graphql::parser::parse_schema(content.as_str()).unwrap();
+                            for def in doc.definitions {
+                                if let TypeSystemDefinition::Type(type_def) = def {
+                                    for dir in type_def.node.directives {
+                                        if dir.node.name.node == "error" {
+                                            errors.push(
+                                                SDLError::from_directive(&dir.node)
+                                                    .to_result()
+                                                    .unwrap(),
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            panic!("Unexpected lack of @error directives in {:?}", path);
+                        }
+                    }
+                    _ => panic!("Unsupported part type in {:?}: {}", path, typ),
+                };
+            }
+
+            if server.is_none() {
+                panic!("Unexpected number of server SDL declarations in {:?} (at least one is required, two are recommended)", path);
+            }
+
+            let md_spec = format!(
+                "# {}\n\n###### sdl error\n\n#### server:\n\n```graphql\n{}\n```\n",
+                file_stem,
+                server.unwrap()
+            );
+
+            if errors.is_empty() {
+                panic!("Unexpected lack of client SDL declarations in {:?}", path);
+            }
+
+            let md_path = PathBuf::from(format!("{}.md", file_stem));
+
+            let mut f = File::options()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(execution_dir.join(&md_path))
+                .expect("Failed to open execution spec");
+
+            f.write_all(md_spec.as_bytes())
+                .expect("Failed to write execution spec");
+
+            let target = snapshots_dir.join(PathBuf::from(format!(
+                "execution_spec__{}.md_errors.snap",
+                file_stem,
+            )));
+
+            let snap = format!(
+                "---\nsource: tests/execution_spec.rs\nexpression: errors\n---\n{}\n",
+                serde_json::to_string_pretty(&errors).unwrap(),
+            );
+
+            write(target, snap).expect("Failed to write errors snapshot");
 
             files_already_processed.insert(file_stem);
         } else if path.is_file() {

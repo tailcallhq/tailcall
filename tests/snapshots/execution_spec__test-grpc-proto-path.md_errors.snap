@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Failed to parse or load proto file",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc"
+    ],
+    "description": null
+  }
+]

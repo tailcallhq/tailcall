@@ -14,3 +14,4 @@ serde_yaml = "0.9"
 tailcall = { path = ".." }
 url = { version = "2", features = ["serde"] }
 tokio = { version = "1.35.1", features = ["rt", "macros"] }
+async-graphql = { version = "7.0.1", features = ["dynamic-schema"] }

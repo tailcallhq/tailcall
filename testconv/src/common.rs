@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use tailcall::http::Method;
+use tailcall::valid::Cause;
 use url::Url;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -56,4 +57,31 @@ pub struct DownstreamResponse(pub APIResponse);
 pub struct Mock {
     pub request: UpstreamRequest,
     pub response: UpstreamResponse,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
+pub struct SDLError {
+    pub message: String,
+    pub trace: Vec<String>,
+    pub description: Option<String>,
+}
+
+impl<'a> From<Cause<&'a str>> for SDLError {
+    fn from(value: Cause<&'a str>) -> Self {
+        SDLError {
+            message: value.message.to_string(),
+            trace: value.trace.iter().map(|e| e.to_string()).collect(),
+            description: None,
+        }
+    }
+}
+
+impl From<Cause<String>> for SDLError {
+    fn from(value: Cause<String>) -> Self {
+        SDLError {
+            message: value.message.to_string(),
+            trace: value.trace.iter().map(|e| e.to_string()).collect(),
+            description: value.description,
+        }
+    }
 }
