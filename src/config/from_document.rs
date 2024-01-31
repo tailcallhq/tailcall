@@ -39,11 +39,11 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     schema_definition(&doc)
         .and_then(|sd| {
             server(sd)
-                .tupled()
-                .zip_fuse(upstream(sd))
-                .zip_fuse(types)
-                .zip_fuse(unions)
-                .zip_fuse(schema)
+                .fuse(upstream(sd))
+                .fuse(types)
+                .fuse(unions)
+                .fuse(schema)
+                .into()
         })
         .map(|(server, upstream, types, unions, schema)| Config {
             server,
