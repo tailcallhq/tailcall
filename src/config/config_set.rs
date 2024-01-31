@@ -22,6 +22,24 @@ pub struct Extensions {
     pub script: Option<String>,
 }
 
+impl Extensions {
+    pub fn merge_right(mut self, other: &Extensions) -> Self {
+        self.grpc_file_descriptor
+            .file
+            .extend(other.grpc_file_descriptor.file.clone());
+        self.script = other.script.clone().or(self.script.take());
+        self
+    }
+}
+
+impl ConfigSet {
+    pub fn merge_right(mut self, other: &Self) -> Self {
+        self.config = self.config.merge_right(&other.config);
+        self.extensions = self.extensions.merge_right(&other.extensions);
+        self
+    }
+}
+
 impl Deref for ConfigSet {
     type Target = Config;
     fn deref(&self) -> &Self::Target {
