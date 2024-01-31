@@ -25,7 +25,7 @@ pub async fn run() -> Result<()> {
     let cli = Cli::parse();
     logger_init();
     update_checker::check_for_update().await;
-    let file_io: std::sync::Arc<dyn FileIO + Send + Sync> = init_file();
+    let file_io: Arc<dyn FileIO + Send + Sync> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
     let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
     match cli.command {

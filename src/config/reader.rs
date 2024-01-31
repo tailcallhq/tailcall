@@ -16,8 +16,8 @@ const NULL_STR: &str = "\0\0\0\0\0\0\0";
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
 pub struct ConfigReader {
-    file: Arc<dyn FileIO + Send>,
-    http: Arc<dyn HttpIO + Send + Sync>,
+    file_io: Arc<dyn FileIO + Send>,
+    http_io: Arc<dyn HttpIO + Send + Sync>,
 }
 
 /// Response of a file read operation
@@ -27,8 +27,11 @@ struct FileRead {
 }
 
 impl ConfigReader {
-    pub fn init(file: Arc<dyn FileIO + Send + Sync>, http: Arc<dyn HttpIO + Send + Sync>) -> Self {
-        Self { file, http }
+    pub fn init(
+        file_io: Arc<dyn FileIO + Send + Sync>,
+        http_io: Arc<dyn HttpIO + Send + Sync>,
+    ) -> Self {
+        Self { file_io, http_io }
     }
 
     /// Reads a file from the filesystem or from an HTTP URL

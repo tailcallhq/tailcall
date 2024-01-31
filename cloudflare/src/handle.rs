@@ -39,16 +39,16 @@ pub async fn fetch(
     // Has to be done here, since when using GraphiQL, a config query parameter is not specified,
     // and get_app_ctx will fail without it.
     if req.method() == Method::GET {
-        return Ok(to_response(graphiql(&req)?).await?);
+        return to_response(graphiql(&req)?).await;
     }
 
     let env = Rc::new(env);
     let app_ctx = match get_app_ctx(env, &req).await? {
         Ok(app_ctx) => app_ctx,
-        Err(e) => return Ok(to_response(e).await?),
+        Err(e) => return to_response(e).await,
     };
     let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
-    Ok(to_response(resp).await?)
+    to_response(resp).await
 }
 
 ///
@@ -77,7 +77,7 @@ async fn get_app_ctx(
 
     // Create new context
     let env_io = Arc::new(CloudflareEnv::init(env.clone()));
-  
+
     let bucket_id = env_io
         .get("BUCKET")
         .ok_or(anyhow!("CONFIG var is not set"))?;
