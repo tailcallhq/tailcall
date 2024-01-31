@@ -2,7 +2,7 @@ use async_graphql_value::ConstValue;
 
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, Field};
+use crate::config::Field;
 use crate::lambda::Expression;
 use crate::lambda::Expression::Literal;
 use crate::try_fold::TryFold;
@@ -23,14 +23,14 @@ fn validate_data_with_schema(
 }
 
 pub struct CompileConst<'a> {
-    pub config: &'a config::Config,
+    pub config_set: &'a config::ConfigSet,
     pub field: &'a config::Field,
     pub value: &'a serde_json::Value,
     pub validate: bool,
 }
 
 pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
-    let config = inputs.config;
+    let config_set = inputs.config_set;
     let field = inputs.field;
     let value = inputs.value;
     let validate = inputs.validate;
@@ -39,7 +39,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
     match ConstValue::from_json(data.to_owned()) {
         Ok(gql) => {
             let validation = if validate {
-                validate_data_with_schema(config, field, gql)
+                validate_data_with_schema(config_set, field, gql)
             } else {
                 Valid::succeed(())
             };
@@ -50,15 +50,20 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
 }
 
 pub fn update_const_field<'a>(
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config, field, _, _), b_field| {
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        |(config_set, field, _, _), b_field| {
             let Some(const_field) = &field.const_field else {
                 return Valid::succeed(b_field);
             };
 
-            compile_const(CompileConst { config, field, value: &const_field.data, validate: true })
-                .map(|resolver| b_field.resolver(Some(resolver)))
+            compile_const(CompileConst {
+                config_set,
+                field,
+                value: &const_field.data,
+                validate: true,
+            })
+            .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
 }
