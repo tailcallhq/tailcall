@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::Config;
+use tailcall::config::ConfigSet;
 use tailcall::http::{graphiql, handle_request, AppContext};
 use tailcall::EnvIO;
 
@@ -56,13 +56,14 @@ async fn get_config(
     env_io: Arc<dyn EnvIO>,
     env: Rc<worker::Env>,
     file_path: &str,
-) -> anyhow::Result<Config> {
+) -> anyhow::Result<ConfigSet> {
     let bucket_id = env_io
         .get("BUCKET")
         .ok_or(anyhow!("BUCKET var is not set"))?;
     log::debug!("R2 Bucket ID: {}", bucket_id);
     let file_io = init_file(env.clone(), bucket_id)?;
     let http_io = init_http();
+
     let reader = ConfigReader::init(file_io, http_io);
     let config = reader.read(&file_path).await?;
     Ok(config)

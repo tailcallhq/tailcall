@@ -1,11 +1,10 @@
-use std::env::current_dir;
 use std::fmt::Debug;
-use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
 use prost::bytes::BufMut;
 use prost::Message;
+use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::{
     DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, ServiceDescriptor,
 };
@@ -71,24 +70,9 @@ impl ProtobufSet {
     // TODO: load definitions from proto file for now, but in future
     // it could be more convenient to load FileDescriptorSet instead
     // either from file or server reflection
-    pub fn from_proto_file(proto_path: &Path) -> Result<Self> {
-        let proto_path = if proto_path.is_relative() {
-            let dir = current_dir()?;
-
-            dir.join(proto_path)
-        } else {
-            PathBuf::from(proto_path)
-        };
-
-        let parent_dir = proto_path
-            .parent()
-            .context("Failed to resolve parent dir for proto file")?;
-
-        let file_descriptor_set = protox::compile([proto_path.as_path()], [parent_dir])
-            .with_context(|| "Failed to parse or load proto file".to_string())?;
-
-        let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
-
+    pub fn from_proto_file(file_descriptor_set: &FileDescriptorSet) -> Result<Self> {
+        let descriptor_pool =
+            DescriptorPool::from_file_descriptor_set(file_descriptor_set.clone())?;
         Ok(Self { descriptor_pool })
     }
 
@@ -209,6 +193,7 @@ impl ProtobufOperation {
 
 #[cfg(test)]
 mod tests {
+    // TODO: Rewrite protobuf tests
     use std::path::PathBuf;
 
     use anyhow::Result;
@@ -217,6 +202,9 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+    use crate::cli::{init_file, init_http};
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, Grpc, Type, Upstream};
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -233,6 +221,29 @@ mod tests {
 
         test_file.push(name);
         test_file
+    }
+
+    async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
+        let file_io = init_file();
+        let http_io = init_http(&Upstream::default(), None);
+        let reader = ConfigReader::init(file_io, http_io);
+        let mut config = Config::default();
+        let grpc = Grpc {
+            proto_path: get_test_file(name)
+                .to_str()
+                .context("Failed to parse or load proto file")?
+                .to_string(),
+            ..Default::default()
+        };
+        config.types.insert(
+            "foo".to_string(),
+            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+        );
+        Ok(reader
+            .resolve(config)
+            .await?
+            .extensions
+            .grpc_file_descriptor)
     }
 
     #[test]
@@ -264,23 +275,21 @@ mod tests {
         );
     }
 
-    #[test]
-    fn unknown_file() -> Result<()> {
-        let proto_file = get_test_file("_unknown.proto");
-        let error = ProtobufSet::from_proto_file(&proto_file).unwrap_err();
+    #[tokio::test]
+    async fn unknown_file() -> Result<()> {
+        let error = get_proto_file("_unknown.proto").await.unwrap_err();
 
         assert_eq!(
             error.to_string(),
-            format!("Failed to parse or load proto file")
+            "No such file or directory (os error 2)".to_string()
         );
 
         Ok(())
     }
 
-    #[test]
-    fn service_not_found() -> Result<()> {
-        let proto_file = get_test_file("greetings.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn service_not_found() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
         let error = file.find_service("_unknown").unwrap_err();
 
         assert_eq!(
@@ -291,10 +300,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn method_not_found() -> Result<()> {
-        let proto_file = get_test_file("greetings.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn method_not_found() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
         let service = file.find_service("Greeter")?;
         let error = service.find_operation("_unknown").unwrap_err();
 
@@ -303,10 +311,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn greetings_proto_file() -> Result<()> {
-        let proto_file = get_test_file("greetings.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn greetings_proto_file() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
         let service = file.find_service("Greeter")?;
         let operation = service.find_operation("SayHello")?;
 
@@ -324,10 +331,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn news_proto_file() -> Result<()> {
-        let proto_file = get_test_file("news.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn news_proto_file() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
         let service = file.find_service("NewsService")?;
         let operation = service.find_operation("GetNews")?;
 
@@ -349,10 +355,9 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn news_proto_file_multiple_messages() -> Result<()> {
-        let proto_file = get_test_file("news.proto");
-        let file = ProtobufSet::from_proto_file(&proto_file)?;
+    #[tokio::test]
+    async fn news_proto_file_multiple_messages() -> Result<()> {
+        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
         let service = file.find_service("NewsService")?;
         let multiple_operation = service.find_operation("GetMultipleNews")?;
 
