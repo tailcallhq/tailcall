@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::Arc;
 use std::{env, fs};
 
 use anyhow::Result;
@@ -21,29 +22,29 @@ use crate::{print_schema, FileIO};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn run() -> Result<()> {
     let cli = Cli::parse();
     logger_init();
     update_checker::check_for_update().await;
-    let file_io: std::sync::Arc<dyn FileIO> = init_file();
+    let file_io: Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
     let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
     match cli.command {
         Command::Start { file_paths } => {
-            let config = config_reader.read_all(&file_paths).await?;
-            log::info!("N + 1: {}", config.n_plus_one().len().to_string());
-            let server = Server::new(config);
+            let config_set = config_reader.read_all(&file_paths).await?;
+            log::info!("N + 1: {}", config_set.n_plus_one().len().to_string());
+            let server = Server::new(config_set);
             server.fork_start().await?;
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
-            let config = (config_reader.read_all(&file_paths)).await?;
-            let blueprint = Blueprint::try_from(&config).map_err(CLIError::from);
+            let config_set = (config_reader.read_all(&file_paths)).await?;
+            let blueprint = Blueprint::try_from(&config_set).map_err(CLIError::from);
 
             match blueprint {
                 Ok(blueprint) => {
                     log::info!("{}", "Config successfully validated".to_string());
-                    display_config(&config, n_plus_one_queries);
+                    display_config(&config_set, n_plus_one_queries);
                     if schema {
                         display_schema(&blueprint);
                     }
@@ -57,7 +58,7 @@ pub async fn run() -> anyhow::Result<()> {
                         }))
                         .await
                         .into_iter()
-                        .collect::<anyhow::Result<Vec<_>>>()?;
+                        .collect::<Result<Vec<_>>>()?;
 
                     validate_operations(&blueprint, ops)
                         .await

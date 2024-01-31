@@ -7,8 +7,9 @@ use tailcall::config::reader::ConfigReader;
 // use tailcall::config::Upstream
 
 async fn test_server(configs: &[&str], url: &str) {
+    let file_io = init_file();
     let http_client = init_http(&Upstream::default(), None);
-    let reader = ConfigReader::init(init_file(), http_client);
+    let reader = ConfigReader::init(file_io, http_client);
     let config = reader.read_all(configs).await.unwrap();
     let mut server = Server::new(config);
     let server_up_receiver = server.server_up_receiver();
@@ -92,8 +93,9 @@ async fn server_start_http2_rsa() {
 #[tokio::test]
 async fn server_start_http2_nokey() {
     let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
+    let file_io = init_file();
     let http_client = init_http(&Upstream::default(), None);
-    let reader = ConfigReader::init(init_file(), http_client);
+    let reader = ConfigReader::init(file_io, http_client);
     let config = reader.read_all(configs).await.unwrap();
     let server = Server::new(config);
     assert!(server.start().await.is_err())

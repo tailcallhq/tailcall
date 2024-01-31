@@ -5,7 +5,7 @@
   "scripts": {
     "deploy": "npx wrangler deploy --minify",
     "publish": "npx wrangler publish --minify",
-    "dev": "npx wrangler dev --port 19194 --remote",
+    "dev": "npx wrangler dev --port 19194",
     "test": "cargo install -q worker-build && worker-build && vitest --run"
   },
   "devDependencies": {
