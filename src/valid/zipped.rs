@@ -1,6 +1,6 @@
-
 use std::fmt::Debug;
 use std::marker::PhantomData;
+
 use crate::valid::{Valid, ValidationError};
 
 pub trait Bool {}
@@ -44,7 +44,7 @@ impl<N: Nat> IsEqual<Zero> for Suc<N> {
 }
 
 impl<Lhs: Nat + IsEqual<Rhs>, Rhs: Nat> IsEqual<Suc<Rhs>> for Suc<Lhs> {
-    type Result  = <Lhs as IsEqual<Rhs>>::Result;
+    type Result = <Lhs as IsEqual<Rhs>>::Result;
 }
 
 trait IsGreaterThan<N: Nat> {
@@ -87,14 +87,11 @@ impl<Lhs: Nat + IsGreaterThanEqualTo<Rhs>, Rhs: Nat> IsGreaterThanEqualTo<Suc<Rh
     type Result = <Lhs as IsGreaterThanEqualTo<Rhs>>::Result;
 }
 
-trait Tupleness<N: Nat=Zero> {}
+trait Tupleness<N: Nat = Zero> {}
 
 impl<T> Tupleness<Zero> for T {}
 
-impl<A, B, An: Nat> Tupleness<Suc<An>> for (A, B)
-where
-    A: Tupleness<An>,
-{}
+impl<A, B, An: Nat> Tupleness<Suc<An>> for (A, B) where A: Tupleness<An> {}
 
 trait Tuple: Debug {}
 
@@ -105,7 +102,6 @@ impl Tuple for EmptyTuple {}
 #[derive(Debug)]
 struct Cons<V: Debug, T: Tuple, N: Nat, M: Nat>(V, T, PhantomData<(N, M)>);
 impl<V: Debug, T: Tuple, N: Nat, M: Nat> Tuple for Cons<V, T, N, M> {}
-
 
 trait TupleEqual<Rhs: Tuple> {
     type Result: Bool;
@@ -123,21 +119,32 @@ impl<V: Debug, T: Tuple, N: Nat, M: Nat> TupleEqual<EmptyTuple> for Cons<V, T, N
     type Result = False;
 }
 
-
-impl<VR: Debug, TR: Tuple, NR: Nat, MR: Nat, VL: Debug, TL: Tuple + TupleEqual<TR>, NL: Nat, ML: Nat> TupleEqual<Cons<VR, TR, NR, MR>> for Cons<VL, TL, NL, ML> {
+impl<
+        VR: Debug,
+        TR: Tuple,
+        NR: Nat,
+        MR: Nat,
+        VL: Debug,
+        TL: Tuple + TupleEqual<TR>,
+        NL: Nat,
+        ML: Nat,
+    > TupleEqual<Cons<VR, TR, NR, MR>> for Cons<VL, TL, NL, ML>
+{
     type Result = <TL as TupleEqual<TR>>::Result;
 }
 
 trait Append<Val: Debug>
 where
-    Self: Tuple
+    Self: Tuple,
 {
     type Result: Tuple;
 
     fn append(self, val: Val) -> Self::Result;
 }
 
-impl<V: Debug, Val: Debug, N: Nat + IsEqual<One, Result = True>, M: Nat> Append<Val> for Cons<V, EmptyTuple, N, M> {
+impl<V: Debug, Val: Debug, N: Nat + IsEqual<One, Result = True>, M: Nat> Append<Val>
+    for Cons<V, EmptyTuple, N, M>
+{
     type Result = Cons<V, Cons<Val, EmptyTuple, N, M>, Suc<N>, Suc<M>>;
 
     fn append(self, val: Val) -> Self::Result {
@@ -146,7 +153,14 @@ impl<V: Debug, Val: Debug, N: Nat + IsEqual<One, Result = True>, M: Nat> Append<
     }
 }
 
-impl<V: Debug, T: Tuple + Append<Val> + TupleEqual<EmptyTuple, Result = False>, Val: Debug, N: Nat + IsGreaterThan<One, Result = True>, M: Nat> Append<Val> for Cons<V, T, N, M> {
+impl<
+        V: Debug,
+        T: Tuple + Append<Val> + TupleEqual<EmptyTuple, Result = False>,
+        Val: Debug,
+        N: Nat + IsGreaterThan<One, Result = True>,
+        M: Nat,
+    > Append<Val> for Cons<V, T, N, M>
+{
     type Result = Cons<V, <T as Append<Val>>::Result, N, M>;
 
     fn append(self, val: Val) -> Self::Result {
@@ -177,9 +191,14 @@ impl<V: Debug, N: Nat, M: Nat> ReverseTuple for Cons<V, EmptyTuple, N, M> {
     }
 }
 
-impl<V: Debug, T: Tuple + ReverseTuple + TupleEqual<EmptyTuple, Result = False>, N: Nat, M: Nat> ReverseTuple for Cons<V, T, N, M>
+impl<
+        V: Debug,
+        T: Tuple + ReverseTuple + TupleEqual<EmptyTuple, Result = False>,
+        N: Nat,
+        M: Nat,
+    > ReverseTuple for Cons<V, T, N, M>
 where
-    <T as ReverseTuple>::Reversed: Append<V>
+    <T as ReverseTuple>::Reversed: Append<V>,
 {
     type Reversed = <<T as ReverseTuple>::Reversed as Append<V>>::Result;
 
@@ -199,12 +218,13 @@ where
     }
 }
 
-impl<A: Debug, B: Debug, N: Nat, M: Nat, C: Debug, T: Tuple> From<(A, B)> for Cons<B, Cons<C, T, N, M>, Suc<N>, Suc<M>>
-    where
-        (A, B): Tupleness<Suc<M>>,
-        N: IsGreaterThan<Zero, Result = True>,
-        Suc<M>: IsGreaterThan<Zero, Result = True>,
-        Cons<C, T, N, M>: From<A>,
+impl<A: Debug, B: Debug, N: Nat, M: Nat, C: Debug, T: Tuple> From<(A, B)>
+    for Cons<B, Cons<C, T, N, M>, Suc<N>, Suc<M>>
+where
+    (A, B): Tupleness<Suc<M>>,
+    N: IsGreaterThan<Zero, Result = True>,
+    Suc<M>: IsGreaterThan<Zero, Result = True>,
+    Cons<C, T, N, M>: From<A>,
 {
     fn from((a, b): (A, B)) -> Self {
         Cons(b, a.into(), PhantomData)
@@ -217,7 +237,9 @@ trait Flatten {
     fn flatten(self) -> Self::Result;
 }
 
-impl<A: Debug, B: Debug, N1: Nat, N2: Nat, M1: Nat, M2: Nat> Flatten for Cons<A, Cons<B, EmptyTuple, N2, M2>, N1, M1> {
+impl<A: Debug, B: Debug, N1: Nat, N2: Nat, M1: Nat, M2: Nat> Flatten
+    for Cons<A, Cons<B, EmptyTuple, N2, M2>, N1, M1>
+{
     type Result = (A, B);
 
     fn flatten(self) -> Self::Result {
@@ -226,7 +248,9 @@ impl<A: Debug, B: Debug, N1: Nat, N2: Nat, M1: Nat, M2: Nat> Flatten for Cons<A,
     }
 }
 
-impl<A: Debug, B: Debug, C: Debug, N1: Nat, N2: Nat, N3: Nat, M1: Nat, M2: Nat, M3: Nat> Flatten for Cons<A, Cons<B, Cons<C, EmptyTuple, N3, M3>, N2, M2>, N1, M1> {
+impl<A: Debug, B: Debug, C: Debug, N1: Nat, N2: Nat, N3: Nat, M1: Nat, M2: Nat, M3: Nat> Flatten
+    for Cons<A, Cons<B, Cons<C, EmptyTuple, N3, M3>, N2, M2>, N1, M1>
+{
     type Result = (A, B, C);
 
     fn flatten(self) -> Self::Result {
@@ -235,7 +259,21 @@ impl<A: Debug, B: Debug, C: Debug, N1: Nat, N2: Nat, N3: Nat, M1: Nat, M2: Nat, 
     }
 }
 
-impl<A: Debug, B: Debug, C: Debug, D: Debug, N1: Nat, N2: Nat, N3: Nat, N4: Nat, M1: Nat, M2: Nat, M3: Nat, M4: Nat> Flatten for Cons<A, Cons<B, Cons<C, Cons<D, EmptyTuple, N4, M4>, N3, M3>, N2, M2>, N1, M1> {
+impl<
+        A: Debug,
+        B: Debug,
+        C: Debug,
+        D: Debug,
+        N1: Nat,
+        N2: Nat,
+        N3: Nat,
+        N4: Nat,
+        M1: Nat,
+        M2: Nat,
+        M3: Nat,
+        M4: Nat,
+    > Flatten for Cons<A, Cons<B, Cons<C, Cons<D, EmptyTuple, N4, M4>, N3, M3>, N2, M2>, N1, M1>
+{
     type Result = (A, B, C, D);
 
     fn flatten(self) -> Self::Result {
@@ -244,7 +282,30 @@ impl<A: Debug, B: Debug, C: Debug, D: Debug, N1: Nat, N2: Nat, N3: Nat, N4: Nat,
     }
 }
 
-impl<A: Debug, B: Debug, C: Debug, D: Debug, E: Debug, N1: Nat, N2: Nat, N3: Nat, N4: Nat, N5: Nat, M1: Nat, M2: Nat, M3: Nat, M4: Nat, M5: Nat> Flatten for Cons<A, Cons<B, Cons<C, Cons<D, Cons<E, EmptyTuple, N5, M5>, N4, M4>, N3, M3>, N2, M2>, N1, M1> {
+impl<
+        A: Debug,
+        B: Debug,
+        C: Debug,
+        D: Debug,
+        E: Debug,
+        N1: Nat,
+        N2: Nat,
+        N3: Nat,
+        N4: Nat,
+        N5: Nat,
+        M1: Nat,
+        M2: Nat,
+        M3: Nat,
+        M4: Nat,
+        M5: Nat,
+    > Flatten
+    for Cons<
+        A,
+        Cons<B, Cons<C, Cons<D, Cons<E, EmptyTuple, N5, M5>, N4, M4>, N3, M3>, N2, M2>,
+        N1,
+        M1,
+    >
+{
     type Result = (A, B, C, D, E);
 
     fn flatten(self) -> Self::Result {
@@ -259,7 +320,9 @@ impl<Level: Nat, A, E> ZippedValid<A, E, Level>
 where
     A: Tupleness<Level>,
 {
-    fn flattened<Cv: Debug, Ct: Tuple + ReverseTuple, Cm: Nat>(self) -> Valid<<Cons<Cv, Ct, Cm, Level> as Flatten>::Result, E>
+    fn flattened<Cv: Debug, Ct: Tuple + ReverseTuple, Cm: Nat>(
+        self,
+    ) -> Valid<<Cons<Cv, Ct, Cm, Level> as Flatten>::Result, E>
     where
         Cons<Cv, Ct, Cm, Level>: From<A> + Flatten,
         // <Cons<Cv, Ct, Level, Cm> as ReverseTuple>::Reversed: Flatten
@@ -284,38 +347,15 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::valid::Valid;
-
-    #[test]
-    fn test_flattened_3() {
-        let valid1: Valid<_, String> = Valid::succeed(10);
-        let valid2 = Valid::succeed(20);
-        let valid3 = Valid::succeed(30);
-        let zipped = valid1.zip2(valid2).zip(valid3);
-        assert_eq!(Valid(Ok((30, 20, 10))), zipped.flattened());
-    }
-
-    #[test]
-    fn test_flattened_4() {
-        let valid1: Valid<_, String> = Valid::succeed(10);
-        let valid2 = Valid::succeed(20);
-        let valid3 = Valid::succeed(30);
-        let valid4 = Valid::succeed(40);
-        let zipped = valid1.zip2(valid2).zip(valid3).zip(valid4);
-        assert_eq!(Valid(Ok((40, 30, 20, 10))), zipped.flattened());
-    }
-}
-
+// Copied implementation from Valid to make the ZippedValid compatible with the Valid interface
 impl<A, E, Level: Nat> ZippedValid<A, E, Level> {
     pub fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
         Valid(self.0.map(f))
     }
 
     pub fn foreach(self, mut f: impl FnMut(A)) -> Valid<A, E>
-        where
-            A: Clone,
+    where
+        A: Clone,
     {
         match self.0 {
             Ok(a) => {
@@ -420,5 +460,29 @@ impl<A, E, Level: Nat> ZippedValid<A, E, Level> {
         } else {
             Valid::succeed(())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::valid::Valid;
+
+    #[test]
+    fn test_flattened_3() {
+        let valid1: Valid<_, String> = Valid::succeed(10);
+        let valid2 = Valid::succeed(20);
+        let valid3 = Valid::succeed(30);
+        let zipped = valid1.zip2(valid2).zip(valid3);
+        assert_eq!(Valid(Ok((30, 20, 10))), zipped.flattened());
+    }
+
+    #[test]
+    fn test_flattened_4() {
+        let valid1: Valid<_, String> = Valid::succeed(10);
+        let valid2 = Valid::succeed(20);
+        let valid3 = Valid::succeed(30);
+        let valid4 = Valid::succeed(40);
+        let zipped = valid1.zip2(valid2).zip(valid3).zip(valid4);
+        assert_eq!(Valid(Ok((40, 30, 20, 10))), zipped.flattened());
     }
 }

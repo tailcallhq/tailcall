@@ -1,7 +1,8 @@
 use std::marker::PhantomData;
+
 use super::{One, ValidationError};
-use crate::valid::Cause;
 use crate::valid::zipped::ZippedValid;
+use crate::valid::Cause;
 
 #[derive(Debug, PartialEq)]
 pub struct Valid<A, E>(pub Result<A, ValidationError<E>>);
