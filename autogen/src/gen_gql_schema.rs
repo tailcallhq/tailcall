@@ -124,24 +124,21 @@ impl<W: Write> IndentedWriter<W> {
 }
 
 impl<W: std::io::Write> Write for IndentedWriter<W> {
-    #[allow(clippy::same_item_push)]
+    // #[allow(clippy::same_item_push)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let mut new_buf = vec![];
+        let mut new_buf = Vec::with_capacity(
+            buf.len() + self.indentation * buf.iter().filter(|&&c| c == b'\n').count(),
+        );
         let mut extra = 0;
 
         for ch in buf {
             if self.line_broke && self.indentation > 0 {
                 extra += self.indentation;
-                for _ in 0..self.indentation {
-                    new_buf.push(b' ');
-                }
+                new_buf.extend((0..self.indentation).map(|_| b' '));
             }
-            self.line_broke = false;
+            self.line_broke = *ch == b'\n';
 
             new_buf.push(*ch);
-            if ch == &b'\n' {
-                self.line_broke = true;
-            }
         }
 
         self.writer.write(&new_buf).map(|a| a - extra)
