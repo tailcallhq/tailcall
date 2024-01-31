@@ -1,8 +1,10 @@
-use super::ValidationError;
+use std::marker::PhantomData;
+use super::{One, ValidationError};
 use crate::valid::Cause;
+use crate::valid::zipped::ZippedValid;
 
 #[derive(Debug, PartialEq)]
-pub struct Valid<A, E>(Result<A, ValidationError<E>>);
+pub struct Valid<A, E>(pub Result<A, ValidationError<E>>);
 
 impl<A, E> Valid<A, E> {
     pub fn fail(e: E) -> Valid<A, E> {
@@ -64,6 +66,19 @@ impl<A, E> Valid<A, E> {
             Err(e1) => match other.0 {
                 Ok(_) => Valid(Err(e1)),
                 Err(e2) => Valid(Err(e1.combine(e2))),
+            },
+        }
+    }
+
+    pub fn zip2<A1>(self, other: Valid<A1, E>) -> ZippedValid<(A, A1), E, One> {
+        match self.0 {
+            Ok(a) => match other.0 {
+                Ok(a1) => ZippedValid(Ok((a, a1)), PhantomData),
+                Err(e1) => ZippedValid(Err(e1), PhantomData),
+            },
+            Err(e1) => match other.0 {
+                Ok(_) => ZippedValid(Err(e1), PhantomData),
+                Err(e2) => ZippedValid(Err(e1.combine(e2)), PhantomData),
             },
         }
     }
