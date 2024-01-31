@@ -22,7 +22,7 @@ use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
-use tailcall::valid::{Cause, Valid};
+use tailcall::valid::{Cause, ValidationError};
 use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
@@ -549,7 +549,8 @@ impl HttpIO for MockHttpClient {
 
 async fn assert_spec(spec: ExecutionSpec) {
     let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
-    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+    let file_io = init_file();
+    let reader = ConfigReader::init(file_io.clone(), init_http(&Upstream::default(), None));
 
     // Parse and validate all server configs + check for identity
     log::info!("{} {} ...", spec.name, spec.path.display());
@@ -562,9 +563,18 @@ async fn assert_spec(spec: ExecutionSpec) {
             panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
         }
 
-        let config = Config::from_sdl(content)
-            .and_then(|config| Valid::from(Blueprint::try_from(&ConfigSet::from(config))))
-            .to_result();
+        let config = Config::from_sdl(content).to_result();
+
+        let config = match config {
+            Ok(config) => {
+                let reader = ConfigReader::init(file_io.clone(), init_http(&config.upstream, None));
+                match reader.resolve(config).await {
+                    Ok(config) => Blueprint::try_from(&config),
+                    Err(e) => Err(ValidationError::new(e.to_string())),
+                }
+            }
+            Err(e) => Err(e),
+        };
 
         match config {
             Ok(_) => {
