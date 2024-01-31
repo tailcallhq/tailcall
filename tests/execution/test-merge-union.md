@@ -1,4 +1,4 @@
-# test-merge-union.graphql
+# test-merge-union
 
 #### server:
 

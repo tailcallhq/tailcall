@@ -1,4 +1,4 @@
-# test-merge-server-sdl
+# test-cache
 
 #### server:
 
@@ -8,13 +8,11 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 }
 
 type Query {
-  foo: [User] @http(path: "/users")
+  user: User @http(path: "/foo") @cache(maxAge: 300)
 }
 
-type User {
+type User @cache(maxAge: 900) {
   id: Int
   name: String
 }
 ```
-
-###### check merge

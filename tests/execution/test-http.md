@@ -1,4 +1,4 @@
-# test-merge-server-sdl
+# test-http
 
 #### server:
 
@@ -16,5 +16,3 @@ type User {
   name: String
 }
 ```
-
-###### check merge

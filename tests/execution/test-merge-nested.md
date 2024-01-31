@@ -1,4 +1,4 @@
-# test-merge-nested.graphql
+# test-merge-nested
 
 #### server:
 

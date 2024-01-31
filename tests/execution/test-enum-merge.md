@@ -1,4 +1,4 @@
-# test-enum-merge.graphql
+# test-enum-merge
 
 #### server:
 

@@ -1,4 +1,4 @@
-# test-conflict-vars.graphql
+# test-conflict-vars
 
 #### server:
 

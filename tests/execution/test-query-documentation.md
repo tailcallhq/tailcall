@@ -1,4 +1,4 @@
-# test-merge-server-sdl
+# test-query-documentation
 
 #### server:
 
@@ -8,13 +8,9 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 }
 
 type Query {
-  foo: [User] @http(path: "/users")
-}
-
-type User {
-  id: Int
-  name: String
+  """
+  This is test
+  """
+  foo: String @http(path: "/foo")
 }
 ```
-
-###### check merge

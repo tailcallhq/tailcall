@@ -1,4 +1,4 @@
-# test-conflict-allowed-headers.graphql
+# test-conflict-allowed-headers
 
 #### server:
 

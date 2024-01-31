@@ -1,4 +1,4 @@
-# test-merge-query.graphql
+# test-merge-query
 
 #### server:
 

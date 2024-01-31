@@ -1,4 +1,4 @@
-# test-server-base-types.graphql
+# test-server-base-types
 
 #### server:
 

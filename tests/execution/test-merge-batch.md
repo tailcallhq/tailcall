@@ -1,4 +1,4 @@
-# test-merge-batch.graphql
+# test-merge-batch
 
 #### server:
 

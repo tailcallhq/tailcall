@@ -1,4 +1,4 @@
-# test-merge-server-sdl
+# test-http-tmpl
 
 #### server:
 
@@ -7,8 +7,14 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
+type Post {
+  id: Int
+  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}])
+  userId: Int!
+}
+
 type Query {
-  foo: [User] @http(path: "/users")
+  posts: [Post] @http(path: "/posts")
 }
 
 type User {
@@ -16,5 +22,3 @@ type User {
   name: String
 }
 ```
-
-###### check merge
