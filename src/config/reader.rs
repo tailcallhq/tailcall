@@ -95,7 +95,9 @@ mod reader_tests {
 
     use crate::cli::{init_file, init_http};
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Script, ScriptOptions, Type, Upstream};
+    use crate::config::{Config, Script, ScriptOptions, Type};
+    use crate::blueprint::Upstream;
+    // use crate::config::Upstream;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()

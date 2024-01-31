@@ -24,10 +24,9 @@ pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
         |blueprint| blueprint.definitions,
     );
 
-    let upstream = to_upstream().transform::<Blueprint>(
-        |upstream, blueprint| blueprint.upstream(upstream),
-        |blueprint| blueprint.upstream,
-    );
+    let upstream = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
+        Valid::from(Upstream::try_from(config.upstream.clone())).map(|upstream| blueprint.upstream(upstream))
+    });
 
     server
         .and(schema)

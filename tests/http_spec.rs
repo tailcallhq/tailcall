@@ -20,7 +20,9 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache};
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, Source, Upstream};
+use tailcall::config::{Config, Source};
+use tailcall::blueprint::Upstream;
+// use tailcall::config::Upstream
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::{EnvIO, HttpIO};
 use url::Url;
