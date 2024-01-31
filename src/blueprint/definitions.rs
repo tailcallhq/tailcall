@@ -1,6 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
-use std::hash::Hash;
 
 use regex::Regex;
 
@@ -265,17 +263,14 @@ fn to_object_type_definition(
 }
 
 fn update_args<'a>(
-    hasher: DefaultHasher,
 ) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
     TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_, field, typ, name), _| {
-            let mut hasher = hasher.clone();
-            name.hash(&mut hasher);
             let cache = field
                 .cache
                 .as_ref()
                 .or(typ.cache.as_ref())
-                .map(|config::Cache { max_age }| Cache { max_age: *max_age, hasher });
+                .map(|config::Cache { max_age }| Cache { max_age: *max_age });
 
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -379,10 +374,7 @@ fn to_fields(
             ));
         }
 
-        let mut hasher = DefaultHasher::new();
-        object_name.hash(&mut hasher);
-
-        update_args(hasher)
+        update_args()
             .and(update_http().trace(config::Http::trace_name().as_str()))
             .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
             .and(update_const_field().trace(config::Const::trace_name().as_str()))

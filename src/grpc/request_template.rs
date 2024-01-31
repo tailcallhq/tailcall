@@ -1,3 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use anyhow::Result;
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
@@ -6,6 +9,7 @@ use reqwest::header::HeaderValue;
 use url::Url;
 
 use super::request::create_grpc_request;
+use crate::cache_key::CacheKey;
 use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
@@ -30,6 +34,13 @@ pub struct RenderedRequestTemplate {
     pub headers: HeaderMap,
     pub body: String,
     pub operation: ProtobufOperation,
+}
+
+impl Hash for RenderedRequestTemplate {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.url.hash(state);
+        self.body.hash(state);
+    }
 }
 
 impl RequestTemplate {
@@ -92,6 +103,15 @@ impl RenderedRequestTemplate {
             self.headers.clone(),
             self.operation.convert_input(self.body.as_str())?,
         ))
+    }
+}
+
+impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+    fn cache_key(&self, ctx: &Ctx) -> Result<u64> {
+        let mut hasher = DefaultHasher::new();
+        let rendered_req = self.render(ctx)?;
+        rendered_req.hash(&mut hasher);
+        Ok(hasher.finish())
     }
 }
 

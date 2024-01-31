@@ -1,9 +1,13 @@
 #![allow(clippy::too_many_arguments)]
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
+use crate::cache_key::CacheKey;
 use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
@@ -70,6 +74,15 @@ impl RequestTemplate {
         mut req: reqwest::Request,
         ctx: &C,
     ) -> reqwest::Request {
+        req.body_mut()
+            .replace(self.render_graphql_query(ctx).into());
+        req
+    }
+
+    fn render_graphql_query<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
+        &self,
+        ctx: &C,
+    ) -> String {
         let operation_type = &self.operation_type;
         let selection_set = ctx.selection_set().unwrap_or_default();
         let operation = self
@@ -84,11 +97,7 @@ impl RequestTemplate {
             .map(|args| format!("{}({})", self.operation_name, args))
             .unwrap_or(self.operation_name.clone());
 
-        let graphql_query =
-            format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#);
-
-        req.body_mut().replace(graphql_query.into());
-        req
+        format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#)
     }
 
     pub fn new(
@@ -115,6 +124,15 @@ impl RequestTemplate {
             operation_arguments,
             headers,
         })
+    }
+}
+
+impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
+    fn cache_key(&self, ctx: &Ctx) -> anyhow::Result<u64> {
+        let mut hasher = DefaultHasher::new();
+        let graphql_query = self.render_graphql_query(ctx);
+        graphql_query.hash(&mut hasher);
+        Ok(hasher.finish())
     }
 }
 

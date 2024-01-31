@@ -1,10 +1,13 @@
 use std::borrow::Cow;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
 
+use crate::cache_key::CacheKey;
 use crate::config::Encoding;
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
@@ -212,6 +215,19 @@ impl TryFrom<Endpoint> for RequestTemplate {
             endpoint,
             encoding,
         })
+    }
+}
+
+impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+    fn cache_key(&self, ctx: &Ctx) -> anyhow::Result<u64> {
+        let mut hasher = DefaultHasher::new();
+
+        self.method.hash(&mut hasher);
+
+        let url = self.create_url(ctx)?;
+        url.hash(&mut hasher);
+
+        Ok(hasher.finish())
     }
 }
 

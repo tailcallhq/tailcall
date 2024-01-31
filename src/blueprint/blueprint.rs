@@ -1,4 +1,3 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
 use std::num::NonZeroU64;
 
@@ -130,7 +129,6 @@ pub struct InputFieldDefinition {
 #[derive(Clone, Debug)]
 pub struct Cache {
     pub max_age: NonZeroU64,
-    pub hasher: DefaultHasher,
 }
 
 #[derive(Clone, Debug, Setters, Default)]
