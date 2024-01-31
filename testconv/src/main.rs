@@ -383,6 +383,10 @@ async fn main() {
                 panic!("Unexpected lack of merged SDL declarations in {:?}", path);
             }
 
+            if server.len() == 1 {
+                md_spec += "###### check merge\n";
+            }
+
             let md_path = PathBuf::from(format!("{}.md", file_stem));
 
             let mut f = File::options()

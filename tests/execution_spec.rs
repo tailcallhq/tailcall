@@ -129,6 +129,7 @@ struct ExecutionSpec {
     runner: Option<Annotation>,
 
     check_identity: bool,
+    check_merge: bool,
 }
 
 impl ExecutionSpec {
@@ -202,6 +203,7 @@ impl ExecutionSpec {
         let mut assert: Option<AssertSpec> = None;
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
+        let mut check_merge = false;
 
         while let Some(node) = children.next() {
             match node {
@@ -262,6 +264,9 @@ impl ExecutionSpec {
                             match text.value.as_str() {
                                 "check identity" => {
                                     check_identity = true;
+                                }
+                                "check merge" => {
+                                    check_merge = true;
                                 }
                                 _ => {
                                     return Err(anyhow!(
@@ -374,6 +379,7 @@ impl ExecutionSpec {
 
             runner,
             check_identity,
+            check_merge,
         };
 
         anyhow::Ok(spec)
@@ -511,6 +517,8 @@ impl HttpIO for MockHttpClient {
 }
 
 async fn assert_spec(spec: ExecutionSpec) {
+    let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
+
     // Parse and validate all server configs + check for identity
     log::info!("{} {} ...", spec.name, spec.path.display());
 
@@ -596,8 +604,13 @@ async fn assert_spec(spec: ExecutionSpec) {
         // client: Check if client spec matches snapshot
         let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
+
+        log::info!("\tclient... (snapshot)");
         insta::assert_snapshot!(snapshot_name, client);
-        log::info!("\tclient ok");
+
+        if will_insta_panic {
+            log::info!("\tclient ok");
+        }
     }
 
     if let Some(assert_spec) = spec.assert.as_ref() {
@@ -632,8 +645,12 @@ async fn assert_spec(spec: ExecutionSpec) {
 
             log::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
+
+            if will_insta_panic {
+                log::info!("\tassert #{} ok", i + 1);
+            }
         }
-    } else {
+    } else if server.len() >= 2 || spec.check_merge {
         // merged: Run merged specs
         log::info!("\tmerged... (snapshot)");
 
@@ -645,6 +662,10 @@ async fn assert_spec(spec: ExecutionSpec) {
         let snapshot_name = format!("{}_merged", spec.safe_name);
 
         insta::assert_snapshot!(snapshot_name, client);
+
+        if will_insta_panic {
+            log::info!("\tmerged ok");
+        }
     }
 }
 
