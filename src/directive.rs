@@ -7,7 +7,7 @@ use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
 
 use crate::blueprint;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
@@ -115,6 +115,7 @@ mod tests {
 
     use crate::blueprint::Directive;
     use crate::directive::{pos, to_const_directive};
+    use crate::valid::Validator;
 
     #[test]
     fn test_to_const_directive() {

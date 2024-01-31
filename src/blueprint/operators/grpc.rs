@@ -10,7 +10,7 @@ use crate::json::JsonSchema;
 use crate::lambda::{Expression, Lambda, IO};
 use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
 
 fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {

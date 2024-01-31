@@ -5,7 +5,7 @@ use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, Lambda, IO};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
 
 pub fn compile_http(

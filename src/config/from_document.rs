@@ -13,7 +13,7 @@ use crate::config::{
     self, Cache, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union, Upstream,
 };
 use crate::directive::DirectiveCodec;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -43,7 +43,7 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
                 .fuse(types)
                 .fuse(unions)
                 .fuse(schema)
-                .into()
+                .collect()
         })
         .map(|(server, upstream, types, unions, schema)| Config {
             server,

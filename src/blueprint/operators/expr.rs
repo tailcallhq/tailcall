@@ -3,7 +3,7 @@ use crate::config;
 use crate::config::{ExprBody, Field, If};
 use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
@@ -182,6 +182,7 @@ mod tests {
     use crate::config::{ConfigSet, Expr, Field, GraphQLOperationType};
     use crate::http::RequestContext;
     use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
+    use crate::valid::Validator;
 
     #[derive(Default)]
     struct Context<'a> {
