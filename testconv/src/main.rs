@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
+use regex::Regex;
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
@@ -96,6 +97,9 @@ async fn main() {
 
     let errors_dir = canonicalize(PathBuf::from("tests/graphql/errors"))
         .expect("Could not find graphql/errors directory");
+
+    let passed_dir = canonicalize(PathBuf::from("tests/graphql/passed"))
+        .expect("Could not find graphql/passed directory");
 
     let execution_dir =
         canonicalize(PathBuf::from("tests/execution")).expect("Could not find execution directory");
@@ -576,7 +580,7 @@ async fn main() {
             }
 
             if server.is_none() {
-                panic!("Unexpected number of server SDL declarations in {:?} (at least one is required, two are recommended)", path);
+                panic!("Unexpected number of server SDL declarations in {:?} (exactly one is required)", path);
             }
 
             let md_spec = format!(
@@ -612,6 +616,136 @@ async fn main() {
             );
 
             write(target, snap).expect("Failed to write errors snapshot");
+
+            files_already_processed.insert(file_stem);
+        } else if path.is_file() {
+            println!("Skipping unexpected file: {:?}", path);
+        }
+    }
+
+    for x in read_dir(passed_dir).expect("Could not read graphql/passed directory") {
+        let x = x.unwrap();
+
+        let path = x.path();
+        let mut file_stem = path.file_stem().unwrap().to_string_lossy().to_string();
+
+        if files_already_processed.contains(&file_stem) {
+            println!(
+                "File name collision: {}. Adding -query to the end.",
+                file_stem
+            );
+            file_stem += "-query";
+            if files_already_processed.contains(&file_stem) {
+                panic!("File name collision: {}", file_stem);
+            }
+        }
+
+        if is_path_file_ext(&path, "graphql") {
+            let spec = "\n".to_string()
+                + read_to_string(&path)
+                    .expect("Failed to read graphql/passed spec")
+                    .as_str();
+
+            let mut server: Option<String> = None;
+            let mut client: Option<String> = None;
+
+            for (typ, content) in graphql_iter_spec_part(&spec) {
+                match typ.as_str() {
+                    "server-sdl" => {
+                        if server.is_none() {
+                            server = Some(content);
+                        } else {
+                            panic!(
+                                "Unexpected number of server SDL declarations in {:?} (only one is allowed)",
+                                path
+                            );
+                        }
+                    }
+                    "client-query" => {
+                        if client.is_none() {
+                            client = Some(content);
+                        } else {
+                            panic!(
+                                "Unexpected number of client query declarations in {:?} (only one is allowed)",
+                                path
+                            );
+                        }
+                    }
+                    _ => panic!("Unsupported part type in {:?}: {}", path, typ),
+                };
+            }
+
+            if server.is_none() {
+                panic!("Unexpected number of server SDL declarations in {:?} (exactly one is required)", path);
+            }
+
+            if client.is_none() {
+                panic!("Unexpected number of client query declarations in {:?} (exactly one is required)", path);
+            }
+
+            let server = server.unwrap();
+            let client = client.unwrap();
+
+            let md_path = PathBuf::from(format!("{}.md", file_stem));
+
+            let regex = Regex::new(r"@expect.*\) ").unwrap();
+            let parsed_query = async_graphql::parser::parse_query(&client).unwrap();
+            let query = regex.replace_all(&client, "");
+
+            let md_spec = format!(
+                "# {}\n\n#### server:\n\n```graphql\n{}\n```\n\n#### query:\n\n```graphql\n{}\n```\n",
+                file_stem,
+                server,
+                query,
+            );
+
+            let mut response: Option<serde_json::Value> = None;
+
+            for (_, q) in parsed_query.operations.iter() {
+                let expect = q
+                    .node
+                    .directives
+                    .iter()
+                    .find(|d| d.node.name.node == "expect");
+                if let Some(dir) = expect {
+                    response = Some(
+                        dir.node
+                            .arguments
+                            .iter()
+                            .find(|a| a.0.node == "json")
+                            .map(|a| a.clone().1.node.into_json().unwrap())
+                            .unwrap(),
+                    );
+                }
+            }
+
+            if response.is_none() {
+                panic!("Unexpected lack of @expect operator in {:#?}", path);
+            }
+
+            let mut f = File::options()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(execution_dir.join(&md_path))
+                .expect("Failed to open execution spec");
+
+            f.write_all(md_spec.as_bytes())
+                .expect("Failed to write execution spec");
+
+            let target = snapshots_dir.join(PathBuf::from(format!(
+                "execution_spec__{}.md_query_0.snap",
+                file_stem,
+            )));
+
+            let snap = format!(
+                "---\nsource: tests/execution_spec.rs\nexpression: response\n---\n{}\n",
+                serde_json::to_string_pretty(&response).unwrap(),
+            );
+
+            write(target, snap).expect("Failed to write query response snapshot");
+
+            generate_client_snapshot_sdl(&file_stem, &server, &reader).await;
 
             files_already_processed.insert(file_stem);
         } else if path.is_file() {

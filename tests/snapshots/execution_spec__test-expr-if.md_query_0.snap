@@ -1,0 +1,10 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "data": {
+    "ifFalse": "fail",
+    "ifTrue": "pass"
+  }
+}

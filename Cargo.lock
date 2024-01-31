@@ -3579,6 +3579,7 @@ dependencies = [
  "async-graphql",
  "derive_setters",
  "indexmap",
+ "regex",
  "serde",
  "serde_json",
  "serde_yaml",

@@ -1,0 +1,12 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "data": {
+    "user": {
+      "age": 12,
+      "name": "John"
+    }
+  }
+}

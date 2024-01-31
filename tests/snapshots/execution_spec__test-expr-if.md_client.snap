@@ -1,0 +1,12 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Query {
+  ifFalse: String
+  ifTrue: String
+}
+
+schema {
+  query: Query
+}
