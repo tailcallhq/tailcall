@@ -1,12 +1,14 @@
 use std::collections::HashSet;
-use std::fs::{self, canonicalize, read_dir, read_to_string, File};
+use std::fs::{self, canonicalize, read_dir, read_to_string, write, File};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use http::ConfigSource;
+use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::Upstream;
+use tailcall::config::{Config, Upstream};
+use tailcall::print_schema::print_schema;
 
 use crate::common::Annotation;
 
@@ -31,6 +33,52 @@ impl From<http::HttpSpec> for execution::AssertSpec {
             env: value.env.clone(),
         }
     }
+}
+
+#[inline]
+fn is_path_file_ext(path: &Path, ext: &str) -> bool {
+    path.is_file()
+    && path
+        .extension()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string()
+        .as_str()
+        == ext
+}
+
+fn graphql_iter_spec_part(spec: &str) -> impl Iterator<Item = (String, String)> + '_ {
+    spec.split("\n#> ").skip(1).map(|part| {
+        let (typ, content) = part.split_once("\n").unwrap();
+
+        (
+            typ.trim().to_string(),
+            content.trim().to_string(),
+        )
+    })
+}
+
+async fn generate_client_snapshot(file_stem: &str, config: &Config) {
+    let snapshots_dir =
+        canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
+
+    let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
+    
+    let snap = format!("---\nsource: tests/execution_spec.rs\nexpression: client\n---\n{}\n", client);
+
+    let target = snapshots_dir.join(PathBuf::from(format!(
+        "execution_spec__{}.md_client.snap",
+        file_stem,
+    )));
+
+    write(target, snap).unwrap();
+}
+
+async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, reader: &ConfigReader) {
+    let config = Config::from_sdl(sdl).to_result().unwrap();
+    let config = reader.read_script(config).await.unwrap();
+    generate_client_snapshot(file_stem, &config).await
 }
 
 #[tokio::main]
@@ -66,16 +114,7 @@ async fn main() {
             panic!("File name collision: {}", file_stem);
         }
 
-        if path.is_file()
-            && path
-                .extension()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string()
-                .as_str()
-                == "yml"
-        {
+        if is_path_file_ext(&path, "yml") {
             let f = File::open(&path).expect("Failed to open http spec");
 
             let old = serde_yaml::from_reader::<File, http::HttpSpec>(f).unwrap();
@@ -207,6 +246,21 @@ async fn main() {
                     .expect("Failed to write exception spec");
             }
 
+            if !bad_graphql_skip {
+                match &old.config {
+                    http::ConfigSource::File(path) => {
+                        let path = PathBuf::from(path);
+                        let sdl = fs::read_to_string(path).expect("Failed to read config file");
+                        generate_client_snapshot_sdl(&file_stem, &sdl, &reader).await;
+                    }
+                    http::ConfigSource::Inline(config) => {
+                        generate_client_snapshot(&file_stem, config).await;
+                    }
+                };
+            } else {
+                println!("TODO: generate client snap for bad graphql skips")
+            }
+
             if has_fail_annotation {
                 let test = std::process::Command::new("cargo")
                     .env("INSTA_FORCE_PASS", "1")
@@ -290,16 +344,7 @@ async fn main() {
             panic!("File name collision: {}", file_stem);
         }
 
-        if path.is_file()
-            && path
-                .extension()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string()
-                .as_str()
-                == "graphql"
-        {
+        if is_path_file_ext(&path, "graphql") {
             let spec = "\n".to_string()
                 + read_to_string(&path)
                     .expect("Failed to read graphql/merge spec")
@@ -308,23 +353,23 @@ async fn main() {
             let mut md_spec = format!("# {}\n\n", path.file_name().unwrap().to_string_lossy());
 
             let mut server_cnt = 0;
-            let mut merged_cnt = 0;
+            let mut merged: Option<String> = None;
 
-            for part in spec.split("\n#> ").skip(1) {
-                let (typ, content) = part.split_once("\n").unwrap();
-
-                // CRLF support
-                let typ = typ.trim();
-                let content = content.trim().to_string();
-
-                match typ {
+            for (typ, content) in graphql_iter_spec_part(&spec) {
+                match typ.as_str() {
                     "server-sdl" => {
                         md_spec += &format!("#### server:\n\n```graphql\n{}\n```\n\n", content);
                         server_cnt += 1;
                     }
                     "merged-sdl" => {
-                        md_spec += &format!("#### merged:\n\n```graphql\n{}\n```\n\n", content);
-                        merged_cnt += 1;
+                        if merged.is_none() {
+                            merged = Some(content);
+                        } else {
+                            panic!(
+                                "Unexpected number of merged SDL declarations in {:?} (only one is allowed)",
+                                path
+                            );
+                        }
                     }
                     _ => panic!("Unsupported part type in {:?}: {}", path, typ),
                 };
@@ -334,11 +379,8 @@ async fn main() {
                 panic!("Unexpected number of server SDL declarations in {:?} (at least one is required, two are recommended)", path);
             }
 
-            if merged_cnt != 1 {
-                panic!(
-                    "Unexpected number of merged SDL declarations in {:?} (only one is allowed)",
-                    path
-                );
+            if merged.is_none() {
+                panic!("Unexpected lack of merged SDL declarations in {:?}", path);
             }
 
             let md_path = PathBuf::from(format!("{}.md", file_stem));
@@ -352,6 +394,15 @@ async fn main() {
 
             f.write_all(md_spec.as_bytes())
                 .expect("Failed to write execution spec");
+            
+            let target = snapshots_dir.join(PathBuf::from(format!(
+                "execution_spec__{}.md_merged.snap",
+                file_stem,
+            )));
+
+            let snap = format!("---\nsource: tests/execution_spec.rs\nexpression: merged\n---\n{}\n", merged.unwrap());
+
+            write(target, snap).unwrap();
 
             files_already_processed.insert(file_stem);
         } else if path.is_file() {

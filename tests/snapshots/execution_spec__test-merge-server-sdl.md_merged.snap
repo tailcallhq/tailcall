@@ -1,8 +1,7 @@
-# test-merge-server-sdl.graphql
-
-#### server:
-
-```graphql
+---
+source: tests/execution_spec.rs
+expression: merged
+---
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
@@ -15,4 +14,3 @@ type User {
   id: Int
   name: String
 }
-```

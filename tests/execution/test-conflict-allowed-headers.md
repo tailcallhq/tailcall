@@ -23,15 +23,3 @@ type Query {
   hello: String @const(data: "world")
 }
 ```
-
-#### merged:
-
-```graphql
-schema @server @upstream(allowedHeaders: ["a", "b", "c", "d"]) {
-  query: Query
-}
-
-type Query {
-  hello: String @const(data: "world")
-}
-```

@@ -37,26 +37,3 @@ type Foo {
   a: String
 }
 ```
-
-#### merged:
-
-```graphql
-schema @server @upstream(baseURL: "http://abc.com") {
-  query: Query
-}
-
-type Foo {
-  """
-  test2
-  """
-  a: String
-  """
-  test1
-  """
-  b: String
-}
-
-type Query {
-  hi: Foo @const(data: {a: "world"})
-}
-```

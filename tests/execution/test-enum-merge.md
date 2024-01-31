@@ -33,21 +33,3 @@ type Query {
   foo: Foo @http(path: "/foo")
 }
 ```
-
-#### merged:
-
-```graphql
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
-  query: Query
-}
-
-enum Foo {
-  BAR
-  BAZ
-  BOOM
-}
-
-type Query {
-  foo: Foo @http(path: "/foo")
-}
-```
