@@ -62,7 +62,8 @@ mod tests {
 
     use super::DataLoaderRequest;
     use crate::cli::{init_file, init_http};
-    use crate::config::{Config, ConfigSetResolver, Field, Grpc, Type, Upstream};
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, Grpc, Type, Upstream};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 
@@ -85,8 +86,8 @@ mod tests {
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
-        let resolver = ConfigSetResolver::init(file_io, http_io);
-        let config_set = resolver.make(config).await.unwrap();
+        let reader = ConfigReader::init(file_io, http_io);
+        let config_set = reader.make_set(config).await.unwrap();
 
         let protobuf_set =
             ProtobufSet::from_proto_file(&config_set.extensions.grpc_file_descriptor).unwrap();

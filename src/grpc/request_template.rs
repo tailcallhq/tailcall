@@ -107,9 +107,8 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::cli::{init_file, init_http};
-    use crate::config::{
-        Config, ConfigSetResolver, Field, GraphQLOperationType, Grpc, Type, Upstream,
-    };
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type, Upstream};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::mustache::Mustache;
 
@@ -123,7 +122,7 @@ mod tests {
 
         let file_io = init_file();
         let http_io = init_http(&Upstream::default(), None);
-        let resolver = ConfigSetResolver::init(file_io, http_io);
+        let reader = ConfigReader::init(file_io, http_io);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: test_file.to_str().unwrap().to_string(),
@@ -135,8 +134,8 @@ mod tests {
         );
 
         let protobuf_set = ProtobufSet::from_proto_file(
-            &resolver
-                .make(config)
+            &reader
+                .make_set(config)
                 .await
                 .unwrap()
                 .extensions

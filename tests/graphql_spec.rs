@@ -16,7 +16,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_env, init_file, init_http, init_in_memory_cache};
-use tailcall::config::{Config, ConfigSet, ConfigSetResolver};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
@@ -290,8 +291,8 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let content = content.as_str();
         let config = Config::from_sdl(content).to_result().unwrap();
         let upstream = config.upstream.clone();
-        let resolver = ConfigSetResolver::init(file_io.clone(), init_http(&upstream, None));
-        let config_set = resolver.make(config).await.unwrap();
+        let reader = ConfigReader::init(file_io.clone(), init_http(&upstream, None));
+        let config_set = reader.make_set(config).await.unwrap();
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
 
@@ -390,8 +391,8 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let actual = match config {
             Ok(config) => {
                 let upstream = config.upstream.clone();
-                let resolver = ConfigSetResolver::init(file_io.clone(), init_http(&upstream, None));
-                match resolver.make(config).await {
+                let reader = ConfigReader::init(file_io.clone(), init_http(&upstream, None));
+                match reader.make_set(config).await {
                     Ok(config_set) => Valid::from(Blueprint::try_from(&config_set))
                         .to_result()
                         .map(|_| ()),
