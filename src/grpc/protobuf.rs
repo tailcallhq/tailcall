@@ -240,7 +240,7 @@ mod tests {
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
         Ok(reader
-            .make_set(config)
+            .resolve(config)
             .await?
             .extensions
             .grpc_file_descriptor)

@@ -14,12 +14,13 @@ use crate::{FileIO, HttpIO};
 
 const NULL_STR: &str = "\0\0\0\0\0\0\0";
 
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked assets.
+/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
 pub struct ConfigReader {
     file_io: Arc<dyn FileIO>,
     http_io: Arc<dyn HttpIO>,
 }
 
+/// Response of a file read operation
 struct FileRead {
     content: String,
     path: String,
@@ -42,6 +43,7 @@ impl ConfigReader {
             String::from_utf8(response.body.to_vec())?
         } else {
             // Is a file path
+
             self.file_io.read(&file.to_string()).await?
         };
 
@@ -62,14 +64,14 @@ impl ConfigReader {
     }
 
     /// Reads the script file and replaces the path with the content
-    async fn read_script(&self, mut config: Config) -> anyhow::Result<Config> {
-        if let Some(Script::Path(options)) = config.server.script {
+    async fn ext_script(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
+        let config = &mut config_set.config;
+        if let Some(Script::Path(ref options)) = &config.server.script {
             let timeout = options.timeout;
-            let path = options.src;
-            let script = self.read_file(path.clone()).await?.content;
+            let script = self.read_file(options.src.clone()).await?.content;
             config.server.script = Some(Script::File(ScriptOptions { src: script, timeout }));
         }
-        Ok(config)
+        Ok(config_set)
     }
 
     /// Reads a single file and returns the config
@@ -80,20 +82,38 @@ impl ConfigReader {
     /// Reads all the files and returns a merged config
     pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigSet> {
         let files = self.read_files(files).await?;
-        let mut config = Config::default();
+        let mut config_set = ConfigSet::default();
+
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
-            let new_config = Config::from_source(source, schema)?;
-            let new_config = self.read_script(new_config).await?;
-            config = config.merge_right(&new_config);
+
+            // Create initial config set
+            let new_config_set = self.resolve(Config::from_source(source, schema)?).await?;
+
+            // Merge it with the original config set
+            config_set = config_set.merge_right(&new_config_set);
         }
-        let config_set = self.make_set(config).await?;
+        Ok(config_set)
+    }
+
+    /// Resolves all the links in a Config to create a ConfigSet
+    pub async fn resolve(&self, config: Config) -> anyhow::Result<ConfigSet> {
+        // Create initial config set
+        let config_set = ConfigSet::from(config);
+
+        // Extend it with the worker script
+        let config_set = self.ext_script(config_set).await?;
+
+        // Extend it with protobuf definitions for GRPC
+        let config_set = self.ext_grpc(config_set).await?;
+
         Ok(config_set)
     }
 
     /// Returns final ConfigSet from Config
-    pub async fn make_set(&self, config: Config) -> anyhow::Result<ConfigSet> {
+    pub async fn ext_grpc(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
+        let config = &config_set.config;
         let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
         let mut grpc_file_descriptor = FileDescriptorSet::default();
         for (_, typ) in config.types.iter() {
@@ -107,7 +127,8 @@ impl ConfigReader {
                 };
 
                 if proto_path != NULL_STR {
-                    self.import_all(&mut descriptors, proto_path.to_string())
+                    descriptors = self
+                        .resolve_descriptors(descriptors, proto_path.to_string())
                         .await?;
                 }
             }
@@ -115,52 +136,48 @@ impl ConfigReader {
         for (_, v) in descriptors {
             grpc_file_descriptor.file.push(v);
         }
-        let mut config_set = ConfigSet::from(config);
-        let extensions = Extensions { grpc_file_descriptor, ..Default::default() };
-        config_set.extensions = extensions;
 
+        config_set.extensions = Extensions { grpc_file_descriptor, ..Default::default() };
         Ok(config_set)
     }
 
     /// Performs BFS to import all nested proto files
-    async fn import_all(
+    async fn resolve_descriptors(
         &self,
-        descriptors: &mut HashMap<String, FileDescriptorProto>,
+        mut descriptors: HashMap<String, FileDescriptorProto>,
         proto_path: String,
-    ) -> anyhow::Result<()> {
-        let source = self.resolve(&proto_path).await?;
-
+    ) -> anyhow::Result<HashMap<String, FileDescriptorProto>> {
+        let parent_proto = self.read_proto(&proto_path).await?;
         let mut queue = VecDeque::new();
-        let parent_proto = protox_parse::parse(&proto_path, &source)?;
         queue.push_back(parent_proto.clone());
 
         while let Some(file) = queue.pop_front() {
             for import in file.dependency.iter() {
-                let source = self.resolve(import).await?;
+                let proto = self.read_proto(import).await?;
                 if descriptors.get(import).is_some() {
                     continue;
                 }
-                let fdp = protox_parse::parse(import, &source)?;
-                queue.push_back(fdp.clone());
-                descriptors.insert(import.clone(), fdp);
+                queue.push_back(proto.clone());
+                descriptors.insert(import.clone(), proto);
             }
         }
 
         descriptors.insert(proto_path, parent_proto);
 
-        Ok(())
+        Ok(descriptors)
     }
 
-    /// calls read_file for normal IO but reads Well-Known Google Proto files from binary (stored at compile time)
-    async fn resolve(&self, path: &str) -> anyhow::Result<String> {
-        if let Ok(file) = GoogleFileResolver::new().open_file(path) {
-            return Ok(file
-                .source()
+    /// Tries to load well-known google proto files and if not found uses normal file and http IO to resolve them
+    async fn read_proto(&self, path: &str) -> anyhow::Result<FileDescriptorProto> {
+        let content = if let Ok(file) = GoogleFileResolver::new().open_file(path) {
+            file.source()
                 .context("Unable to extract content of google well-known proto file")?
-                .to_string());
-        }
-        let content = self.read_file(path).await?.content;
-        Ok(content)
+                .to_string()
+        } else {
+            self.read_file(path).await?.content
+        };
+
+        Ok(protox_parse::parse(path, &content)?)
     }
 }
 
@@ -175,13 +192,14 @@ mod test_proto_config {
     use crate::config::reader::ConfigReader;
 
     #[tokio::test]
-    async fn test_resolve() -> Result<()> {
+    async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-
         let reader = ConfigReader::init(init_file(), init_http(&Default::default(), None));
-        let empty = reader.resolve("google/protobuf/empty.proto").await?;
-        assert!(!empty.is_empty());
-        Ok(())
+        reader
+            .read_proto("google/protobuf/empty.proto")
+            .await
+            .unwrap();
+        assert!(true);
     }
 
     #[tokio::test]
@@ -204,8 +222,9 @@ mod test_proto_config {
         let test_file = test_file.to_str().unwrap().to_string();
 
         let reader = ConfigReader::init(init_file(), init_http(&Default::default(), None));
-        let mut helper_map = HashMap::new();
-        reader.import_all(&mut helper_map, test_file).await?;
+        let helper_map = reader
+            .resolve_descriptors(HashMap::new(), test_file)
+            .await?;
         let files = test_dir.read_dir()?;
         for file in files {
             let file = file?;
