@@ -46,7 +46,7 @@ pub async fn fetch(req: worker::Request, env: worker::Env) -> anyhow::Result<wor
     let app_ctx = get_app_ctx(env, config_path.as_str()).await?;
     let resp = handle_request::<GraphQLRequest>(hyper_req, app_ctx).await?;
 
-    Ok(to_response(resp).await?)
+    to_response(resp).await
 }
 
 ///
