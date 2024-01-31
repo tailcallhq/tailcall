@@ -8,7 +8,7 @@ use http::ConfigSource;
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, Upstream};
+use tailcall::config::{Config, ConfigSet, Upstream};
 use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 
@@ -58,7 +58,7 @@ fn graphql_iter_spec_part(spec: &str) -> impl Iterator<Item = (String, String)> 
     })
 }
 
-async fn generate_client_snapshot(file_stem: &str, config: &Config) {
+async fn generate_client_snapshot(file_stem: &str, config: &ConfigSet) {
     let snapshots_dir =
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 
@@ -79,7 +79,7 @@ async fn generate_client_snapshot(file_stem: &str, config: &Config) {
 
 async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, reader: &ConfigReader) {
     let config = Config::from_sdl(sdl).to_result().unwrap();
-    let config = reader.read_script(config).await.unwrap();
+    let config = reader.resolve(config).await.unwrap();
     generate_client_snapshot(file_stem, &config).await
 }
 
@@ -257,7 +257,8 @@ async fn main() {
                         generate_client_snapshot_sdl(&file_stem, &sdl, &reader).await;
                     }
                     http::ConfigSource::Inline(config) => {
-                        generate_client_snapshot(&file_stem, config).await;
+                        let config = reader.resolve(config.to_owned()).await.expect("Failed to resolve config");
+                        generate_client_snapshot(&file_stem, &config).await;
                     }
                 };
             } else {

@@ -19,7 +19,7 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache};
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, Source, Upstream};
+use tailcall::config::{Config, ConfigSet, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::valid::{Cause, Valid};
@@ -418,7 +418,7 @@ impl ExecutionSpec {
 
     async fn server_context(
         &self,
-        config: &Config,
+        config: &ConfigSet,
         env: HashMap<String, String>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
@@ -563,7 +563,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         }
 
         let config = Config::from_sdl(content)
-            .and_then(|config| Valid::from(Blueprint::try_from(&config)))
+            .and_then(|config| Valid::from(Blueprint::try_from(&ConfigSet::from(config))))
             .to_result();
 
         match config {
@@ -593,7 +593,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         return;
     }
 
-    let mut server: Vec<Config> = Vec::with_capacity(spec.server.len());
+    let mut server: Vec<ConfigSet> = Vec::with_capacity(spec.server.len());
 
     for (i, (source, content)) in spec.server.iter().enumerate() {
         let config = Config::from_source(source.to_owned(), content).unwrap_or_else(|e| {
@@ -654,10 +654,10 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         log::info!("\tserver #{} round-trip ok", i + 1);
 
-        // TODO: We have to read scripts after identity checking until #1059 is fixed.
-        let config = reader.read_script(config).await.unwrap_or_else(|e| {
+        // TODO: We have to resolve after identity checking until #1059 is fixed.
+        let config = reader.resolve(config).await.unwrap_or_else(|e| {
             panic!(
-                "Couldn't read scripts of GraphQL in server definition #{} of {:#?}: {}",
+                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
                 i + 1,
                 spec.path,
                 e
@@ -774,7 +774,7 @@ async fn run_assert(
     spec: ExecutionSpec,
     assert: AssertSpec,
     downstream_assertion: &&DownstreamAssertion,
-    config: &Config,
+    config: &ConfigSet,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string =
         serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
