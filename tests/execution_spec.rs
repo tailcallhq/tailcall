@@ -755,14 +755,14 @@ async fn assert_spec(spec: ExecutionSpec) {
         // merged: Run merged specs
         log::info!("\tmerged... (snapshot)");
 
-        let client = server
+        let merged = server
             .iter()
             .fold(Config::default(), |acc, c| acc.merge_right(c))
             .to_sdl();
 
         let snapshot_name = format!("{}_merged", spec.safe_name);
 
-        insta::assert_snapshot!(snapshot_name, client);
+        insta::assert_snapshot!(snapshot_name, merged);
 
         if will_insta_panic {
             log::info!("\tmerged ok");
