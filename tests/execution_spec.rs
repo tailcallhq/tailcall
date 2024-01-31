@@ -22,6 +22,7 @@ use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
+use tailcall::valid::{Cause, Valid};
 use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
@@ -116,6 +117,33 @@ struct AssertSpec {
     env: HashMap<String, String>,
 }
 
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
+struct SDLError {
+    message: String,
+    trace: Vec<String>,
+    description: Option<String>,
+}
+
+impl<'a> From<Cause<&'a str>> for SDLError {
+    fn from(value: Cause<&'a str>) -> Self {
+        SDLError {
+            message: value.message.to_string(),
+            trace: value.trace.iter().map(|e| e.to_string()).collect(),
+            description: None,
+        }
+    }
+}
+
+impl From<Cause<String>> for SDLError {
+    fn from(value: Cause<String>) -> Self {
+        SDLError {
+            message: value.message.to_string(),
+            trace: value.trace.iter().map(|e| e.to_string()).collect(),
+            description: value.description,
+        }
+    }
+}
+
 #[derive(Clone, Setters)]
 struct ExecutionSpec {
     path: PathBuf,
@@ -130,6 +158,7 @@ struct ExecutionSpec {
 
     check_identity: bool,
     check_merge: bool,
+    sdl_error: bool,
 }
 
 impl ExecutionSpec {
@@ -204,6 +233,7 @@ impl ExecutionSpec {
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut check_merge = false;
+        let mut sdl_error = false;
 
         while let Some(node) = children.next() {
             match node {
@@ -267,6 +297,9 @@ impl ExecutionSpec {
                                 }
                                 "check merge" => {
                                     check_merge = true;
+                                }
+                                "sdl error" => {
+                                    sdl_error = true;
                                 }
                                 _ => {
                                     return Err(anyhow!(
@@ -377,6 +410,7 @@ impl ExecutionSpec {
             runner,
             check_identity,
             check_merge,
+            sdl_error,
         };
 
         anyhow::Ok(spec)
@@ -515,13 +549,51 @@ impl HttpIO for MockHttpClient {
 
 async fn assert_spec(spec: ExecutionSpec) {
     let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
+    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
 
     // Parse and validate all server configs + check for identity
     log::info!("{} {} ...", spec.name, spec.path.display());
 
-    let mut server: Vec<Config> = Vec::with_capacity(spec.server.len());
+    if spec.sdl_error {
+        // errors: errors are expected, make sure they match
+        let (source, content) = &spec.server[0];
 
-    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+        if !matches!(source, Source::GraphQL) {
+            panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
+        }
+
+        let config = Config::from_sdl(content)
+            .and_then(|config| Valid::from(Blueprint::try_from(&config)))
+            .to_result();
+
+        match config {
+            Ok(_) => {
+                log::error!("\terror FAIL");
+                panic!(
+                    "Spec {} {:?} with \"sdl error\" directive did not have a validation error.",
+                    spec.name, spec.path
+                );
+            }
+            Err(cause) => {
+                let errors: Vec<SDLError> =
+                    cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
+
+                log::info!("\terrors... (snapshot)");
+
+                let snapshot_name = format!("{}_errors", spec.safe_name);
+
+                insta::assert_json_snapshot!(snapshot_name, errors);
+
+                if will_insta_panic {
+                    log::info!("\terrors ok");
+                }
+            }
+        };
+
+        return;
+    }
+
+    let mut server: Vec<Config> = Vec::with_capacity(spec.server.len());
 
     for (i, (source, content)) in spec.server.iter().enumerate() {
         let config = Config::from_source(source.to_owned(), content).unwrap_or_else(|e| {
