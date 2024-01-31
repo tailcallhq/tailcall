@@ -9,6 +9,7 @@ use inquire::Confirm;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
+use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
@@ -22,9 +23,10 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub async fn run() -> Result<()> {
     let cli = Cli::parse();
-
     logger_init();
     let file_io: Arc<dyn FileIO> = init_file();
+    update_checker::check_for_update().await;
+    let file_io: std::sync::Arc<dyn FileIO> = init_file();
     let default_http_io = init_http(&Upstream::default(), None);
     let config_reader = ConfigReader::init(file_io.clone(), default_http_io.clone());
     match cli.command {
