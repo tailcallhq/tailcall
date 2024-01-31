@@ -199,7 +199,6 @@ mod test_proto_config {
             .read_proto("google/protobuf/empty.proto")
             .await
             .unwrap();
-        assert!(true);
     }
 
     #[tokio::test]
