@@ -8,8 +8,8 @@ use schemars::schema::{
 };
 use tailcall::config;
 
-static GRAPHQL_SCHEMA_FILE: &'static str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_WHITELIST: [(&'static str, Entity, bool); 12] = [
+static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
+static DIRECTIVE_WHITELIST: [(&str, Entity, bool); 12] = [
     ("server", Entity::Schema, false),
     ("upstream", Entity::Schema, false),
     ("http", Entity::FieldDefinition, false),
@@ -23,7 +23,7 @@ static DIRECTIVE_WHITELIST: [(&'static str, Entity, bool); 12] = [
     ("expr", Entity::FieldDefinition, false),
     ("js", Entity::FieldDefinition, false),
 ];
-static OBJECT_WHITELIST: [&'static str; 18] = [
+static OBJECT_WHITELIST: [&str; 18] = [
     "ExprBody",
     "If",
     "Http",
@@ -124,6 +124,7 @@ impl<W: Write> IndentedWriter<W> {
 }
 
 impl<W: std::io::Write> Write for IndentedWriter<W> {
+    #[allow(clippy::same_item_push)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let mut new_buf = vec![];
         let mut extra = 0;
@@ -185,10 +186,10 @@ fn write_instance_type(
 
 fn write_reference(
     writer: &mut IndentedWriter<impl Write>,
-    reference: &String,
+    reference: &str,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    let mut nm = reference.split("/").last().unwrap().to_string();
+    let mut nm = reference.split('/').last().unwrap().to_string();
     first_char_to_upper(&mut nm);
     extra_it.insert(nm.clone(), ExtraTypes::Schema);
     write!(writer, "{nm}")
@@ -208,6 +209,7 @@ fn first_char_to_upper(name: &mut String) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn write_type(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
@@ -245,7 +247,7 @@ fn write_type(
             if let Some(arr_valid) = schema.array.clone() {
                 write_array_validation(writer, name, *arr_valid, defs, extra_it)
             } else if let Some(typ) = schema.object.clone() {
-                if typ.properties.len() > 0 {
+                if !typ.properties.is_empty() {
                     let mut name = name;
                     first_char_to_upper(&mut name);
                     write!(writer, "{name}")?;
@@ -280,7 +282,7 @@ fn write_type(
         }
     }
 }
-
+#[allow(clippy::too_many_arguments)]
 fn write_field(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
@@ -290,9 +292,9 @@ fn write_field(
 ) -> std::io::Result<()> {
     write!(writer, "{name}: ")?;
     write_type(writer, name, schema, defs, extra_it)?;
-    writeln!(writer, "")
+    writeln!(writer)
 }
-
+#[allow(clippy::too_many_arguments)]
 fn write_input_type(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
@@ -386,7 +388,7 @@ fn write_input_type(
 
     Ok(())
 }
-
+#[allow(clippy::too_many_arguments)]
 fn write_property(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
@@ -429,7 +431,7 @@ fn input_whitelist_lookup<'a>(
 
     None
 }
-
+#[allow(clippy::too_many_arguments)]
 fn write_directive(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
@@ -506,7 +508,7 @@ fn write_all_directives(
 
     Ok(())
 }
-
+#[allow(clippy::too_many_arguments)]
 fn write_array_validation(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
@@ -532,7 +534,7 @@ fn write_array_validation(
     }
     write!(writer, "]")
 }
-
+#[allow(clippy::too_many_arguments)]
 fn write_object_validation(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
@@ -540,7 +542,7 @@ fn write_object_validation(
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    if obj_valid.properties.len() > 0 {
+    if !obj_valid.properties.is_empty() {
         writeln!(writer, "input {name} {{")?;
         writer.indent();
         for (name, property) in obj_valid.properties {
