@@ -61,9 +61,10 @@ mod tests {
     use url::Url;
 
     use super::DataLoaderRequest;
+    use crate::blueprint::Upstream;
     use crate::cli::{init_file, init_http};
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, Grpc, Type, Upstream};
+    use crate::config::{Config, Field, Grpc, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 

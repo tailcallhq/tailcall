@@ -19,7 +19,6 @@ pub use file::NativeFileIO;
 pub use http::NativeHttp;
 pub use tc::run;
 
-// use crate::config::Upstream;
 use crate::blueprint::Upstream;
 use crate::cache::InMemoryCache;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};

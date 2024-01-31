@@ -14,7 +14,7 @@ use pretty_assertions::{assert_eq, assert_ne};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::blueprint::Blueprint;
+use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::{init_env, init_file, init_http, init_in_memory_cache};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet};
@@ -290,7 +290,7 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let content = spec.find_source(Tag::ServerSDL);
         let content = content.as_str();
         let config = Config::from_sdl(content).to_result().unwrap();
-        let upstream = config.upstream.clone();
+        let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
         let reader = ConfigReader::init(file_io.clone(), init_http(&upstream, None));
         let config_set = reader.resolve(config).await.unwrap();
         let actual =
@@ -390,7 +390,7 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let config = Config::from_sdl(content).to_result();
         let actual = match config {
             Ok(config) => {
-                let upstream = config.upstream.clone();
+                let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
                 let reader = ConfigReader::init(file_io.clone(), init_http(&upstream, None));
                 match reader.resolve(config).await {
                     Ok(config_set) => Valid::from(Blueprint::try_from(&config_set))

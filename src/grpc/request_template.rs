@@ -106,9 +106,10 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;
+    use crate::blueprint::Upstream;
     use crate::cli::{init_file, init_http};
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type, Upstream};
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::mustache::Mustache;
 

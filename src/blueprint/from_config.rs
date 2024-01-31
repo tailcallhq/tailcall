@@ -25,8 +25,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
         |blueprint| blueprint.definitions,
     );
 
-    let upstream = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
-        Valid::from(Upstream::try_from(config.upstream.clone()))
+    let upstream = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
+        Valid::from(Upstream::try_from(config_set.upstream.clone()))
             .map(|upstream| blueprint.upstream(upstream))
     });
 
