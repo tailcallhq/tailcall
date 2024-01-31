@@ -1,12 +1,13 @@
-use std::sync::Arc;
+use mini_v8::MiniV8;
+use tokio::sync::mpsc;
 
-use super::sync_v8::SyncV8;
-use crate::HttpIO;
+use super::async_wrapper::ChannelMessage;
 
 mod console;
 pub mod fetch;
-pub async fn init(v8: &SyncV8, http: Arc<dyn HttpIO>) -> anyhow::Result<()> {
-    console::init(v8).await?;
-    fetch::init(v8, http).await?;
+
+pub fn init(v8: &MiniV8, http_sender: mpsc::UnboundedSender<ChannelMessage>) -> anyhow::Result<()> {
+    console::init(v8)?;
+    fetch::init(v8.clone(), http_sender)?;
     Ok(())
 }

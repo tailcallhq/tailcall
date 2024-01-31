@@ -1,7 +1,7 @@
+use mini_v8::MiniV8;
 use serde::{Deserialize, Serialize};
 
 use crate::cli::javascript::serde_v8::SerdeV8;
-use crate::cli::javascript::sync_v8::SyncV8;
 use crate::cli::CLIError;
 use crate::ToAnyHow;
 
@@ -17,24 +17,21 @@ impl From<JSError> for CLIError {
     }
 }
 
-pub async fn init(v8: &SyncV8) -> anyhow::Result<()> {
-    v8.borrow(|v8| {
-        let console = v8.create_object();
-        console
-            .set("log", v8.create_function(console_log))
-            .or_anyhow("could not set console.log: ")?;
+pub fn init(v8: &MiniV8) -> anyhow::Result<()> {
+    let console = v8.create_object();
+    console
+        .set("log", v8.create_function(console_log))
+        .or_anyhow("could not set console.log: ")?;
 
-        console
-            .set("error", v8.create_function(console_err))
-            .or_anyhow("could not set console.error: ")?;
+    console
+        .set("error", v8.create_function(console_err))
+        .or_anyhow("could not set console.error: ")?;
 
-        v8.global()
-            .set("console", console)
-            .or_anyhow("could not set global.console: ")?;
+    v8.global()
+        .set("console", console)
+        .or_anyhow("could not set global.console: ")?;
 
-        Ok(())
-    })
-    .await
+    Ok(())
 }
 
 fn console_log(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v8::Error> {

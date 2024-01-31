@@ -1,17 +1,17 @@
-use std::sync::Arc;
-
 use hyper::body::Bytes;
-use mini_v8::Values;
+use mini_v8::{Function, MiniV8, Values};
+use tokio::sync::{mpsc, oneshot};
 
+use super::async_wrapper::ChannelMessage;
 use super::serde_v8::SerdeV8;
-use super::sync_v8::{SyncV8, SyncV8Function};
 use crate::channel::{JsRequest, JsResponse};
 use crate::http::Response;
-use crate::{blueprint, HttpIO, ToAnyHow};
+use crate::{blueprint, ToAnyHow};
 
+#[derive(Clone)]
 pub struct Worker {
-    sync_v8: SyncV8,
-    on_event_js: SyncV8Function,
+    v8: MiniV8,
+    on_event_js: Function,
 }
 
 fn create_closure(script: &str) -> String {
@@ -19,84 +19,70 @@ fn create_closure(script: &str) -> String {
 }
 
 impl Worker {
-    pub async fn new(script: blueprint::Script, http: impl HttpIO) -> anyhow::Result<Self> {
-        let sync_v8 = SyncV8::new();
-        super::shim::init(&sync_v8, Arc::new(http)).await?;
-        let v8 = sync_v8.clone();
-        let closure = sync_v8
-            .borrow_ret(move |mv8| {
-                let script = mini_v8::Script {
-                    source: create_closure(script.source.as_str()),
-                    timeout: script.timeout,
-                    ..Default::default()
-                };
-                let value: mini_v8::Value = mv8
-                    .eval(script)
-                    .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-                let closure = value
-                    .as_function()
-                    .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?
-                    .clone();
+    pub fn new(
+        script: blueprint::Script,
+        http_sender: mpsc::UnboundedSender<ChannelMessage>,
+    ) -> anyhow::Result<Self> {
+        let v8 = MiniV8::new();
+        super::shim::init(&v8, http_sender)?;
+        let script = mini_v8::Script {
+            source: create_closure(script.source.as_str()),
+            timeout: script.timeout,
+            ..Default::default()
+        };
+        let value: mini_v8::Value = v8
+            .eval(script)
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        let on_event_js = value
+            .as_function()
+            .ok_or_else(|| anyhow::anyhow!("expected an 'onEvent' function"))?
+            .clone();
 
-                Ok(v8.as_sync_function(closure))
-            })
-            .await?;
-        Ok(Self { sync_v8, on_event_js: closure })
+        Ok(Self { v8, on_event_js })
     }
 
     pub async fn on_event(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        let (tx, mut rx) = tokio::sync::broadcast::channel::<serde_json::Value>(1024);
-        let sync_v8 = self.sync_v8.clone();
+        let (tx, rx) = oneshot::channel::<serde_json::Value>();
+        let mut tx = Some(tx);
         let js_request = JsRequest::try_from(&request)?;
         let on_event_js = self.on_event_js.clone();
 
-        sync_v8
-            .borrow(move |mv8| {
-                let js_request_v8 = js_request.to_v8(mv8)?;
+        let js_request_v8 = js_request.to_v8(&self.v8)?;
 
-                let cb: mini_v8::Value = mini_v8::Value::Function(mv8.create_function({
-                    move |invocation| {
-                        // FIXME: get arg.get(0) as error
-                        let response = invocation.args.get(1);
-                        let json = serde_json::Value::from_v8(&response).unwrap();
-                        tx.send(json).map_err(|e| {
-                            mini_v8::Error::ExternalError(anyhow::anyhow!(e.to_string()).into())
-                        })?;
-                        Ok(mini_v8::Value::Undefined)
-                    }
-                }));
+        let cb: mini_v8::Value = mini_v8::Value::Function(self.v8.create_function_mut({
+            move |invocation| {
+                let Some(tx) = tx.take() else {
+                    return Err(mini_v8::Error::ExternalError(
+                        "Multiple callback calls".into(),
+                    ));
+                };
 
-                // Initiate an async call
-                let args: Values = Values::from_iter(vec![js_request_v8, cb]);
+                // FIXME: get arg.get(0) as error
+                let response = invocation.args.get(1);
+                let json = serde_json::Value::from_v8(&response).unwrap();
+                tx.send(json).map_err(|e| {
+                    mini_v8::Error::ExternalError(anyhow::anyhow!(e.to_string()).into())
+                })?;
+                Ok(mini_v8::Value::Undefined)
+            }
+        }));
 
-                // NOTE: This doesn't complete
-                let _err = on_event_js
-                    .call::<()>(args)
-                    .or_anyhow("failed to dispatch request to js-worker: ");
+        // Initiate an async call
+        let args: Values = Values::from_iter(vec![js_request_v8, cb]);
 
-                Ok(())
-            })
-            .await?;
+        on_event_js
+            .call(args)
+            .or_anyhow("failed to dispatch request to js-worker: ")?;
 
         let result = rx
-            .recv()
             .await
             .or_anyhow("failed to receive response from js-worker")?;
         // Check if the result is a response
 
+        // TODO: simplify conversions
         let js_response: JsResponse = serde_json::from_value(result)?;
         let response = Response::<Bytes>::try_from(js_response)?;
         Ok(response)
-    }
-}
-
-#[async_trait::async_trait]
-impl HttpIO for Worker {
-    async fn execute(
-        &self,
-        request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.on_event(request).await
     }
 }
 
@@ -105,21 +91,28 @@ mod test {
     use hyper::body::Buf;
     use pretty_assertions::assert_eq;
     use serde_json::{json, Value};
+    use tokio::spawn;
     use url::Url;
 
     use super::*;
     use crate::blueprint::Script;
     use crate::cli::javascript::shim::fetch::FETCH;
-    use crate::cli::NativeHttp;
 
     async fn new_worker(script: &str) -> anyhow::Result<Worker> {
-        let http = NativeHttp::default();
         let script = Script {
             source: script.to_string(),
             timeout: None,
             ..Default::default()
         };
-        Worker::new(script, http).await
+        let (http_sender, mut http_receiver) = mpsc::unbounded_channel::<ChannelMessage>();
+
+        spawn(async move {
+            while let Some((respond, _request)) = http_receiver.recv().await {
+                let _ = respond.send(Ok(Response::default()));
+            }
+        });
+
+        Worker::new(script, http_sender)
     }
 
     fn new_get_request(url: &str) -> anyhow::Result<reqwest::Request> {
