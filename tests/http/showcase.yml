@@ -59,7 +59,7 @@ assert:
       body:
         data: null
         errors:
-          - message: "Invalid Config URL specified"
+          - message: "Failed to read config: ./tests/http/config/simple.graphql"
   - request:
       method: POST
       url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Finvalid.graphql
@@ -69,7 +69,7 @@ assert:
       body:
         data: null
         errors:
-          - message: "Validation Error\n•  --> 1:1\n  |\n1 | \"dsjfsjdfjdsfjkdskjfjkds\"\n  | ^---\n  |\n  = expected type_system_definition\n"
+          - message: "Failed to read config: Validation Error\n•  --> 1:1\n  |\n1 | \"dsjfsjdfjdsfjkdskjfjkds\"\n  | ^---\n  |\n  = expected type_system_definition\n"
   - request:
       method: POST
       url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql
