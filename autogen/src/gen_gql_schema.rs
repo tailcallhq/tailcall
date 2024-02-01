@@ -124,7 +124,6 @@ impl<W: Write> IndentedWriter<W> {
 }
 
 impl<W: std::io::Write> Write for IndentedWriter<W> {
-    // #[allow(clippy::same_item_push)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let mut new_buf = Vec::with_capacity(
             buf.len() + self.indentation * buf.iter().filter(|&&c| c == b'\n').count(),
