@@ -3,7 +3,7 @@ use std::ops::Deref;
 use super::TryFoldConfig;
 use crate::config::{ConfigSet, Upstream};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 pub fn to_upstream<'a>() -> TryFold<'a, ConfigSet, Upstream, String> {
     TryFoldConfig::<Upstream>::new(|config_set, up| {

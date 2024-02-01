@@ -4,7 +4,7 @@ use crate::graphql::RequestTemplate;
 use crate::helpers;
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 pub fn compile_graphql(
     config: &config::Config,
