@@ -9,7 +9,7 @@ use std::{fs, panic};
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
 use hyper::body::Bytes;
-use hyper::{Body, HeaderMap, Request};
+use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -20,7 +20,7 @@ use tailcall::blueprint::Blueprint;
 use tailcall::cli::{init_file, init_hook_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Source, Upstream};
-use tailcall::http::{handle_request, AppContext, Method, RequestContext, Response};
+use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::target_runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
@@ -153,7 +153,6 @@ struct ExecutionSpec {
 
     server: Vec<(Source, String)>,
     assert: Option<AssertSpec>,
-    query: Vec<String>,
 
     // Annotations for the runner
     runner: Option<Annotation>,
@@ -232,7 +231,6 @@ impl ExecutionSpec {
         let mut name: Option<String> = None;
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut assert: Option<AssertSpec> = None;
-        let mut query: Vec<String> = Vec::new();
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut check_merge = false;
@@ -356,13 +354,6 @@ impl ExecutionSpec {
                                         return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
-                                "query:" => {
-                                    if matches!(source, Source::GraphQL) {
-                                        query.push(content);
-                                    } else {
-                                        return Err(anyhow!("Unexpected query block language in {:?} (only graphql is allowed)", path));
-                                    }
-                                }
                                 _ => {
                                     return Err(anyhow!(
                                         "Unexpected component {:?} in {:?}: {:#?}",
@@ -399,19 +390,6 @@ impl ExecutionSpec {
             ));
         }
 
-        // TODO: add query
-        let unique_block_count = [assert.is_some(), !query.is_empty()]
-            .into_iter()
-            .filter(|x| *x)
-            .count();
-
-        if unique_block_count >= 2 {
-            return Err(anyhow!(
-                "Unexpected blocks in {:?}: You may only define either one assert block, or one or more query blocks.",
-                path,
-            ));
-        }
-
         let spec = ExecutionSpec {
             path: path.to_owned(),
             name: name.unwrap_or_else(|| path.file_name().unwrap().to_str().unwrap().to_string()),
@@ -419,7 +397,6 @@ impl ExecutionSpec {
 
             server,
             assert,
-            query,
 
             runner,
             check_identity,
@@ -721,20 +698,6 @@ async fn assert_spec(spec: ExecutionSpec) {
                 log::info!("\tassert #{} ok", i + 1);
             }
         }
-    } else if !spec.query.is_empty() {
-        if server.len() != 1 {
-            panic!("Unexpected number of servers in {:?} (exactly one is allowed if there are queries present)", spec.path);
-        }
-
-        for (i, query) in spec.query.iter().enumerate() {
-            let response = run_query(&server[0], query)
-                .await
-                .expect("Failed to run query");
-
-            let snapshot_name = format!("{}_query_{}", spec.safe_name, i);
-
-            insta::assert_json_snapshot!(snapshot_name, response);
-        }
     } else if server.len() >= 2 || spec.check_merge {
         // merged: Run merged specs
         log::info!("\tmerged... (snapshot)");
@@ -814,22 +777,4 @@ async fn run_assert(
     } else {
         handle_request::<GraphQLRequest>(req, server_context).await
     }
-}
-
-async fn run_query(config: &ConfigSet, query: &str) -> anyhow::Result<async_graphql::Response> {
-    let blueprint = Blueprint::try_from(config)?;
-    let runtime = init_runtime(&blueprint.upstream, None);
-    let app = AppContext::new(blueprint, runtime);
-
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        HeaderName::from_static("authorization"),
-        HeaderValue::from_static("1"),
-    );
-
-    let req_ctx = Arc::new(RequestContext::from(&app).req_headers(headers));
-    let req = async_graphql::Request::from(query).data(req_ctx.clone());
-    let res = app.schema.execute(req).await;
-
-    Ok(res)
 }

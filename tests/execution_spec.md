@@ -9,7 +9,6 @@ A Markdown-based snapshot testing framework for Tailcall.
   - [Blocks](#blocks)
     - [`server`](#server)
     - [`assert`](#assert)
-    - [`query`](#query)
   - [Instruction](#instruction)
 - [Test process](#test-process)
 - [Snapshots](#snapshots)
@@ -55,7 +54,7 @@ Blocks are level 4 headings (`####`) followed by the block type, and a code bloc
 
 A `server` block specifies a server SDL config. These are expected to be successfully parseable to have a passing test, unless the [`sdl error` instruction](#instruction) is specified, which requires the config parsing to throw an error.
 
-Every test should have at least one `server` block. Some main actions, like `assert` and `query` require that there be exactly one `server` block. Additionally, having exactly one `server` block in a test means that the `client` check will also be performed.
+Every test should have at least one `server` block. Some blocks (for example, `assert`) require that there be exactly one `server` block. Additionally, having exactly one `server` block in a test means that the `client` check will also be performed.
 
 The `merge` main action is only performed if two or more `server` blocks are specified, unless the [`check merge` instruction](#instruction) is specified.
 
@@ -90,7 +89,7 @@ An `assert` block specifies HTTP assertions in `YAML`. This is very similar to t
 
 `assert` describes the requests that the runner should perform. These only have a `request`, the response for each request is stored in an `assert_{i}` snapshot.
 
-There may be at most one `assert` block in a test, but it is not compatible with `query` blocks.
+There may be at most one `assert` block in a test.
 
 Example:
 
@@ -116,32 +115,12 @@ assert:
 ```
 ````
 
-#### `#### query:`
-
-A `query` block specifies a GraphQL query. The result of the query is stored in a `query_{i}` snapshot.
-
-There may be any amount of `query` blocks in a test, but it is not compatible with an `assert` block.
-
-Example:
-
-````md
-#### query:
-
-```graphql
-query {
-  user {
-    name
-  }
-}
-```
-````
-
 ### Instruction
 
 A level 6 heading (`######`), with the text being one of the following:
 
 - `###### check identity` -- This instructs the runner to run identity checks on `server` blocks. While it would be good to run this on every test, the code of `server` blocks must be written with this instruction mind, therefore it is optional.
-- `###### check merge` -- This instructs the runner to merge all `server` blocks and to compare the result with a `merged` snapshot. This happens automatically with tests that do not have an `assert` or `query` block and have more than two `server` blocks, but sometimes we want to merge only one `server` block with the default config, so this instruction is useful in that case.
+- `###### check merge` -- This instructs the runner to merge all `server` blocks and to compare the result with a `merged` snapshot. This happens automatically with tests that do not have an `assert` block and have more than two `server` blocks, but sometimes we want to merge only one `server` block with the default config, so this instruction is useful in that case.
 - `###### sdl error` -- This instructs the runner to expect a failure when parsing the `server` block and to compare the result with an `errors` snapshot. This is used when testing for error handling.
 
 There must be exactly zero or one instruction in a test.
@@ -175,12 +154,6 @@ There must be exactly zero or one instruction in a test.
        1. For each assertion in the `assert` property (0-based index `i`), the runner does the following:
           1. Runs the HTTP request on the app context.
           1. Compares the HTTP response to the `assert_{i}` snapshot.
-          1. If the snapshot doesn't match the response, the runner generates a new snapshot and throws an error.
-     - If the test has one or more [`query` blocks](#query), the runner performs `query` checks:
-       1. Creates an app context based on the `server` block.
-       1. For each [`query` block](#query) (0-based index `i`), the runner does the following:
-          1. Runs the GraphQL query on the app context.
-          1. Compares the GraphQL response to the `query_{i}` snapshot.
           1. If the snapshot doesn't match the response, the runner generates a new snapshot and throws an error.
      - If the test has two or more [`server` blocks](#server) or a [`check merge` instruction](#instruction), the runner performs a `merge` check:
        1. Attemps to merge all [`server` blocks](#server), resulting in a merged config.
@@ -245,13 +218,3 @@ Each test's `.md` file may have a file name suffix of `-error` if the bare file 
 1. An [`sdl error` instruction](#instruction) is appended.
 1. The server SDL is put into a [`server` block](#server).
 1. The expected errors are put into an `errors` snapshot.
-
-#### passed (1 server-sdl, 1 client-query)
-
-Each test's `.md` file may have a file name suffix of `-query` if the bare file name is already taken by a previously converted test.
-
-1. The name is generated from the file name, and put into a [header](#header).
-1. The server SDL is put into a [`server` block](#server).
-1. The client queries' `@expect` operators are removed and converted to corresponding `query_{i}` snapshots.
-1. The client queries are put into [`query` blocks](#query).
-1. A `client` snapshot is auto-generated.
