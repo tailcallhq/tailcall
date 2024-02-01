@@ -331,8 +331,8 @@ async fn test_execution() -> std::io::Result<()> {
                     .to_result()
                     .unwrap();
                 let runtime = init_runtime(&blueprint.upstream, None);
-                let server_ctx = AppContext::new(blueprint, runtime);
-                let schema = &server_ctx.schema;
+                let app_ctx = AppContext::new(blueprint, runtime);
+                let schema = &app_ctx.schema;
 
                 for q in spec.test_queries {
                     let mut headers = HeaderMap::new();

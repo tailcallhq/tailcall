@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::{Body, Request, Response};
@@ -10,31 +8,15 @@ use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::Blueprint;
 use crate::config::reader::ConfigReader;
-use crate::{EntityCache, EnvIO, FileIO, HttpIO};
-
-struct DummyEnvIO;
-
-impl EnvIO for DummyEnvIO {
-    fn get(&self, _key: &str) -> Option<String> {
-        None
-    }
-}
-
-pub struct ShowcaseResources {
-    pub http: Arc<dyn HttpIO + Send + Sync>,
-    pub env: Option<Arc<dyn EnvIO>>,
-    pub file: Option<Arc<dyn FileIO + Send + Sync>>,
-    pub cache: Arc<EntityCache>,
-}
+use crate::target_runtime::TargetRuntime;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,
-    resources: ShowcaseResources,
+    runtime: TargetRuntime,
+    enable_fs: bool,
 ) -> Result<Result<AppContext, Response<Body>>> {
     let url = Url::parse(&req.uri().to_string())?;
     let mut query = url.query_pairs();
-
-    let http = resources.http;
 
     let config_url = if let Some(pair) = query.find(|x| x.0 == "config") {
         pair.1.to_string()
@@ -45,7 +27,14 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         return Ok(Err(GraphQLResponse::from(response).to_response()?));
     };
 
-    let reader = ConfigReader::init(resources.file, http.clone());
+    if !enable_fs && Url::parse(&config_url).is_err() {
+        let mut response = async_graphql::Response::default();
+        let server_error = ServerError::new("Invalid Config URL specified", None);
+        response.errors = vec![server_error];
+        return Ok(Err(GraphQLResponse::from(response).to_response()?));
+    }
+
+    let reader = ConfigReader::init(runtime.clone());
     let config = match reader.read(config_url).await {
         Ok(config) => config,
         Err(e) => {
@@ -66,15 +55,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    let env = resources.env.unwrap_or_else(|| Arc::new(DummyEnvIO));
-
-    Ok(Ok(AppContext::new(
-        blueprint,
-        http.clone(),
-        http,
-        env,
-        resources.cache,
-    )))
+    Ok(Ok(AppContext::new(blueprint, runtime)))
 }
 
 #[cfg(test)]
@@ -85,18 +66,10 @@ mod tests {
     use serde_json::json;
 
     use crate::async_graphql_hyper::GraphQLRequest;
-    use crate::cli::{init_env, init_file, init_http, init_in_memory_cache};
+    use crate::cli::init_runtime;
     use crate::config::Upstream;
-    use crate::http::showcase::DummyEnvIO;
-    use crate::http::{handle_request, showcase_get_app_ctx, ShowcaseResources};
-    use crate::EnvIO as _;
-
-    #[test]
-    fn dummy_env_works() {
-        let env = DummyEnvIO;
-
-        assert!(env.get("PATH").is_none());
-    }
+    use crate::http::handle_request;
+    use crate::http::showcase::create_app_ctx;
 
     #[tokio::test]
     async fn works_with_file() {
@@ -108,23 +81,28 @@ mod tests {
             }).to_string()))
             .unwrap();
 
-        let app = showcase_get_app_ctx::<GraphQLRequest>(
-            &req,
-            ShowcaseResources {
-                http: init_http(&Upstream::default(), None),
-                env: Some(init_env()),
-                file: Some(init_file()),
-                cache: Arc::new(init_in_memory_cache()),
-            },
-        )
-        .await
-        .unwrap()
-        .unwrap();
+        let runtime = init_runtime(&Upstream::default(), None);
+        let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let req = Request::builder()
+            .method("POST")
+            .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
+            .body(hyper::Body::from(
+                json!({
+                    "query": "query { user { name } }"
+                })
+                .to_string(),
+            ))
+            .unwrap();
 
         let res = handle_request::<GraphQLRequest>(req, Arc::new(app))
             .await
             .unwrap();
 
         println!("{:#?}", res);
+        assert!(res.status().is_success())
     }
 }

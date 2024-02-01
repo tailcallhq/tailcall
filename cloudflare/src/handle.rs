@@ -3,17 +3,12 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
-use anyhow::anyhow;
 use hyper::{Body, Method, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::http::{
-    graphiql, handle_request, showcase_get_app_ctx, AppContext, ShowcaseResources,
-};
-use tailcall::EnvIO;
+use tailcall::http::{graphiql, handle_request, showcase, AppContext};
 
-use crate::env::CloudflareEnv;
-use crate::http::{to_request, to_response, CloudflareHttp};
+use crate::http::{to_request, to_response};
 use crate::init_runtime;
 
 lazy_static! {
@@ -75,23 +70,10 @@ async fn get_app_ctx(
         }
     }
 
-    // Create new context
-    let env_io = Arc::new(CloudflareEnv::init(env.clone()));
-    let bucket_id = env_io
-        .get("BUCKET")
-        .ok_or(anyhow!("CONFIG var is not set"))?;
-    log::debug!("R2 Bucket ID: {}", bucket_id);
-
-    let resources = ShowcaseResources {
-        http: init_http(),
-        file: Some(init_file(env.clone(), bucket_id)?),
-        env: Some(env_io),
-        cache: init_cache(env),
-    };
-
-    match showcase_get_app_ctx::<GraphQLRequest>(req, resources).await? {
+    let runtime = init_runtime(env)?;
+    match showcase::create_app_ctx::<GraphQLRequest>(req, runtime, true).await? {
         Ok(app_ctx) => {
-            let app_ctx = Arc::new(app_ctx);
+            let app_ctx: Arc<AppContext> = Arc::new(app_ctx);
             if let Some(file_path) = file_path {
                 *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
             }

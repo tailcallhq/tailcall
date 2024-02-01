@@ -59,7 +59,7 @@ assert:
       body:
         data: null
         errors:
-          - message: "Failed to read config: ./tests/http/config/simple.graphql"
+          - message: "Invalid Config URL specified"
   - request:
       method: POST
       url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Finvalid.graphql
