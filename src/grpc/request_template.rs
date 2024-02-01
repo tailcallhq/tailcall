@@ -106,7 +106,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;
-    use crate::cli::{init_file, init_http};
+    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type, Upstream};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -120,9 +120,8 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
-        let file_io = init_file();
-        let http_io = init_http(&Upstream::default(), None);
-        let reader = ConfigReader::init(file_io, http_io);
+        let runtime = init_runtime(&Upstream::default(), None);
+        let reader = ConfigReader::init(runtime);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: test_file.to_str().unwrap().to_string(),

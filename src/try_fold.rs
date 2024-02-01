@@ -1,4 +1,4 @@
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 /// Trait for types that support a "try fold" operation.
 ///
@@ -164,7 +164,7 @@ mod tests {
     use std::cell::RefCell;
 
     use super::TryFold;
-    use crate::valid::{Valid, ValidationError};
+    use crate::valid::{Valid, ValidationError, Validator};
 
     #[test]
     fn test_and() {

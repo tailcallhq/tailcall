@@ -6,7 +6,7 @@ use crate::config::Field;
 use crate::lambda::Expression;
 use crate::lambda::Expression::Literal;
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 fn validate_data_with_schema(
     config: &config::Config,
