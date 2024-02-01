@@ -28,10 +28,6 @@ pub async fn fetch(req: worker::Request, env: worker::Env) -> anyhow::Result<wor
     );
     let env = Rc::new(env);
     let hyper_req = to_request(req).await?;
-    if hyper_req.method() == hyper::Method::GET {
-        let response = graphiql(&hyper_req)?;
-        return to_response(response).await;
-    }
     let query = hyper_req
         .uri()
         .query()
@@ -44,6 +40,11 @@ pub async fn fetch(req: worker::Request, env: worker::Env) -> anyhow::Result<wor
 
     log::info!("config-url: {}", config_path);
     let app_ctx = get_app_ctx(env, config_path.as_str()).await?;
+    if hyper_req.method() == hyper::Method::GET {
+        let response = graphiql(&hyper_req, app_ctx.as_ref())?;
+        return to_response(response).await;
+    }
+
     let resp = handle_request::<GraphQLRequest>(hyper_req, app_ctx).await?;
 
     to_response(resp).await

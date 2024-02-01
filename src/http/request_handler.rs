@@ -12,7 +12,7 @@ use super::request_context::RequestContext;
 use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
-pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
+pub fn graphiql(req: &Request<Body>, server_ctx: &AppContext) -> Result<Response<Body>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
     let endpoint = if let Some(query) = query {
@@ -25,9 +25,11 @@ pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
         Cow::Borrowed(endpoint)
     };
 
-    Ok(Response::new(Body::from(playground_source(
+    let mut response = Response::new(Body::from(playground_source(
         GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
-    ))))
+    )));
+    update_response_headers(&mut response, server_ctx);
+    Ok(response)
 }
 
 fn not_found() -> Result<Response<Body>> {
@@ -116,7 +118,9 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
             graphql_request::<T>(req, state.as_ref()).await
         }
-        hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(&req),
+        hyper::Method::GET if state.blueprint.server.enable_graphiql => {
+            graphiql(&req, state.as_ref())
+        }
         _ => not_found(),
     }
 }
