@@ -7,12 +7,11 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
-use crate::cache_key::CacheKey;
 use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::http::Method::POST;
-use crate::lambda::GraphQLOperationContext;
+use crate::lambda::{CacheKey, GraphQLOperationContext};
 use crate::mustache::Mustache;
 use crate::path::PathGraphql;
 
@@ -128,11 +127,11 @@ impl RequestTemplate {
 }
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> anyhow::Result<u64> {
+    fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
-        Ok(hasher.finish())
+        hasher.finish()
     }
 }
 

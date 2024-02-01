@@ -12,6 +12,7 @@ use super::logic::Logic;
 use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
 use crate::json::JsonLike;
 use crate::lambda::cache::Cached;
+use crate::lambda::has_io::HasIO;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -77,6 +78,24 @@ impl Expression {
 
     pub fn in_sequence(self) -> Self {
         self.concurrency(Concurrent::Sequential)
+    }
+}
+
+impl HasIO for Expression {
+    fn has_io(&self) -> bool {
+        match self {
+            Expression::Context(_) => false,
+            Expression::Literal(_) => false,
+            Expression::EqualTo(lhs, rhs) => lhs.has_io() || rhs.has_io(),
+            Expression::IO(_) => true,
+            Expression::Cached(cached) => cached.has_io(),
+            Expression::Input(expr, _) => expr.has_io(),
+            Expression::Logic(logic) => logic.has_io(),
+            Expression::Relation(relation) => relation.has_io(),
+            Expression::List(list) => list.has_io(),
+            Expression::Math(math) => math.has_io(),
+            Expression::Concurrency(_, expr) => expr.has_io(),
+        }
     }
 }
 

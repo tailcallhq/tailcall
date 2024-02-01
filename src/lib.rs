@@ -4,7 +4,6 @@ mod app_context;
 pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod cache;
-mod cache_key;
 pub mod channel;
 #[cfg(feature = "cli")]
 pub mod cli;

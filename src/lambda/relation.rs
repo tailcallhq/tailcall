@@ -11,6 +11,7 @@ use super::{
     Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
 };
 use crate::helpers::value::HashableConstValue;
+use crate::lambda::has_io::HasIO;
 
 #[derive(Clone, Debug)]
 pub enum Relation {
@@ -28,6 +29,27 @@ pub enum Relation {
     SortPath(Box<Expression>, Vec<String>),
     SymmetricDifference(Vec<Expression>, Vec<Expression>),
     Union(Vec<Expression>, Vec<Expression>),
+}
+
+impl HasIO for Relation {
+    fn has_io(&self) -> bool {
+        match self {
+            Relation::Intersection(exprs) => exprs.has_io(),
+            Relation::Difference(lhs, rhs) => (lhs, rhs).has_io(),
+            Relation::Equals(lhs, rhs) => (lhs, rhs).has_io(),
+            Relation::Gt(lhs, rhs) => (lhs, rhs).has_io(),
+            Relation::Gte(lhs, rhs) => (lhs, rhs).has_io(),
+            Relation::Lt(lhs, rhs) => (lhs, rhs).has_io(),
+            Relation::Lte(lhs, rhs) => (lhs, rhs).has_io(),
+            Relation::Max(exprs) => exprs.has_io(),
+            Relation::Min(exprs) => exprs.has_io(),
+            Relation::PathEq(expr1, _, expr2) => (expr1, expr2).has_io(),
+            Relation::PropEq(expr1, _, expr2) => (expr1, expr2).has_io(),
+            Relation::SortPath(expr, _) => expr.has_io(),
+            Relation::SymmetricDifference(expr1, expr2) => (expr1, expr2).has_io(),
+            Relation::Union(expr1, expr2) => (expr1, expr2).has_io(),
+        }
+    }
 }
 
 impl Eval for Relation {

@@ -7,7 +7,11 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike, IO};
-use crate::cache_key::CacheKey;
+use crate::lambda::has_io::HasIO;
+
+pub trait CacheKey<Ctx> {
+    fn cache_key(&self, ctx: &Ctx) -> u64;
+}
 
 #[derive(Clone, Debug)]
 pub enum Cached {
@@ -39,6 +43,15 @@ impl Cached {
     }
 }
 
+impl HasIO for Cached {
+    fn has_io(&self) -> bool {
+        match self {
+            Cached::IOCache(_) => true,
+            Cached::NonIOCache(_) => false,
+        }
+    }
+}
+
 impl Eval for Cached {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
@@ -56,8 +69,8 @@ impl Eval for Cached {
                         },
                         _ => Err(anyhow::anyhow!(
                             "IOCache shouldn't contain non-IO expressions"
-                        )),
-                    }?;
+                        ))?,
+                    };
 
                     if let Some(val) = ctx.req_ctx.cache.get(&key).await? {
                         Ok(val)
