@@ -7,7 +7,6 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
 use super::HttpIO;
-// use crate::config::Upstream;
 use crate::blueprint::Upstream;
 use crate::http::Response;
 

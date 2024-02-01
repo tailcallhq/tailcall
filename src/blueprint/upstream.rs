@@ -1,7 +1,9 @@
 use std::collections::BTreeSet;
+
 use derive_setters::Setters;
+
 use crate::config::{self, Batch};
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
 pub struct Proxy {
@@ -86,9 +88,9 @@ impl TryFrom<crate::config::Upstream> for Upstream {
 
     fn try_from(config_upstream: config::Upstream) -> Result<Self, Self::Error> {
         get_batch(&config_upstream)
-            .zip(get_base_url(&config_upstream))
-            .zip(get_proxy(&config_upstream))
-            .map(|((batch, base_url), proxy)| Upstream {
+            .fuse(get_base_url(&config_upstream))
+            .fuse(get_proxy(&config_upstream))
+            .map(|(batch, base_url, proxy)| Upstream {
                 pool_idle_timeout: (config_upstream).get_pool_idle_timeout(),
                 pool_max_idle_per_host: (config_upstream).get_pool_max_idle_per_host(),
                 keep_alive_interval: (config_upstream).get_keep_alive_interval(),

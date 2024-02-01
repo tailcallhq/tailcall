@@ -7,7 +7,6 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 
 use crate::blueprint::{Server, Upstream};
-// use crate::config::Upstream;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;

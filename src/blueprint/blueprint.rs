@@ -10,7 +10,6 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
-// use crate::config::Upstream;
 use crate::lambda::{Expression, Lambda};
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
