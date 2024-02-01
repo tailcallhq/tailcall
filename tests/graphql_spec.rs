@@ -15,12 +15,13 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_env, init_file, init_http, init_in_memory_cache};
+use tailcall::cli::{init_env, init_file, init_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
+use tailcall::target_runtime::TargetRuntime;
 use tailcall::valid::{Cause, Valid, ValidationError, Validator};
 
 static INIT: Once = Once::new();
@@ -282,7 +283,6 @@ fn test_config_identity() -> std::io::Result<()> {
 #[tokio::test]
 async fn test_server_to_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql");
-    let file_io = init_file();
 
     for spec in specs? {
         let expected = spec.find_source(Tag::ClientSDL);
@@ -291,7 +291,8 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let content = content.as_str();
         let config = Config::from_sdl(content).to_result().unwrap();
         let upstream = config.upstream.clone();
-        let reader = ConfigReader::init(file_io.clone(), init_http(&upstream, None));
+        let runtime = init_runtime(&upstream, None);
+        let reader = ConfigReader::init(runtime);
         let config_set = reader.resolve(config).await.unwrap();
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
@@ -335,10 +336,13 @@ async fn test_execution() -> std::io::Result<()> {
                 let chrono_cache = init_in_memory_cache();
                 let server_ctx = AppContext::new(
                     blueprint,
-                    h_client,
-                    h2_client,
-                    init_env(),
-                    Arc::new(chrono_cache),
+                    TargetRuntime {
+                        http: h_client,
+                        http2_only: h2_client,
+                        env: init_env(),
+                        cache: Arc::new(chrono_cache),
+                        file: init_file(),
+                    },
                 );
                 let schema = &server_ctx.schema;
 
@@ -379,7 +383,6 @@ async fn test_execution() -> std::io::Result<()> {
 #[tokio::test]
 async fn test_failures_in_client_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql/errors");
-    let file_io = init_file();
 
     for spec in specs? {
         let content = spec.find_source(Tag::ServerSDL);
@@ -391,7 +394,8 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let actual = match config {
             Ok(config) => {
                 let upstream = config.upstream.clone();
-                let reader = ConfigReader::init(file_io.clone(), init_http(&upstream, None));
+                let runtime = init_runtime(&upstream, None);
+                let reader = ConfigReader::init(runtime);
                 match reader.resolve(config).await {
                     Ok(config_set) => Valid::from(Blueprint::try_from(&config_set))
                         .to_result()
