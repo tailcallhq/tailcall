@@ -646,14 +646,14 @@ async fn assert_spec(spec: ExecutionSpec) {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
 
-                if identity != content.as_ref() {
-                    panic!(
-                        "Identity check failed for {:#?}\n\noriginal:\n{}\n\nserialized:\n{}",
-                        spec.path, content, identity
-                    );
-                } else {
-                    log::info!("\tserver #{} identity ok", i + 1);
-                }
+                pretty_assertions::assert_eq!(
+                    content.as_ref(),
+                    identity,
+                    "Identity check failed for {:#?}",
+                    spec.path,
+                );
+
+                log::info!("\tserver #{} identity ok", i + 1);
             } else {
                 panic!(
                     "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
