@@ -7,8 +7,7 @@ use crate::config;
 use crate::config::Field;
 use crate::lambda::Expression;
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
-use crate::valid::Validator as _;
+use crate::valid::{Valid, Validator as _};
 
 pub struct CompileFile<'a> {
     pub config_set: &'a config::ConfigSet,
