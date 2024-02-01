@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename = "schema")]
@@ -214,7 +214,7 @@ mod tests {
     use indexmap::IndexMap;
 
     use crate::json::JsonSchema;
-    use crate::valid::Valid;
+    use crate::valid::{Valid, Validator};
 
     #[test]
     fn test_validate_string() {
