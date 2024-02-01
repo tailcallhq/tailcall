@@ -195,6 +195,12 @@ impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
     }
 }
 
+impl<A, E> From<Fusion<A, E>> for Valid<A, E> {
+    fn from(value: Fusion<A, E>) -> Self {
+        Valid(value.to_result())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Cause, ValidationError};
