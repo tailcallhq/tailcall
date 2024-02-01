@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tokio::{
     runtime::Builder,
     spawn,
@@ -21,17 +23,22 @@ impl JsTokioWrapper {
     pub fn new(script: blueprint::Script, http: impl HttpIO) -> Self {
         let (sender, mut receiver) = mpsc::unbounded_channel::<ChannelMessage>();
         let (http_sender, mut http_receiver) = mpsc::unbounded_channel::<ChannelMessage>();
+        let http = Arc::new(http);
 
         spawn(async move {
             while let Some((send_response, request)) = http_receiver.recv().await {
-                let result = http.execute(request).await;
+                let http = http.clone();
 
-                send_response.send(result).unwrap();
+                spawn(async move {
+                    let result = http.execute(request).await;
+
+                    send_response.send(result).unwrap();
+                });
             }
         });
 
         std::thread::spawn(move || {
-            let rt = Builder::new_current_thread().enable_all().build().unwrap();
+            let rt = Builder::new_current_thread().build().unwrap();
             let local = LocalSet::new();
 
             local.spawn_local(async move {
