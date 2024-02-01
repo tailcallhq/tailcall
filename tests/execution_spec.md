@@ -52,11 +52,11 @@ Blocks are level 4 headings (`####`) followed by the block type, and a code bloc
 
 #### `#### server:`
 
-A `server` block specifies a server SDL config. These are expected to be successfully parseable to have a passing test, unless the [`sdl error` instruction](#instruction) is specified, which requires the config parsing to throw an error.
+A `server` block specifies a server SDL config. These are expected to be successfully parseable to have a passing test, unless the [`sdl error` instruction](#instruction) is specified, which requires the config parsing to throw an error. There must be at least one `server` block in a test.
 
 Every test should have at least one `server` block. Some blocks (for example, `assert`) require that there be exactly one `server` block. Additionally, having exactly one `server` block in a test means that the `client` check will also be performed.
 
-The `merge` main action is only performed if two or more `server` blocks are specified, unless the [`check merge` instruction](#instruction) is specified.
+The `merge` check is always performed using every defined server block.
 
 When the [`check identity` instruction](#instruction) is specified, the runner will attempt to perform an `identity` check, but since is a "dumb", plain-text check, it requires the `server` block's code to be written in a specific way.
 
@@ -120,7 +120,6 @@ assert:
 A level 6 heading (`######`), with the text being one of the following:
 
 - `###### check identity` -- This instructs the runner to run identity checks on `server` blocks. While it would be good to run this on every test, the code of `server` blocks must be written with this instruction mind, therefore it is optional.
-- `###### check merge` -- This instructs the runner to merge all `server` blocks and to compare the result with a `merged` snapshot. This happens automatically with tests that do not have an `assert` block and have more than two `server` blocks, but sometimes we want to merge only one `server` block with the default config, so this instruction is useful in that case.
 - `###### sdl error` -- This instructs the runner to expect a failure when parsing the `server` block and to compare the result with an `errors` snapshot. This is used when testing for error handling.
 
 There must be exactly zero or one instruction in a test.
@@ -133,33 +132,30 @@ There must be exactly zero or one instruction in a test.
    - If one or more tests have a [`skip` annotation](#annotation), every test except those will be run.
    - If none of the above is true, all tests will be run.
 1. The runner evaluates every test.
-   - If the test has an [`sdl error` instruction](#instruction), the runner does the following:
-     1. Reads and parses the config, taking note of the validation errors.
-     1. **If no validation errors occurred, the runner throws an error.** (`sdl error` is a requirement, not a try-catch.)
-     1. Compares the encountered errors to the `errors` snapshot.
-     1. If the snapshot doesn't match the encountered errors, the runner generates a new snapshot and throws an error.
-     1. Ends the test run, and starts evaluating the next test. (All other actions would require a parseable `server` schema.)
-   - The runner parses every `server` block.
-     1. Parses the block and checks for errors.
-     1. If the test has a [`check identity` instruction](#instruction), the runner converts the parsed block to SDL again, and checks if the two strings are the same. If they're not, the runner throws an error.
-     1. Convers the parsed block to SDL again, parses the converted SDL again, and checks if the two Config structs are equal. (This is called a `server round-trip` check.)
-   - If there is exactly one [`server` block](#server), the runner performs a `client` check:
-     1. Generates the client schema of the `server` block.
-     1. Compares it to the `client` snapshot.
-     1. If the snapshot doesn't match the generated schema, the runner generates a new snapshot and throws an error.
-   - The runner tries to determine the main test action. (Only one of the following bullet points will happen, you can not combine main test actions.)
-     - If the test has an [`assert` block](#assert), the runner performs `assert` checks:
-       1. Sets up the mock HTTP client based on the `mock` property.
-       1. Creates an app context based on the `server` block.
-       1. For each assertion in the `assert` property (0-based index `i`), the runner does the following:
-          1. Runs the HTTP request on the app context.
-          1. Compares the HTTP response to the `assert_{i}` snapshot.
-          1. If the snapshot doesn't match the response, the runner generates a new snapshot and throws an error.
-     - If the test has two or more [`server` blocks](#server) or a [`check merge` instruction](#instruction), the runner performs a `merge` check:
-       1. Attemps to merge all [`server` blocks](#server), resulting in a merged config.
-       1. Compares the merged config to the `merged` snapshot.
-       1. If the snapshot doesn't match the merged config, the runner generates a new snapshot and throws an error.
-     - If none of the above is true, nothing happens.
+   1. If the test has an [`sdl error` instruction](#instruction), the runner does the following:
+      1. Reads and parses the config, taking note of the validation errors.
+      1. **If no validation errors occurred, the runner throws an error.** (`sdl error` is a requirement, not a try-catch.)
+      1. Compares the encountered errors to the `errors` snapshot.
+      1. If the snapshot doesn't match the encountered errors, the runner generates a new snapshot and throws an error.
+      1. Ends the test run, and starts evaluating the next test. (All other actions would require a parseable `server` schema.)
+      1. The runner parses every `server` block.
+   1. Parses the block and checks for errors.
+   1. If the test has a [`check identity` instruction](#instruction), the runner converts the parsed block to SDL again, and checks if the two strings are the same. If they're not, the runner throws an error.
+   1. The runner performs a `merge` check:
+      1. Attemps to merge all [`server` blocks](#server), resulting in a merged config. (If there is only one [`server` block](#server), the runner will merge it with the default config.)
+      1. Compares the merged config to the `merged` snapshot.
+      1. If the snapshot doesn't match the merged config, the runner generates a new snapshot and throws an error.
+   1. If there is exactly one [`server` block](#server), the runner performs a `client` check:
+      1. Generates the client schema of the `server` block.
+      1. Compares it to the `client` snapshot.
+      1. If the snapshot doesn't match the generated schema, the runner generates a new snapshot and throws an error.
+   1. If the test has an [`assert` block](#assert), the runner performs `assert` checks:
+      1. Sets up the mock HTTP client based on the `mock` property.
+      1. Creates an app context based on the `server` block.
+      1. For each assertion in the `assert` property (0-based index `i`), the runner does the following:
+         1. Runs the HTTP request on the app context.
+         1. Compares the HTTP response to the `assert_{i}` snapshot.
+         1. If the snapshot doesn't match the response, the runner generates a new snapshot and throws an error.
 
 ## Snapshots
 
@@ -187,10 +183,11 @@ Porting is automatically done by `testconv`. This is a description of what it do
 ### `http_spec`
 
 1. The name, and optionally the description, are read out and put into a [header](#header).
-1. The GraphQL config is read out and put into a `server` block.
-1. Client schema is auto-generated for the `server` block.
+1. The GraphQL config is read out and put into a [`server` block](#server).
+1. The client schema snapshot is auto-generated for the [`server` block](#server).
+1. The merged SDL snapshot is auto-generated for the [`server` block](#server).
 1. The `assert` property's `response` are removed from the YAML and converted into snapshots.
-1. The `mock` and the `assert` properties are put into an `assert` block.
+1. The `mock` and the `assert` properties are put into an [`assert` block](#assert).
 1. If the `http_spec` had a `runner: fail` annotation (which is unsupported by `execution_spec`), the snapshot of the error is automatically generated.
 
 ### `graphql_spec`
@@ -200,6 +197,7 @@ Porting is automatically done by `testconv`. This is a description of what it do
 1. The name is generated from the file name, and put into a [header](#header).
 1. The server SDL is put into a [`server` block](#server).
 1. The client SDL is put into the corresponding `client` snapshot.
+1. The merged SDL snapshot is auto-generated for the [`server` block](#server).
 
 These tests will not have a main action, since `client` checks are performed on all (non-`sdl error`) tests with only one [`server` block](#server).
 
@@ -208,7 +206,7 @@ These tests will not have a main action, since `client` checks are performed on 
 1. The name is generated from the file name, and put into a [header](#header).
 1. The server SDLs are put into [`server` blocks](#server).
 1. The merged SDL is put into the a `merged` snapshot.
-1. If there is only one server SDL, a [`check merge` instruction](#instruction) is appended, and a `client` snapshot is auto-generated.
+1. If the test only has one server block, the client schema snapshot is auto-generated for the [`server` block](#server).
 
 #### errors (1 server-sdl, 1 client-sdl with `@error` operator)
 

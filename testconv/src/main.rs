@@ -84,6 +84,30 @@ async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, reader: &Confi
     generate_client_snapshot(file_stem, &config).await
 }
 
+async fn generate_merged_snapshot(file_stem: &str, config: &Config) {
+    let snapshots_dir =
+        canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
+
+    let merged = Config::default().merge_right(config).to_sdl();
+
+    let snap = format!(
+        "---\nsource: tests/execution_spec.rs\nexpression: merged\n---\n{}\n",
+        merged,
+    );
+
+    let target = snapshots_dir.join(PathBuf::from(format!(
+        "execution_spec__{}.md_merged.snap",
+        file_stem,
+    )));
+
+    write(target, snap).unwrap();
+}
+
+async fn generate_merged_snapshot_sdl(file_stem: &str, sdl: &str) {
+    let config = Config::from_sdl(sdl).to_result().unwrap();
+    generate_merged_snapshot(file_stem, &config).await
+}
+
 #[tokio::main]
 async fn main() {
     let http_dir =
@@ -256,6 +280,7 @@ async fn main() {
                         let path = PathBuf::from(path);
                         let sdl = fs::read_to_string(path).expect("Failed to read config file");
                         generate_client_snapshot_sdl(&file_stem, &sdl, &reader).await;
+                        generate_merged_snapshot_sdl(&file_stem, &sdl).await;
                     }
                     http::ConfigSource::Inline(config) => {
                         let config = reader
@@ -263,6 +288,7 @@ async fn main() {
                             .await
                             .expect("Failed to resolve config");
                         generate_client_snapshot(&file_stem, &config).await;
+                        generate_merged_snapshot(&file_stem, &config).await;
                     }
                 };
             } else {
@@ -386,10 +412,6 @@ async fn main() {
                 panic!("Unexpected lack of merged SDL declarations in {:?}", path);
             }
 
-            if server.len() == 1 {
-                md_spec += "###### check merge\n";
-            }
-
             let md_path = PathBuf::from(format!("{}.md", file_stem));
 
             let mut f = File::options()
@@ -473,10 +495,11 @@ async fn main() {
                 panic!("Unexpected number of server SDL declarations in {:?} (at least one is required, two are recommended)", path);
             }
 
+            let server = server.unwrap();
+
             let md_spec = format!(
                 "# {}\n\n###### check identity\n\n#### server:\n\n```graphql\n{}\n```\n",
-                file_stem,
-                server.unwrap()
+                file_stem, server,
             );
 
             if client.is_none() {
@@ -506,6 +529,8 @@ async fn main() {
             );
 
             write(target, snap).expect("Failed to write client snapshot");
+
+            generate_merged_snapshot_sdl(&file_stem, &server).await;
 
             files_already_processed.insert(file_stem);
         } else if path.is_file() {

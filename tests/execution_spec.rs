@@ -8,6 +8,7 @@ use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
+use futures_util::future::join_all;
 use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
@@ -158,7 +159,6 @@ struct ExecutionSpec {
     runner: Option<Annotation>,
 
     check_identity: bool,
-    check_merge: bool,
     sdl_error: bool,
 }
 
@@ -233,7 +233,6 @@ impl ExecutionSpec {
         let mut assert: Option<AssertSpec> = None;
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
-        let mut check_merge = false;
         let mut sdl_error = false;
 
         while let Some(node) = children.next() {
@@ -295,9 +294,6 @@ impl ExecutionSpec {
                             match text.value.as_str() {
                                 "check identity" => {
                                     check_identity = true;
-                                }
-                                "check merge" => {
-                                    check_merge = true;
                                 }
                                 "sdl error" => {
                                     sdl_error = true;
@@ -400,7 +396,6 @@ impl ExecutionSpec {
 
             runner,
             check_identity,
-            check_merge,
             sdl_error,
         };
 
@@ -598,7 +593,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         return;
     }
 
-    let mut server: Vec<ConfigSet> = Vec::with_capacity(spec.server.len());
+    let mut server: Vec<Config> = Vec::with_capacity(spec.server.len());
 
     for (i, (source, content)) in spec.server.iter().enumerate() {
         let config = Config::from_source(source.to_owned(), content).unwrap_or_else(|e| {
@@ -639,17 +634,41 @@ async fn assert_spec(spec: ExecutionSpec) {
             }
         }
 
-        let config = reader.resolve(config).await.unwrap_or_else(|e| {
-            panic!(
-                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
-                i + 1,
-                spec.path,
-                e
-            )
-        });
-
         server.push(config);
     }
+
+    // merged: Run merged specs
+    log::info!("\tmerged... (snapshot)");
+
+    let merged = server
+        .iter()
+        .fold(Config::default(), |acc, c| acc.merge_right(c))
+        .to_sdl();
+
+    let snapshot_name = format!("{}_merged", spec.safe_name);
+
+    insta::assert_snapshot!(snapshot_name, merged);
+
+    if will_insta_panic {
+        log::info!("\tmerged ok");
+    }
+
+    // Resolve all configs
+    let server: Vec<ConfigSet> = join_all(server.into_iter().map(|config| reader.resolve(config)))
+        .await
+        .into_iter()
+        .enumerate()
+        .map(|(i, result)| {
+            result.unwrap_or_else(|e| {
+                panic!(
+                    "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
+                    i + 1,
+                    spec.path,
+                    e
+                )
+            })
+        })
+        .collect();
 
     if server.len() == 1 {
         let config = &server[0];
@@ -697,22 +716,6 @@ async fn assert_spec(spec: ExecutionSpec) {
             if will_insta_panic {
                 log::info!("\tassert #{} ok", i + 1);
             }
-        }
-    } else if server.len() >= 2 || spec.check_merge {
-        // merged: Run merged specs
-        log::info!("\tmerged... (snapshot)");
-
-        let merged = server
-            .iter()
-            .fold(Config::default(), |acc, c| acc.merge_right(c))
-            .to_sdl();
-
-        let snapshot_name = format!("{}_merged", spec.safe_name);
-
-        insta::assert_snapshot!(snapshot_name, merged);
-
-        if will_insta_panic {
-            log::info!("\tmerged ok");
         }
     }
 }
