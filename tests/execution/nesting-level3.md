@@ -33,52 +33,46 @@ type Post {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/posts/1
+    body: null
+  response:
+    status: 200
+    body:
+      userId: 1
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users/1
+    body: null
+  response:
+    status: 200
+    body:
+      id: 1
+      name: Leanne Graham
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users/1/todos
+    body: null
+  response:
+    status: 200
+    body:
+      - completed: false
+      - completed: false
+      - completed: false
+      - completed: true
+      - completed: false
+      - completed: false
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/posts/1
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        userId: 1
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users/1
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        id: 1
-        name: Leanne Graham
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users/1/todos
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        - completed: false
-        - completed: false
-        - completed: false
-        - completed: true
-        - completed: false
-        - completed: false
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { post { user { todos { completed } } } }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { post { user { todos { completed } } } }
 ```

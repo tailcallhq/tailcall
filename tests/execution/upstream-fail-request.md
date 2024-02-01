@@ -17,25 +17,23 @@ type Query {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users/1
+    body: null
+  response:
+    status: 503
+    body: {}
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users/1
-      headers: {}
-      body: null
-    response:
-      status: 503
-      headers: {}
-      body: {}
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { user { name } }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { user { name } }
 ```

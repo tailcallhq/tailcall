@@ -15,13 +15,8 @@ type Query {
 #### assert:
 
 ```yml
-mock: []
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { intersection }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { intersection }
 ```

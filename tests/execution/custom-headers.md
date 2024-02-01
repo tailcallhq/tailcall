@@ -40,13 +40,8 @@
 #### assert:
 
 ```yml
-mock: []
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { greet }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { greet }
 ```

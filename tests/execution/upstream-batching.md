@@ -58,30 +58,29 @@
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users?id=1&id=2
+    headers:
+      test: test
+    body: null
+  response:
+    status: 200
+    body:
+      - id: 1
+        name: foo
+      - id: 2
+        name: bar
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users?id=1&id=2
-      headers:
-        test: test
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        - id: 1
-          name: foo
-        - id: 2
-          name: bar
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: "query { u1: user(id: 1) { id } u2: user(id: 2) { id } }"
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: "query { u1: user(id: 1) { id } u2: user(id: 2) { id } }"
 ```

@@ -8,6 +8,8 @@ A Markdown-based snapshot testing framework for Tailcall.
   - [Annotation](#annotation)
   - [Blocks](#blocks)
     - [`server`](#server)
+    - [`mock`](#mock)
+    - [`env`](#env)
     - [`assert`](#assert)
   - [Instruction](#instruction)
 - [Test process](#test-process)
@@ -81,13 +83,52 @@ type Query {
 ```
 ````
 
+#### `#### mock:`
+
+A `mock` block specifies mocked HTTP endpoints in `YAML`. This is very similar to the `mock` field in the [`http_spec`](#http_spec) syntax.
+
+An item of `mock` contains a `request` and a `response`.
+
+There may be at most one `mock` block in a test.
+
+Example:
+
+````md
+#### mock:
+
+```graphql
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users/1
+  response:
+    status: 200
+    body:
+      id: 1
+      name: foo
+```
+````
+
+#### `#### env:`
+
+An `env` block specifies environment variables in `YAML` that the runner should use in the app context.
+This is very similar to the `env` field in the [`http_spec`](#http_spec) syntax.
+
+There may be at most one `env` block in a test.
+
+Example:
+
+````md
+#### env:
+
+```graphql
+TEST_ID: 1
+```
+````
+
 #### `#### assert:`
 
-An `assert` block specifies HTTP assertions in `YAML`. This is very similar to the [`http_spec`](#http_spec) syntax, but only two top-level fields are used: `mock`, and `assert`.
-
-`mock` describes the mocked HTTP endpoints that are required for the test to run. These are made up of a `request` and a `response`.
-
-`assert` describes the requests that the runner should perform. These only have a `request`, the response for each request is stored in an `assert_{i}` snapshot.
+An `assert` block specifies HTTP requests that the runner should perform in `YAML`. This is very similar to the `assert` field in the [`http_spec`](#http_spec) syntax,
+but it only contains requests. The response for each request is stored in an `assert_{i}` snapshot.
 
 There may be at most one `assert` block in a test.
 
@@ -97,21 +138,10 @@ Example:
 #### assert:
 
 ```graphql
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users/1
-    response:
-      status: 200
-      body:
-        id: 1
-        name: foo
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      body:
-        query: query { user { name } }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { user { name } }
 ```
 ````
 
@@ -150,9 +180,10 @@ There must be exactly zero or one instruction in a test.
       1. Compares it to the `client` snapshot.
       1. If the snapshot doesn't match the generated schema, the runner generates a new snapshot and throws an error.
    1. If the test has an [`assert` block](#assert), the runner performs `assert` checks:
-      1. Sets up the mock HTTP client based on the `mock` property.
-      1. Creates an app context based on the `server` block.
-      1. For each assertion in the `assert` property (0-based index `i`), the runner does the following:
+      1. If there is a [`mock` block](#mock), the runner sets up the mock HTTP client based on it.
+      1. If there is an [`env` block](#env), the runner uses it for the app context.
+      1. Creates an app context based on the [`server` block](#server).
+      1. For each assertion in the block (0-based index `i`), the runner does the following:
          1. Runs the HTTP request on the app context.
          1. Compares the HTTP response to the `assert_{i}` snapshot.
          1. If the snapshot doesn't match the response, the runner generates a new snapshot and throws an error.
@@ -187,7 +218,8 @@ Porting is automatically done by `testconv`. This is a description of what it do
 1. The client schema snapshot is auto-generated for the [`server` block](#server).
 1. The merged SDL snapshot is auto-generated for the [`server` block](#server).
 1. The `assert` property's `response` are removed from the YAML and converted into snapshots.
-1. The `mock` and the `assert` properties are put into an [`assert` block](#assert).
+1. The `assert` property is converted to an [`assert` block](#assert).
+1. The `mock` property is put into a [`mock` block](#mock).
 1. If the `http_spec` had a `runner: fail` annotation (which is unsupported by `execution_spec`), the snapshot of the error is automatically generated.
 
 ### `graphql_spec`

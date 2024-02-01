@@ -34,69 +34,63 @@ type B {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: POST
+    url: http://upstream/graphql
+    body: '[{"query": "a {id, bid, cid}"}]'
+  response:
+    status: 200
+    body:
+      data:
+        a:
+          - bid: 1
+            cid: 1
+            id: 1
+          - bid: 1
+            cid: 1
+            id: 2
+          - bid: 2
+            cid: 2
+            id: 3
+          - bid: 2
+            cid: 2
+            id: 4
+- request:
+    method: POST
+    url: http://upstream/graphql
+    body: '[{"query": "b {y}"},{"query": "c {x}"}]'
+  response:
+    status: 200
+    body:
+      - data:
+          b:
+            y: 1
+      - data:
+          c:
+            x: 1
+- request:
+    method: POST
+    url: http://upstream/graphql
+    body: '[{"query": "c {x}"},{"query": "b {y}"}]'
+  response:
+    status: 200
+    body:
+      - data:
+          c:
+            x: 1
+      - data:
+          b:
+            y: 1
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: POST
-      url: http://upstream/graphql
-      headers: {}
-      body: '[{"query": "a {id, bid, cid}"}]'
-    response:
-      status: 200
-      headers: {}
-      body:
-        data:
-          a:
-            - bid: 1
-              cid: 1
-              id: 1
-            - bid: 1
-              cid: 1
-              id: 2
-            - bid: 2
-              cid: 2
-              id: 3
-            - bid: 2
-              cid: 2
-              id: 4
-  - request:
-      method: POST
-      url: http://upstream/graphql
-      headers: {}
-      body: '[{"query": "b {y}"},{"query": "c {x}"}]'
-    response:
-      status: 200
-      headers: {}
-      body:
-        - data:
-            b:
-              y: 1
-        - data:
-            c:
-              x: 1
-  - request:
-      method: POST
-      url: http://upstream/graphql
-      headers: {}
-      body: '[{"query": "c {x}"},{"query": "b {y}"}]'
-    response:
-      status: 200
-      headers: {}
-      body:
-        - data:
-            c:
-              x: 1
-        - data:
-            b:
-              y: 1
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { a { id bid cid b { y } c { x } } }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { a { id bid cid b { y } c { x } } }
 ```

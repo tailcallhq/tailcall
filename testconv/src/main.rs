@@ -13,30 +13,13 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::Validator as _;
 
-use crate::common::{Annotation, SDLError};
+use crate::common::{APIRequest, Annotation, SDLError};
 
 mod common;
-mod execution;
 mod http;
 
 const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
 const BAD_GRAPHQL_MSG: &str = "This test has invalid GraphQL that wasn't caught by http_spec before conversion. It is skipped right now, but it should be fixed at some point.";
-
-impl From<http::DownstreamAssertion> for execution::DownstreamAssertion {
-    fn from(value: http::DownstreamAssertion) -> Self {
-        Self { request: value.request.clone() }
-    }
-}
-
-impl From<http::HttpSpec> for execution::AssertSpec {
-    fn from(value: http::HttpSpec) -> Self {
-        Self {
-            mock: value.mock.clone(),
-            assert: value.assert.clone().into_iter().map(|x| x.into()).collect(),
-            env: value.env.clone(),
-        }
-    }
-}
 
 #[inline]
 fn is_path_file_ext(path: &Path, ext: &str) -> bool {
@@ -216,10 +199,29 @@ async fn main() {
                 }
             };
 
+            if !old.mock.is_empty() {
+                spec += &format!(
+                    "#### mock:\n\n```yml\n{}\n```\n\n",
+                    serde_yaml::to_string(&old.mock).expect("Failed to serialize mocks")
+                );
+            }
+
+            if !old.env.is_empty() {
+                spec += &format!(
+                    "#### env:\n\n```yml\n{}\n```\n\n",
+                    serde_yaml::to_string(&old.env).expect("Failed to serialize mocks")
+                );
+            }
+
             spec += &format!(
                 "#### assert:\n\n```yml\n{}```\n",
-                serde_yaml::to_string(&execution::AssertSpec::from(old.clone()))
-                    .expect("Failed to serialize AssertSpec")
+                serde_yaml::to_string(
+                    &old.assert
+                        .iter()
+                        .map(|x| x.request.0.clone())
+                        .collect::<Vec<APIRequest>>()
+                )
+                .expect("Failed to serialize AssertSpec")
             );
 
             let md_path = PathBuf::from(format!("{}.md", file_stem));

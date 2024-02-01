@@ -16,27 +16,25 @@ type Query @addField(name: "username", path: ["username", "0", "name"]) {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users
+    body: null
+  response:
+    status: 200
+    body:
+      - id: 1
+        name: Leanne Graham
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        - id: 1
-          name: Leanne Graham
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { username }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { username }
 ```

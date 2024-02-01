@@ -28,46 +28,42 @@ type User {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
+    body: null
+  response:
+    status: 200
+    body:
+      - body: bar
+        id: 11
+        title: foo
+        userId: 1
+      - body: bar
+        id: 3
+        title: foo
+        userId: 2
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
+    body: null
+  response:
+    status: 200
+    body:
+      - id: 1
+        name: Leanne Graham
+      - id: 2
+        name: Ervin Howell
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        - body: bar
-          id: 11
-          title: foo
-          userId: 1
-        - body: bar
-          id: 3
-          title: foo
-          userId: 2
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        - id: 1
-          name: Leanne Graham
-        - id: 2
-          name: Ervin Howell
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { posts { user { id } userId } }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { posts { user { id } userId } }
 ```

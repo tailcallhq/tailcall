@@ -35,28 +35,26 @@ type User {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: POST
+    url: http://jsonplaceholder.typicode.com/posts
+    body: '{"body":"post-body","title":"post-title","userId":1}'
+  response:
+    status: 200
+    body:
+      body: post-body
+      title: post-title
+      userId: 1
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: POST
-      url: http://jsonplaceholder.typicode.com/posts
-      headers: {}
-      body: '{"body":"post-body","title":"post-title","userId":1}'
-    response:
-      status: 200
-      headers: {}
-      body:
-        body: post-body
-        title: post-title
-        userId: 1
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: 'mutation { insertPost(input: { body: "post-body", title: "post-title", userId: 1 }) { body } }'
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: 'mutation { insertPost(input: { body: "post-body", title: "post-title", userId: 1 }) { body } }'
 ```

@@ -17,29 +17,27 @@ type Query {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: POST
+    url: http://upstream/graphql
+    body: '{ "query": "query { users { name } }" }'
+  response:
+    status: 200
+    body:
+      data:
+        users:
+          - name: Leanne Graham
+          - name: Ervin Howell
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: POST
-      url: http://upstream/graphql
-      headers: {}
-      body: '{ "query": "query { users { name } }" }'
-    response:
-      status: 200
-      headers: {}
-      body:
-        data:
-          users:
-            - name: Leanne Graham
-            - name: Ervin Howell
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { users_list { name } }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { users_list { name } }
 ```

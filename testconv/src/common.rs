@@ -21,6 +21,7 @@ pub struct APIRequest {
     pub method: Method,
     pub url: Url,
     #[serde(default)]
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub headers: BTreeMap<String, String>,
     #[serde(default)]
     pub body: serde_json::Value,
@@ -32,6 +33,7 @@ pub struct APIResponse {
     #[serde(default = "default_status")]
     pub status: u16,
     #[serde(default)]
+    #[serde(skip_serializing_if = "IndexMap::is_empty")]
     pub headers: IndexMap<String, String>,
     #[serde(default)]
     pub body: serde_json::Value,

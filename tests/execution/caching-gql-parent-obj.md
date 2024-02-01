@@ -26,45 +26,43 @@ type Bar {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://example.com/bars
+    body: null
+  response:
+    status: 200
+    body:
+      - flag: true
+        foo:
+          id: 2
+        id:
+          - bid: 1
+      - flag: false
+        foo:
+          id: 4
+        id:
+          - bid: 3
+      - flag: false
+        foo:
+          id: 6
+        id:
+          - bid: 5
+      - flag: true
+        foo:
+          id: 8
+        id:
+          - bid: 7
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://example.com/bars
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        - flag: true
-          foo:
-            id: 2
-          id:
-            - bid: 1
-        - flag: false
-          foo:
-            id: 4
-          id:
-            - bid: 3
-        - flag: false
-          foo:
-            id: 6
-          id:
-            - bid: 5
-        - flag: true
-          foo:
-            id: 8
-          id:
-            - bid: 7
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { bars { id { bid } flag foo { id } } }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { bars { id { bid } flag foo { id } } }
 ```

@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_file, init_hook_http, init_in_memory_cache, init_runtime};
+use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, Response};
@@ -87,14 +87,6 @@ struct UpstreamRequest(APIRequest);
 struct UpstreamResponse(APIResponse);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct DownstreamRequest(APIRequest);
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct DownstreamAssertion {
-    request: DownstreamRequest,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 enum ConfigSource {
     File(String),
@@ -105,18 +97,6 @@ enum ConfigSource {
 struct Mock {
     request: UpstreamRequest,
     response: UpstreamResponse,
-}
-
-#[derive(Serialize, Deserialize, Clone, Setters, Debug)]
-#[serde(rename_all = "camelCase")]
-struct AssertSpec {
-    #[serde(default)]
-    mock: Vec<Mock>,
-
-    assert: Vec<DownstreamAssertion>,
-
-    #[serde(default)]
-    env: HashMap<String, String>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -153,7 +133,9 @@ struct ExecutionSpec {
     safe_name: String,
 
     server: Vec<(Source, String)>,
-    assert: Option<AssertSpec>,
+    mock: Option<Vec<Mock>>,
+    env: Option<HashMap<String, String>>,
+    assert: Option<Vec<APIRequest>>,
 
     // Annotations for the runner
     runner: Option<Annotation>,
@@ -230,7 +212,9 @@ impl ExecutionSpec {
 
         let mut name: Option<String> = None;
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
-        let mut assert: Option<AssertSpec> = None;
+        let mut mock: Option<Vec<Mock>> = None;
+        let mut env: Option<HashMap<String, String>> = None;
+        let mut assert: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut sdl_error = false;
@@ -339,6 +323,28 @@ impl ExecutionSpec {
                                     // Server configs are only parsed if the test isn't skipped.
                                     server.push((source, content));
                                 }
+                                "mock:" => {
+                                    if mock.is_none() {
+                                        mock = match source {
+                                            Source::Json => Ok(serde_json::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            _ => Err(anyhow!("Unexpected language in mock block in {:?} (only JSON and YAML are supported)", path)),
+                                        }?;
+                                    } else {
+                                        return Err(anyhow!("Unexpected number of mock blocks in {:?} (only one is allowed)", path));
+                                    }
+                                }
+                                "env:" => {
+                                    if env.is_none() {
+                                        env = match source {
+                                            Source::Json => Ok(serde_json::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
+                                        }?;
+                                    } else {
+                                        return Err(anyhow!("Unexpected number of env blocks in {:?} (only one is allowed)", path));
+                                    }
+                                }
                                 "assert:" => {
                                     if assert.is_none() {
                                         assert = match source {
@@ -392,6 +398,8 @@ impl ExecutionSpec {
             safe_name: path.file_name().unwrap().to_str().unwrap().to_string(),
 
             server,
+            mock,
+            env,
             assert,
 
             runner,
@@ -408,13 +416,25 @@ impl ExecutionSpec {
         env: HashMap<String, String>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
-        let http = init_hook_http(
-            MockHttpClient::new(self.clone()),
-            blueprint.server.script.clone(),
-        );
+
+        let http = if self.mock.is_some() {
+            init_hook_http(
+                MockHttpClient::new(self.clone()),
+                blueprint.server.script.clone(),
+            )
+        } else {
+            init_http(&blueprint.upstream, blueprint.server.script.clone())
+        };
+
+        let http2_only = if self.mock.is_some() {
+            Arc::new(MockHttpClient::new(self.clone()))
+        } else {
+            http.clone()
+        };
+
         let runtime = TargetRuntime {
-            http2_only: Arc::new(MockHttpClient::new(self.clone())),
             http,
+            http2_only,
             file: init_file(),
             env: Arc::new(Env::init(env)),
             cache: Arc::new(init_in_memory_cache()),
@@ -464,7 +484,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        let mocks = self.spec.assert.as_ref().unwrap().mock.clone();
+        let mocks = self.spec.mock.as_ref().unwrap();
 
         // Determine if the request is a GRPC request based on PORT
         let is_grpc = req.url().as_str().contains("50051");
@@ -687,11 +707,19 @@ async fn assert_spec(spec: ExecutionSpec) {
 
     if let Some(assert_spec) = spec.assert.as_ref() {
         // assert: Run assert specs
-        for (i, assertion) in assert_spec.assert.iter().enumerate() {
-            let response = run_assert(&spec, assert_spec, &assertion, server.first().unwrap())
-                .await
-                .context(spec.path.to_str().unwrap().to_string())
-                .unwrap();
+        for (i, assertion) in assert_spec.iter().enumerate() {
+            let response = run_assert(
+                &spec,
+                &spec
+                    .env
+                    .clone()
+                    .unwrap_or_else(|| HashMap::with_capacity(0)),
+                assertion,
+                server.first().unwrap(),
+            )
+            .await
+            .context(spec.path.to_str().unwrap().to_string())
+            .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
@@ -754,16 +782,15 @@ async fn main() -> anyhow::Result<()> {
 
 async fn run_assert(
     spec: &ExecutionSpec,
-    assert: &AssertSpec,
-    downstream_assertion: &&DownstreamAssertion,
+    env: &HashMap<String, String>,
+    request: &APIRequest,
     config: &ConfigSet,
 ) -> anyhow::Result<hyper::Response<Body>> {
-    let query_string =
-        serde_json::to_string(&downstream_assertion.request.0.body).expect("body is required");
-    let method = downstream_assertion.request.0.method.clone();
-    let headers = downstream_assertion.request.0.headers.clone();
-    let url = downstream_assertion.request.0.url.clone();
-    let server_context = spec.server_context(config, assert.env.clone()).await;
+    let query_string = serde_json::to_string(&request.body).expect("body is required");
+    let method = request.method.clone();
+    let headers = request.headers.clone();
+    let url = request.url.clone();
+    let server_context = spec.server_context(config, env.clone()).await;
     let req = headers
         .into_iter()
         .fold(

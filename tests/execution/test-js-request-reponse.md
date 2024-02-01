@@ -13,25 +13,23 @@ type Query {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://localhost:3000/bye
+    body: '""'
+  response:
+    status: 200
+    body: hello world
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://localhost:3000/bye
-      headers: {}
-      body: '""'
-    response:
-      status: 200
-      headers: {}
-      body: hello world
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { hi }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { hi }
 ```

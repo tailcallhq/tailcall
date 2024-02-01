@@ -18,57 +18,51 @@ type Query {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: POST
+    url: http://upstream/graphql
+    body: '{ "query": "query { user(id: 1) { name } }" }'
+  response:
+    status: 200
+    body:
+      data: null
+      errors:
+        - locations:
+            - column: 9
+              line: 1
+          message: Failed to resolve user
+          path:
+            - user
+- request:
+    method: POST
+    url: http://upstream/graphql
+    body: '{ "query": "query { user(id: 2) { name id } }" }'
+  response:
+    status: 200
+    body:
+      data:
+        user:
+          id: 2
+          name: null
+      errors:
+        - locations:
+            - column: 35
+              line: 1
+          message: Failed to resolve name
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: POST
-      url: http://upstream/graphql
-      headers: {}
-      body: '{ "query": "query { user(id: 1) { name } }" }'
-    response:
-      status: 200
-      headers: {}
-      body:
-        data: null
-        errors:
-          - locations:
-              - column: 9
-                line: 1
-            message: Failed to resolve user
-            path:
-              - user
-  - request:
-      method: POST
-      url: http://upstream/graphql
-      headers: {}
-      body: '{ "query": "query { user(id: 2) { name id } }" }'
-    response:
-      status: 200
-      headers: {}
-      body:
-        data:
-          user:
-            id: 2
-            name: null
-        errors:
-          - locations:
-              - column: 35
-                line: 1
-            message: Failed to resolve name
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: "query { user(id: 1) { name } }"
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: "query { user(id: 2) { name id } }"
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: "query { user(id: 1) { name } }"
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: "query { user(id: 2) { name id } }"
 ```

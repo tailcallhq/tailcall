@@ -77,101 +77,100 @@ type User {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://example.com/user
+    body: null
+  response:
+    status: 200
+    body:
+      email: abc@bcd.com
+      friend:
+        email: bcd@abc.com
+        friend: null
+        id: 2
+      id: 1
+- request:
+    method: POST
+    url: http://localhost:8080/graphql
+    body:
+      query: |-
+        query { intersection difference symmetricDifference1 symmetricDifference2
+        equalsTrue1 equalsTrue2 equalsTrue3 equalsFalse1 equalsFalse2 equalsFalse3
+        gtTrue1 gtTrue2 gtTrue3 gtFalse1 gtFalse2 gtFalse3
+        ltFalse1 ltFalse2 ltFalse3 ltTrue1 ltTrue2 ltTrue3
+        gteTrue1 gteTrue2 gteTrue3 gteFalse1 gteFalse2 gteFalse3
+        lteTrue1 lteFalse1 lteTrue2 lteTrue3 lteTrue4 lteTrue5
+        max1 max2 max3
+        min1 min2 min3
+        sortPath pathEq1 pathEq2 }
+  response:
+    status: 200
+    body:
+      data:
+        difference:
+          - 1
+        equalsFalse1: false
+        equalsFalse2: false
+        equalsFalse3: false
+        equalsTrue1: true
+        equalsTrue2: true
+        equalsTrue3: true
+        gtFalse1: false
+        gtFalse2: false
+        gtFalse3: false
+        gtTrue1: true
+        gtTrue2: true
+        gtTrue3: true
+        gteFalse1: false
+        gteFalse2: false
+        gteFalse3: false
+        gteTrue1: true
+        gteTrue2: true
+        gteTrue3: true
+        intersection:
+          - 3
+        ltFalse1: false
+        ltFalse2: false
+        ltFalse3: false
+        ltTrue1: true
+        ltTrue2: true
+        ltTrue3: true
+        lteFalse1: false
+        lteTrue1: true
+        lteTrue2: true
+        lteTrue3: true
+        lteTrue4: true
+        lteTrue5: true
+        max1: 923.83
+        max2: z
+        max3:
+          - 2
+          - 3
+        min1: -423
+        min2: abc
+        min3:
+          - -1
+          - 0
+          - 0
+          - 0
+        pathEqFalse: false
+        pathEqTrue: true
+        sortPath:
+          - 2
+          - 3
+          - 4
+        symmetricDifference1:
+          - 1
+        symmetricDifference2:
+          - 1
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://example.com/user
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        email: abc@bcd.com
-        friend:
-          email: bcd@abc.com
-          friend: null
-          id: 2
-        id: 1
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: |-
-          query { intersection difference symmetricDifference1 symmetricDifference2
-          equalsTrue1 equalsTrue2 equalsTrue3 equalsFalse1 equalsFalse2 equalsFalse3
-          gtTrue1 gtTrue2 gtTrue3 gtFalse1 gtFalse2 gtFalse3
-          ltFalse1 ltFalse2 ltFalse3 ltTrue1 ltTrue2 ltTrue3
-          gteTrue1 gteTrue2 gteTrue3 gteFalse1 gteFalse2 gteFalse3
-          lteTrue1 lteFalse1 lteTrue2 lteTrue3 lteTrue4 lteTrue5
-          max1 max2 max3
-          min1 min2 min3
-          sortPath pathEq1 pathEq2 }
-    response:
-      status: 200
-      headers: {}
-      body:
-        data:
-          difference:
-            - 1
-          equalsFalse1: false
-          equalsFalse2: false
-          equalsFalse3: false
-          equalsTrue1: true
-          equalsTrue2: true
-          equalsTrue3: true
-          gtFalse1: false
-          gtFalse2: false
-          gtFalse3: false
-          gtTrue1: true
-          gtTrue2: true
-          gtTrue3: true
-          gteFalse1: false
-          gteFalse2: false
-          gteFalse3: false
-          gteTrue1: true
-          gteTrue2: true
-          gteTrue3: true
-          intersection:
-            - 3
-          ltFalse1: false
-          ltFalse2: false
-          ltFalse3: false
-          ltTrue1: true
-          ltTrue2: true
-          ltTrue3: true
-          lteFalse1: false
-          lteTrue1: true
-          lteTrue2: true
-          lteTrue3: true
-          lteTrue4: true
-          lteTrue5: true
-          max1: 923.83
-          max2: z
-          max3:
-            - 2
-            - 3
-          min1: -423
-          min2: abc
-          min3:
-            - -1
-            - 0
-            - 0
-            - 0
-          pathEqFalse: false
-          pathEqTrue: true
-          sortPath:
-            - 2
-            - 3
-            - 4
-          symmetricDifference1:
-            - 1
-          symmetricDifference2:
-            - 1
-assert: []
-env: {}
+[]
 ```

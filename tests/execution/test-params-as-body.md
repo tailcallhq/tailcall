@@ -17,33 +17,31 @@ type User {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: POST
+    url: http://jsonplaceholder.typicode.com/users
+    body: '{"id":1,"name":"foo"}'
+  response:
+    status: 200
+    body:
+      id: 1
+      name: foo
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: POST
-      url: http://jsonplaceholder.typicode.com/users
-      headers: {}
-      body: '{"id":1,"name":"foo"}'
-    response:
-      status: 200
-      headers: {}
-      body:
-        id: 1
-        name: foo
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: |-
-          {
-            firstUser(id: 1, name:"foo") {
-              id
-              name
-            }
-          }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |-
+      {
+        firstUser(id: 1, name:"foo") {
+          id
+          name
+        }
+      }
 ```

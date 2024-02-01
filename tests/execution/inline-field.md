@@ -24,30 +24,28 @@ type Query {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users/1
+    body: null
+  response:
+    status: 200
+    body:
+      address:
+        geo:
+          lat: "-37.3159"
+      id: 1
+      name: foo
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users/1
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        address:
-          geo:
-            lat: "-37.3159"
-        id: 1
-        name: foo
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: query { user { address } }
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { user { address } }
 ```

@@ -36,37 +36,33 @@ type User {
 }
 ```
 
+#### mock:
+
+```yml
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users/1
+    body: null
+  response:
+    status: 200
+    body:
+      id: 1
+      name: Leanne Graham
+- request:
+    method: PUT
+    url: http://jsonplaceholder.typicode.com/posts/100
+    body: '{"body":"abc","id":100,"title":"bar","userId":1}'
+  response:
+    status: 200
+    body:
+      body: abc
+```
+
 #### assert:
 
 ```yml
-mock:
-  - request:
-      method: GET
-      url: http://jsonplaceholder.typicode.com/users/1
-      headers: {}
-      body: null
-    response:
-      status: 200
-      headers: {}
-      body:
-        id: 1
-        name: Leanne Graham
-  - request:
-      method: PUT
-      url: http://jsonplaceholder.typicode.com/posts/100
-      headers: {}
-      body: '{"body":"abc","id":100,"title":"bar","userId":1}'
-    response:
-      status: 200
-      headers: {}
-      body:
-        body: abc
-assert:
-  - request:
-      method: POST
-      url: http://localhost:8080/graphql
-      headers: {}
-      body:
-        query: 'mutation { insertPost(input: { body: "abc", title: "bar", userId: 1, id: 100 }) { body } }'
-env: {}
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: 'mutation { insertPost(input: { body: "abc", title: "bar", userId: 1, id: 100 }) { body } }'
 ```
