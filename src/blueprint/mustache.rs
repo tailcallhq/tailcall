@@ -1,7 +1,7 @@
 use super::{is_scalar, to_type, FieldDefinition, Type};
 use crate::config::{self, Config};
 use crate::lambda::{Expression, IO};
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 struct MustachePartsValidator<'a> {
     type_of: &'a config::Type,

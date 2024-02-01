@@ -1,7 +1,5 @@
 use std::collections::BTreeSet;
-
 use derive_setters::Setters;
-
 use crate::config::{self, Batch};
 use crate::valid::{Valid, ValidationError};
 

@@ -16,7 +16,7 @@ use crate::cli::server::Server;
 use crate::cli::{init_file, init_http, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::Config;
-// use crate::config::Upstream;
+use crate::valid::Validator;
 use crate::{print_schema, FileIO};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
