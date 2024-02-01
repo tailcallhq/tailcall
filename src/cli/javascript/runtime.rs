@@ -86,13 +86,7 @@ fn on_event_impl(rtm: &LocalRuntime, event: Event) -> anyhow::Result<Command> {
         .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
     let serde_command = serde_json::Value::from_v8(&mini_command)?;
     let command = match serde_command {
-        serde_json::Value::Null => {
-            if let Some(req) = event.request() {
-                Ok(Command::Continue(req))
-            } else {
-                Err(anyhow::anyhow!("expected a request"))
-            }
-        }
+        serde_json::Value::Null => Err(anyhow::anyhow!("expected a request")),
         _ => {
             let command: Command = serde_json::from_value(serde_command)?;
             Ok(command)
