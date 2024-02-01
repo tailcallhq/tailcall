@@ -1,8 +1,103 @@
+use super::append::Append;
 use super::ValidationError;
 use crate::valid::Cause;
 
 #[derive(Debug, PartialEq)]
 pub struct Valid<A, E>(Result<A, ValidationError<E>>);
+
+pub trait Validator<A, E>: Sized {
+    fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
+        Valid(self.to_result().map(f))
+    }
+
+    fn collect(self) -> Valid<A, E> {
+        Valid(self.to_result())
+    }
+
+    fn foreach(self, mut f: impl FnMut(A)) -> Valid<A, E>
+    where
+        A: Clone,
+    {
+        match self.to_result() {
+            Ok(a) => {
+                f(a.clone());
+                Valid::succeed(a)
+            }
+            Err(e) => Valid(Err(e)),
+        }
+    }
+
+    fn is_succeed(&self) -> bool;
+
+    fn and<A1>(self, other: Valid<A1, E>) -> Valid<A1, E> {
+        self.zip(other).map(|(_, a1)| a1)
+    }
+
+    fn zip<A1>(self, other: Valid<A1, E>) -> Valid<(A, A1), E> {
+        match self.to_result() {
+            Ok(a) => match other.0 {
+                Ok(a1) => Valid(Ok((a, a1))),
+                Err(e1) => Valid(Err(e1)),
+            },
+            Err(e1) => match other.0 {
+                Ok(_) => Valid(Err(e1)),
+                Err(e2) => Valid(Err(e1.combine(e2))),
+            },
+        }
+    }
+
+    fn fuse<A1>(self, other: Valid<A1, E>) -> Fusion<(A, A1), E> {
+        Fusion(self.zip(other))
+    }
+
+    fn trace(self, message: &str) -> Valid<A, E> {
+        let valid = self.to_result();
+        if let Err(error) = valid {
+            return Valid(Err(error.trace(message)));
+        }
+
+        Valid(valid)
+    }
+
+    fn fold<A1>(
+        self,
+        ok: impl FnOnce(A) -> Valid<A1, E>,
+        err: impl FnOnce() -> Valid<A1, E>,
+    ) -> Valid<A1, E> {
+        match self.to_result() {
+            Ok(a) => ok(a),
+            Err(e) => Valid::<A1, E>(Err(e)).and(err()),
+        }
+    }
+
+    fn to_result(self) -> Result<A, ValidationError<E>>;
+
+    fn and_then<B>(self, f: impl FnOnce(A) -> Valid<B, E>) -> Valid<B, E> {
+        match self.to_result() {
+            Ok(a) => f(a),
+            Err(e) => Valid(Err(e)),
+        }
+    }
+
+    fn unit(self) -> Valid<(), E> {
+        self.map(|_| ())
+    }
+
+    fn some(self) -> Valid<Option<A>, E> {
+        self.map(Some)
+    }
+
+    fn map_to<B>(self, b: B) -> Valid<B, E> {
+        self.map(|_| b)
+    }
+    fn when(self, f: impl FnOnce() -> bool) -> Valid<(), E> {
+        if f() {
+            self.unit()
+        } else {
+            Valid::succeed(())
+        }
+    }
+}
 
 impl<A, E> Valid<A, E> {
     pub fn fail(e: E) -> Valid<A, E> {
@@ -26,66 +121,8 @@ impl<A, E> Valid<A, E> {
         Valid(Err(error.into()))
     }
 
-    pub fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
-        Valid(self.0.map(f))
-    }
-
-    pub fn foreach(self, mut f: impl FnMut(A)) -> Valid<A, E>
-    where
-        A: Clone,
-    {
-        match self.0 {
-            Ok(a) => {
-                f(a.clone());
-                Valid::succeed(a)
-            }
-            Err(e) => Valid(Err(e)),
-        }
-    }
-
     pub fn succeed(a: A) -> Valid<A, E> {
         Valid(Ok(a))
-    }
-
-    pub fn is_succeed(&self) -> bool {
-        self.0.is_ok()
-    }
-
-    pub fn and<A1>(self, other: Valid<A1, E>) -> Valid<A1, E> {
-        self.zip(other).map(|(_, a1)| a1)
-    }
-
-    pub fn zip<A1>(self, other: Valid<A1, E>) -> Valid<(A, A1), E> {
-        match self.0 {
-            Ok(a) => match other.0 {
-                Ok(a1) => Valid(Ok((a, a1))),
-                Err(e1) => Valid(Err(e1)),
-            },
-            Err(e1) => match other.0 {
-                Ok(_) => Valid(Err(e1)),
-                Err(e2) => Valid(Err(e1.combine(e2))),
-            },
-        }
-    }
-
-    pub fn trace(self, message: &str) -> Valid<A, E> {
-        let valid = self.0;
-        if let Err(error) = valid {
-            return Valid(Err(error.trace(message)));
-        }
-
-        Valid(valid)
-    }
-
-    pub fn fold<A1>(
-        self,
-        ok: impl FnOnce(A) -> Valid<A1, E>,
-        err: impl FnOnce() -> Valid<A1, E>,
-    ) -> Valid<A1, E> {
-        match self.0 {
-            Ok(a) => ok(a),
-            Err(e) => Valid::<A1, E>(Err(e)).and(err()),
-        }
     }
 
     pub fn from_iter<B>(
@@ -119,37 +156,37 @@ impl<A, E> Valid<A, E> {
         }
     }
 
-    pub fn to_result(self) -> Result<A, ValidationError<E>> {
-        self.0
-    }
-
-    pub fn and_then<B>(self, f: impl FnOnce(A) -> Valid<B, E>) -> Valid<B, E> {
-        match self.0 {
-            Ok(a) => f(a),
-            Err(e) => Valid(Err(e)),
-        }
-    }
-
-    pub fn unit(self) -> Valid<(), E> {
-        self.map(|_| ())
-    }
-
-    pub fn some(self) -> Valid<Option<A>, E> {
-        self.map(Some)
-    }
-
     pub fn none() -> Valid<Option<A>, E> {
         Valid::succeed(None)
     }
-    pub fn map_to<B>(self, b: B) -> Valid<B, E> {
-        self.map(|_| b)
+}
+
+impl<A, E> Validator<A, E> for Valid<A, E> {
+    fn to_result(self) -> Result<A, ValidationError<E>> {
+        self.0
     }
-    pub fn when(self, f: impl FnOnce() -> bool) -> Valid<(), E> {
-        if f() {
-            self.unit()
-        } else {
-            Valid::succeed(())
-        }
+
+    fn is_succeed(&self) -> bool {
+        self.0.is_ok()
+    }
+}
+
+pub struct Fusion<A, E>(Valid<A, E>);
+impl<A, E> Fusion<A, E> {
+    pub fn fuse<A1>(self, other: Valid<A1, E>) -> Fusion<A::Out, E>
+    where
+        A: Append<A1>,
+    {
+        Fusion(self.0.zip(other).map(|(a, a1)| a.append(a1)))
+    }
+}
+
+impl<A, E> Validator<A, E> for Fusion<A, E> {
+    fn to_result(self) -> Result<A, ValidationError<E>> {
+        self.0.to_result()
+    }
+    fn is_succeed(&self) -> bool {
+        self.0.is_succeed()
     }
 }
 
@@ -166,6 +203,7 @@ impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
 mod tests {
     use super::{Cause, ValidationError};
     use crate::valid::valid::Valid;
+    use crate::valid::Validator;
 
     #[test]
     fn test_ok() {

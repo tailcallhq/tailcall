@@ -2,7 +2,7 @@ use hyper::header::HeaderName;
 
 use crate::config::KeyValues;
 use crate::mustache::Mustache;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
 
@@ -30,6 +30,7 @@ mod tests {
     use super::to_mustache_headers;
     use crate::config::KeyValues;
     use crate::mustache::Mustache;
+    use crate::valid::Validator;
 
     #[test]
     fn valid_headers() -> Result<()> {

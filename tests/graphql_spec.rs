@@ -21,7 +21,7 @@ use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
-use tailcall::valid::{Cause, Valid, ValidationError};
+use tailcall::valid::{Cause, Valid, ValidationError, Validator};
 
 static INIT: Once = Once::new();
 
