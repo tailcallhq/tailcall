@@ -1,10 +1,6 @@
 function onEvent(event) {
-  // console.log(event)
-  if (event.response) {
-    return {response: event.response[0]}
-  }
-
-  return {request: [event.request]}
+  console.log(event)
+  return event
 }
 
 // function onEvent(event) {

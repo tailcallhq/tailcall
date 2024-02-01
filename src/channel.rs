@@ -9,17 +9,22 @@ use crate::is_default;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum Event {
-    Request(JsRequest),
-    Response(Vec<JsResponse>),
+pub struct Event {
+    pub message: Message,
+    pub command_id: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum Command {
-    Request(Vec<JsRequest>),
+pub struct Command {
+    pub message: Message,
+    pub id: Option<u64>,
+}
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Message {
+    Request(JsRequest),
     Response(JsResponse),
-    Continue(JsRequest),
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -111,15 +116,15 @@ impl TryFrom<&reqwest::Request> for JsRequest {
 }
 
 impl Event {
-    pub fn response(&self) -> Vec<JsResponse> {
+    pub fn response(&self) -> Option<JsResponse> {
         match self {
-            Event::Response(res) => res.clone(),
-            _ => Vec::new(),
+            Event { message: Message::Response(res), command_id: _ } => Some(res.clone()),
+            _ => None,
         }
     }
     pub fn request(&self) -> Option<JsRequest> {
         match self {
-            Event::Request(req) => Some(req.clone()),
+            Event { message: Message::Request(req), command_id: _ } => Some(req.clone()),
             _ => None,
         }
     }

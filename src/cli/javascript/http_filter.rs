@@ -1,11 +1,10 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
-use futures_util::future::join_all;
 use futures_util::Future;
 use hyper::body::Bytes;
 
-use crate::channel::{Command, Event, JsResponse};
+use crate::channel::{Command, Event, JsRequest, JsResponse, Message};
 use crate::http::Response;
 use crate::{HttpIO, ScriptIO};
 
@@ -30,28 +29,19 @@ impl HttpFilter {
     {
         Box::pin(async move {
             match command {
-                Command::Request(requests) => {
-                    let requests = requests.into_iter().flat_map(|req| {
-                        let req = req.try_into().ok()?;
-                        Some(self.client.execute(req))
-                    });
-                    let responses = join_all(requests)
-                        .await
-                        .into_iter()
-                        .collect::<anyhow::Result<Vec<_>>>()?
-                        .iter()
-                        .flat_map(|e| JsResponse::try_from(e).ok())
-                        .collect::<Vec<_>>();
-                    let command = self.script.on_event(Event::Response(responses)).await?;
+                Command { message: Message::Request(request), id } => {
+                    let request = request.try_into()?;
+                    let response = self.client.execute(request).await?;
+                    let response = JsResponse::try_from(&response)?;
+                    let command = self
+                        .script
+                        .on_event(Event { message: Message::Response(response), command_id: id })
+                        .await?;
                     Ok(self.on_command(command).await?)
                 }
-                Command::Response(response) => {
+                Command { message: Message::Response(response), id: _ } => {
                     let res: anyhow::Result<Response<Bytes>> = response.try_into();
                     res
-                }
-                Command::Continue(request) => {
-                    let res = self.client.execute(request.try_into()?).await?;
-                    Ok(res)
                 }
             }
         })
@@ -64,9 +54,10 @@ impl HttpIO for HttpFilter {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
+        let request = JsRequest::try_from(&request)?;
         let command = self
             .script
-            .on_event(Event::Request((&request).try_into()?))
+            .on_event(Event { message: Message::Request(request), command_id: None })
             .await?;
         self.on_command(command).await
     }
