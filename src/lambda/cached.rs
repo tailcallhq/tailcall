@@ -33,12 +33,13 @@ pub struct NonIOCache {
 
 impl Cached {
     pub fn new(max_age: NonZeroU64, expr: Expression) -> Self {
-        match &expr {
-            Expression::IO(_) => Cached::IOCache(IOCache { max_age, expr: Box::new(expr) }),
-            _ => Cached::NonIOCache(NonIOCache {
+        if expr.has_io() {
+            Cached::IOCache(IOCache { max_age, expr: Box::new(expr) })
+        } else {
+            Cached::NonIOCache(NonIOCache {
                 data: Arc::new(RwLock::new(None)),
                 expr: Box::new(expr),
-            }),
+            })
         }
     }
 }

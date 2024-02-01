@@ -11,7 +11,7 @@ use super::list::List;
 use super::logic::Logic;
 use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
 use crate::json::JsonLike;
-use crate::lambda::cache::Cached;
+use crate::lambda::cached::Cached;
 use crate::lambda::has_io::HasIO;
 
 #[derive(Clone, Debug)]
