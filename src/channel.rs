@@ -9,20 +9,14 @@ use crate::is_default;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Event {
-    pub message: Message,
-    pub id: Option<u64>,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Command {
-    pub message: Message,
+pub struct Message {
+    pub message: MessageContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<u64>,
 }
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum Message {
+pub enum MessageContent {
     Request(JsRequest),
     Response(JsResponse),
 }
@@ -115,16 +109,16 @@ impl TryFrom<&reqwest::Request> for JsRequest {
     }
 }
 
-impl Event {
+impl Message {
     pub fn response(&self) -> Option<JsResponse> {
         match self {
-            Event { message: Message::Response(res), id: _ } => Some(res.clone()),
+            Message { message: MessageContent::Response(res), id: _ } => Some(res.clone()),
             _ => None,
         }
     }
     pub fn request(&self) -> Option<JsRequest> {
         match self {
-            Event { message: Message::Request(req), id: _ } => Some(req.clone()),
+            Message { message: MessageContent::Request(req), id: _ } => Some(req.clone()),
             _ => None,
         }
     }

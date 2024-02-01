@@ -5,7 +5,7 @@ use std::thread;
 use mini_v8::{MiniV8, Script};
 
 use crate::blueprint::{self};
-use crate::channel::{Command, Event};
+use crate::channel::Message;
 use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::ScriptIO;
 
@@ -58,8 +58,8 @@ impl Runtime {
 }
 
 #[async_trait::async_trait]
-impl ScriptIO<Event, Command> for Runtime {
-    async fn on_event(&self, event: Event) -> anyhow::Result<Command> {
+impl ScriptIO<Message, Message> for Runtime {
+    async fn on_event(&self, event: Message) -> anyhow::Result<Message> {
         let script = self.script.clone();
         LOCAL_RUNTIME.with(|cell| {
             let rtm = cell
@@ -71,7 +71,7 @@ impl ScriptIO<Event, Command> for Runtime {
     }
 }
 
-fn on_event_impl(rtm: &LocalRuntime, event: Event) -> anyhow::Result<Command> {
+fn on_event_impl(rtm: &LocalRuntime, event: Message) -> anyhow::Result<Message> {
     log::debug!("event: {:?}", event);
     let closure = &rtm.closure;
     let v8 = &rtm.v8;
@@ -88,7 +88,7 @@ fn on_event_impl(rtm: &LocalRuntime, event: Event) -> anyhow::Result<Command> {
     let command = match serde_command {
         serde_json::Value::Null => Err(anyhow::anyhow!("expected a request")),
         _ => {
-            let command: Command = serde_json::from_value(serde_command)?;
+            let command: Message = serde_json::from_value(serde_command)?;
             Ok(command)
         }
     }?;
