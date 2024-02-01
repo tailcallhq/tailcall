@@ -4,6 +4,9 @@ use async_graphql_value::ConstValue;
 
 use crate::{Cache, EnvIO, FileIO, HttpIO};
 
+/// The TargetRuntime struct unifies the available runtime-specific
+/// IO implementations. This is used to reduce piping IO structs all
+/// over the codebase.
 #[derive(Clone)]
 pub struct TargetRuntime {
     pub http: Arc<dyn HttpIO>,
