@@ -1,21 +1,17 @@
 use std::sync::Arc;
 
-use cache::LambdaCache;
-use env::LambdaEnv;
-use file::init_file;
-use http::{init_http, to_request, to_response};
+use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Error, Request, Response};
 use lazy_static::lazy_static;
+use runtime::init_runtime;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::http::{handle_request, AppContext};
 use tokio::sync::RwLock;
 
-mod cache;
-mod env;
-mod file;
 mod http;
+mod runtime;
 
 lazy_static! {
     static ref APP_CTX: RwLock<Option<Arc<AppContext>>> = RwLock::new(None);
@@ -41,21 +37,13 @@ async fn main() -> Result<(), Error> {
         .without_time()
         .init();
 
-    let file = init_file();
-    let http = init_http();
-
-    let config = ConfigReader::init(file, http.clone())
+    let runtime = init_runtime();
+    let config = ConfigReader::init(runtime.clone())
         .read("./config.graphql")
         .await?;
     let blueprint = Blueprint::try_from(&config)?;
 
-    let app_ctx = Arc::new(AppContext::new(
-        blueprint,
-        http.clone(),
-        http,
-        Arc::new(LambdaEnv),
-        Arc::new(LambdaCache::new()),
-    ));
+    let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
 
     APP_CTX.write().await.replace(app_ctx);
 
