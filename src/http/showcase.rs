@@ -27,7 +27,7 @@ pub struct ShowcaseResources {
     pub cache: Arc<EntityCache>,
 }
 
-pub async fn showcase_get_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
+pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,
     resources: ShowcaseResources,
 ) -> Result<Result<AppContext, Response<Body>>> {

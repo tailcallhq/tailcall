@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
 use super::showcase::ShowcaseResources;
-use super::{showcase_get_app_ctx, AppContext};
+use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
@@ -119,7 +119,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         }
         hyper::Method::POST
             if app_ctx.blueprint.server.enable_showcase
-                && req.uri().path().ends_with("/showcase/graphql") =>
+                && req.uri().path() == "/showcase/graphql" =>
         {
             let resources = ShowcaseResources {
                 http: app_ctx.universal_http_client.clone(),
@@ -130,7 +130,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
                 cache: app_ctx.cache.clone(),
             };
 
-            let app_ctx = match showcase_get_app_ctx::<T>(&req, resources).await? {
+            let app_ctx = match showcase::create_app_ctx::<T>(&req, resources).await? {
                 Ok(app_ctx) => app_ctx,
                 Err(res) => return Ok(res),
             };
