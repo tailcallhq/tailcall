@@ -63,6 +63,7 @@ mod tests {
     use super::DataLoaderRequest;
     use crate::blueprint::Upstream;
     use crate::cli::{init_file, init_http};
+    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -76,8 +77,7 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
-        let file_io = init_file();
-        let http_io = init_http(&Upstream::default(), None);
+        let runtime = init_runtime(&Upstream::default(), None);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: test_file.to_str().unwrap().to_string(),
@@ -87,7 +87,7 @@ mod tests {
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
-        let reader = ConfigReader::init(file_io, http_io);
+        let reader = ConfigReader::init(runtime);
         let config_set = reader.resolve(config).await.unwrap();
 
         let protobuf_set =

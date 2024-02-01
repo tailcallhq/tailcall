@@ -21,6 +21,7 @@ pub use tc::run;
 
 use crate::blueprint::Upstream;
 use crate::cache::InMemoryCache;
+use crate::target_runtime::TargetRuntime;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
 // Provides access to env in native rust environment
@@ -60,4 +61,14 @@ pub fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -
 
 pub fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {
     InMemoryCache::new()
+}
+
+pub fn init_runtime(upstream: &Upstream, script: Option<blueprint::Script>) -> TargetRuntime {
+    TargetRuntime {
+        http: init_http(upstream, script.clone()),
+        http2_only: init_http2_only(upstream, script),
+        env: init_env(),
+        file: init_file(),
+        cache: Arc::new(init_in_memory_cache()),
+    }
 }

@@ -204,6 +204,7 @@ mod tests {
     use super::*;
     use crate::blueprint::Upstream;
     use crate::cli::{init_file, init_http};
+    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Type};
 
@@ -225,9 +226,8 @@ mod tests {
     }
 
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
-        let file_io = init_file();
-        let http_io = init_http(&Upstream::default(), None);
-        let reader = ConfigReader::init(file_io, http_io);
+        let runtime = init_runtime(&Upstream::default(), None);
+        let reader = ConfigReader::init(runtime);
         let mut config = Config::default();
         let grpc = Grpc {
             proto_path: get_test_file(name)
