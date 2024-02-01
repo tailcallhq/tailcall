@@ -3,15 +3,16 @@ use std::collections::{BTreeMap, HashMap};
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
-use crate::config::{Arg, Batch, Config, Field};
+use crate::config::{Arg, Batch, Config, ConfigSet, Field};
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
-pub fn config_blueprint<'a>() -> TryFold<'a, Config, Blueprint, String> {
-    let server = TryFoldConfig::<Blueprint>::new(|config, blueprint| {
-        Valid::from(Server::try_from(config.server.clone())).map(|server| blueprint.server(server))
+pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
+    let server = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
+        Valid::from(Server::try_from(config_set.server.clone()))
+            .map(|server| blueprint.server(server))
     });
 
     let schema = to_schema().transform::<Blueprint>(
@@ -105,12 +106,12 @@ where
     }
 }
 
-impl TryFrom<&Config> for Blueprint {
+impl TryFrom<&ConfigSet> for Blueprint {
     type Error = ValidationError<String>;
 
-    fn try_from(config: &Config) -> Result<Self, Self::Error> {
+    fn try_from(config_set: &ConfigSet) -> Result<Self, Self::Error> {
         config_blueprint()
-            .try_fold(config, Blueprint::default())
+            .try_fold(config_set, Blueprint::default())
             .to_result()
     }
 }
