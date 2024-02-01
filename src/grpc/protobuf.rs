@@ -203,7 +203,6 @@ mod tests {
 
     use super::*;
     use crate::blueprint::Upstream;
-    use crate::cli::{init_file, init_http};
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Type};

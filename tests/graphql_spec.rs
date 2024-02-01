@@ -15,7 +15,6 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::{Blueprint, Upstream};
-use tailcall::cli::{init_env, init_file, init_http, init_in_memory_cache};
 use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet};

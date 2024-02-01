@@ -264,7 +264,6 @@ mod reader_tests {
     use tokio::io::AsyncReadExt;
 
     use crate::blueprint::Upstream;
-    use crate::cli::{init_file, init_http};
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Script, ScriptOptions, Type};
