@@ -10,10 +10,6 @@ pub trait Validator<A, E>: Sized {
         Valid(self.to_result().map(f))
     }
 
-    fn collect(self) -> Valid<A, E> {
-        Valid(self.to_result())
-    }
-
     fn foreach(self, mut f: impl FnMut(A)) -> Valid<A, E>
     where
         A: Clone,

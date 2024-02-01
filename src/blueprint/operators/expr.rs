@@ -80,7 +80,6 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
                 .map(Box::new)
                 .fuse(compile(ctx, *then.clone()).map(Box::new))
                 .fuse(compile(ctx, *els.clone()).map(Box::new))
-                .collect()
                 .map(|(cond, then, els)| {
                     Expression::Logic(Logic::If { cond, then, els }).parallel_when(expr.has_io())
                 })

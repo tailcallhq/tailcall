@@ -92,7 +92,6 @@ impl TryFrom<crate::config::Server> for Server {
                 (config_server).get_response_headers().0,
             ))
             .fuse(to_script(&config_server))
-            .collect()
             .map(|(hostname, http, response_headers, script)| Server {
                 enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                 enable_cache_control_header: (config_server).enable_cache_control(),

@@ -133,7 +133,6 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
         ))
         .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
         .fuse(helpers::body::to_body(grpc.body.as_deref()))
-        .collect()
         .and_then(|(url, operation, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_set, field);

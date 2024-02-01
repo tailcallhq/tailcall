@@ -36,22 +36,20 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     let types = to_types(&type_definitions);
     let unions = to_union_types(&type_definitions);
     let schema = schema_definition(&doc).map(to_root_schema);
-    schema_definition(&doc)
-        .and_then(|sd| {
-            server(sd)
-                .fuse(upstream(sd))
-                .fuse(types)
-                .fuse(unions)
-                .fuse(schema)
-                .collect()
-        })
-        .map(|(server, upstream, types, unions, schema)| Config {
-            server,
-            upstream,
-            types,
-            unions,
-            schema,
-        })
+    schema_definition(&doc).and_then(|sd| {
+        server(sd)
+            .fuse(upstream(sd))
+            .fuse(types)
+            .fuse(unions)
+            .fuse(schema)
+            .map(|(server, upstream, types, unions, schema)| Config {
+                server,
+                upstream,
+                types,
+                unions,
+                schema,
+            })
+    })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -255,7 +253,6 @@ where
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(JS::from_directives(directives.iter()))
-        .collect()
         .map(|(http, graphql, cache, grpc, expr, omit, modify, script)| {
             let const_field = to_const_field(directives);
             config::Field {
