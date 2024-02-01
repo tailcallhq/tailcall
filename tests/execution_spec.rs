@@ -17,12 +17,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_env, init_file, init_hook_http, init_http, init_in_memory_cache};
+use tailcall::cli::{init_file, init_hook_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Source, Upstream};
 use tailcall::http::{handle_request, AppContext, Method, RequestContext, Response};
 use tailcall::print_schema::print_schema;
-use tailcall::valid::{Cause, ValidationError};
+use tailcall::target_runtime::TargetRuntime;
+use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
@@ -435,15 +436,18 @@ impl ExecutionSpec {
         env: HashMap<String, String>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
-        let client = init_hook_http(
+        let http = init_hook_http(
             MockHttpClient::new(self.clone()),
             blueprint.server.script.clone(),
         );
-        let http2_client = Arc::new(MockHttpClient::new(self.clone()));
-        let env = Arc::new(Env::init(env));
-        let chrono_cache = Arc::new(init_in_memory_cache());
-        let server_context = AppContext::new(blueprint, client, http2_client, env, chrono_cache);
-        Arc::new(server_context)
+        let runtime = TargetRuntime {
+            http2_only: Arc::new(MockHttpClient::new(self.clone())),
+            http,
+            file: init_file(),
+            env: Arc::new(Env::init(env)),
+            cache: Arc::new(init_in_memory_cache()),
+        };
+        Arc::new(AppContext::new(blueprint, runtime))
     }
 }
 
@@ -562,8 +566,8 @@ impl HttpIO for MockHttpClient {
 
 async fn assert_spec(spec: ExecutionSpec) {
     let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
-    let file_io = init_file();
-    let reader = ConfigReader::init(file_io.clone(), init_http(&Upstream::default(), None));
+    let runtime = init_runtime(&Upstream::default(), None);
+    let reader = ConfigReader::init(runtime);
 
     // Parse and validate all server configs + check for identity
     log::info!("{} {} ...", spec.name, spec.path.display());
@@ -580,7 +584,8 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = match config {
             Ok(config) => {
-                let reader = ConfigReader::init(file_io.clone(), init_http(&config.upstream, None));
+                let runtime = init_runtime(&config.upstream, None);
+                let reader = ConfigReader::init(runtime);
                 match reader.resolve(config).await {
                     Ok(config) => Blueprint::try_from(&config),
                     Err(e) => Err(ValidationError::new(e.to_string())),
@@ -834,14 +839,8 @@ async fn run_assert(
 
 async fn run_query(config: &ConfigSet, query: &str) -> anyhow::Result<async_graphql::Response> {
     let blueprint = Blueprint::try_from(config)?;
-    let h_client = init_http(&blueprint.upstream, None);
-    let app = AppContext::new(
-        blueprint,
-        h_client.clone(),
-        h_client,
-        init_env(),
-        Arc::new(init_in_memory_cache()),
-    );
+    let runtime = init_runtime(&blueprint.upstream, None);
+    let app = AppContext::new(blueprint, runtime);
 
     let mut headers = HeaderMap::new();
     headers.insert(
