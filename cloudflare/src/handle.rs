@@ -7,12 +7,12 @@ use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::Config;
+use tailcall::config::ConfigSet;
 use tailcall::http::{graphiql, handle_request, AppContext};
-use tailcall::EnvIO;
+use tailcall::target_runtime::TargetRuntime;
 
 use crate::http::{to_request, to_response};
-use crate::{init_cache, init_env, init_file, init_http};
+use crate::init_runtime;
 
 lazy_static! {
     static ref APP_CTX: RwLock<Option<(String, Arc<AppContext>)>> = RwLock::new(None);
@@ -52,18 +52,8 @@ pub async fn fetch(req: worker::Request, env: worker::Env) -> anyhow::Result<wor
 ///
 /// Reads the configuration from the CONFIG environment variable.
 ///
-async fn get_config(
-    env_io: Arc<dyn EnvIO>,
-    env: Rc<worker::Env>,
-    file_path: &str,
-) -> anyhow::Result<Config> {
-    let bucket_id = env_io
-        .get("BUCKET")
-        .ok_or(anyhow!("BUCKET var is not set"))?;
-    log::debug!("R2 Bucket ID: {}", bucket_id);
-    let file_io = init_file(env.clone(), bucket_id)?;
-    let http_io = init_http();
-    let reader = ConfigReader::init(file_io, http_io);
+async fn get_config(runtime: TargetRuntime, file_path: &str) -> anyhow::Result<ConfigSet> {
+    let reader = ConfigReader::init(runtime);
     let config = reader.read(&file_path).await?;
     Ok(config)
 }
@@ -81,21 +71,13 @@ async fn get_app_ctx(env: Rc<worker::Env>, file_path: &str) -> anyhow::Result<Ar
         }
     }
     // Create new context
-    let env_io = init_env(env.clone());
-    let cfg = get_config(env_io.clone(), env.clone(), file_path).await?;
+    let runtime = init_runtime(env)?;
+    let cfg = get_config(runtime.clone(), file_path).await?;
     log::info!("Configuration read ... ok");
     log::debug!("\n{}", cfg.to_sdl());
     let blueprint = Blueprint::try_from(&cfg)?;
     log::info!("Blueprint generated ... ok");
-    let h_client = init_http();
-    let cache = init_cache(env);
-    let app_ctx = Arc::new(AppContext::new(
-        blueprint,
-        h_client.clone(),
-        h_client,
-        env_io,
-        cache,
-    ));
+    let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
     *APP_CTX.write().unwrap() = Some((file_path.to_string(), app_ctx.clone()));
     log::info!("Initialized new application context");
     Ok(app_ctx)

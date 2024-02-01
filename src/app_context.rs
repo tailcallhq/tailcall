@@ -7,32 +7,24 @@ use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Cache, Definition};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
+use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{Cached, DataLoaderId, Expression, IO};
-use crate::{grpc, EntityCache, EnvIO, HttpIO};
+use crate::target_runtime::TargetRuntime;
 
 pub struct AppContext {
     pub schema: dynamic::Schema,
-    pub universal_http_client: Arc<dyn HttpIO>,
-    pub http2_only_client: Arc<dyn HttpIO>,
+    pub runtime: TargetRuntime,
     pub blueprint: Blueprint,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-    pub cache: Arc<EntityCache>,
-    pub env_vars: Arc<dyn EnvIO>,
 }
 
 impl AppContext {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        mut blueprint: Blueprint,
-        h_client: Arc<dyn HttpIO>,
-        h2_client: Arc<dyn HttpIO>,
-        env: Arc<dyn EnvIO>,
-        cache: Arc<EntityCache>,
-    ) -> Self {
+    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -44,7 +36,7 @@ impl AppContext {
                         match expr {
                             IO::Http { req_template, group_by, .. } => {
                                 let data_loader = HttpDataLoader::new(
-                                    h_client.clone(),
+                                    runtime.http.clone(),
                                     group_by.clone(),
                                     matches!(&field.of_type, ListType { .. }),
                                 )
@@ -63,7 +55,7 @@ impl AppContext {
 
                             IO::GraphQLEndpoint { req_template, field_name, batch, .. } => {
                                 let graphql_data_loader =
-                                    GraphqlDataLoader::new(h_client.clone(), *batch)
+                                    GraphqlDataLoader::new(runtime.http.clone(), *batch)
                                         .to_data_loader(
                                             blueprint.upstream.batch.clone().unwrap_or_default(),
                                         );
@@ -80,7 +72,7 @@ impl AppContext {
 
                             IO::Grpc { req_template, group_by, .. } => {
                                 let data_loader = GrpcDataLoader {
-                                    client: h2_client.clone(),
+                                    client: runtime.http2_only.clone(),
                                     operation: req_template.operation.clone(),
                                     group_by: group_by.clone(),
                                 };
@@ -112,14 +104,11 @@ impl AppContext {
 
         AppContext {
             schema,
-            universal_http_client: h_client,
-            http2_only_client: h2_client,
+            runtime,
             blueprint,
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
-            cache,
             grpc_data_loaders: Arc::new(grpc_data_loaders),
-            env_vars: env,
         }
     }
 

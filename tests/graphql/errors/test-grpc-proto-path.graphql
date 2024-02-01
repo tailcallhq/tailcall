@@ -25,4 +25,4 @@ type News {
 }
 
 #> client-sdl
-type Failure @error(message: "Failed to parse or load proto file", trace: ["Query", "news", "@grpc"])
+type Failure @error(message: "No such file or directory (os error 2)", trace: [])

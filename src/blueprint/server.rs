@@ -7,7 +7,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
 use crate::config::{self, HttpVersion};
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
@@ -87,12 +87,12 @@ impl TryFrom<crate::config::Server> for Server {
         };
 
         validate_hostname((config_server).get_hostname().to_lowercase())
-            .zip(http_server)
-            .zip(handle_response_headers(
+            .fuse(http_server)
+            .fuse(handle_response_headers(
                 (config_server).get_response_headers().0,
             ))
-            .zip(to_script(&config_server))
-            .map(|(((hostname, http), response_headers), script)| Server {
+            .fuse(to_script(&config_server))
+            .map(|(hostname, http, response_headers, script)| Server {
                 enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                 enable_cache_control_header: (config_server).enable_cache_control(),
                 enable_graphiql: (config_server).enable_graphiql(),
