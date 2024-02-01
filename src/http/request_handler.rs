@@ -114,6 +114,12 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     state: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     match *req.method() {
+        // NOTE:
+        // The first check for the route should be for `/graphql`
+        // This is always going to be the most used route.
+        hyper::Method::POST if req.uri().path() == "/graphql" => {
+            graphql_request::<T>(req, state.as_ref()).await
+        }
         hyper::Method::POST
             if state.blueprint.server.enable_showcase
                 && req.uri().path().ends_with("/showcase/graphql") =>
@@ -134,9 +140,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &server_ctx).await
         }
-        hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
-            graphql_request::<T>(req, state.as_ref()).await
-        }
+
         hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(&req),
         _ => not_found(),
     }
