@@ -3,7 +3,7 @@ use std::fmt::Write;
 use async_graphql::dynamic::Schema;
 
 use super::{Blueprint, SchemaModifiers};
-use crate::valid::{Cause, Valid};
+use crate::valid::{Cause, Valid, Validator};
 
 #[derive(Debug)]
 pub struct OperationQuery {
