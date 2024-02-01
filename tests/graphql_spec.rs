@@ -15,13 +15,12 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_env, init_file, init_http, init_in_memory_cache, init_runtime};
+use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
-use tailcall::target_runtime::TargetRuntime;
 use tailcall::valid::{Cause, Valid, ValidationError, Validator};
 
 static INIT: Once = Once::new();
@@ -331,19 +330,8 @@ async fn test_execution() -> std::io::Result<()> {
                     .trace(spec.path.to_str().unwrap_or_default())
                     .to_result()
                     .unwrap();
-                let h_client = init_http(&blueprint.upstream, None);
-                let h2_client = init_http(&blueprint.upstream, None);
-                let chrono_cache = init_in_memory_cache();
-                let server_ctx = AppContext::new(
-                    blueprint,
-                    TargetRuntime {
-                        http: h_client,
-                        http2_only: h2_client,
-                        env: init_env(),
-                        cache: Arc::new(chrono_cache),
-                        file: init_file(),
-                    },
-                );
+                let runtime = init_runtime(&blueprint.upstream, None);
+                let server_ctx = AppContext::new(blueprint, runtime);
                 let schema = &server_ctx.schema;
 
                 for q in spec.test_queries {
