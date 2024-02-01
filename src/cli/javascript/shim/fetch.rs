@@ -1,16 +1,20 @@
+use hyper::body::Bytes;
 use mini_v8::{Function, Invocation, MiniV8, Values};
+use serde_json::json;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 use tokio::task::spawn_local;
 
 use crate::channel::{JsRequest, JsResponse};
-use crate::cli::javascript::async_wrapper::{ChannelMessage, ChannelResult};
+use crate::cli::javascript::async_wrapper::FetchMessage;
+use crate::cli::javascript::async_wrapper::FetchResult;
 use crate::cli::javascript::serde_v8::SerdeV8;
+use crate::http::Response;
 use crate::ToAnyHow;
 
 pub const FETCH: &str = "__fetch__";
 
-pub fn init(v8: MiniV8, http_sender: mpsc::UnboundedSender<ChannelMessage>) -> anyhow::Result<()> {
+pub fn init(v8: MiniV8, http_sender: mpsc::UnboundedSender<FetchMessage>) -> anyhow::Result<()> {
     let mv8 = v8.clone();
     let fetch = v8.create_function(move |invocation| {
         let args = JSFetchArgs::try_from(&mv8, &invocation).map_err(|_| {
@@ -48,21 +52,16 @@ impl JSFetchArgs {
 
 async fn fetch(
     v8: MiniV8,
-    http_sender: mpsc::UnboundedSender<ChannelMessage>,
+    http_sender: mpsc::UnboundedSender<FetchMessage>,
     args: JSFetchArgs,
 ) -> anyhow::Result<()> {
-    let (tx, rx) = oneshot::channel::<ChannelResult>();
-    let request = reqwest::Request::try_from(args.request)?;
+    let (tx, rx) = oneshot::channel::<FetchResult>();
 
-    http_sender.send((tx, request))?;
+    http_sender.send((tx, args.request))?;
 
     let response = rx.await?;
-
     match response {
         Ok(response) => {
-            let js_response = JsResponse::try_from(&response)?;
-            let response = serde_json::to_value(js_response)?;
-
             args.callback
                 .call(Values::from_iter(vec![
                     mini_v8::Value::Null,

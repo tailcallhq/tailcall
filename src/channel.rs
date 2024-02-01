@@ -41,11 +41,11 @@ pub struct JsResponse {
         default = "default_http_status",
         skip_serializing_if = "is_default_status"
     )]
-    status: f64, // TODO: make this u16 once we derive the codecs for v8::Value
+    pub status: f64, // TODO: make this u16 once we derive the codecs for v8::Value
     #[serde(default, skip_serializing_if = "is_default")]
-    headers: BTreeMap<String, String>,
+    pub headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    body: Option<serde_json::Value>,
+    pub body: Option<serde_json::Value>,
 }
 
 fn default_http_status() -> f64 {

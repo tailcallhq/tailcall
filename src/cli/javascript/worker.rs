@@ -2,7 +2,7 @@ use hyper::body::Bytes;
 use mini_v8::{Function, MiniV8, Values};
 use tokio::sync::{mpsc, oneshot};
 
-use super::async_wrapper::ChannelMessage;
+use super::async_wrapper::{ChannelMessage, FetchMessage};
 use super::serde_v8::SerdeV8;
 use crate::channel::{JsRequest, JsResponse};
 use crate::http::Response;
@@ -21,7 +21,7 @@ fn create_closure(script: &str) -> String {
 impl Worker {
     pub fn new(
         script: blueprint::Script,
-        http_sender: mpsc::UnboundedSender<ChannelMessage>,
+        http_sender: mpsc::UnboundedSender<FetchMessage>,
     ) -> anyhow::Result<Self> {
         let v8 = MiniV8::new();
         super::shim::init(&v8, http_sender)?;
