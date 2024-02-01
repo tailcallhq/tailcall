@@ -1,5 +1,15 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(
+    port: 8000
+    graphiql: true
+    hostname: "0.0.0.0"
+    responseHeaders: [
+      {key: "Access-Control-Allow-Origin", value: "stackblitz.com"}
+      {key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, DELETE, OPTIONS"}
+      {key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization"}
+      {key: "Access-Control-Allow-Credentials", value: "true"}
+    ]
+  )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
