@@ -4,17 +4,17 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 }
 
 type Query {
-  foo: [User] @js(script: "[{id: 1, name: 'foo'}]")
+  user: User @http(path: "/foo") @cache(maxAge: 300)
 }
 
-type User {
+type User @cache(maxAge: 900) {
   id: Int
   name: String
 }
 
 #> client-sdl
 type Query {
-  foo: [User]
+  user: User
 }
 
 type User {
