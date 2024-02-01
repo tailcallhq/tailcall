@@ -11,7 +11,7 @@ use crate::is_default;
 #[serde(rename_all = "camelCase")]
 pub struct Event {
     pub message: Message,
-    pub command_id: Option<u64>,
+    pub id: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -118,13 +118,13 @@ impl TryFrom<&reqwest::Request> for JsRequest {
 impl Event {
     pub fn response(&self) -> Option<JsResponse> {
         match self {
-            Event { message: Message::Response(res), command_id: _ } => Some(res.clone()),
+            Event { message: Message::Response(res), id: _ } => Some(res.clone()),
             _ => None,
         }
     }
     pub fn request(&self) -> Option<JsRequest> {
         match self {
-            Event { message: Message::Request(req), command_id: _ } => Some(req.clone()),
+            Event { message: Message::Request(req), id: _ } => Some(req.clone()),
             _ => None,
         }
     }

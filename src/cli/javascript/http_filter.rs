@@ -35,7 +35,7 @@ impl HttpFilter {
                     let response = JsResponse::try_from(&response)?;
                     let command = self
                         .script
-                        .on_event(Event { message: Message::Response(response), command_id: id })
+                        .on_event(Event { message: Message::Response(response), id })
                         .await?;
                     Ok(self.on_command(command).await?)
                 }
@@ -57,7 +57,7 @@ impl HttpIO for HttpFilter {
         let request = JsRequest::try_from(&request)?;
         let command = self
             .script
-            .on_event(Event { message: Message::Request(request), command_id: None })
+            .on_event(Event { message: Message::Request(request), id: None })
             .await?;
         self.on_command(command).await
     }
