@@ -61,49 +61,44 @@ impl Runtime {
 impl ScriptIO<Event, Command> for Runtime {
     async fn on_event(&self, event: Event) -> anyhow::Result<Command> {
         let script = self.script.clone();
-        let serde_event = serde_json::to_value(event.clone())?;
-        let serde_command = LOCAL_RUNTIME.with(|cell| {
+        LOCAL_RUNTIME.with(|cell| {
             let rtm = cell
                 .get_or_init(move || LocalRuntime::new(script.clone()))
                 .as_ref()
                 .unwrap();
-            on_event_impl(rtm, serde_event)
-        })?;
-
-        match serde_command {
-            serde_json::Value::Null => {
-                if let Some(req) = event.request() {
-                    Ok(Command::Continue(req))
-                } else {
-                    Err(anyhow::anyhow!("expected a request"))
-                }
-            }
-            _ => {
-                let command: Command = serde_json::from_value(serde_command)?;
-                Ok(command)
-            }
-        }
+            on_event_impl(rtm, event)
+        })
     }
 }
 
-fn on_event_impl(
-    rtm: &LocalRuntime,
-    serde_event: serde_json::Value,
-) -> anyhow::Result<serde_json::Value> {
+fn on_event_impl(rtm: &LocalRuntime, event: Event) -> anyhow::Result<Command> {
+    log::debug!("event: {:?}", event);
     let closure = &rtm.closure;
     let v8 = &rtm.v8;
-    log::debug!("event: {:?}", serde_event);
-    let err = &anyhow::anyhow!("expected an 'onEvent' function");
+    let serde_event = serde_json::to_value(event.clone())?;
     let on_event = closure
         .as_function()
-        .ok_or(err)
+        .ok_or(&anyhow::anyhow!("expected an 'onEvent' function"))
         .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-
     let args = serde_event.to_v8(v8)?;
     let mini_command = on_event
         .call::<mini_v8::Values, mini_v8::Value>(mini_v8::Values::from_vec(vec![args]))
         .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
     let serde_command = serde_json::Value::from_v8(&mini_command)?;
-    log::debug!("command: {:?}", serde_command);
-    Ok(serde_command)
+    let command = match serde_command {
+        serde_json::Value::Null => {
+            if let Some(req) = event.request() {
+                Ok(Command::Continue(req))
+            } else {
+                Err(anyhow::anyhow!("expected a request"))
+            }
+        }
+        _ => {
+            let command: Command = serde_json::from_value(serde_command)?;
+            Ok(command)
+        }
+    }?;
+
+    log::debug!("command: {:?}", command);
+    Ok(command)
 }
