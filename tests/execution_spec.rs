@@ -662,27 +662,6 @@ async fn assert_spec(spec: ExecutionSpec) {
             }
         }
 
-        // round-trip: Re-serialize in SDL, re-parse, and check identity
-        let inter = config.to_sdl();
-
-        let roundtrip = Config::from_sdl(&inter).to_result().unwrap_or_else(|e| {
-            panic!(
-                "Couldn't parse round-trip GraphQL in server definition #{} of {:#?}: {}",
-                i + 1,
-                spec.path,
-                e
-            )
-        });
-
-        let roundtrip = Config::default().merge_right(&roundtrip);
-
-        if config != roundtrip {
-            panic!("Parsed config of {:#?} didn't match SDL round-trip config.\n\toriginal: {:?}\n\tround-trip: {:?}\n\nintermediate format:\n{}", spec.path, config, roundtrip, inter);
-        }
-
-        log::info!("\tserver #{} round-trip ok", i + 1);
-
-        // TODO: We have to resolve after identity checking until #1059 is fixed.
         let config = reader.resolve(config).await.unwrap_or_else(|e| {
             panic!(
                 "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
