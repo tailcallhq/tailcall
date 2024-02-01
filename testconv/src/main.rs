@@ -7,11 +7,12 @@ use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
 use regex::Regex;
 use tailcall::blueprint::Blueprint;
-use tailcall::cli::{init_file, init_http};
+use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Upstream};
 use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
+use tailcall::valid::Validator as _;
 
 use crate::common::{Annotation, SDLError};
 
@@ -109,7 +110,7 @@ async fn main() {
 
     let mut files_already_processed: HashSet<String> = HashSet::new();
 
-    let reader = ConfigReader::init(init_file(), init_http(&Upstream::default(), None));
+    let reader = ConfigReader::init(init_runtime(&Upstream::default(), None));
 
     for x in read_dir(http_dir).expect("Could not read http directory") {
         let x = x.unwrap();
