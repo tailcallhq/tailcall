@@ -1,5 +1,7 @@
 # test-union
 
+###### check identity
+
 #### server:
 
 ```graphql

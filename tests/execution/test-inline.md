@@ -1,5 +1,7 @@
 # test-inline
 
+###### check identity
+
 #### server:
 
 ```graphql

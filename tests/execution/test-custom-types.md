@@ -1,5 +1,7 @@
 # test-custom-types
 
+###### check identity
+
 #### server:
 
 ```graphql

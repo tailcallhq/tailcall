@@ -1,5 +1,7 @@
 # test-omit
 
+###### check identity
+
 #### server:
 
 ```graphql

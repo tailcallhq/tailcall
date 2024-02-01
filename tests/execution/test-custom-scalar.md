@@ -1,5 +1,7 @@
 # test-custom-scalar
 
+###### check identity
+
 #### server:
 
 ```graphql

@@ -478,7 +478,7 @@ async fn main() {
             }
 
             let md_spec = format!(
-                "# {}\n\n#### server:\n\n```graphql\n{}\n```\n",
+                "# {}\n\n###### check identity\n\n#### server:\n\n```graphql\n{}\n```\n",
                 file_stem,
                 server.unwrap()
             );

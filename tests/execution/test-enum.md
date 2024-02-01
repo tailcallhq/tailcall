@@ -1,5 +1,7 @@
 # test-enum
 
+###### check identity
+
 #### server:
 
 ```graphql

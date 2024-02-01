@@ -1,5 +1,7 @@
 # test-batching-group-by
 
+###### check identity
+
 #### server:
 
 ```graphql

@@ -115,7 +115,7 @@ assert:
       body:
         query: query { post1 {id title body userId} post2 {id title body userId} post3 {id title body userId} }
 env:
+  POST_ID: "2"
   NESTED_POST_ID: "3"
   ID: "1"
-  POST_ID: "2"
 ```
