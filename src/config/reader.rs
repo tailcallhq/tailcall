@@ -7,7 +7,7 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ExprBody, Extensions, LinkType, Script, ScriptOptions};
+use super::{ExprBody, Extensions, FileDescriptorSetWithId, LinkType, Script, ScriptOptions};
 use crate::config::{Config, ConfigSet, ServiceDocumentWithId, Source};
 use crate::target_runtime::TargetRuntime;
 
@@ -104,7 +104,23 @@ impl ConfigReader {
                             service_document,
                         });
                 }
-                LinkType::Protobuf => todo!(),
+                LinkType::Protobuf => {
+                    let descriptors = self
+                        .resolve_descriptors(HashMap::new(), source.path)
+                        .await?;
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+
+                    for (_, v) in descriptors {
+                        file_descriptor_set.file.push(v);
+                    }
+
+                    config_set.extensions.file_descriptor_from_links.push(
+                        FileDescriptorSetWithId {
+                            id: config_link.id.to_owned(),
+                            file_descriptor_set,
+                        },
+                    );
+                }
                 LinkType::Data => todo!(),
             }
         }
@@ -331,6 +347,59 @@ mod test_proto_config {
             config_set.config.links.len(),
             config_set.extensions.service_document_from_links.len()
         );
+
+        dir.close().unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_load_proto_link() {
+        let runtime = init_runtime(&Default::default(), None);
+        let reader = ConfigReader::init(runtime);
+        let news_proto = "src/grpc/tests/news.proto";
+        let greetings_proto = "src/grpc/tests/greetings.proto";
+
+        let sdl = format!("schema @server @upstream @link(id: \"news\", src: \"{}\", type: Protobuf) @link(id: \"greetings\", src: \"{}\", type: Protobuf) {{
+            query: Query
+          }}", news_proto, greetings_proto);
+
+        let dir = tempfile::tempdir().unwrap();
+
+        let schema_path = dir.path().join("schema.graphql");
+        tokio::fs::write(&schema_path, sdl).await.unwrap();
+
+        let config_set = reader.read(schema_path.display()).await.unwrap();
+
+        assert_eq!(config_set.config.links.len(), 2);
+        assert_eq!(
+            config_set.config.links.len(),
+            config_set.extensions.file_descriptor_from_links.len()
+        );
+
+        let expected_news_proto = reader.read_proto(news_proto).await.unwrap();
+        let actual_news_proto = config_set
+            .extensions
+            .file_descriptor_from_links
+            .iter()
+            .find(|x| x.id == Some("news".to_string()))
+            .unwrap()
+            .file_descriptor_set
+            .file
+            .get(0)
+            .unwrap();
+        assert_eq!(expected_news_proto, *actual_news_proto);
+
+        let expected_greetings_proto = reader.read_proto(greetings_proto).await.unwrap();
+        let actual_greetings_proto = config_set
+            .extensions
+            .file_descriptor_from_links
+            .iter()
+            .find(|x| x.id == Some("greetings".to_string()))
+            .unwrap()
+            .file_descriptor_set
+            .file
+            .get(0)
+            .unwrap();
+        assert_eq!(expected_greetings_proto, *actual_greetings_proto);
 
         dir.close().unwrap();
     }

@@ -12,6 +12,12 @@ pub struct ConfigSet {
     pub extensions: Extensions,
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct FileDescriptorSetWithId {
+    pub id: Option<String>,
+    pub file_descriptor_set: FileDescriptorSet,
+}
+
 #[derive(Clone, Debug)]
 pub struct ServiceDocumentWithId {
     pub id: Option<String>,
@@ -37,6 +43,9 @@ pub struct Extensions {
     /// Contains the contents of the JS file
     pub script: Option<String>,
 
+    /// Contains the file descriptor sets resolved from the links
+    pub file_descriptor_from_links: Vec<FileDescriptorSetWithId>,
+
     /// Contains the service documents resolved from the links
     pub service_document_from_links: Vec<ServiceDocumentWithId>,
 }
@@ -49,6 +58,8 @@ impl Extensions {
         self.script = other.script.clone().or(self.script.take());
         self.service_document_from_links
             .extend(other.service_document_from_links.clone());
+        self.file_descriptor_from_links
+            .extend(other.file_descriptor_from_links.clone());
         self
     }
 }
