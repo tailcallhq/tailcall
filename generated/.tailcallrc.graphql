@@ -218,10 +218,9 @@ directive @server(
   """
   cacheControlHeader: Boolean
   """
-  `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). 
-  @default `null`.
+  `cert` contains a path to key and certificate. @default None
   """
-  cert: String
+  cert: TlsCert
   """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
@@ -242,10 +241,6 @@ directive @server(
   `true`.
   """
   introspection: Boolean
-  """
-  `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-  """
-  key: String
   pipelineFlush: Boolean
   """
   `port` sets the Tailcall running port. @default `8000`.
@@ -631,6 +626,16 @@ input Script {
 input ScriptOptions {
   src: String!
   timeout: Int
+}
+input TlsCert {
+  """
+  `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS).
+  """
+  cert: String!
+  """
+  `key` sets the path to key for running the server over HTTP2 (HTTPS).
+  """
+  key: String!
 }
 input Schema {
   Obj: JSON

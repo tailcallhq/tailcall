@@ -100,7 +100,7 @@ mod tests {
     use std::path::PathBuf;
 
     use derive_setters::Setters;
-    use once_cell::sync::Lazy;
+    
     use pretty_assertions::assert_eq;
     use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
     use reqwest::Method;

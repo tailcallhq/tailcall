@@ -147,8 +147,7 @@ where
                                 let (part, body) = req.into_parts();
                                 let body = body.collect().await?.to_bytes();
                                 let req = Request::from_parts(part, Full::new(body));
-                                handle_request::<GraphQLBatchRequest>(req, app_ctx)
-                                    .await
+                                handle_request::<GraphQLBatchRequest>(req, app_ctx).await
                             }
                         }),
                     )
