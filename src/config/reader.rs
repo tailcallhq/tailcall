@@ -7,7 +7,7 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigSet, ExprBody, Extensions, Script, ScriptOptions};
+use super::{ConfigSet, ExprBody, Extensions, LinkType, Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
@@ -63,7 +63,8 @@ impl ConfigReader {
     }
 
     /// Reads the links in a Config and fill the content
-    async fn read_links(&self, config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
+    #[async_recursion::async_recursion]
+    async fn read_links(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
         let links = config_set.config.links.clone();
 
         if links.is_empty() {
@@ -74,7 +75,31 @@ impl ConfigReader {
             return Err(anyhow::anyhow!("Link src cannot be empty"));
         }
 
-        todo!()
+        for config_link in links.iter() {
+            let source = self.read_file(&config_link.src).await?;
+            let content = source.content;
+
+            match config_link.type_of {
+                LinkType::Config => {
+                    let config =
+                        Config::from_source(Source::detect(&source.path).unwrap(), &content)?;
+
+                    config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
+
+                    if !config.links.is_empty() {
+                        config_set = config_set
+                            .merge_right(&self.read_links(ConfigSet::from(config)).await?);
+                    }
+                }
+                LinkType::GraphQL => todo!(),
+                LinkType::Protobuf => todo!(),
+                LinkType::Data => todo!(),
+            }
+        }
+
+        dbg!(config_set.clone());
+
+        Ok(config_set)
     }
 
     /// Reads the script file and replaces the path with the content
