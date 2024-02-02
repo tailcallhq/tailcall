@@ -1,7 +1,7 @@
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
 use tailcall::Cache;
@@ -30,7 +30,7 @@ impl CloudflareChronoCache {
 impl Cache for CloudflareChronoCache {
     type Key = u64;
     type Value = ConstValue;
-    async fn set<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<ConstValue> {
+    async fn set<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<()> {
         let kv_store = self.get_kv()?;
         let ttl = ttl.get();
         async_std::task::spawn_local(async move {
@@ -40,13 +40,12 @@ impl Cache for CloudflareChronoCache {
                 .expiration_ttl(ttl)
                 .execute()
                 .await
-                .map_err(to_anyhow)?;
-            anyhow::Ok(value)
+                .map_err(to_anyhow)
         })
         .await
     }
 
-    async fn get<'a>(&'a self, key: &'a u64) -> Result<ConstValue> {
+    async fn get<'a>(&'a self, key: &'a u64) -> Result<Option<Self::Value>> {
         let kv_store = self.get_kv()?;
         let key = key.to_string();
         async_std::task::spawn_local(async move {
@@ -55,8 +54,7 @@ impl Cache for CloudflareChronoCache {
                 .json::<Value>()
                 .await
                 .map_err(to_anyhow)?;
-            let val = val.ok_or(anyhow!("key not found"))?;
-            Ok(ConstValue::from_json(val)?)
+            Ok(val.map(ConstValue::from_json).transpose()?)
         })
         .await
     }
