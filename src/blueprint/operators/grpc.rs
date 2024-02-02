@@ -78,7 +78,7 @@ fn validate_schema(
             // TODO: all of the fields in protobuf are optional actually
             // and if we want to mark some fields as required in GraphQL
             // JsonSchema won't match and the validation will fail
-            fields.compare(&output_schema, name)
+            fields.compare(&output_schema, name).map(|x| x)
         })
 }
 
