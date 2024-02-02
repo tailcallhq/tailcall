@@ -21,14 +21,14 @@ moka = { version = "0.12.5", default-features = false, features = [
 hyper-rustls = { version = "0.25.0", optional = true }
 rustls = { version = "0.22.2", optional = true }
 rustls-pemfile = { version = "1.0.4", optional = true }
-rustls-pki-types = "1.1.0"
+rustls-pki-types = "1.2.0"
 inquire = { version = "0.6.2", optional = true }
 
 # dependencies safe for wasm:
 
 schemars = { version = "0.8.16", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"], default-features = false }
-tokio = { version = "1.35.1", features = ["rt", "time"] }
+tokio = { version = "1.36.0", features = ["rt", "time"] }
 anyhow = "1.0.79"
 derive_setters = "0.1.6"
 thiserror = "1.0.56"
