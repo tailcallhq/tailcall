@@ -9,6 +9,10 @@ on:
     paths-ignore: ["docs/**", "**.md"]
     types: [opened, reopened, synchronize, labeled]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   macro_benchmark:
     name: Macro Benchmarks
