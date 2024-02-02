@@ -2,7 +2,6 @@ use core::future::Future;
 use std::num::NonZeroU64;
 use std::pin::Pin;
 
-
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 
@@ -22,7 +21,7 @@ impl Cached {
     pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
         match expr {
             Expression::IO(io) => Expression::Cached(Cached { max_age, expr: io }),
-            expr => expr
+            expr => expr,
         }
     }
 }
@@ -39,7 +38,10 @@ impl Eval for Cached {
                 Ok(val)
             } else {
                 let val = self.expr.eval(ctx, conc).await?;
-                ctx.req_ctx.cache.set(key, val.clone(), self.max_age).await?;
+                ctx.req_ctx
+                    .cache
+                    .set(key, val.clone(), self.max_age)
+                    .await?;
                 Ok(val)
             }
         })

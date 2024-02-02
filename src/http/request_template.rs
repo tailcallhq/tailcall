@@ -11,7 +11,7 @@ use crate::config::Encoding;
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
-use crate::lambda::{CacheKey};
+use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 

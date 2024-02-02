@@ -1,6 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
 
-
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
