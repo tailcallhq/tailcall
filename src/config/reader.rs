@@ -8,7 +8,7 @@ use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
 use super::{ConfigSet, ExprBody, Extensions, Script, ScriptOptions};
-use crate::config::{Config, Link, Source};
+use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
 const NULL_STR: &str = "\0\0\0\0\0\0\0";
@@ -62,6 +62,21 @@ impl ConfigReader {
         Ok(content)
     }
 
+    /// Reads the links in a Config and fill the content
+    async fn read_links(&self, config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
+        let links = config_set.config.links.clone();
+
+        if links.is_empty() {
+            return Ok(config_set);
+        }
+
+        if links.iter().any(|link| link.src.is_empty()) {
+            return Err(anyhow::anyhow!("Link src cannot be empty"));
+        }
+
+        todo!()
+    }
+
     /// Reads the script file and replaces the path with the content
     async fn ext_script(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
         let config = &mut config_set.config;
@@ -106,6 +121,9 @@ impl ConfigReader {
 
         // Extend it with protobuf definitions for GRPC
         let config_set = self.ext_grpc(config_set).await?;
+
+        // Extend it with the links
+        let config_set = self.read_links(config_set).await?;
 
         Ok(config_set)
     }
