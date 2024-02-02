@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+use async_graphql::parser::types::ServiceDocument;
 use prost_reflect::prost_types::FileDescriptorSet;
 
 use crate::config::Config;
@@ -11,6 +12,21 @@ pub struct ConfigSet {
     pub extensions: Extensions,
 }
 
+#[derive(Clone, Debug)]
+pub struct ServiceDocumentWithId {
+    pub id: Option<String>,
+    pub service_document: ServiceDocument,
+}
+
+impl Default for ServiceDocumentWithId {
+    fn default() -> Self {
+        ServiceDocumentWithId {
+            id: None,
+            service_document: ServiceDocument { definitions: vec![] },
+        }
+    }
+}
+
 /// Extensions are meta-information required before we can generate the blueprint.
 /// Typically, this information cannot be inferred without performing an IO operation, i.e.,
 /// reading a file, making an HTTP call, etc.
@@ -20,6 +36,9 @@ pub struct Extensions {
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
+
+    /// Contains the service documents resolved from the links
+    pub service_document_from_links: Vec<ServiceDocumentWithId>,
 }
 
 impl Extensions {
@@ -28,6 +47,8 @@ impl Extensions {
             .file
             .extend(other.grpc_file_descriptor.file.clone());
         self.script = other.script.clone().or(self.script.take());
+        self.service_document_from_links
+            .extend(other.service_document_from_links.clone());
         self
     }
 }

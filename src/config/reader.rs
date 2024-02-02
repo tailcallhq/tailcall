@@ -7,8 +7,8 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigSet, ExprBody, Extensions, LinkType, Script, ScriptOptions};
-use crate::config::{Config, Source};
+use super::{ExprBody, Extensions, LinkType, Script, ScriptOptions};
+use crate::config::{Config, ConfigSet, ServiceDocumentWithId, Source};
 use crate::target_runtime::TargetRuntime;
 
 const NULL_STR: &str = "\0\0\0\0\0\0\0";
@@ -91,13 +91,23 @@ impl ConfigReader {
                             .merge_right(&self.read_links(ConfigSet::from(config)).await?);
                     }
                 }
-                LinkType::GraphQL => todo!(),
+                LinkType::GraphQL => {
+                    let service_document =
+                        Config::from_source(Source::detect(&source.path).unwrap(), &content)?
+                            .to_document();
+
+                    config_set
+                        .extensions
+                        .service_document_from_links
+                        .push(ServiceDocumentWithId {
+                            id: config_link.id.to_owned(),
+                            service_document,
+                        });
+                }
                 LinkType::Protobuf => todo!(),
                 LinkType::Data => todo!(),
             }
         }
-
-        dbg!(config_set.clone());
 
         Ok(config_set)
     }
@@ -297,6 +307,32 @@ mod test_proto_config {
         } else {
             None
         }
+    }
+
+    #[tokio::test]
+    async fn test_load_graphql_link() {
+        let runtime = init_runtime(&Default::default(), None);
+        let reader = ConfigReader::init(runtime);
+        let link_const = "tests/graphql/fixtures/link-const.graphql";
+        let link_enum = "tests/graphql/fixtures/link-enum.graphql";
+
+        let sdl = format!("schema @server @upstream @link(id: \"const\", src: \"{}\", type: GraphQL) @link(id: \"enum\", src: \"{}\", type: GraphQL) {{
+            query: Query
+          }}", link_const, link_enum);
+
+        let dir = tempfile::tempdir().unwrap();
+        let schema_path = dir.path().join("schema.graphql");
+        tokio::fs::write(&schema_path, sdl).await.unwrap();
+
+        let config_set = reader.read(schema_path.display()).await.unwrap();
+
+        assert_eq!(config_set.config.links.len(), 2);
+        assert_eq!(
+            config_set.config.links.len(),
+            config_set.extensions.service_document_from_links.len()
+        );
+
+        dir.close().unwrap();
     }
 }
 

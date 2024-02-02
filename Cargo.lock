@@ -3499,6 +3499,7 @@ dependencies = [
  "serde_urlencoded",
  "serde_yaml",
  "stripmargin",
+ "tempfile",
  "thiserror",
  "tokio",
  "ttl_cache",
