@@ -1,15 +1,19 @@
 name: PR Title Validation
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
+  # pull_request_target is ok until we do not checkout and build external code
+  # TODO: maybe it is not required after all https://github.com/amannn/action-semantic-pull-request/issues/219
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  pull-requests: read
 
 jobs:
   title-check:
     name: Check PR Title
     runs-on: ubuntu-latest
     steps:
-      - uses: naveenk1223/action-pr-title@master
-        with:
-          regex: '^[a-zA-Z]+(\([a-zA-Z/]+\))?!?: .+'
-          allowed_prefixes: "feat,fix,docs,style,refactor,test,chore,ci,perf,revert"
-          prefix_case_sensitive: false
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
