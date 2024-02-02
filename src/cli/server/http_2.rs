@@ -7,7 +7,7 @@ use http_body_util::{BodyExt, Full};
 use hyper::body::Incoming;
 use hyper::service::service_fn;
 use hyper::Request;
-use hyper_util::rt::TokioIo;
+use hyper_util::rt::{TokioExecutor, TokioIo};
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
@@ -56,18 +56,6 @@ async fn load_private_key(filename: String) -> Result<PrivateKeyDer<'static>> {
     });
 
     key.ok_or(CLIError::new("Invalid private key").into())
-}
-
-#[derive(Clone, Copy, Debug)]
-struct LocalExec;
-
-impl<F> hyper::rt::Executor<F> for LocalExec
-where
-    F: std::future::Future + 'static,
-{
-    fn execute(&self, fut: F) {
-        tokio::task::spawn_local(fut);
-    }
 }
 
 #[async_trait::async_trait]
@@ -150,7 +138,7 @@ where
             let sc = sc.clone();
             let io = tcp_io.get_io(tls_acceptor.clone(), stream).await?;
             tokio::spawn(async move {
-                let server = hyper::server::conn::http2::Builder::new(LocalExec)
+                let server = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
                     .serve_connection(
                         io,
                         service_fn(move |req: Request<Incoming>| {
@@ -176,7 +164,7 @@ where
             let sc = sc.clone();
             let io = tcp_io.get_io(tls_acceptor.clone(), stream).await?;
             tokio::spawn(async move {
-                let server = hyper::server::conn::http2::Builder::new(LocalExec)
+                let server = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
                     .serve_connection(
                         io,
                         service_fn(move |req: Request<Incoming>| {
