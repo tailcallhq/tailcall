@@ -13,8 +13,8 @@ pub trait CacheKey<Ctx> {
 
 #[derive(Clone, Debug)]
 pub struct Cached {
-    max_age: NonZeroU64,
-    expr: IO,
+    pub max_age: NonZeroU64,
+    pub expr: IO,
 }
 
 impl Cached {

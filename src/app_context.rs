@@ -10,7 +10,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::lambda::{DataLoaderId, Expression, IO};
+use crate::lambda::{Cached, DataLoaderId, Expression, IO};
 use crate::target_runtime::TargetRuntime;
 
 pub struct AppContext {
@@ -32,7 +32,9 @@ impl AppContext {
         for def in blueprint.definitions.iter_mut() {
             if let Definition::ObjectTypeDefinition(def) = def {
                 for field in &mut def.fields {
-                    if let Some(Expression::IO(expr)) = &mut field.resolver {
+                    if let Some(Expression::IO(expr) | Expression::Cached(Cached { expr, .. })) =
+                        &mut field.resolver
+                    {
                         match expr {
                             IO::Http { req_template, group_by, .. } => {
                                 let data_loader = HttpDataLoader::new(

@@ -1,7 +1,7 @@
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{ExprBody, Field, If};
-use crate::lambda::{Cached, Expression, List, Logic, Math, Relation};
+use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
@@ -54,10 +54,6 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     let config_set = ctx.config_set;
     let field = ctx.config_field;
     let operation_type = ctx.operation_type;
-    let _wrap_cache = field
-        .cache
-        .as_ref()
-        .map(|config::Cache { max_age }| |expression| Cached::wrap(*max_age, expression));
     match expr {
         // Io Expr
         ExprBody::Http(http) => compile_http(config_set, field, &http),
