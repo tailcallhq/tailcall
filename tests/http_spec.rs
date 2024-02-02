@@ -21,11 +21,12 @@ mod http_spec {
     use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
     use tailcall::blueprint::Blueprint;
     use tailcall::cache::InMemoryCache;
+    use tailcall::cli::javascript;
     use tailcall::config::reader::ConfigReader;
     use tailcall::config::{Config, ConfigSet, Source};
     use tailcall::http::{handle_request, AppContext, Method, Response};
     use tailcall::target_runtime::TargetRuntime;
-    use tailcall::{EnvIO, HttpIO};
+    use tailcall::{blueprint, EnvIO, HttpIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use url::Url;
 
@@ -66,6 +67,18 @@ mod http_spec {
         env: HashMap<String, String>,
     }
 
+    impl EnvIO for Env {
+        fn get(&self, key: &str) -> Option<String> {
+            self.env.get(key).cloned()
+        }
+    }
+
+    impl Env {
+        pub fn init(map: HashMap<String, String>) -> Self {
+            Self { env: map }
+        }
+    }
+
     #[derive(Clone)]
     pub struct FileIO {}
 
@@ -94,18 +107,6 @@ mod http_spec {
                 .map_err(|e| anyhow!("{}", e))?;
             log::info!("File read: {} ... ok", path);
             Ok(String::from_utf8(buffer)?)
-        }
-    }
-
-    impl EnvIO for Env {
-        fn get(&self, key: &str) -> Option<String> {
-            self.env.get(key).cloned()
-        }
-    }
-
-    impl Env {
-        pub fn init(map: HashMap<String, String>) -> Self {
-            Self { env: map }
         }
     }
 
@@ -233,13 +234,24 @@ mod http_spec {
             anyhow::Ok(spec)
         }
 
+        fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
+            #[cfg(feature = "js")]
+            if let Some(script) = script {
+                return javascript::init_http(http, script);
+            }
+
+            #[cfg(not(feature = "js"))]
+            log::warn!("JS capabilities are disabled in this build");
+            let _ = script;
+
+            Arc::new(http)
+        }
+
         async fn server_context(&self) -> Arc<AppContext> {
-            let http = Arc::new(MockHttpClient::new(self.clone()));
-            let http2_only = http.clone();
             let runtime = TargetRuntime {
-                http,
-                http2_only,
-                env: Arc::new(Env::init(self.env.clone())),
+                http: Self::init_hook_http(MockHttpClient::new(self.clone()), None),
+                http2_only: Self::init_hook_http(MockHttpClient::new(self.clone()), None),
+                env: Arc::new(Env::init(HashMap::new())),
                 file: Arc::new(FileIO::init()),
                 cache: Arc::new(InMemoryCache::new()),
             };
@@ -251,8 +263,23 @@ mod http_spec {
                 ConfigSource::Inline(config) => ConfigSet::from(config),
             };
             let blueprint = Blueprint::try_from(&config).unwrap();
-            let _http2_client = Arc::new(MockHttpClient::new(self.clone()));
-            let server_context = AppContext::new(blueprint, runtime);
+            let client = Self::init_hook_http(
+                MockHttpClient::new(self.clone()),
+                blueprint.server.script.clone(),
+            );
+            let http2_client = Arc::new(MockHttpClient::new(self.clone()));
+            let env = Arc::new(Env::init(self.env.clone()));
+            let chrono_cache = Arc::new(InMemoryCache::new());
+            let server_context = AppContext::new(
+                blueprint,
+                TargetRuntime {
+                    http: client,
+                    http2_only: http2_client,
+                    env,
+                    cache: chrono_cache,
+                    file: runtime.file.clone(),
+                },
+            );
             Arc::new(server_context)
         }
     }
