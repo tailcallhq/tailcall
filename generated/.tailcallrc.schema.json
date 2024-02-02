@@ -1492,6 +1492,7 @@
       "type": "object"
     },
     "Type": {
+      "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
       "properties": {
         "added_fields": {
           "description": "Additional fields to be added to the type",

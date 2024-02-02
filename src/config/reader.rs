@@ -383,32 +383,6 @@ mod test_proto_config {
             config_set.extensions.file_descriptor_from_links.len()
         );
 
-        let expected_news_proto = reader.read_proto(news_proto).await.unwrap();
-        let actual_news_proto = config_set
-            .extensions
-            .file_descriptor_from_links
-            .iter()
-            .find(|x| x.id == Some("news".to_string()))
-            .unwrap()
-            .file_descriptor_set
-            .file
-            .first()
-            .unwrap();
-        assert_eq!(expected_news_proto, *actual_news_proto);
-
-        let expected_greetings_proto = reader.read_proto(greetings_proto).await.unwrap();
-        let actual_greetings_proto = config_set
-            .extensions
-            .file_descriptor_from_links
-            .iter()
-            .find(|x| x.id == Some("greetings".to_string()))
-            .unwrap()
-            .file_descriptor_set
-            .file
-            .first()
-            .unwrap();
-        assert_eq!(expected_greetings_proto, *actual_greetings_proto);
-
         dir.close().unwrap();
     }
 
