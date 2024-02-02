@@ -12,7 +12,9 @@ use crate::is_default;
 pub struct Message {
     pub message: MessageContent,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<u64>,
+
+    // FIXME: should be u64
+    pub id: Option<f64>,
 }
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
