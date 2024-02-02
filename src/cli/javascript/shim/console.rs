@@ -27,6 +27,6 @@ fn console_log(invocation: mini_v8::Invocation) -> Result<mini_v8::Value, mini_v
         })
         .collect::<Vec<_>>()
         .join(",");
-    log::info!("JS: {}", args);
+    println!("{}", args);
     Ok(mini_v8::Value::Undefined)
 }

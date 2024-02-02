@@ -6,7 +6,6 @@ use mini_v8::{MiniV8, Script};
 
 use crate::blueprint::{self};
 use crate::channel::Message;
-use crate::cli::javascript::serde_v8::SerdeV8;
 use crate::WorkerIO;
 
 thread_local! {
@@ -72,27 +71,21 @@ impl WorkerIO<Message, Message> for Runtime {
 }
 
 fn on_event_impl(rtm: &LocalRuntime, event: Message) -> anyhow::Result<Message> {
-    log::debug!("event: {:?}", event);
+    // log::debug!("event: {:?}", event);
     let closure = &rtm.closure;
     let v8 = &rtm.v8;
-    let serde_event = serde_json::to_value(event.clone())?;
     let on_event = closure
         .as_function()
         .ok_or(&anyhow::anyhow!("expected an 'onEvent' function"))
         .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-    let args = serde_event.to_v8(v8)?;
-    let mini_command = on_event
+    let args = event
+        .to_v8(v8)
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let command = on_event
         .call::<mini_v8::Values, mini_v8::Value>(mini_v8::Values::from_vec(vec![args]))
         .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
-    let serde_command = serde_json::Value::from_v8(&mini_command)?;
-    let command = match serde_command {
-        serde_json::Value::Null => Err(anyhow::anyhow!("expected a request")),
-        _ => {
-            let command: Message = serde_json::from_value(serde_command)?;
-            Ok(command)
-        }
-    }?;
+    let command = Message::from_v8(command)?;
 
-    log::debug!("command: {:?}", command);
+    // log::debug!("command: {:?}", command);
     Ok(command)
 }
