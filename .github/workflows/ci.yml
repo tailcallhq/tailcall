@@ -10,6 +10,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # TODO: cancel in progress is not ok for a release since it can be cancelled in a middle of updates
+  # and we can end up with partial release.
+  # but for pull-requests cancelling previously running jobs could be beneficial
+  # cancel-in-progress: true
+
 jobs:
   check_if_build:
     name: Check if Build
