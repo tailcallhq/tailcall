@@ -717,4 +717,55 @@ mod tests {
         )]);
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn test_merge_right_with_default() {
+        let expected = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+        let actual = expected.clone().merge_right(&Config::default());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_merge_right_with_values_and_default() {
+        let upstream = Upstream::default().base_url(Some("http://localhost:8080".to_string()));
+        let server = Server {
+            hostname: Some("localhost".to_string()),
+            ..Default::default()
+        };
+        let expected = Config {
+            server: server.clone(),
+            upstream: upstream.clone(),
+            ..Default::default()
+        };
+        let actual = Config { server, ..Default::default() }
+            .merge_right(&Config { upstream, ..Default::default() });
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_merge_right_overriding_values_with_default() {
+        let upstream = Upstream::default().base_url(Some("http://localhost:8080".to_string()));
+        let server = Server {
+            hostname: Some("localhost".to_string()),
+            ..Default::default()
+        };
+        let new_server = Server {
+            hostname: Some("127.0.0.1".to_string()),
+            port: Some(8080),
+            ..Default::default()
+        };
+        let new_upstream = Upstream { http2_only: Some(true), ..Default::default() };
+        let expected = Config {
+            server: new_server.clone(),
+            upstream: upstream.clone().merge_right(new_upstream.clone()),
+            ..Default::default()
+        };
+        let actual = Config { server, ..Default::default() }
+            .merge_right(&Config { server: new_server, upstream, ..Default::default() })
+            .merge_right(&Config { upstream: new_upstream, ..Default::default() });
+
+        assert_eq!(actual, expected);
+    }
 }
