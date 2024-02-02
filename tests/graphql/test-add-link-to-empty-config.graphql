@@ -1,5 +1,5 @@
 #> server-sdl
-schema @server @upstream @link(src: "examples/link-const.graphql", type: Config) @link(src: "examples/link-enum.graphql", type: Config) {
+schema @server @upstream @link(src: "tests/graphql/fixtures/link-const.graphql", type: Config) @link(src: "tests/graphql/fixtures/link-enum.graphql", type: Config) {
   query: Query
 }
 
