@@ -1,138 +1,153 @@
-use std::collections::BTreeMap;
+use std::io::Read;
 
 use hyper::body::Bytes;
-use hyper::header::{HeaderName, HeaderValue};
 use reqwest::Request;
 
-use crate::http::Response;
-use crate::is_default;
+use crate::http::{Response};
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Message {
     pub message: MessageContent,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    // FIXME: should be u64
-    pub id: Option<f64>,
+    pub id: Option<u64>,
 }
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+
 pub enum MessageContent {
-    Request(JsRequest),
-    Response(JsResponse),
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct JsRequest {
-    url: String,
-    method: String,
-    headers: BTreeMap<String, String>,
-    #[serde(skip_serializing_if = "is_default")]
-    body: Option<serde_json::Value>,
-}
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct JsResponse {
-    status: f64,
-    headers: BTreeMap<String, String>,
-    body: Option<serde_json::Value>,
-}
-
-// Response implementations
-impl TryFrom<JsResponse> for Response<Bytes> {
-    type Error = anyhow::Error;
-
-    fn try_from(res: JsResponse) -> Result<Self, Self::Error> {
-        let status = reqwest::StatusCode::from_u16(res.status as u16)?;
-        let headers = create_header_map(res.headers)?;
-        let body = serde_json::to_string(&res.body)?;
-        Ok(Response { status, headers, body: Bytes::from(body) })
-    }
-}
-
-impl TryFrom<&Response<Bytes>> for JsResponse {
-    type Error = anyhow::Error;
-
-    fn try_from(res: &Response<Bytes>) -> Result<Self, Self::Error> {
-        let status = res.status.as_u16() as f64;
-        let mut headers = BTreeMap::new();
-        for (key, value) in res.headers.iter() {
-            let key = key.to_string();
-            let value = value.to_str()?.to_string();
-            headers.insert(key, value);
-        }
-
-        let body = serde_json::from_slice(res.body.as_ref())?;
-        Ok(JsResponse { status, headers, body })
-    }
-}
-
-// Request implementations
-impl TryFrom<JsRequest> for reqwest::Request {
-    type Error = anyhow::Error;
-
-    fn try_from(req: JsRequest) -> Result<Self, Self::Error> {
-        let mut request = reqwest::Request::new(
-            reqwest::Method::from_bytes(req.method.as_bytes())?,
-            req.url.parse()?,
-        );
-        let headers = create_header_map(req.headers)?;
-        request.headers_mut().extend(headers);
-        let body = serde_json::to_string(&req.body)?;
-        let _ = request.body_mut().insert(reqwest::Body::from(body));
-        Ok(request)
-    }
-}
-
-impl TryFrom<&reqwest::Request> for JsRequest {
-    type Error = anyhow::Error;
-
-    fn try_from(req: &Request) -> Result<Self, Self::Error> {
-        let url = req.url().to_string();
-        let method = req.method().as_str().to_string();
-        let headers = req
-            .headers()
-            .iter()
-            .map(|(key, value)| {
-                (
-                    key.to_string(),
-                    value.to_str().unwrap_or_default().to_string(),
-                )
-            })
-            .collect::<BTreeMap<String, String>>();
-        let body = req
-            .body()
-            .and_then(|body| body.as_bytes())
-            .and_then(|body| serde_json::from_slice(body).ok());
-        Ok(JsRequest { url, method, headers, body })
-    }
+    Request(Request),
+    Response(Response<Bytes>),
 }
 
 impl Message {
-    pub fn response(&self) -> Option<JsResponse> {
-        match self {
-            Message { message: MessageContent::Response(res), id: _ } => Some(res.clone()),
-            _ => None,
-        }
-    }
-    pub fn request(&self) -> Option<JsRequest> {
-        match self {
-            Message { message: MessageContent::Request(req), id: _ } => Some(req.clone()),
-            _ => None,
-        }
-    }
-}
+    pub fn to_v8(self, v8: &mini_v8::MiniV8) -> mini_v8::Result<mini_v8::Value> {
+        let v8 = v8.clone();
+        match self.message {
+            MessageContent::Request(request) => {
+                let obj = v8.clone().create_object();
+                let req_url = request.url().clone();
+                let req_headers = request.headers().clone();
 
-fn create_header_map(
-    headers: BTreeMap<String, String>,
-) -> anyhow::Result<reqwest::header::HeaderMap> {
-    let mut header_map = reqwest::header::HeaderMap::new();
-    for (key, value) in headers.iter() {
-        let key = HeaderName::from_bytes(key.as_bytes())?;
-        let value = HeaderValue::from_str(value.as_str())?;
-        header_map.insert(key, value);
+                obj.set("type", v8.clone().create_string("request"))?;
+
+                if let Some(id) = self.id {
+                    obj.set("id", mini_v8::Value::Number(id as f64))?;
+                }
+
+                obj.set(
+                    "method",
+                    v8.clone().create_string(request.method().as_str()),
+                )?;
+
+                obj.set(
+                    "url",
+                    v8.clone().create_function({
+                        let v8 = v8.clone();
+                        move |_| {
+                            let uri = req_url.clone().to_string();
+                            Ok(v8.clone().create_string(uri.as_str()))
+                        }
+                    }),
+                )?;
+
+                obj.set("headers", {
+                    let headers = v8.clone().create_object();
+                    headers.set(
+                        "get",
+                        v8.clone().create_function({
+                            let v8 = v8.clone();
+
+                            move |inv| {
+                                let key = inv.args.get(0);
+                                let key = key.as_string();
+                                if let Some(key) = key {
+                                    let value =
+                                        req_headers.get(key.to_string()).unwrap().to_str().unwrap();
+                                    Ok(mini_v8::Value::String(v8.create_string(value)))
+                                } else {
+                                    Ok(mini_v8::Value::Null)
+                                }
+                            }
+                        }),
+                    )?;
+
+                    headers
+                })?;
+
+                obj.set(
+                    "body",
+                    v8.clone().create_function({
+                        let v8 = v8.clone();
+                        move |_| {
+                            let bytes = request.body().and_then(|body| body.as_bytes());
+                            if let Some(bytes) = bytes {
+                                let bytes_array = v8.create_array();
+                                for byte in bytes {
+                                    bytes_array.push(mini_v8::Value::Number(*byte as f64))?;
+                                }
+                                Ok(mini_v8::Value::Array(bytes_array))
+                            } else {
+                                Ok(mini_v8::Value::Null)
+                            }
+                        }
+                    }),
+                )?;
+                Ok(mini_v8::Value::Object(obj))
+            }
+            MessageContent::Response(response) => {
+                let obj = v8.clone().create_object();
+                let res_status = response.status;
+                let res_headers = response.headers.clone();
+
+                obj.set("type", v8.clone().create_string("response"))?;
+
+                if let Some(id) = self.id {
+                    obj.set("id", mini_v8::Value::Number(id as f64))?;
+                }
+
+                obj.set("status", mini_v8::Value::Number(res_status.as_u16() as f64))?;
+
+                obj.set("headers", {
+                    let headers = v8.clone().create_object();
+                    headers.set(
+                        "get",
+                        v8.clone().create_function({
+                            let v8 = v8.clone();
+
+                            move |inv| {
+                                let key = inv.args.get(0);
+                                let key = key.as_string();
+                                if let Some(key) = key {
+                                    let value =
+                                        res_headers.get(key.to_string()).unwrap().to_str().unwrap();
+                                    Ok(mini_v8::Value::String(v8.create_string(value)))
+                                } else {
+                                    Ok(mini_v8::Value::Null)
+                                }
+                            }
+                        }),
+                    )?;
+
+                    headers
+                })?;
+
+                obj.set(
+                    "body",
+                    v8.clone().create_function({
+                        let v8 = v8.clone();
+                        move |_| {
+                            let bytes = response.body.bytes();
+                            let bytes_array = v8.create_array();
+                            for byte in bytes {
+                                let byte = byte.unwrap(); // FIXME: remove unwrap
+                                bytes_array.push(mini_v8::Value::Number(byte as f64))?;
+                            }
+                            Ok(mini_v8::Value::Array(bytes_array))
+                        }
+                    }),
+                )?;
+                Ok(mini_v8::Value::Object(obj))
+            }
+        }
     }
-    Ok(header_map)
+
+    pub fn from_v8(_value: mini_v8::Value) -> anyhow::Result<Self> {
+        todo!()
+    }
 }

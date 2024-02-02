@@ -2,9 +2,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use futures_util::Future;
-use hyper::body::Bytes;
 
-use crate::channel::{JsRequest, JsResponse, Message, MessageContent};
+use crate::channel::{Message, MessageContent};
 use crate::http::Response;
 use crate::{HttpIO, WorkerIO};
 
@@ -35,17 +34,13 @@ impl HttpFilter {
                     if id.is_none() {
                         return Ok(response);
                     }
-                    let response = JsResponse::try_from(&response)?;
                     let command = self
                         .worker
                         .dispatch(Message { message: MessageContent::Response(response), id })
                         .await?;
                     Ok(self.on_command(command).await?)
                 }
-                Message { message: MessageContent::Response(response), id: _ } => {
-                    let res: anyhow::Result<Response<Bytes>> = response.try_into();
-                    res
-                }
+                Message { message: MessageContent::Response(response), id: _ } => Ok(response),
             }
         })
     }
@@ -57,7 +52,6 @@ impl HttpIO for HttpFilter {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        let request = JsRequest::try_from(&request)?;
         let command = self
             .worker
             .dispatch(Message { message: MessageContent::Request(request), id: None })

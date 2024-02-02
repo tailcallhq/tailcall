@@ -73,7 +73,6 @@ fn serde_v8(value: serde_json::Value, v8: &mini_v8::MiniV8) -> anyhow::Result<mi
 impl<A: Serialize + DeserializeOwned> SerdeV8 for A {
     fn to_v8(self, mv8: &MiniV8) -> anyhow::Result<Value> {
         let json = serde_json::to_value(&self)?;
-        log::debug!("json: {}", json);
         serde_v8(json, mv8)
     }
 
