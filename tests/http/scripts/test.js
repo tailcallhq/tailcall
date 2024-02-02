@@ -1,29 +1,29 @@
 function onEvent(event) {
-  if (event.response) {
-    return {
-      response: event.response[0],
-    }
+  if (event.message.response) {
+    return event
   }
-  if (event.request.method === "GET" && event.request.url === "http://localhost:3000/hello") {
+  if (event.message.request.method === "GET" && event.message.request.url === "http://localhost:3000/hello") {
     return {
-      response: {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
+      message: {
+        response: {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: "hello world",
         },
-        body: "hello world",
       },
     }
-  } else if (event.request.method === "GET" && event.request.url === "http://localhost:3000/hi") {
+  } else if (event.message.request.method === "GET" && event.message.request.url === "http://localhost:3000/hi") {
     return {
-      request: [
-        {
+      message: {
+        request: {
           url: "http://localhost:3000/bye",
           headers: {},
           body: "",
           method: "GET",
         },
-      ],
+      },
     }
   }
 }

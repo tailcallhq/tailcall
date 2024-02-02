@@ -4,7 +4,7 @@ const asyncId = () => {
   return i
 }
 function onEvent(event) {
-    if (event.message.request) {
+  if (event.message.request) {
     event.id = asyncId()
   }
 
