@@ -6,7 +6,7 @@ use crate::config::{Field, GraphQLOperationType};
 use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 use crate::{config, graphql, grpc, http};
 
 fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option<&'a String> {
