@@ -427,8 +427,8 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_merge_sdl() -> std::io::Result<()> {
+#[test]
+fn test_merge_sdl() -> std::io::Result<()> {
     let specs = GraphQLSpec::cargo_read("tests/graphql/merge");
 
     for spec in specs? {
