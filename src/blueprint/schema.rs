@@ -5,7 +5,7 @@ use async_graphql::parser::types::ConstDirective;
 use crate::blueprint::*;
 use crate::config::{Config, Field, Type};
 use crate::directive::DirectiveCodec;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
     Valid::from_option(

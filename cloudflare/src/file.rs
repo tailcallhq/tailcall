@@ -24,6 +24,7 @@ impl CloudflareFileIO {
 
 // TODO: avoid the unsafe impl
 unsafe impl Sync for CloudflareFileIO {}
+unsafe impl Send for CloudflareFileIO {}
 
 async fn get(bucket: Rc<worker::Bucket>, path: String) -> anyhow::Result<String> {
     let maybe_object = bucket

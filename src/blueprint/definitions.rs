@@ -11,7 +11,7 @@ use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
@@ -69,7 +69,7 @@ struct ProcessFieldWithinTypeContext<'a> {
     remaining_path: &'a [String],
     type_info: &'a config::Type,
     is_required: bool,
-    config: &'a Config,
+    config_set: &'a ConfigSet,
     invalid_path_handler: &'a InvalidPathHandler,
     path_resolver_error_handler: &'a PathResolverErrorHandler,
     original_path: &'a [String],
@@ -81,7 +81,7 @@ struct ProcessPathContext<'a> {
     field: &'a config::Field,
     type_info: &'a config::Type,
     is_required: bool,
-    config: &'a Config,
+    config_set: &'a ConfigSet,
     invalid_path_handler: &'a InvalidPathHandler,
     path_resolver_error_handler: &'a PathResolverErrorHandler,
     original_path: &'a [String],
@@ -93,7 +93,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     let remaining_path = context.remaining_path;
     let type_info = context.type_info;
     let is_required = context.is_required;
-    let config = context.config;
+    let config_set = context.config_set;
     let invalid_path_handler = context.invalid_path_handler;
     let path_resolver_error_handler = context.path_resolver_error_handler;
 
@@ -119,7 +119,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             .and(process_path(ProcessPathContext {
                 type_info,
                 is_required,
-                config,
+                config_set,
                 invalid_path_handler,
                 path_resolver_error_handler,
                 path: remaining_path,
@@ -132,7 +132,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
         if is_scalar(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 type_info,
-                config,
+                config_set,
                 invalid_path_handler,
                 path_resolver_error_handler,
                 path: remaining_path,
@@ -142,9 +142,9 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             });
         }
 
-        if let Some(next_type_info) = config.find_type(&next_field.type_of) {
+        if let Some(next_type_info) = config_set.find_type(&next_field.type_of) {
             return process_path(ProcessPathContext {
-                config,
+                config_set,
                 invalid_path_handler,
                 path_resolver_error_handler,
                 path: remaining_path,
@@ -168,7 +168,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
                 field,
                 type_info,
                 is_required,
-                config,
+                config_set,
                 invalid_path_handler,
                 path_resolver_error_handler,
                 original_path: context.original_path,
@@ -185,7 +185,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     let field = context.field;
     let type_info = context.type_info;
     let is_required = context.is_required;
-    let config = context.config;
+    let config_set = context.config_set;
     let invalid_path_handler = context.invalid_path_handler;
     let path_resolver_error_handler = context.path_resolver_error_handler;
     if let Some((field_name, remaining_path)) = path.split_first() {
@@ -193,7 +193,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
             let mut modified_field = field.clone();
             modified_field.list = false;
             return process_path(ProcessPathContext {
-                config,
+                config_set,
                 type_info,
                 invalid_path_handler,
                 path_resolver_error_handler,
@@ -207,7 +207,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
             .fields
             .get(field_name)
             .map(|_| type_info)
-            .or_else(|| config.find_type(&field.type_of));
+            .or_else(|| config_set.find_type(&field.type_of));
 
         if let Some(type_info) = target_type_info {
             return process_field_within_type(ProcessFieldWithinTypeContext {
@@ -216,7 +216,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
                 remaining_path,
                 type_info,
                 is_required,
-                config,
+                config_set,
                 invalid_path_handler,
                 path_resolver_error_handler,
                 original_path: context.original_path,
@@ -252,9 +252,9 @@ fn to_enum_type_definition(
 fn to_object_type_definition(
     name: &str,
     type_of: &config::Type,
-    config: &Config,
+    config_set: &ConfigSet,
 ) -> Valid<Definition, String> {
-    to_fields(name, type_of, config).map(|fields| {
+    to_fields(name, type_of, config_set).map(|fields| {
         Definition::ObjectTypeDefinition(ObjectTypeDefinition {
             name: name.to_string(),
             description: type_of.doc.clone(),
@@ -266,8 +266,8 @@ fn to_object_type_definition(
 
 fn update_args<'a>(
     hasher: DefaultHasher,
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_, field, typ, name), _| {
             let mut hasher = hasher.clone();
             name.hash(&mut hasher);
@@ -333,8 +333,8 @@ fn update_resolver_from_path(
 /// To solve the problem that by default such fields will be resolved to null value
 /// and nested resolvers won't be called
 pub fn update_nested_resolvers<'a>(
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), mut b_field| {
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
@@ -361,9 +361,9 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 fn to_fields(
     object_name: &str,
     type_of: &config::Type,
-    config: &Config,
+    config_set: &ConfigSet,
 ) -> Valid<Vec<FieldDefinition>, String> {
-    let operation_type = if config.schema.mutation.as_deref().eq(&Some(object_name)) {
+    let operation_type = if config_set.schema.mutation.as_deref().eq(&Some(object_name)) {
         GraphQLOperationType::Mutation
     } else {
         GraphQLOperationType::Query
@@ -390,7 +390,10 @@ fn to_fields(
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
             .and(update_nested_resolvers())
-            .try_fold(&(config, field, type_of, name), FieldDefinition::default())
+            .try_fold(
+                &(config_set, field, type_of, name),
+                FieldDefinition::default(),
+            )
     };
 
     // Process fields that are not marked as `omit`
@@ -400,7 +403,7 @@ fn to_fields(
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            validate_field_type_exist(config, field)
+            validate_field_type_exist(config_set, field)
                 .and(to_field(name, field))
                 .trace(name)
         },
@@ -455,7 +458,7 @@ fn to_fields(
                             field: source_field,
                             type_info: type_of,
                             is_required: false,
-                            config,
+                            config_set,
                             invalid_path_handler: &invalid_path_handler,
                             path_resolver_error_handler: &path_resolver_error_handler,
                             original_path: &add_field.path,
@@ -481,11 +484,11 @@ fn to_fields(
     })
 }
 
-pub fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
-    TryFold::<Config, Vec<Definition>, String>::new(|config, _| {
-        let output_types = config.output_types();
-        let input_types = config.input_types();
-        Valid::from_iter(config.types.iter(), |(name, type_)| {
+pub fn to_definitions<'a>() -> TryFold<'a, ConfigSet, Vec<Definition>, String> {
+    TryFold::<ConfigSet, Vec<Definition>, String>::new(|config_set, _| {
+        let output_types = config_set.output_types();
+        let input_types = config_set.input_types();
+        Valid::from_iter(config_set.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if let Some(variants) = &type_.variants {
                 if !variants.is_empty() {
@@ -498,11 +501,11 @@ pub fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
             } else {
-                to_object_type_definition(name, type_, config)
+                to_object_type_definition(name, type_, config_set)
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
                         Definition::ObjectTypeDefinition(object_type_definition) => {
-                            if config.input_types().contains(name) {
+                            if config_set.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
                             } else if type_.interface {
                                 to_interface_type_definition(object_type_definition).trace(name)
@@ -515,7 +518,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, Config, Vec<Definition>, String> {
             }
         })
         .map(|mut types| {
-            types.extend(config.unions.iter().map(to_union_type_definition));
+            types.extend(config_set.unions.iter().map(to_union_type_definition));
             types
         })
     })
