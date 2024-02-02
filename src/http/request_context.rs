@@ -127,7 +127,7 @@ mod test {
 
     use crate::blueprint::Server;
     use crate::cache::InMemoryCache;
-    use crate::cli::{init_env, init_http, init_http2_only};
+    use crate::cli::{ init_runtime};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
 
@@ -136,8 +136,10 @@ mod test {
             let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
             //TODO: default is used only in tests. Drop default and move it to test.
             let server = Server::try_from(server).unwrap();
-            let h_client = init_http(&upstream, None);
-            let h2_client = init_http2_only(&upstream.clone(), None);
+            let runtime = init_runtime(&upstream, None);
+            let h_client = runtime.http;
+            let h2_client = runtime.http2_only;
+            let env_vars = runtime.env;
             RequestContext {
                 req_headers: HeaderMap::new(),
                 h_client,
@@ -150,7 +152,7 @@ mod test {
                 grpc_data_loaders: Arc::new(vec![]),
                 min_max_age: Arc::new(Mutex::new(None)),
                 cache_public: Arc::new(Mutex::new(None)),
-                env_vars: init_env(),
+                env_vars
             }
         }
     }

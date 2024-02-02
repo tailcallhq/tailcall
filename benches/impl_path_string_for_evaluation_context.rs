@@ -11,7 +11,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::blueprint::Server;
 use tailcall::cache::InMemoryCache;
-use tailcall::cli::{init_env, init_http, init_http2_only};
+use tailcall::cli::init_runtime;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
@@ -151,9 +151,10 @@ fn request_context() -> RequestContext {
     let tailcall::config::Config { server, upstream, .. } = tailcall::config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(server).unwrap();
-
-    let h_client = init_http(&upstream, None);
-    let h2_client = init_http2_only(&upstream, None);
+    let runtime = init_runtime(&upstream, None);
+    let h_client = runtime.http;
+    let h2_client = runtime.http2_only;
+    let env_vars = runtime.env;
     RequestContext {
         req_headers: HeaderMap::new(),
         h_client,
@@ -166,7 +167,7 @@ fn request_context() -> RequestContext {
         grpc_data_loaders: Arc::new(vec![]),
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
-        env_vars: init_env(),
+        env_vars,
     }
 }
 
