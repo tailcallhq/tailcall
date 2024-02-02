@@ -99,16 +99,16 @@ fn validate_group_by(
     }
     let output_type = field_descriptor.and_then(|f| JsonSchema::try_from(&f));
 
-Valid::from(JsonSchema::try_from(input_type))
-    .zip(Valid::from(output_type))
-    .and_then(|(_input_schema, output_schema)| {
-        // TODO: add validation for input schema - should compare result grpc.body to schema considering repeated message type
-        let fields = &field_schema.field;
-        let args = &field_schema.args;
-        let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
-        let _args = JsonSchema::Arr(Box::new(args.to_owned()));
-        fields.compare(&output_schema, group_by[0].as_str())
-    })
+    Valid::from(JsonSchema::try_from(input_type))
+        .zip(Valid::from(output_type))
+        .and_then(|(_input_schema, output_schema)| {
+            // TODO: add validation for input schema - should compare result grpc.body to schema considering repeated message type
+            let fields = &field_schema.field;
+            let args = &field_schema.args;
+            let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
+            let _args = JsonSchema::Arr(Box::new(args.to_owned()));
+            fields.compare(&output_schema, group_by[0].as_str())
+        })
 }
 
 pub struct CompileGrpc<'a> {
