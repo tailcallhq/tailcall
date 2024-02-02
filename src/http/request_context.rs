@@ -127,9 +127,90 @@ mod test {
 
     use crate::blueprint::Server;
     use crate::cache::InMemoryCache;
-    use crate::cli::{ init_runtime};
     use crate::config::{self, Batch};
-    use crate::http::RequestContext;
+    use crate::http::{RequestContext, Response};
+
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use anyhow::anyhow;
+    use async_trait::async_trait;
+    use hyper::body::Bytes;
+    use reqwest::{Client, Request};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use crate::{EnvIO, HttpIO};
+    use crate::cache::InMemoryCache;
+    use crate::http::Response;
+    use crate::target_runtime::TargetRuntime;
+
+    pub struct Env {
+        env: HashMap<String, String>,
+    }
+
+    #[derive(Clone)]
+    pub struct FileIO {}
+
+    impl FileIO {
+        pub fn init() -> Self {
+            FileIO {}
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl crate::FileIO for FileIO {
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+            let mut file = tokio::fs::File::create(path).await?;
+            file.write_all(content).await.map_err(|e|anyhow!("{}",e))?;
+            log::info!("File write: {} ... ok", path);
+            Ok(())
+        }
+
+        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+            let mut file = tokio::fs::File::open(path).await?;
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer)
+                .await
+                .map_err(|e|anyhow!("{}",e))?;
+            log::info!("File read: {} ... ok", path);
+            Ok(String::from_utf8(buffer)?)
+        }
+    }
+
+
+    impl EnvIO for Env {
+        fn get(&self, key: &str) -> Option<String> {
+            self.env.get(key).cloned()
+        }
+    }
+
+    impl Env {
+        pub fn init(map: HashMap<String, String>) -> Self {
+            Self { env: map }
+        }
+    }
+
+    struct Http {
+        client: Client
+    }
+    #[async_trait]
+    impl HttpIO for Http {
+        async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
+            let resp = self.client.execute(request).await?;
+            let resp = crate::http::Response::from_reqwest(resp).await?;
+            Ok(resp)
+        }
+    }
+
+    fn init_runtime() -> TargetRuntime {
+        let http = Arc::new(Http{ client: Client::new() });
+        let http2_only = http.clone();
+        TargetRuntime {
+            http,
+            http2_only,
+            env: Arc::new(Env::init(HashMap::new())),
+            file: Arc::new(FileIO::init()),
+            cache: Arc::new(InMemoryCache::new()),
+        }
+    }
 
     impl Default for RequestContext {
         fn default() -> Self {

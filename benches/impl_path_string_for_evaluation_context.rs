@@ -1,3 +1,12 @@
+use std::collections::HashMap;
+use anyhow::anyhow;
+use async_trait::async_trait;
+use hyper::body::Bytes;
+use reqwest::{Client, Request};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tailcall::{EnvIO, HttpIO};
+use tailcall::http::Response;
+use tailcall::target_runtime::TargetRuntime;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
@@ -11,10 +20,80 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use tailcall::blueprint::Server;
 use tailcall::cache::InMemoryCache;
-use tailcall::cli::init_runtime;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
+
+pub struct Env {
+    env: HashMap<String, String>,
+}
+
+#[derive(Clone)]
+pub struct FileIO {}
+
+impl FileIO {
+    pub fn init() -> Self {
+        FileIO {}
+    }
+}
+
+#[async_trait::async_trait]
+impl tailcall::FileIO for FileIO {
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        let mut file = tokio::fs::File::create(path).await?;
+        file.write_all(content).await.map_err(|e| anyhow!("{}",e))?;
+        log::info!("File write: {} ... ok", path);
+        Ok(())
+    }
+
+    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        let mut file = tokio::fs::File::open(path).await?;
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .await
+            .map_err(|e| anyhow!("{}",e))?;
+        log::info!("File read: {} ... ok", path);
+        Ok(String::from_utf8(buffer)?)
+    }
+}
+
+
+impl EnvIO for Env {
+    fn get(&self, key: &str) -> Option<String> {
+        self.env.get(key).cloned()
+    }
+}
+
+impl Env {
+    pub fn init(map: HashMap<String, String>) -> Self {
+        Self { env: map }
+    }
+}
+
+struct Http {
+    client: Client,
+}
+
+#[async_trait]
+impl HttpIO for Http {
+    async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
+        let resp = self.client.execute(request).await?;
+        let resp = tailcall::http::Response::from_reqwest(resp).await?;
+        Ok(resp)
+    }
+}
+
+fn init_runtime() -> TargetRuntime {
+    let http = Arc::new(Http { client: Client::new() });
+    let http2_only = http.clone();
+    TargetRuntime {
+        http,
+        http2_only,
+        env: Arc::new(Env::init(HashMap::new())),
+        file: Arc::new(FileIO::init()),
+        cache: Arc::new(InMemoryCache::new()),
+    }
+}
 
 const INPUT_VALUE: &[&[&str]] = &[
     // existing values
@@ -151,7 +230,7 @@ fn request_context() -> RequestContext {
     let tailcall::config::Config { server, upstream, .. } = tailcall::config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(server).unwrap();
-    let runtime = init_runtime(&upstream, None);
+    let runtime = init_runtime();
     let h_client = runtime.http;
     let h2_client = runtime.http2_only;
     let env_vars = runtime.env;
