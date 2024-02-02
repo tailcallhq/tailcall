@@ -135,19 +135,19 @@ where
     if sc.blueprint.server.enable_batch_requests {
         loop {
             let (stream, _) = listener.accept().await?;
-            let sc = sc.clone();
+            let app_ctx = sc.app_ctx.clone();
             let io = tcp_io.get_io(tls_acceptor.clone(), stream).await?;
             tokio::spawn(async move {
                 let server = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
                     .serve_connection(
                         io,
                         service_fn(move |req: Request<Incoming>| {
-                            let state = sc.clone();
+                            let app_ctx = app_ctx.clone();
                             async move {
                                 let (part, body) = req.into_parts();
                                 let body = body.collect().await?.to_bytes();
                                 let req = Request::from_parts(part, Full::new(body));
-                                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
+                                handle_request::<GraphQLBatchRequest>(req, app_ctx)
                                     .await
                             }
                         }),
@@ -161,19 +161,19 @@ where
     } else {
         loop {
             let (stream, _) = listener.accept().await?;
-            let sc = sc.clone();
+            let app_ctx = sc.app_ctx.clone();
             let io = tcp_io.get_io(tls_acceptor.clone(), stream).await?;
             tokio::spawn(async move {
                 let server = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
                     .serve_connection(
                         io,
                         service_fn(move |req: Request<Incoming>| {
-                            let state = sc.clone();
+                            let app_ctx = app_ctx.clone();
                             async move {
                                 let (part, body) = req.into_parts();
                                 let body = body.collect().await?.to_bytes();
                                 let req = Request::from_parts(part, Full::new(body));
-                                handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
+                                handle_request::<GraphQLRequest>(req, app_ctx).await
                             }
                         }),
                     )
