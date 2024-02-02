@@ -1,0 +1,4 @@
+syntax = "proto3";
+
+import "src/grpc/tests/nested0.proto";
+import "src/grpc/tests/duplicate.proto";

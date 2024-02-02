@@ -18,6 +18,7 @@ use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
+use crate::valid::Validator;
 use crate::{grpc, http};
 
 #[derive(Clone, Debug)]

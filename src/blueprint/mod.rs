@@ -20,10 +20,10 @@ pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
-use crate::config::{Arg, Config, Field};
+use crate::config::{Arg, ConfigSet, Field};
 use crate::try_fold::TryFold;
 
-pub type TryFoldConfig<'a, A> = TryFold<'a, Config, A, String>;
+pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigSet, A, String>;
 
 pub(crate) trait TypeLike {
     fn name(&self) -> &str;

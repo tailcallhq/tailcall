@@ -1,13 +1,13 @@
 use reqwest::Client;
 use serde_json::json;
+use tailcall::cli::init_runtime;
 use tailcall::cli::server::Server;
-use tailcall::cli::{init_file, init_http};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::Upstream;
 
 async fn test_server(configs: &[&str], url: &str) {
-    let http_client = init_http(&Upstream::default(), None);
-    let reader = ConfigReader::init(init_file(), http_client);
+    let runtime = init_runtime(&Upstream::default(), None);
+    let reader = ConfigReader::init(runtime);
     let config = reader.read_all(configs).await.unwrap();
     let mut server = Server::new(config);
     let server_up_receiver = server.server_up_receiver();
@@ -91,8 +91,8 @@ async fn server_start_http2_rsa() {
 #[tokio::test]
 async fn server_start_http2_nokey() {
     let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
-    let http_client = init_http(&Upstream::default(), None);
-    let reader = ConfigReader::init(init_file(), http_client);
+    let runtime = init_runtime(&Upstream::default(), None);
+    let reader = ConfigReader::init(runtime);
     let config = reader.read_all(configs).await.unwrap();
     let server = Server::new(config);
     assert!(server.start().await.is_err())
