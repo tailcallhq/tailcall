@@ -4,7 +4,7 @@ on:
   # pull_request_target is ok until we do not checkout and build external code
   # TODO: maybe it is not required after all https://github.com/amannn/action-semantic-pull-request/issues/219
   pull_request_target:
-    types: [opened, edited]
+    types: [opened, reopened, synchronize, edited]
 
 permissions:
   pull-requests: read
