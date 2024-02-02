@@ -287,7 +287,23 @@ directive @server(
   workers: Int
 ) on SCHEMA
 
-directive @link(type: LinkType!, src: String!) repeatable on SCHEMA
+"""
+The @link directive allows you to import external resources, such as configuration, a .proto file, a plain text file, or a GraphQL schema.
+"""
+directive @link(
+  """
+  The id of the link. It is used to reference the link in the schema.
+  """
+  id: String,
+  """
+  The type of the link. It can be `Config`, `GraphQL`, `Protobuf`, or `Data`.
+  """
+  type: LinkType!,
+  """
+  The source of the link. It can be a URL or a path to a file.
+  """
+  src: String!
+) repeatable on SCHEMA
 
 enum LinkType {
   Config
