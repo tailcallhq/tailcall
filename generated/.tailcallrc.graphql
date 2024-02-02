@@ -442,6 +442,8 @@ input ExprBody {
   product: [ExprBody]
   subtract: [ExprBody]
   sum: [ExprBody]
+  mean: [ExprBody]
+  median: [ExprBody]
 }
 input ExprIf {
   """
@@ -683,6 +685,8 @@ input ExprBody {
   product: [ExprBody]
   subtract: [ExprBody]
   sum: [ExprBody]
+  mean: [ExprBody]
+  median: [ExprBody]
 }
 input ExprIf {
   """
