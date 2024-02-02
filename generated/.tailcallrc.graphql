@@ -288,31 +288,6 @@ directive @server(
 ) on SCHEMA
 
 """
-The @link directive allows you to import external resources, such as configuration, a .proto file, a plain text file, or a GraphQL schema.
-"""
-directive @link(
-  """
-  The id of the link. It is used to reference the link in the schema.
-  """
-  id: String,
-  """
-  The type of the link. It can be `Config`, `GraphQL`, `Protobuf`, or `Data`.
-  """
-  type: LinkType!,
-  """
-  The source of the link. It can be a URL or a path to a file.
-  """
-  src: String!
-) repeatable on SCHEMA
-
-enum LinkType {
-  Config
-  GraphQL
-  Protobuf
-  Data
-}
-
-"""
 The `upstream` directive allows you to control various aspects of the upstream server 
 connection. This includes settings like connection timeouts, keep-alive intervals, 
 and more. If not specified, default values are used.
@@ -885,3 +860,4 @@ input Proxy {
 }
 scalar KeyValues
 scalar JSON
+

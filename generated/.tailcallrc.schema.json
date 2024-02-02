@@ -1193,6 +1193,7 @@
       "type": "object"
     },
     "Link": {
+      "description": "The @link directive allows you to import external resources, such as configuration, a .proto file, a plain text file, or a GraphQL schema.",
       "properties": {
         "content": {
           "description": "Raw content of the file",
@@ -1202,14 +1203,14 @@
           ]
         },
         "id": {
-          "description": "Id is used to refer at different places in the config",
+          "description": "The id of the link. It is used to reference the link in the schema.",
           "type": [
             "string",
             "null"
           ]
         },
         "src": {
-          "description": "Source URL for linked files",
+          "description": "The source of the link. It can be a URL or a path to a file.",
           "type": "string"
         },
         "type": {
@@ -1218,7 +1219,7 @@
               "$ref": "#/definitions/LinkType"
             }
           ],
-          "description": "Type of the link"
+          "description": "The type of the link. It can be `Config`, `GraphQL`, `Protobuf`, or `Data`."
         }
       },
       "type": "object"

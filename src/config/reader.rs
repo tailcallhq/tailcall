@@ -392,7 +392,7 @@ mod test_proto_config {
             .unwrap()
             .file_descriptor_set
             .file
-            .get(0)
+            .first()
             .unwrap();
         assert_eq!(expected_news_proto, *actual_news_proto);
 
@@ -405,7 +405,7 @@ mod test_proto_config {
             .unwrap()
             .file_descriptor_set
             .file
-            .get(0)
+            .first()
             .unwrap();
         assert_eq!(expected_greetings_proto, *actual_greetings_proto);
 
