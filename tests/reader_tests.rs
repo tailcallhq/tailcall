@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+
 use anyhow::anyhow;
 use async_trait::async_trait;
 use hyper::body::Bytes;
 use reqwest::{Client, Request};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tailcall::{EnvIO, HttpIO};
 use tailcall::cache::InMemoryCache;
 use tailcall::http::Response;
 use tailcall::target_runtime::TargetRuntime;
+use tailcall::{EnvIO, HttpIO};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub struct Env {
     env: HashMap<String, String>,
@@ -27,7 +28,9 @@ impl FileIO {
 impl tailcall::FileIO for FileIO {
     async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
         let mut file = tokio::fs::File::create(path).await?;
-        file.write_all(content).await.map_err(|e|anyhow!("{}",e))?;
+        file.write_all(content)
+            .await
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File write: {} ... ok", path);
         Ok(())
     }
@@ -37,12 +40,11 @@ impl tailcall::FileIO for FileIO {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
             .await
-            .map_err(|e|anyhow!("{}",e))?;
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File read: {} ... ok", path);
         Ok(String::from_utf8(buffer)?)
     }
 }
-
 
 impl EnvIO for Env {
     fn get(&self, key: &str) -> Option<String> {
@@ -57,7 +59,7 @@ impl Env {
 }
 
 struct Http {
-    client: Client
+    client: Client,
 }
 #[async_trait]
 impl HttpIO for Http {
@@ -69,7 +71,7 @@ impl HttpIO for Http {
 }
 
 fn init_runtime() -> TargetRuntime {
-    let http = Arc::new(Http{ client: Client::new() });
+    let http = Arc::new(Http { client: Client::new() });
     let http2_only = http.clone();
     TargetRuntime {
         http,
@@ -83,10 +85,10 @@ fn init_runtime() -> TargetRuntime {
 mod reader_tests {
     use anyhow::Context;
     use pretty_assertions::assert_eq;
-    use tokio::io::AsyncReadExt;
-
     use tailcall::config::reader::ConfigReader;
     use tailcall::config::{Config, Script, ScriptOptions, Type};
+    use tokio::io::AsyncReadExt;
+
     use crate::init_runtime;
 
     fn start_mock_server() -> httpmock::MockServer {
@@ -126,9 +128,9 @@ mod reader_tests {
             format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
             format!("http://localhost:{port}/foo.json").as_str(), // with url extension
         ]
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
@@ -154,9 +156,9 @@ mod reader_tests {
             "examples/jsonplaceholder.graphql",
             "examples/jsonplaceholder.json",
         ]
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
@@ -194,7 +196,7 @@ mod reader_tests {
                     .context(path.to_string())
                     .unwrap(),
             )
-                .unwrap(),
+            .unwrap(),
             timeout: None,
         };
         assert_eq!(config.server.script, Some(Script::File(file)),);

@@ -120,27 +120,23 @@ impl From<&AppContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
 
+    use anyhow::anyhow;
+    use async_trait::async_trait;
     use cache_control::Cachability;
+    use hyper::body::Bytes;
     use hyper::HeaderMap;
+    use reqwest::{Client, Request};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use crate::blueprint::Server;
     use crate::cache::InMemoryCache;
     use crate::config::{self, Batch};
     use crate::http::{RequestContext, Response};
-
-    use std::collections::HashMap;
-    use std::sync::Arc;
-    use anyhow::anyhow;
-    use async_trait::async_trait;
-    use hyper::body::Bytes;
-    use reqwest::{Client, Request};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use crate::{EnvIO, HttpIO};
-    use crate::cache::InMemoryCache;
-    use crate::http::Response;
     use crate::target_runtime::TargetRuntime;
+    use crate::{EnvIO, HttpIO};
 
     pub struct Env {
         env: HashMap<String, String>,
@@ -159,7 +155,9 @@ mod test {
     impl crate::FileIO for FileIO {
         async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
             let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content).await.map_err(|e|anyhow!("{}",e))?;
+            file.write_all(content)
+                .await
+                .map_err(|e| anyhow!("{}", e))?;
             log::info!("File write: {} ... ok", path);
             Ok(())
         }
@@ -169,12 +167,11 @@ mod test {
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer)
                 .await
-                .map_err(|e|anyhow!("{}",e))?;
+                .map_err(|e| anyhow!("{}", e))?;
             log::info!("File read: {} ... ok", path);
             Ok(String::from_utf8(buffer)?)
         }
     }
-
 
     impl EnvIO for Env {
         fn get(&self, key: &str) -> Option<String> {
@@ -189,7 +186,7 @@ mod test {
     }
 
     struct Http {
-        client: Client
+        client: Client,
     }
     #[async_trait]
     impl HttpIO for Http {
@@ -201,7 +198,7 @@ mod test {
     }
 
     fn init_runtime() -> TargetRuntime {
-        let http = Arc::new(Http{ client: Client::new() });
+        let http = Arc::new(Http { client: Client::new() });
         let http2_only = http.clone();
         TargetRuntime {
             http,
@@ -217,7 +214,7 @@ mod test {
             let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
             //TODO: default is used only in tests. Drop default and move it to test.
             let server = Server::try_from(server).unwrap();
-            let runtime = init_runtime(&upstream, None);
+            let runtime = init_runtime();
             let h_client = runtime.http;
             let h2_client = runtime.http2_only;
             let env_vars = runtime.env;
@@ -233,7 +230,7 @@ mod test {
                 grpc_data_loaders: Arc::new(vec![]),
                 min_max_age: Arc::new(Mutex::new(None)),
                 cache_public: Arc::new(Mutex::new(None)),
-                env_vars
+                env_vars,
             }
         }
     }

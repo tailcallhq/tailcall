@@ -98,30 +98,29 @@ impl RenderedRequestTemplate {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
+    use std::collections::HashMap;
     use std::path::PathBuf;
+    use std::sync::Arc;
 
+    use anyhow::anyhow;
+    use async_trait::async_trait;
     use derive_setters::Setters;
+    use hyper::body::Bytes;
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::{HeaderMap, Method};
     use pretty_assertions::assert_eq;
-
-    use super::RequestTemplate;
-    use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type, Upstream};
-    use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::mustache::Mustache;
-
-    use std::collections::HashMap;
-    use std::sync::Arc;
-    use anyhow::anyhow;
-    use async_trait::async_trait;
-    use hyper::body::Bytes;
     use reqwest::{Client, Request};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use crate::{EnvIO, HttpIO};
+
+    use super::RequestTemplate;
     use crate::cache::InMemoryCache;
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type};
+    use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::http::Response;
+    use crate::mustache::Mustache;
     use crate::target_runtime::TargetRuntime;
+    use crate::{EnvIO, HttpIO};
 
     pub struct Env {
         env: HashMap<String, String>,
@@ -140,7 +139,9 @@ mod tests {
     impl crate::FileIO for FileIO {
         async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
             let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content).await.map_err(|e|anyhow!("{}",e))?;
+            file.write_all(content)
+                .await
+                .map_err(|e| anyhow!("{}", e))?;
             log::info!("File write: {} ... ok", path);
             Ok(())
         }
@@ -150,12 +151,11 @@ mod tests {
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer)
                 .await
-                .map_err(|e|anyhow!("{}",e))?;
+                .map_err(|e| anyhow!("{}", e))?;
             log::info!("File read: {} ... ok", path);
             Ok(String::from_utf8(buffer)?)
         }
     }
-
 
     impl EnvIO for Env {
         fn get(&self, key: &str) -> Option<String> {
@@ -170,7 +170,7 @@ mod tests {
     }
 
     struct Http {
-        client: Client
+        client: Client,
     }
     #[async_trait]
     impl HttpIO for Http {
@@ -182,7 +182,7 @@ mod tests {
     }
 
     fn init_runtime() -> TargetRuntime {
-        let http = Arc::new(Http{ client: Client::new() });
+        let http = Arc::new(Http { client: Client::new() });
         let http2_only = http.clone();
         TargetRuntime {
             http,
@@ -201,7 +201,7 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = init_runtime();
         let reader = ConfigReader::init(runtime);
         let mut config = Config::default();
         let grpc = Grpc {

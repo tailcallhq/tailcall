@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+
 use anyhow::anyhow;
 use async_trait::async_trait;
 use hyper::body::Bytes;
 use reqwest::{Client, Request};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tailcall::{EnvIO, HttpIO};
 use tailcall::cache::InMemoryCache;
 use tailcall::http::Response;
 use tailcall::target_runtime::TargetRuntime;
+use tailcall::{EnvIO, HttpIO};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub struct Env {
     env: HashMap<String, String>,
@@ -27,7 +28,9 @@ impl FileIO {
 impl tailcall::FileIO for FileIO {
     async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
         let mut file = tokio::fs::File::create(path).await?;
-        file.write_all(content).await.map_err(|e|anyhow!("{}",e))?;
+        file.write_all(content)
+            .await
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File write: {} ... ok", path);
         Ok(())
     }
@@ -37,12 +40,11 @@ impl tailcall::FileIO for FileIO {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
             .await
-            .map_err(|e|anyhow!("{}",e))?;
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File read: {} ... ok", path);
         Ok(String::from_utf8(buffer)?)
     }
 }
-
 
 impl EnvIO for Env {
     fn get(&self, key: &str) -> Option<String> {
@@ -57,7 +59,7 @@ impl Env {
 }
 
 struct Http {
-    client: Client
+    client: Client,
 }
 #[async_trait]
 impl HttpIO for Http {
@@ -69,7 +71,7 @@ impl HttpIO for Http {
 }
 
 fn init_runtime() -> TargetRuntime {
-    let http = Arc::new(Http{ client: Client::new() });
+    let http = Arc::new(Http { client: Client::new() });
     let http2_only = http.clone();
     TargetRuntime {
         http,
@@ -104,6 +106,7 @@ mod gql_spec {
     use tailcall::http::{AppContext, RequestContext};
     use tailcall::print_schema;
     use tailcall::valid::{Cause, Valid, ValidationError, Validator};
+
     use crate::init_runtime;
 
     static INIT: Once = Once::new();
@@ -219,7 +222,9 @@ mod gql_spec {
                                 for dir in type_def.node.directives {
                                     if dir.node.name.node == "error" {
                                         spec.sdl_errors.push(
-                                            SDLError::from_directive(&dir.node).to_result().unwrap(),
+                                            SDLError::from_directive(&dir.node)
+                                                .to_result()
+                                                .unwrap(),
                                         );
                                     }
                                 }
@@ -422,7 +427,8 @@ mod gql_spec {
                             HeaderName::from_static("authorization"),
                             HeaderValue::from_static("1"),
                         );
-                        let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
+                        let req_ctx =
+                            Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
                         let req = Request::from(q.query.as_str()).data(req_ctx.clone());
                         let res = schema.execute(req).await;
                         let json = serde_json::to_string(&res).unwrap();

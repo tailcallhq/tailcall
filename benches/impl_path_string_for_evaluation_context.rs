@@ -1,28 +1,26 @@
-use std::collections::HashMap;
-use anyhow::anyhow;
-use async_trait::async_trait;
-use hyper::body::Bytes;
-use reqwest::{Client, Request};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tailcall::{EnvIO, HttpIO};
-use tailcall::http::Response;
-use tailcall::target_runtime::TargetRuntime;
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 
+use anyhow::anyhow;
 use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
+use async_trait::async_trait;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
+use reqwest::{Client, Request};
 use tailcall::blueprint::Server;
 use tailcall::cache::InMemoryCache;
-use tailcall::http::RequestContext;
+use tailcall::http::{RequestContext, Response};
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
+use tailcall::target_runtime::TargetRuntime;
+use tailcall::{EnvIO, HttpIO};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub struct Env {
     env: HashMap<String, String>,
@@ -41,7 +39,9 @@ impl FileIO {
 impl tailcall::FileIO for FileIO {
     async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
         let mut file = tokio::fs::File::create(path).await?;
-        file.write_all(content).await.map_err(|e| anyhow!("{}",e))?;
+        file.write_all(content)
+            .await
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File write: {} ... ok", path);
         Ok(())
     }
@@ -51,12 +51,11 @@ impl tailcall::FileIO for FileIO {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
             .await
-            .map_err(|e| anyhow!("{}",e))?;
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File read: {} ... ok", path);
         Ok(String::from_utf8(buffer)?)
     }
 }
-
 
 impl EnvIO for Env {
     fn get(&self, key: &str) -> Option<String> {

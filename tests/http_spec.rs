@@ -20,14 +20,14 @@ mod http_spec {
     use serde_json::Value;
     use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
     use tailcall::blueprint::Blueprint;
+    use tailcall::cache::InMemoryCache;
     use tailcall::config::reader::ConfigReader;
     use tailcall::config::{Config, ConfigSet, Source};
     use tailcall::http::{handle_request, AppContext, Method, Response};
     use tailcall::target_runtime::TargetRuntime;
     use tailcall::{EnvIO, HttpIO};
-    use url::Url;
-    use tailcall::cache::InMemoryCache;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use url::Url;
 
     static INIT: Once = Once::new();
 
@@ -79,7 +79,9 @@ mod http_spec {
     impl tailcall::FileIO for FileIO {
         async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
             let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content).await.map_err(|e|anyhow!("{}",e))?;
+            file.write_all(content)
+                .await
+                .map_err(|e| anyhow!("{}", e))?;
             log::info!("File write: {} ... ok", path);
             Ok(())
         }
@@ -89,12 +91,11 @@ mod http_spec {
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer)
                 .await
-                .map_err(|e|anyhow!("{}",e))?;
+                .map_err(|e| anyhow!("{}", e))?;
             log::info!("File read: {} ... ok", path);
             Ok(String::from_utf8(buffer)?)
         }
     }
-
 
     impl EnvIO for Env {
         fn get(&self, key: &str) -> Option<String> {
@@ -251,10 +252,7 @@ mod http_spec {
             };
             let blueprint = Blueprint::try_from(&config).unwrap();
             let _http2_client = Arc::new(MockHttpClient::new(self.clone()));
-            let server_context = AppContext::new(
-                blueprint,
-                runtime,
-            );
+            let server_context = AppContext::new(blueprint, runtime);
             Arc::new(server_context)
         }
     }
@@ -329,11 +327,11 @@ mod http_spec {
                     method_match && url_match && (body_match || is_grpc)
                 })
                 .ok_or(anyhow!(
-                "No mock found for request: {:?} {} in {}",
-                req.method(),
-                req.url(),
-                format!("{}", self.spec.path.to_str().unwrap())
-            ))?;
+                    "No mock found for request: {:?} {} in {}",
+                    req.method(),
+                    req.url(),
+                    format!("{}", self.spec.path.to_str().unwrap())
+                ))?;
 
             // Clone the response from the mock to avoid borrowing issues.
             let mock_response = mock.response.clone();
@@ -392,10 +390,10 @@ mod http_spec {
                     }
                     Err(_) => {
                         log::info!(
-                        "{} {} ... failed (expected)",
-                        spec.name,
-                        spec.path.display()
-                    );
+                            "{} {} ... failed (expected)",
+                            spec.name,
+                            spec.path.display()
+                        );
                     }
                 }
             } else {

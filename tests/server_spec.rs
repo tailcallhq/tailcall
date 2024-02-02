@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+
 use anyhow::anyhow;
 use async_trait::async_trait;
 use hyper::body::Bytes;
 use reqwest::{Client, Request};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tailcall::{EnvIO, HttpIO};
 use tailcall::cache::InMemoryCache;
 use tailcall::http::Response;
 use tailcall::target_runtime::TargetRuntime;
+use tailcall::{EnvIO, HttpIO};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub struct Env {
     env: HashMap<String, String>,
@@ -27,7 +28,9 @@ impl FileIO {
 impl tailcall::FileIO for FileIO {
     async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
         let mut file = tokio::fs::File::create(path).await?;
-        file.write_all(content).await.map_err(|e|anyhow!("{}",e))?;
+        file.write_all(content)
+            .await
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File write: {} ... ok", path);
         Ok(())
     }
@@ -37,12 +40,11 @@ impl tailcall::FileIO for FileIO {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
             .await
-            .map_err(|e|anyhow!("{}",e))?;
+            .map_err(|e| anyhow!("{}", e))?;
         log::info!("File read: {} ... ok", path);
         Ok(String::from_utf8(buffer)?)
     }
 }
-
 
 impl EnvIO for Env {
     fn get(&self, key: &str) -> Option<String> {
@@ -57,7 +59,7 @@ impl Env {
 }
 
 struct Http {
-    client: Client
+    client: Client,
 }
 #[async_trait]
 impl HttpIO for Http {
@@ -69,7 +71,7 @@ impl HttpIO for Http {
 }
 
 fn init_runtime() -> TargetRuntime {
-    let http = Arc::new(Http{ client: Client::new() });
+    let http = Arc::new(Http { client: Client::new() });
     let http2_only = http.clone();
     TargetRuntime {
         http,
@@ -80,14 +82,13 @@ fn init_runtime() -> TargetRuntime {
     }
 }
 
-
 #[cfg(test)]
 mod serv_spec {
     use reqwest::Client;
     use serde_json::json;
     use tailcall::cli::server::Server;
     use tailcall::config::reader::ConfigReader;
-    
+
     use crate::init_runtime;
 
     async fn test_server(configs: &[&str], url: &str) {
@@ -111,8 +112,8 @@ mod serv_spec {
             .build()
             .unwrap();
         let query = json!({
-        "query": "{ greet }"
-    });
+            "query": "{ greet }"
+        });
 
         let mut tasks = vec![];
         for _ in 0..100 {
@@ -135,10 +136,10 @@ mod serv_spec {
                 .expect("Spawned task should success")
                 .expect("Request should success");
             let expected_response = json!({
-            "data": {
-                "greet": "Hello World!"
-            }
-        });
+                "data": {
+                    "greet": "Hello World!"
+                }
+            });
             assert_eq!(
                 response_body, expected_response,
                 "Unexpected response from server"
@@ -152,7 +153,7 @@ mod serv_spec {
             &["tests/server/config/server-start.graphql"],
             "http://localhost:8800/graphql",
         )
-            .await
+        .await
     }
 
     #[tokio::test]
@@ -161,7 +162,7 @@ mod serv_spec {
             &["tests/server/config/server-start-http2-pkcs8.graphql"],
             "https://localhost:8801/graphql",
         )
-            .await
+        .await
     }
 
     #[tokio::test]
@@ -170,7 +171,7 @@ mod serv_spec {
             &["tests/server/config/server-start-http2-rsa.graphql"],
             "https://localhost:8802/graphql",
         )
-            .await
+        .await
     }
 
     #[tokio::test]
@@ -189,6 +190,6 @@ mod serv_spec {
             &["tests/server/config/server-start-http2-ec.graphql"],
             "https://localhost:8804/graphql",
         )
-            .await
+        .await
     }
 }
