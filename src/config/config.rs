@@ -89,11 +89,6 @@ impl Config {
         types
     }
 
-    pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::document::print(doc)
-    }
-
     pub fn recurse_type<'a>(&'a self, type_of: &str, types: &mut HashSet<&'a String>) {
         if let Some(type_) = self.find_type(type_of) {
             for (_, field) in type_.fields.iter() {
@@ -148,6 +143,11 @@ impl Config {
         self.clone().into()
     }
 
+    pub fn to_sdl(&self) -> String {
+        let doc = self.to_document();
+        crate::document::print(doc)
+    }
+
     pub fn query(mut self, query: &str) -> Self {
         self.schema.query = Some(query.to_string());
         self
@@ -187,6 +187,10 @@ fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
     links
 }
 
+///
+/// Represents a GraphQL type.
+/// A type can be an object, interface, enum or scalar.
+///
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Type {
     ///
