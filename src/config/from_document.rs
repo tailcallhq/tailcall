@@ -14,7 +14,7 @@ use crate::config::{
     Upstream,
 };
 use crate::directive::DirectiveCodec;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -37,22 +37,20 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     let types = to_types(&type_definitions);
     let unions = to_union_types(&type_definitions);
     let schema = schema_definition(&doc).map(to_root_schema);
-
-    schema_definition(&doc)
-        .and_then(|sd| {
-            server(sd)
-                .zip(upstream(sd))
-                .zip(types)
-                .zip(unions)
-                .zip(schema)
-        })
-        .map(|((((server, upstream), types), unions), schema)| Config {
-            server,
-            upstream,
-            types,
-            unions,
-            schema,
-        })
+    schema_definition(&doc).and_then(|sd| {
+        server(sd)
+            .fuse(upstream(sd))
+            .fuse(types)
+            .fuse(unions)
+            .fuse(schema)
+            .map(|(server, upstream, types, unions, schema)| Config {
+                server,
+                upstream,
+                types,
+                unions,
+                schema,
+            })
+    })
 }
 
 fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> {
@@ -249,37 +247,35 @@ where
     let list_type_required = matches!(&base, BaseType::List(type_of) if !type_of.nullable);
     let doc = description.to_owned().map(|pos| pos.node);
     config::Http::from_directives(directives.iter())
-        .zip(GraphQL::from_directives(directives.iter()))
-        .zip(Cache::from_directives(directives.iter()))
-        .zip(Grpc::from_directives(directives.iter()))
-        .zip(Expr::from_directives(directives.iter()))
-        .zip(Omit::from_directives(directives.iter()))
-        .zip(Modify::from_directives(directives.iter()))
-        .zip(JS::from_directives(directives.iter()))
-        .zip(Call::from_directives(directives.iter()))
-        .map(
-            |((((((((http, graphql), cache), grpc), expr), omit), modify), script), call)| {
-                let const_field = to_const_field(directives);
-                config::Field {
-                    type_of,
-                    list,
-                    required: !nullable,
-                    list_type_required,
-                    args,
-                    doc,
-                    modify,
-                    omit,
-                    http,
-                    grpc,
-                    script,
-                    const_field,
-                    graphql,
-                    expr,
-                    cache,
-                    call,
-                }
-            },
-        )
+        .fuse(GraphQL::from_directives(directives.iter()))
+        .fuse(Cache::from_directives(directives.iter()))
+        .fuse(Grpc::from_directives(directives.iter()))
+        .fuse(Expr::from_directives(directives.iter()))
+        .fuse(Omit::from_directives(directives.iter()))
+        .fuse(Modify::from_directives(directives.iter()))
+        .fuse(JS::from_directives(directives.iter()))
+        .fuse(Call::from_directives(directives.iter()))
+        .map(|(http, graphql, cache, grpc, expr, omit, modify, script, call)| {
+            let const_field = to_const_field(directives);
+            config::Field {
+                type_of,
+                list,
+                required: !nullable,
+                list_type_required,
+                args,
+                doc,
+                modify,
+                omit,
+                http,
+                grpc,
+                script,
+                const_field,
+                graphql,
+                expr,
+                cache,
+                call
+            }
+        })
 }
 
 fn to_type_of(type_: &Type) -> String {

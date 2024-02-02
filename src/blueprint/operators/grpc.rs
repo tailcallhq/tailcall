@@ -10,7 +10,7 @@ use crate::json::JsonSchema;
 use crate::lambda::{Expression, Lambda, IO};
 use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
 
 fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
@@ -127,13 +127,13 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let validate_with_schema = inputs.validate_with_schema;
 
     to_url(grpc, config_set)
-        .zip(to_operation(
+        .fuse(to_operation(
             grpc,
             &config_set.extensions.grpc_file_descriptor,
         ))
-        .zip(helpers::headers::to_mustache_headers(&grpc.headers))
-        .zip(helpers::body::to_body(grpc.body.as_deref()))
-        .and_then(|(((url, operation), headers), body)| {
+        .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
+        .fuse(helpers::body::to_body(grpc.body.as_deref()))
+        .and_then(|(url, operation, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_set, field);
                 if grpc.group_by.is_empty() {

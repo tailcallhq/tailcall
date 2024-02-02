@@ -1,5 +1,4 @@
 use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
 
 use anyhow::Context;
 use futures_util::future::join_all;
@@ -10,14 +9,13 @@ use url::Url;
 
 use super::{ConfigSet, ExprBody, Extensions, Script, ScriptOptions};
 use crate::config::{Config, Source};
-use crate::{FileIO, HttpIO};
+use crate::target_runtime::TargetRuntime;
 
 const NULL_STR: &str = "\0\0\0\0\0\0\0";
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
 pub struct ConfigReader {
-    file_io: Arc<dyn FileIO>,
-    http_io: Arc<dyn HttpIO>,
+    runtime: TargetRuntime,
 }
 
 /// Response of a file read operation
@@ -27,8 +25,8 @@ struct FileRead {
 }
 
 impl ConfigReader {
-    pub fn init(file_io: Arc<dyn FileIO>, http_io: Arc<dyn HttpIO>) -> Self {
-        Self { file_io, http_io }
+    pub fn init(runtime: TargetRuntime) -> Self {
+        Self { runtime }
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
@@ -36,7 +34,8 @@ impl ConfigReader {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             let response = self
-                .http_io
+                .runtime
+                .http
                 .execute(reqwest::Request::new(reqwest::Method::GET, url))
                 .await?;
 
@@ -44,7 +43,7 @@ impl ConfigReader {
         } else {
             // Is a file path
 
-            self.file_io.read(&file.to_string()).await?
+            self.runtime.file.read(&file.to_string()).await?
         };
 
         Ok(FileRead { content, path: file.to_string() })
@@ -187,13 +186,13 @@ mod test_proto_config {
 
     use anyhow::{Context, Result};
 
-    use crate::cli::{init_file, init_http};
+    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(init_file(), init_http(&Default::default(), None));
+        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -219,7 +218,7 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(init_file(), init_http(&Default::default(), None));
+        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
         let helper_map = reader
             .resolve_descriptors(HashMap::new(), test_file)
             .await?;
@@ -264,7 +263,7 @@ mod reader_tests {
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
 
-    use crate::cli::{init_file, init_http};
+    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Script, ScriptOptions, Type, Upstream};
 
@@ -274,8 +273,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let file_io = init_file();
-        let http_io = init_http(&Upstream::default(), None);
+        let runtime = init_runtime(&Upstream::default(), None);
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -309,7 +307,7 @@ mod reader_tests {
         .iter()
         .map(|x| x.to_string())
         .collect();
-        let cr = ConfigReader::init(file_io, http_io);
+        let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "Test", "User"]
@@ -327,8 +325,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let file_io = init_file();
-        let http_io = init_http(&Upstream::default(), None);
+        let runtime = init_runtime(&Upstream::default(), None);
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -338,7 +335,7 @@ mod reader_tests {
         .iter()
         .map(|x| x.to_string())
         .collect();
-        let cr = ConfigReader::init(file_io, http_io);
+        let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "User"]
@@ -354,11 +351,10 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let file_io = init_file();
-        let http_io = init_http(&Upstream::default(), None);
+        let runtime = init_runtime(&Upstream::default(), None);
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-        let reader = ConfigReader::init(file_io, http_io);
+        let reader = ConfigReader::init(runtime);
 
         let config = reader
             .read(&format!(

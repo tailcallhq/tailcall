@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::sync::Arc;
 use std::{env, fs};
 
 use anyhow::Result;
@@ -13,10 +12,11 @@ use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{init_file, init_http, CLIError};
+use crate::cli::{init_runtime, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::{Config, Upstream};
-use crate::{print_schema, FileIO};
+use crate::print_schema;
+use crate::valid::Validator;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -25,9 +25,8 @@ pub async fn run() -> Result<()> {
     let cli = Cli::parse();
     logger_init();
     update_checker::check_for_update().await;
-    let file_io: Arc<dyn FileIO> = init_file();
-    let default_http_io = init_http(&Upstream::default(), None);
-    let config_reader = ConfigReader::init(file_io.clone(), default_http_io);
+    let runtime = init_runtime(&Upstream::default(), None);
+    let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
             let config_set = config_reader.read_all(&file_paths).await?;
@@ -50,7 +49,8 @@ pub async fn run() -> Result<()> {
 
                     let ops: Vec<OperationQuery> =
                         futures_util::future::join_all(operations.iter().map(|op| async {
-                            file_io
+                            runtime
+                                .file
                                 .read(op)
                                 .await
                                 .map(|query| OperationQuery::new(query, op.clone()))

@@ -7,7 +7,7 @@ use crate::config::{Arg, Batch, Config, ConfigSet, Field};
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {

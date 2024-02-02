@@ -3,7 +3,7 @@ use crate::config;
 use crate::config::{ExprBody, Field, If};
 use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
@@ -79,9 +79,9 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
         ExprBody::If(If { ref cond, on_true: ref then, on_false: ref els }) => {
             compile(ctx, *cond.clone())
                 .map(Box::new)
-                .zip(compile(ctx, *then.clone()).map(Box::new))
-                .zip(compile(ctx, *els.clone()).map(Box::new))
-                .map(|((cond, then), els)| {
+                .fuse(compile(ctx, *then.clone()).map(Box::new))
+                .fuse(compile(ctx, *els.clone()).map(Box::new))
+                .map(|(cond, then, els)| {
                     Expression::Logic(Logic::If { cond, then, els }).parallel_when(expr.has_io())
                 })
         }
@@ -182,6 +182,7 @@ mod tests {
     use crate::config::{ConfigSet, Expr, Field, GraphQLOperationType};
     use crate::http::RequestContext;
     use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
+    use crate::valid::Validator;
 
     #[derive(Default)]
     struct Context<'a> {

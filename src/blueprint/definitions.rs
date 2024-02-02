@@ -11,7 +11,7 @@ use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
