@@ -1,26 +1,26 @@
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, ExprBody, Field};
+use crate::config::{ExprBody, Field, If};
 use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
     operation_type: &'a config::GraphQLOperationType,
-    config: &'a config::Config,
+    config_set: &'a config::ConfigSet,
 }
 
 pub fn update_expr(
     operation_type: &config::GraphQLOperationType,
-) -> TryFold<'_, (&Config, &Field, &config::Type, &str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config, field, _, _), b_field| {
+) -> TryFold<'_, (&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        |(config_set, field, _, _), b_field| {
             let Some(expr) = &field.expr else {
                 return Valid::succeed(b_field);
             };
 
-            let context = CompilationContext { config, operation_type, config_field: field };
+            let context = CompilationContext { config_set, operation_type, config_field: field };
 
             compile(&context, expr.body.clone()).map(|compiled| b_field.resolver(Some(compiled)))
         },
@@ -51,15 +51,15 @@ fn compile_ab(
 /// Compiles expr into Expression
 ///
 fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-    let config = ctx.config;
+    let config_set = ctx.config_set;
     let field = ctx.config_field;
     let operation_type = ctx.operation_type;
     match expr {
         // Io Expr
-        ExprBody::Http(http) => compile_http(config, field, &http),
+        ExprBody::Http(http) => compile_http(config_set, field, &http),
         ExprBody::Grpc(grpc) => {
             let grpc = CompileGrpc {
-                config,
+                config_set,
                 field,
                 operation_type,
                 grpc: &grpc,
@@ -67,19 +67,23 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
             };
             compile_grpc(grpc)
         }
-        ExprBody::GraphQL(gql) => compile_graphql(config, operation_type, &gql),
+        ExprBody::GraphQL(gql) => compile_graphql(config_set, operation_type, &gql),
 
         // Safe Expr
         ExprBody::Const(value) => {
-            compile_const(CompileConst { config, field, value: &value, validate: false })
+            compile_const(CompileConst { config_set, field, value: &value, validate: false })
         }
 
         // Logic
-        ExprBody::If { cond, on_true: then, on_false: els } => compile(ctx, *cond)
-            .map(Box::new)
-            .zip(compile(ctx, *then).map(Box::new))
-            .zip(compile(ctx, *els).map(Box::new))
-            .map(|((cond, then), els)| Expression::Logic(Logic::If { cond, then, els })),
+        ExprBody::If(If { ref cond, on_true: ref then, on_false: ref els }) => {
+            compile(ctx, *cond.clone())
+                .map(Box::new)
+                .fuse(compile(ctx, *then.clone()).map(Box::new))
+                .fuse(compile(ctx, *els.clone()).map(Box::new))
+                .map(|(cond, then, els)| {
+                    Expression::Logic(Logic::If { cond, then, els }).parallel_when(expr.has_io())
+                })
+        }
 
         ExprBody::And(ref list) => compile_list(ctx, list.clone())
             .map(|a| Expression::Logic(Logic::And(a)).parallel_when(expr.has_io())),
@@ -174,9 +178,10 @@ mod tests {
     use serde_json::{json, Number};
 
     use super::{compile, CompilationContext};
-    use crate::config::{Config, Expr, Field, GraphQLOperationType};
+    use crate::config::{ConfigSet, Expr, Field, GraphQLOperationType};
     use crate::http::RequestContext;
     use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
+    use crate::valid::Validator;
 
     #[derive(Default)]
     struct Context<'a> {
@@ -213,11 +218,11 @@ mod tests {
     impl Expr {
         async fn eval(expr: serde_json::Value) -> anyhow::Result<serde_json::Value> {
             let expr = serde_json::from_value::<Expr>(expr)?;
-            let config = Config::default();
+            let config_set = ConfigSet::default();
             let field = Field::default();
             let operation_type = GraphQLOperationType::Query;
             let context = CompilationContext {
-                config: &config,
+                config_set: &config_set,
                 config_field: &field,
                 operation_type: &operation_type,
             };

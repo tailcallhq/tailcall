@@ -16,7 +16,7 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 use crate::json::JsonSchema;
-use crate::valid::Valid;
+use crate::valid::{Valid, Validator};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
