@@ -6,20 +6,20 @@ use hyper::body::Bytes;
 
 use crate::channel::{JsRequest, JsResponse, Message, MessageContent};
 use crate::http::Response;
-use crate::{HttpIO, ScriptIO};
+use crate::{HttpIO, WorkerIO};
 
 #[derive(Clone)]
 pub struct HttpFilter {
     client: Arc<dyn HttpIO + Send + Sync>,
-    script: Arc<dyn ScriptIO<Message, Message> + Send + Sync>,
+    worker: Arc<dyn WorkerIO<Message, Message> + Send + Sync>,
 }
 
 impl HttpFilter {
     pub fn new(
         http: impl HttpIO + Send + Sync,
-        script: impl ScriptIO<Message, Message> + Send + Sync + 'static,
+        script: impl WorkerIO<Message, Message> + Send + Sync + 'static,
     ) -> Self {
-        HttpFilter { client: Arc::new(http), script: Arc::new(script) }
+        HttpFilter { client: Arc::new(http), worker: Arc::new(script) }
     }
 
     fn on_command<'a>(
@@ -37,8 +37,8 @@ impl HttpFilter {
                     }
                     let response = JsResponse::try_from(&response)?;
                     let command = self
-                        .script
-                        .on_event(Message { message: MessageContent::Response(response), id })
+                        .worker
+                        .dispatch(Message { message: MessageContent::Response(response), id })
                         .await?;
                     Ok(self.on_command(command).await?)
                 }
@@ -59,8 +59,8 @@ impl HttpIO for HttpFilter {
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
         let request = JsRequest::try_from(&request)?;
         let command = self
-            .script
-            .on_event(Message { message: MessageContent::Request(request), id: None })
+            .worker
+            .dispatch(Message { message: MessageContent::Request(request), id: None })
             .await?;
         self.on_command(command).await
     }

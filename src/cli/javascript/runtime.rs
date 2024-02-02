@@ -7,7 +7,7 @@ use mini_v8::{MiniV8, Script};
 use crate::blueprint::{self};
 use crate::channel::Message;
 use crate::cli::javascript::serde_v8::SerdeV8;
-use crate::ScriptIO;
+use crate::WorkerIO;
 
 thread_local! {
   static LOCAL_RUNTIME: OnceCell<anyhow::Result<LocalRuntime>> = const { OnceCell::new() };
@@ -58,8 +58,8 @@ impl Runtime {
 }
 
 #[async_trait::async_trait]
-impl ScriptIO<Message, Message> for Runtime {
-    async fn on_event(&self, event: Message) -> anyhow::Result<Message> {
+impl WorkerIO<Message, Message> for Runtime {
+    async fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
         let script = self.script.clone();
         LOCAL_RUNTIME.with(|cell| {
             let rtm = cell
