@@ -12,7 +12,6 @@ use crate::is_default;
 pub struct Message {
     pub message: MessageContent,
     #[serde(skip_serializing_if = "Option::is_none")]
-
     // FIXME: should be u64
     pub id: Option<f64>,
 }
