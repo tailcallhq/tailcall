@@ -5,7 +5,6 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
-use crate::lambda::has_io::HasIO;
 
 #[derive(Clone, Debug)]
 pub enum Logic {
@@ -20,20 +19,6 @@ pub enum Logic {
     DefaultTo(Box<Expression>, Box<Expression>),
     IsEmpty(Box<Expression>),
     Not(Box<Expression>),
-}
-
-impl HasIO for Logic {
-    fn has_io(&self) -> bool {
-        match self {
-            Logic::If { cond, then, els } => (cond, then, els).has_io(),
-            Logic::And(exprs) => exprs.has_io(),
-            Logic::Or(exprs) => exprs.has_io(),
-            Logic::Cond(exprs) => exprs.has_io(),
-            Logic::DefaultTo(expr1, expr2) => (expr1, expr2).has_io(),
-            Logic::IsEmpty(expr) => expr.has_io(),
-            Logic::Not(expr) => expr.has_io(),
-        }
-    }
 }
 
 impl Eval for Logic {

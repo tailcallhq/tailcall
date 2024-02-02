@@ -1,5 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
-use std::num::NonZeroU64;
+
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -126,11 +126,6 @@ pub struct InputFieldDefinition {
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
-pub struct Cache {
-    pub max_age: NonZeroU64,
-}
-
 #[derive(Clone, Debug, Setters, Default)]
 pub struct FieldDefinition {
     pub name: String,
@@ -139,7 +134,6 @@ pub struct FieldDefinition {
     pub resolver: Option<Expression>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
-    pub cache: Option<Cache>,
 }
 
 impl FieldDefinition {
@@ -157,6 +151,12 @@ impl FieldDefinition {
             Some(expr) => Some(other(Lambda::new(expr)).expression),
         };
         self
+    }
+
+    pub fn wrap_resolver<F: Fn(Expression) -> Expression>(&mut self, wrapper: F) {
+        if let Some(resolver) = self.resolver.take() {
+            self.resolver = Some(wrapper(resolver))
+        }
     }
 }
 

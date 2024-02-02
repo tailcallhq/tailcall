@@ -1,54 +1,28 @@
 use core::future::Future;
 use std::num::NonZeroU64;
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
+
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike, IO};
-use crate::lambda::has_io::HasIO;
 
 pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> u64;
 }
 
 #[derive(Clone, Debug)]
-pub enum Cached {
-    IOCache(IOCache),
-    NonIOCache(NonIOCache),
-}
-
-#[derive(Clone, Debug)]
-pub struct IOCache {
+pub struct Cached {
     max_age: NonZeroU64,
-    expr: Box<Expression>,
-}
-
-#[derive(Clone, Debug)]
-pub struct NonIOCache {
-    data: Arc<RwLock<Option<ConstValue>>>,
-    expr: Box<Expression>,
+    expr: IO,
 }
 
 impl Cached {
-    pub fn new(max_age: NonZeroU64, expr: Expression) -> Self {
-        if expr.has_io() {
-            Cached::IOCache(IOCache { max_age, expr: Box::new(expr) })
-        } else {
-            Cached::NonIOCache(NonIOCache {
-                data: Arc::new(RwLock::new(None)),
-                expr: Box::new(expr),
-            })
-        }
-    }
-}
-
-impl HasIO for Cached {
-    fn has_io(&self) -> bool {
-        match self {
-            Cached::IOCache(_) => true,
-            Cached::NonIOCache(_) => false,
+    pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
+        match expr {
+            Expression::IO(io) => Expression::Cached(Cached { max_age, expr: io }),
+            expr => expr
         }
     }
 }
@@ -60,37 +34,13 @@ impl Eval for Cached {
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
-            match self {
-                Cached::IOCache(IOCache { max_age, expr }) => {
-                    let key = match expr.as_ref() {
-                        Expression::IO(io) => match io {
-                            IO::Http { req_template, .. } => req_template.cache_key(ctx),
-                            IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
-                            IO::GraphQLEndpoint { req_template, .. } => req_template.cache_key(ctx),
-                        },
-                        _ => Err(anyhow::anyhow!(
-                            "IOCache shouldn't contain non-IO expressions"
-                        ))?,
-                    };
-
-                    if let Some(val) = ctx.req_ctx.cache.get(&key).await? {
-                        Ok(val)
-                    } else {
-                        let val = expr.eval(ctx, conc).await?;
-                        ctx.req_ctx.cache.set(key, val.clone(), *max_age).await?;
-                        Ok(val)
-                    }
-                }
-                Cached::NonIOCache(NonIOCache { data, expr }) => {
-                    let cache_lookup = data.read().unwrap().clone();
-                    if let Some(val) = cache_lookup {
-                        Ok(val)
-                    } else {
-                        let val = expr.eval(ctx, conc).await?;
-                        *data.write().unwrap() = Some(val.clone());
-                        Ok(val)
-                    }
-                }
+            let key = self.expr.cache_key(ctx);
+            if let Some(val) = ctx.req_ctx.cache.get(&key).await? {
+                Ok(val)
+            } else {
+                let val = self.expr.eval(ctx, conc).await?;
+                ctx.req_ctx.cache.set(key, val.clone(), self.max_age).await?;
+                Ok(val)
             }
         })
     }

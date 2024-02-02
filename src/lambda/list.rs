@@ -8,19 +8,10 @@ use futures_util::future::join_all;
 use super::{
     Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
 };
-use crate::lambda::has_io::HasIO;
 
 #[derive(Clone, Debug)]
 pub enum List {
     Concat(Vec<Expression>),
-}
-
-impl HasIO for List {
-    fn has_io(&self) -> bool {
-        match self {
-            List::Concat(exprs) => exprs.has_io(),
-        }
-    }
 }
 
 impl Eval for List {

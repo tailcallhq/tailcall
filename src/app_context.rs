@@ -4,13 +4,13 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Cache, Definition};
+use crate::blueprint::{Blueprint, Definition};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::lambda::{Cached, DataLoaderId, Expression, IO};
+use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::target_runtime::TargetRuntime;
 
 pub struct AppContext {
@@ -89,12 +89,6 @@ impl AppContext {
                                 grpc_data_loaders.push(data_loader);
                             }
                         }
-                    }
-
-                    if let Some(Cache { max_age }) = field.cache.clone() {
-                        let expr = field.resolver.take();
-                        field.resolver =
-                            expr.map(|expr| Expression::Cached(Cached::new(max_age, expr)));
                     }
                 }
             }

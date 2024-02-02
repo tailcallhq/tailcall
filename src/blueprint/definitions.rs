@@ -7,7 +7,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
-use crate::lambda::{Expression, Lambda};
+use crate::lambda::{Cached, Expression, Lambda};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
@@ -265,13 +265,7 @@ fn to_object_type_definition(
 fn update_args<'a>(
 ) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
     TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(_, field, typ, name), _| {
-            let cache = field
-                .cache
-                .as_ref()
-                .or(typ.cache.as_ref())
-                .map(|config::Cache { max_age }| Cache { max_age: *max_age });
-
+        move |(_, field, _typ, name), _| {
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
                 Valid::succeed(InputFieldDefinition {
@@ -288,7 +282,6 @@ fn update_args<'a>(
                 of_type: to_type(*field, None),
                 directives: Vec::new(),
                 resolver: None,
-                cache,
             })
         },
     )
@@ -344,6 +337,21 @@ pub fn update_nested_resolvers<'a>(
     )
 }
 
+/// Wraps the IO Expression with Expression::Cached
+/// if `Field::cache` is present for that field
+pub fn update_cacheable_resolvers<'a>(
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        move |(_config, field, _, _name), mut b_field| {
+            if let Some(config::Cache { max_age }) = field.cache.as_ref() {
+                b_field.wrap_resolver(|expression| Cached::wrap(*max_age, expression))
+            }
+
+            Valid::succeed(b_field)
+        },
+    )
+}
+
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
     let field_type = &field.type_of;
     if !is_scalar(field_type) && !config.contains(field_type) {
@@ -382,6 +390,7 @@ fn to_fields(
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
             .and(update_nested_resolvers())
+            .and(update_cacheable_resolvers())
             .try_fold(
                 &(config_set, field, type_of, name),
                 FieldDefinition::default(),

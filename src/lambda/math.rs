@@ -9,7 +9,6 @@ use super::{
     Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
 };
 use crate::json::JsonLike;
-use crate::lambda::has_io::HasIO;
 
 #[derive(Clone, Debug)]
 pub enum Math {
@@ -23,23 +22,6 @@ pub enum Math {
     Product(Vec<Expression>),
     Subtract(Box<Expression>, Box<Expression>),
     Sum(Vec<Expression>),
-}
-
-impl HasIO for Math {
-    fn has_io(&self) -> bool {
-        match self {
-            Math::Mod(lhs, rhs) => (lhs, rhs).has_io(),
-            Math::Add(lhs, rhs) => (lhs, rhs).has_io(),
-            Math::Dec(expr) => expr.has_io(),
-            Math::Divide(lhs, rhs) => (lhs, rhs).has_io(),
-            Math::Inc(expr) => expr.has_io(),
-            Math::Multiply(lhs, rhs) => (lhs, rhs).has_io(),
-            Math::Negate(expr) => expr.has_io(),
-            Math::Product(expr) => expr.has_io(),
-            Math::Subtract(lhs, rhs) => (lhs, rhs).has_io(),
-            Math::Sum(expr) => expr.has_io(),
-        }
-    }
 }
 
 impl Eval for Math {
