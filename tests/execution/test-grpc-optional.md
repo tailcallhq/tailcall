@@ -12,7 +12,7 @@ schema {
 type Query {
   news: NewsData
     @grpc(
-      service: "NewsService"
+      service: "news.NewsService"
       method: "GetAllNews"
       baseURL: "http://localhost:4000"
       protoPath: "tests/graphql/errors/proto/news.proto"

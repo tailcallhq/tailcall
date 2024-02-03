@@ -10,14 +10,14 @@ schema @server(port: 8000, graphiql: true) @upstream(httpCache: true, batch: {de
 type Query {
   news: NewsData!
     @grpc(
-      service: "NewsService"
+      service: "news.NewsService"
       method: "GetAllNews"
       baseURL: "http://localhost:50051"
       protoPath: "src/grpc/tests/news.proto"
     )
   newsById(news: NewsInput!): News!
     @grpc(
-      service: "NewsService"
+      service: "news.NewsService"
       method: "GetNews"
       baseURL: "http://localhost:50051"
       body: "{{args.news}}"
@@ -47,7 +47,7 @@ type News {
 ```yml
 - request:
     method: POST
-    url: http://localhost:50051/NewsService/GetAllNews
+    url: http://localhost:50051/news.NewsService/GetAllNews
     body: null
   response:
     status: 200
