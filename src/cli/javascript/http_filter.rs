@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use futures_util::Future;
 
-use crate::channel::{Message, MessageContent};
+use super::channel::{Message, MessageContent};
 use crate::http::Response;
 use crate::{HttpIO, WorkerIO};
 
