@@ -5,7 +5,7 @@
 #### server:
 
 ```graphql
-schema @server @upstream @link(src: "fixtures/graphql-with-link.graphql", type: Config) {
+schema @server @upstream @link(src: "../fixtures/graphql-with-link.graphql", type: Config) {
   query: Query
 }
 ```
