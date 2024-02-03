@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use async_trait::async_trait;
 use hyper::body::Bytes;
+use lazy_static::lazy_static;
 use reqwest::{Client, Request};
 
 use crate::cache::InMemoryCache;
@@ -12,23 +13,23 @@ use crate::http::Response;
 use crate::target_runtime::TargetRuntime;
 use crate::{EnvIO, HttpIO};
 
-macro_rules! include_file {
-    ($name:literal) => {
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), $name))
+lazy_static! {
+    static ref FILES: HashMap<String, String> = {
+        let mut m = HashMap::new();
+        m.insert("src/grpc/tests/news.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/news.proto")).to_string());
+        m.insert("src/grpc/tests/greetings.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/greetings.proto")).to_string());
+        m.insert("src/grpc/tests/nested0.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/nested0.proto")).to_string());
+        m.insert("src/grpc/tests/nested1.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/nested1.proto")).to_string());
+        m.insert("src/grpc/tests/cycle.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/cycle.proto")).to_string());
+        m.insert("src/grpc/tests/duplicate.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/duplicate.proto")).to_string());
+        m.insert("examples/jsonplaceholder.graphql".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder.graphql")).to_string());
+        m.insert("examples/jsonplaceholder.json".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder.json")).to_string());
+        m.insert("examples/jsonplaceholder.yml".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder.yml")).to_string());
+        m.insert("examples/jsonplaceholder_script.graphql".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder_script.graphql")).to_string());
+        m.insert("examples/scripts/echo.js".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/scripts/echo.js")).to_string());
+        m
     };
 }
-
-const NESTED0: &str = include_file!("/src/grpc/tests/nested0.proto");
-const NESTED1: &str = include_file!("/src/grpc/tests/nested1.proto");
-const GREETINGS: &str = include_file!("/src/grpc/tests/greetings.proto");
-const NEWS: &str = include_file!("/src/grpc/tests/news.proto");
-const CYCLE: &str = include_file!("/src/grpc/tests/cycle.proto");
-const DUPLICATE: &str = include_file!("/src/grpc/tests/duplicate.proto");
-const JSONPLACEHOLDER_JSON: &str = include_file!("/examples/jsonplaceholder.json");
-const JSONPLACEHOLDER_YML: &str = include_file!("/examples/jsonplaceholder.yml");
-const JSONPLACEHOLDER_GQL: &str = include_file!("/examples/jsonplaceholder.graphql");
-const JSONPLACEHOLDER_SCRIPT: &str = include_file!("/examples/jsonplaceholder_script.graphql");
-const ECHO_JS: &str = include_file!("/examples/scripts/echo.js");
 
 pub struct Env {
     env: HashMap<String, String>,
@@ -36,38 +37,11 @@ pub struct Env {
 
 #[derive(Clone)]
 pub struct FileIO {
-    files: HashMap<String, String>,
 }
 
 impl FileIO {
     pub fn init() -> Self {
-        let mut files = HashMap::new();
-        files.insert("src/grpc/tests/news.proto".into(), NEWS.into());
-        files.insert("src/grpc/tests/greetings.proto".into(), GREETINGS.into());
-        files.insert("src/grpc/tests/nested0.proto".into(), NESTED0.into());
-        files.insert("src/grpc/tests/nested1.proto".into(), NESTED1.into());
-        files.insert("src/grpc/tests/cycle.proto".into(), CYCLE.into());
-        files.insert("src/grpc/tests/duplicate.proto".into(), DUPLICATE.into());
-
-        files.insert(
-            "examples/jsonplaceholder.graphql".into(),
-            JSONPLACEHOLDER_GQL.into(),
-        );
-        files.insert(
-            "examples/jsonplaceholder.json".into(),
-            JSONPLACEHOLDER_JSON.into(),
-        );
-        files.insert(
-            "examples/jsonplaceholder.yml".into(),
-            JSONPLACEHOLDER_YML.into(),
-        );
-        files.insert(
-            "examples/jsonplaceholder_script.graphql".into(),
-            JSONPLACEHOLDER_SCRIPT.into(),
-        );
-        files.insert("examples/scripts/echo.js".into(), ECHO_JS.into());
-
-        FileIO { files }
+        FileIO { }
     }
 }
 
@@ -81,7 +55,7 @@ impl crate::FileIO for FileIO {
 
     async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
         let path = path_to_file_name(Path::new(path)).unwrap_or(path.to_string());
-        let content = self.files.get(&path).context("No such file")?;
+        let content = FILES.get(&path).context("No such file")?;
         log::info!("File read: {} ... ok", path);
         Ok(content.clone())
     }
