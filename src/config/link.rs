@@ -28,8 +28,4 @@ pub struct Link {
     ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub id: Option<String>,
-    ///
-    /// Raw content of the file
-    ///
-    content: Option<String>,
 }
