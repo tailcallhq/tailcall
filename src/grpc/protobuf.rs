@@ -205,7 +205,7 @@ mod tests {
     use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, Grpc, Type};
+    use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -227,14 +227,17 @@ mod tests {
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
         let runtime = init_runtime(&Upstream::default(), None);
         let reader = ConfigReader::init(runtime);
-        let mut config = Config::default();
-        let grpc = Grpc {
-            proto_path: get_test_file(name)
+
+        let id = "greetings".to_string();
+        let mut config = Config::default().links(vec![Link {
+            id: Some(id.clone()),
+            src: get_test_file(name)
                 .to_str()
                 .context("Failed to parse or load proto file")?
                 .to_string(),
-            ..Default::default()
-        };
+            type_of: LinkType::Protobuf,
+        }]);
+        let grpc = Grpc { proto_id: id.clone(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
@@ -243,7 +246,8 @@ mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .grpc_file_descriptor)
+            .get_file_descriptor(id.as_str())
+            .to_owned())
     }
 
     #[test]

@@ -8,11 +8,9 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigSet, Content, ExprBody, Extensions, LinkType, Script, ScriptOptions};
+use super::{ConfigSet, Content, LinkType, Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
-
-const NULL_STR: &str = "\0\0\0\0\0\0\0";
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
 pub struct ConfigReader {
@@ -180,42 +178,9 @@ impl ConfigReader {
         // Extend it with the worker script
         let config_set = self.ext_script(config_set).await?;
 
-        // Extend it with protobuf definitions for GRPC
-        let config_set = self.ext_grpc(config_set).await?;
-
         // Extend it with the links
         let config_set = self.ext_links(config_set).await?;
 
-        Ok(config_set)
-    }
-
-    /// Returns final ConfigSet from Config
-    pub async fn ext_grpc(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
-        let config = &config_set.config;
-        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
-        let mut grpc_file_descriptor = FileDescriptorSet::default();
-        for (_, typ) in config.types.iter() {
-            for (_, fld) in typ.fields.iter() {
-                let proto_path = if let Some(grpc) = &fld.grpc {
-                    &grpc.proto_path
-                } else if let Some(ExprBody::Grpc(grpc)) = fld.expr.as_ref().map(|e| &e.body) {
-                    &grpc.proto_path
-                } else {
-                    NULL_STR
-                };
-
-                if proto_path != NULL_STR {
-                    descriptors = self
-                        .resolve_descriptors(descriptors, proto_path.to_string())
-                        .await?;
-                }
-            }
-        }
-        for (_, v) in descriptors {
-            grpc_file_descriptor.file.push(v);
-        }
-
-        config_set.extensions = Extensions { grpc_file_descriptor, ..Default::default() };
         Ok(config_set)
     }
 

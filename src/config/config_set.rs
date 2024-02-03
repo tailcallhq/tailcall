@@ -33,20 +33,26 @@ impl<A> Deref for Content<A> {
 /// reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default)]
 pub struct Extensions {
-    pub grpc_file_descriptor: FileDescriptorSet,
-
     /// Contains the file descriptor sets resolved from the links
     pub file_descriptor_from_links: Vec<Content<FileDescriptorSet>>,
 }
 
 impl Extensions {
     pub fn merge_right(mut self, other: &Extensions) -> Self {
-        self.grpc_file_descriptor
-            .file
-            .extend(other.grpc_file_descriptor.file.clone());
+        // self.grpc_file_descriptor
+        //     .file
+        //     .extend(other.grpc_file_descriptor.file.clone());
         self.file_descriptor_from_links
             .extend(other.file_descriptor_from_links.clone());
         self
+    }
+
+    pub fn get_file_descriptor(&self, id: &str) -> &FileDescriptorSet {
+        self.file_descriptor_from_links
+            .iter()
+            .find(|content| content.id.as_deref() == Some(id))
+            .expect("File descriptor not found")
+            .deref()
     }
 }
 

@@ -5,7 +5,9 @@
 #### server:
 
 ```graphql
-schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com")
+  @link(id: "news", src: "src/grpc/tests/news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -31,24 +33,13 @@ type Query {
   newsGrpcHeaders: NewsData!
     @grpc(
       method: "GetAllNews"
-      protoPath: "src/grpc/tests/news.proto"
+      protoId: "news"
       service: "news.NewsService"
       headers: [{key: "id", value: "{{args.id}}"}]
     )
   newsGrpcUrl: NewsData!
-    @grpc(
-      method: "GetAllNews"
-      protoPath: "src/grpc/tests/news.proto"
-      service: "news.NewsService"
-      baseURL: "{{args.url}}"
-    )
-  newsGrpcBody: NewsData!
-    @grpc(
-      method: "GetAllNews"
-      protoPath: "src/grpc/tests/news.proto"
-      service: "news.NewsService"
-      body: "{{args.id}}"
-    )
+    @grpc(method: "GetAllNews", protoId: "news", service: "news.NewsService", baseURL: "{{args.url}}")
+  newsGrpcBody: NewsData! @grpc(method: "GetAllNews", protoId: "news", service: "news.NewsService", body: "{{args.id}}")
 }
 
 type User {

@@ -129,7 +129,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     to_url(grpc, config_set)
         .fuse(to_operation(
             grpc,
-            &config_set.extensions.grpc_file_descriptor,
+            config_set.extensions.get_file_descriptor(&grpc.proto_id),
         ))
         .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
         .fuse(helpers::body::to_body(grpc.body.as_deref()))

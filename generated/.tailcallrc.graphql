@@ -112,11 +112,9 @@ directive @grpc(
   """
   method: String!
   """
-  The `protoPath` parameter allows you to specify the path to the proto file which 
-  contains service and method definitions and is used to encode and decode the request 
-  and response body.
+  The id of the protobuf included via @link directive.
   """
-  protoPath: String!
+  protoId: String!
   """
   This refers to the gRPC service you're going to call. For instance `NewsService`.
   """
@@ -527,11 +525,9 @@ input Grpc {
   """
   method: String!
   """
-  The `protoPath` parameter allows you to specify the path to the proto file which 
-  contains service and method definitions and is used to encode and decode the request 
-  and response body.
+  The id of the protobuf included via @link directive.
   """
-  protoPath: String!
+  protoId: String!
   """
   This refers to the gRPC service you're going to call. For instance `NewsService`.
   """
@@ -768,11 +764,9 @@ input Grpc {
   """
   method: String!
   """
-  The `protoPath` parameter allows you to specify the path to the proto file which 
-  contains service and method definitions and is used to encode and decode the request 
-  and response body.
+  The id of the protobuf included via @link directive.
   """
-  protoPath: String!
+  protoId: String!
   """
   This refers to the gRPC service you're going to call. For instance `NewsService`.
   """

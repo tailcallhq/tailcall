@@ -1064,8 +1064,8 @@
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
         },
-        "protoPath": {
-          "description": "The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.",
+        "protoId": {
+          "description": "The id of the protobuf included via @link directive.",
           "type": "string"
         },
         "service": {
@@ -1075,7 +1075,7 @@
       },
       "required": [
         "method",
-        "protoPath",
+        "protoId",
         "service"
       ],
       "type": "object"
