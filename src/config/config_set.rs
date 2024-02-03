@@ -31,9 +31,6 @@ impl<A> Deref for Content<A> {
 pub struct Extensions {
     pub grpc_file_descriptor: FileDescriptorSet,
 
-    /// Contains the contents of the JS file
-    pub script: Option<String>,
-
     /// Contains the file descriptor sets resolved from the links
     pub file_descriptor_from_links: Vec<Content<FileDescriptorSet>>,
 }
@@ -43,7 +40,6 @@ impl Extensions {
         self.grpc_file_descriptor
             .file
             .extend(other.grpc_file_descriptor.file.clone());
-        self.script = other.script.clone().or(self.script.take());
         self.file_descriptor_from_links
             .extend(other.file_descriptor_from_links.clone());
         self
