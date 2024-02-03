@@ -26,9 +26,8 @@ type Query @addField(name: "username", path: ["username", "0", "name"]) {
   response:
     status: 200
     body:
-    - id: 1
-      name: Leanne Graham
-
+      - id: 1
+        name: Leanne Graham
 ```
 
 #### assert:

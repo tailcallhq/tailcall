@@ -34,7 +34,6 @@ type User @addField(name: "address", path: ["address", "street"]) {
         street: Kulas Light
       id: 1
       name: foo
-
 ```
 
 #### assert:

@@ -78,7 +78,6 @@
     body:
       id: 2
       name: Leanne Graham
-
 ```
 
 #### assert:
@@ -87,5 +86,5 @@
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: 'query { u1: user(id: 1) {id} u2: user(id: 2) {id} }'
+    query: "query { u1: user(id: 1) {id} u2: user(id: 2) {id} }"
 ```

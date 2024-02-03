@@ -35,14 +35,14 @@ type Bar {
   response:
     status: 200
     body:
-    - fooId: 1
-      id: 1
-    - fooId: 1
-      id: 2
-    - fooId: 2
-      id: 3
-    - fooId: 2
-      id: 4
+      - fooId: 1
+        id: 1
+      - fooId: 1
+        id: 2
+      - fooId: 2
+        id: 3
+      - fooId: 2
+        id: 4
 - request:
     method: GET
     url: http://example.com/foos?id=1&id=2
@@ -50,11 +50,10 @@ type Bar {
   response:
     status: 200
     body:
-    - id: 1
-      name: foo1
-    - id: 2
-      name: foo2
-
+      - id: 1
+        name: foo1
+      - id: 2
+        name: foo2
 ```
 
 #### assert:

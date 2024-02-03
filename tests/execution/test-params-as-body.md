@@ -29,7 +29,6 @@ type User {
     body:
       id: 1
       name: foo
-
 ```
 
 #### assert:
