@@ -247,6 +247,7 @@ mod tests {
             .await?
             .extensions
             .get_file_descriptor(id.as_str())
+            .unwrap()
             .to_owned())
     }
 

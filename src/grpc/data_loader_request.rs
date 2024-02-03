@@ -92,9 +92,13 @@ mod tests {
         let reader = ConfigReader::init(runtime);
         let config_set = reader.resolve(config, None).await.unwrap();
 
-        let protobuf_set =
-            ProtobufSet::from_proto_file(config_set.extensions.get_file_descriptor(id.as_str()))
-                .unwrap();
+        let protobuf_set = ProtobufSet::from_proto_file(
+            config_set
+                .extensions
+                .get_file_descriptor(id.as_str())
+                .unwrap(),
+        )
+        .unwrap();
 
         let service = protobuf_set.find_service("Greeter").unwrap();
 

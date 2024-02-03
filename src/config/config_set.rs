@@ -44,12 +44,11 @@ impl Extensions {
         self
     }
 
-    pub fn get_file_descriptor(&self, id: &str) -> &FileDescriptorSet {
+    pub fn get_file_descriptor(&self, id: &str) -> Option<&FileDescriptorSet> {
         self.file_descriptor_from_links
             .iter()
             .find(|content| content.id.as_deref() == Some(id))
-            .expect("File descriptor not found")
-            .deref()
+            .map(|content| content.deref())
     }
 }
 

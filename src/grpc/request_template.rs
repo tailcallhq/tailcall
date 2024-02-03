@@ -142,7 +142,8 @@ mod tests {
                 .await
                 .unwrap()
                 .extensions
-                .get_file_descriptor(id.as_str()),
+                .get_file_descriptor(id.as_str())
+                .unwrap(),
         )
         .unwrap();
 
