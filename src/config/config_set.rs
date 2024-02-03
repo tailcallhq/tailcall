@@ -34,12 +34,6 @@ impl Default for ServiceDocumentWithId {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct RawContent {
-    pub id: Option<String>,
-    pub content: async_graphql_value::ConstValue,
-}
-
 /// Extensions are meta-information required before we can generate the blueprint.
 /// Typically, this information cannot be inferred without performing an IO operation, i.e.,
 /// reading a file, making an HTTP call, etc.
@@ -55,9 +49,6 @@ pub struct Extensions {
 
     /// Contains the service documents resolved from the links
     pub service_document_from_links: Vec<ServiceDocumentWithId>,
-
-    /// Contains the raw content resolved from the links
-    pub raw_content: Vec<RawContent>,
 }
 
 impl Extensions {
@@ -70,7 +61,6 @@ impl Extensions {
             .extend(other.service_document_from_links.clone());
         self.file_descriptor_from_links
             .extend(other.file_descriptor_from_links.clone());
-        self.raw_content.extend(other.raw_content.clone());
         self
     }
 }

@@ -23,7 +23,6 @@ fn config_document(config: &Config) -> ServiceDocument {
             LinkType::Config => "Config",
             LinkType::GraphQL => "Graphql",
             LinkType::Protobuf => "Protobuf",
-            LinkType::Data => "Data",
         }
         .to_string();
 

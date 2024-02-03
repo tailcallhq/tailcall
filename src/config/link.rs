@@ -8,7 +8,6 @@ pub enum LinkType {
     Config,
     GraphQL,
     Protobuf,
-    Data,
 }
 
 /// The @link directive allows you to import external resources, such as configuration, a .proto file, a plain text file, or a GraphQL schema.

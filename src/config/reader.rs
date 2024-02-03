@@ -8,8 +8,8 @@ use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
 use super::{
-    ConfigSet, ExprBody, Extensions, FileDescriptorSetWithId, LinkType, RawContent, Script,
-    ScriptOptions, ServiceDocumentWithId,
+    ConfigSet, ExprBody, Extensions, FileDescriptorSetWithId, LinkType, Script, ScriptOptions,
+    ServiceDocumentWithId,
 };
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
@@ -123,12 +123,6 @@ impl ConfigReader {
                             file_descriptor_set,
                         },
                     );
-                }
-                LinkType::Data => {
-                    config_set.extensions.raw_content.push(RawContent {
-                        id: config_link.id.to_owned(),
-                        content: async_graphql_value::ConstValue::String(content),
-                    });
                 }
             }
         }
@@ -381,65 +375,6 @@ mod test_proto_config {
         assert_eq!(
             config_set.config.links.len(),
             config_set.extensions.file_descriptor_from_links.len()
-        );
-
-        dir.close().unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_load_data_link() {
-        let runtime = init_runtime(&Default::default(), None);
-        let reader = ConfigReader::init(runtime);
-        let data_first = "Some random text";
-        let data_second = "Some other random text";
-
-        let dir = tempfile::tempdir().unwrap();
-
-        let data_first_path = dir.path().join("data_first.txt");
-        tokio::fs::write(&data_first_path, data_first)
-            .await
-            .unwrap();
-
-        let data_second_path = dir.path().join("data_second.txt");
-        tokio::fs::write(&data_second_path, data_second)
-            .await
-            .unwrap();
-
-        let sdl = format!("schema @server @upstream @link(id: \"first\", src: \"{}\", type: Data) @link(id: \"second\", src: \"{}\", type: Data) {{
-            query: Query
-          }}", data_first_path.display(), data_second_path.display());
-
-        let schema_path = dir.path().join("schema.graphql");
-        tokio::fs::write(&schema_path, sdl).await.unwrap();
-
-        let config_set = reader.read(schema_path.display()).await.unwrap();
-
-        assert_eq!(config_set.config.links.len(), 2);
-        assert_eq!(
-            config_set.config.links.len(),
-            config_set.extensions.raw_content.len()
-        );
-
-        let actual_data = config_set
-            .extensions
-            .raw_content
-            .iter()
-            .find(|x| x.id == Some("first".to_string()))
-            .unwrap();
-        assert_eq!(
-            async_graphql_value::ConstValue::String(data_first.to_string()),
-            actual_data.content
-        );
-
-        let actual_data = config_set
-            .extensions
-            .raw_content
-            .iter()
-            .find(|x| x.id == Some("second".to_string()))
-            .unwrap();
-        assert_eq!(
-            async_graphql_value::ConstValue::String(data_second.to_string()),
-            actual_data.content
         );
 
         dir.close().unwrap();
