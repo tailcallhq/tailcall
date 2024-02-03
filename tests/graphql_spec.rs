@@ -1,19 +1,7 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use async_trait::async_trait;
-use hyper::body::Bytes;
-use reqwest::{Client, Request};
-use tailcall::cache::InMemoryCache;
-use tailcall::http::Response;
-use tailcall::target_runtime::TargetRuntime;
-use tailcall::{EnvIO, HttpIO};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-pub struct Env {
-    env: HashMap<String, String>,
-}
 
 #[derive(Clone)]
 pub struct FileIO {}
@@ -46,41 +34,10 @@ impl tailcall::FileIO for FileIO {
     }
 }
 
-impl EnvIO for Env {
-    fn get(&self, key: &str) -> Option<String> {
-        self.env.get(key).cloned()
-    }
+fn init_file() -> Arc<dyn tailcall::FileIO> {
+    Arc::new(FileIO::init())
 }
 
-impl Env {
-    pub fn init(map: HashMap<String, String>) -> Self {
-        Self { env: map }
-    }
-}
-
-struct Http {
-    client: Client,
-}
-#[async_trait]
-impl HttpIO for Http {
-    async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
-        let resp = self.client.execute(request).await?;
-        let resp = tailcall::http::Response::from_reqwest(resp).await?;
-        Ok(resp)
-    }
-}
-
-fn init_runtime() -> TargetRuntime {
-    let http = Arc::new(Http { client: Client::new() });
-    let http2_only = http.clone();
-    TargetRuntime {
-        http,
-        http2_only,
-        env: Arc::new(Env::init(HashMap::new())),
-        file: Arc::new(FileIO::init()),
-        cache: Arc::new(InMemoryCache::new()),
-    }
-}
 #[cfg(test)]
 mod gql_spec {
     use std::fmt::Debug;
@@ -105,9 +62,10 @@ mod gql_spec {
     use tailcall::directive::DirectiveCodec;
     use tailcall::http::{AppContext, RequestContext};
     use tailcall::print_schema;
+    use tailcall::test::init_test_runtime;
     use tailcall::valid::{Cause, Valid, ValidationError, Validator};
 
-    use crate::init_runtime;
+    use crate::init_file;
 
     static INIT: Once = Once::new();
 
@@ -377,7 +335,8 @@ mod gql_spec {
             let content = spec.find_source(Tag::ServerSDL);
             let content = content.as_str();
             let config = Config::from_sdl(content).to_result().unwrap();
-            let runtime = init_runtime();
+            let mut runtime = init_test_runtime();
+            runtime.file = init_file();
             let reader = ConfigReader::init(runtime);
             let config_set = reader.resolve(config).await.unwrap();
             let actual =
@@ -417,7 +376,9 @@ mod gql_spec {
                         .trace(spec.path.to_str().unwrap_or_default())
                         .to_result()
                         .unwrap();
-                    let runtime = init_runtime();
+                    let mut runtime = init_test_runtime();
+                    runtime.file = init_file();
+
                     let server_ctx = AppContext::new(blueprint, runtime);
                     let schema = &server_ctx.schema;
 
@@ -469,7 +430,9 @@ mod gql_spec {
             let config = Config::from_sdl(content).to_result();
             let actual = match config {
                 Ok(config) => {
-                    let runtime = init_runtime();
+                    let mut runtime = init_test_runtime();
+                    runtime.file = init_file();
+
                     let reader = ConfigReader::init(runtime);
                     match reader.resolve(config).await {
                         Ok(config_set) => Valid::from(Blueprint::try_from(&config_set))

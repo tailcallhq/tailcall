@@ -26,6 +26,9 @@ pub mod target_runtime;
 pub mod try_fold;
 pub mod valid;
 
+#[cfg(feature = "test-utils")]
+pub mod test;
+
 use std::hash::Hash;
 use std::num::NonZeroU64;
 

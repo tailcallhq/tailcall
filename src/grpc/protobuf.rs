@@ -193,98 +193,17 @@ impl ProtobufOperation {
 
 #[cfg(test)]
 mod tests {
-    // TODO: Rewrite protobuf tests
-    use std::collections::HashMap;
     use std::path::PathBuf;
-    use std::sync::Arc;
 
-    use anyhow::{anyhow, Result};
-    use async_trait::async_trait;
-    use hyper::body::Bytes;
+    use anyhow::Result;
     use once_cell::sync::Lazy;
     use prost_reflect::Value;
-    use reqwest::{Client, Request};
     use serde_json::json;
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use super::*;
-    use crate::cache::InMemoryCache;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Type};
-    use crate::http::Response;
-    use crate::target_runtime::TargetRuntime;
-    use crate::{EnvIO, HttpIO};
-
-    pub struct Env {
-        env: HashMap<String, String>,
-    }
-
-    #[derive(Clone)]
-    pub struct FileIO {}
-
-    impl FileIO {
-        pub fn init() -> Self {
-            FileIO {}
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl crate::FileIO for FileIO {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-            let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
-            log::info!("File write: {} ... ok", path);
-            Ok(())
-        }
-
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-            let mut file = tokio::fs::File::open(path).await?;
-            let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
-            log::info!("File read: {} ... ok", path);
-            Ok(String::from_utf8(buffer)?)
-        }
-    }
-
-    impl EnvIO for Env {
-        fn get(&self, key: &str) -> Option<String> {
-            self.env.get(key).cloned()
-        }
-    }
-
-    impl Env {
-        pub fn init(map: HashMap<String, String>) -> Self {
-            Self { env: map }
-        }
-    }
-
-    struct Http {
-        client: Client,
-    }
-    #[async_trait]
-    impl HttpIO for Http {
-        async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
-            let resp = self.client.execute(request).await?;
-            let resp = crate::http::Response::from_reqwest(resp).await?;
-            Ok(resp)
-        }
-    }
-
-    fn init_runtime() -> TargetRuntime {
-        let http = Arc::new(Http { client: Client::new() });
-        let http2_only = http.clone();
-        TargetRuntime {
-            http,
-            http2_only,
-            env: Arc::new(Env::init(HashMap::new())),
-            file: Arc::new(FileIO::init()),
-            cache: Arc::new(InMemoryCache::new()),
-        }
-    }
+    use crate::test::init_test_runtime;
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -304,7 +223,7 @@ mod tests {
     }
 
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
-        let runtime = init_runtime();
+        let runtime = init_test_runtime();
         let reader = ConfigReader::init(runtime);
         let mut config = Config::default();
         let grpc = Grpc {
@@ -358,10 +277,7 @@ mod tests {
     async fn unknown_file() -> Result<()> {
         let error = get_proto_file("_unknown.proto").await.unwrap_err();
 
-        assert_eq!(
-            error.to_string(),
-            "No such file or directory (os error 2)".to_string()
-        );
+        assert_eq!(error.to_string(), "No such file".to_string());
 
         Ok(())
     }

@@ -13,6 +13,7 @@ fn run_blocking() -> anyhow::Result<()> {
 }
 
 fn main() -> anyhow::Result<()> {
+    println!("{:?}", env!("CARGO_MANIFEST_DIR"));
     let result = run_blocking();
     match result {
         Ok(_) => {}

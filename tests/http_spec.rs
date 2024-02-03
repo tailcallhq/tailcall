@@ -26,7 +26,8 @@ mod http_spec {
     use tailcall::config::{Config, ConfigSet, Source};
     use tailcall::http::{handle_request, AppContext, Method, Response};
     use tailcall::target_runtime::TargetRuntime;
-    use tailcall::{blueprint, EnvIO, HttpIO};
+    use tailcall::test::{init_test_runtime, Env};
+    use tailcall::{blueprint, HttpIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use url::Url;
 
@@ -61,22 +62,6 @@ mod http_spec {
         headers: BTreeMap<String, String>,
         #[serde(default)]
         body: serde_json::Value,
-    }
-
-    pub struct Env {
-        env: HashMap<String, String>,
-    }
-
-    impl EnvIO for Env {
-        fn get(&self, key: &str) -> Option<String> {
-            self.env.get(key).cloned()
-        }
-    }
-
-    impl Env {
-        pub fn init(map: HashMap<String, String>) -> Self {
-            Self { env: map }
-        }
     }
 
     #[derive(Clone)]
@@ -248,13 +233,12 @@ mod http_spec {
         }
 
         async fn server_context(&self) -> Arc<AppContext> {
-            let runtime = TargetRuntime {
-                http: Self::init_hook_http(MockHttpClient::new(self.clone()), None),
-                http2_only: Self::init_hook_http(MockHttpClient::new(self.clone()), None),
-                env: Arc::new(Env::init(HashMap::new())),
-                file: Arc::new(FileIO::init()),
-                cache: Arc::new(InMemoryCache::new()),
-            };
+            let http_io = Self::init_hook_http(MockHttpClient::new(self.clone()), None);
+            let mut runtime = init_test_runtime();
+            runtime.http = http_io.clone();
+            runtime.http2_only = http_io;
+            runtime.file = Arc::new(FileIO::init());
+
             let config = match self.config.clone() {
                 ConfigSource::File(file) => {
                     let reader = ConfigReader::init(runtime.clone());

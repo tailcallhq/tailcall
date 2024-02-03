@@ -2,6 +2,7 @@
 name = "tailcall"
 version = "0.1.0"
 edition = "2021"
+resolver = "2"
 
 [[bin]]
 name = "tailcall"
@@ -89,6 +90,8 @@ pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 
 [features]
+# contains test io and rt
+test-utils = []
 
 # Feature Flag to enable V8.
 # V8 currently is not support on all platforms so we control it via this feature flag.

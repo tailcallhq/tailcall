@@ -1,19 +1,7 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use async_trait::async_trait;
-use hyper::body::Bytes;
-use reqwest::{Client, Request};
-use tailcall::cache::InMemoryCache;
-use tailcall::http::Response;
-use tailcall::target_runtime::TargetRuntime;
-use tailcall::{EnvIO, HttpIO};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-pub struct Env {
-    env: HashMap<String, String>,
-}
 
 #[derive(Clone)]
 pub struct FileIO {}
@@ -46,40 +34,8 @@ impl tailcall::FileIO for FileIO {
     }
 }
 
-impl EnvIO for Env {
-    fn get(&self, key: &str) -> Option<String> {
-        self.env.get(key).cloned()
-    }
-}
-
-impl Env {
-    pub fn init(map: HashMap<String, String>) -> Self {
-        Self { env: map }
-    }
-}
-
-struct Http {
-    client: Client,
-}
-#[async_trait]
-impl HttpIO for Http {
-    async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
-        let resp = self.client.execute(request).await?;
-        let resp = tailcall::http::Response::from_reqwest(resp).await?;
-        Ok(resp)
-    }
-}
-
-fn init_runtime() -> TargetRuntime {
-    let http = Arc::new(Http { client: Client::new() });
-    let http2_only = http.clone();
-    TargetRuntime {
-        http,
-        http2_only,
-        env: Arc::new(Env::init(HashMap::new())),
-        file: Arc::new(FileIO::init()),
-        cache: Arc::new(InMemoryCache::new()),
-    }
+fn init_file() -> Arc<dyn tailcall::FileIO> {
+    Arc::new(FileIO::init())
 }
 
 #[cfg(test)]
@@ -88,11 +44,13 @@ mod serv_spec {
     use serde_json::json;
     use tailcall::cli::server::Server;
     use tailcall::config::reader::ConfigReader;
+    use tailcall::test::init_test_runtime;
 
-    use crate::init_runtime;
+    use crate::init_file;
 
     async fn test_server(configs: &[&str], url: &str) {
-        let runtime = init_runtime();
+        let mut runtime = init_test_runtime();
+        runtime.file = init_file();
         let reader = ConfigReader::init(runtime);
         let config = reader.read_all(configs).await.unwrap();
         let mut server = Server::new(config);
@@ -177,7 +135,8 @@ mod serv_spec {
     #[tokio::test]
     async fn server_start_http2_nokey() {
         let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
-        let runtime = init_runtime();
+        let mut runtime = init_test_runtime();
+        runtime.file = init_file();
         let reader = ConfigReader::init(runtime);
         let config = reader.read_all(configs).await.unwrap();
         let server = Server::new(config);
