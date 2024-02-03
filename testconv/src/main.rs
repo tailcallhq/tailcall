@@ -314,6 +314,12 @@ async fn main() {
                     .output()
                     .expect("Failed to run cargo test");
 
+                print!(
+                    "{}{}",
+                    String::from_utf8_lossy(&test.stdout),
+                    String::from_utf8_lossy(&test.stderr)
+                );
+
                 if !test.status.success() {
                     panic!(
                         "Running cargo test (needed for fail annotation conversion) failed:\n{}",
@@ -321,7 +327,6 @@ async fn main() {
                     );
                 }
 
-                print!("{}{}", &test.stdout, &test.stderr);
 
                 let mut patched = 0;
 
