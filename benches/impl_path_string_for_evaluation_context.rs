@@ -9,7 +9,7 @@ use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use tailcall::blueprint::Server;
+use tailcall::blueprint::{Server, Upstream};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::{init_env, init_http, init_http2_only};
 use tailcall::http::RequestContext;
@@ -151,6 +151,7 @@ fn request_context() -> RequestContext {
     let tailcall::config::Config { server, upstream, .. } = tailcall::config::Config::default();
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(server).unwrap();
+    let upstream = Upstream::try_from(upstream).unwrap();
 
     let h_client = init_http(&upstream, None);
     let h2_client = init_http2_only(&upstream, None);

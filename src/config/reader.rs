@@ -346,9 +346,10 @@ mod reader_tests {
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
 
+    use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Script, ScriptOptions, Type, Upstream};
+    use crate::config::{Config, Script, ScriptOptions, Type};
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
