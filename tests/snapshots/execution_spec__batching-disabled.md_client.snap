@@ -1,0 +1,17 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Query {
+  user(id: Int!): User
+}
+
+type User {
+  id: Int
+  name: String
+  username: String
+}
+
+schema {
+  query: Query
+}
