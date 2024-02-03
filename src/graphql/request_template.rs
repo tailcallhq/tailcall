@@ -137,6 +137,8 @@ impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for 
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use async_graphql::Value;
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
@@ -146,7 +148,7 @@ mod tests {
     use crate::graphql::RequestTemplate;
     use crate::has_headers::HasHeaders;
     use crate::json::JsonLike;
-    use crate::lambda::GraphQLOperationContext;
+    use crate::lambda::{CacheKey, GraphQLOperationContext};
     use crate::path::PathGraphql;
 
     struct Context {
@@ -236,5 +238,68 @@ mod tests {
             std::str::from_utf8(&body).unwrap(),
             r#"{ "query": "mutation { create(id: \"baz\", struct: {bar: \"baz\",header: \"abc\"}) { a,b,c } }" }"#
         );
+    }
+
+    fn create_gql_request_template_and_ctx(json: serde_json::Value) -> (RequestTemplate, Context) {
+        let value = Value::from_json(json).unwrap();
+
+        let tmpl = RequestTemplate::new(
+            "http://localhost:3000".to_string(),
+            &GraphQLOperationType::Mutation,
+            "create",
+            Some(
+                serde_json::from_str(
+                    r#"[{"key": "id", "value": "{{foo.bar}}"}, {"key": "struct", "value": "{{foo}}"}]"#,
+                )
+                    .unwrap(),
+            )
+                .as_ref(),
+            vec![],
+        )
+            .unwrap();
+        let ctx = Context { value, headers: Default::default() };
+
+        (tmpl, ctx)
+    }
+
+    #[test]
+    fn test_cache_key_collision() {
+        let arr = [
+            json!({
+              "foo": {
+                "bar": "baz",
+                "header": "abc"
+              }
+            }),
+            json!({
+              "foo": {
+                "bar": "baz",
+                "header": "ab"
+              }
+            }),
+            json!({
+              "foo": {
+                "bar": "ba",
+                "header": "abc"
+              }
+            }),
+            json!({
+              "foo": {
+                "bar": "abc",
+                "header": "baz"
+              }
+            }),
+        ];
+
+        let cache_key_set: HashSet<_> = arr
+            .iter()
+            .cloned()
+            .map(|value| {
+                let (tmpl, ctx) = create_gql_request_template_and_ctx(value);
+                tmpl.cache_key(&ctx)
+            })
+            .collect();
+
+        assert_eq!(arr.len(), cache_key_set.len());
     }
 }
