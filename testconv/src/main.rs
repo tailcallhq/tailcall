@@ -649,8 +649,14 @@ async fn main() {
 
     println!("Running prettier...");
 
+    let prettierrc = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.prettierrc");
     let prettier = std::process::Command::new("prettier")
-        .args(["-c", ".prettierrc", "--write", "tests/execution/*.md"])
+        .args([
+            "-c",
+            prettierrc.to_string_lossy().as_ref(),
+            "--write",
+            "tests/execution/*.md",
+        ])
         .output()
         .expect("Failed to run prettier");
 
