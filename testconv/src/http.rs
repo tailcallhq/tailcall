@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use derive_setters::Setters;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use tailcall::config::Config;
 
@@ -30,7 +29,7 @@ pub struct HttpSpec {
     pub mock: Vec<Mock>,
 
     #[serde(default)]
-    pub env: HashMap<String, String>,
+    pub env: IndexMap<String, String>,
 
     #[serde(default)]
     pub expected_upstream_requests: Vec<UpstreamRequest>,
