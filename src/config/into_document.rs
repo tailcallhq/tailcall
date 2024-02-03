@@ -4,7 +4,6 @@ use async_graphql_value::{ConstValue, Name};
 
 use super::Config;
 use crate::blueprint::TypeLike;
-
 use crate::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
