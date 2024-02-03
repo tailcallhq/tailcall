@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Parsing failed because of invalid type: map, expected a sequence",
+    "trace": [
+      "@http",
+      "query"
+    ],
+    "description": null
+  }
+]
