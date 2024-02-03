@@ -94,16 +94,7 @@ fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
         })
         .collect();
 
-    let mut res = Valid::succeed(Vec::new());
-
-    for directive in directives {
-        res = res.zip(directive).map(|(mut vec, item)| {
-            vec.push(item);
-            vec
-        });
-    }
-
-    res
+    Valid::from_iter(directives, |item| item)
 }
 
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
