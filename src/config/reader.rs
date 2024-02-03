@@ -7,9 +7,7 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{
-    ConfigSet, ExprBody, Extensions, FileDescriptorSetWithId, LinkType, Script, ScriptOptions,
-};
+use super::{ConfigSet, Content, ExprBody, Extensions, LinkType, Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
@@ -103,12 +101,13 @@ impl ConfigReader {
                         file_descriptor_set.file.push(v);
                     }
 
-                    config_set.extensions.file_descriptor_from_links.push(
-                        FileDescriptorSetWithId {
+                    config_set
+                        .extensions
+                        .file_descriptor_from_links
+                        .push(Content {
                             id: config_link.id.to_owned(),
-                            file_descriptor_set,
-                        },
-                    );
+                            content: file_descriptor_set,
+                        });
                 }
             }
         }

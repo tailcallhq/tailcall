@@ -12,9 +12,16 @@ pub struct ConfigSet {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct FileDescriptorSetWithId {
+pub struct Content<A> {
     pub id: Option<String>,
-    pub file_descriptor_set: FileDescriptorSet,
+    pub content: A,
+}
+
+impl<A> Deref for Content<A> {
+    type Target = A;
+    fn deref(&self) -> &Self::Target {
+        &self.content
+    }
 }
 
 /// Extensions are meta-information required before we can generate the blueprint.
@@ -28,7 +35,7 @@ pub struct Extensions {
     pub script: Option<String>,
 
     /// Contains the file descriptor sets resolved from the links
-    pub file_descriptor_from_links: Vec<FileDescriptorSetWithId>,
+    pub file_descriptor_from_links: Vec<Content<FileDescriptorSet>>,
 }
 
 impl Extensions {
