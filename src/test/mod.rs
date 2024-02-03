@@ -16,17 +16,94 @@ use crate::{EnvIO, HttpIO};
 lazy_static! {
     static ref FILES: HashMap<String, String> = {
         let mut m = HashMap::new();
-        m.insert("src/grpc/tests/news.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/news.proto")).to_string());
-        m.insert("src/grpc/tests/greetings.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/greetings.proto")).to_string());
-        m.insert("src/grpc/tests/nested0.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/nested0.proto")).to_string());
-        m.insert("src/grpc/tests/nested1.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/nested1.proto")).to_string());
-        m.insert("src/grpc/tests/cycle.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/cycle.proto")).to_string());
-        m.insert("src/grpc/tests/duplicate.proto".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/grpc/tests/duplicate.proto")).to_string());
-        m.insert("examples/jsonplaceholder.graphql".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder.graphql")).to_string());
-        m.insert("examples/jsonplaceholder.json".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder.json")).to_string());
-        m.insert("examples/jsonplaceholder.yml".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder.yml")).to_string());
-        m.insert("examples/jsonplaceholder_script.graphql".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/jsonplaceholder_script.graphql")).to_string());
-        m.insert("examples/scripts/echo.js".to_string(), include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/scripts/echo.js")).to_string());
+        m.insert(
+            "src/grpc/tests/news.proto".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/grpc/tests/news.proto"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "src/grpc/tests/greetings.proto".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/grpc/tests/greetings.proto"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "src/grpc/tests/nested0.proto".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/grpc/tests/nested0.proto"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "src/grpc/tests/nested1.proto".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/grpc/tests/nested1.proto"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "src/grpc/tests/cycle.proto".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/grpc/tests/cycle.proto"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "src/grpc/tests/duplicate.proto".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/src/grpc/tests/duplicate.proto"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "examples/jsonplaceholder.graphql".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/examples/jsonplaceholder.graphql"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "examples/jsonplaceholder.json".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/examples/jsonplaceholder.json"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "examples/jsonplaceholder.yml".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/examples/jsonplaceholder.yml"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "examples/jsonplaceholder_script.graphql".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/examples/jsonplaceholder_script.graphql"
+            ))
+            .to_string(),
+        );
+        m.insert(
+            "examples/scripts/echo.js".to_string(),
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/examples/scripts/echo.js"
+            ))
+            .to_string(),
+        );
         m
     };
 }
@@ -36,12 +113,11 @@ pub struct Env {
 }
 
 #[derive(Clone)]
-pub struct FileIO {
-}
+pub struct FileIO {}
 
 impl FileIO {
     pub fn init() -> Self {
-        FileIO { }
+        FileIO {}
     }
 }
 
