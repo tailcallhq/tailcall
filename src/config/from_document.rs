@@ -255,27 +255,29 @@ where
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(JS::from_directives(directives.iter()))
         .fuse(Call::from_directives(directives.iter()))
-        .map(|(http, graphql, cache, grpc, expr, omit, modify, script, call)| {
-            let const_field = to_const_field(directives);
-            config::Field {
-                type_of,
-                list,
-                required: !nullable,
-                list_type_required,
-                args,
-                doc,
-                modify,
-                omit,
-                http,
-                grpc,
-                script,
-                const_field,
-                graphql,
-                expr,
-                cache,
-                call
-            }
-        })
+        .map(
+            |(http, graphql, cache, grpc, expr, omit, modify, script, call)| {
+                let const_field = to_const_field(directives);
+                config::Field {
+                    type_of,
+                    list,
+                    required: !nullable,
+                    list_type_required,
+                    args,
+                    doc,
+                    modify,
+                    omit,
+                    http,
+                    grpc,
+                    script,
+                    const_field,
+                    graphql,
+                    expr,
+                    cache,
+                    call,
+                }
+            },
+        )
 }
 
 fn to_type_of(type_: &Type) -> String {
