@@ -22,9 +22,9 @@ type NewsData {
 }
 
 type Query {
-  news: NewsData! @grpc(method: "GetAllNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService")
-  newsById(news: NewsInput!): News! @grpc(body: "{{args.news}}", method: "GetNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService")
-  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService")
+  news: NewsData! @grpc(method: "GetAllNews", protoPath: "src/grpc/tests/news.proto", service: "news.NewsService")
+  newsById(news: NewsInput!): News! @grpc(body: "{{args.news}}", method: "GetNews", protoPath: "src/grpc/tests/news.proto", service: "news.NewsService")
+  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoPath: "src/grpc/tests/news.proto", service: "news.NewsService")
 }
 
 #> client-sdl
