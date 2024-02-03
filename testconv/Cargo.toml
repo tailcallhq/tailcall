@@ -13,6 +13,6 @@ serde_json = "1.0"
 serde_yaml = "0.9"
 tailcall = { path = ".." }
 url = { version = "2", features = ["serde"] }
-tokio = { version = "1.35.1", features = ["rt", "macros"] }
+tokio = { version = "1.36.0", features = ["rt", "macros"] }
 async-graphql = { version = "7.0.1", features = ["dynamic-schema"] }
 regex = "1.10.3"
