@@ -756,7 +756,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Explicitly only run one test if specified in command line args
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
-    let explicit = std::env::args().skip(1).find(|x| x != "--color=auto");
+    let explicit = std::env::args().skip(1).find(|x| !x.starts_with("--"));
     let spec = if let Some(explicit) = explicit {
         let path = PathBuf::from(&explicit)
             .canonicalize()
