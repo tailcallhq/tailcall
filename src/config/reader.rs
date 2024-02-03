@@ -88,7 +88,6 @@ impl ConfigReader {
                     .unwrap_or(Path::new(""))
                     .join(&config_link.src);
 
-                dbg!(path.clone());
                 self.read_file(path.to_string_lossy()).await?
             };
 
@@ -102,8 +101,11 @@ impl ConfigReader {
                     config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
 
                     if !config.links.is_empty() {
-                        config_set =
-                            config_set.merge_right(&self.ext_links(ConfigSet::from(config)).await?);
+                        config_set = config_set.merge_right(
+                            &self
+                                .ext_links(ConfigSet::from(config).path(Some(source.path)))
+                                .await?,
+                        );
                     }
                 }
                 LinkType::Protobuf => {

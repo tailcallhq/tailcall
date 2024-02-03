@@ -54,7 +54,7 @@ impl ConfigSet {
     pub fn merge_right(mut self, other: &Self) -> Self {
         self.config = self.config.merge_right(&other.config);
         self.extensions = self.extensions.merge_right(&other.extensions);
-        self.path = other.path.clone();
+        self.path = other.path.clone().or(self.path);
         self
     }
 }
