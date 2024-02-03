@@ -314,7 +314,7 @@ async fn main() {
                     .output()
                     .expect("Failed to run cargo test");
 
-                print!(
+                println!(
                     "{}{}",
                     String::from_utf8_lossy(&test.stdout),
                     String::from_utf8_lossy(&test.stderr)
@@ -326,7 +326,6 @@ async fn main() {
                         String::from_utf8_lossy(&test.stderr)
                     );
                 }
-
 
                 let mut patched = 0;
 
