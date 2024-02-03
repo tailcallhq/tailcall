@@ -37,7 +37,10 @@ type Query {
     body: null
   response:
     status: 200
-    body: null
+    textBody: |2-
+       schema { query: Query }
+      type User { id: Int name: String }
+      type Query { user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com") }
 - request:
     method: GET
     url: http://example.com/invalid.graphql
