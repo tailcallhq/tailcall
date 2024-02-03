@@ -6,7 +6,6 @@ use super::super::is_default;
 pub enum LinkType {
     #[default]
     Config,
-    GraphQL,
     Protobuf,
 }
 

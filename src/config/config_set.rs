@@ -1,6 +1,5 @@
 use std::ops::Deref;
 
-use async_graphql::parser::types::ServiceDocument;
 use prost_reflect::prost_types::FileDescriptorSet;
 
 use crate::config::Config;
@@ -18,22 +17,6 @@ pub struct FileDescriptorSetWithId {
     pub file_descriptor_set: FileDescriptorSet,
 }
 
-#[derive(Clone, Debug)]
-pub struct ServiceDocumentWithId {
-    pub id: Option<String>,
-    pub service_document: ServiceDocument,
-}
-
-// Is necessary to implement Default for ServiceDocumentWithId because ServiceDocument does not implement Default
-impl Default for ServiceDocumentWithId {
-    fn default() -> Self {
-        ServiceDocumentWithId {
-            id: None,
-            service_document: ServiceDocument { definitions: vec![] },
-        }
-    }
-}
-
 /// Extensions are meta-information required before we can generate the blueprint.
 /// Typically, this information cannot be inferred without performing an IO operation, i.e.,
 /// reading a file, making an HTTP call, etc.
@@ -46,9 +29,6 @@ pub struct Extensions {
 
     /// Contains the file descriptor sets resolved from the links
     pub file_descriptor_from_links: Vec<FileDescriptorSetWithId>,
-
-    /// Contains the service documents resolved from the links
-    pub service_document_from_links: Vec<ServiceDocumentWithId>,
 }
 
 impl Extensions {
@@ -57,8 +37,6 @@ impl Extensions {
             .file
             .extend(other.grpc_file_descriptor.file.clone());
         self.script = other.script.clone().or(self.script.take());
-        self.service_document_from_links
-            .extend(other.service_document_from_links.clone());
         self.file_descriptor_from_links
             .extend(other.file_descriptor_from_links.clone());
         self

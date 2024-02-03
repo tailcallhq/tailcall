@@ -21,7 +21,6 @@ fn config_document(config: &Config) -> ServiceDocument {
 
         let name = match link.type_of {
             LinkType::Config => "Config",
-            LinkType::GraphQL => "Graphql",
             LinkType::Protobuf => "Protobuf",
         }
         .to_string();
