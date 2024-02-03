@@ -209,7 +209,7 @@ This will regenerate all snapshots without interrupting the test every time ther
 
 ## Porting from `graphql_spec`/`http_spec`
 
-Porting is automatically done by `testconv`. This is a description of what it does under the hood.
+Porting is automatically done by `testconv`. You can run `testconv` by doing `cargo run -p testconv`, but it is automatically performed by `./lint.sh --mode=fix`. This is a description of what it does under the hood.
 
 ### `http_spec`
 
