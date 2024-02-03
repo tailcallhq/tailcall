@@ -205,14 +205,18 @@ fn first_char_to_upper(name: &mut String) {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn write_type(
-    writer: &mut IndentedWriter<impl Write>,
+struct WriteParams<'a, W: Write> {
+    writer: &'a mut IndentedWriter<W>,
     name: String,
     schema: SchemaObject,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+    defs: &'a BTreeMap<String, Schema>,
+    scalars: &'a mut HashSet<String>,
+    extra_it: &'a mut BTreeMap<String, ExtraTypes>,
+}
+
+//#[allow(clippy::too_many_arguments)]
+fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, schema, defs, extra_it, .. } = params;
     match schema.instance_type {
         Some(SingleOrVec::Single(typ))
             if matches!(
@@ -278,32 +282,21 @@ fn write_type(
         }
     }
 }
-#[allow(clippy::too_many_arguments)]
-fn write_field(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    schema: SchemaObject,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+// #[allow(clippy::too_many_arguments)]
+fn write_field<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, .. } = params;
     write!(writer, "{name}: ")?;
-    write_type(writer, name, schema, defs, extra_it)?;
+    let params_clone = WriteParams { writer, name: name.clone(), ..params };
+    write_type(params_clone)?;
     writeln!(writer)
 }
-#[allow(clippy::too_many_arguments)]
-fn write_input_type(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    typ: SchemaObject,
-    defs: &BTreeMap<String, Schema>,
-    scalars: &mut HashSet<String>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+// #[allow(clippy::too_many_arguments)]
+fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, schema: typ, defs, scalars, extra_it } = params;
     let name = match input_whitelist_lookup(&name, extra_it) {
         Some(name) => name,
         None => return Ok(()),
     };
-
     let description = typ
         .metadata
         .as_ref()
@@ -323,7 +316,8 @@ fn write_input_type(
                 .as_ref()
                 .and_then(|metadata| metadata.description.as_ref());
             write_description(writer, description)?;
-            write_field(writer, name, property, defs, extra_it)?;
+            let params = WriteParams { writer, name, schema: property, defs, scalars, extra_it };
+            write_field(params)?;
         }
         writer.unindent();
         writeln!(writer, "}}")?;
@@ -352,7 +346,15 @@ fn write_input_type(
             write_description(writer, description)?;
             if let Some(obj) = property.object {
                 for (name, schema) in obj.properties {
-                    write_field(writer, name, schema.into_object(), defs, extra_it)?;
+                    let params = WriteParams {
+                        writer,
+                        name,
+                        schema: schema.into_object(),
+                        defs,
+                        scalars,
+                        extra_it,
+                    };
+                    write_field(params)?;
                 }
             }
         }
@@ -368,7 +370,15 @@ fn write_input_type(
         for property in list {
             if let Some(obj) = property.clone().into_object().object {
                 for (name, schema) in obj.properties {
-                    write_field(writer, name, schema.into_object(), defs, extra_it)?;
+                    let params = WriteParams {
+                        writer,
+                        name,
+                        schema: schema.into_object(),
+                        defs,
+                        scalars,
+                        extra_it,
+                    };
+                    write_field(params)?;
                 }
             }
         }
@@ -384,21 +394,24 @@ fn write_input_type(
 
     Ok(())
 }
-#[allow(clippy::too_many_arguments)]
-fn write_property(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    property: Schema,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
-    let property = property.into_object();
+// #[allow(clippy::too_many_arguments)]
+fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, schema: property, defs, extra_it, .. } = params;
+    //let property = property.into_object();
     let description = property
         .metadata
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
     write_description(writer, description)?;
-    write_field(writer, name, property, defs, extra_it)?;
+    let params = WriteParams {
+        writer,
+        name,
+        schema: property,
+        defs,
+        scalars: &mut HashSet::new(),
+        extra_it,
+    };
+    write_field(params)?;
     Ok(())
 }
 
@@ -427,15 +440,16 @@ fn input_whitelist_lookup<'a>(
 
     None
 }
-#[allow(clippy::too_many_arguments)]
-fn write_directive(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    schema: SchemaObject,
-    defs: &BTreeMap<String, Schema>,
-    written_directives: &mut HashSet<String>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+// #[allow(clippy::too_many_arguments)]
+fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams {
+        writer,
+        name,
+        schema,
+        defs,
+        scalars: written_directives,
+        extra_it,
+    } = params;
     let (name, entity, is_repeatable) = match directive_whitelist_lookup(&name) {
         Some(entity) => entity,
         None => return Ok(()),
@@ -459,11 +473,27 @@ fn write_directive(
         if let Some((name, property)) = properties_iter.next() {
             writeln!(writer, "(")?;
             writer.indent();
-            write_property(writer, name, property, defs, extra_it)?;
+            let params = WriteParams {
+                writer,
+                name,
+                schema: property.into_object(),
+                defs,
+                scalars: &mut HashSet::new(),
+                extra_it,
+            };
+            write_property(params)?;
             close_param = true;
         }
         for (name, property) in properties_iter {
-            write_property(writer, name, property, defs, extra_it)?;
+            let params = WriteParams {
+                writer,
+                name,
+                schema: property.into_object(),
+                defs,
+                scalars: &mut HashSet::new(),
+                extra_it,
+            };
+            write_property(params)?;
         }
         if close_param {
             writer.unindent();
@@ -492,14 +522,15 @@ fn write_all_directives(
     let dirs: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     for (name, schema) in dirs.into_iter() {
         let schema = schema.clone().into_object();
-        write_directive(
+        let params = WriteParams {
             writer,
-            name.clone(),
+            name: name.clone(),
             schema,
-            &defs,
-            written_directives,
+            defs: &defs,
+            scalars: written_directives,
             extra_it,
-        )?;
+        };
+        write_directive(params)?;
     }
 
     Ok(())
@@ -514,15 +545,25 @@ fn write_array_validation(
 ) -> std::io::Result<()> {
     write!(writer, "[")?;
     if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
-        write_type(writer, name, schema.into_object(), defs, extra_it)?;
-    } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
-        write_type(
+        let params = WriteParams {
             writer,
             name,
-            schemas[0].clone().into_object(),
+            schema: schema.into_object(),
             defs,
+            scalars: &mut HashSet::new(),
             extra_it,
-        )?;
+        };
+        write_type(params)?;
+    } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
+        let params = WriteParams {
+            writer,
+            name,
+            schema: schemas[0].clone().into_object(),
+            defs,
+            scalars: &mut HashSet::new(),
+            extra_it,
+        };
+        write_type(params)?;
     } else {
         println!("{name}: {arr_valid:?}");
 
@@ -542,7 +583,15 @@ fn write_object_validation(
         writeln!(writer, "input {name} {{")?;
         writer.indent();
         for (name, property) in obj_valid.properties {
-            write_property(writer, name, property, defs, extra_it)?;
+            let params = WriteParams {
+                writer,
+                name,
+                schema: property.into_object(),
+                defs,
+                scalars: &mut HashSet::new(),
+                extra_it,
+            };
+            write_property(params)?;
         }
         writer.unindent();
         writeln!(writer, "}}")
@@ -562,14 +611,15 @@ fn write_all_input_types(
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
-        write_input_type(
+        let params = WriteParams {
             writer,
             name,
-            input_type.clone().into_object(),
-            &defs,
-            &mut scalars,
-            &mut extra_it,
-        )?;
+            schema: input_type.clone().into_object(),
+            defs: &defs,
+            scalars: &mut scalars,
+            extra_it: &mut extra_it,
+        };
+        write_input_type(params)?;
     }
 
     let mut new_extra_it = BTreeMap::new();
@@ -578,14 +628,15 @@ fn write_all_input_types(
         match extra_type {
             ExtraTypes::Schema => {
                 if let Some(schema) = defs.get(&name).cloned() {
-                    write_input_type(
+                    let params = WriteParams {
                         writer,
                         name,
-                        schema.into_object(),
-                        &defs,
-                        &mut scalars,
-                        &mut new_extra_it,
-                    )?
+                        schema: schema.into_object(),
+                        defs: &defs,
+                        scalars: &mut scalars,
+                        extra_it: &mut new_extra_it,
+                    };
+                    write_input_type(params)?
                 }
             }
             ExtraTypes::ObjectValidation(obj_valid) => {
