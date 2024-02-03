@@ -1,0 +1,17 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  expr_users: [User] @expr(body: {file: {src: "./tests/http/config/users.json"}})
+  users: [User] @file(src: "./tests/http/config/users.json")
+}
+
+type User {
+  id: Int
+  name: String
+}

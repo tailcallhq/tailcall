@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "@file must have parameter src",
+    "trace": [
+      "Query",
+      "user",
+      "@file"
+    ],
+    "description": null
+  }
+]

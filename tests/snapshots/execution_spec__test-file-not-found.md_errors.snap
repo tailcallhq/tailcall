@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "file not found: \"./doesntexist.json\"",
+    "trace": [
+      "Query",
+      "user",
+      "@file"
+    ],
+    "description": null
+  }
+]
