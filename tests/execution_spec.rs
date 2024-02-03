@@ -17,7 +17,7 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::{Blueprint, Upstream};
+use tailcall::blueprint::{self, Blueprint, Upstream};
 use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigSet, Source};
@@ -576,7 +576,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = match config {
             Ok(config) => {
-                let runtime = init_runtime(&config.upstream, None);
+                let runtime = init_runtime(&blueprint::Upstream::default(), None);
                 let reader = ConfigReader::init(runtime);
                 match reader.resolve(config).await {
                     Ok(config) => Blueprint::try_from(&config),

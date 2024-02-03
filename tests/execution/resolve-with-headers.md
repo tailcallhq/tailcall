@@ -29,11 +29,10 @@ type Query {
   response:
     status: 200
     headers:
-      authorization: '1'
+      authorization: "1"
     body:
       id: 1
       title: post title
-
 ```
 
 #### assert:
@@ -42,7 +41,7 @@ type Query {
 - method: POST
   url: http://localhost:8080/graphql
   headers:
-    authorization: '1'
+    authorization: "1"
   body:
     query: query { post1 { title } }
 ```

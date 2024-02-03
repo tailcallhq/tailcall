@@ -105,9 +105,9 @@
 #### env:
 
 ```yml
+NESTED_POST_ID: "3"
 ID: "1"
 POST_ID: "2"
-NESTED_POST_ID: "3"
 ```
 
 #### assert:

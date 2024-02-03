@@ -37,9 +37,7 @@
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com",
-            "groupBy": [
-              "id"
-            ]
+            "groupBy": ["id"]
           },
           "cache": null
         }
@@ -75,11 +73,10 @@
   response:
     status: 200
     body:
-    - id: 1
-      name: foo
-    - id: 2
-      name: bar
-
+      - id: 1
+        name: foo
+      - id: 2
+        name: bar
 ```
 
 #### assert:
@@ -88,6 +85,6 @@
 - method: POST
   url: http://localhost:8080/graphql
   body:
-  - query: 'query { user(id: 1) { id name } }'
-  - query: 'query { user(id: 2) { id name } }'
+    - query: "query { user(id: 1) { id name } }"
+    - query: "query { user(id: 2) { id name } }"
 ```

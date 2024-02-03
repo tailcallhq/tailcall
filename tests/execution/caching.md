@@ -31,19 +31,18 @@ type Bar {
   response:
     status: 200
     body:
-    - foo:
-        id: 2
-      id: 1
-    - foo:
-        id: 4
-      id: 3
-    - foo:
-        id: 6
-      id: 5
-    - foo:
-        id: 8
-      id: 7
-
+      - foo:
+          id: 2
+        id: 1
+      - foo:
+          id: 4
+        id: 3
+      - foo:
+          id: 6
+        id: 5
+      - foo:
+          id: 8
+        id: 7
 ```
 
 #### assert:
