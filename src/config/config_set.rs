@@ -39,9 +39,6 @@ pub struct Extensions {
 
 impl Extensions {
     pub fn merge_right(mut self, other: &Extensions) -> Self {
-        // self.grpc_file_descriptor
-        //     .file
-        //     .extend(other.grpc_file_descriptor.file.clone());
         self.file_descriptor_from_links
             .extend(other.file_descriptor_from_links.clone());
         self
