@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Link src cannot be empty",
+    "trace": [],
+    "description": null
+  }
+]

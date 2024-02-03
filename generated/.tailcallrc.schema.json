@@ -1195,13 +1195,6 @@
     "Link": {
       "description": "The @link directive allows you to import external resources, such as configuration, a .proto file, a plain text file, or a GraphQL schema.",
       "properties": {
-        "content": {
-          "description": "Raw content of the file",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "id": {
           "description": "The id of the link. It is used to reference the link in the schema.",
           "type": [
@@ -1227,9 +1220,7 @@
     "LinkType": {
       "enum": [
         "Config",
-        "GraphQL",
-        "Protobuf",
-        "Data"
+        "Protobuf"
       ],
       "type": "string"
     },

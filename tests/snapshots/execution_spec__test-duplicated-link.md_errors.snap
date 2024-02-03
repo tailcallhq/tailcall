@@ -1,0 +1,13 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Duplicated id: placeholder1",
+    "trace": [
+      "link"
+    ],
+    "description": null
+  }
+]
