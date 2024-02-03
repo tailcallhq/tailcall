@@ -1,9 +1,13 @@
 use std::io::Read;
+use std::str::FromStr;
 
 use hyper::body::Bytes;
-use reqwest::Request;
+use hyper::HeaderMap;
+use mini_v8::{Object, Value};
+use reqwest::header::{HeaderName, HeaderValue};
+use reqwest::{Body, Request};
 
-use crate::http::{Response};
+use crate::http::Response;
 
 pub struct Message {
     pub message: MessageContent,
@@ -147,7 +151,105 @@ impl Message {
         }
     }
 
-    pub fn from_v8(_value: mini_v8::Value) -> anyhow::Result<Self> {
-        todo!()
+    pub fn from_v8(value: mini_v8::Value) -> anyhow::Result<Self> {
+        let wrapper = value
+            .as_object()
+            .ok_or(anyhow::anyhow!("expected an object"))?;
+        let id = wrapper
+            .get::<&str, mini_v8::Value>("id")
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        let id = id.as_number().map(|n| n as u64);
+        let message = wrapper
+            .get::<&str, mini_v8::Value>("message")
+            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+        let message = message
+            .as_object()
+            .ok_or(anyhow::anyhow!("expected an object"))?;
+        if let Ok(request) = message.get::<&str, mini_v8::Value>("request") {
+            let request = Self::request_from_v8(request)?;
+            Ok(Message { message: MessageContent::Request(request), id })
+        } else if let Ok(response) = message.get::<&str, mini_v8::Value>("response") {
+            let response = Self::response_from_v8(response)?;
+            Ok(Message { message: MessageContent::Response(response), id })
+        } else {
+            Err(anyhow::anyhow!("expected a request or response"))
+        }
+    }
+    fn response_from_v8(value: mini_v8::Value) -> anyhow::Result<Response<Bytes>> {
+        let response = value
+            .as_object()
+            .ok_or(anyhow::anyhow!("expected an object"))?;
+        let status_value = response
+            .get::<&str, mini_v8::Value>("status")
+            .map_err(|e| anyhow::anyhow!(format!("error getting status: {}", e.to_string())))?;
+        let status = status_value
+            .as_number()
+            .ok_or(anyhow::anyhow!("expected a number"))?;
+        let status = reqwest::StatusCode::from_u16(status as u16)?;
+        let header_map = Self::headers_from_v8(response)?;
+        let body_bytes = Self::body_from_v8(response)?;
+        let response = Response { status, headers: header_map, body: Bytes::from(body_bytes) };
+        Ok(response)
+    }
+
+    fn headers_from_v8(obj: &Object) -> anyhow::Result<HeaderMap> {
+        let headers_value = obj
+            .get::<&str, mini_v8::Value>("headers")
+            .map_err(|e| anyhow::anyhow!(format!("error getting headers: {}", e.to_string())))?;
+        let headers = headers_value
+            .as_object()
+            .ok_or(anyhow::anyhow!("expected an object"))?;
+        let mut header_map = reqwest::header::HeaderMap::new();
+        if let Ok(mut headers) = headers.clone().properties::<String, String>(false) {
+            while let Some(Ok((key, value))) = headers.next() {
+                header_map.insert(
+                    HeaderName::from_str(key.clone().as_str())?,
+                    HeaderValue::from_str(value.as_str())?,
+                );
+            }
+        }
+        Ok(header_map)
+    }
+    fn request_from_v8(request: Value) -> anyhow::Result<Request> {
+        let request = request
+            .as_object()
+            .ok_or(anyhow::anyhow!("expected an object"))?;
+        let method_value = request
+            .get::<&str, mini_v8::Value>("method")
+            .map_err(|e| anyhow::anyhow!(format!("error getting method: {}", e.to_string())))?;
+        let method = method_value
+            .as_string()
+            .ok_or(anyhow::anyhow!("expected a string"))?;
+        let method = reqwest::Method::from_str(method.to_string().as_str())?;
+        let url_value = request
+            .get::<&str, mini_v8::Value>("url")
+            .map_err(|e| anyhow::anyhow!(format!("error getting url: {}", e.to_string())))?;
+        let url = url_value
+            .as_string()
+            .ok_or(anyhow::anyhow!("expected a string"))?
+            .to_string();
+        let url = reqwest::Url::from_str(url.as_str())?;
+        let header_map = Self::headers_from_v8(request)?;
+
+        let body_bytes = Self::body_from_v8(request)?;
+        let mut request = Request::new(method, url);
+        request.headers_mut().extend(header_map);
+        request.body_mut().replace(Body::from(body_bytes));
+        Ok(request)
+    }
+
+    fn body_from_v8(obj: &Object) -> anyhow::Result<Vec<u8>> {
+        let body_value = obj
+            .get::<&str, mini_v8::Value>("body")
+            .map_err(|e| anyhow::anyhow!(format!("error getting body: {}", e.to_string())))?;
+        let body = body_value
+            .as_array()
+            .ok_or(anyhow::anyhow!("expected an array"))?;
+        let mut body_bytes = Vec::new();
+        for byte in body.clone().elements::<f64>() {
+            let byte = byte.map_err(|e| anyhow::anyhow!(e.to_string()))? as u8;
+            body_bytes.push(byte as u8);
+        }
+        Ok(body_bytes)
     }
 }
