@@ -36,26 +36,27 @@ type Bar {
   response:
     status: 200
     body:
-      - flag: true
-        foo:
-          id: 2
-        id:
-          - bid: 1
-      - flag: false
-        foo:
-          id: 4
-        id:
-          - bid: 3
-      - flag: false
-        foo:
-          id: 6
-        id:
-          - bid: 5
-      - flag: true
-        foo:
-          id: 8
-        id:
-          - bid: 7
+    - flag: true
+      foo:
+        id: 2
+      id:
+      - bid: 1
+    - flag: false
+      foo:
+        id: 4
+      id:
+      - bid: 3
+    - flag: false
+      foo:
+        id: 6
+      id:
+      - bid: 5
+    - flag: true
+      foo:
+        id: 8
+      id:
+      - bid: 7
+
 ```
 
 #### assert:

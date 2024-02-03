@@ -5,10 +5,10 @@ use std::path::{Path, PathBuf};
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
-use tailcall::blueprint::Blueprint;
+use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigSet, Upstream};
+use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::Validator as _;

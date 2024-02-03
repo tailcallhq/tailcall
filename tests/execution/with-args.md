@@ -27,8 +27,9 @@ type Query {
   response:
     status: 200
     body:
-      - id: 1
-        name: Leanne Graham
+    - id: 1
+      name: Leanne Graham
+
 ```
 
 #### assert:
@@ -37,5 +38,5 @@ type Query {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: "query { user(id: 1) { name } }"
+    query: 'query { user(id: 1) { name } }'
 ```

@@ -41,8 +41,8 @@ type User {
   response:
     status: 200
     body:
-      - id: 1
-        userId: 1
+    - id: 1
+      userId: 1
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
@@ -52,6 +52,7 @@ type User {
     body:
       id: 1
       name: Leanne Graham
+
 ```
 
 #### assert:

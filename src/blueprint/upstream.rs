@@ -30,49 +30,12 @@ pub struct Upstream {
 }
 
 impl Upstream {
-    pub fn get_pool_idle_timeout(&self) -> u64 {
-        self.pool_idle_timeout
-    }
-    pub fn get_pool_max_idle_per_host(&self) -> usize {
-        self.pool_max_idle_per_host
-    }
-    pub fn get_keep_alive_interval(&self) -> u64 {
-        self.keep_alive_interval
-    }
-    pub fn get_keep_alive_timeout(&self) -> u64 {
-        self.keep_alive_timeout
-    }
-    pub fn get_keep_alive_while_idle(&self) -> bool {
-        self.keep_alive_while_idle
-    }
-    pub fn get_connect_timeout(&self) -> u64 {
-        self.connect_timeout
-    }
-    pub fn get_timeout(&self) -> u64 {
-        self.timeout
-    }
-    pub fn get_tcp_keep_alive(&self) -> u64 {
-        self.tcp_keep_alive
-    }
-    pub fn get_user_agent(&self) -> String {
-        self.user_agent.clone()
-    }
-    pub fn get_enable_http_cache(&self) -> bool {
-        self.http_cache
-    }
-    pub fn get_allowed_headers(&self) -> BTreeSet<String> {
-        self.allowed_headers.clone()
-    }
-    pub fn get_delay(&self) -> usize {
-        self.batch.clone().map_or(0, |b| b.delay)
-    }
-
-    pub fn get_max_size(&self) -> usize {
-        self.batch.clone().map_or(100, |b| b.max_size)
-    }
-
-    pub fn get_http_2_only(&self) -> bool {
-        self.http2_only
+    pub fn is_batching_enabled(&self) -> bool {
+        if let Some(batch) = self.batch.as_ref() {
+            batch.delay >= 1 || batch.max_size >= 1
+        } else {
+            false
+        }
     }
 }
 

@@ -29,8 +29,9 @@ type Query {
     body:
       data:
         users:
-          - name: Leanne Graham
-          - name: Ervin Howell
+        - name: Leanne Graham
+        - name: Ervin Howell
+
 ```
 
 #### assert:

@@ -56,6 +56,7 @@
     body:
       id: 1
       name: foo
+
 ```
 
 #### assert:
@@ -64,8 +65,8 @@
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    - query: query { user { id } }
-    - query: query { user { name } }
+  - query: query { user { id } }
+  - query: query { user { name } }
 - method: POST
   url: http://localhost:8080/graphql
   body:

@@ -93,8 +93,7 @@ impl RequestContext {
     }
 
     pub fn is_batching_enabled(&self) -> bool {
-        self.upstream.batch.is_some()
-            && (self.upstream.get_delay() >= 1 || self.upstream.get_max_size() >= 1)
+        self.upstream.is_batching_enabled()
     }
 }
 

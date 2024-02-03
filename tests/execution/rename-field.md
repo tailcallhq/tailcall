@@ -37,6 +37,7 @@ type Query {
     body:
       id: 2
       name: Ervin Howell
+
 ```
 
 #### assert:

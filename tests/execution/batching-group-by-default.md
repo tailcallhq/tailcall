@@ -38,14 +38,14 @@ type User {
   response:
     status: 200
     body:
-      - body: bar
-        id: 11
-        title: foo
-        userId: 1
-      - body: bar
-        id: 3
-        title: foo
-        userId: 2
+    - body: bar
+      id: 11
+      title: foo
+      userId: 1
+    - body: bar
+      id: 3
+      title: foo
+      userId: 2
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
@@ -53,10 +53,11 @@ type User {
   response:
     status: 200
     body:
-      - id: 1
-        name: foo
-      - id: 2
-        name: bar
+    - id: 1
+      name: foo
+    - id: 2
+      name: bar
+
 ```
 
 #### assert:

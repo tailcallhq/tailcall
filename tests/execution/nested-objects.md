@@ -38,9 +38,10 @@ type Query {
     body:
       address:
         geo:
-          lat: "-37.3159"
+          lat: '-37.3159'
       id: 1
       name: foo
+
 ```
 
 #### assert:

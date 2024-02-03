@@ -46,18 +46,18 @@ type B {
     body:
       data:
         a:
-          - bid: 1
-            cid: 1
-            id: 1
-          - bid: 1
-            cid: 1
-            id: 2
-          - bid: 2
-            cid: 2
-            id: 3
-          - bid: 2
-            cid: 2
-            id: 4
+        - bid: 1
+          cid: 1
+          id: 1
+        - bid: 1
+          cid: 1
+          id: 2
+        - bid: 2
+          cid: 2
+          id: 3
+        - bid: 2
+          cid: 2
+          id: 4
 - request:
     method: POST
     url: http://upstream/graphql
@@ -65,12 +65,12 @@ type B {
   response:
     status: 200
     body:
-      - data:
-          b:
-            y: 1
-      - data:
-          c:
-            x: 1
+    - data:
+        b:
+          y: 1
+    - data:
+        c:
+          x: 1
 - request:
     method: POST
     url: http://upstream/graphql
@@ -78,12 +78,13 @@ type B {
   response:
     status: 200
     body:
-      - data:
-          c:
-            x: 1
-      - data:
-          b:
-            y: 1
+    - data:
+        c:
+          x: 1
+    - data:
+        b:
+          y: 1
+
 ```
 
 #### assert:
