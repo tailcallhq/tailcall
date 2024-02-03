@@ -4,8 +4,8 @@ use std::thread;
 
 use mini_v8::{MiniV8, Script};
 
+use super::channel::Message;
 use crate::blueprint::{self};
-use crate::channel::Message;
 use crate::WorkerIO;
 
 thread_local! {
