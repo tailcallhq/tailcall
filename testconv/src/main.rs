@@ -303,6 +303,9 @@ async fn main() {
                     .args([
                         "test",
                         "--no-fail-fast",
+                        "--no-default-features",
+                        "--features",
+                        "cli",
                         "-p",
                         "tailcall",
                         "--test",
