@@ -29,7 +29,7 @@ impl HttpFilter {
         Box::pin(async move {
             match command {
                 Message { message: MessageContent::Request(request), id } => {
-                    let request = request.try_into()?;
+                    let request = request;
                     let response = self.client.execute(request).await?;
                     if id.is_none() {
                         return Ok(response);
