@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+  query: Query
+}
+
+type Bar {
+  foo: Foo @http(path: "/foo?id={{value.id}}") @cache(maxAge: 300)
+  id: String!
+}
+
+type Foo {
+  id: Int!
+}
+
+type Query @cache(maxAge: 100) {
+  bars: [Bar] @http(path: "/bars")
+}

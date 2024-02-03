@@ -1,0 +1,29 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user": {
+        "id": 2,
+        "name": null
+      }
+    },
+    "errors": [
+      {
+        "locations": [
+          {
+            "column": 35,
+            "line": 1
+          }
+        ],
+        "message": "Failed to resolve name"
+      }
+    ]
+  }
+}

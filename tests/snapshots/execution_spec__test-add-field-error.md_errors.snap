@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Cannot add field",
+    "trace": [
+      "Query",
+      "@addField",
+      "street"
+    ],
+    "description": "Path [user, address, street] does not exist"
+  }
+]

@@ -8,13 +8,20 @@
     {
       "files": [
         "add-field-many-list.graphql",
+        "add-field-many-list.md",
         "add-field-many.graphql",
+        "add-field-many.md",
         "inline-many.graphql",
+        "inline-many.md",
         "inline-many-list.graphql",
+        "inline-many-list.md",
         "test-grpc.graphql",
         "test-add-link-to-empty-config.graphql",
+        "test-grpc.md",
         "test-expr-success.graphql",
-        "omit-many.graphql"
+        "test-expr-success.md",
+        "omit-many.graphql",
+        "omit-many.md"
       ],
       "options": {
         "printWidth": 200

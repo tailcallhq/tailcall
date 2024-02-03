@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "No base URL defined",
+    "trace": [
+      "Query",
+      "user",
+      "@http"
+    ],
+    "description": null
+  }
+]

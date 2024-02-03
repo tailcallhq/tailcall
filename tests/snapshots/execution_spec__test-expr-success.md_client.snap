@@ -1,0 +1,33 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+input NewsInput {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type Post {
+  content: String
+  id: Int!
+}
+
+type Query {
+  cond: Post
+  greeting: String
+  news(news: NewsInput!): News!
+  post(id: Int!): Post
+}
+
+schema {
+  query: Query
+}

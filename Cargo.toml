@@ -89,6 +89,8 @@ criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
+markdown = "1.0.0-alpha.16"
+insta = { version = "1.34.0", features = ["json"] }
 
 [features]
 
@@ -120,7 +122,12 @@ default = ["cli", "js"]
 
 
 [workspace]
-members = [".", "autogen", "cloudflare"]
+members = [".", "autogen", "cloudflare", "testconv"]
+
+# Boost execution_spec snapshot diffing performance
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3
 
 [profile.release]
 opt-level = 3
@@ -130,6 +137,10 @@ lto = 'thin'
 debug = false
 incremental = false
 overflow-checks = false
+
+[[test]]
+name = "execution_spec"
+harness = false
 
 [[bench]]
 name = "json_like_bench"
