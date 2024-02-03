@@ -17,6 +17,7 @@
         "inline-many-list.md",
         "test-grpc.graphql",
         "test-add-link-to-empty-config.graphql",
+        "test-add-link-to-empty-config.md",
         "test-grpc.md",
         "test-expr-success.graphql",
         "test-expr-success.md",
