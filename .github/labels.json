@@ -219,7 +219,7 @@
   {
     "name": "ci: benchmark",
     "color": "F9D0C4",
-    "description": "Runs macro benchmarks",
-    "aliases": ["ci:lint"]
+    "description": "Runs benchmarks",
+    "aliases": ["ci:benchmark"]
   }
 ]

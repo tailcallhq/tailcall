@@ -6,12 +6,12 @@ schema
 }
 
 type Query {
-  news: NewsData! @grpc(service: "NewsService", method: "GetAllNews", protoPath: "src/grpc/tests/news.proto")
+  news: NewsData! @grpc(service: "news.NewsService", method: "GetAllNews", protoPath: "src/grpc/tests/news.proto")
   newsById(news: NewsInput!): News!
-    @grpc(service: "NewsService", method: "GetNews", body: "{{args.news}}", protoPath: "src/grpc/tests/news.proto")
+    @grpc(service: "news.NewsService", method: "GetNews", body: "{{args.news}}", protoPath: "src/grpc/tests/news.proto")
   newsByIdBatch(news: NewsInput!): News!
     @grpc(
-      service: "NewsService"
+      service: "news.NewsService"
       method: "GetMultipleNews"
       body: "{{args.news}}"
       protoPath: "src/grpc/tests/news.proto"

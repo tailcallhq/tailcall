@@ -1,0 +1,22 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Post {
+  id: Int
+  user: User
+}
+
+type Query {
+  post(id: Int): Post @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "post")
+  user(id: Int): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+}
+
+type User {
+  id: Int
+  name: String
+}

@@ -202,9 +202,10 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+    use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, Grpc, Type, Upstream};
+    use crate::config::{Config, Field, Grpc, Type};
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -333,7 +334,7 @@ mod tests {
     #[tokio::test]
     async fn news_proto_file() -> Result<()> {
         let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
-        let service = file.find_service("NewsService")?;
+        let service = file.find_service("news.NewsService")?;
         let operation = service.find_operation("GetNews")?;
 
         let input = operation.convert_input(r#"{ "id": 1 }"#)?;
@@ -357,7 +358,7 @@ mod tests {
     #[tokio::test]
     async fn news_proto_file_multiple_messages() -> Result<()> {
         let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
-        let service = file.find_service("NewsService")?;
+        let service = file.find_service("news.NewsService")?;
         let multiple_operation = service.find_operation("GetMultipleNews")?;
 
         let child_messages = vec![r#"{ "id": 3 }"#, r#"{ "id": 5 }"#, r#"{ "id": 1 }"#];

@@ -26,3 +26,5 @@ cloudflare/pkg
 /lambda/deploy/*.graphql
 /lambda/deploy/tmp/
 !/lambda/deploy/example.graphql
+
+/tests/snapshots/*.new

@@ -26,13 +26,23 @@ type Query {
     @grpc(
       method: "GetAllNews"
       protoPath: "src/grpc/tests/news.proto"
-      service: "NewsService"
+      service: "news.NewsService"
       headers: [{key: "id", value: "{{args.id}}"}]
     )
   newsGrpcUrl: NewsData!
-    @grpc(method: "GetAllNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService", baseURL: "{{args.url}}")
+    @grpc(
+      method: "GetAllNews"
+      protoPath: "src/grpc/tests/news.proto"
+      service: "news.NewsService"
+      baseURL: "{{args.url}}"
+    )
   newsGrpcBody: NewsData!
-    @grpc(method: "GetAllNews", protoPath: "src/grpc/tests/news.proto", service: "NewsService", body: "{{args.id}}")
+    @grpc(
+      method: "GetAllNews"
+      protoPath: "src/grpc/tests/news.proto"
+      service: "news.NewsService"
+      body: "{{args.id}}"
+    )
 }
 
 type User {
