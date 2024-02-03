@@ -7,6 +7,7 @@ use mini_v8::{MiniV8, Script};
 use super::channel::Message;
 use crate::blueprint::{self};
 use crate::WorkerIO;
+use wasmtime::{Engine, Linker, Module, Store};
 
 thread_local! {
   static LOCAL_RUNTIME: OnceCell<anyhow::Result<LocalRuntime>> = const { OnceCell::new() };
@@ -14,14 +15,32 @@ thread_local! {
 
 #[derive(Clone)]
 struct LocalRuntime {
-    v8: MiniV8,
+    engine: Engine,
     closure: mini_v8::Value,
 }
 
 impl LocalRuntime {
     fn new(script: Arc<blueprint::Script>) -> anyhow::Result<Self> {
-        let v8 = MiniV8::new();
-        let _ = super::shim::init(&v8);
+        let engine = Engine::default();
+        let wat = script.source.as_str();
+        let module = Module::new(&engine, wat)?;
+
+        // Create a `Linker` which will be later used to instantiate this module.
+        // Host functionality is defined by name within the `Linker`.
+        let mut linker = Linker::new(&engine);
+
+        // All wasm objects operate within the context of a "store". Each
+        // `Store` has a type parameter to store host-specific data, which in
+        // this case we're using `4` for.
+        let mut store = Store::new(&engine, 4);
+        let instance = linker.instantiate(&mut store, &module)?;
+        let on_event = instance.get_typed_func::<Message, Message>(&mut store, "onEvent")?;
+
+        // And finally we can call the wasm!
+        on_event.call(&mut store, ())?;
+
+        Ok(());
+
         let script = Script {
             source: create_closure(script.source.as_str()),
             timeout: script.timeout,
@@ -39,7 +58,7 @@ impl LocalRuntime {
         let closure = mini_v8::Value::Function(function.clone());
 
         log::debug!("mini_v8: {:?}", thread::current().name());
-        Ok(Self { v8, closure })
+        Ok(Self { engine: v8, closure })
     }
 }
 
@@ -73,7 +92,7 @@ impl WorkerIO<Message, Message> for Runtime {
 fn on_event_impl(rtm: &LocalRuntime, event: Message) -> anyhow::Result<Message> {
     // log::debug!("event: {:?}", event);
     let closure = &rtm.closure;
-    let v8 = &rtm.v8;
+    let v8 = &rtm.engine;
     let on_event = closure
         .as_function()
         .ok_or(&anyhow::anyhow!("expected an 'onEvent' function"))

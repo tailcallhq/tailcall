@@ -6,6 +6,7 @@ use hyper::HeaderMap;
 use mini_v8::{Object, Value};
 use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::{Body, Request};
+use wasmtime::WasmParams;
 
 use crate::http::Response;
 
