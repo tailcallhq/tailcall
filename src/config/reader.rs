@@ -67,7 +67,7 @@ impl ConfigReader {
 
     /// Reads the links in a Config and fill the content
     #[async_recursion::async_recursion]
-    async fn read_links(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
+    async fn ext_links(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
         let links = config_set.config.links.clone();
 
         if links.is_empty() {
@@ -90,8 +90,8 @@ impl ConfigReader {
                     config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
 
                     if !config.links.is_empty() {
-                        config_set = config_set
-                            .merge_right(&self.read_links(ConfigSet::from(config)).await?);
+                        config_set =
+                            config_set.merge_right(&self.ext_links(ConfigSet::from(config)).await?);
                     }
                 }
                 LinkType::GraphQL => {
@@ -176,7 +176,7 @@ impl ConfigReader {
         let config_set = self.ext_grpc(config_set).await?;
 
         // Extend it with the links
-        let config_set = self.read_links(config_set).await?;
+        let config_set = self.ext_links(config_set).await?;
 
         Ok(config_set)
     }
