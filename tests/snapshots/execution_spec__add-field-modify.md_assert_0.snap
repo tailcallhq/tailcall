@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user": {
+        "city": "Gwenborough",
+        "name": "foo",
+        "street": "Kulas Light",
+        "zipcode": "92998-3874"
+      }
+    }
+  }
+}

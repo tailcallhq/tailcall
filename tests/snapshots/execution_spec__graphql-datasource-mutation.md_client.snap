@@ -1,0 +1,27 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Mutation {
+  createUser(user: UserInput!): User
+}
+
+type Query {
+  users: [User]
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+input UserInput {
+  email: String!
+  name: String!
+  phone: String
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}
