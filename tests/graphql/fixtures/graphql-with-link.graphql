@@ -1,7 +1,4 @@
-schema
-  @server
-  @upstream(baseURL: "http://localhost:8000/graphql")
-  @link(src: "tests/graphql/fixtures/link-enum.graphql", type: Config) {
+schema @server @upstream(baseURL: "http://localhost:8000/graphql") @link(src: "./link-enum.graphql", type: Config) {
   query: Query
 }
 

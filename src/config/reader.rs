@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use anyhow::Context;
+use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -19,6 +20,7 @@ pub struct ConfigReader {
 }
 
 /// Response of a file read operation
+#[derive(Debug)]
 struct FileRead {
     content: String,
     path: String,
@@ -75,8 +77,21 @@ impl ConfigReader {
             return Err(anyhow::anyhow!("Link src cannot be empty"));
         }
 
+        let path = config_set.path.clone().unwrap_or_default().to_string();
+
         for config_link in links.iter() {
-            let source = self.read_file(&config_link.src).await?;
+            let source = if let Ok(data) = self.read_file(&config_link.src).await {
+                data
+            } else {
+                let path = PathBuf::from(&path)
+                    .parent()
+                    .unwrap_or(Path::new(""))
+                    .join(&config_link.src);
+
+                dbg!(path.clone());
+                self.read_file(path.to_string_lossy()).await?
+            };
+
             let content = source.content;
 
             match config_link.type_of {
@@ -141,18 +156,24 @@ impl ConfigReader {
             let schema = &file.content;
 
             // Create initial config set
-            let new_config_set = self.resolve(Config::from_source(source, schema)?).await?;
+            let new_config_set = self
+                .resolve(
+                    Config::from_source(source, schema)?,
+                    Some(file.path.clone()),
+                )
+                .await?;
 
             // Merge it with the original config set
             config_set = config_set.merge_right(&new_config_set);
         }
+
         Ok(config_set)
     }
 
     /// Resolves all the links in a Config to create a ConfigSet
-    pub async fn resolve(&self, config: Config) -> anyhow::Result<ConfigSet> {
+    pub async fn resolve(&self, config: Config, path: Option<String>) -> anyhow::Result<ConfigSet> {
         // Create initial config set
-        let config_set = ConfigSet::from(config);
+        let config_set = ConfigSet::from(config).path(path);
 
         // Extend it with the worker script
         let config_set = self.ext_script(config_set).await?;

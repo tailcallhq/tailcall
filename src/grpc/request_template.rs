@@ -135,7 +135,7 @@ mod tests {
 
         let protobuf_set = ProtobufSet::from_proto_file(
             &reader
-                .resolve(config)
+                .resolve(config, None)
                 .await
                 .unwrap()
                 .extensions

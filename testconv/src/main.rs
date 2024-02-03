@@ -63,7 +63,7 @@ async fn generate_client_snapshot(file_stem: &str, config: &ConfigSet) {
 
 async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, reader: &ConfigReader) {
     let config = Config::from_sdl(sdl).to_result().unwrap();
-    let config = reader.resolve(config).await.unwrap();
+    let config = reader.resolve(config, None).await.unwrap();
     generate_client_snapshot(file_stem, &config).await
 }
 
@@ -288,7 +288,7 @@ async fn main() {
                     }
                     http::ConfigSource::Inline(config) => {
                         let config = reader
-                            .resolve(config.to_owned())
+                            .resolve(config.to_owned(), Some(path.to_string_lossy().to_string()))
                             .await
                             .expect("Failed to resolve config");
                         generate_client_snapshot(&file_stem, &config).await;
