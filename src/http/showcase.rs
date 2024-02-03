@@ -66,8 +66,8 @@ mod tests {
     use serde_json::json;
 
     use crate::async_graphql_hyper::GraphQLRequest;
+    use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
-    use crate::config::Upstream;
     use crate::http::handle_request;
     use crate::http::showcase::create_app_ctx;
 
