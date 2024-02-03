@@ -243,13 +243,10 @@ impl Message {
             .get::<&str, mini_v8::Value>("body")
             .map_err(|e| anyhow::anyhow!(format!("error getting body: {}", e.to_string())))?;
         let body = body_value
-            .as_array()
+            .as_string()
             .ok_or(anyhow::anyhow!("expected an array"))?;
-        let mut body_bytes = Vec::new();
-        for byte in body.clone().elements::<f64>() {
-            let byte = byte.map_err(|e| anyhow::anyhow!(e.to_string()))? as u8;
-            body_bytes.push(byte as u8);
-        }
-        Ok(body_bytes)
+        let body_bytes = body.to_string();
+        let body = body_bytes.as_bytes();
+        Ok(body.to_vec())
     }
 }
