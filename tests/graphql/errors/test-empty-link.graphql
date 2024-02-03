@@ -1,5 +1,5 @@
 #> server-sdl
-schema @link(type: Data, src: "") {
+schema @link(type: Config, src: "") {
   query: Query
 }
 

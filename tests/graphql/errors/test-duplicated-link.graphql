@@ -1,8 +1,8 @@
 #> server-sdl
 schema
-  @link(type: Data, src: "examples/Data.txt", id: "data")
-  @link(type: Data, src: "examples/Data.txt", id: "data1")
-  @link(type: Data, src: "examples/Data.txt", id: "data1") {
+  @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder")
+  @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder1")
+  @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder1") {
   query: Query
 }
 
@@ -29,4 +29,4 @@ type Post {
 }
 
 #> client-sdl
-type Failure @error(message: "Duplicated id: data1", trace: ["link"])
+type Failure @error(message: "Duplicated id: placeholder1", trace: ["link"])
