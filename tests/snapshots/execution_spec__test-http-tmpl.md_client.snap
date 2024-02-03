@@ -1,0 +1,22 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+type Post {
+  id: Int
+  user: User
+  userId: Int!
+}
+
+type Query {
+  posts: [Post]
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+schema {
+  query: Query
+}

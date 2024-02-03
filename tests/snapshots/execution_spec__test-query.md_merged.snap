@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  foo: String @http(path: "/foo")
+}

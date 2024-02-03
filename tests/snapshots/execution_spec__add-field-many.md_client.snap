@@ -1,0 +1,25 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+type Foo {
+  a: String
+  b: String
+  c: String
+  name: String
+  x: X
+}
+
+type Query {
+  user: Foo
+}
+
+type X {
+  a: String
+  b: String
+  c: String
+}
+
+schema {
+  query: Query
+}
