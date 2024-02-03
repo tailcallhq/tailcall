@@ -236,44 +236,46 @@ async fn main() {
             f.write_all(spec.as_bytes())
                 .expect("Failed to write execution spec");
 
-            for (i, assert) in old.assert.iter().enumerate() {
-                let mut f = File::options()
-                    .create(true)
-                    .write(true)
-                    .truncate(true)
-                    .open(snapshots_dir.join(PathBuf::from(format!(
-                        "execution_spec__{}.md_assert_{}.snap",
-                        file_stem, i
-                    ))))
-                    .expect("Failed to open execution snapshot");
+            if !has_fail_annotation {
+                for (i, assert) in old.assert.iter().enumerate() {
+                    let mut f = File::options()
+                        .create(true)
+                        .write(true)
+                        .truncate(true)
+                        .open(snapshots_dir.join(PathBuf::from(format!(
+                            "execution_spec__{}.md_assert_{}.snap",
+                            file_stem, i
+                        ))))
+                        .expect("Failed to open execution snapshot");
 
-                let mut res = assert.response.to_owned();
+                    let mut res = assert.response.to_owned();
 
-                res.0.headers = res
-                    .0
-                    .headers
-                    .into_iter()
-                    .map(|(k, v)| (k.to_lowercase(), v.to_owned()))
-                    .collect();
+                    res.0.headers = res
+                        .0
+                        .headers
+                        .into_iter()
+                        .map(|(k, v)| (k.to_lowercase(), v.to_owned()))
+                        .collect();
 
-                if !res.0.headers.contains_key("content-type") {
+                    if !res.0.headers.contains_key("content-type") {
+                        res.0
+                            .headers
+                            .insert("content-type".to_string(), "application/json".to_string());
+                    }
+
                     res.0
                         .headers
-                        .insert("content-type".to_string(), "application/json".to_string());
+                        .sort_by(|a, _, b, _| a.partial_cmp(b).unwrap());
+
+                    let snap = format!(
+                        "---\nsource: tests/execution_spec.rs\nexpression: response\n---\n{}\n",
+                        serde_json::to_string_pretty(&res)
+                            .expect("Failed to serialize assert.response"),
+                    );
+
+                    f.write_all(snap.as_bytes())
+                        .expect("Failed to write exception spec");
                 }
-
-                res.0
-                    .headers
-                    .sort_by(|a, _, b, _| a.partial_cmp(b).unwrap());
-
-                let snap = format!(
-                    "---\nsource: tests/execution_spec.rs\nexpression: response\n---\n{}\n",
-                    serde_json::to_string_pretty(&res)
-                        .expect("Failed to serialize assert.response"),
-                );
-
-                f.write_all(snap.as_bytes())
-                    .expect("Failed to write exception spec");
             }
 
             if !bad_graphql_skip {
@@ -293,70 +295,6 @@ async fn main() {
                         generate_merged_snapshot(&file_stem, &config).await;
                     }
                 };
-            } else {
-                println!("TODO: generate client snap for bad graphql skips")
-            }
-
-            if has_fail_annotation {
-                let test = std::process::Command::new("cargo")
-                    .env("INSTA_FORCE_PASS", "1")
-                    .args([
-                        "test",
-                        "--no-fail-fast",
-                        "-p",
-                        "tailcall",
-                        "--test",
-                        "execution_spec",
-                        "--",
-                        execution_dir.join(&md_path).to_str().unwrap(),
-                    ])
-                    .output()
-                    .expect("Failed to run cargo test");
-
-                if !test.status.success() {
-                    panic!(
-                        "Running cargo test (needed for fail annotation conversion) failed:\n{}",
-                        String::from_utf8_lossy(&test.stderr)
-                    );
-                }
-
-                let mut patched = 0;
-
-                for i in 0..old.assert.len() {
-                    let old = snapshots_dir.join(PathBuf::from(format!(
-                        "execution_spec__{}.md_assert_{}.snap",
-                        file_stem, i
-                    )));
-
-                    let new = snapshots_dir.join(PathBuf::from(format!(
-                        "execution_spec__{}.md_assert_{}.snap.new",
-                        file_stem, i
-                    )));
-
-                    if new.exists() {
-                        std::fs::rename(new, &old).unwrap();
-
-                        let snap = fs::read_to_string(&old)
-                            .expect("Failed to read back snapshot for patching");
-
-                        let lines = snap
-                            .split('\n')
-                            .filter(|x| !x.starts_with("assertion_line"))
-                            .collect::<Vec<&str>>()
-                            .join("\n");
-
-                        std::fs::write(&old, lines).expect("Failed to write back patched snapshot");
-
-                        patched += 1;
-                    }
-                }
-
-                if patched == 0 {
-                    panic!(
-                        "Spec {:?} has a fail annotation but all tests passed.",
-                        path
-                    );
-                }
             }
 
             files_already_processed.insert(file_stem);
@@ -649,8 +587,14 @@ async fn main() {
 
     println!("Running prettier...");
 
+    let prettierrc = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.prettierrc");
     let prettier = std::process::Command::new("prettier")
-        .args(["-c", ".prettierrc", "--write", "tests/execution/*.md"])
+        .args([
+            "-c",
+            prettierrc.to_string_lossy().as_ref(),
+            "--write",
+            "tests/execution/*.md",
+        ])
         .output()
         .expect("Failed to run prettier");
 
