@@ -19,3 +19,5 @@ cloudflare/node_modules
 cloudflare/pkg
 
 .wrangler/
+
+/tests/snapshots/*.new

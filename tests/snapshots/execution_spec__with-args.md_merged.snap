@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  user(id: Int!): [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{args.id}}"}])
+}
+
+type User {
+  name: String
+}
