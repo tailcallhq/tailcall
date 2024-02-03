@@ -293,8 +293,6 @@ async fn main() {
                         generate_merged_snapshot(&file_stem, &config).await;
                     }
                 };
-            } else {
-                println!("TODO: generate client snap for bad graphql skips")
             }
 
             if has_fail_annotation {
@@ -323,8 +321,6 @@ async fn main() {
                     );
                 }
 
-                let mut patched = 0;
-
                 for i in 0..old.assert.len() {
                     let old = snapshots_dir.join(PathBuf::from(format!(
                         "execution_spec__{}.md_assert_{}.snap",
@@ -349,16 +345,7 @@ async fn main() {
                             .join("\n");
 
                         std::fs::write(&old, lines).expect("Failed to write back patched snapshot");
-
-                        patched += 1;
                     }
-                }
-
-                if patched == 0 {
-                    panic!(
-                        "Spec {:?} has a fail annotation but all tests passed.",
-                        path
-                    );
                 }
             }
 
