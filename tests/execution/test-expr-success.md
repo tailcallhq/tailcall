@@ -5,7 +5,7 @@
 #### server:
 
 ```graphql
-schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, maxSize: 1000}, httpCache: true) @link(id: "news", src: "src/grpc/tests/news.proto", type: Protobuf) {
+schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000}, httpCache: true) @link(id: "news", src: "src/grpc/tests/news.proto", type: Protobuf) {
   query: Query
 }
 

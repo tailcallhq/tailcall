@@ -2,8 +2,9 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config, LinkType};
+use super::Config;
 use crate::blueprint::TypeLike;
+
 use crate::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -16,22 +17,25 @@ fn config_document(config: &Config) -> ServiceDocument {
         pos(config.upstream.to_directive()),
     ];
 
-    config.links.iter().for_each(|link| {
+    directives.extend(config.links.iter().map(|link| {
         let mut directive = link.to_directive();
 
-        let name = match link.type_of {
-            LinkType::Config => "Config",
-            LinkType::Protobuf => "Protobuf",
-        }
-        .to_string();
-
-        directive.arguments.push((
+        let type_directive = (
             pos(Name::new("type")),
-            pos(ConstValue::Enum(Name::new(name))),
-        ));
+            pos(ConstValue::Enum(Name::new(link.type_of.to_string()))),
+        );
 
-        directives.push(pos(directive));
-    });
+        directive.arguments = directive
+            .arguments
+            .iter()
+            // "type" needs to be filtered out, because when is the default value, it is not present in the directive
+            .filter(|(name, _)| name != &pos(Name::new("type")))
+            .map(|argument| argument.to_owned())
+            .chain(std::iter::once(type_directive))
+            .collect();
+
+        pos(directive)
+    }));
 
     let schema_definition = SchemaDefinition {
         extend: false,

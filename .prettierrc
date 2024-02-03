@@ -25,7 +25,7 @@
         "omit-many.md"
       ],
       "options": {
-        "printWidth": 200
+        "printWidth": 210
       }
     }
   ]
