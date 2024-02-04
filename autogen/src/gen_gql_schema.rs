@@ -302,11 +302,18 @@ fn write_input_type(
     defs: &BTreeMap<String, Schema>,
     scalars: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
+    types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
     let name = match input_whitelist_lookup(&name, extra_it) {
         Some(name) => name,
         None => return Ok(()),
     };
+
+    if types_added.contains(name) {
+        return Ok(());
+    } else {
+        types_added.insert(name.to_string());
+    }
 
     let description = typ
         .metadata
@@ -563,6 +570,7 @@ fn write_all_input_types(
 
     let defs = schema.definitions;
     let mut scalars = HashSet::new();
+    let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
@@ -573,6 +581,7 @@ fn write_all_input_types(
             &defs,
             &mut scalars,
             &mut extra_it,
+            &mut types_added,
         )?;
     }
 
@@ -589,6 +598,7 @@ fn write_all_input_types(
                         &defs,
                         &mut scalars,
                         &mut new_extra_it,
+                        &mut types_added,
                     )?
                 }
             }
