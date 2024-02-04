@@ -96,8 +96,7 @@ impl ConfigReader {
 
             match config_link.type_of {
                 LinkType::Config => {
-                    let config =
-                        Config::from_source(Source::detect(&source.path).unwrap(), &content)?;
+                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
                     config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
 
