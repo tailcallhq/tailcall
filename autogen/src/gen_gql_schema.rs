@@ -9,7 +9,7 @@ use schemars::schema::{
 use tailcall::config;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_WHITELIST: [(&str, Entity, bool); 12] = [
+static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 12] = [
     ("server", Entity::Schema, false),
     ("upstream", Entity::Schema, false),
     ("http", Entity::FieldDefinition, false),
@@ -304,7 +304,7 @@ fn write_input_type(
     extra_it: &mut BTreeMap<String, ExtraTypes>,
     types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
-    let name = match input_whitelist_lookup(&name, extra_it) {
+    let name = match input_allow_list_lookup(&name, extra_it) {
         Some(name) => name,
         None => return Ok(()),
     };
@@ -413,8 +413,8 @@ fn write_property(
     Ok(())
 }
 
-fn directive_whitelist_lookup(name: &str) -> Option<(&'static str, Entity, bool)> {
-    for (nm, entity, is_repeatable) in DIRECTIVE_WHITELIST.iter() {
+fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, Entity, bool)> {
+    for (nm, entity, is_repeatable) in DIRECTIVE_ALLOW_LIST.iter() {
         if name.to_lowercase() == nm.to_lowercase() {
             return Some((*nm, *entity, *is_repeatable));
         }
@@ -422,7 +422,7 @@ fn directive_whitelist_lookup(name: &str) -> Option<(&'static str, Entity, bool)
     None
 }
 
-fn input_whitelist_lookup<'a>(
+fn input_allow_list_lookup<'a>(
     name: &'a str,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> Option<&'a str> {
@@ -447,7 +447,7 @@ fn write_directive(
     written_directives: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    let (name, entity, is_repeatable) = match directive_whitelist_lookup(&name) {
+    let (name, entity, is_repeatable) = match directive_allow_list_lookup(&name) {
         Some(entity) => entity,
         None => return Ok(()),
     };
