@@ -136,6 +136,11 @@ struct HttpSpec {
 impl HttpSpec {
     fn cargo_read(path: &str) -> anyhow::Result<Vec<HttpSpec>> {
         let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
+
+        if !dir_path.exists() {
+            return Ok(Vec::with_capacity(0))
+        }
+
         let mut files = Vec::new();
 
         for entry in fs::read_dir(dir_path)? {
