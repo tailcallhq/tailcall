@@ -217,7 +217,7 @@ impl GraphQLSpec {
                 }
             }
         }
-        
+
         if !only_files.is_empty() {
             Ok(only_files)
         } else {

@@ -138,7 +138,7 @@ impl HttpSpec {
         let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
         let mut files = Vec::new();
 
-        for entry in fs::read_dir(&dir_path)? {
+        for entry in fs::read_dir(dir_path)? {
             let path = entry?.path();
             if path.is_dir() {
                 continue;
