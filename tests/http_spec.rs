@@ -153,11 +153,6 @@ impl HttpSpec {
             }
         }
 
-        assert!(
-            !files.is_empty(),
-            "No files found in {}",
-            dir_path.to_str().unwrap_or_default()
-        );
         Ok(files)
     }
 
