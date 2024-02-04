@@ -88,7 +88,6 @@ impl AppContext {
 
                                 grpc_data_loaders.push(data_loader);
                             }
-                            _ => {}
                         }
                     }
                 }

@@ -273,7 +273,7 @@ where
                     const_field,
                     graphql,
                     expr,
-                    cache: cache.or(parent_cache),
+                    cache,
                 }
             },
         )

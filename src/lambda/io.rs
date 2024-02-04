@@ -18,6 +18,7 @@ use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
+use crate::valid::Validator as _;
 use crate::{grpc, http};
 
 #[derive(Clone, Debug)]
@@ -38,7 +39,6 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
     },
-    JS(Box<Expression>, String),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -112,26 +112,6 @@ impl Eval for IO {
                     set_cache_control(ctx, &res);
 
                     Ok(res.body)
-                }
-                IO::JS(input, script) => {
-                    let result;
-                    #[cfg(not(feature = "unsafe-js"))]
-                    {
-                        let _ = script;
-                        let _ = input;
-                        result = Err(EvaluationError::JSException(
-                            "JS execution is disabled".to_string(),
-                        )
-                        .into());
-                    }
-
-                    #[cfg(feature = "unsafe-js")]
-                    {
-                        let input = input.eval(ctx, _conc).await?;
-                        result = javascript::execute_js(script, input, Some(ctx.timeout))
-                            .map_err(|e| EvaluationError::JSException(e.to_string()).into());
-                    }
-                    result
                 }
             }
         })
