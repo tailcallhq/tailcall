@@ -40,8 +40,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
                 .trace("schema");
         }
 
-        Valid::from_iter(links.iter(), |link| {
-            let pos = links.iter().position(|l| l == link).unwrap().to_string();
+        Valid::from_iter(links.iter().enumerate(), |(pos, link)| {
+            let pos = pos.to_string();
 
             if link.src.is_empty() {
                 return Valid::fail("Link src cannot be empty".to_string()).trace(&pos);
