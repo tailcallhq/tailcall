@@ -188,6 +188,25 @@ directive @js(
   script: String!
 ) on FIELD_DEFINITION
 
+"""
+The @link directive allows you to import external resources, such as configuration, 
+a .proto file, a plain text file, or a GraphQL schema.
+"""
+directive @link(
+  """
+  The id of the link. It is used to reference the link in the schema.
+  """
+  id: String
+  """
+  The source of the link. It can be a URL or a path to a file.
+  """
+  src: String!
+  """
+  The type of the link. It can be `Config`, `GraphQL`, `Protobuf`, or `Data`.
+  """
+  type: LinkType
+) repeatable  on SCHEMA
+
 directive @modify(
   name: String
   omit: Boolean!
@@ -601,6 +620,10 @@ enum HttpVersion {
 }
 input JS {
   script: String!
+}
+enum LinkType {
+  Config
+  Protobuf
 }
 enum Method {
   GET
