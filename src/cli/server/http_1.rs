@@ -31,7 +31,7 @@ pub async fn start_http_1(
         loop {
             let stream_result = listener.accept().await;
             match stream_result {
-                Ok((stream,_)) => {
+                Ok((stream, _)) => {
                     let io = TokioIo::new(stream);
                     let sc = sc.clone();
                     tokio::spawn(async move {
@@ -44,7 +44,11 @@ pub async fn start_http_1(
                                         let (part, body) = req.into_parts();
                                         let body = body.collect().await?.to_bytes();
                                         let req = Request::from_parts(part, Full::new(body));
-                                        handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone()).await
+                                        handle_request::<GraphQLBatchRequest>(
+                                            req,
+                                            state.app_ctx.clone(),
+                                        )
+                                        .await
                                     }
                                 }),
                             )
@@ -54,14 +58,14 @@ pub async fn start_http_1(
                         }
                     });
                 }
-                Err(e) => log::error!("An error occurred while handling request: {e}")
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
             }
         }
     } else {
         loop {
             let stream_result = listener.accept().await;
             match stream_result {
-                Ok((stream,_)) => {
+                Ok((stream, _)) => {
                     let io = TokioIo::new(stream);
                     let sc = sc.clone();
                     tokio::spawn(async move {
@@ -74,7 +78,8 @@ pub async fn start_http_1(
                                         let (part, body) = req.into_parts();
                                         let body = body.collect().await?.to_bytes();
                                         let req = Request::from_parts(part, Full::new(body));
-                                        handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
+                                        handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
+                                            .await
                                     }
                                 }),
                             )
@@ -84,7 +89,7 @@ pub async fn start_http_1(
                         }
                     });
                 }
-                Err(e) => log::error!("An error occurred while handling request: {e}")
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
             }
         }
     }

@@ -136,72 +136,78 @@ where
         loop {
             let stream_result = listener.accept().await;
             match stream_result {
-                Ok((stream,_)) => {
+                Ok((stream, _)) => {
                     let app_ctx = sc.app_ctx.clone();
                     let io_result = tcp_io.get_io(tls_acceptor.clone(), stream).await;
                     match io_result {
                         Ok(io) => {
                             tokio::spawn(async move {
-                                let server = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
-                                    .serve_connection(
-                                        io,
-                                        service_fn(move |req: Request<Incoming>| {
-                                            let app_ctx = app_ctx.clone();
-                                            async move {
-                                                let (part, body) = req.into_parts();
-                                                let body = body.collect().await?.to_bytes();
-                                                let req = Request::from_parts(part, Full::new(body));
-                                                handle_request::<GraphQLBatchRequest>(req, app_ctx).await
-                                            }
-                                        }),
-                                    )
-                                    .await;
+                                let server =
+                                    hyper::server::conn::http2::Builder::new(TokioExecutor::new())
+                                        .serve_connection(
+                                            io,
+                                            service_fn(move |req: Request<Incoming>| {
+                                                let app_ctx = app_ctx.clone();
+                                                async move {
+                                                    let (part, body) = req.into_parts();
+                                                    let body = body.collect().await?.to_bytes();
+                                                    let req =
+                                                        Request::from_parts(part, Full::new(body));
+                                                    handle_request::<GraphQLBatchRequest>(
+                                                        req, app_ctx,
+                                                    )
+                                                    .await
+                                                }
+                                            }),
+                                        )
+                                        .await;
                                 if let Err(e) = server {
                                     log::error!("An error occurred while handling a request: {e}");
                                 }
                             });
                         }
-                        Err(e) => log::error!("An error occurred while handling request IO: {e}")
+                        Err(e) => log::error!("An error occurred while handling request IO: {e}"),
                     }
-
                 }
-                Err(e) => log::error!("An error occurred while handling request: {e}")
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
             }
         }
     } else {
         loop {
             let stream_result = listener.accept().await;
             match stream_result {
-                Ok((stream,_)) => {
+                Ok((stream, _)) => {
                     let app_ctx = sc.app_ctx.clone();
                     let io_result = tcp_io.get_io(tls_acceptor.clone(), stream).await;
                     match io_result {
                         Ok(io) => {
                             tokio::spawn(async move {
-                                let server = hyper::server::conn::http2::Builder::new(TokioExecutor::new())
-                                    .serve_connection(
-                                        io,
-                                        service_fn(move |req: Request<Incoming>| {
-                                            let app_ctx = app_ctx.clone();
-                                            async move {
-                                                let (part, body) = req.into_parts();
-                                                let body = body.collect().await?.to_bytes();
-                                                let req = Request::from_parts(part, Full::new(body));
-                                                handle_request::<GraphQLRequest>(req, app_ctx).await
-                                            }
-                                        }),
-                                    )
-                                    .await;
+                                let server =
+                                    hyper::server::conn::http2::Builder::new(TokioExecutor::new())
+                                        .serve_connection(
+                                            io,
+                                            service_fn(move |req: Request<Incoming>| {
+                                                let app_ctx = app_ctx.clone();
+                                                async move {
+                                                    let (part, body) = req.into_parts();
+                                                    let body = body.collect().await?.to_bytes();
+                                                    let req =
+                                                        Request::from_parts(part, Full::new(body));
+                                                    handle_request::<GraphQLRequest>(req, app_ctx)
+                                                        .await
+                                                }
+                                            }),
+                                        )
+                                        .await;
                                 if let Err(e) = server {
                                     log::error!("An error occurred while handling a request: {e}");
                                 }
                             });
                         }
-                        Err(e) => log::error!("An error occurred while handling request IO: {e}")
+                        Err(e) => log::error!("An error occurred while handling request IO: {e}"),
                     }
-
                 }
-                Err(e) => log::error!("An error occurred while handling request: {e}")
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
             }
         }
     };

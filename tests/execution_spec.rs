@@ -9,8 +9,9 @@ use std::{fs, panic};
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
 use futures_util::future::join_all;
+use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
-use hyper::{Body, Request};
+use hyper::Request;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -493,7 +494,7 @@ impl HttpIO for MockHttpClient {
         let mock = mocks
             .iter()
             .find(|Mock { request: mock_req, response: _ }| {
-                let method_match = req.method() == mock_req.0.method.clone().to_hyper();
+                let method_match = req.method() == mock_req.0.method.clone().to_reqwest();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let req_body = match req.body() {
                     Some(body) => {
@@ -556,7 +557,7 @@ impl HttpIO for MockHttpClient {
     }
 }
 
-async fn assert_spec(spec: ExecutionSpec) {
+async fn assert_spec(spec: ExecutionSpec) -> anyhow::Result<()> {
     let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
     let runtime = init_runtime(&Upstream::default(), None);
     let reader = ConfigReader::init(runtime);
@@ -610,7 +611,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             }
         };
 
-        return;
+        return Ok(());
     }
 
     let mut server: Vec<Config> = Vec::with_capacity(spec.server.len());
@@ -726,14 +727,18 @@ async fn assert_spec(spec: ExecutionSpec) {
             for (key, value) in response.headers() {
                 headers.insert(key.to_string(), value.to_str().unwrap().to_string());
             }
-
+            let status = response.status().as_u16();
+            let bytes = response
+                .into_body()
+                .frame()
+                .await
+                .context("unable to extract frame")??
+                .into_data()
+                .map_err(|e| anyhow!("{:?}", e))?;
             let response: APIResponse = APIResponse {
-                status: response.status().clone().as_u16(),
+                status,
                 headers,
-                body: serde_json::from_slice(
-                    &hyper::body::to_bytes(response.into_body()).await.unwrap(),
-                )
-                .unwrap(),
+                body: serde_json::from_slice(&bytes).unwrap(),
             };
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
@@ -746,6 +751,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             }
         }
     }
+    Ok(())
 }
 
 #[tokio::main]
@@ -774,7 +780,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     for spec in spec.into_iter() {
-        assert_spec(spec).await;
+        assert_spec(spec).await?;
     }
 
     Ok(())
@@ -785,7 +791,7 @@ async fn run_assert(
     env: &HashMap<String, String>,
     request: &APIRequest,
     config: &ConfigSet,
-) -> anyhow::Result<hyper::Response<Body>> {
+) -> anyhow::Result<hyper::Response<Full<Bytes>>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();
     let headers = request.headers.clone();
@@ -799,7 +805,7 @@ async fn run_assert(
                 .uri(url.as_str()),
             |acc, (key, value)| acc.header(key, value),
         )
-        .body(Body::from(query_string))?;
+        .body(Full::new(Bytes::from(query_string)))?;
 
     // TODO: reuse logic from server.rs to select the correct handler
     if server_context.blueprint.server.enable_batch_requests {
