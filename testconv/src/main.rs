@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use async_graphql::parser::types::TypeSystemDefinition;
-use http::ConfigSource;
+use testconv::http::{ConfigSource, HttpSpec};
 use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
@@ -13,10 +13,7 @@ use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::Validator as _;
 
-use crate::common::{APIRequest, Annotation, SDLError};
-
-mod common;
-mod http;
+use testconv::common::{APIRequest, Annotation, SDLError};
 
 const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
 const BAD_GRAPHQL_MSG: &str = "This test has invalid GraphQL that wasn't caught by http_spec before conversion. It is skipped right now, but it should be fixed at some point.";
@@ -128,7 +125,7 @@ async fn main() {
         if is_path_file_ext(&path, "yml") {
             let f = File::open(&path).expect("Failed to open http spec");
 
-            let old = serde_yaml::from_reader::<File, http::HttpSpec>(f).unwrap();
+            let old = serde_yaml::from_reader::<File, HttpSpec>(f).unwrap();
 
             let has_fail_annotation = matches!(old.runner, Some(Annotation::Fail));
             let bad_graphql_skip: bool = match &old.config {
@@ -178,7 +175,7 @@ async fn main() {
 
             spec += "\n#### server:\n\n```";
             spec += &match &old.config {
-                http::ConfigSource::File(path) => {
+                ConfigSource::File(path) => {
                     let path = PathBuf::from(path);
 
                     let ext = path.extension().unwrap().to_string_lossy().to_string();
@@ -191,7 +188,7 @@ async fn main() {
                         if content.ends_with('\n') { "" } else { "\n" },
                     )
                 }
-                http::ConfigSource::Inline(content) => {
+                ConfigSource::Inline(content) => {
                     format!(
                         "json\n{}\n```\n\n",
                         serde_json::to_string_pretty(&content).expect("Failed to serialize Config")
@@ -280,13 +277,13 @@ async fn main() {
 
             if !bad_graphql_skip {
                 match &old.config {
-                    http::ConfigSource::File(path) => {
+                    ConfigSource::File(path) => {
                         let path = PathBuf::from(path);
                         let sdl = fs::read_to_string(path).expect("Failed to read config file");
                         generate_client_snapshot_sdl(&file_stem, &sdl, &reader).await;
                         generate_merged_snapshot_sdl(&file_stem, &sdl).await;
                     }
-                    http::ConfigSource::Inline(config) => {
+                    ConfigSource::Inline(config) => {
                         let config = reader
                             .resolve(config.to_owned())
                             .await
