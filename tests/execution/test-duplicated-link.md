@@ -8,7 +8,9 @@
 schema
   @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder")
   @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder1")
-  @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder1") {
+  @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder1")
+  @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder2")
+  @link(type: Config, src: "examples/jsonplaceholder.graphql", id: "placeholder2") {
   query: Query
 }
 

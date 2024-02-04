@@ -109,24 +109,7 @@ fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
 }
 
 fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
-    let links: Valid<Vec<Link>, String> = process_schema_multiple_directives(
-        schema_definition,
-        config::Link::directive_name().as_str(),
-    );
-
-    links.and_then(|links| {
-        let mut ids: Vec<String> = Vec::new();
-        for link in &links {
-            if let Some(id) = &link.id {
-                if ids.contains(id) {
-                    return Valid::fail(format!("Duplicated id: {}", id))
-                        .trace(config::Link::directive_name().as_str());
-                }
-                ids.push(id.to_string());
-            }
-        }
-        Valid::succeed(links)
-    })
+    process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
 }
 
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {

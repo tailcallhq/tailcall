@@ -6,7 +6,32 @@ expression: errors
   {
     "message": "Duplicated id: placeholder1",
     "trace": [
-      "link"
+      "schema",
+      "@link"
+    ],
+    "description": null
+  },
+  {
+    "message": "Duplicated id: placeholder1",
+    "trace": [
+      "schema",
+      "@link"
+    ],
+    "description": null
+  },
+  {
+    "message": "Duplicated id: placeholder2",
+    "trace": [
+      "schema",
+      "@link"
+    ],
+    "description": null
+  },
+  {
+    "message": "Duplicated id: placeholder2",
+    "trace": [
+      "schema",
+      "@link"
     ],
     "description": null
   }

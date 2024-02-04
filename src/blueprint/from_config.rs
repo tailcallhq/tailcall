@@ -40,7 +40,24 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
                 .trace("schema");
         }
 
-        Valid::succeed(blueprint)
+        Valid::from_iter(links.iter(), |link| {
+            if link.src.is_empty() {
+                return Valid::fail("Link src cannot be empty".to_string());
+            }
+
+            if let Some(id) = &link.id {
+                if links.iter().filter(|l| l.id.as_ref() == Some(&id)).count() > 1 {
+                    Valid::fail(format!("Duplicated id: {}", id))
+                } else {
+                    Valid::succeed(())
+                }
+            } else {
+                Valid::succeed(())
+            }
+        })
+        .trace(Link::trace_name().as_str())
+        .trace("schema")
+        .map_to(blueprint)
     });
 
     server
