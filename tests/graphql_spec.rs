@@ -197,6 +197,10 @@ impl GraphQLSpec {
         let mut dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir_path.push(path);
 
+        if !dir_path.exists() {
+            return Ok(Vec::with_capacity(0));
+        }
+
         let entries = fs::read_dir(dir_path.clone())?;
         let mut files = Vec::new();
         let mut only_files = Vec::new();
@@ -217,12 +221,6 @@ impl GraphQLSpec {
                 }
             }
         }
-
-        assert!(
-            !files.is_empty() || !only_files.is_empty(),
-            "No files found in {}",
-            dir_path.to_str().unwrap_or_default()
-        );
 
         if !only_files.is_empty() {
             Ok(only_files)
