@@ -136,9 +136,9 @@ debug = false
 incremental = false
 overflow-checks = false
 
-[[test]]
-name = "execution_spec"
-harness = false
+#[[test]]
+#name = "execution_spec"
+#harness = false
 
 [[bench]]
 name = "json_like_bench"

@@ -257,7 +257,7 @@ impl ExecutionSpec {
                                             "Unexpected runner annotation {:?} in {:?}",
                                             text.value,
                                             path,
-                                        ))
+                                        ));
                                     }
                                 });
                             } else {
@@ -287,7 +287,7 @@ impl ExecutionSpec {
                                         "Unexpected flag {:?} in {:?}",
                                         text.value,
                                         path,
-                                    ))
+                                    ));
                                 }
                             };
                         } else {
@@ -362,7 +362,7 @@ impl ExecutionSpec {
                                         name,
                                         path,
                                         heading
-                                    ))
+                                    ));
                                 }
                             }
                         } else {
@@ -447,6 +447,7 @@ impl ExecutionSpec {
 struct MockHttpClient {
     spec: ExecutionSpec,
 }
+
 impl MockHttpClient {
     fn new(spec: ExecutionSpec) -> Self {
         MockHttpClient { spec }
@@ -717,9 +718,9 @@ async fn assert_spec(spec: ExecutionSpec) {
                 assertion,
                 server.first().unwrap(),
             )
-            .await
-            .context(spec.path.to_str().unwrap().to_string())
-            .unwrap();
+                .await
+                .context(spec.path.to_str().unwrap().to_string())
+                .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
@@ -733,7 +734,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 body: serde_json::from_slice(
                     &hyper::body::to_bytes(response.into_body()).await.unwrap(),
                 )
-                .unwrap(),
+                    .unwrap(),
             };
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
@@ -748,30 +749,14 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+#[tokio::test]
+async fn foo() -> anyhow::Result<()> {
     env_logger::builder()
         .filter(Some("execution_spec"), log::LevelFilter::Info)
         .init();
 
-    // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
-    let explicit = std::env::args().skip(1).find(|x| !x.starts_with("--"));
-    let spec = if let Some(explicit) = explicit {
-        let path = PathBuf::from(&explicit)
-            .canonicalize()
-            .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", explicit));
-
-        let contents = fs::read_to_string(&path)?;
-        let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
-            .await
-            .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
-
-        vec![spec]
-    } else {
-        let spec = ExecutionSpec::cargo_read("tests/execution").await?;
-        ExecutionSpec::filter_specs(spec)
-    };
+    let spec = ExecutionSpec::cargo_read("tests/execution").await?;
+    let spec = ExecutionSpec::filter_specs(spec);
 
     for spec in spec.into_iter() {
         assert_spec(spec).await;
