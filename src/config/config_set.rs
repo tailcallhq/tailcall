@@ -32,12 +32,16 @@ impl<A> Deref for Content<A> {
 pub struct Extensions {
     /// Contains the file descriptor sets resolved from the links
     pub file_descriptor_from_links: Vec<Content<FileDescriptorSet>>,
+
+    /// Contains the contents of the JS file
+    pub script: Option<String>,
 }
 
 impl Extensions {
     pub fn merge_right(mut self, other: &Extensions) -> Self {
         self.file_descriptor_from_links
             .extend(other.file_descriptor_from_links.clone());
+        self.script = other.script.clone().or(self.script.take());
         self
     }
 
