@@ -25,6 +25,12 @@
       "options": {
         "printWidth": 200
       }
+    },
+    {
+      "files": ["devcontainer.json"],
+      "options": {
+        "trailingComma": "none"
+      }
     }
   ]
 }
