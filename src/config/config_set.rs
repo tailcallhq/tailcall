@@ -9,9 +9,6 @@ use crate::config::Config;
 #[derive(Clone, Debug, Default, Setters)]
 pub struct ConfigSet {
     pub config: Config,
-    // Contains the file path of the file from which the config was read
-    // In case multiple files are read, the last file is stored
-    pub path: Option<String>,
     pub extensions: Extensions,
 }
 
@@ -56,7 +53,6 @@ impl ConfigSet {
     pub fn merge_right(mut self, other: &Self) -> Self {
         self.config = self.config.merge_right(&other.config);
         self.extensions = self.extensions.merge_right(&other.extensions);
-        self.path = other.path.clone().or(self.path);
         self
     }
 }

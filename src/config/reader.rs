@@ -64,7 +64,11 @@ impl ConfigReader {
 
     /// Reads the links in a Config and fill the content
     #[async_recursion::async_recursion]
-    async fn ext_links(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
+    async fn ext_links(
+        &self,
+        mut config_set: ConfigSet,
+        path: Option<String>,
+    ) -> anyhow::Result<ConfigSet> {
         let links = config_set.config.links.clone();
 
         if links.is_empty() {
@@ -75,12 +79,11 @@ impl ConfigReader {
             return Err(anyhow::anyhow!("Link src cannot be empty"));
         }
 
-        let path = config_set.path.clone().unwrap_or_default().to_string();
-
         for config_link in links.iter() {
             let source = if let Ok(data) = self.read_file(&config_link.src).await {
                 data
             } else {
+                let path = path.clone().unwrap_or_default();
                 let path = PathBuf::from(&path)
                     .parent()
                     .unwrap_or(Path::new(""))
@@ -101,7 +104,7 @@ impl ConfigReader {
                     if !config.links.is_empty() {
                         config_set = config_set.merge_right(
                             &self
-                                .ext_links(ConfigSet::from(config).path(Some(source.path)))
+                                .ext_links(ConfigSet::from(config), Some(source.path))
                                 .await?,
                         );
                     }
@@ -173,13 +176,13 @@ impl ConfigReader {
     /// Resolves all the links in a Config to create a ConfigSet
     pub async fn resolve(&self, config: Config, path: Option<String>) -> anyhow::Result<ConfigSet> {
         // Create initial config set
-        let config_set = ConfigSet::from(config).path(path);
+        let config_set = ConfigSet::from(config);
 
         // Extend it with the worker script
         let config_set = self.ext_script(config_set).await?;
 
         // Extend it with the links
-        let config_set = self.ext_links(config_set).await?;
+        let config_set = self.ext_links(config_set, path).await?;
 
         Ok(config_set)
     }
