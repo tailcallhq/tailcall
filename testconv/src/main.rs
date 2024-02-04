@@ -298,6 +298,8 @@ async fn main() {
             }
 
             files_already_processed.insert(file_stem);
+
+            fs::remove_file(path).unwrap();
         } else if path.is_file() {
             println!("skipping unexpected file: {:?}", path);
         }
@@ -381,6 +383,8 @@ async fn main() {
             }
 
             files_already_processed.insert(file_stem);
+
+            fs::remove_file(path).unwrap();
         } else if path.is_file() {
             println!("Skipping unexpected file: {:?}", path);
         }
@@ -473,6 +477,8 @@ async fn main() {
             generate_merged_snapshot_sdl(&file_stem, &server).await;
 
             files_already_processed.insert(file_stem);
+
+            fs::remove_file(path).unwrap();
         } else if path.is_file() {
             println!("Skipping unexpected file: {:?}", path);
         }
@@ -580,6 +586,8 @@ async fn main() {
             write(target, snap).expect("Failed to write errors snapshot");
 
             files_already_processed.insert(file_stem);
+
+            fs::remove_file(path).unwrap();
         } else if path.is_file() {
             println!("Skipping unexpected file: {:?}", path);
         }
