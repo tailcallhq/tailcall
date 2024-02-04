@@ -4,7 +4,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use async_graphql::parser::types::TypeSystemDefinition;
-use testconv::http::{ConfigSource, HttpSpec};
 use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
@@ -12,8 +11,8 @@ use tailcall::config::{Config, ConfigSet};
 use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::Validator as _;
-
 use testconv::common::{APIRequest, Annotation, SDLError};
+use testconv::http::{ConfigSource, HttpSpec};
 
 const TEST_ANNOTATION_MSG: &str = "**This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))";
 const BAD_GRAPHQL_MSG: &str = "This test has invalid GraphQL that wasn't caught by http_spec before conversion. It is skipped right now, but it should be fixed at some point.";

@@ -718,9 +718,9 @@ async fn assert_spec(spec: ExecutionSpec) {
                 assertion,
                 server.first().unwrap(),
             )
-                .await
-                .context(spec.path.to_str().unwrap().to_string())
-                .unwrap();
+            .await
+            .context(spec.path.to_str().unwrap().to_string())
+            .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
@@ -734,7 +734,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 body: serde_json::from_slice(
                     &hyper::body::to_bytes(response.into_body()).await.unwrap(),
                 )
-                    .unwrap(),
+                .unwrap(),
             };
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);

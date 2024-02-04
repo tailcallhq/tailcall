@@ -74,6 +74,7 @@ jobs:
 
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+        working-directory: ./testconv
 
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
