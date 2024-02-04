@@ -48,7 +48,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
             }
 
             if let Some(id) = &link.id {
-                if links.iter().filter(|l| l.id.as_ref() == Some(&id)).count() > 1 {
+                if links.iter().filter(|l| l.id.as_ref() == Some(id)).count() > 1 {
                     Valid::fail(format!("Duplicated id: {}", id)).trace(&pos)
                 } else {
                     Valid::succeed(())
