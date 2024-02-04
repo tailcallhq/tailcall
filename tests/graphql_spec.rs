@@ -198,7 +198,7 @@ impl GraphQLSpec {
         dir_path.push(path);
 
         if !dir_path.exists() {
-            return Ok(Vec::with_capacity(0))
+            return Ok(Vec::with_capacity(0));
         }
 
         let entries = fs::read_dir(dir_path.clone())?;

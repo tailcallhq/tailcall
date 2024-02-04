@@ -138,7 +138,7 @@ impl HttpSpec {
         let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
 
         if !dir_path.exists() {
-            return Ok(Vec::with_capacity(0))
+            return Ok(Vec::with_capacity(0));
         }
 
         let mut files = Vec::new();
