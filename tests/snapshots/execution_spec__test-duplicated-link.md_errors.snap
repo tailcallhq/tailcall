@@ -7,7 +7,8 @@ expression: errors
     "message": "Duplicated id: placeholder1",
     "trace": [
       "schema",
-      "@link"
+      "@link",
+      "1"
     ],
     "description": null
   },
@@ -15,7 +16,8 @@ expression: errors
     "message": "Duplicated id: placeholder1",
     "trace": [
       "schema",
-      "@link"
+      "@link",
+      "2"
     ],
     "description": null
   },
@@ -23,7 +25,8 @@ expression: errors
     "message": "Duplicated id: placeholder2",
     "trace": [
       "schema",
-      "@link"
+      "@link",
+      "3"
     ],
     "description": null
   },
@@ -31,7 +34,8 @@ expression: errors
     "message": "Duplicated id: placeholder2",
     "trace": [
       "schema",
-      "@link"
+      "@link",
+      "4"
     ],
     "description": null
   }

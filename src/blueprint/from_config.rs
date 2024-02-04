@@ -41,13 +41,15 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
         }
 
         Valid::from_iter(links.iter(), |link| {
+            let pos = links.iter().position(|l| l == link).unwrap().to_string();
+
             if link.src.is_empty() {
-                return Valid::fail("Link src cannot be empty".to_string());
+                return Valid::fail("Link src cannot be empty".to_string()).trace(&pos);
             }
 
             if let Some(id) = &link.id {
                 if links.iter().filter(|l| l.id.as_ref() == Some(&id)).count() > 1 {
-                    Valid::fail(format!("Duplicated id: {}", id))
+                    Valid::fail(format!("Duplicated id: {}", id)).trace(&pos)
                 } else {
                     Valid::succeed(())
                 }
