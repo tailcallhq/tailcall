@@ -8,7 +8,7 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigSet, Content, LinkType, Script, ScriptOptions};
+use super::{ConfigSet, Content, Link, LinkType, Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
@@ -69,14 +69,21 @@ impl ConfigReader {
         mut config_set: ConfigSet,
         path: Option<String>,
     ) -> anyhow::Result<ConfigSet> {
-        let links = config_set.config.links.clone();
+        let links: Vec<Link> = config_set
+            .config
+            .links
+            .clone()
+            .iter()
+            .filter_map(|link| {
+                if link.src.is_empty() {
+                    return None;
+                }
+                Some(link.to_owned())
+            })
+            .collect();
 
         if links.is_empty() {
             return Ok(config_set);
-        }
-
-        if links.iter().any(|link| link.src.is_empty()) {
-            return Err(anyhow::anyhow!("Link src cannot be empty"));
         }
 
         for config_link in links.iter() {

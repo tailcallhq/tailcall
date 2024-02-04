@@ -5,7 +5,10 @@ expression: errors
 [
   {
     "message": "Link src cannot be empty",
-    "trace": [],
+    "trace": [
+      "schema",
+      "@link"
+    ],
     "description": null
   }
 ]
