@@ -29,51 +29,63 @@ pub async fn start_http_1(
 
     if sc.blueprint.server.enable_batch_requests {
         loop {
-            let (stream, _) = listener.accept().await?;
-            let io = TokioIo::new(stream);
-            let sc = sc.clone();
-            let server = hyper::server::conn::http1::Builder::new()
-                .serve_connection(
-                    io,
-                    service_fn(move |req: Request<Incoming>| {
-                        let state = sc.clone();
-                        async move {
-                            let (part, body) = req.into_parts();
-                            let body = body.collect().await?.to_bytes();
-                            let req = Request::from_parts(part, Full::new(body));
-                            handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone()).await
+            let stream_result = listener.accept().await;
+            match stream_result {
+                Ok((stream,_)) => {
+                    let io = TokioIo::new(stream);
+                    let sc = sc.clone();
+                    tokio::spawn(async move {
+                        let server = hyper::server::conn::http1::Builder::new()
+                            .serve_connection(
+                                io,
+                                service_fn(move |req: Request<Incoming>| {
+                                    let state = sc.clone();
+                                    async move {
+                                        let (part, body) = req.into_parts();
+                                        let body = body.collect().await?.to_bytes();
+                                        let req = Request::from_parts(part, Full::new(body));
+                                        handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone()).await
+                                    }
+                                }),
+                            )
+                            .await;
+                        if let Err(e) = server {
+                            log::error!("An error occurred while handling a request: {e}");
                         }
-                    }),
-                )
-                .await;
-            if let Err(e) = server {
-                log::error!("An error occurred while handling a request: {e}");
+                    });
+                }
+                Err(e) => log::error!("An error occurred while handling request: {e}")
             }
         }
     } else {
         loop {
-            let (stream, _) = listener.accept().await?;
-            let io = TokioIo::new(stream);
-            let sc = sc.clone();
-            tokio::spawn(async move {
-                let server = hyper::server::conn::http1::Builder::new()
-                    .serve_connection(
-                        io,
-                        service_fn(move |req: Request<Incoming>| {
-                            let state = sc.clone();
-                            async move {
-                                let (part, body) = req.into_parts();
-                                let body = body.collect().await?.to_bytes();
-                                let req = Request::from_parts(part, Full::new(body));
-                                handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
-                            }
-                        }),
-                    )
-                    .await;
-                if let Err(e) = server {
-                    log::error!("An error occurred while handling a request: {e}");
+            let stream_result = listener.accept().await;
+            match stream_result {
+                Ok((stream,_)) => {
+                    let io = TokioIo::new(stream);
+                    let sc = sc.clone();
+                    tokio::spawn(async move {
+                        let server = hyper::server::conn::http1::Builder::new()
+                            .serve_connection(
+                                io,
+                                service_fn(move |req: Request<Incoming>| {
+                                    let state = sc.clone();
+                                    async move {
+                                        let (part, body) = req.into_parts();
+                                        let body = body.collect().await?.to_bytes();
+                                        let req = Request::from_parts(part, Full::new(body));
+                                        handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
+                                    }
+                                }),
+                            )
+                            .await;
+                        if let Err(e) = server {
+                            log::error!("An error occurred while handling a request: {e}");
+                        }
+                    });
                 }
-            });
+                Err(e) => log::error!("An error occurred while handling request: {e}")
+            }
         }
     }
 }
