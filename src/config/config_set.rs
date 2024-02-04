@@ -31,7 +31,7 @@ impl<A> Deref for Content<A> {
 #[derive(Clone, Debug, Default)]
 pub struct Extensions {
     /// Contains the file descriptor sets resolved from the links
-    pub file_descriptor_from_links: Vec<Content<FileDescriptorSet>>,
+    pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -39,14 +39,14 @@ pub struct Extensions {
 
 impl Extensions {
     pub fn merge_right(mut self, other: &Extensions) -> Self {
-        self.file_descriptor_from_links
-            .extend(other.file_descriptor_from_links.clone());
+        self.grpc_file_descriptors
+            .extend(other.grpc_file_descriptors.clone());
         self.script = other.script.clone().or(self.script.take());
         self
     }
 
     pub fn get_file_descriptor(&self, id: &str) -> Option<&FileDescriptorSet> {
-        self.file_descriptor_from_links
+        self.grpc_file_descriptors
             .iter()
             .find(|content| content.id.as_deref() == Some(id))
             .map(|content| content.deref())

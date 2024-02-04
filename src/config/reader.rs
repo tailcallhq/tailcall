@@ -119,13 +119,10 @@ impl ConfigReader {
                         file_descriptor_set.file.push(v);
                     }
 
-                    config_set
-                        .extensions
-                        .file_descriptor_from_links
-                        .push(Content {
-                            id: config_link.id.to_owned(),
-                            content: file_descriptor_set,
-                        });
+                    config_set.extensions.grpc_file_descriptors.push(Content {
+                        id: config_link.id.to_owned(),
+                        content: file_descriptor_set,
+                    });
                 }
             }
         }
@@ -324,7 +321,7 @@ mod test_proto_config {
         assert_eq!(config_set.config.links.len(), 2);
         assert_eq!(
             config_set.config.links.len(),
-            config_set.extensions.file_descriptor_from_links.len()
+            config_set.extensions.grpc_file_descriptors.len()
         );
 
         dir.close().unwrap();
