@@ -217,13 +217,7 @@ impl GraphQLSpec {
                 }
             }
         }
-
-        assert!(
-            !files.is_empty() || !only_files.is_empty(),
-            "No files found in {}",
-            dir_path.to_str().unwrap_or_default()
-        );
-
+        
         if !only_files.is_empty() {
             Ok(only_files)
         } else {
