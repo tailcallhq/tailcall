@@ -16,3 +16,22 @@ url = { version = "2", features = ["serde"] }
 tokio = { version = "1.36.0", features = ["rt", "macros"] }
 async-graphql = { version = "7.0.1", features = ["dynamic-schema"] }
 regex = "1.10.3"
+
+[dev-dependencies]
+criterion = "0.5.1"
+httpmock = "0.7.0"
+pretty_assertions = "1.4.0"
+stripmargin = "0.1.1"
+markdown = "1.0.0-alpha.16"
+insta = { version = "1.34.0", features = ["json"] }
+env_logger = "0.11.1"
+anyhow = "1.0.79"
+log = "0.4.20"
+async-trait = "0.1.77"
+futures-util = "0.3.30"
+reqwest = { version = "0.11", features = [
+    "json",
+    "rustls-tls",
+], default-features = false }
+hyper = "0.14.28"
+hyper-rustls = { version = "0.25.0" }
