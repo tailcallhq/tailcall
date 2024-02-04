@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "concat": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  }
+}

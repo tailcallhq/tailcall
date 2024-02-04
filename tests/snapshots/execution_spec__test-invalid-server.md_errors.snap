@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Parsing failed because of invalid type: string \"8000\", expected u16",
+    "trace": [
+      "@server",
+      "port"
+    ],
+    "description": null
+  }
+]

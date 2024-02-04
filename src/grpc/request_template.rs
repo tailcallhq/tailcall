@@ -105,9 +105,10 @@ mod tests {
     use reqwest::Method;
 
     use super::RequestTemplate;
+    use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type, Upstream};
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::mustache::Mustache;
 

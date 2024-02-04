@@ -41,7 +41,7 @@ fn not_found() -> Result<Response<Full<Bytes>>> {
 
 fn create_request_context(req: &Request<Full<Bytes>>, server_ctx: &AppContext) -> RequestContext {
     let upstream = server_ctx.blueprint.upstream.clone();
-    let allowed = upstream.get_allowed_headers();
+    let allowed = upstream.allowed_headers;
     let headers = create_allowed_headers(to_reqwest_hmap(req.headers()), &allowed);
     RequestContext::from(server_ctx).req_headers(headers)
 }

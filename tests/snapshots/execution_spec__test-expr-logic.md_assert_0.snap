@@ -1,0 +1,41 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "andFalse1": false,
+      "andFalse2": false,
+      "andFalse3": false,
+      "andTrue1": true,
+      "andTrue2": true,
+      "condOne": 1,
+      "condTwo": 2,
+      "condZero": 0,
+      "defaultToTrue": true,
+      "defaultToZero": 0,
+      "ifOne": 1,
+      "ifZero": 0,
+      "isEmptyFalse1": false,
+      "isEmptyFalse2": false,
+      "isEmptyFalse3": false,
+      "isEmptyTrue1": true,
+      "isEmptyTrue2": true,
+      "isEmptyTrue3": true,
+      "isEmptyTrue4": true,
+      "notFalse1": false,
+      "notFalse2": false,
+      "notTrue": true,
+      "orFalse1": false,
+      "orFalse2": false,
+      "orTrue1": true,
+      "orTrue2": true,
+      "orTrue3": true
+    }
+  }
+}

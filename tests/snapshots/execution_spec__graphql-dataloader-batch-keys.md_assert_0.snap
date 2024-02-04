@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "locations": [
+          {
+            "column": 9,
+            "line": 1
+          }
+        ],
+        "message": "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-dataloader-batch-keys.md"
+      }
+    ]
+  }
+}
