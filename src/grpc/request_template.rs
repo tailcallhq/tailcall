@@ -118,6 +118,7 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
+    use std::collections::HashSet;
     use std::path::PathBuf;
 
     use derive_setters::Setters;
@@ -131,6 +132,7 @@ mod tests {
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+    use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
@@ -245,5 +247,39 @@ mod tests {
         if let Some(body) = req.body() {
             assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref()))
         }
+    }
+
+    async fn request_template_with_body(body_str: &str) -> RequestTemplate {
+        RequestTemplate {
+            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            headers: vec![],
+            operation: get_protobuf_op().await,
+            body: Some(Mustache::parse(body_str).unwrap()),
+            operation_type: GraphQLOperationType::Query,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_grpc_cache_key_collision() {
+        let tmpls = [
+            r#"{ "name": "test" }"#,
+            r#"{ "name": "test1" }"#,
+            r#"{ "name1": "test" }"#,
+            r#"{ "name1": "test1" }"#,
+        ];
+
+        let ctx = Context::default();
+        let tmpl_set: HashSet<_> =
+            futures_util::future::join_all(tmpls.iter().cloned().zip(std::iter::repeat(&ctx)).map(
+                |(body_str, ctx)| async {
+                    let tmpl = request_template_with_body(body_str).await;
+                    tmpl.cache_key(ctx)
+                },
+            ))
+            .await
+            .into_iter()
+            .collect();
+
+        assert_eq!(tmpls.len(), tmpl_set.len());
     }
 }
