@@ -56,7 +56,7 @@ impl Lambda<serde_json::Value> {
         field_name: String,
         batch: bool,
     ) -> Lambda<serde_json::Value> {
-        Lambda::new(Expression::IO(IO::GraphQLEndpoint {
+        Lambda::new(Expression::IO(IO::GraphQL {
             req_template,
             field_name,
             batch,

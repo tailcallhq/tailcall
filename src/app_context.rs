@@ -55,14 +55,14 @@ impl AppContext {
                                 http_data_loaders.push(data_loader);
                             }
 
-                            IO::GraphQLEndpoint { req_template, field_name, batch, .. } => {
+                            IO::GraphQL { req_template, field_name, batch, .. } => {
                                 let graphql_data_loader =
                                     GraphqlDataLoader::new(runtime.http.clone(), *batch)
                                         .to_data_loader(
                                             blueprint.upstream.batch.clone().unwrap_or_default(),
                                         );
 
-                                field.resolver = Some(Expression::IO(IO::GraphQLEndpoint {
+                                field.resolver = Some(Expression::IO(IO::GraphQL {
                                     req_template: req_template.clone(),
                                     field_name: field_name.clone(),
                                     batch: *batch,

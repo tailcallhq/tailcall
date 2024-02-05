@@ -28,7 +28,7 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
     },
-    GraphQLEndpoint {
+    GraphQL {
         req_template: graphql::RequestTemplate,
         field_name: String,
         batch: bool,
@@ -77,7 +77,7 @@ impl Eval for IO {
 
                     Ok(res.body)
                 }
-                IO::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
+                IO::GraphQL { req_template, field_name, dl_id, .. } => {
                     let req = req_template.to_request(ctx)?;
 
                     let res = if ctx.req_ctx.upstream.batch.is_some()
@@ -123,7 +123,7 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
-            IO::GraphQLEndpoint { req_template, .. } => req_template.cache_key(ctx),
+            IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
         }
     }
 }
