@@ -11,7 +11,7 @@ use super::list::List;
 use super::logic::Logic;
 use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
 use crate::json::JsonLike;
-use crate::lambda::cached::Cached;
+use crate::lambda::cache::Cache;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -19,7 +19,7 @@ pub enum Expression {
     Literal(Value), // TODO: this should async_graphql::Value
     EqualTo(Box<Expression>, Box<Expression>),
     IO(IO),
-    Cached(Cached),
+    Cache(Cache),
     Input(Box<Expression>, Vec<String>),
     Logic(Logic),
     Relation(Relation),
@@ -110,7 +110,7 @@ impl Eval for Expression {
                     left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
                 )),
                 Expression::IO(operation) => operation.eval(ctx, conc).await,
-                Expression::Cached(cached) => cached.eval(ctx, conc).await,
+                Expression::Cache(cached) => cached.eval(ctx, conc).await,
                 Expression::Relation(relation) => relation.eval(ctx, conc).await,
                 Expression::Logic(logic) => logic.eval(ctx, conc).await,
                 Expression::List(list) => list.eval(ctx, conc).await,

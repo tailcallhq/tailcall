@@ -13,12 +13,12 @@ pub trait CacheKey<Ctx> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Cached {
+pub struct Cache {
     pub max_age: NonZeroU64,
     pub expr: IO,
 }
 
-impl Cached {
+impl Cache {
     ///
     /// Wraps an expression with the cache primitive.
     /// Performance DFS on the cache on the expression and identifies all the IO nodes.
@@ -26,13 +26,13 @@ impl Cached {
     ///
     pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
         expr.modify(Rc::new(move |expr| match expr {
-            Expression::IO(io) => Some(Expression::Cached(Cached { max_age, expr: io.clone() })),
+            Expression::IO(io) => Some(Expression::Cache(Cache { max_age, expr: io.clone() })),
             _ => None,
         }))
     }
 }
 
-impl Eval for Cached {
+impl Eval for Cache {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: &'a EvaluationContext<'a, Ctx>,

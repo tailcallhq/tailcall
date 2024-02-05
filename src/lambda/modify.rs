@@ -28,7 +28,7 @@ impl Expression {
                         expr2.modify_box(modifier),
                     ),
                     Expression::IO(_) => expr,
-                    Expression::Cached(_) => expr,
+                    Expression::Cache(_) => expr,
                     Expression::Input(expr, path) => {
                         Expression::Input(expr.modify_box(modifier), path)
                     }

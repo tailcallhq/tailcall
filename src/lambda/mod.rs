@@ -1,4 +1,4 @@
-mod cached;
+mod cache;
 mod concurrent;
 mod eval;
 mod evaluation_context;
@@ -13,7 +13,7 @@ mod modify;
 mod relation;
 mod resolver_context_like;
 
-pub use cached::*;
+pub use cache::*;
 pub use concurrent::*;
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
