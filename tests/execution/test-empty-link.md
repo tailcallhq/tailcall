@@ -5,7 +5,7 @@
 #### server:
 
 ```graphql
-schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Config, src: "") {
+schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Config, src: "") @link(type: Config) {
   query: Query
 }
 
