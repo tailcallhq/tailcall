@@ -2,7 +2,7 @@ use crate::blueprint::FieldDefinition;
 use crate::config::{self, ConfigSet, Field, GraphQLOperationType};
 use crate::graphql::RequestTemplate;
 use crate::helpers;
-use crate::lambda::{Expression, Lambda};
+use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -34,7 +34,12 @@ pub fn compile_graphql(
     })
     .map(|req_template| {
         let field_name = graphql.name.clone();
-        Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression
+        Expression::IO(IO::GraphQLEndpoint {
+            req_template,
+            field_name,
+            batch: graphql.batch,
+            dl_id: None,
+        })
     })
 }
 
