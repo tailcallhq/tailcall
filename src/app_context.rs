@@ -56,14 +56,14 @@ impl AppContext {
                                             group_by.clone(),
                                             matches!(of_type, ListType { .. }),
                                         )
-                                            .to_data_loader(
-                                                upstream_batch.clone().unwrap_or_default(),
-                                            );
+                                        .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
                                         let result = Some(Expression::IO(IO::Http {
                                             req_template: req_template.clone(),
                                             group_by: group_by.clone(),
-                                            dl_id: Some(DataLoaderId(http_data_loaders.borrow().len())),
+                                            dl_id: Some(DataLoaderId(
+                                                http_data_loaders.borrow().len(),
+                                            )),
                                         }));
 
                                         http_data_loaders.borrow_mut().push(data_loader);
@@ -82,7 +82,9 @@ impl AppContext {
                                             req_template: req_template.clone(),
                                             field_name: field_name.clone(),
                                             batch: *batch,
-                                            dl_id: Some(DataLoaderId(gql_data_loaders.borrow().len())),
+                                            dl_id: Some(DataLoaderId(
+                                                gql_data_loaders.borrow().len(),
+                                            )),
                                         }));
 
                                         gql_data_loaders.borrow_mut().push(graphql_data_loader);
@@ -103,15 +105,17 @@ impl AppContext {
                                         let result = Some(Expression::IO(IO::Grpc {
                                             req_template: req_template.clone(),
                                             group_by: group_by.clone(),
-                                            dl_id: Some(DataLoaderId(grpc_data_loaders.borrow().len())),
+                                            dl_id: Some(DataLoaderId(
+                                                grpc_data_loaders.borrow().len(),
+                                            )),
                                         }));
 
                                         grpc_data_loaders.borrow_mut().push(data_loader);
 
                                         result
                                     }
-                                }
-                                _ => None
+                                },
+                                _ => None,
                             }
                         })
                     });
