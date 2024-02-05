@@ -339,12 +339,12 @@ pub fn update_nested_resolvers<'a>(
 
 /// Wraps the IO Expression with Expression::Cached
 /// if `Field::cache` is present for that field
-pub fn update_cacheable_resolvers<'a>(
+pub fn update_cache_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
     TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_config, field, _, _name), mut b_field| {
             if let Some(config::Cache { max_age }) = field.cache.as_ref() {
-                b_field.wrap_resolver(|expression| Cached::wrap(*max_age, expression))
+                b_field.update_resolver(|expression| Cached::wrap(*max_age, expression))
             }
 
             Valid::succeed(b_field)
@@ -390,7 +390,7 @@ fn to_fields(
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
             .and(update_nested_resolvers())
-            .and(update_cacheable_resolvers())
+            .and(update_cache_resolvers())
             .try_fold(
                 &(config_set, field, type_of, name),
                 FieldDefinition::default(),

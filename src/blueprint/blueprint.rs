@@ -151,7 +151,7 @@ impl FieldDefinition {
         self
     }
 
-    pub fn wrap_resolver<F: Fn(Expression) -> Expression>(&mut self, wrapper: F) {
+    pub fn update_resolver<F: Fn(Expression) -> Expression>(&mut self, wrapper: F) {
         if let Some(resolver) = self.resolver.take() {
             self.resolver = Some(wrapper(resolver))
         }
