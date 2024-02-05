@@ -3,7 +3,7 @@ use std::thread;
 
 use deno_core::{v8, FastString, JsRuntime};
 
-use super::deno_channel::{Message, MessageContent};
+use super::channel::{Message, MessageContent};
 use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime {
@@ -12,7 +12,7 @@ struct LocalRuntime {
 }
 
 thread_local! {
-  static LOCAL_RUNTIME: RefCell<OnceCell<LocalRuntime>> = RefCell::new(OnceCell::new());
+  static LOCAL_RUNTIME: RefCell<OnceCell<LocalRuntime>> = const { RefCell::new(OnceCell::new()) };
 }
 
 impl LocalRuntime {
@@ -35,7 +35,7 @@ pub struct Runtime {
 
 impl Runtime {
     pub fn new(script: blueprint::Script) -> Self {
-        Self { script: script }
+        Self { script }
     }
 }
 

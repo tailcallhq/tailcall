@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use futures_util::Future;
 
-use super::channel_mv8::{Message, MessageContent};
+use super::channel::{JsResponse, Message, MessageContent};
 use crate::http::Response;
 use crate::{HttpIO, WorkerIO};
 
@@ -30,16 +30,22 @@ impl HttpFilter {
             match command {
                 Message { message: MessageContent::Request(request), id } => {
                     let request = request;
-                    let response = self.client.execute(request).await?;
+                    let response = self.client.execute(request.try_into()?).await?;
                     if id.is_none() {
                         return Ok(response);
                     }
-                    let command = self
-                        .worker
-                        .dispatch(Message { message: MessageContent::Response(response), id })?;
+                    let command = self.worker.dispatch(Message {
+                        message: MessageContent::Response(JsResponse::try_from(response)?),
+                        id,
+                    })?;
                     Ok(self.on_command(command).await?)
                 }
-                Message { message: MessageContent::Response(response), id: _ } => Ok(response),
+                Message { message: MessageContent::Response(response), id: _ } => {
+                    Ok(response.try_into()?)
+                }
+                Message { message: MessageContent::Empty, id: _ } => {
+                    anyhow::bail!("No response received from worker")
+                }
             }
         })
     }
@@ -51,9 +57,10 @@ impl HttpIO for HttpFilter {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        let command = self
-            .worker
-            .dispatch(Message { message: MessageContent::Request(request), id: None })?;
+        let command = self.worker.dispatch(Message {
+            message: MessageContent::Request(request.try_into()?),
+            id: None,
+        })?;
         self.on_command(command).await
     }
 }

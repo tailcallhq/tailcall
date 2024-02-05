@@ -131,7 +131,7 @@ mod test {
     use hyper::body::Bytes;
     use reqwest::header::HeaderMap;
 
-    use crate::cli::javascript::deno_channel::JsResponse;
+    use crate::cli::javascript::channel::JsResponse;
 
     fn create_test_response() -> Result<JsResponse> {
         let mut headers = HeaderMap::new();
@@ -141,8 +141,7 @@ mod test {
             headers,
             body: Bytes::from("Hello, World!"),
         };
-        let js_response: Result<crate::cli::javascript::deno_channel::JsResponse> =
-            response.try_into();
+        let js_response: Result<crate::cli::javascript::channel::JsResponse> = response.try_into();
         js_response
     }
     #[test]
