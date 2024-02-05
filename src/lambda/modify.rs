@@ -1,18 +1,32 @@
-use super::{Cached, Expression};
+use super::Expression;
+
+pub trait ExpressionModifier {
+    fn modify(&self, expr: &Expression) -> Option<Expression>;
+}
 
 impl Expression {
-    fn modify_box<F>(self, f: F) -> Box<Expression>
+    fn modify_vec<M>(exprs: Vec<Self>, modifier: &M) -> Vec<Expression>
     where
-        F: Fn(&Expression) -> Option<Expression>,
+        M: ExpressionModifier,
     {
-        Box::new(self.modify(f))
+        exprs
+            .into_iter()
+            .map(|expr| expr.modify(modifier))
+            .collect()
     }
 
-    pub fn modify<F>(self, f: F) -> Expression
+    fn modify_box<M>(self, modifier: &M) -> Box<Expression>
     where
-        F: Fn(&Expression) -> Option<Expression>,
+        M: ExpressionModifier,
     {
-        let modified = f(&self);
+        Box::new(self.modify(modifier))
+    }
+
+    pub fn modify<M>(self, modifier: &M) -> Expression
+    where
+        M: ExpressionModifier,
+    {
+        let modified = modifier.modify(&self);
         match modified {
             Some(expr) => expr,
             None => {
@@ -21,143 +35,173 @@ impl Expression {
                     Expression::Context(_) => expr,
                     Expression::Literal(_) => expr,
                     Expression::EqualTo(expr1, expr2) => {
-                        Expression::EqualTo(expr1.modify_box(&f), expr2.modify_box(&f))
+                        Expression::EqualTo(expr1.modify_box(modifier), expr2.modify_box(modifier))
                     }
                     Expression::IO(_) => expr,
                     Expression::Cached(_) => expr,
-                    Expression::Input(_, _) => expr,
+                    Expression::Input(expr, path) => {
+                        Expression::Input(expr.modify_box(modifier), path)
+                    }
                     Expression::Logic(expr) => match expr {
                         super::Logic::If { cond, then, els } => {
                             Expression::Logic(super::Logic::If {
-                                cond: cond.modify_box(&f),
-                                then: then.modify_box(&f),
-                                els: els.modify_box(&f),
+                                cond: cond.modify_box(modifier),
+                                then: then.modify_box(modifier),
+                                els: els.modify_box(modifier),
                             })
                         }
-                        super::Logic::And(exprs) => Expression::Logic(super::Logic::And(
-                            exprs.into_iter().map(|expr| expr.modify(&f)).collect(),
-                        )),
-                        super::Logic::Or(exprs) => Expression::Logic(super::Logic::Or(
-                            exprs.into_iter().map(|expr| expr.modify(&f)).collect(),
-                        )),
+                        super::Logic::And(exprs) => {
+                            Expression::Logic(super::Logic::And(Self::modify_vec(exprs, modifier)))
+                        }
+                        super::Logic::Or(exprs) => {
+                            Expression::Logic(super::Logic::Or(Self::modify_vec(exprs, modifier)))
+                        }
                         super::Logic::Cond(branches) => Expression::Logic(super::Logic::Cond(
                             branches
                                 .into_iter()
-                                .map(|(cond, expr)| (cond.modify_box(&f), expr.modify_box(&f)))
+                                .map(|(cond, expr)| {
+                                    (cond.modify_box(modifier), expr.modify_box(modifier))
+                                })
                                 .collect(),
                         )),
-                        super::Logic::DefaultTo(expr1, expr2) => Expression::Logic(
-                            super::Logic::DefaultTo(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
+                        super::Logic::DefaultTo(expr1, expr2) => {
+                            Expression::Logic(super::Logic::DefaultTo(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
+                        }
                         super::Logic::IsEmpty(expr) => {
-                            Expression::Logic(super::Logic::IsEmpty(expr.modify_box(&f)))
+                            Expression::Logic(super::Logic::IsEmpty(expr.modify_box(modifier)))
                         }
                         super::Logic::Not(expr) => {
-                            Expression::Logic(super::Logic::Not(expr.modify_box(&f)))
+                            Expression::Logic(super::Logic::Not(expr.modify_box(modifier)))
                         }
                     },
                     Expression::Relation(expr) => match expr {
-                        super::Relation::Intersection(expr1, expr2) => {
-                            Expression::Relation(super::Relation::Intersection(
-                                expr1.modify_box(&f),
-                                expr2.modify_box(&f),
+                        super::Relation::Intersection(exprs) => Expression::Relation(
+                            super::Relation::Intersection(Self::modify_vec(exprs, modifier)),
+                        ),
+                        super::Relation::Difference(expr1, expr2) => {
+                            Expression::Relation(super::Relation::Difference(
+                                Self::modify_vec(expr1, modifier),
+                                Self::modify_vec(expr2, modifier),
                             ))
                         }
-                        super::Relation::Difference(expr1, expr2) => Expression::Relation(
-                            super::Relation::Difference(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
-                        super::Relation::Equals(expr1, expr2) => Expression::Relation(
-                            super::Relation::Equals(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
-                        super::Relation::Gt(expr1, expr2) => Expression::Relation(
-                            super::Relation::Gt(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
-                        super::Relation::Gte(expr1, expr2) => Expression::Relation(
-                            super::Relation::Gte(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
-                        super::Relation::Lt(expr1, expr2) => Expression::Relation(
-                            super::Relation::Lt(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
-                        super::Relation::Lte(expr1, expr2) => Expression::Relation(
-                            super::Relation::Lte(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
-                        super::Relation::Max(expr) => {
-                            Expression::Relation(super::Relation::Max(expr.modify_box(&f)))
+                        super::Relation::Equals(expr1, expr2) => {
+                            Expression::Relation(super::Relation::Equals(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
                         }
-                        super::Relation::Min(expr) => {
-                            Expression::Relation(super::Relation::Min(expr.modify_box(&f)))
+                        super::Relation::Gt(expr1, expr2) => {
+                            Expression::Relation(super::Relation::Gt(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
                         }
-                        super::Relation::PathEq(expr1, expr2, expr3) => {
+                        super::Relation::Gte(expr1, expr2) => {
+                            Expression::Relation(super::Relation::Gte(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
+                        }
+                        super::Relation::Lt(expr1, expr2) => {
+                            Expression::Relation(super::Relation::Lt(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
+                        }
+                        super::Relation::Lte(expr1, expr2) => {
+                            Expression::Relation(super::Relation::Lte(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
+                        }
+                        super::Relation::Max(exprs) => Expression::Relation(super::Relation::Max(
+                            Self::modify_vec(exprs, modifier),
+                        )),
+                        super::Relation::Min(exprs) => Expression::Relation(super::Relation::Min(
+                            Self::modify_vec(exprs, modifier),
+                        )),
+                        super::Relation::PathEq(expr1, path, expr2) => {
                             Expression::Relation(super::Relation::PathEq(
-                                expr1.modify_box(&f),
-                                expr2.modify_box(&f),
-                                expr3.modify_box(&f),
+                                expr1.modify_box(modifier),
+                                path,
+                                expr2.modify_box(modifier),
                             ))
                         }
-                        super::Relation::PropEq(expr1, expr2, expr3) => {
+                        super::Relation::PropEq(expr1, path, expr2) => {
                             Expression::Relation(super::Relation::PropEq(
-                                expr1.modify_box(&f),
-                                expr2.modify_box(&f),
-                                expr3.modify_box(&f),
+                                expr1.modify_box(modifier),
+                                path,
+                                expr2.modify_box(modifier),
                             ))
                         }
-                        super::Relation::SortPath(expr1, expr2) => Expression::Relation(
-                            super::Relation::SortPath(expr1.modify_box(&f), expr2.modify_box(&f)),
+                        super::Relation::SortPath(expr, path) => Expression::Relation(
+                            super::Relation::SortPath(expr.modify_box(modifier), path),
                         ),
                         super::Relation::SymmetricDifference(expr1, expr2) => {
                             Expression::Relation(super::Relation::SymmetricDifference(
-                                expr1.modify_box(&f),
-                                expr2.modify_box(&f),
+                                Self::modify_vec(expr1, modifier),
+                                Self::modify_vec(expr2, modifier),
                             ))
                         }
-                        super::Relation::Union(expr1, expr2) => Expression::Relation(
-                            super::Relation::Union(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
+                        super::Relation::Union(exprs1, exprs2) => {
+                            Expression::Relation(super::Relation::Union(
+                                Self::modify_vec(exprs1, modifier),
+                                Self::modify_vec(exprs2, modifier),
+                            ))
+                        }
                     },
-                    Expression::List(expr) => match expr {
-                        super::List::Concat(_) => todo!(),
-                    },
+                    Expression::List(expr) => Expression::List(match expr {
+                        super::List::Concat(exprs) => {
+                            super::List::Concat(Self::modify_vec(exprs, modifier))
+                        }
+                    }),
                     Expression::Concurrency(conc, expr) => {
-                        Expression::Concurrency(conc, expr.modify_box(&f))
+                        Expression::Concurrency(conc, expr.modify_box(modifier))
                     }
                     Expression::Math(expr) => match expr {
                         super::Math::Mod(expr1, expr2) => Expression::Math(super::Math::Mod(
-                            expr1.modify_box(&f),
-                            expr2.modify_box(&f),
+                            expr1.modify_box(modifier),
+                            expr2.modify_box(modifier),
                         )),
                         super::Math::Add(expr1, expr2) => Expression::Math(super::Math::Add(
-                            expr1.modify_box(&f),
-                            expr2.modify_box(&f),
+                            expr1.modify_box(modifier),
+                            expr2.modify_box(modifier),
                         )),
                         super::Math::Dec(expr) => {
-                            Expression::Math(super::Math::Dec(expr.modify_box(&f)))
+                            Expression::Math(super::Math::Dec(expr.modify_box(modifier)))
                         }
                         super::Math::Divide(expr1, expr2) => Expression::Math(super::Math::Divide(
-                            expr1.modify_box(&f),
-                            expr2.modify_box(&f),
+                            expr1.modify_box(modifier),
+                            expr2.modify_box(modifier),
                         )),
                         super::Math::Inc(expr) => {
-                            Expression::Math(super::Math::Inc(expr.modify_box(&f)))
+                            Expression::Math(super::Math::Inc(expr.modify_box(modifier)))
                         }
-                        super::Math::Multiply(expr1, expr2) => Expression::Math(
-                            super::Math::Multiply(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
+                        super::Math::Multiply(expr1, expr2) => {
+                            Expression::Math(super::Math::Multiply(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
+                        }
                         super::Math::Negate(expr) => {
-                            Expression::Math(super::Math::Negate(expr.modify_box(&f)))
+                            Expression::Math(super::Math::Negate(expr.modify_box(modifier)))
                         }
-                        super::Math::Product(expr) => Expression::Math(super::Math::Product(
-                            expr.into_iter().map(|expr| expr.modify(&f)).collect(),
+                        super::Math::Product(exprs) => Expression::Math(super::Math::Product(
+                            Self::modify_vec(exprs, modifier),
                         )),
-                        super::Math::Subtract(expr1, expr2) => Expression::Math(
-                            super::Math::Subtract(expr1.modify_box(&f), expr2.modify_box(&f)),
-                        ),
-                        super::Math::Sum(expr) => {
-                            expr.into_iter().map(|expr| expr.modify(&f)).collect()
+                        super::Math::Subtract(expr1, expr2) => {
+                            Expression::Math(super::Math::Subtract(
+                                expr1.modify_box(modifier),
+                                expr2.modify_box(modifier),
+                            ))
+                        }
+                        super::Math::Sum(exprs) => {
+                            Expression::Math(super::Math::Sum(Self::modify_vec(exprs, modifier)))
                         }
                     },
-                    Expression::Concurrency(conc, expr) => {
-                        Expression::Concurrency(conc, expr.modify_box(&f))
-                    }
                 }
             }
         }
