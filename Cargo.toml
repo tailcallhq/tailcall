@@ -23,6 +23,7 @@ rustls = { version = "0.22.2", optional = true }
 rustls-pemfile = { version = "1.0.4", optional = true }
 rustls-pki-types = "1.2.0"
 inquire = { version = "0.6.2", optional = true }
+google-analyticsreporting4 = { version = "5.0.3", optional = true}
 
 # dependencies safe for wasm:
 
