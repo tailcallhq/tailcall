@@ -2,10 +2,7 @@ use crate::config::Link;
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError, Validator};
 
-// Wrap the Vec<Link> is necessary to implement TryFrom
-#[allow(dead_code)]
-pub struct Links(Vec<Link>);
-
+pub struct Links {}
 impl TryFrom<Vec<Link>> for Links {
     type Error = ValidationError<String>;
 
@@ -32,6 +29,6 @@ impl TryFrom<Vec<Link>> for Links {
                 .trace("schema")
         })
         .to_result()
-        .map(Links)
+        .map(|_| Links {})
     }
 }
