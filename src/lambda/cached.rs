@@ -1,12 +1,12 @@
 use core::future::Future;
 use std::num::NonZeroU64;
 use std::pin::Pin;
+use std::rc::Rc;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike, IO};
-use crate::lambda::modify::ExpressionModifier;
 
 pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> u64;
@@ -18,23 +18,6 @@ pub struct Cached {
     pub expr: IO,
 }
 
-#[derive(Clone)]
-pub struct CacheModifier {
-    max_age: NonZeroU64,
-}
-
-impl ExpressionModifier for CacheModifier {
-    fn modify(&self, expr: &Expression) -> Option<Expression> {
-        match expr {
-            Expression::IO(io) => Some(Expression::Cached(Cached {
-                max_age: self.max_age,
-                expr: io.clone(),
-            })),
-            _ => None,
-        }
-    }
-}
-
 impl Cached {
     ///
     /// Wraps an expression with the cache primitive.
@@ -42,7 +25,13 @@ impl Cached {
     /// Then wraps each IO node with the cache primitive.
     ///
     pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
-        expr.modify(&CacheModifier { max_age })
+        expr.modify(Rc::new(move |expr| match expr {
+            Expression::IO(io) => Some(Expression::Cached(Cached {
+                max_age: max_age,
+                expr: io.clone(),
+            })),
+            _ => None,
+        }))
     }
 }
 

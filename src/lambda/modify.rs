@@ -1,32 +1,27 @@
+use std::rc::Rc;
+
 use super::Expression;
 
-pub trait ExpressionModifier {
-    fn modify(&self, expr: &Expression) -> Option<Expression>;
-}
-
 impl Expression {
-    fn modify_vec<M>(exprs: Vec<Self>, modifier: &M) -> Vec<Expression>
-    where
-        M: ExpressionModifier,
-    {
+    fn modify_vec(
+        exprs: Vec<Self>,
+        modifier: Rc<dyn Fn(&Expression) -> Option<Expression>>,
+    ) -> Vec<Expression> {
         exprs
             .into_iter()
-            .map(|expr| expr.modify(modifier))
+            .map(|expr| expr.modify(modifier.clone()))
             .collect()
     }
 
-    fn modify_box<M>(self, modifier: &M) -> Box<Expression>
-    where
-        M: ExpressionModifier,
-    {
+    fn modify_box(
+        self,
+        modifier: Rc<dyn Fn(&Expression) -> Option<Expression>>,
+    ) -> Box<Expression> {
         Box::new(self.modify(modifier))
     }
 
-    pub fn modify<M>(self, modifier: &M) -> Expression
-    where
-        M: ExpressionModifier,
-    {
-        let modified = modifier.modify(&self);
+    pub fn modify(self, modifier: Rc<dyn Fn(&Expression) -> Option<Expression>>) -> Expression {
+        let modified = modifier(&self);
         match modified {
             Some(expr) => expr,
             None => {
@@ -34,9 +29,10 @@ impl Expression {
                 match expr {
                     Expression::Context(_) => expr,
                     Expression::Literal(_) => expr,
-                    Expression::EqualTo(expr1, expr2) => {
-                        Expression::EqualTo(expr1.modify_box(modifier), expr2.modify_box(modifier))
-                    }
+                    Expression::EqualTo(expr1, expr2) => Expression::EqualTo(
+                        expr1.modify_box(modifier.clone()),
+                        expr2.modify_box(modifier),
+                    ),
                     Expression::IO(_) => expr,
                     Expression::Cached(_) => expr,
                     Expression::Input(expr, path) => {
@@ -45,8 +41,8 @@ impl Expression {
                     Expression::Logic(expr) => match expr {
                         super::Logic::If { cond, then, els } => {
                             Expression::Logic(super::Logic::If {
-                                cond: cond.modify_box(modifier),
-                                then: then.modify_box(modifier),
+                                cond: cond.modify_box(modifier.clone()),
+                                then: then.modify_box(modifier.clone()),
                                 els: els.modify_box(modifier),
                             })
                         }
@@ -60,13 +56,16 @@ impl Expression {
                             branches
                                 .into_iter()
                                 .map(|(cond, expr)| {
-                                    (cond.modify_box(modifier), expr.modify_box(modifier))
+                                    (
+                                        cond.modify_box(modifier.clone()),
+                                        expr.modify_box(modifier.clone()),
+                                    )
                                 })
                                 .collect(),
                         )),
                         super::Logic::DefaultTo(expr1, expr2) => {
                             Expression::Logic(super::Logic::DefaultTo(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
@@ -83,37 +82,37 @@ impl Expression {
                         ),
                         super::Relation::Difference(expr1, expr2) => {
                             Expression::Relation(super::Relation::Difference(
-                                Self::modify_vec(expr1, modifier),
+                                Self::modify_vec(expr1, modifier.clone()),
                                 Self::modify_vec(expr2, modifier),
                             ))
                         }
                         super::Relation::Equals(expr1, expr2) => {
                             Expression::Relation(super::Relation::Equals(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
                         super::Relation::Gt(expr1, expr2) => {
                             Expression::Relation(super::Relation::Gt(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
                         super::Relation::Gte(expr1, expr2) => {
                             Expression::Relation(super::Relation::Gte(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
                         super::Relation::Lt(expr1, expr2) => {
                             Expression::Relation(super::Relation::Lt(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
                         super::Relation::Lte(expr1, expr2) => {
                             Expression::Relation(super::Relation::Lte(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
@@ -125,14 +124,14 @@ impl Expression {
                         )),
                         super::Relation::PathEq(expr1, path, expr2) => {
                             Expression::Relation(super::Relation::PathEq(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 path,
                                 expr2.modify_box(modifier),
                             ))
                         }
                         super::Relation::PropEq(expr1, path, expr2) => {
                             Expression::Relation(super::Relation::PropEq(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 path,
                                 expr2.modify_box(modifier),
                             ))
@@ -142,13 +141,13 @@ impl Expression {
                         ),
                         super::Relation::SymmetricDifference(expr1, expr2) => {
                             Expression::Relation(super::Relation::SymmetricDifference(
-                                Self::modify_vec(expr1, modifier),
+                                Self::modify_vec(expr1, modifier.clone()),
                                 Self::modify_vec(expr2, modifier),
                             ))
                         }
                         super::Relation::Union(exprs1, exprs2) => {
                             Expression::Relation(super::Relation::Union(
-                                Self::modify_vec(exprs1, modifier),
+                                Self::modify_vec(exprs1, modifier.clone()),
                                 Self::modify_vec(exprs2, modifier),
                             ))
                         }
@@ -163,18 +162,18 @@ impl Expression {
                     }
                     Expression::Math(expr) => match expr {
                         super::Math::Mod(expr1, expr2) => Expression::Math(super::Math::Mod(
-                            expr1.modify_box(modifier),
+                            expr1.modify_box(modifier.clone()),
                             expr2.modify_box(modifier),
                         )),
                         super::Math::Add(expr1, expr2) => Expression::Math(super::Math::Add(
-                            expr1.modify_box(modifier),
+                            expr1.modify_box(modifier.clone()),
                             expr2.modify_box(modifier),
                         )),
                         super::Math::Dec(expr) => {
                             Expression::Math(super::Math::Dec(expr.modify_box(modifier)))
                         }
                         super::Math::Divide(expr1, expr2) => Expression::Math(super::Math::Divide(
-                            expr1.modify_box(modifier),
+                            expr1.modify_box(modifier.clone()),
                             expr2.modify_box(modifier),
                         )),
                         super::Math::Inc(expr) => {
@@ -182,7 +181,7 @@ impl Expression {
                         }
                         super::Math::Multiply(expr1, expr2) => {
                             Expression::Math(super::Math::Multiply(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
@@ -194,7 +193,7 @@ impl Expression {
                         )),
                         super::Math::Subtract(expr1, expr2) => {
                             Expression::Math(super::Math::Subtract(
-                                expr1.modify_box(modifier),
+                                expr1.modify_box(modifier.clone()),
                                 expr2.modify_box(modifier),
                             ))
                         }
