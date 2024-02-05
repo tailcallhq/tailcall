@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "locations": [
+          {
+            "column": 9,
+            "line": 1
+          }
+        ],
+        "message": "ExprEvalError: \"median can not be zero\""
+      }
+    ]
+  }
+}

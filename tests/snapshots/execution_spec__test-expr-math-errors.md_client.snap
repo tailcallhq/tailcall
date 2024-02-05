@@ -1,0 +1,12 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Query {
+  median_err_negative: Int
+  median_err_zero: Int
+}
+
+schema {
+  query: Query
+}
