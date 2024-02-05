@@ -2,14 +2,9 @@ use std::cell::{OnceCell, RefCell};
 use std::thread;
 
 use deno_core::{v8, FastString, JsRuntime};
-use hyper::body::Bytes;
-use hyper::header::{HeaderName, HeaderValue};
-use reqwest::Request;
-use serde::{Deserialize, Serialize};
 
 use super::deno_channel::{Message, MessageContent};
-use crate::http::Response;
-use crate::{blueprint, is_default, WorkerIO};
+use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime {
     value: v8::Global<v8::Value>,
@@ -54,7 +49,6 @@ impl WorkerIO<Message, Message> for Runtime {
                 .get_or_init(|| LocalRuntime::try_new(script).unwrap());
             on_event(event)
         });
-        log::debug!("command: {:?}", command);
         command
     }
 }
@@ -67,9 +61,10 @@ fn on_event(message: Message) -> anyhow::Result<Message> {
         let local_value = v8::Local::new(scope, value);
         let closure: v8::Local<v8::Function> = local_value.try_into()?;
         let input = serde_v8::to_v8(scope, message)?;
+        log::debug!("js input: {:?}", input);
         let null_ctx = v8::null(scope);
-        let output = closure.call(scope, null_ctx.into(), &[input]);
 
+        let output = closure.call(scope, null_ctx.into(), &[input]);
         match output {
             None => Ok(Message { message: MessageContent::Empty, id: None }),
             Some(output) => Ok(serde_v8::from_v8(scope, output)?),
