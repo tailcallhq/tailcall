@@ -292,6 +292,10 @@ directive @server(
   """
   script: Script
   """
+  `showcase` enables the /showcase/graphql endpoint.
+  """
+  showcase: Boolean
+  """
   This configuration defines local variables for server operations. Useful for storing 
   constant configurations, secrets, or shared information.
   """

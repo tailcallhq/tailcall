@@ -332,8 +332,8 @@ async fn test_execution() -> std::io::Result<()> {
                     .to_result()
                     .unwrap();
                 let runtime = init_runtime(&blueprint.upstream, None);
-                let server_ctx = AppContext::new(blueprint, runtime);
-                let schema = &server_ctx.schema;
+                let app_ctx = AppContext::new(blueprint, runtime);
+                let schema = &app_ctx.schema;
 
                 for q in spec.test_queries {
                     let mut headers = HeaderMap::new();
@@ -341,7 +341,7 @@ async fn test_execution() -> std::io::Result<()> {
                         HeaderName::from_static("authorization"),
                         HeaderValue::from_static("1"),
                     );
-                    let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
+                    let req_ctx = Arc::new(RequestContext::from(&app_ctx).req_headers(headers));
                     let req = Request::from(q.query.as_str()).data(req_ctx.clone());
                     let res = schema.execute(req).await;
                     let json = serde_json::to_string(&res).unwrap();

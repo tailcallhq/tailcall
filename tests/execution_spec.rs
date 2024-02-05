@@ -58,6 +58,9 @@ struct APIResponse {
     headers: BTreeMap<String, String>,
     #[serde(default)]
     body: serde_json::Value,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_body: Option<String>,
 }
 
 pub struct Env {
@@ -544,15 +547,20 @@ impl HttpIO for MockHttpClient {
         }
 
         // Special Handling for GRPC
-        if is_grpc {
+        if let Some(body) = mock_response.0.text_body {
+            // Return plaintext body if specified
+            let body = string_to_bytes(&body);
+            response.body = Bytes::from_iter(body);
+        } else if is_grpc {
+            // Special Handling for GRPC
             let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
             response.body = Bytes::from_iter(body);
-            Ok(response)
         } else {
             let body = serde_json::to_vec(&mock_response.0.body)?;
             response.body = Bytes::from_iter(body);
-            Ok(response)
         }
+
+        Ok(response)
     }
 }
 
@@ -743,6 +751,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                     &hyper::body::to_bytes(response.into_body()).await.unwrap(),
                 )
                 .unwrap(),
+                text_body: None,
             };
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);

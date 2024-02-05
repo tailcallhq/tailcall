@@ -3539,6 +3539,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_path_to_error",
+ "serde_qs",
  "serde_urlencoded",
  "serde_yaml",
  "stripmargin",
