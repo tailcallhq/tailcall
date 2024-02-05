@@ -4,7 +4,7 @@ use std::thread;
 
 use mini_v8::{MiniV8, Script};
 
-use super::channel::Message;
+use super::channel_mv8::Message;
 use crate::blueprint::{self};
 use crate::WorkerIO;
 

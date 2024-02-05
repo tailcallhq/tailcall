@@ -1,13 +1,13 @@
 mod http_filter;
-mod runtime;
+mod runtime_mv8;
 mod serde_mv8;
 mod shim;
 pub use std::sync::Arc;
-mod channel;
+mod channel_mv8;
 mod deno_runtime;
 
 pub use http_filter::HttpFilter;
-pub use runtime::Runtime;
+pub use runtime_mv8::Runtime;
 
 use crate::{blueprint, HttpIO};
 
