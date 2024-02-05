@@ -6,8 +6,7 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use crate::blueprint::Server;
-use crate::config::Upstream;
+use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc::data_loader::GrpcDataLoader;
@@ -94,26 +93,25 @@ impl RequestContext {
     }
 
     pub fn is_batching_enabled(&self) -> bool {
-        self.upstream.batch.is_some()
-            && (self.upstream.get_delay() >= 1 || self.upstream.get_max_size() >= 1)
+        self.upstream.is_batching_enabled()
     }
 }
 
 impl From<&AppContext> for RequestContext {
-    fn from(server_ctx: &AppContext) -> Self {
+    fn from(app_ctx: &AppContext) -> Self {
         Self {
-            h_client: server_ctx.runtime.http.clone(),
-            h2_client: server_ctx.runtime.http2_only.clone(),
-            server: server_ctx.blueprint.server.clone(),
-            upstream: server_ctx.blueprint.upstream.clone(),
+            h_client: app_ctx.runtime.http.clone(),
+            h2_client: app_ctx.runtime.http2_only.clone(),
+            server: app_ctx.blueprint.server.clone(),
+            upstream: app_ctx.blueprint.upstream.clone(),
             req_headers: HeaderMap::new(),
-            http_data_loaders: server_ctx.http_data_loaders.clone(),
-            gql_data_loaders: server_ctx.gql_data_loaders.clone(),
-            cache: server_ctx.runtime.cache.clone(),
-            grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
+            http_data_loaders: app_ctx.http_data_loaders.clone(),
+            gql_data_loaders: app_ctx.gql_data_loaders.clone(),
+            cache: app_ctx.runtime.cache.clone(),
+            grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
-            env_vars: server_ctx.runtime.env.clone(),
+            env_vars: app_ctx.runtime.env.clone(),
         }
     }
 }
@@ -125,7 +123,7 @@ mod test {
     use cache_control::Cachability;
     use hyper::HeaderMap;
 
-    use crate::blueprint::Server;
+    use crate::blueprint::{Server, Upstream};
     use crate::cache::InMemoryCache;
     use crate::cli::{init_env, init_http, init_http2_only};
     use crate::config::{self, Batch};
@@ -136,6 +134,7 @@ mod test {
             let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
             //TODO: default is used only in tests. Drop default and move it to test.
             let server = Server::try_from(server).unwrap();
+            let upstream = Upstream::try_from(upstream).unwrap();
             let h_client = init_http(&upstream, None);
             let h2_client = init_http2_only(&upstream.clone(), None);
             RequestContext {
@@ -196,10 +195,9 @@ mod test {
     fn test_is_batching_enabled_default() {
         // create ctx with default batch
         let config = config::Config::default();
-        let mut upstream = config.upstream.clone();
-        upstream.batch = Some(Batch::default());
         let server = Server::try_from(config.server.clone()).unwrap();
-
+        let mut upstream = Upstream::try_from(config.upstream.clone()).unwrap();
+        upstream.batch = Some(Batch::default());
         let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 
         assert!(req_ctx.is_batching_enabled());

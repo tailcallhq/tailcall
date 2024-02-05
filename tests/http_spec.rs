@@ -17,10 +17,10 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::Blueprint;
+use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::{init_hook_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigSet, Source, Upstream};
+use tailcall::config::{Config, ConfigSet, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::target_runtime::TargetRuntime;
 use tailcall::{EnvIO, HttpIO};
@@ -57,6 +57,8 @@ struct APIResponse {
     headers: BTreeMap<String, String>,
     #[serde(default)]
     body: serde_json::Value,
+    #[serde(default)]
+    text_body: Option<String>,
 }
 
 pub struct Env {
@@ -136,9 +138,14 @@ struct HttpSpec {
 impl HttpSpec {
     fn cargo_read(path: &str) -> anyhow::Result<Vec<HttpSpec>> {
         let dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path);
+
+        if !dir_path.exists() {
+            return Ok(Vec::with_capacity(0));
+        }
+
         let mut files = Vec::new();
 
-        for entry in fs::read_dir(&dir_path)? {
+        for entry in fs::read_dir(dir_path)? {
             let path = entry?.path();
             if path.is_dir() {
                 continue;
@@ -153,11 +160,6 @@ impl HttpSpec {
             }
         }
 
-        assert!(
-            !files.is_empty(),
-            "No files found in {}",
-            dir_path.to_str().unwrap_or_default()
-        );
         Ok(files)
     }
 
@@ -325,16 +327,20 @@ impl HttpIO for MockHttpClient {
             response.headers.insert(header_name, header_value);
         }
 
-        // Special Handling for GRPC
-        if is_grpc {
+        if let Some(body) = mock_response.0.text_body {
+            // Return plaintext body if specified
+            let body = string_to_bytes(&body);
+            response.body = Bytes::from_iter(body);
+        } else if is_grpc {
+            // Special Handling for GRPC
             let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
             response.body = Bytes::from_iter(body);
-            Ok(response)
         } else {
             let body = serde_json::to_vec(&mock_response.0.body)?;
             response.body = Bytes::from_iter(body);
-            Ok(response)
         }
+
+        Ok(response)
     }
 }
 

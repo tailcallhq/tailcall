@@ -1,0 +1,19 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Bar {
+  id: Int!
+}
+
+input Dummy {
+  list: [Int]
+}
+
+type Query {
+  bar(dummy: Dummy, flag: Boolean!, id: Int!): Bar
+}
+
+schema {
+  query: Query
+}

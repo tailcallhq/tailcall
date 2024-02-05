@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "type is used in input and output",
+    "trace": [
+      "Post"
+    ],
+    "description": null
+  },
+  {
+    "message": "type is used in input and output",
+    "trace": [
+      "User"
+    ],
+    "description": null
+  }
+]

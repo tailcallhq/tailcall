@@ -1,0 +1,42 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Parsing failed because of invalid HTTP header name",
+    "trace": [
+      "schema",
+      "@server",
+      "responseHeaders"
+    ],
+    "description": null
+  },
+  {
+    "message": "Parsing failed because of failed to parse header value",
+    "trace": [
+      "schema",
+      "@server",
+      "responseHeaders"
+    ],
+    "description": null
+  },
+  {
+    "message": "Parsing failed because of invalid HTTP header name",
+    "trace": [
+      "schema",
+      "@server",
+      "responseHeaders"
+    ],
+    "description": null
+  },
+  {
+    "message": "Parsing failed because of failed to parse header value",
+    "trace": [
+      "schema",
+      "@server",
+      "responseHeaders"
+    ],
+    "description": null
+  }
+]

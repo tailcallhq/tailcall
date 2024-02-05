@@ -1,0 +1,18 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+type Query {
+  u: U
+}
+
+type U {
+  b: [String]
+  c: String
+  d: String
+  e: String
+}
+
+schema {
+  query: Query
+}

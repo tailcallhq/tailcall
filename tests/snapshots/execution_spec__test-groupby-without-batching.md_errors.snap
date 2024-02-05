@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "GroupBy can only be applied if batching is enabled",
+    "trace": [
+      "Query",
+      "user",
+      "@http"
+    ],
+    "description": null
+  }
+]
