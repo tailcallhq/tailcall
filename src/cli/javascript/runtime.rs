@@ -45,8 +45,9 @@ impl WorkerIO<Message, Message> for Runtime {
         log::debug!("event: {:?}", event);
         let command = LOCAL_RUNTIME.with(move |cell| {
             let script = self.script.clone();
+            // TODO: use `get_or_try_init`. Currently it is an unstable feature
             cell.borrow()
-                .get_or_init(|| LocalRuntime::try_new(script).unwrap());
+                .get_or_init(|| LocalRuntime::try_new(script).expect("JS runtime not initialized"));
             on_event(event)
         });
         command
@@ -55,7 +56,9 @@ impl WorkerIO<Message, Message> for Runtime {
 
 fn on_event(message: Message) -> anyhow::Result<Message> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let local_runtime = cell.get_mut().unwrap();
+        let local_runtime = cell
+            .get_mut()
+            .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
         let scope = &mut local_runtime.js_runtime.handle_scope();
         let value = &local_runtime.value;
         let local_value = v8::Local::new(scope, value);
