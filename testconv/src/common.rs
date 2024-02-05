@@ -36,7 +36,11 @@ pub struct APIResponse {
     #[serde(skip_serializing_if = "IndexMap::is_empty")]
     pub headers: IndexMap<String, String>,
     #[serde(default)]
+    #[serde(skip_serializing_if = "serde_json::Value::is_null")]
     pub body: serde_json::Value,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_body: Option<String>,
 }
 
 fn default_status() -> u16 {
