@@ -20,7 +20,7 @@ pub enum MessageContent {
 }
 
 impl Message {
-    pub fn to_v8(self, v8: &mini_v8::MiniV8) -> mini_v8::Result<mini_v8::Value> {
+    pub fn to_mv8(self, v8: &mini_v8::MiniV8) -> mini_v8::Result<mini_v8::Value> {
         let v8 = v8.clone();
         match self.message {
             MessageContent::Request(request) => {
@@ -151,7 +151,7 @@ impl Message {
         }
     }
 
-    pub fn from_v8(value: mini_v8::Value) -> anyhow::Result<Self> {
+    pub fn from_mv8(value: mini_v8::Value) -> anyhow::Result<Self> {
         let wrapper = value
             .as_object()
             .ok_or(anyhow::anyhow!("expected an object"))?;

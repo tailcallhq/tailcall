@@ -79,12 +79,12 @@ fn on_event_impl(rtm: &LocalRuntime, event: Message) -> anyhow::Result<Message> 
         .ok_or(&anyhow::anyhow!("expected an 'onEvent' function"))
         .map_err(|e| anyhow::anyhow!(e.to_string()))?;
     let args = event
-        .to_v8(v8)
+        .to_mv8(v8)
         .map_err(|e| anyhow::anyhow!(e.to_string()))?;
     let command = on_event
         .call::<mini_v8::Values, mini_v8::Value>(mini_v8::Values::from_vec(vec![args]))
         .map_err(|e| anyhow::anyhow!("Function invocation failure: {}", e.to_string()))?;
-    let command = Message::from_v8(command)?;
+    let command = Message::from_mv8(command)?;
 
     // log::debug!("command: {:?}", command);
     Ok(command)
