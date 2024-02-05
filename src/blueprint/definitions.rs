@@ -325,8 +325,6 @@ fn update_resolver_from_path(
             None => resolver,
             Some(resolver) => Expression::Input(Box::new(resolver), context.path.to_owned()),
         };
-        // updated_base_field = updated_base_field
-        //     .resolver_or_default(resolver, |r| r.to_input_path(context.path.to_owned()));
         Valid::succeed(updated_base_field.resolver(Some(resolver)))
     })
 }
