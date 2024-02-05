@@ -187,38 +187,7 @@
           "description": "Branch based on a condition",
           "properties": {
             "if": {
-              "properties": {
-                "cond": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Condition to evaluate"
-                },
-                "else": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Expression to evaluate if the condition is false"
-                },
-                "then": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Expression to evaluate if the condition is true"
-                }
-              },
-              "required": [
-                "cond",
-                "else",
-                "then"
-              ],
-              "type": "object"
+              "$ref": "#/definitions/ExprIf"
             }
           },
           "required": [
@@ -876,6 +845,40 @@
           "type": "object"
         }
       ]
+    },
+    "ExprIf": {
+      "properties": {
+        "cond": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Condition to evaluate"
+        },
+        "else": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Expression to evaluate if the condition is false"
+        },
+        "then": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Expression to evaluate if the condition is true"
+        }
+      },
+      "required": [
+        "cond",
+        "else",
+        "then"
+      ],
+      "type": "object"
     },
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",

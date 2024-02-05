@@ -1,13 +1,17 @@
+mod gen_gql_schema;
+
 use std::env;
 use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
+use gen_gql_schema::update_gql;
+use schemars::schema::RootSchema;
 use serde_json::{json, Value};
 use tailcall::cli::init_file;
-use tailcall::config::Config;
+use tailcall::config;
 
-static JSON_SCHEMA_FILE: &'static str = "../generated/.tailcallrc.schema.json";
+static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
 #[tokio::main]
 async fn main() {
@@ -61,7 +65,7 @@ async fn mode_check() -> Result<()> {
 
 async fn mode_fix() -> Result<()> {
     update_json().await?;
-    // update_gql().await?;
+    update_gql()?;
     Ok(())
 }
 
@@ -84,7 +88,7 @@ fn get_file_path() -> PathBuf {
 }
 
 async fn get_updated_json() -> Result<Value> {
-    let schema = schemars::schema_for!(Config);
+    let schema: RootSchema = schemars::schema_for!(config::Config);
     let schema = json!(schema);
     Ok(schema)
 }

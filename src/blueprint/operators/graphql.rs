@@ -1,10 +1,10 @@
 use crate::blueprint::FieldDefinition;
-use crate::config::{self, Config, Field, GraphQLOperationType};
+use crate::config::{self, ConfigSet, Field, GraphQLOperationType};
 use crate::graphql::RequestTemplate;
 use crate::helpers;
 use crate::lambda::{Expression, Lambda};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::{Valid, ValidationError, Validator};
 
 pub fn compile_graphql(
     config: &config::Config,
@@ -40,8 +40,8 @@ pub fn compile_graphql(
 
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a Config, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&Config, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), b_field| {
             let Some(graphql) = &field.graphql else {
                 return Valid::succeed(b_field);
