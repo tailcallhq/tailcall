@@ -4,6 +4,7 @@ mod serde_v8;
 mod shim;
 pub use std::sync::Arc;
 mod channel;
+mod deno_runtime;
 
 pub use http_filter::HttpFilter;
 pub use runtime::Runtime;
