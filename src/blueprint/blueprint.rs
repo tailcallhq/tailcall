@@ -10,7 +10,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
-use crate::lambda::{Expression, Lambda};
+use crate::lambda::Expression;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -143,7 +143,7 @@ pub struct FieldDefinition {
     pub cache: Option<Cache>,
 }
 
-impl FieldDefinition {
+/*impl FieldDefinition {
     pub fn to_lambda(self) -> Option<Lambda<serde_json::Value>> {
         self.resolver.map(Lambda::new)
     }
@@ -159,7 +159,7 @@ impl FieldDefinition {
         };
         self
     }
-}
+}*/
 
 #[derive(Clone, Debug)]
 pub struct Directive {
