@@ -87,17 +87,18 @@ impl ConfigReader {
         }
 
         for config_link in links.iter() {
-            let source = if let Ok(data) = self.read_file(&config_link.src).await {
-                data
+            let path = if Path::new(&config_link.src).exists().await {
+                config_link.src.clone()
             } else {
-                let path = path.clone().unwrap_or_default();
-                let path = PathBuf::from(&path)
+                PathBuf::from(path.clone().unwrap_or_default())
                     .parent()
                     .unwrap_or(Path::new(""))
-                    .join(&config_link.src);
-
-                self.read_file(path.to_string_lossy()).await?
+                    .join(&config_link.src)
+                    .to_string_lossy()
+                    .to_string()
             };
+
+            let source = self.read_file(&path).await?;
 
             let content = source.content;
 
