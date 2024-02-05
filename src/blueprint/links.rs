@@ -2,7 +2,8 @@ use crate::config::Link;
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError, Validator};
 
-pub struct Links {}
+pub struct Links;
+
 impl TryFrom<Vec<Link>> for Links {
     type Error = ValidationError<String>;
 
@@ -28,7 +29,7 @@ impl TryFrom<Vec<Link>> for Links {
                 .trace(Link::trace_name().as_str())
                 .trace("schema")
         })
+        .map_to(Links)
         .to_result()
-        .map(|_| Links {})
     }
 }
