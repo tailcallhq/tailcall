@@ -9,7 +9,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
-use crate::lambda::{Expression, Lambda};
+use crate::lambda::{Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
@@ -314,17 +314,18 @@ fn update_resolver_from_path(
 
     process_path(context.clone()).and_then(|of_type| {
         let mut updated_base_field = base_field;
-        let resolver = Lambda::context_path(context.path.to_owned());
+        let resolver = Expression::Context(Context::Path(context.path.to_owned()));
         if has_index {
             updated_base_field.of_type =
                 Type::NamedType { name: of_type.name().to_string(), non_null: false }
         } else {
             updated_base_field.of_type = of_type;
         }
-
-        updated_base_field = updated_base_field
-            .resolver_or_default(resolver, |r| r.to_input_path(context.path.to_owned()));
-        Valid::succeed(updated_base_field)
+        let resolver = match updated_base_field.resolver.clone() {
+            None => resolver,
+            Some(resolver) => Expression::Input(Box::new(resolver), context.path.to_owned()),
+        };
+        Valid::succeed(updated_base_field.resolver(Some(resolver)))
     })
 }
 
