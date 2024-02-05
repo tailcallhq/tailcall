@@ -7,7 +7,8 @@ expression: errors
     "message": "Link src cannot be empty",
     "trace": [
       "schema",
-      "@link"
+      "@link",
+      "0"
     ],
     "description": null
   }

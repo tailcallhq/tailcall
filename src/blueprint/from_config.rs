@@ -3,8 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
-use crate::config::{Arg, Batch, Config, ConfigSet, Field, Link};
-use crate::directive::DirectiveCodec;
+use crate::config::{Arg, Batch, Config, ConfigSet, Field};
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
@@ -31,42 +30,15 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
             .map(|upstream| blueprint.upstream(upstream))
     });
 
-    let validate_links = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        let links: Vec<Link> = config_set.links.clone();
-
-        if links.iter().any(|link| link.src.is_empty()) {
-            return Valid::fail("Link src cannot be empty".to_string())
-                .trace(Link::trace_name().as_str())
-                .trace("schema");
-        }
-
-        Valid::from_iter(links.iter().enumerate(), |(pos, link)| {
-            let pos = pos.to_string();
-
-            if link.src.is_empty() {
-                return Valid::fail("Link src cannot be empty".to_string()).trace(&pos);
-            }
-
-            if let Some(id) = &link.id {
-                if links.iter().filter(|l| l.id.as_ref() == Some(id)).count() > 1 {
-                    Valid::fail(format!("Duplicated id: {}", id)).trace(&pos)
-                } else {
-                    Valid::succeed(())
-                }
-            } else {
-                Valid::succeed(())
-            }
-        })
-        .trace(Link::trace_name().as_str())
-        .trace("schema")
-        .map_to(blueprint)
+    let links = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
+        Valid::from(Links::try_from(config_set.links.clone())).map_to(blueprint)
     });
 
     server
         .and(schema)
         .and(definitions)
         .and(upstream)
-        .and(validate_links)
+        .and(links)
         .update(apply_batching)
         .update(compress)
 }
