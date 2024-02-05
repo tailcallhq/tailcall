@@ -1,7 +1,6 @@
 use core::future::Future;
 use std::num::NonZeroU64;
 use std::pin::Pin;
-use std::rc::Rc;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
@@ -25,10 +24,10 @@ impl Cache {
     /// Then wraps each IO node with the cache primitive.
     ///
     pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
-        expr.modify(Rc::new(move |expr| match expr {
+        expr.modify(move |expr| match expr {
             Expression::IO(io) => Some(Expression::Cache(Cache { max_age, expr: io.clone() })),
             _ => None,
-        }))
+        })
     }
 }
 

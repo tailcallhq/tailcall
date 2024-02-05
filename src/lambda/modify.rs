@@ -1,21 +1,26 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::Expression;
-type Modifier = Rc<dyn Fn(&Expression) -> Option<Expression>>;
+use super::{Cache, Expression};
+type Modifier = Rc<RefCell<dyn FnMut(&Expression) -> Option<Expression>>>;
 impl Expression {
+    pub fn modify(self, f: impl FnMut(&Expression) -> Option<Expression> + 'static) -> Expression {
+        self.modify_inner(Rc::new(RefCell::new(f)))
+    }
+
     fn modify_vec(exprs: Vec<Self>, modifier: Modifier) -> Vec<Expression> {
         exprs
             .into_iter()
-            .map(|expr| expr.modify(modifier.clone()))
+            .map(|expr| expr.modify_inner(modifier.clone()))
             .collect()
     }
 
     fn modify_box(self, modifier: Modifier) -> Box<Expression> {
-        Box::new(self.modify(modifier))
+        Box::new(self.modify_inner(modifier))
     }
 
-    pub fn modify(self, modifier: Modifier) -> Expression {
-        let modified = modifier(&self);
+    fn modify_inner(self, modifier: Modifier) -> Expression {
+        let modified = modifier.borrow_mut()(&self);
         match modified {
             Some(expr) => expr,
             None => {
@@ -28,7 +33,7 @@ impl Expression {
                         expr2.modify_box(modifier),
                     ),
                     Expression::IO(_) => expr,
-                    Expression::Cache(_) => expr,
+                    Expression::Cache(Cache { expr, .. }) => Expression::IO(expr).modify_inner(modifier.clone()),
                     Expression::Input(expr, path) => {
                         Expression::Input(expr.modify_box(modifier), path)
                     }

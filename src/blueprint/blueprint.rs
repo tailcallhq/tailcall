@@ -153,7 +153,7 @@ impl FieldDefinition {
     ///
     /// Transforms the current expression if it exists on the provided field.
     ///
-    pub fn map_expr<F: Fn(Expression) -> Expression>(&mut self, wrapper: F) {
+    pub fn map_expr<F: FnMut(Expression) -> Expression>(&mut self, mut wrapper: F) {
         if let Some(resolver) = self.resolver.take() {
             self.resolver = Some(wrapper(resolver))
         }
