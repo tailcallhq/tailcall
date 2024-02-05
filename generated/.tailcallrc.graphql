@@ -112,7 +112,8 @@ directive @grpc(
   """
   method: String!
   """
-  The id of the protobuf included via @link directive.
+  The id of the protobuf included via @link directive. If the protobuf was not included 
+  via @link, an error will be thrown.
   """
   protoId: String!
   """
@@ -189,8 +190,9 @@ directive @js(
 ) on FIELD_DEFINITION
 
 """
-The @link directive allows you to import external resources, such as configuration, 
-a .proto file, a plain text file, or a GraphQL schema.
+The @link directive allows you to import external resources, such as configuration 
+– which will be merged into the config importing it –, or a .proto file – which
+ will be later used by `@grpc` directive –.
 """
 directive @link(
   """
@@ -202,7 +204,7 @@ directive @link(
   """
   src: String!
   """
-  The type of the link. It can be `Config`, `GraphQL`, `Protobuf`, or `Data`.
+  The type of the link. It can be `Config`, or `Protobuf`.
   """
   type: LinkType
 ) repeatable  on SCHEMA
@@ -544,7 +546,8 @@ input Grpc {
   """
   method: String!
   """
-  The id of the protobuf included via @link directive.
+  The id of the protobuf included via @link directive. If the protobuf was not included 
+  via @link, an error will be thrown.
   """
   protoId: String!
   """

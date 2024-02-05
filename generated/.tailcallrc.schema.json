@@ -1065,7 +1065,7 @@
           "type": "string"
         },
         "protoId": {
-          "description": "The id of the protobuf included via @link directive.",
+          "description": "The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.",
           "type": "string"
         },
         "service": {
@@ -1193,7 +1193,7 @@
       "type": "object"
     },
     "Link": {
-      "description": "The @link directive allows you to import external resources, such as configuration, a .proto file, a plain text file, or a GraphQL schema.",
+      "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
       "properties": {
         "id": {
           "description": "The id of the link. It is used to reference the link in the schema.",
@@ -1212,7 +1212,7 @@
               "$ref": "#/definitions/LinkType"
             }
           ],
-          "description": "The type of the link. It can be `Config`, `GraphQL`, `Protobuf`, or `Data`."
+          "description": "The type of the link. It can be `Config`, or `Protobuf`."
         }
       },
       "type": "object"

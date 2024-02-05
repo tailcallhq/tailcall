@@ -596,7 +596,7 @@ pub struct Grpc {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
-    /// The id of the protobuf included via @link directive.
+    /// The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.
     pub proto_id: String,
 }
 

@@ -20,11 +20,12 @@ impl Display for LinkType {
     }
 }
 
-/// The @link directive allows you to import external resources, such as configuration, a .proto file, a plain text file, or a GraphQL schema.
+/// The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –,
+/// or a .proto file – which will be later used by `@grpc` directive –.
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone, schemars::JsonSchema)]
 pub struct Link {
     ///
-    /// The type of the link. It can be `Config`, `GraphQL`, `Protobuf`, or `Data`.
+    /// The type of the link. It can be `Config`, or `Protobuf`.
     ///
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,
