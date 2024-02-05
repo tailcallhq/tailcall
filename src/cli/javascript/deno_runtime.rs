@@ -1,20 +1,15 @@
-use std::{
-    cell::{OnceCell, RefCell},
-    collections::BTreeMap,
-    thread,
-};
+use std::cell::{OnceCell, RefCell};
+use std::thread;
 
 use deno_core::{v8, FastString, JsRuntime};
-use hyper::{
-    body::Bytes,
-    header::{HeaderName, HeaderValue},
-};
+use hyper::body::Bytes;
+use hyper::header::{HeaderName, HeaderValue};
 use reqwest::Request;
 use serde::{Deserialize, Serialize};
 
-use crate::{blueprint, http::Response, is_default, WorkerIO};
-
 use super::deno_channel::{Message, MessageContent};
+use crate::http::Response;
+use crate::{blueprint, is_default, WorkerIO};
 
 struct LocalRuntime {
     value: v8::Global<v8::Value>,

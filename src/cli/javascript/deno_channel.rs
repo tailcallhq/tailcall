@@ -1,13 +1,12 @@
 use std::collections::BTreeMap;
 
-use hyper::{
-    body::Bytes,
-    header::{HeaderName, HeaderValue},
-};
+use hyper::body::Bytes;
+use hyper::header::{HeaderName, HeaderValue};
 use reqwest::Request;
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Response, is_default};
+use crate::http::Response;
+use crate::is_default;
 
 #[derive(Serialize, Deserialize)]
 pub struct Message {
@@ -52,8 +51,10 @@ impl TryFrom<JsRequest> for reqwest::Request {
         );
         let headers = create_header_map(req.headers)?;
         request.headers_mut().extend(headers);
-        let body = serde_json::to_string(&req.body)?;
-        let _ = request.body_mut().insert(reqwest::Body::from(body));
+        if let Some(bytes) = req.body {
+            let _ = request.body_mut().insert(reqwest::Body::from(bytes));
+        }
+
         Ok(request)
     }
 }
@@ -74,10 +75,11 @@ impl TryFrom<reqwest::Request> for JsRequest {
                 )
             })
             .collect::<BTreeMap<String, String>>();
-        let body = req
-            .body()
-            .and_then(|body| body.as_bytes())
-            .and_then(|body| serde_json::from_slice(body).ok());
+        let body = req.body().map(|body| {
+            let bytes = body.as_bytes().unwrap_or_default();
+            Bytes::from_iter(bytes.to_vec())
+        });
+
         Ok(JsRequest { url, method, headers, body })
     }
 }
