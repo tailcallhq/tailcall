@@ -3,7 +3,7 @@ use crate::config::group_by::GroupBy;
 use crate::config::Field;
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
-use crate::lambda::{Expression, Lambda, IO};
+use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
@@ -65,7 +65,7 @@ pub fn compile_http(
                     dl_id: None,
                 })
             } else {
-                Lambda::from_request_template(req_template).expression
+                Expression::IO(IO::Http { req_template, group_by: None, dl_id: None })
             }
         })
 }
