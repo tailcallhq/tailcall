@@ -344,7 +344,7 @@ pub fn update_cache_resolvers<'a>(
     TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_config, field, _, _name), mut b_field| {
             if let Some(config::Cache { max_age }) = field.cache.as_ref() {
-                b_field.map_expr(|expression| Cached::wrap_ios(*max_age, expression))
+                b_field.map_expr(|expression| Cached::wrap(*max_age, expression))
             }
 
             Valid::succeed(b_field)

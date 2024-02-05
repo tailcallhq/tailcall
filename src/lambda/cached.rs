@@ -24,29 +24,33 @@ impl Cached {
     fn wrap_vec(max_age: NonZeroU64, exprs: Vec<Expression>) -> Vec<Expression> {
         exprs
             .into_iter()
-            .map(|expr| Cached::wrap_ios(max_age, expr))
+            .map(|expr| Cached::wrap(max_age, expr))
             .collect()
     }
 
-    pub fn wrap_ios(max_age: NonZeroU64, expr: Expression) -> Expression {
-        let box_cache_wrap = |max_age, expr| Box::new(Cached::wrap_ios(max_age, expr));
-        // Expression::IO(io) => Expression::Cached(Cached { max_age, expr: io }),
+    ///
+    /// Wraps an expression with the cache primitive.
+    /// Performance DFS on the cache on the expression and identifies all the IO nodes.
+    /// Then wraps each IO node with the cache primitive.
+    ///
+    pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
+        let wrap = |max_age, expr| Box::new(Cached::wrap(max_age, expr));
         match expr {
             expr @ (Expression::Context(_) | Expression::Literal(_) | Expression::Cached(_)) => {
                 expr
             }
             Expression::EqualTo(lhs, rhs) => {
-                Expression::EqualTo(box_cache_wrap(max_age, *lhs), box_cache_wrap(max_age, *rhs))
+                Expression::EqualTo(wrap(max_age, *lhs), wrap(max_age, *rhs))
             }
             Expression::IO(io) => Expression::Cached(Cached { max_age, expr: io }),
             Expression::Input(expr, path) => {
-                Expression::Input(box_cache_wrap(max_age, *expr), path)
+                Expression::Input(wrap(max_age, *expr), path)
             }
             Expression::Logic(logic) => Expression::Logic(match logic {
                 Logic::If { cond, then, els } => Logic::If {
-                    cond: box_cache_wrap(max_age, *cond),
-                    then: box_cache_wrap(max_age, *then),
-                    els: box_cache_wrap(max_age, *els),
+                    cond: wrap(max_age, *cond),
+                    then: wrap(max_age, *then),
+                    els: wrap(max_age, *els),
                 },
                 Logic::And(exprs) => Logic::And(Cached::wrap_vec(max_age, exprs)),
                 Logic::Or(exprs) => Logic::Or(Cached::wrap_vec(max_age, exprs)),
@@ -55,17 +59,17 @@ impl Cached {
                         .into_iter()
                         .map(|(expr1, expr2)| {
                             (
-                                box_cache_wrap(max_age, *expr1),
-                                box_cache_wrap(max_age, *expr2),
+                                wrap(max_age, *expr1),
+                                wrap(max_age, *expr2),
                             )
                         })
                         .collect(),
                 ),
                 Logic::DefaultTo(expr1, expr2) => Logic::DefaultTo(
-                    box_cache_wrap(max_age, *expr1),
-                    box_cache_wrap(max_age, *expr2),
+                    wrap(max_age, *expr1),
+                    wrap(max_age, *expr2),
                 ),
-                Logic::IsEmpty(expr) => Logic::IsEmpty(box_cache_wrap(max_age, *expr)),
+                Logic::IsEmpty(expr) => Logic::IsEmpty(wrap(max_age, *expr)),
                 Logic::Not(expr) => Logic::Not(expr),
             }),
             Expression::Relation(relation) => Expression::Relation(match relation {
@@ -78,34 +82,34 @@ impl Cached {
                     Relation::Difference(expr1, expr2)
                 }
                 Relation::Equals(lhs, rhs) => {
-                    Relation::Equals(box_cache_wrap(max_age, *lhs), box_cache_wrap(max_age, *rhs))
+                    Relation::Equals(wrap(max_age, *lhs), wrap(max_age, *rhs))
                 }
                 Relation::Gt(lhs, rhs) => {
-                    Relation::Gt(box_cache_wrap(max_age, *lhs), box_cache_wrap(max_age, *rhs))
+                    Relation::Gt(wrap(max_age, *lhs), wrap(max_age, *rhs))
                 }
                 Relation::Gte(lhs, rhs) => {
-                    Relation::Gte(box_cache_wrap(max_age, *lhs), box_cache_wrap(max_age, *rhs))
+                    Relation::Gte(wrap(max_age, *lhs), wrap(max_age, *rhs))
                 }
                 Relation::Lt(lhs, rhs) => {
-                    Relation::Lt(box_cache_wrap(max_age, *lhs), box_cache_wrap(max_age, *rhs))
+                    Relation::Lt(wrap(max_age, *lhs), wrap(max_age, *rhs))
                 }
                 Relation::Lte(lhs, rhs) => {
-                    Relation::Lte(box_cache_wrap(max_age, *lhs), box_cache_wrap(max_age, *rhs))
+                    Relation::Lte(wrap(max_age, *lhs), wrap(max_age, *rhs))
                 }
                 Relation::Max(exprs) => Relation::Max(Cached::wrap_vec(max_age, exprs)),
                 Relation::Min(exprs) => Relation::Min(Cached::wrap_vec(max_age, exprs)),
                 Relation::PathEq(expr1, path, expr2) => Relation::PathEq(
-                    box_cache_wrap(max_age, *expr1),
+                    wrap(max_age, *expr1),
                     path,
-                    box_cache_wrap(max_age, *expr2),
+                    wrap(max_age, *expr2),
                 ),
                 Relation::PropEq(expr1, path, expr2) => Relation::PropEq(
-                    box_cache_wrap(max_age, *expr1),
+                    wrap(max_age, *expr1),
                     path,
-                    box_cache_wrap(max_age, *expr2),
+                    wrap(max_age, *expr2),
                 ),
                 Relation::SortPath(expr, path) => {
-                    Relation::SortPath(box_cache_wrap(max_age, *expr), path)
+                    Relation::SortPath(wrap(max_age, *expr), path)
                 }
                 Relation::SymmetricDifference(lhs, rhs) => Relation::SymmetricDifference(
                     Cached::wrap_vec(max_age, lhs),
@@ -121,38 +125,38 @@ impl Cached {
             }),
             Expression::Math(math) => Expression::Math(match math {
                 Math::Mod(lhs, rhs) => {
-                    let lhs = box_cache_wrap(max_age, *lhs);
-                    let rhs = box_cache_wrap(max_age, *rhs);
+                    let lhs = wrap(max_age, *lhs);
+                    let rhs = wrap(max_age, *rhs);
                     Math::Mod(lhs, rhs)
                 }
                 Math::Add(lhs, rhs) => {
-                    let lhs = box_cache_wrap(max_age, *lhs);
-                    let rhs = box_cache_wrap(max_age, *rhs);
+                    let lhs = wrap(max_age, *lhs);
+                    let rhs = wrap(max_age, *rhs);
                     Math::Add(lhs, rhs)
                 }
                 Math::Divide(lhs, rhs) => {
-                    let lhs = box_cache_wrap(max_age, *lhs);
-                    let rhs = box_cache_wrap(max_age, *rhs);
+                    let lhs = wrap(max_age, *lhs);
+                    let rhs = wrap(max_age, *rhs);
                     Math::Divide(lhs, rhs)
                 }
                 Math::Multiply(lhs, rhs) => {
-                    let lhs = box_cache_wrap(max_age, *lhs);
-                    let rhs = box_cache_wrap(max_age, *rhs);
+                    let lhs = wrap(max_age, *lhs);
+                    let rhs = wrap(max_age, *rhs);
                     Math::Multiply(lhs, rhs)
                 }
                 Math::Subtract(lhs, rhs) => {
-                    let lhs = box_cache_wrap(max_age, *lhs);
-                    let rhs = box_cache_wrap(max_age, *rhs);
+                    let lhs = wrap(max_age, *lhs);
+                    let rhs = wrap(max_age, *rhs);
                     Math::Subtract(lhs, rhs)
                 }
-                Math::Dec(expr) => Math::Dec(box_cache_wrap(max_age, *expr)),
-                Math::Inc(expr) => Math::Inc(box_cache_wrap(max_age, *expr)),
-                Math::Negate(expr) => Math::Negate(box_cache_wrap(max_age, *expr)),
+                Math::Dec(expr) => Math::Dec(wrap(max_age, *expr)),
+                Math::Inc(expr) => Math::Inc(wrap(max_age, *expr)),
+                Math::Negate(expr) => Math::Negate(wrap(max_age, *expr)),
                 Math::Product(exprs) => Math::Product(Cached::wrap_vec(max_age, exprs)),
                 Math::Sum(exprs) => Math::Sum(Cached::wrap_vec(max_age, exprs)),
             }),
             Expression::Concurrency(conc, expr) => {
-                Expression::Concurrency(conc, box_cache_wrap(max_age, *expr))
+                Expression::Concurrency(conc, wrap(max_age, *expr))
             }
         }
     }
