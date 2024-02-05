@@ -46,13 +46,16 @@ impl Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Message, Message> for Runtime {
-    async fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
-        LOCAL_RUNTIME.with(move |cell| {
+    fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
+        log::debug!("event: {:?}", event);
+        let command = LOCAL_RUNTIME.with(move |cell| {
             let script = self.script.clone();
             cell.borrow()
                 .get_or_init(|| LocalRuntime::try_new(script).unwrap());
             on_event(event)
-        })
+        });
+        log::debug!("command: {:?}", command);
+        command
     }
 }
 

@@ -34,13 +34,10 @@ impl HttpFilter {
                     if id.is_none() {
                         return Ok(response);
                     }
-                    let command = self
-                        .worker
-                        .dispatch(Message {
-                            message: MessageContent::Response(JsResponse::try_from(response)?),
-                            id,
-                        })
-                        .await?;
+                    let command = self.worker.dispatch(Message {
+                        message: MessageContent::Response(JsResponse::try_from(response)?),
+                        id,
+                    })?;
                     Ok(self.on_command(command).await?)
                 }
                 Message { message: MessageContent::Response(response), id: _ } => {
@@ -60,13 +57,10 @@ impl HttpIO for HttpFilter {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        let command = self
-            .worker
-            .dispatch(Message {
-                message: MessageContent::Request(request.try_into()?),
-                id: None,
-            })
-            .await?;
+        let command = self.worker.dispatch(Message {
+            message: MessageContent::Request(request.try_into()?),
+            id: None,
+        })?;
         self.on_command(command).await
     }
 }

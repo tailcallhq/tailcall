@@ -56,9 +56,8 @@ impl Runtime {
     }
 }
 
-#[async_trait::async_trait]
 impl WorkerIO<Message, Message> for Runtime {
-    async fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
+    fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
         let script = self.script.clone();
         LOCAL_RUNTIME.with(|cell| {
             let rtm = cell

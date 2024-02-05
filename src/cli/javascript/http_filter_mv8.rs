@@ -36,8 +36,7 @@ impl HttpFilter {
                     }
                     let command = self
                         .worker
-                        .dispatch(Message { message: MessageContent::Response(response), id })
-                        .await?;
+                        .dispatch(Message { message: MessageContent::Response(response), id })?;
                     Ok(self.on_command(command).await?)
                 }
                 Message { message: MessageContent::Response(response), id: _ } => Ok(response),
@@ -54,8 +53,7 @@ impl HttpIO for HttpFilter {
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
         let command = self
             .worker
-            .dispatch(Message { message: MessageContent::Request(request), id: None })
-            .await?;
+            .dispatch(Message { message: MessageContent::Request(request), id: None })?;
         self.on_command(command).await
     }
 }

@@ -8,34 +8,36 @@ use serde::{Deserialize, Serialize};
 use crate::http::Response;
 use crate::is_default;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Message {
     pub message: MessageContent,
     pub id: Option<u64>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub enum MessageContent {
     Request(JsRequest),
     Response(JsResponse),
     Empty,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRequest {
     url: String,
     method: String,
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     headers: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "is_default")]
     body: Option<Bytes>,
 }
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JsResponse {
     status: u16,
-    #[serde(skip_serializing_if = "is_default")]
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     headers: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "is_default")]
     body: Option<Bytes>,
