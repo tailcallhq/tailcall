@@ -87,7 +87,7 @@ impl ConfigReader {
         }
 
         for config_link in links.iter() {
-            let path = if Path::new(&config_link.src).exists().await {
+            let path = if Path::new(&config_link.src).to_owned().exists().await {
                 config_link.src.clone()
             } else {
                 PathBuf::from(path.clone().unwrap_or_default())
