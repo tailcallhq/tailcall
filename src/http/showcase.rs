@@ -17,7 +17,8 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     runtime: TargetRuntime,
     enable_fs: bool,
 ) -> Result<Result<AppContext, Response<Body>>> {
-    let config_url = req.uri()
+    let config_url = req
+        .uri()
         .query()
         .and_then(|x| serde_qs::from_str::<HashMap<String, String>>(x).ok())
         .and_then(|x| x.get("config").cloned());
