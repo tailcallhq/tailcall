@@ -3,7 +3,7 @@ use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError, Validator};
 
 // Wrap the Vec<Link> is necessary to implement TryFrom
-#[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct Links(Vec<Link>);
 
 impl TryFrom<Vec<Link>> for Links {
