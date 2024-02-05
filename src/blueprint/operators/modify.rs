@@ -1,7 +1,7 @@
 use crate::blueprint::*;
 use crate::config;
 use crate::config::Field;
-use crate::lambda::Lambda;
+use crate::lambda::{Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -21,10 +21,9 @@ pub fn update_modify<'a>(
                             }
                         }
                     }
+                    let expr = Expression::Context(Context::Path(vec![b_field.name.clone()]));
 
-                    let lambda = Lambda::context_field(b_field.name.clone());
-                    b_field = b_field.resolver_or_default(lambda, |r| r);
-                    b_field = b_field.name(new_name.clone());
+                    b_field = b_field.resolver(Some(expr)).name(new_name.clone());
                 }
             }
             Valid::succeed(b_field)
