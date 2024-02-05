@@ -138,6 +138,11 @@ debug = false
 incremental = false
 overflow-checks = false
 
+[profile.release.package.cloudflare]
+strip = true
+codegen-units = 1
+opt-level = 'z'
+
 [[test]]
 name = "execution_spec"
 harness = false
