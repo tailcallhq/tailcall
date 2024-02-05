@@ -143,24 +143,6 @@ pub struct FieldDefinition {
     pub cache: Option<Cache>,
 }
 
-/*impl FieldDefinition {
-    pub fn to_lambda(self) -> Option<Lambda<serde_json::Value>> {
-        self.resolver.map(Lambda::new)
-    }
-
-    pub fn resolver_or_default(
-        mut self,
-        default_res: Lambda<serde_json::Value>,
-        other: impl Fn(Lambda<serde_json::Value>) -> Lambda<serde_json::Value>,
-    ) -> Self {
-        self.resolver = match self.resolver {
-            None => Some(default_res.expression),
-            Some(expr) => Some(other(Lambda::new(expr)).expression),
-        };
-        self
-    }
-}*/
-
 #[derive(Clone, Debug)]
 pub struct Directive {
     pub name: String,
