@@ -1,26 +1,20 @@
 use std::rc::Rc;
 
 use super::Expression;
-
+type Modifier = Rc<dyn Fn(&Expression) -> Option<Expression>>;
 impl Expression {
-    fn modify_vec(
-        exprs: Vec<Self>,
-        modifier: Rc<dyn Fn(&Expression) -> Option<Expression>>,
-    ) -> Vec<Expression> {
+    fn modify_vec(exprs: Vec<Self>, modifier: Modifier) -> Vec<Expression> {
         exprs
             .into_iter()
             .map(|expr| expr.modify(modifier.clone()))
             .collect()
     }
 
-    fn modify_box(
-        self,
-        modifier: Rc<dyn Fn(&Expression) -> Option<Expression>>,
-    ) -> Box<Expression> {
+    fn modify_box(self, modifier: Modifier) -> Box<Expression> {
         Box::new(self.modify(modifier))
     }
 
-    pub fn modify(self, modifier: Rc<dyn Fn(&Expression) -> Option<Expression>>) -> Expression {
+    pub fn modify(self, modifier: Modifier) -> Expression {
         let modified = modifier(&self);
         match modified {
             Some(expr) => expr,

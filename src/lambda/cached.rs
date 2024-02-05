@@ -26,10 +26,7 @@ impl Cached {
     ///
     pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
         expr.modify(Rc::new(move |expr| match expr {
-            Expression::IO(io) => Some(Expression::Cached(Cached {
-                max_age,
-                expr: io.clone(),
-            })),
+            Expression::IO(io) => Some(Expression::Cached(Cached { max_age, expr: io.clone() })),
             _ => None,
         }))
     }
