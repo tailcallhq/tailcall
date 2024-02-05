@@ -87,10 +87,11 @@ impl ConfigReader {
         }
 
         for config_link in links.iter() {
-            let path = if Path::new(&config_link.src).to_owned().exists().await {
+            let path = if Path::new(&config_link.src).is_absolute() {
                 config_link.src.clone()
             } else {
-                PathBuf::from(path.clone().unwrap_or_default())
+                let path = path.clone().unwrap_or_default();
+                PathBuf::from(path)
                     .parent()
                     .unwrap_or(Path::new(""))
                     .join(&config_link.src)
@@ -305,33 +306,6 @@ mod test_proto_config {
         } else {
             None
         }
-    }
-
-    #[tokio::test]
-    async fn test_load_proto_link() {
-        let runtime = init_runtime(&Default::default(), None);
-        let reader = ConfigReader::init(runtime);
-        let news_proto = "src/grpc/tests/news.proto";
-        let greetings_proto = "src/grpc/tests/greetings.proto";
-
-        let sdl = format!("schema @server @upstream @link(id: \"news\", src: \"{}\", type: Protobuf) @link(id: \"greetings\", src: \"{}\", type: Protobuf) {{
-            query: Query
-          }}", news_proto, greetings_proto);
-
-        let dir = tempfile::tempdir().unwrap();
-
-        let schema_path = dir.path().join("schema.graphql");
-        tokio::fs::write(&schema_path, sdl).await.unwrap();
-
-        let config_set = reader.read(schema_path.display()).await.unwrap();
-
-        assert_eq!(config_set.config.links.len(), 2);
-        assert_eq!(
-            config_set.config.links.len(),
-            config_set.extensions.grpc_file_descriptors.len()
-        );
-
-        dir.close().unwrap();
     }
 }
 

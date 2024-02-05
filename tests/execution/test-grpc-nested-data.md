@@ -8,7 +8,7 @@
 schema
   @server(port: 8000, graphiql: true)
   @upstream(httpCache: true, batch: {delay: 10})
-  @link(id: "news", src: "src/grpc/tests/news.proto", type: Protobuf) {
+  @link(id: "news", src: "../../src/grpc/tests/news.proto", type: Protobuf) {
   query: Query
 }
 

@@ -7,7 +7,7 @@
 ```graphql
 schema
   @upstream(baseURL: "http://jsonplaceholder.typicode.com")
-  @link(id: "news", src: "src/grpc/tests/news.proto", type: Protobuf) {
+  @link(id: "news", src: "../../src/grpc/tests/news.proto", type: Protobuf) {
   query: Query
 }
 

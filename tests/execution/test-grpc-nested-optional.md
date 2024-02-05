@@ -5,7 +5,7 @@
 #### server:
 
 ```graphql
-schema @link(id: "news", src: "tests/graphql/errors/proto/news.proto", type: Protobuf) {
+schema @link(id: "news", src: "../graphql/errors/proto/news.proto", type: Protobuf) {
   query: Query
 }
 

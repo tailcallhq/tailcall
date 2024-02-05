@@ -31,6 +31,7 @@ pub struct Link {
     pub type_of: LinkType,
     ///
     /// The source of the link. It can be a URL or a path to a file.
+    /// If a path is provided, it is relative to the file that imports the link.
     ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub src: String,
