@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::{Body, Request, Response};
@@ -15,11 +17,13 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     runtime: TargetRuntime,
     enable_fs: bool,
 ) -> Result<Result<AppContext, Response<Body>>> {
-    let url = Url::parse(&req.uri().to_string())?;
-    let mut query = url.query_pairs();
+    let config_url = req.uri()
+        .query()
+        .and_then(|x| serde_qs::from_str::<HashMap<String, String>>(x).ok())
+        .and_then(|x| x.get("config").cloned());
 
-    let config_url = if let Some(pair) = query.find(|x| x.0 == "config") {
-        pair.1.to_string()
+    let config_url = if let Some(config_url) = config_url {
+        config_url
     } else {
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("No Config URL specified", None);
