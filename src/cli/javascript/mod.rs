@@ -1,6 +1,6 @@
 mod http_filter;
 mod runtime;
-mod serde_v8;
+mod serde_mv8;
 mod shim;
 pub use std::sync::Arc;
 mod channel;

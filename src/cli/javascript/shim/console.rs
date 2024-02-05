@@ -1,6 +1,6 @@
 use mini_v8::MiniV8;
 
-use crate::cli::javascript::serde_v8::SerdeV8;
+use crate::cli::javascript::serde_mv8::SerdeV8;
 
 pub fn init(v8: &MiniV8) -> anyhow::Result<()> {
     let console = v8.create_object();
