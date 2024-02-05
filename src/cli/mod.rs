@@ -30,7 +30,7 @@ pub fn init_env() -> Arc<dyn EnvIO> {
 }
 
 // Provides access to file system in native rust environment
-pub fn init_file() -> Arc<dyn FileIO + Send + Sync> {
+pub fn init_file() -> Arc<dyn FileIO> {
     Arc::new(file::NativeFileIO::init())
 }
 
