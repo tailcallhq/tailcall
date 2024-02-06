@@ -87,7 +87,7 @@ specified when the `users` field is queried.
 directive @grpc(
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -133,7 +133,7 @@ is queried.
 directive @http(
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -172,7 +172,7 @@ directive @http(
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.For 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
@@ -526,7 +526,7 @@ specified when the `users` field is queried.
 input Grpc {
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -571,7 +571,7 @@ is queried.
 input Http {
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -610,7 +610,7 @@ input Http {
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.For 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """

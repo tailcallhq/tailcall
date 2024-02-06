@@ -10,19 +10,19 @@ expression: response
   "body": {
     "data": {
       "user": {
-        "id": 2,
-        "name": null
+        "name": null,
+        "id": 2
       }
     },
     "errors": [
       {
+        "message": "Failed to resolve name",
         "locations": [
           {
-            "column": 35,
-            "line": 1
+            "line": 1,
+            "column": 35
           }
-        ],
-        "message": "Failed to resolve name"
+        ]
       }
     ]
   }
