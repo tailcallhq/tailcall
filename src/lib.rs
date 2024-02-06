@@ -70,6 +70,6 @@ pub trait ScriptIO<Event, Command>: Send + Sync {
     async fn on_event(&self, event: Event) -> anyhow::Result<Command>;
 }
 
-fn is_default<T: Default + Eq>(val: &T) -> bool {
+pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
 }

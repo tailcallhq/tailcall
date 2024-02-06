@@ -30,10 +30,15 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
             .map(|upstream| blueprint.upstream(upstream))
     });
 
+    let links = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
+        Valid::from(Links::try_from(config_set.links.clone())).map_to(blueprint)
+    });
+
     server
         .and(schema)
         .and(definitions)
         .and(upstream)
+        .and(links)
         .update(apply_batching)
         .update(compress)
 }
