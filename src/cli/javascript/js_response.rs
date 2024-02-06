@@ -50,6 +50,7 @@ mod test {
     use anyhow::Result;
     use hyper::body::Bytes;
     use reqwest::header::HeaderMap;
+    use std::collections::BTreeMap;
 
     use super::JsResponse;
 
@@ -90,5 +91,34 @@ mod test {
             "application/json"
         );
         assert_eq!(response.body, Bytes::from("Hello, World!"));
+    }
+    #[test]
+    fn test_js_response_with_defaults() {
+        let js_response = JsResponse {
+            status: 200,
+            headers: BTreeMap::new(), // Empty headers
+            body: None,               // No body
+        };
+
+        let response: Result<crate::http::Response<Bytes>, _> = js_response.try_into();
+        assert!(response.is_ok());
+        let response = response.unwrap();
+        assert!(response.headers.is_empty());
+        assert_eq!(response.body, Bytes::new()); // Assuming `Bytes::new()` is the expected result for no body
+    }
+
+    #[test]
+    fn test_unusual_headers() {
+        let body = "a";
+        let mut headers = BTreeMap::new();
+        headers.insert("x-unusual-header".to_string(), "🚀".to_string());
+
+        let js_response = JsResponse { status: 200, headers, body: Some(Bytes::from(body)) };
+
+        let response: Result<crate::http::Response<Bytes>, _> = js_response.try_into();
+        assert!(response.is_ok());
+        let response = response.unwrap();
+        assert_eq!(response.headers.get("x-unusual-header").unwrap(), "🚀");
+        assert_eq!(response.body, Bytes::from(body));
     }
 }
