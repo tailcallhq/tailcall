@@ -45,7 +45,7 @@ struct APIRequest {
     #[serde(default)]
     headers: BTreeMap<String, String>,
     #[serde(default)]
-    body: serde_json::Value,
+    body: Option<Bytes>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -56,7 +56,7 @@ struct APIResponse {
     #[serde(default)]
     headers: BTreeMap<String, String>,
     #[serde(default)]
-    body: serde_json::Value,
+    body: Option<Bytes>,
     #[serde(default)]
     text_body: Option<String>,
 }
@@ -275,31 +275,15 @@ impl HttpIO for MockHttpClient {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         let mocks = self.spec.mock.clone();
 
-        // Determine if the request is a GRPC request based on PORT
-        let is_grpc = req.url().as_str().contains("50051");
-
         // Try to find a matching mock for the incoming request.
         let mock = mocks
             .iter()
             .find(|Mock { request: mock_req, response: _ }| {
                 let method_match = req.method() == mock_req.0.method.clone().to_hyper();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-                let req_body = match req.body() {
-                    Some(body) => {
-                        if let Some(bytes) = body.as_bytes() {
-                            if let Ok(body_str) = std::str::from_utf8(bytes) {
-                                Value::from(body_str)
-                            } else {
-                                Value::Null
-                            }
-                        } else {
-                            Value::Null
-                        }
-                    }
-                    None => Value::Null,
-                };
-                let body_match = req_body == mock_req.0.body;
-                method_match && url_match && (body_match || is_grpc)
+                let req_body = req.body().and_then(|b| b.as_bytes()).map(|b| b.to_vec());
+                let body_match = req_body == mock_req.0.body.as_ref().map(|b| b.to_vec());
+                method_match && url_match && (body_match)
             })
             .ok_or(anyhow!(
                 "No mock found for request: {:?} {} in {}",
@@ -330,10 +314,6 @@ impl HttpIO for MockHttpClient {
         if let Some(body) = mock_response.0.text_body {
             // Return plaintext body if specified
             let body = string_to_bytes(&body);
-            response.body = Bytes::from_iter(body);
-        } else if is_grpc {
-            // Special Handling for GRPC
-            let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
             response.body = Bytes::from_iter(body);
         } else {
             let body = serde_json::to_vec(&mock_response.0.body)?;
