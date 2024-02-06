@@ -7,7 +7,7 @@ use crate::config::{Config, ConfigSet, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
-use crate::lambda::{Expression, Lambda, IO};
+use crate::lambda::{Expression, IO};
 use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
@@ -162,7 +162,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
                 dl_id: None,
             })
         } else {
-            Lambda::from_grpc_request_template(req_template).expression
+            Expression::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
         }
     })
 }
