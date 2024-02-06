@@ -16,6 +16,7 @@ concurrency:
 
 defaults:
   run:
+    # use nightly toolchain for this workflow
     working-directory: ".nightly"
 
 jobs:
@@ -37,9 +38,6 @@ jobs:
         run: npm install --global prettier
       - name: Install Nightly Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed
