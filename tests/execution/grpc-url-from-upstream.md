@@ -5,15 +5,14 @@
 ```graphql
 schema
   @server(port: 8000, graphiql: true)
-  @upstream(httpCache: true, batch: {delay: 10})
+  @upstream(httpCache: true, batch: {delay: 10}, baseURL: "http://localhost:50051")
   @link(id: "news", src: "../../src/grpc/tests/news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:50051")
-  newsById(news: NewsInput!): News!
-    @grpc(method: "news.NewsService.GetNews", baseURL: "http://localhost:50051", body: "{{args.news}}")
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
 }
 input NewsInput {
   id: Int

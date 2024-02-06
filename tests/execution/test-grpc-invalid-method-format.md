@@ -1,4 +1,4 @@
-# test-grpc-invalid-proto-id
+# test-grpc-invalid-method-format
 
 ###### sdl error
 
@@ -10,7 +10,7 @@ schema {
 }
 
 type Query {
-  news: NewsData @grpc(method: "abc.NewsService.GetAllNews", baseURL: "http://localhost:4000")
+  news: NewsData @grpc(method: "abc.NewsService", baseURL: "http://localhost:4000")
 }
 
 type NewsData {

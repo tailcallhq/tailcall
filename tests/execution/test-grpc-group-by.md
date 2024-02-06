@@ -15,11 +15,9 @@ schema
 type Query {
   newsById(news: NewsInput!): News!
     @grpc(
-      service: "news.NewsService"
-      method: "GetMultipleNews"
+      method: "news.NewsService.GetMultipleNews"
       baseURL: "http://localhost:50051"
       body: "{{args.news}}"
-      protoId: "news"
       groupBy: ["id"]
     )
 }
