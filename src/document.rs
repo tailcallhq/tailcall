@@ -232,7 +232,7 @@ fn print_directive(directive: &DirectiveDefinition) -> String {
             let type_str = format!("{}", arg.node.ty.node);
             if type_str.starts_with('[') || type_str.starts_with('{') {
                 let parts: Vec<&str> = type_str.split(',').collect();
-                format!("{}: {}", arg.node.name.node, parts.join(", "))
+                format!("{}: {}", arg.node.name.node, parts.join(","))
             } else {
                 format!("{}: {}", arg.node.name.node, type_str)
             }
