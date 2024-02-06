@@ -40,6 +40,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
+        working-directory: .
       - name: Commit and push if changed
         if: env.LINT_MODE == 'fix'
         uses: autofix-ci/action@ea32e3a12414e6d3183163c3424a7d7a8631ad84
