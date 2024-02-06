@@ -213,9 +213,10 @@ struct WriteParams<'a, W: Write> {
     defs: &'a BTreeMap<String, Schema>,
     scalars: &'a mut HashSet<String>,
     extra_it: &'a mut BTreeMap<String, ExtraTypes>,
+    arr_valid: ArrayValidation,
+    obj_valid: ObjectValidation,
 }
 
-//#[allow(clippy::too_many_arguments)]
 fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     let WriteParams { writer, name, schema, defs, extra_it, .. } = params;
     match schema.instance_type {
@@ -246,7 +247,18 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         }
         _ => {
             if let Some(arr_valid) = schema.array.clone() {
-                write_array_validation(writer, name, *arr_valid, defs, extra_it)
+                let params = WriteParams {
+                    writer,
+                    name,
+                    schema: SchemaObject::default(),
+                    defs,
+                    scalars: &mut HashSet::new(),
+                    extra_it,
+                    arr_valid: *arr_valid,
+                    obj_valid: ObjectValidation::default(),
+                };
+                //write_array_validation(writer, name, *arr_valid, defs, extra_it)
+                write_array_validation(params)
             } else if let Some(typ) = schema.object.clone() {
                 if !typ.properties.is_empty() {
                     let mut name = name;
@@ -283,7 +295,7 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         }
     }
 }
-// #[allow(clippy::too_many_arguments)]
+
 fn write_field<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     let WriteParams { writer, name, .. } = params;
     write!(writer, "{name}: ")?;
@@ -291,9 +303,10 @@ fn write_field<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     write_type(params_clone)?;
     writeln!(writer)
 }
-// #[allow(clippy::too_many_arguments)]
+
 fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams { writer, name, schema: typ, defs, scalars, extra_it } = params;
+    let WriteParams { writer, name, schema: typ, defs, scalars, extra_it, .. } = params;
+
     let name = match input_whitelist_lookup(&name, extra_it) {
         Some(name) => name,
         None => return Ok(()),
@@ -317,7 +330,16 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                 .as_ref()
                 .and_then(|metadata| metadata.description.as_ref());
             write_description(writer, description)?;
-            let params = WriteParams { writer, name, schema: property, defs, scalars, extra_it };
+            let params = WriteParams {
+                writer,
+                name,
+                schema: property,
+                defs,
+                scalars,
+                extra_it,
+                arr_valid: ArrayValidation::default(),
+                obj_valid: ObjectValidation::default(),
+            };
             write_field(params)?;
         }
         writer.unindent();
@@ -354,6 +376,8 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         defs,
                         scalars,
                         extra_it,
+                        arr_valid: ArrayValidation::default(),
+                        obj_valid: ObjectValidation::default(),
                     };
                     write_field(params)?;
                 }
@@ -378,6 +402,8 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         defs,
                         scalars,
                         extra_it,
+                        arr_valid: ArrayValidation::default(),
+                        obj_valid: ObjectValidation::default(),
                     };
                     write_field(params)?;
                 }
@@ -395,7 +421,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
 
     Ok(())
 }
-// #[allow(clippy::too_many_arguments)]
+
 fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     let WriteParams { writer, name, schema: property, defs, extra_it, .. } = params;
     //let property = property.into_object();
@@ -411,6 +437,8 @@ fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         defs,
         scalars: &mut HashSet::new(),
         extra_it,
+        arr_valid: ArrayValidation::default(),
+        obj_valid: ObjectValidation::default(),
     };
     write_field(params)?;
     Ok(())
@@ -425,7 +453,7 @@ fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, Entity, bool
     None
 }
 
-fn input_allow_list_lookup<'a>(
+fn input_whitelist_lookup<'a>(
     name: &'a str,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> Option<&'a str> {
@@ -441,7 +469,7 @@ fn input_allow_list_lookup<'a>(
 
     None
 }
-// #[allow(clippy::too_many_arguments)]
+
 fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     let WriteParams {
         writer,
@@ -450,8 +478,9 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
         defs,
         scalars: written_directives,
         extra_it,
+        ..
     } = params;
-    let (name, entity, is_repeatable) = match directive_whitelist_lookup(&name) {
+    let (name, entity, is_repeatable) = match directive_allow_list_lookup(&name) {
         Some(entity) => entity,
         None => return Ok(()),
     };
@@ -481,6 +510,8 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
                 defs,
                 scalars: &mut HashSet::new(),
                 extra_it,
+                arr_valid: ArrayValidation::default(),
+                obj_valid: ObjectValidation::default(),
             };
             write_property(params)?;
             close_param = true;
@@ -493,6 +524,8 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
                 defs,
                 scalars: &mut HashSet::new(),
                 extra_it,
+                arr_valid: ArrayValidation::default(),
+                obj_valid: ObjectValidation::default(),
             };
             write_property(params)?;
         }
@@ -530,20 +563,17 @@ fn write_all_directives(
             defs: &defs,
             scalars: written_directives,
             extra_it,
+            arr_valid: ArrayValidation::default(),
+            obj_valid: ObjectValidation::default(),
         };
         write_directive(params)?;
     }
 
     Ok(())
 }
-#[allow(clippy::too_many_arguments)]
-fn write_array_validation(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    arr_valid: ArrayValidation,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+
+fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, defs, extra_it, arr_valid, .. } = params;
     write!(writer, "[")?;
     if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
         let params = WriteParams {
@@ -553,6 +583,8 @@ fn write_array_validation(
             defs,
             scalars: &mut HashSet::new(),
             extra_it,
+            arr_valid: ArrayValidation::default(),
+            obj_valid: ObjectValidation::default(),
         };
         write_type(params)?;
     } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
@@ -563,6 +595,8 @@ fn write_array_validation(
             defs,
             scalars: &mut HashSet::new(),
             extra_it,
+            arr_valid: ArrayValidation::default(),
+            obj_valid: ObjectValidation::default(),
         };
         write_type(params)?;
     } else {
@@ -572,14 +606,9 @@ fn write_array_validation(
     }
     write!(writer, "]")
 }
-#[allow(clippy::too_many_arguments)]
-fn write_object_validation(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    obj_valid: ObjectValidation,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+
+fn write_object_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, defs, extra_it, obj_valid, .. } = params;
     if !obj_valid.properties.is_empty() {
         writeln!(writer, "input {name} {{")?;
         writer.indent();
@@ -591,6 +620,8 @@ fn write_object_validation(
                 defs,
                 scalars: &mut HashSet::new(),
                 extra_it,
+                arr_valid: ArrayValidation::default(),
+                obj_valid: ObjectValidation::default(),
             };
             write_property(params)?;
         }
@@ -609,7 +640,6 @@ fn write_all_input_types(
 
     let defs = schema.definitions;
     let mut scalars = HashSet::new();
-    let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
@@ -620,6 +650,8 @@ fn write_all_input_types(
             defs: &defs,
             scalars: &mut scalars,
             extra_it: &mut extra_it,
+            arr_valid: ArrayValidation::default(),
+            obj_valid: ObjectValidation::default(),
         };
         write_input_type(params)?;
     }
@@ -637,12 +669,25 @@ fn write_all_input_types(
                         defs: &defs,
                         scalars: &mut scalars,
                         extra_it: &mut new_extra_it,
+                        arr_valid: ArrayValidation::default(),
+                        obj_valid: ObjectValidation::default(),
                     };
                     write_input_type(params)?
                 }
             }
             ExtraTypes::ObjectValidation(obj_valid) => {
-                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+                //write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+                let params = WriteParams {
+                    writer,
+                    name,
+                    schema: SchemaObject::default(),
+                    defs: &defs,
+                    scalars: &mut scalars,
+                    extra_it: &mut new_extra_it,
+                    arr_valid: ArrayValidation::default(),
+                    obj_valid,
+                };
+                write_object_validation(params)?;
             }
         }
     }
