@@ -34,7 +34,6 @@ fn to_operation(
     method: &str,
     file_descriptor_set: &FileDescriptorSet,
 ) -> Valid<ProtobufOperation, String> {
-    println!("service: {}", service);
     Valid::from(
         ProtobufSet::from_proto_file(file_descriptor_set)
             .map_err(|e| ValidationError::new(e.to_string())),
