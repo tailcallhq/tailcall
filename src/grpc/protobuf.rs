@@ -77,7 +77,6 @@ impl ProtobufSet {
     }
 
     pub fn find_service(&self, name: &str) -> Result<ProtobufService> {
-        println!("find_service: {:?}", name);
         let service_descriptor = self
             .descriptor_pool
             .get_service_by_name(name)
