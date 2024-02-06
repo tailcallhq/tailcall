@@ -139,7 +139,7 @@ impl TryFrom<String> for GrpcMethod {
         }
 
         let id = method[0].to_string();
-        let service = format!("{}.{}", id, method[1].to_string());
+        let service = format!("{}.{}", id, method[1]);
         let name = method[2].to_string();
 
         Ok(GrpcMethod { id, service, name })
