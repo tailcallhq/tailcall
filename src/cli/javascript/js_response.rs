@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
 use hyper::body::Bytes;
-use hyper::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 
+use super::create_header_map;
 use crate::http::Response;
 use crate::is_default;
 
@@ -43,18 +43,6 @@ impl TryFrom<Response<Bytes>> for JsResponse {
         let body = Some(res.body);
         Ok(JsResponse { status, headers, body })
     }
-}
-
-fn create_header_map(
-    headers: BTreeMap<String, String>,
-) -> anyhow::Result<reqwest::header::HeaderMap> {
-    let mut header_map = reqwest::header::HeaderMap::new();
-    for (key, value) in headers.iter() {
-        let key = HeaderName::from_bytes(key.as_bytes())?;
-        let value = HeaderValue::from_str(value.as_str())?;
-        header_map.insert(key, value);
-    }
-    Ok(header_map)
 }
 
 #[cfg(test)]

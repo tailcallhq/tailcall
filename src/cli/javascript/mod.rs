@@ -22,7 +22,7 @@ pub fn init_http(http: impl HttpIO, script: blueprint::Script) -> Arc<dyn HttpIO
     Arc::new(HttpFilter::new(http, script_io))
 }
 
-pub(crate) fn create_header_map(
+fn create_header_map(
     headers: BTreeMap<String, String>,
 ) -> anyhow::Result<reqwest::header::HeaderMap> {
     let mut header_map = reqwest::header::HeaderMap::new();
