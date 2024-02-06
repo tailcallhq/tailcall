@@ -1,4 +1,6 @@
 use std::borrow::Cow;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
@@ -9,6 +11,7 @@ use crate::config::Encoding;
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
+use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
@@ -178,6 +181,11 @@ impl RequestTemplate {
     pub fn form_encoded_url(url: &str) -> anyhow::Result<Self> {
         Ok(Self::new(url)?.encoding(Encoding::ApplicationXWwwFormUrlencoded))
     }
+
+    pub fn with_body(mut self, body: Mustache) -> Self {
+        self.body_path = Some(body);
+        self
+    }
 }
 
 impl TryFrom<Endpoint> for RequestTemplate {
@@ -212,6 +220,37 @@ impl TryFrom<Endpoint> for RequestTemplate {
             endpoint,
             encoding,
         })
+    }
+}
+
+impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+    fn cache_key(&self, ctx: &Ctx) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        let state = &mut hasher;
+
+        self.method.hash(state);
+
+        let mut headers = vec![];
+        for (name, mustache) in self.headers.iter() {
+            name.hash(state);
+            mustache.render(ctx).hash(state);
+            headers.push((name.to_string(), mustache.render(ctx)));
+        }
+
+        for (name, value) in ctx.headers().iter() {
+            name.hash(state);
+            value.hash(state);
+            headers.push((name.to_string(), value.to_str().unwrap().to_string()));
+        }
+
+        if let Some(body) = self.body_path.as_ref() {
+            body.render(ctx).hash(state)
+        }
+
+        let url = self.create_url(ctx).unwrap();
+        url.hash(state);
+
+        hasher.finish()
     }
 }
 
@@ -664,6 +703,97 @@ mod tests {
             let ctx = Context::default().value(json!({}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, r#"foo=bar"#);
+        }
+    }
+
+    mod cache_key {
+        use std::collections::HashSet;
+
+        use hyper::HeaderMap;
+        use serde_json::json;
+
+        use crate::http::request_template::tests::Context;
+        use crate::http::RequestTemplate;
+        use crate::lambda::CacheKey;
+        use crate::mustache::Mustache;
+
+        fn assert_no_duplicate<const N: usize>(arr: [u64; N]) {
+            println!("{arr:?}");
+            let set = HashSet::from(arr);
+            assert_eq!(arr.len(), set.len());
+        }
+
+        #[test]
+        fn test_url_diff() {
+            let ctx = Context::default().value(json!({}));
+            assert_no_duplicate([
+                RequestTemplate::form_encoded_url("http://localhost:3000/1")
+                    .unwrap()
+                    .cache_key(&ctx),
+                RequestTemplate::form_encoded_url("http://localhost:3000/2")
+                    .unwrap()
+                    .cache_key(&ctx),
+                RequestTemplate::form_encoded_url("http://localhost:3001/1")
+                    .unwrap()
+                    .cache_key(&ctx),
+                RequestTemplate::form_encoded_url("http://localhost:3001/2")
+                    .unwrap()
+                    .cache_key(&ctx),
+            ]);
+        }
+
+        #[test]
+        fn test_headers_diff() {
+            let auth_header_ctx = |key, val| {
+                let mut headers = HeaderMap::new();
+                headers.insert(key, val);
+                Context::default().headers(headers)
+            };
+
+            assert_no_duplicate([
+                RequestTemplate::form_encoded_url("http://localhost:3000")
+                    .unwrap()
+                    .cache_key(&auth_header_ctx("Authorization", "abc".parse().unwrap())),
+                RequestTemplate::form_encoded_url("http://localhost:3000")
+                    .unwrap()
+                    .cache_key(&auth_header_ctx("Authorization", "bcd".parse().unwrap())),
+                RequestTemplate::form_encoded_url("http://localhost:3000")
+                    .unwrap()
+                    .cache_key(&auth_header_ctx("Range", "bytes=0-100".parse().unwrap())),
+                RequestTemplate::form_encoded_url("http://localhost:3000")
+                    .unwrap()
+                    .cache_key(&auth_header_ctx("Range", "bytes=0-".parse().unwrap())),
+            ]);
+        }
+
+        #[test]
+        fn test_body_diff() {
+            let ctx_with_body = |value| Context::default().value(value);
+
+            let key_123_1 = RequestTemplate::form_encoded_url("http://localhost:3000")
+                .unwrap()
+                .with_body(Mustache::parse("{{args.value}}").unwrap())
+                .cache_key(&ctx_with_body(json!({"args": {"value": "123"}})));
+
+            let key_234_1 = RequestTemplate::form_encoded_url("http://localhost:3000")
+                .unwrap()
+                .with_body(Mustache::parse("{{args.value}}").unwrap())
+                .cache_key(&ctx_with_body(json!({"args": {"value": "234"}})));
+
+            let key_123_2 = RequestTemplate::form_encoded_url("http://localhost:3000")
+                .unwrap()
+                .with_body(Mustache::parse("{{value.id}}").unwrap())
+                .cache_key(&ctx_with_body(json!({"value": {"id": "123"}})));
+
+            let key_234_2 = RequestTemplate::form_encoded_url("http://localhost:3000")
+                .unwrap()
+                .with_body(Mustache::parse("{{value.id2}}").unwrap())
+                .cache_key(&ctx_with_body(
+                    json!({"value": {"id1": "123", "id2": "234"}}),
+                ));
+
+            assert_eq!(key_123_1, key_123_2);
+            assert_eq!(key_234_1, key_234_2);
         }
     }
 }

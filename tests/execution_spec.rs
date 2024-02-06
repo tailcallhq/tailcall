@@ -586,7 +586,10 @@ async fn assert_spec(spec: ExecutionSpec) {
             Ok(config) => {
                 let runtime = init_runtime(&blueprint::Upstream::default(), None);
                 let reader = ConfigReader::init(runtime);
-                match reader.resolve(config).await {
+                match reader
+                    .resolve(config, Some(spec.path.to_string_lossy().to_string()))
+                    .await
+                {
                     Ok(config) => Blueprint::try_from(&config),
                     Err(e) => Err(ValidationError::new(e.to_string())),
                 }
@@ -681,22 +684,28 @@ async fn assert_spec(spec: ExecutionSpec) {
         log::info!("\tmerged ok");
     }
 
+    dbg!(spec.path.to_string_lossy().to_string());
+
     // Resolve all configs
-    let server: Vec<ConfigSet> = join_all(server.into_iter().map(|config| reader.resolve(config)))
-        .await
-        .into_iter()
-        .enumerate()
-        .map(|(i, result)| {
-            result.unwrap_or_else(|e| {
-                panic!(
-                    "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
-                    i + 1,
-                    spec.path,
-                    e
-                )
-            })
+    let server: Vec<ConfigSet> = join_all(
+        server
+            .into_iter()
+            .map(|config| reader.resolve(config, Some(spec.path.to_string_lossy().to_string()))),
+    )
+    .await
+    .into_iter()
+    .enumerate()
+    .map(|(i, result)| {
+        result.unwrap_or_else(|e| {
+            panic!(
+                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
+                i + 1,
+                spec.path,
+                e
+            )
         })
-        .collect();
+    })
+    .collect();
 
     if server.len() == 1 {
         let config = &server[0];
