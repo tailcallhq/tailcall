@@ -10,9 +10,9 @@ expression: response
   "body": {
     "data": {
       "user": {
-        "city": "Gwenborough",
         "name": "foo",
         "street": "Kulas Light",
+        "city": "Gwenborough",
         "zipcode": "92998-3874"
       }
     }

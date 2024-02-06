@@ -87,7 +87,7 @@ specified when the `users` field is queried.
 directive @grpc(
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -133,7 +133,7 @@ is queried.
 directive @http(
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -172,7 +172,7 @@ directive @http(
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.For 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
@@ -228,7 +228,7 @@ directive @server(
   apolloTracing: Boolean
   """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
-  introducing latency and complicating debugging. Use judiciously. @default `false`
+  introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
   batchRequests: Boolean
   """
@@ -266,6 +266,9 @@ directive @server(
   `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   """
   key: String
+  """
+  `pipelineFlush` allows to control flushing behavior of the server pipeline.
+  """
   pipelineFlush: Boolean
   """
   `port` sets the Tailcall running port. @default `8000`.
@@ -277,9 +280,9 @@ directive @server(
   """
   queryValidation: Boolean
   """
-  The responseHeader is a key-value pair array. These headers are included in every 
-  server response. Useful for headers like Access-Control-Allow-Origin for cross-origin 
-  requests, or additional headers like X-Allowed-Roles for downstream services.
+  The `responseHeaders` are key-value pairs included in every server response. Useful 
+  for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
+  or additional headers for downstream services.
   """
   responseHeaders: KeyValues
   """
@@ -526,7 +529,7 @@ specified when the `users` field is queried.
 input Grpc {
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -571,7 +574,7 @@ is queried.
 input Http {
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -610,7 +613,7 @@ input Http {
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.For 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """

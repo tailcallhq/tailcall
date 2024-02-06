@@ -11,13 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
+        "message": "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-dataloader-batch-keys.md",
         "locations": [
           {
-            "column": 9,
-            "line": 1
+            "line": 1,
+            "column": 9
           }
-        ],
-        "message": "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-dataloader-batch-keys.md"
+        ]
       }
     ]
   }
