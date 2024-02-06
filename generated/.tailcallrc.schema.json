@@ -1468,6 +1468,13 @@
             }
           ]
         },
+        "showcase": {
+          "description": "`showcase` enables the /showcase/graphql endpoint.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "vars": {
           "description": "This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.",
           "allOf": [

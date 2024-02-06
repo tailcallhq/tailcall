@@ -34,6 +34,9 @@ pub struct Server {
     /// `globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.
     pub global_response_timeout: Option<i64>,
     #[serde(default, skip_serializing_if = "is_default")]
+    /// `showcase` enables the /showcase/graphql endpoint.
+    pub showcase: Option<bool>,
+    #[serde(default, skip_serializing_if = "is_default")]
     /// `workers` sets the number of worker threads. @default the number of system cores.
     pub workers: Option<usize>,
     #[serde(default, skip_serializing_if = "is_default")]
@@ -118,6 +121,9 @@ impl Server {
     pub fn enable_batch_requests(&self) -> bool {
         self.batch_requests.unwrap_or(false)
     }
+    pub fn enable_showcase(&self) -> bool {
+        self.showcase.unwrap_or(false)
+    }
 
     pub fn get_hostname(&self) -> String {
         self.hostname.clone().unwrap_or("127.0.0.1".to_string())
@@ -150,6 +156,7 @@ impl Server {
         self.global_response_timeout = other
             .global_response_timeout
             .or(self.global_response_timeout);
+        self.showcase = other.showcase.or(self.showcase);
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);

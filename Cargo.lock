@@ -3785,6 +3785,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_path_to_error",
+ "serde_qs",
  "serde_urlencoded",
  "serde_v8 0.167.0",
  "serde_yaml",
