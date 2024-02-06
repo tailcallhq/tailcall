@@ -77,6 +77,7 @@ impl ProtobufSet {
     }
 
     pub fn find_service(&self, name: &str) -> Result<ProtobufService> {
+        println!("find_service: {:?}", name);
         let service_descriptor = self
             .descriptor_pool
             .get_service_by_name(name)
@@ -237,7 +238,10 @@ mod tests {
                 .to_string(),
             type_of: LinkType::Protobuf,
         }]);
-        let grpc = Grpc { proto_id: id.clone(), ..Default::default() };
+        let grpc = Grpc {
+            method: format!("{}.{}.{}", id, "a", "b"),
+            ..Default::default()
+        };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
