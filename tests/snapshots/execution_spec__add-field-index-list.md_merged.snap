@@ -6,7 +6,7 @@ schema @server @upstream {
   query: Query
 }
 
-type Query @addField(name: "username", path: ["users", "0", "name"]) {
+type Query @addField(name: "username", path: ["users","0","name"]) {
   users: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
 }
 

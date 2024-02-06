@@ -14,6 +14,6 @@ type Query {
   user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
 }
 
-type User @addField(name: "address", path: ["address", "street"]) {
+type User @addField(name: "address", path: ["address","street"]) {
   address: Address @modify(omit: true)
 }

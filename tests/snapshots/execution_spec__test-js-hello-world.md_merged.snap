@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(script: {path: {src: "tests/http/scripts/test.js", timeout: null}}) @upstream {
+schema @server(script: {path: {src: "tests/http/scripts/test.js",timeout: null}}) @upstream {
   query: Query
 }
 

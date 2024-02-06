@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}, {key: "p", value: "q"}]) @upstream {
+schema @server(vars: [{key: "a",value: "b"},{key: "c",value: "d"},{key: "p",value: "q"}]) @upstream {
   query: Query
 }
 
