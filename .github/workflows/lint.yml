@@ -31,11 +31,6 @@ jobs:
       - name: Install Prettier
         run: npm install --global prettier
       - uses: actions/checkout@v4
-      - name: Install Nightly Toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed
