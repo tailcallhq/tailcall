@@ -28,8 +28,8 @@ type NewsData {
 }
 
 type Query {
-  news: NewsData! @grpc(method: "GetAllNews", protoId: "news", service: "news.NewsService")
-  newsById(news: NewsInput!): News! @grpc(body: "{{args.news}}", method: "GetNews", protoId: "news", service: "news.NewsService")
-  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoId: "news", service: "news.NewsService")
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+  newsById(news: NewsInput!): News! @grpc(body: "{{args.news}}", method: "news.NewsService.GetNews")
+  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", groupBy: ["news", "id"], method: "news.NewsService.GetMultipleNews")
 }
 ```
