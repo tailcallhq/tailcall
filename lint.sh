@@ -58,12 +58,11 @@ fi
 # Run commands based on mode
 case $MODE in
     check|fix)
-        run_autogen_schema $MODE
-        AUTOGEN_SCHEMA_EXIT_CODE=$?
-
         # Commands that uses nightly toolchains are run from `.nightly` directory
         # to read the nightly version from `rust-toolchain.toml` file
         pushd .nightly
+        run_autogen_schema $MODE
+        AUTOGEN_SCHEMA_EXIT_CODE=$?
         run_cargo_fmt $MODE
         FMT_EXIT_CODE=$?
         run_cargo_clippy $MODE
