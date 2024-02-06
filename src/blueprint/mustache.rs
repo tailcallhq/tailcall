@@ -124,7 +124,7 @@ impl FieldDefinition {
                 }))
                 .unit()
             }
-            Some(Expression::IO(IO::GraphQLEndpoint { req_template, .. })) => {
+            Some(Expression::IO(IO::GraphQL { req_template, .. })) => {
                 Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                     Valid::from_iter(mustache.expression_segments(), |parts| {
                         parts_validator.validate(parts, true).trace("headers")

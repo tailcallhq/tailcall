@@ -1,4 +1,3 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
 use std::num::NonZeroU64;
 use std::time::Duration;
@@ -132,7 +131,6 @@ pub struct InputFieldDefinition {
 #[derive(Clone, Debug)]
 pub struct Cache {
     pub max_age: NonZeroU64,
-    pub hasher: DefaultHasher,
 }
 
 #[derive(Clone, Debug)]
@@ -161,8 +159,18 @@ pub struct FieldDefinition {
     pub resolver: Option<Expression>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
-    pub cache: Option<Cache>,
     pub rate_limit: Option<RateLimit>,
+}
+
+impl FieldDefinition {
+    ///
+    /// Transforms the current expression if it exists on the provided field.
+    ///
+    pub fn map_expr<F: FnMut(Expression) -> Expression>(&mut self, mut wrapper: F) {
+        if let Some(resolver) = self.resolver.take() {
+            self.resolver = Some(wrapper(resolver))
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
