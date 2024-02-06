@@ -11,13 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
+        "message": " --> 1:1\n  |\n1 | FOO\n  | ^---\n  |\n  = expected executable_definition",
         "locations": [
           {
-            "column": 1,
-            "line": 1
+            "line": 1,
+            "column": 1
           }
-        ],
-        "message": " --> 1:1\n  |\n1 | FOO\n  | ^---\n  |\n  = expected executable_definition"
+        ]
       }
     ]
   }

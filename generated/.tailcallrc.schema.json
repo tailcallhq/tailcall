@@ -6,6 +6,13 @@
     "schema"
   ],
   "properties": {
+    "links": {
+      "description": "A list of all links in the schema.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Link"
+      }
+    },
     "schema": {
       "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
       "allOf": [
@@ -1081,12 +1088,12 @@
       "type": "object",
       "required": [
         "method",
-        "protoPath",
+        "protoId",
         "service"
       ],
       "properties": {
         "baseURL": {
-          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
+          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
           "type": [
             "string",
             "null"
@@ -1118,8 +1125,8 @@
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
         },
-        "protoPath": {
-          "description": "The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.",
+        "protoId": {
+          "description": "The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.",
           "type": "string"
         },
         "service": {
@@ -1136,7 +1143,7 @@
       ],
       "properties": {
         "baseURL": {
-          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
+          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
           "type": [
             "string",
             "null"
@@ -1203,7 +1210,7 @@
           ]
         },
         "path": {
-          "description": "This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
+          "description": "This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
           "type": "string"
         },
         "query": {
@@ -1239,6 +1246,38 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "Link": {
+      "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The id of the link. It is used to reference the link in the schema.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "src": {
+          "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the link. It can be `Config`, or `Protobuf`.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LinkType"
+            }
+          ]
+        }
+      }
+    },
+    "LinkType": {
+      "type": "string",
+      "enum": [
+        "Config",
+        "Protobuf"
+      ]
     },
     "Method": {
       "type": "string",
@@ -1364,7 +1403,7 @@
           ]
         },
         "batchRequests": {
-          "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`",
+          "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.",
           "type": [
             "boolean",
             "null"
@@ -1421,6 +1460,7 @@
           ]
         },
         "pipelineFlush": {
+          "description": "`pipelineFlush` allows to control flushing behavior of the server pipeline.",
           "type": [
             "boolean",
             "null"
@@ -1443,7 +1483,7 @@
           ]
         },
         "responseHeaders": {
-          "description": "The responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services.",
+          "description": "The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
           "allOf": [
             {
               "$ref": "#/definitions/KeyValues"

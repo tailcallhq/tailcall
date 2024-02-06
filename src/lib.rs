@@ -68,6 +68,6 @@ pub trait WorkerIO<Event, Command>: Send + Sync {
     fn dispatch(&self, event: Event) -> anyhow::Result<Command>;
 }
 
-fn is_default<T: Default + Eq>(val: &T) -> bool {
+pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
 }
