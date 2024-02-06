@@ -538,37 +538,46 @@ impl Union {
 /// The path argument specifies the path of the REST API.
 /// In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
 pub struct Http {
-    /// This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.
-    ///
-    /// For dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.
-    pub path: String,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
-    pub method: Method,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.
-    pub query: KeyValues,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Schema of the input of the API call. It is automatically inferred in most cases.
-    pub input: Option<JsonSchema>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Schema of the output of the API call. It is automatically inferred in most cases.
-    pub output: Option<JsonSchema>,
+    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
+    pub base_url: Option<String>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.
     pub body: Option<String>,
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator
-    pub base_url: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.
-    pub headers: KeyValues,
-    #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
-    /// The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
     pub encoding: Encoding,
+
+    #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
+    /// The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    pub group_by: Vec<String>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.
+    pub headers: KeyValues,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Schema of the input of the API call. It is automatically inferred in most cases.
+    pub input: Option<JsonSchema>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
+    pub method: Method,
+
+    /// This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.
+    ///
+    /// For dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.
+    pub path: String,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Schema of the output of the API call. It is automatically inferred in most cases.
+    pub output: Option<JsonSchema>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.
+    pub query: KeyValues,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -580,45 +589,50 @@ pub struct Http {
 /// The `method` argument specifies the name of the gRPC method.
 /// In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.
 pub struct Grpc {
-    /// This refers to the gRPC service you're going to call. For instance `NewsService`.
-    pub service: String,
-    /// This refers to the gRPC method you're going to call. For instance `GetAllNews`.
-    pub method: String,
+    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
+    pub base_url: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.
     pub body: Option<String>,
-    #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator
-    pub base_url: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc
-    pub headers: KeyValues,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc
+    pub headers: KeyValues,
+    /// This refers to the gRPC method you're going to call. For instance `GetAllNews`.
+    pub method: String,
     /// The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.
     pub proto_id: String,
+
+    /// This refers to the gRPC service you're going to call. For instance `NewsService`.
+    pub service: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch data from.
 pub struct GraphQL {
-    /// Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.
-    pub name: String,
     #[serde(default, skip_serializing_if = "is_default")]
     /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
     pub args: Option<KeyValues>,
+
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.
-    pub headers: KeyValues,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.
     ///
     /// Make sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.
     pub batch: bool,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.
+    pub headers: KeyValues,
+
+    /// Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.
+    pub name: String,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
