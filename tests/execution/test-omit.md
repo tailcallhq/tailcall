@@ -21,7 +21,7 @@ type Foo {
   a: A
 }
 
-type Query @addField(name: "foo", path: ["foo", "a", "b"]) {
+type Query @addField(name: "foo", path: ["foo","a","b"]) {
   foo: Foo @http(path: "/foo") @omit
 }
 ```

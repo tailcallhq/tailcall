@@ -8,7 +8,7 @@ schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
 
 type Post {
   id: Int
-  user: User! @http(path: "/users", query: [{key: "id", value: "{{value.user.id}}"}])
+  user: User! @http(path: "/users", query: [{key: "id",value: "{{value.user.id}}"}])
 }
 
 type Query {
