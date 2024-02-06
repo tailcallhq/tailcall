@@ -30,16 +30,9 @@ type Query {
   postGraphQLArgs: Post @graphQL(name: "post", args: [{key: "id", value: "{{args.id}}"}])
   postGraphQLHeaders: Post @graphQL(name: "post", headers: [{key: "id", value: "{{args.id}}"}])
   postHttp: Post @http(path: "/posts/{{args.id}}")
-  newsGrpcHeaders: NewsData!
-    @grpc(
-      method: "GetAllNews"
-      protoId: "news"
-      service: "news.NewsService"
-      headers: [{key: "id", value: "{{args.id}}"}]
-    )
-  newsGrpcUrl: NewsData!
-    @grpc(method: "GetAllNews", protoId: "news", service: "news.NewsService", baseURL: "{{args.url}}")
-  newsGrpcBody: NewsData! @grpc(method: "GetAllNews", protoId: "news", service: "news.NewsService", body: "{{args.id}}")
+  newsGrpcHeaders: NewsData! @grpc(method: "news.NewsService.GetAllNews", headers: [{key: "id", value: "{{args.id}}"}])
+  newsGrpcUrl: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "{{args.url}}")
+  newsGrpcBody: NewsData! @grpc(method: "news.NewsService.GetAllNews", body: "{{args.id}}")
 }
 
 type User {
