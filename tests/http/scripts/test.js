@@ -1,3 +1,12 @@
+// TODO: get rid of this function and do it automatically
+function str2ab(str) {
+  var buf = new ArrayBuffer(str.length); // 2 bytes for each char
+  var bufView = new Uint8Array(buf);
+  for (var i=0, strLen=str.length; i<strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}
 function onEvent(event) {
   if (event.message.response) {
     return event
@@ -10,7 +19,7 @@ function onEvent(event) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: "hello world",
+          body: str2ab(JSON.stringify("hello world")),
         },
       },
     }
@@ -20,7 +29,6 @@ function onEvent(event) {
         request: {
           url: "http://localhost:3000/bye",
           headers: {},
-          body: "",
           method: "GET",
         },
       },
