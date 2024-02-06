@@ -592,19 +592,22 @@ pub struct Grpc {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<String>,
-
     #[serde(default, skip_serializing_if = "is_default")]
     /// This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.
     pub body: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc
-    pub headers: KeyValues,
-    /// The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.
-    pub proto_id: String,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc
+    pub headers: KeyValues,
+    /// This refers to the gRPC method you're going to call. For instance `GetAllNews`.
+    pub method: String,
+    /// The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.
+    pub proto_id: String,
+
+    /// This refers to the gRPC service you're going to call. For instance `NewsService`.
+    pub service: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
