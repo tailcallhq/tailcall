@@ -1417,6 +1417,7 @@
           ]
         },
         "cert": {
+          "description": "`cert` contains a path to key and certificate. @default None",
           "anyOf": [
             {
               "$ref": "#/definitions/TlsCert"
@@ -1424,8 +1425,7 @@
             {
               "type": "null"
             }
-          ],
-          "description": "`cert` contains a path to key and certificate. @default None"
+          ]
         },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
@@ -1543,6 +1543,7 @@
       }
     },
     "TlsCert": {
+      "type": "object",
       "properties": {
         "cert": {
           "description": "`cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS).",
@@ -1552,8 +1553,7 @@
           "description": "`key` sets the path to key for running the server over HTTP2 (HTTPS).",
           "type": "string"
         }
-      },
-      "type": "object"
+      }
     },
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",

@@ -22,8 +22,8 @@ pub struct Server {
     pub cache_control_header: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
-    pub cert: Option<String>,
+    /// `cert` contains a path to key and certificate. @default None
+    pub cert: Option<TlsCert>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.
@@ -40,10 +40,6 @@ pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
     /// `introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.
     pub introspection: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-    pub key: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `pipelineFlush` allows to control flushing behavior of the server pipeline.
@@ -105,6 +101,16 @@ pub enum HttpVersion {
     #[default]
     HTTP1,
     HTTP2,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+pub struct TlsCert {
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS).
+    pub cert: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `key` sets the path to key for running the server over HTTP2 (HTTPS).
+    pub key: String,
 }
 
 impl Server {
@@ -187,7 +193,6 @@ impl Server {
         self.response_headers = KeyValues(response_headers);
         self.version = other.version.or(self.version);
         self.cert = other.cert.or(self.cert);
-        self.key = other.key.or(self.key);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
         self

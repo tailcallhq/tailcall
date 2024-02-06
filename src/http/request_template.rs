@@ -707,7 +707,7 @@ mod tests {
     mod cache_key {
         use std::collections::HashSet;
 
-        use hyper::HeaderMap;
+        use reqwest::header::HeaderMap;
         use serde_json::json;
 
         use crate::http::request_template::tests::Context;

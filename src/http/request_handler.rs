@@ -83,7 +83,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Full<Bytes>>,
     app_ctx: &AppContext,
 ) -> Result<Response<Full<Bytes>>> {
-    let req_ctx = Arc::new(create_request_context(&req, server_ctx));
+    let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let bytes = req
         .into_body()
         .frame()

@@ -112,7 +112,7 @@ directive @grpc(
   """
   method: String!
   """
-  The id of the protobuf included via @link directive. If the protobuf was not included
+  The id of the protobuf included via @link directive. If the protobuf was not included 
   via @link, an error will be thrown.
   """
   protoId: String!
@@ -172,7 +172,7 @@ directive @http(
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
@@ -190,7 +190,7 @@ directive @js(
 ) on FIELD_DEFINITION
 
 """
-The @link directive allows you to import external resources, such as configuration
+The @link directive allows you to import external resources, such as configuration 
 – which will be merged into the config importing it –, or a .proto file – which
  will be later used by `@grpc` directive –.
 """
@@ -200,7 +200,7 @@ directive @link(
   """
   id: String
   """
-  The source of the link. It can be a URL or a path to a file. If a path is provided,
+  The source of the link. It can be a URL or a path to a file. If a path is provided, 
   it is relative to the file that imports the link.
   """
   src: String!
@@ -262,10 +262,6 @@ directive @server(
   """
   introspection: Boolean
   """
-  `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-  """
-  key: String
-  """
   `pipelineFlush` allows to control flushing behavior of the server pipeline.
   """
   pipelineFlush: Boolean
@@ -279,8 +275,8 @@ directive @server(
   """
   queryValidation: Boolean
   """
-  The `responseHeaders` are key-value pairs included in every server response. Useful
-  for setting headers like `Access-Control-Allow-Origin` for cross-origin requests
+  The `responseHeaders` are key-value pairs included in every server response. Useful 
+  for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
   or additional headers for downstream services.
   """
   responseHeaders: KeyValues
@@ -298,7 +294,7 @@ directive @server(
   """
   showcase: Boolean
   """
-  This configuration defines local variables for server operations. Useful for storing
+  This configuration defines local variables for server operations. Useful for storing 
   constant configurations, secrets, or shared information.
   """
   vars: KeyValues
@@ -553,7 +549,7 @@ input Grpc {
   """
   method: String!
   """
-  The id of the protobuf included via @link directive. If the protobuf was not included
+  The id of the protobuf included via @link directive. If the protobuf was not included 
   via @link, an error will be thrown.
   """
   protoId: String!
@@ -612,7 +608,7 @@ input Http {
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """

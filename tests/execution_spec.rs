@@ -756,7 +756,7 @@ async fn assert_spec(spec: ExecutionSpec) -> anyhow::Result<()> {
                 status,
                 headers,
                 body: serde_json::from_slice(&bytes).unwrap(),
-                text_body: None
+                text_body: None,
             };
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
