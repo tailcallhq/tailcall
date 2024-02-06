@@ -187,38 +187,7 @@
           "description": "Branch based on a condition",
           "properties": {
             "if": {
-              "properties": {
-                "cond": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Condition to evaluate"
-                },
-                "else": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Expression to evaluate if the condition is false"
-                },
-                "then": {
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/ExprBody"
-                    }
-                  ],
-                  "description": "Expression to evaluate if the condition is true"
-                }
-              },
-              "required": [
-                "cond",
-                "else",
-                "then"
-              ],
-              "type": "object"
+              "$ref": "#/definitions/ExprIf"
             }
           },
           "required": [
@@ -847,6 +816,40 @@
         }
       ]
     },
+    "ExprIf": {
+      "properties": {
+        "cond": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Condition to evaluate"
+        },
+        "else": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Expression to evaluate if the condition is false"
+        },
+        "then": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ],
+          "description": "Expression to evaluate if the condition is true"
+        }
+      },
+      "required": [
+        "cond",
+        "else",
+        "then"
+      ],
+      "type": "object"
+    },
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
       "properties": {
@@ -1298,6 +1301,53 @@
       },
       "type": "object"
     },
+    "Script": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "$ref": "#/definitions/ScriptOptions"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "$ref": "#/definitions/ScriptOptions"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ScriptOptions": {
+      "properties": {
+        "src": {
+          "type": "string"
+        },
+        "timeout": {
+          "format": "uint64",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "src"
+      ],
+      "type": "object"
+    },
     "Server": {
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
       "properties": {
@@ -1402,6 +1452,24 @@
             "null"
           ]
         },
+        "script": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Script"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A link to an external JS file that listens on every HTTP request response event."
+        },
+        "showcase": {
+          "description": "`showcase` enables the /showcase/graphql endpoint.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "vars": {
           "allOf": [
             {
@@ -1453,7 +1521,7 @@
             }
           ],
           "default": null,
-          "description": "Setting to indicate if the type is cacheable."
+          "description": "Setting to indicate if the type can be cached."
         },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",
@@ -1500,7 +1568,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Setting to indicate if rate limit needs to be applied to the type."
         },
         "scalar": {
           "description": "Flag to indicate if the type is a scalar.",

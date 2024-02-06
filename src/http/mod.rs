@@ -7,6 +7,7 @@ mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
+pub mod showcase;
 
 pub use cache::*;
 pub use data_loader::*;

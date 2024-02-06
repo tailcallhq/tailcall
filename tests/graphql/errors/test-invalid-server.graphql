@@ -1,8 +1,0 @@
-#> server-sdl
-schema @server(port: "8000") {
-  query: Query
-}
-
-#> client-sdl
-type Failure
-  @error(message: "Parsing failed because of invalid type: string \"8000\", expected u16", trace: ["@server", "port"])

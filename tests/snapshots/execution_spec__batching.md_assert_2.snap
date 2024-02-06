@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "locations": [
+          {
+            "column": 1,
+            "line": 1
+          }
+        ],
+        "message": " --> 1:1\n  |\n1 | FOO\n  | ^---\n  |\n  = expected executable_definition"
+      }
+    ]
+  }
+}

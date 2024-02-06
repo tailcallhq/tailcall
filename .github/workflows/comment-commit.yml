@@ -1,0 +1,27 @@
+name: Comment on commit
+
+on:
+  workflow_run:
+    workflows: ["Benchmark"]
+    types:
+      - completed
+
+jobs:
+  comment:
+    name: Comment on commit
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Download artifact with body message
+        uses: actions/download-artifact@v4
+        with:
+          name: body
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Create Commit Comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          sha: ${{ github.event.workflow_run.head_sha }}
+          body-path: body.md
