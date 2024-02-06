@@ -47,10 +47,11 @@ impl TryFrom<Response<Bytes>> for JsResponse {
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeMap;
+
     use anyhow::Result;
     use hyper::body::Bytes;
     use reqwest::header::HeaderMap;
-    use std::collections::BTreeMap;
 
     use super::JsResponse;
 
