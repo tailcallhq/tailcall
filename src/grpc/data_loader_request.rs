@@ -64,7 +64,7 @@ mod tests {
     use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, Grpc, Type};
+    use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 
@@ -76,25 +76,38 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
-        let runtime = init_runtime(&Upstream::default(), None);
-        let mut config = Config::default();
+        let id = "greetings".to_string();
+        let mut config = Config::default().links(vec![Link {
+            id: Some(id.clone()),
+            src: test_file.to_str().unwrap().to_string(),
+            type_of: LinkType::Protobuf,
+        }]);
+        let service = "Greeter";
+        let method = "SayHello";
         let grpc = Grpc {
-            proto_path: test_file.to_str().unwrap().to_string(),
+            method: format!("{}.{}.{}", id, service, method),
             ..Default::default()
         };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
+
+        let runtime = init_runtime(&Upstream::default(), None);
         let reader = ConfigReader::init(runtime);
-        let config_set = reader.resolve(config).await.unwrap();
+        let config_set = reader.resolve(config, None).await.unwrap();
 
-        let protobuf_set =
-            ProtobufSet::from_proto_file(&config_set.extensions.grpc_file_descriptor).unwrap();
+        let protobuf_set = ProtobufSet::from_proto_file(
+            config_set
+                .extensions
+                .get_file_descriptor(id.as_str())
+                .unwrap(),
+        )
+        .unwrap();
 
-        let service = protobuf_set.find_service("Greeter").unwrap();
+        let service = protobuf_set.find_service(service).unwrap();
 
-        service.find_operation("SayHello").unwrap()
+        service.find_operation(method).unwrap()
     }
 
     #[tokio::test]

@@ -9,8 +9,9 @@ use schemars::schema::{
 use tailcall::config;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_WHITELIST: [(&str, Entity, bool); 12] = [
+static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
     ("server", Entity::Schema, false),
+    ("link", Entity::Schema, true),
     ("upstream", Entity::Schema, false),
     ("http", Entity::FieldDefinition, false),
     ("grpc", Entity::FieldDefinition, false),
@@ -415,8 +416,8 @@ fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     Ok(())
 }
 
-fn directive_whitelist_lookup(name: &str) -> Option<(&'static str, Entity, bool)> {
-    for (nm, entity, is_repeatable) in DIRECTIVE_WHITELIST.iter() {
+fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, Entity, bool)> {
+    for (nm, entity, is_repeatable) in DIRECTIVE_ALLOW_LIST.iter() {
         if name.to_lowercase() == nm.to_lowercase() {
             return Some((*nm, *entity, *is_repeatable));
         }
@@ -424,7 +425,7 @@ fn directive_whitelist_lookup(name: &str) -> Option<(&'static str, Entity, bool)
     None
 }
 
-fn input_whitelist_lookup<'a>(
+fn input_allow_list_lookup<'a>(
     name: &'a str,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> Option<&'a str> {
@@ -608,6 +609,7 @@ fn write_all_input_types(
 
     let defs = schema.definitions;
     let mut scalars = HashSet::new();
+    let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);

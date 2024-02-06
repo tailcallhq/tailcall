@@ -1,57 +1,51 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
-use futures_util::future::join_all;
 use futures_util::Future;
-use hyper::body::Bytes;
 
-use crate::channel::{Command, Event, JsResponse};
+use super::channel::{Message, MessageContent};
+use super::JsResponse;
 use crate::http::Response;
-use crate::{HttpIO, ScriptIO};
+use crate::{HttpIO, WorkerIO};
 
 #[derive(Clone)]
 pub struct HttpFilter {
     client: Arc<dyn HttpIO + Send + Sync>,
-    script: Arc<dyn ScriptIO<Event, Command> + Send + Sync>,
+    worker: Arc<dyn WorkerIO<Message, Message> + Send + Sync>,
 }
 
 impl HttpFilter {
     pub fn new(
         http: impl HttpIO + Send + Sync,
-        script: impl ScriptIO<Event, Command> + Send + Sync + 'static,
+        script: impl WorkerIO<Message, Message> + Send + Sync + 'static,
     ) -> Self {
-        HttpFilter { client: Arc::new(http), script: Arc::new(script) }
+        HttpFilter { client: Arc::new(http), worker: Arc::new(script) }
     }
 
     fn on_command<'a>(
         &'a self,
-        command: Command,
+        command: Message,
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<Response<hyper::body::Bytes>>> + Send + 'a>>
     {
         Box::pin(async move {
             match command {
-                Command::Request(requests) => {
-                    let requests = requests.into_iter().flat_map(|req| {
-                        let req = req.try_into().ok()?;
-                        Some(self.client.execute(req))
-                    });
-                    let responses = join_all(requests)
-                        .await
-                        .into_iter()
-                        .collect::<anyhow::Result<Vec<_>>>()?
-                        .iter()
-                        .flat_map(|e| JsResponse::try_from(e).ok())
-                        .collect::<Vec<_>>();
-                    let command = self.script.on_event(Event::Response(responses)).await?;
+                Message { message: MessageContent::Request(request), id } => {
+                    let request = request;
+                    let response = self.client.execute(request.try_into()?).await?;
+                    if id.is_none() {
+                        return Ok(response);
+                    }
+                    let command = self.worker.dispatch(Message {
+                        message: MessageContent::Response(JsResponse::try_from(response)?),
+                        id,
+                    })?;
                     Ok(self.on_command(command).await?)
                 }
-                Command::Response(response) => {
-                    let res: anyhow::Result<Response<Bytes>> = response.try_into();
-                    res
+                Message { message: MessageContent::Response(response), id: _ } => {
+                    Ok(response.try_into()?)
                 }
-                Command::Continue(request) => {
-                    let res = self.client.execute(request.try_into()?).await?;
-                    Ok(res)
+                Message { message: MessageContent::Empty, id: _ } => {
+                    anyhow::bail!("No response received from worker")
                 }
             }
         })
@@ -64,10 +58,10 @@ impl HttpIO for HttpFilter {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        let command = self
-            .script
-            .on_event(Event::Request((&request).try_into()?))
-            .await?;
+        let command = self.worker.dispatch(Message {
+            message: MessageContent::Request(request.try_into()?),
+            id: None,
+        })?;
         self.on_command(command).await
     }
 }

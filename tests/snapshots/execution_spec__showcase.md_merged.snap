@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(showcase: true) @upstream {
+  query: Query
+}
+
+type Query {
+  not_user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+}
+
+type User {
+  not_id: Int
+  not_name: String
+}
