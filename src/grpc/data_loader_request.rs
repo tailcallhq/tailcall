@@ -81,7 +81,12 @@ mod tests {
             src: test_file.to_str().unwrap().to_string(),
             type_of: LinkType::Protobuf,
         }]);
-        let grpc = Grpc { proto_id: id.clone(), ..Default::default() };
+        let service = "Greeter";
+        let method = "SayHello";
+        let grpc = Grpc {
+            method: format!("{}.{}.{}", id, service, method),
+            ..Default::default()
+        };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
@@ -99,9 +104,9 @@ mod tests {
         )
         .unwrap();
 
-        let service = protobuf_set.find_service("Greeter").unwrap();
+        let service = protobuf_set.find_service(service).unwrap();
 
-        service.find_operation("SayHello").unwrap()
+        service.find_operation(method).unwrap()
     }
 
     #[tokio::test]

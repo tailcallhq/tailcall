@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "Couldn't find definitions for service news.YourServiceName",
+    "message": "Invalid method format: abc.NewsService. Expected format is <package/proto_id>.<service>.<method>",
     "trace": [
       "Query",
       "news",

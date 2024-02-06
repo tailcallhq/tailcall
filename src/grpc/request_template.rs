@@ -151,7 +151,10 @@ mod tests {
             src: test_file.to_str().unwrap().to_string(),
             type_of: LinkType::Protobuf,
         }]);
-        let grpc = Grpc { proto_id: id.clone(), ..Default::default() };
+        let grpc = Grpc {
+            method: format!("{}.{}.{}", id.clone(), "a", "b"),
+            ..Default::default()
+        };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
