@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "File descriptor not found for proto id: abc",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc"
+    ],
+    "description": null
+  }
+]
