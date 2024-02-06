@@ -8,11 +8,11 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigSet, Content, Link, LinkType};
+use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
+/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
 }
@@ -66,9 +66,9 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        mut config_set: ConfigSet,
+        mut config_set: ConfigModule,
         path: Option<String>,
-    ) -> anyhow::Result<ConfigSet> {
+    ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_set
             .config
             .links
@@ -107,12 +107,12 @@ impl ConfigReader {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                    config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
+                    config_set = config_set.merge_right(&ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
                         config_set = config_set.merge_right(
                             &self
-                                .ext_links(ConfigSet::from(config), Some(source.path))
+                                .ext_links(ConfigModule::from(config), Some(source.path))
                                 .await?,
                         );
                     }
@@ -142,14 +142,14 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigSet> {
+    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigSet> {
+    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.read_files(files).await?;
-        let mut config_set = ConfigSet::default();
+        let mut config_set = ConfigModule::default();
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
@@ -170,10 +170,14 @@ impl ConfigReader {
         Ok(config_set)
     }
 
-    /// Resolves all the links in a Config to create a ConfigSet
-    pub async fn resolve(&self, config: Config, path: Option<String>) -> anyhow::Result<ConfigSet> {
+    /// Resolves all the links in a Config to create a ConfigModule
+    pub async fn resolve(
+        &self,
+        config: Config,
+        path: Option<String>,
+    ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
-        let config_set = ConfigSet::from(config);
+        let config_set = ConfigModule::from(config);
 
         // Extend it with the links
         let config_set = self.ext_links(config_set, path).await?;

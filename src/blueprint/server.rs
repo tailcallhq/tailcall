@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::config::{self, ConfigSet, HttpVersion};
+use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
@@ -46,7 +46,7 @@ pub enum Http {
 impl Default for Server {
     fn default() -> Self {
         // NOTE: Using unwrap because try_from default will never fail
-        Server::try_from(ConfigSet::default()).unwrap()
+        Server::try_from(ConfigModule::default()).unwrap()
     }
 }
 
@@ -67,10 +67,10 @@ impl Server {
     }
 }
 
-impl TryFrom<crate::config::ConfigSet> for Server {
+impl TryFrom<crate::config::ConfigModule> for Server {
     type Error = ValidationError<String>;
 
-    fn try_from(config_set: config::ConfigSet) -> Result<Self, Self::Error> {
+    fn try_from(config_set: config::ConfigModule) -> Result<Self, Self::Error> {
         let config_server = config_set.server.clone();
 
         let http_server = match config_server.clone().get_version() {
@@ -118,7 +118,7 @@ impl TryFrom<crate::config::ConfigSet> for Server {
     }
 }
 
-fn to_script(config_set: &crate::config::ConfigSet) -> Valid<Option<Script>, String> {
+fn to_script(config_set: &crate::config::ConfigModule) -> Valid<Option<Script>, String> {
     config_set.extensions.script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
@@ -168,11 +168,11 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
 
 #[cfg(test)]
 mod tests {
-    use crate::config::ConfigSet;
+    use crate::config::ConfigModule;
 
     #[test]
     fn test_try_from_default() {
-        let actual = super::Server::try_from(ConfigSet::default());
+        let actual = super::Server::try_from(ConfigModule::default());
         assert!(actual.is_ok())
     }
 }

@@ -20,7 +20,7 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint, Upstream};
 use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigSet, Source};
+use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::target_runtime::TargetRuntime;
@@ -415,7 +415,7 @@ impl ExecutionSpec {
 
     async fn server_context(
         &self,
-        config: &ConfigSet,
+        config: &ConfigModule,
         env: HashMap<String, String>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
@@ -687,7 +687,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     dbg!(spec.path.to_string_lossy().to_string());
 
     // Resolve all configs
-    let server: Vec<ConfigSet> = join_all(
+    let server: Vec<ConfigModule> = join_all(
         server
             .into_iter()
             .map(|config| reader.resolve(config, Some(spec.path.to_string_lossy().to_string()))),
@@ -802,7 +802,7 @@ async fn run_assert(
     spec: &ExecutionSpec,
     env: &HashMap<String, String>,
     request: &APIRequest,
-    config: &ConfigSet,
+    config: &ConfigModule,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();
