@@ -16,7 +16,7 @@ concurrency:
 
 defaults:
   run:
-    working-directory: .nightly
+    working-directory: ".nightly"
 
 jobs:
   lint:
