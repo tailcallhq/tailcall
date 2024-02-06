@@ -141,20 +141,6 @@ impl ConfigReader {
         Ok(config_set)
     }
 
-    // /// Reads the script file and replaces the path with the content
-    // async fn ext_script(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
-    //     let config = &mut config_set.config;
-
-    //     if let Some(ref options) = &onfig.server.script {
-    //         config_set.extensions.script
-    //         // let timeout = options.timeout;
-    //         // let script = self.read_file(options.src.clone()).await?.content;
-    //         // config.server.script = Some(Script::File(ScriptOptions { src: script, timeout }));
-    //     }
-
-    //     Ok(config_set)
-    // }
-
     /// Reads a single file and returns the config
     pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigSet> {
         self.read_all(&[file]).await
@@ -188,9 +174,6 @@ impl ConfigReader {
     pub async fn resolve(&self, config: Config, path: Option<String>) -> anyhow::Result<ConfigSet> {
         // Create initial config set
         let config_set = ConfigSet::from(config);
-
-        // // Extend it with the worker script
-        // let config_set = self.ext_script(config_set).await?;
 
         // Extend it with the links
         let config_set = self.ext_links(config_set, path).await?;
@@ -324,7 +307,7 @@ mod reader_tests {
     use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Link, LinkType, Type};
+    use crate::config::{Config, Type};
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()

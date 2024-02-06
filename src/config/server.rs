@@ -86,17 +86,9 @@ pub struct Server {
     pub workers: Option<usize>,
 }
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-// #[serde(rename_all = "camelCase")]
-// pub enum Script {
-//     Path(ScriptOptions),
-//     File(ScriptOptions),
-// }
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptOptions {
-    pub src: String,
     pub timeout: Option<u64>,
 }
 

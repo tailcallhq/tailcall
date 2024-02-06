@@ -168,7 +168,7 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
 
 #[cfg(test)]
 mod tests {
-    use crate::config::{self, ConfigSet};
+    use crate::config::ConfigSet;
 
     #[test]
     fn test_try_from_default() {
