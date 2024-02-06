@@ -65,9 +65,9 @@ pub struct Server {
     /// `responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.
     pub response_validation: Option<bool>,
 
-    #[serde(default, skip_serializing_if = "is_default")]
+    // #[serde(default, skip_serializing_if = "is_default")]
     /// A link to an external JS file that listens on every HTTP request response event.
-    pub script: Option<Script>,
+    pub script: Option<ScriptOptions>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `showcase` enables the /showcase/graphql endpoint.
@@ -86,12 +86,12 @@ pub struct Server {
     pub workers: Option<usize>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub enum Script {
-    Path(ScriptOptions),
-    File(ScriptOptions),
-}
+// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+// #[serde(rename_all = "camelCase")]
+// pub enum Script {
+//     Path(ScriptOptions),
+//     File(ScriptOptions),
+// }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]

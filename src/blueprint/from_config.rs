@@ -11,8 +11,7 @@ use crate::valid::{Valid, ValidationError, Validator};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Server::try_from(config_set.server.clone()))
-            .map(|server| blueprint.server(server))
+        Valid::from(Server::try_from(config_set.clone())).map(|server| blueprint.server(server))
     });
 
     let schema = to_schema().transform::<Blueprint>(

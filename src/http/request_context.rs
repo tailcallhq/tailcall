@@ -131,9 +131,11 @@ mod test {
 
     impl Default for RequestContext {
         fn default() -> Self {
-            let crate::config::Config { server, upstream, .. } = crate::config::Config::default();
+            let config_set = crate::config::ConfigSet::default();
+
+            let crate::config::Config { upstream, .. } = config_set.config.clone();
             //TODO: default is used only in tests. Drop default and move it to test.
-            let server = Server::try_from(server).unwrap();
+            let server = Server::try_from(config_set).unwrap();
             let upstream = Upstream::try_from(upstream).unwrap();
             let h_client = init_http(&upstream, None);
             let h2_client = init_http2_only(&upstream.clone(), None);
@@ -194,9 +196,9 @@ mod test {
     #[test]
     fn test_is_batching_enabled_default() {
         // create ctx with default batch
-        let config = config::Config::default();
-        let server = Server::try_from(config.server.clone()).unwrap();
-        let mut upstream = Upstream::try_from(config.upstream.clone()).unwrap();
+        let config_set = config::ConfigSet::default();
+        let server = Server::try_from(config_set.clone()).unwrap();
+        let mut upstream = Upstream::try_from(config_set.upstream.clone()).unwrap();
         upstream.batch = Some(Batch::default());
         let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 

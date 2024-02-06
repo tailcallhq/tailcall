@@ -3,7 +3,7 @@
 #### server:
 
 ```graphql
-schema @server(script: {path: {src: "tests/http/scripts/test.js"}}) {
+schema @server @link(type: Script, src: "../http/scripts/test.js") {
   query: Query
 }
 
