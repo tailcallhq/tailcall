@@ -111,15 +111,6 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
-  """
-  The id of the protobuf included via @link directive. If the protobuf was not included 
-  via @link, an error will be thrown.
-  """
-  protoId: String!
-  """
-  This refers to the gRPC service you're going to call. For instance `NewsService`.
-  """
-  service: String!
 ) on FIELD_DEFINITION
 
 """
@@ -553,15 +544,6 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
-  """
-  The id of the protobuf included via @link directive. If the protobuf was not included 
-  via @link, an error will be thrown.
-  """
-  protoId: String!
-  """
-  This refers to the gRPC service you're going to call. For instance `NewsService`.
-  """
-  service: String!
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 

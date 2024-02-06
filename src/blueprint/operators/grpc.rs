@@ -134,24 +134,18 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     // proto_id.method[1] is service
     // method[2] is method
 
-    dbg!(grpc.method.clone());
-
     let method: Vec<&str> = grpc.method.split('.').collect();
 
     let proto_id = method[0];
-    let service = format!("{}.{}", proto_id, method[1]);
+    let package_and_service = format!("{}.{}", proto_id, method[1]);
     let method = method[2];
 
-    println!("proto_id: {}", proto_id);
-    println!("service: {}", service);
-    println!("method: {}", method);
-
     Valid::from_option(
-        config_set.extensions.get_file_descriptor(&proto_id),
+        config_set.extensions.get_file_descriptor(proto_id),
         format!("File descriptor not found for proto id: {}", proto_id),
     )
-    .and_then(|file_descriptor_set| to_operation(&service, method, file_descriptor_set))
-    .fuse(to_url(grpc, &service, method, config_set))
+    .and_then(|file_descriptor_set| to_operation(&package_and_service, method, file_descriptor_set))
+    .fuse(to_url(grpc, &package_and_service, method, config_set))
     .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
     .fuse(helpers::body::to_body(grpc.body.as_deref()))
     .and_then(|(operation, url, headers, body)| {
