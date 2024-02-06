@@ -35,10 +35,10 @@ jobs:
         run: cp -f .nightly/rust-toolchain.toml rust-toolchain.toml
       - name: Install Nightly Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Run Lint Script
-        run: ./lint.sh --mode=$LINT_MODE
       - name: Rollback toolchain file change
         run: git restore rust-toolchain.toml
+      - name: Run Lint Script
+        run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed
         if: env.LINT_MODE == 'fix'
         uses: autofix-ci/action@ea32e3a12414e6d3183163c3424a7d7a8631ad84
