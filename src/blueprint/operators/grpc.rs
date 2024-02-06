@@ -126,44 +126,45 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
 
-    to_url(grpc, config_set)
-        .fuse(to_operation(
-            grpc,
-            &config_set.extensions.grpc_file_descriptor,
-        ))
-        .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
-        .fuse(helpers::body::to_body(grpc.body.as_deref()))
-        .and_then(|(url, operation, headers, body)| {
-            let validation = if validate_with_schema {
-                let field_schema = json_schema_from_field(config_set, field);
-                if grpc.group_by.is_empty() {
-                    validate_schema(field_schema, &operation, field.name()).unit()
-                } else {
-                    validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
-                }
+    Valid::from_option(
+        config_set.extensions.get_file_descriptor(&grpc.proto_id),
+        format!("File descriptor not found for proto id: {}", grpc.proto_id),
+    )
+    .and_then(|file_descriptor_set| to_operation(grpc, file_descriptor_set))
+    .fuse(to_url(grpc, config_set))
+    .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
+    .fuse(helpers::body::to_body(grpc.body.as_deref()))
+    .and_then(|(operation, url, headers, body)| {
+        let validation = if validate_with_schema {
+            let field_schema = json_schema_from_field(config_set, field);
+            if grpc.group_by.is_empty() {
+                validate_schema(field_schema, &operation, field.name()).unit()
             } else {
-                Valid::succeed(())
-            };
-            validation.map(|_| (url, headers, operation, body))
-        })
-        .map(|(url, headers, operation, body)| {
-            let req_template = RequestTemplate {
-                url,
-                headers,
-                operation,
-                body,
-                operation_type: operation_type.clone(),
-            };
-            if !grpc.group_by.is_empty() {
-                Expression::IO(IO::Grpc {
-                    req_template,
-                    group_by: Some(GroupBy::new(grpc.group_by.clone())),
-                    dl_id: None,
-                })
-            } else {
-                Expression::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
+                validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
             }
-        })
+        } else {
+            Valid::succeed(())
+        };
+        validation.map(|_| (url, headers, operation, body))
+    })
+    .map(|(url, headers, operation, body)| {
+        let req_template = RequestTemplate {
+            url,
+            headers,
+            operation,
+            body,
+            operation_type: operation_type.clone(),
+        };
+        if !grpc.group_by.is_empty() {
+            Expression::IO(IO::Grpc {
+                req_template,
+                group_by: Some(GroupBy::new(grpc.group_by.clone())),
+                dl_id: None,
+            })
+        } else {
+            Expression::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
+        }
+    })
 }
 
 pub fn update_grpc<'a>(

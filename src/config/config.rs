@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{Expr, Server, Upstream};
+use super::{Expr, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::KeyValues;
@@ -54,6 +54,12 @@ pub struct Config {
     ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub unions: BTreeMap<String, Union>,
+
+    ///
+    /// A list of all links in the schema.
+    ///
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub links: Vec<Link>,
 }
 impl Config {
     pub fn port(&self) -> u16 {
@@ -166,9 +172,19 @@ impl Config {
         let unions = merge_unions(self.unions, other.unions.clone());
         let schema = self.schema.merge_right(other.schema.clone());
         let upstream = self.upstream.merge_right(other.upstream.clone());
+        let links = merge_links(self.links, other.links.clone());
 
-        Self { server, upstream, types, schema, unions }
+        Self { server, upstream, types, schema, unions, links }
     }
+}
+
+fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
+    let mut links = self_links.clone();
+    let other_links = other_links.clone();
+
+    links.extend(other_links);
+
+    links
 }
 
 ///
@@ -615,11 +631,11 @@ pub struct Grpc {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc
     pub headers: KeyValues,
-    /// The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.
-    pub proto_path: String,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
+    /// The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.
+    pub proto_id: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

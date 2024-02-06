@@ -290,7 +290,10 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
         let runtime = init_runtime(&upstream, None);
         let reader = ConfigReader::init(runtime);
-        let config_set = reader.resolve(config).await.unwrap();
+        let config_set = reader
+            .resolve(config, Some(spec.path.to_string_lossy().to_string()))
+            .await
+            .unwrap();
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
 
@@ -382,7 +385,10 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
                 let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
                 let runtime = init_runtime(&upstream, None);
                 let reader = ConfigReader::init(runtime);
-                match reader.resolve(config).await {
+                match reader
+                    .resolve(config, Some(spec.path.to_string_lossy().to_string()))
+                    .await
+                {
                     Ok(config_set) => Valid::from(Blueprint::try_from(&config_set))
                         .to_result()
                         .map(|_| ()),

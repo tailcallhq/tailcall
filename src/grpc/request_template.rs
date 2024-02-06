@@ -109,7 +109,7 @@ mod tests {
     use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type};
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::mustache::Mustache;
 
@@ -121,25 +121,29 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
+        let id = "greetings".to_string();
+
         let runtime = init_runtime(&Upstream::default(), None);
         let reader = ConfigReader::init(runtime);
-        let mut config = Config::default();
-        let grpc = Grpc {
-            proto_path: test_file.to_str().unwrap().to_string(),
-            ..Default::default()
-        };
+        let mut config = Config::default().links(vec![Link {
+            id: Some(id.clone()),
+            src: test_file.to_str().unwrap().to_string(),
+            type_of: LinkType::Protobuf,
+        }]);
+        let grpc = Grpc { proto_id: id.clone(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
 
         let protobuf_set = ProtobufSet::from_proto_file(
-            &reader
-                .resolve(config)
+            reader
+                .resolve(config, None)
                 .await
                 .unwrap()
                 .extensions
-                .grpc_file_descriptor,
+                .get_file_descriptor(id.as_str())
+                .unwrap(),
         )
         .unwrap();
 
