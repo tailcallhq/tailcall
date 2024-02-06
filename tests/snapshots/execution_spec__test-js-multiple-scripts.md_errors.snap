@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Only one script link is allowed",
+    "trace": [
+      "schema",
+      "@link"
+    ],
+    "description": null
+  }
+]
