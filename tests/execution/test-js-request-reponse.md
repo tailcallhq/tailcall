@@ -19,7 +19,6 @@ type Query {
 - request:
     method: GET
     url: http://localhost:3000/bye
-    body: '""'
   response:
     status: 200
     body: hello world
