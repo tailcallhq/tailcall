@@ -30,14 +30,8 @@ impl TryFrom<Vec<Link>> for Links {
         .and_then(|links| {
             let script_links = links
                 .iter()
-                .filter_map(|l| {
-                    if l.type_of == LinkType::Script {
-                        Some(l.to_owned())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<Link>>();
+                .filter(|l| l.type_of == LinkType::Script)
+                .collect::<Vec<&Link>>();
 
             if script_links.len() > 1 {
                 Valid::fail("Only one script link is allowed".to_string())
