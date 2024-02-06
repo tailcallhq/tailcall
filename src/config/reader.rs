@@ -1,17 +1,16 @@
 use std::collections::{HashMap, VecDeque};
 
 use anyhow::Context;
+use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigSet, ExprBody, Extensions, Script, ScriptOptions};
+use super::{ConfigSet, Content, Link, LinkType, Script, ScriptOptions};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
-
-const NULL_STR: &str = "\0\0\0\0\0\0\0";
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
 pub struct ConfigReader {
@@ -19,6 +18,7 @@ pub struct ConfigReader {
 }
 
 /// Response of a file read operation
+#[derive(Debug)]
 struct FileRead {
     content: String,
     path: String,
@@ -62,6 +62,82 @@ impl ConfigReader {
         Ok(content)
     }
 
+    /// Reads the links in a Config and fill the content
+    #[async_recursion::async_recursion]
+    async fn ext_links(
+        &self,
+        mut config_set: ConfigSet,
+        path: Option<String>,
+    ) -> anyhow::Result<ConfigSet> {
+        let links: Vec<Link> = config_set
+            .config
+            .links
+            .clone()
+            .iter()
+            .filter_map(|link| {
+                if link.src.is_empty() {
+                    return None;
+                }
+                Some(link.to_owned())
+            })
+            .collect();
+
+        if links.is_empty() {
+            return Ok(config_set);
+        }
+
+        for config_link in links.iter() {
+            let path = if Path::new(&config_link.src).is_absolute() {
+                config_link.src.clone()
+            } else {
+                let path = path.clone().unwrap_or_default();
+                PathBuf::from(path)
+                    .parent()
+                    .unwrap_or(Path::new(""))
+                    .join(&config_link.src)
+                    .to_string_lossy()
+                    .to_string()
+            };
+
+            let source = self.read_file(&path).await?;
+
+            let content = source.content;
+
+            match config_link.type_of {
+                LinkType::Config => {
+                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+
+                    config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
+
+                    if !config.links.is_empty() {
+                        config_set = config_set.merge_right(
+                            &self
+                                .ext_links(ConfigSet::from(config), Some(source.path))
+                                .await?,
+                        );
+                    }
+                }
+                LinkType::Protobuf => {
+                    let descriptors = self
+                        .resolve_descriptors(HashMap::new(), source.path)
+                        .await?;
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+
+                    for (_, v) in descriptors {
+                        file_descriptor_set.file.push(v);
+                    }
+
+                    config_set.extensions.grpc_file_descriptors.push(Content {
+                        id: config_link.id.to_owned(),
+                        content: file_descriptor_set,
+                    });
+                }
+            }
+        }
+
+        Ok(config_set)
+    }
+
     /// Reads the script file and replaces the path with the content
     async fn ext_script(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
         let config = &mut config_set.config;
@@ -88,55 +164,31 @@ impl ConfigReader {
             let schema = &file.content;
 
             // Create initial config set
-            let new_config_set = self.resolve(Config::from_source(source, schema)?).await?;
+            let new_config_set = self
+                .resolve(
+                    Config::from_source(source, schema)?,
+                    Some(file.path.clone()),
+                )
+                .await?;
 
             // Merge it with the original config set
             config_set = config_set.merge_right(&new_config_set);
         }
+
         Ok(config_set)
     }
 
     /// Resolves all the links in a Config to create a ConfigSet
-    pub async fn resolve(&self, config: Config) -> anyhow::Result<ConfigSet> {
+    pub async fn resolve(&self, config: Config, path: Option<String>) -> anyhow::Result<ConfigSet> {
         // Create initial config set
         let config_set = ConfigSet::from(config);
 
         // Extend it with the worker script
         let config_set = self.ext_script(config_set).await?;
 
-        // Extend it with protobuf definitions for GRPC
-        let config_set = self.ext_grpc(config_set).await?;
+        // Extend it with the links
+        let config_set = self.ext_links(config_set, path).await?;
 
-        Ok(config_set)
-    }
-
-    /// Returns final ConfigSet from Config
-    pub async fn ext_grpc(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
-        let config = &config_set.config;
-        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
-        let mut grpc_file_descriptor = FileDescriptorSet::default();
-        for (_, typ) in config.types.iter() {
-            for (_, fld) in typ.fields.iter() {
-                let proto_path = if let Some(grpc) = &fld.grpc {
-                    &grpc.proto_path
-                } else if let Some(ExprBody::Grpc(grpc)) = fld.expr.as_ref().map(|e| &e.body) {
-                    &grpc.proto_path
-                } else {
-                    NULL_STR
-                };
-
-                if proto_path != NULL_STR {
-                    descriptors = self
-                        .resolve_descriptors(descriptors, proto_path.to_string())
-                        .await?;
-                }
-            }
-        }
-        for (_, v) in descriptors {
-            grpc_file_descriptor.file.push(v);
-        }
-
-        config_set.extensions = Extensions { grpc_file_descriptor, ..Default::default() };
         Ok(config_set)
     }
 

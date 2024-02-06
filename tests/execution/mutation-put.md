@@ -64,5 +64,5 @@ type User {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: 'mutation { insertPost(input: { body: "abc", title: "bar", userId: 1, id: 100 }) { body } }'
+    query: 'mutation { insertPost(input: { body: "abc", id: 100 , title: "bar", userId: 1}) { body } }'
 ```

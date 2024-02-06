@@ -98,20 +98,20 @@ impl RequestContext {
 }
 
 impl From<&AppContext> for RequestContext {
-    fn from(server_ctx: &AppContext) -> Self {
+    fn from(app_ctx: &AppContext) -> Self {
         Self {
-            h_client: server_ctx.runtime.http.clone(),
-            h2_client: server_ctx.runtime.http2_only.clone(),
-            server: server_ctx.blueprint.server.clone(),
-            upstream: server_ctx.blueprint.upstream.clone(),
+            h_client: app_ctx.runtime.http.clone(),
+            h2_client: app_ctx.runtime.http2_only.clone(),
+            server: app_ctx.blueprint.server.clone(),
+            upstream: app_ctx.blueprint.upstream.clone(),
             req_headers: HeaderMap::new(),
-            http_data_loaders: server_ctx.http_data_loaders.clone(),
-            gql_data_loaders: server_ctx.gql_data_loaders.clone(),
-            cache: server_ctx.runtime.cache.clone(),
-            grpc_data_loaders: server_ctx.grpc_data_loaders.clone(),
+            http_data_loaders: app_ctx.http_data_loaders.clone(),
+            gql_data_loaders: app_ctx.gql_data_loaders.clone(),
+            cache: app_ctx.runtime.cache.clone(),
+            grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
-            env_vars: server_ctx.runtime.env.clone(),
+            env_vars: app_ctx.runtime.env.clone(),
         }
     }
 }

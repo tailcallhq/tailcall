@@ -11,48 +11,48 @@ expression: response
     "data": {
       "bars": [
         {
-          "flag": true,
-          "foo": {
-            "id": 2
-          },
           "id": [
             {
               "bid": 1
             }
-          ]
+          ],
+          "flag": true,
+          "foo": {
+            "id": 2
+          }
         },
         {
-          "flag": false,
-          "foo": {
-            "id": 4
-          },
           "id": [
             {
               "bid": 3
             }
-          ]
-        },
-        {
+          ],
           "flag": false,
           "foo": {
-            "id": 6
-          },
+            "id": 4
+          }
+        },
+        {
           "id": [
             {
               "bid": 5
             }
-          ]
+          ],
+          "flag": false,
+          "foo": {
+            "id": 6
+          }
         },
         {
-          "flag": true,
-          "foo": {
-            "id": 8
-          },
           "id": [
             {
               "bid": 7
             }
-          ]
+          ],
+          "flag": true,
+          "foo": {
+            "id": 8
+          }
         }
       ]
     }

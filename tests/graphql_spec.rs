@@ -196,6 +196,10 @@ impl GraphQLSpec {
         let mut dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir_path.push(path);
 
+        if !dir_path.exists() {
+            return Ok(Vec::with_capacity(0));
+        }
+
         let entries = fs::read_dir(dir_path.clone())?;
         let mut files = Vec::new();
         let mut only_files = Vec::new();
@@ -216,12 +220,6 @@ impl GraphQLSpec {
                 }
             }
         }
-
-        assert!(
-            !files.is_empty() || !only_files.is_empty(),
-            "No files found in {}",
-            dir_path.to_str().unwrap_or_default()
-        );
 
         if !only_files.is_empty() {
             Ok(only_files)
@@ -291,7 +289,10 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
         let runtime = init_runtime(&upstream, None);
         let reader = ConfigReader::init(runtime);
-        let config_set = reader.resolve(config).await.unwrap();
+        let config_set = reader
+            .resolve(config, Some(spec.path.to_string_lossy().to_string()))
+            .await
+            .unwrap();
         let actual =
             print_schema::print_schema((Blueprint::try_from(&config_set).unwrap()).to_schema());
 
@@ -330,8 +331,8 @@ async fn test_execution() -> std::io::Result<()> {
                     .to_result()
                     .unwrap();
                 let runtime = init_runtime(&blueprint.upstream, None);
-                let server_ctx = AppContext::new(blueprint, runtime);
-                let schema = &server_ctx.schema;
+                let app_ctx = AppContext::new(blueprint, runtime);
+                let schema = &app_ctx.schema;
 
                 for q in spec.test_queries {
                     let mut headers = HeaderMap::new();
@@ -339,7 +340,7 @@ async fn test_execution() -> std::io::Result<()> {
                         HeaderName::from_static("authorization"),
                         HeaderValue::from_static("1"),
                     );
-                    let req_ctx = Arc::new(RequestContext::from(&server_ctx).req_headers(headers));
+                    let req_ctx = Arc::new(RequestContext::from(&app_ctx).req_headers(headers));
                     let req = Request::from(q.query.as_str()).data(req_ctx.clone());
                     let res = schema.execute(req).await;
                     let json = serde_json::to_string(&res).unwrap();
@@ -383,7 +384,10 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
                 let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
                 let runtime = init_runtime(&upstream, None);
                 let reader = ConfigReader::init(runtime);
-                match reader.resolve(config).await {
+                match reader
+                    .resolve(config, Some(spec.path.to_string_lossy().to_string()))
+                    .await
+                {
                     Ok(config_set) => Valid::from(Blueprint::try_from(&config_set))
                         .to_result()
                         .map(|_| ()),

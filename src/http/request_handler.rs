@@ -12,7 +12,7 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
-use super::AppContext;
+use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
 pub fn graphiql(req: &Request<Full<Bytes>>) -> Result<Response<Full<Bytes>>> {
@@ -39,11 +39,11 @@ fn not_found() -> Result<Response<Full<Bytes>>> {
         .body(Full::new(Bytes::new()))?)
 }
 
-fn create_request_context(req: &Request<Full<Bytes>>, server_ctx: &AppContext) -> RequestContext {
-    let upstream = server_ctx.blueprint.upstream.clone();
+fn create_request_context(req: &Request<Full<Bytes>>, app_ctx: &AppContext) -> RequestContext {
+    let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
     let headers = create_allowed_headers(to_reqwest_hmap(req.headers()), &allowed);
-    RequestContext::from(server_ctx).req_headers(headers)
+    RequestContext::from(app_ctx).req_headers(headers)
 }
 
 fn to_reqwest_hmap(hyper_headers: &hyper::HeaderMap) -> HeaderMap {
@@ -61,10 +61,10 @@ fn to_reqwest_hmap(hyper_headers: &hyper::HeaderMap) -> HeaderMap {
 
 fn update_cache_control_header(
     response: GraphQLResponse,
-    server_ctx: &AppContext,
+    app_ctx: &AppContext,
     req_ctx: Arc<RequestContext>,
 ) -> GraphQLResponse {
-    if server_ctx.blueprint.server.enable_cache_control_header {
+    if app_ctx.blueprint.server.enable_cache_control_header {
         let ttl = req_ctx.get_min_max_age().unwrap_or(0);
         let cache_public_flag = req_ctx.is_cache_public().unwrap_or(true);
         return response.set_cache_control(ttl, cache_public_flag);
@@ -72,16 +72,16 @@ fn update_cache_control_header(
     response
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<Full<Bytes>>, server_ctx: &AppContext) {
-    if !server_ctx.blueprint.server.response_headers.is_empty() {
+pub fn update_response_headers(resp: &mut hyper::Response<Full<Bytes>>, app_ctx: &AppContext) {
+    if !app_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
-            .extend(server_ctx.blueprint.server.response_headers.clone());
+            .extend(app_ctx.blueprint.server.response_headers.clone());
     }
 }
 
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Full<Bytes>>,
-    server_ctx: &AppContext,
+    app_ctx: &AppContext,
 ) -> Result<Response<Full<Bytes>>> {
     let req_ctx = Arc::new(create_request_context(&req, server_ctx));
     let bytes = req
@@ -95,13 +95,10 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let request = serde_json::from_slice::<T>(&bytes);
     match request {
         Ok(request) => {
-            let mut response = request
-                .data(req_ctx.clone())
-                .execute(&server_ctx.schema)
-                .await;
-            response = update_cache_control_header(response, server_ctx, req_ctx);
+            let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+            response = update_cache_control_header(response, app_ctx, req_ctx);
             let mut resp = response.to_response()?;
-            update_response_headers(&mut resp, server_ctx);
+            update_response_headers(&mut resp, app_ctx);
             Ok(resp)
         }
         Err(err) => {
@@ -133,13 +130,29 @@ fn create_allowed_headers(headers: HeaderMap, allowed: &BTreeSet<String>) -> Hea
 
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Full<Bytes>>,
-    state: Arc<AppContext>,
+    app_ctx: Arc<AppContext>,
 ) -> Result<Response<Full<Bytes>>> {
     match *req.method() {
-        hyper::Method::POST if req.uri().path().ends_with("/graphql") => {
-            graphql_request::<T>(req, state.as_ref()).await
+        // NOTE:
+        // The first check for the route should be for `/graphql`
+        // This is always going to be the most used route.
+        hyper::Method::POST if req.uri().path() == "/graphql" => {
+            graphql_request::<T>(req, app_ctx.as_ref()).await
         }
-        hyper::Method::GET if state.blueprint.server.enable_graphiql => graphiql(&req),
+        hyper::Method::POST
+            if app_ctx.blueprint.server.enable_showcase
+                && req.uri().path() == "/showcase/graphql" =>
+        {
+            let app_ctx =
+                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
+                    Ok(app_ctx) => app_ctx,
+                    Err(res) => return Ok(res),
+                };
+
+            graphql_request::<T>(req, &app_ctx).await
+        }
+
+        hyper::Method::GET if app_ctx.blueprint.server.enable_graphiql => graphiql(&req),
         _ => not_found(),
     }
 }

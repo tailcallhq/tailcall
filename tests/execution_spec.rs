@@ -59,6 +59,9 @@ struct APIResponse {
     headers: BTreeMap<String, String>,
     #[serde(default)]
     body: serde_json::Value,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_body: Option<String>,
 }
 
 pub struct Env {
@@ -545,15 +548,20 @@ impl HttpIO for MockHttpClient {
         }
 
         // Special Handling for GRPC
-        if is_grpc {
+        if let Some(body) = mock_response.0.text_body {
+            // Return plaintext body if specified
+            let body = string_to_bytes(&body);
+            response.body = Bytes::from_iter(body);
+        } else if is_grpc {
+            // Special Handling for GRPC
             let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
             response.body = Bytes::from_iter(body);
-            Ok(response)
         } else {
             let body = serde_json::to_vec(&mock_response.0.body)?;
             response.body = Bytes::from_iter(body);
-            Ok(response)
         }
+
+        Ok(response)
     }
 }
 
@@ -579,7 +587,10 @@ async fn assert_spec(spec: ExecutionSpec) -> anyhow::Result<()> {
             Ok(config) => {
                 let runtime = init_runtime(&blueprint::Upstream::default(), None);
                 let reader = ConfigReader::init(runtime);
-                match reader.resolve(config).await {
+                match reader
+                    .resolve(config, Some(spec.path.to_string_lossy().to_string()))
+                    .await
+                {
                     Ok(config) => Blueprint::try_from(&config),
                     Err(e) => Err(ValidationError::new(e.to_string())),
                 }
@@ -674,22 +685,28 @@ async fn assert_spec(spec: ExecutionSpec) -> anyhow::Result<()> {
         log::info!("\tmerged ok");
     }
 
+    dbg!(spec.path.to_string_lossy().to_string());
+
     // Resolve all configs
-    let server: Vec<ConfigSet> = join_all(server.into_iter().map(|config| reader.resolve(config)))
-        .await
-        .into_iter()
-        .enumerate()
-        .map(|(i, result)| {
-            result.unwrap_or_else(|e| {
-                panic!(
-                    "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
-                    i + 1,
-                    spec.path,
-                    e
-                )
-            })
+    let server: Vec<ConfigSet> = join_all(
+        server
+            .into_iter()
+            .map(|config| reader.resolve(config, Some(spec.path.to_string_lossy().to_string()))),
+    )
+    .await
+    .into_iter()
+    .enumerate()
+    .map(|(i, result)| {
+        result.unwrap_or_else(|e| {
+            panic!(
+                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
+                i + 1,
+                spec.path,
+                e
+            )
         })
-        .collect();
+    })
+    .collect();
 
     if server.len() == 1 {
         let config = &server[0];
@@ -739,6 +756,7 @@ async fn assert_spec(spec: ExecutionSpec) -> anyhow::Result<()> {
                 status,
                 headers,
                 body: serde_json::from_slice(&bytes).unwrap(),
+                text_body: None
             };
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
