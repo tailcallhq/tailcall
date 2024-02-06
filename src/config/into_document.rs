@@ -11,12 +11,34 @@ fn pos<A>(a: A) -> Positioned<A> {
 }
 fn config_document(config: &Config) -> ServiceDocument {
     let mut definitions = Vec::new();
+    let mut directives = vec![
+        pos(config.server.to_directive()),
+        pos(config.upstream.to_directive()),
+    ];
+
+    directives.extend(config.links.iter().map(|link| {
+        let mut directive = link.to_directive();
+
+        let type_directive = (
+            pos(Name::new("type")),
+            pos(ConstValue::Enum(Name::new(link.type_of.to_string()))),
+        );
+
+        directive.arguments = directive
+            .arguments
+            .iter()
+            // "type" needs to be filtered out, because when is the default value, it is not present in the directive
+            .filter(|(name, _)| name != &pos(Name::new("type")))
+            .map(|argument| argument.to_owned())
+            .chain(std::iter::once(type_directive))
+            .collect();
+
+        pos(directive)
+    }));
+
     let schema_definition = SchemaDefinition {
         extend: false,
-        directives: vec![
-            pos(config.server.to_directive()),
-            pos(config.upstream.to_directive()),
-        ],
+        directives,
         query: config.schema.query.clone().map(|name| pos(Name::new(name))),
         mutation: config
             .schema

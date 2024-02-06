@@ -1101,8 +1101,8 @@
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
         },
-        "protoPath": {
-          "description": "The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.",
+        "protoId": {
+          "description": "The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.",
           "type": "string"
         },
         "service": {
@@ -1112,7 +1112,7 @@
       },
       "required": [
         "method",
-        "protoPath",
+        "protoId",
         "service"
       ],
       "type": "object"
@@ -1228,6 +1228,38 @@
         "type": "string"
       },
       "type": "object"
+    },
+    "Link": {
+      "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
+      "properties": {
+        "id": {
+          "description": "The id of the link. It is used to reference the link in the schema.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "src": {
+          "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
+          "type": "string"
+        },
+        "type": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/LinkType"
+            }
+          ],
+          "description": "The type of the link. It can be `Config`, or `Protobuf`."
+        }
+      },
+      "type": "object"
+    },
+    "LinkType": {
+      "enum": [
+        "Config",
+        "Protobuf"
+      ],
+      "type": "string"
     },
     "Method": {
       "enum": [
@@ -1455,6 +1487,13 @@
             }
           ],
           "description": "A link to an external JS file that listens on every HTTP request response event."
+        },
+        "showcase": {
+          "description": "`showcase` enables the /showcase/graphql endpoint.",
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "vars": {
           "allOf": [
@@ -1767,6 +1806,13 @@
     }
   },
   "properties": {
+    "links": {
+      "description": "A list of all links in the schema.",
+      "items": {
+        "$ref": "#/definitions/Link"
+      },
+      "type": "array"
+    },
     "schema": {
       "allOf": [
         {

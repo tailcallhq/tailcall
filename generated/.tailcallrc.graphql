@@ -112,11 +112,10 @@ directive @grpc(
   """
   method: String!
   """
-  The `protoPath` parameter allows you to specify the path to the proto file which 
-  contains service and method definitions and is used to encode and decode the request 
-  and response body.
+  The id of the protobuf included via @link directive. If the protobuf was not included 
+  via @link, an error will be thrown.
   """
-  protoPath: String!
+  protoId: String!
   """
   This refers to the gRPC service you're going to call. For instance `NewsService`.
   """
@@ -189,6 +188,27 @@ directive @http(
 directive @js(
   script: String!
 ) on FIELD_DEFINITION
+
+"""
+The @link directive allows you to import external resources, such as configuration 
+– which will be merged into the config importing it –, or a .proto file – which
+ will be later used by `@grpc` directive –.
+"""
+directive @link(
+  """
+  The id of the link. It is used to reference the link in the schema.
+  """
+  id: String
+  """
+  The source of the link. It can be a URL or a path to a file. If a path is provided, 
+  it is relative to the file that imports the link.
+  """
+  src: String!
+  """
+  The type of the link. It can be `Config`, or `Protobuf`.
+  """
+  type: LinkType
+) repeatable  on SCHEMA
 
 directive @modify(
   name: String
@@ -271,6 +291,10 @@ directive @server(
   A link to an external JS file that listens on every HTTP request response event.
   """
   script: Script
+  """
+  `showcase` enables the /showcase/graphql endpoint.
+  """
+  showcase: Boolean
   """
   This configuration defines local variables for server operations. Useful for storing 
   constant configurations, secrets, or shared information.
@@ -542,11 +566,10 @@ input Grpc {
   """
   method: String!
   """
-  The `protoPath` parameter allows you to specify the path to the proto file which 
-  contains service and method definitions and is used to encode and decode the request 
-  and response body.
+  The id of the protobuf included via @link directive. If the protobuf was not included 
+  via @link, an error will be thrown.
   """
-  protoPath: String!
+  protoId: String!
   """
   This refers to the gRPC service you're going to call. For instance `NewsService`.
   """
@@ -620,6 +643,10 @@ enum HttpVersion {
 }
 input JS {
   script: String!
+}
+enum LinkType {
+  Config
+  Protobuf
 }
 enum Method {
   GET
