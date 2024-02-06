@@ -1,7 +1,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::thread;
 
-use deno_core::{v8, FastString, JsRuntime};
+use deno_core::{extension, v8, FastString, JsRuntime, RuntimeOptions};
 
 use super::channel::{Message, MessageContent};
 use crate::{blueprint, WorkerIO};
@@ -18,7 +18,11 @@ thread_local! {
 impl LocalRuntime {
     fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
         let source = create_closure(script.source.as_str());
-        let mut js_runtime = JsRuntime::new(Default::default());
+        extension!(console, js = ["src/cli/javascript/shim/console.js",]);
+        let mut js_runtime = JsRuntime::new(RuntimeOptions {
+            extensions: vec![console::init_ops_and_esm()],
+            ..Default::default()
+        });
         let value = js_runtime.execute_script("<anon>", FastString::from(source))?;
         log::debug!("JS Runtime created: {:?}", thread::current().name());
         Ok(Self { value, js_runtime })
