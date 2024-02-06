@@ -1,3 +1,4 @@
+mod cache;
 mod concurrent;
 mod eval;
 mod evaluation_context;
@@ -7,9 +8,11 @@ mod io;
 mod list;
 mod logic;
 mod math;
+mod modify;
 mod relation;
 mod resolver_context_like;
 
+pub use cache::*;
 pub use concurrent::*;
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
