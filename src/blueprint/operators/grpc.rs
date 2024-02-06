@@ -13,7 +13,7 @@ use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
 
-fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
+fn to_url(grpc: &Grpc, service: &str, method: &str, config: &Config) -> Valid<Mustache, String> {
     Valid::from_option(
         grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
@@ -21,32 +21,34 @@ fn to_url(grpc: &Grpc, config: &Config) -> Valid<Mustache, String> {
     .and_then(|base_url| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
-        base_url.push_str(&grpc.service);
+        base_url.push_str(service);
         base_url.push('/');
-        base_url.push_str(&grpc.method);
+        base_url.push_str(method);
 
         helpers::url::to_url(&base_url)
     })
 }
 
 fn to_operation(
-    grpc: &Grpc,
+    service: &str,
+    method: &str,
     file_descriptor_set: &FileDescriptorSet,
 ) -> Valid<ProtobufOperation, String> {
+    println!("service: {}", service);
     Valid::from(
         ProtobufSet::from_proto_file(file_descriptor_set)
             .map_err(|e| ValidationError::new(e.to_string())),
     )
     .and_then(|set| {
         Valid::from(
-            set.find_service(&grpc.service)
+            set.find_service(service)
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
     .and_then(|service| {
         Valid::from(
             service
-                .find_operation(&grpc.method)
+                .find_operation(method)
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
@@ -126,12 +128,30 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
 
+    // all data is on grpc.method
+    // I need to split it
+    // method[0] is proto_id
+    // proto_id.method[1] is service
+    // method[2] is method
+
+    dbg!(grpc.method.clone());
+
+    let method: Vec<&str> = grpc.method.split('.').collect();
+
+    let proto_id = method[0];
+    let service = format!("{}.{}", proto_id, method[1]);
+    let method = method[2];
+
+    println!("proto_id: {}", proto_id);
+    println!("service: {}", service);
+    println!("method: {}", method);
+
     Valid::from_option(
-        config_set.extensions.get_file_descriptor(&grpc.proto_id),
-        format!("File descriptor not found for proto id: {}", grpc.proto_id),
+        config_set.extensions.get_file_descriptor(&proto_id),
+        format!("File descriptor not found for proto id: {}", proto_id),
     )
-    .and_then(|file_descriptor_set| to_operation(grpc, file_descriptor_set))
-    .fuse(to_url(grpc, config_set))
+    .and_then(|file_descriptor_set| to_operation(&service, method, file_descriptor_set))
+    .fuse(to_url(grpc, &service, method, config_set))
     .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
     .fuse(helpers::body::to_body(grpc.body.as_deref()))
     .and_then(|(operation, url, headers, body)| {
