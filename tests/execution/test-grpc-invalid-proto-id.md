@@ -10,8 +10,7 @@ schema {
 }
 
 type Query {
-  news: NewsData
-    @grpc(service: "news.NewsService", method: "GetAllNews", baseURL: "http://localhost:4000", protoId: "abc")
+  news: NewsData @grpc(method: "abc.NewsService.GetAllNews", baseURL: "http://localhost:4000")
 }
 
 type NewsData {
