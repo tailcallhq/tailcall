@@ -153,8 +153,10 @@ A `file` block creates a file in the spec's virtual file system. The [`server` b
 Every `file` block has the filename declared in the header. The language of the code block is optional and does not matter.
 
 Example:
+
 ````md
 #### file:enum.graphql
+
 ```graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query

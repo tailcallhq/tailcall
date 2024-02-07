@@ -3,6 +3,7 @@
 ###### sdl error
 
 #### file:news.proto
+
 ```protobuf
 syntax = "proto3";
 

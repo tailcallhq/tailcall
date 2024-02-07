@@ -3,6 +3,7 @@
 ###### check identity
 
 #### file:news.proto
+
 ```protobuf
 syntax = "proto3";
 

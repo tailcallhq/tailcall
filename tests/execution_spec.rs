@@ -314,19 +314,23 @@ impl ExecutionSpec {
                         if let Some(Node::Text(text)) = heading.children.first() {
                             let name = text.value.as_str();
 
-                            if name.starts_with("file:") {
-                                let name = &name[5..];
+                            if let Some(name) = name.strip_prefix("file:") {
                                 if files.insert(name.to_string(), content).is_some() {
-                                    return Err(anyhow!("Double declaration of file {:?} in {:#?}", name, path));
+                                    return Err(anyhow!(
+                                        "Double declaration of file {:?} in {:#?}",
+                                        name,
+                                        path
+                                    ));
                                 }
                             } else {
                                 let lang = match lang {
                                     Some(x) => Ok(x),
-                                    None => {
-                                        Err(anyhow!("Unexpected languageless code block in {:?}", path))
-                                    }
+                                    None => Err(anyhow!(
+                                        "Unexpected languageless code block in {:?}",
+                                        path
+                                    )),
                                 }?;
-        
+
                                 let source = Source::from_str(&lang)?;
 
                                 match name {
@@ -575,7 +579,7 @@ impl HttpIO for MockHttpClient {
 }
 
 struct MockFileSystem {
-    spec: ExecutionSpec
+    spec: ExecutionSpec,
 }
 
 impl MockFileSystem {
@@ -592,7 +596,9 @@ impl FileIO for MockFileSystem {
 
     async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
         let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/execution/");
-        let path = path.strip_prefix(&base.to_string_lossy().to_string()).unwrap_or(path);
+        let path = path
+            .strip_prefix(&base.to_string_lossy().to_string())
+            .unwrap_or(path);
 
         match self.spec.files.get(path) {
             Some(x) => Ok(x.to_owned()),

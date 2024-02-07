@@ -1,6 +1,7 @@
 # Grpc datasource
 
 #### file:news.proto
+
 ```protobuf
 syntax = "proto3";
 

@@ -3,6 +3,7 @@
 ###### sdl error
 
 #### file:jsonplaceholder.graphql
+
 ```graphql
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
