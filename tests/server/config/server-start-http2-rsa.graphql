@@ -1,13 +1,7 @@
 schema
-  @server(
-    port: 8802
-    version: HTTP2
-    hostname: "localhost"
-    batchRequests: true
-  )
+  @server(port: 8802, version: HTTP2, hostname: "localhost", batchRequests: true)
   @link(src: "example.crt", type: Cert)
-  @link(src: "example-rsa.key", type: Key)
-{
+  @link(src: "example-rsa.key", type: Key) {
   query: Query
 }
 

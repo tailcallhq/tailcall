@@ -41,11 +41,9 @@ impl Server {
         let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
         let cert = self.config_set.extensions.tls_cert;
         let key = self.config_set.extensions.tls_key;
-        let tls_cert = if cert.is_some() && key.is_some() {
-            Some(TlsCert { key: key.unwrap(), cert: cert.unwrap() })
-        } else {
-            None
-        };
+
+        let tls_cert = cert.zip(key).map(|(cert, key)| TlsCert { cert, key });
+
         match blueprint.server.http.clone() {
             HttpVersion::HTTP2 => {
                 start_http_2(server_config, tls_cert, self.server_up_sender).await
