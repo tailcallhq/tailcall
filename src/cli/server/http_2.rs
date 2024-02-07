@@ -55,37 +55,74 @@ async fn load_private_key(filename: String) -> anyhow::Result<PrivateKeyDer<'sta
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
-    cert: String,
-    key: String,
+    cert: Option<String>,
+    key: Option<String>,
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
-    let cert_chain = load_cert(cert).await?;
-    let key = load_private_key(key).await?;
     let incoming = AddrIncoming::bind(&addr)?;
-    let acceptor = TlsAcceptor::builder()
-        .with_single_cert(cert_chain, key)?
-        .with_http2_alpn()
-        .with_incoming(incoming);
-    let make_svc_single_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
 
-    let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
+    let server: std::prelude::v1::Result<(), hyper::Error> =
+        if let (Some(cert), Some(key)) = (cert, key) {
+            let cert_chain = load_cert(cert).await?;
+            let key = load_private_key(key).await?;
+            let acceptor = TlsAcceptor::builder()
+                .with_single_cert(cert_chain, key)?
+                .with_http2_alpn()
+                .with_incoming(incoming);
 
-    let builder = Server::builder(acceptor).http2_only(true);
+            let make_svc_single_req = make_service_fn(|_conn| {
+                let state = Arc::clone(&sc);
+                async move {
+                    Ok::<_, anyhow::Error>(service_fn(move |req| {
+                        handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
+                    }))
+                }
+            });
+
+            let make_svc_batch_req = make_service_fn(|_conn| {
+                let state = Arc::clone(&sc);
+                async move {
+                    Ok::<_, anyhow::Error>(service_fn(move |req| {
+                        handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
+                    }))
+                }
+            });
+
+            let builder = Server::builder(acceptor).http2_only(true);
+
+            if sc.blueprint.server.enable_batch_requests {
+                builder.serve(make_svc_batch_req).await
+            } else {
+                builder.serve(make_svc_single_req).await
+            }
+        } else {
+            let make_svc_single_req = make_service_fn(|_conn| {
+                let state = Arc::clone(&sc);
+                async move {
+                    Ok::<_, anyhow::Error>(service_fn(move |req| {
+                        handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
+                    }))
+                }
+            });
+
+            let make_svc_batch_req = make_service_fn(|_conn| {
+                let state = Arc::clone(&sc);
+                async move {
+                    Ok::<_, anyhow::Error>(service_fn(move |req| {
+                        handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
+                    }))
+                }
+            });
+
+            let builder = Server::builder(incoming).http2_only(true);
+
+            if sc.blueprint.server.enable_batch_requests {
+                builder.serve(make_svc_batch_req).await
+            } else {
+                builder.serve(make_svc_single_req).await
+            }
+        };
 
     super::log_launch_and_open_browser(sc.as_ref());
 
@@ -94,13 +131,6 @@ pub async fn start_http_2(
             .send(())
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
-
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
 
     let result = server.map_err(CLIError::from);
 

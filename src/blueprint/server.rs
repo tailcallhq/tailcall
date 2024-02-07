@@ -40,7 +40,10 @@ pub struct Script {
 #[derive(Clone, Debug)]
 pub enum Http {
     HTTP1,
-    HTTP2 { cert: String, key: String },
+    HTTP2 {
+        cert: Option<String>,
+        key: Option<String>,
+    },
 }
 
 impl Default for Server {
@@ -75,16 +78,10 @@ impl TryFrom<crate::config::ConfigModule> for Server {
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
-                let cert = Valid::from_option(
-                    config_server.cert.clone(),
-                    "Certificate is required for HTTP2".to_string(),
-                );
-                let key = Valid::from_option(
-                    config_server.key.clone(),
-                    "Key is required for HTTP2".to_string(),
-                );
+                let cert = config_server.cert.clone();
+                let key = config_server.key.clone();
 
-                cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
+                Valid::succeed((cert, key)).map(|(cert, key)| Http::HTTP2 { cert, key })
             }
             _ => Valid::succeed(Http::HTTP1),
         };
