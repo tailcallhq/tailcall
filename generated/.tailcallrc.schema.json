@@ -868,6 +868,36 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "mean"
+          ],
+          "properties": {
+            "mean": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "median"
+          ],
+          "properties": {
+            "median": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
