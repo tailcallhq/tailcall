@@ -172,6 +172,12 @@ impl Expression {
                             expr1.modify_box(modifier),
                             expr2.modify_box(modifier),
                         )),
+                        super::Math::Median(exprs) => {
+                            Expression::Math(super::Math::Median(Self::modify_vec(exprs, modifier)))
+                        }
+                        super::Math::Mean(exprs) => {
+                            Expression::Math(super::Math::Mean(Self::modify_vec(exprs, modifier)))
+                        }
                         super::Math::Dec(expr) => {
                             Expression::Math(super::Math::Dec(expr.modify_box(modifier)))
                         }
