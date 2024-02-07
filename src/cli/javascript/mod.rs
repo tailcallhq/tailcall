@@ -8,6 +8,7 @@ mod http_filter;
 mod js_request;
 mod js_response;
 mod runtime;
+mod worker;
 
 pub use http_filter::HttpFilter;
 pub use js_request::JsRequest;
