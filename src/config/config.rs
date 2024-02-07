@@ -641,11 +641,6 @@ pub struct Grpc {
     pub headers: KeyValues,
     /// This refers to the gRPC method you're going to call. For instance `GetAllNews`.
     pub method: String,
-    /// The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.
-    pub proto_id: String,
-
-    /// This refers to the gRPC service you're going to call. For instance `NewsService`.
-    pub service: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

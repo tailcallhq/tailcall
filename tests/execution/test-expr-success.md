@@ -31,7 +31,7 @@ type Post {
 type Query {
   cond: Post @expr(body: {if: {cond: {const: true}, else: {http: {path: "/posts/1"}}, then: {http: {path: "/posts/2"}}}})
   greeting: String @expr(body: {const: "hello from server"})
-  news(news: NewsInput!): News! @expr(body: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "GetMultipleNews", protoId: "news", service: "news.NewsService"}})
+  news(news: NewsInput!): News! @expr(body: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "news.NewsService.GetMultipleNews"}})
   post(id: Int!): Post @expr(body: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}"}})
 }
 ```

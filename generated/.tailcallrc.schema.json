@@ -1097,9 +1097,7 @@
       "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
       "type": "object",
       "required": [
-        "method",
-        "protoId",
-        "service"
+        "method"
       ],
       "properties": {
         "baseURL": {
@@ -1133,14 +1131,6 @@
         },
         "method": {
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
-          "type": "string"
-        },
-        "protoId": {
-          "description": "The id of the protobuf included via @link directive. If the protobuf was not included via @link, an error will be thrown.",
-          "type": "string"
-        },
-        "service": {
-          "description": "This refers to the gRPC service you're going to call. For instance `NewsService`.",
           "type": "string"
         }
       }
