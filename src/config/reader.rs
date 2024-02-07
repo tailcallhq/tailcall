@@ -147,7 +147,6 @@ impl ConfigReader {
         Ok(config_set)
     }
 
-
     /// Reads a single file and returns the config
     pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
@@ -358,9 +357,9 @@ mod reader_tests {
             format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
             format!("http://localhost:{port}/foo.json").as_str(), // with url extension
         ]
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
@@ -386,9 +385,9 @@ mod reader_tests {
             "examples/jsonplaceholder.graphql",
             "examples/jsonplaceholder.json",
         ]
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(

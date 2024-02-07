@@ -196,7 +196,7 @@ directive @link(
   """
   src: String!
   """
-  The type of the link. It can be `Config`, or `Protobuf`.
+  The type of the link. It can be `Config`, `Protobuf`, `Script`, `Key` or `Cert`.
   """
   type: LinkType
 ) repeatable  on SCHEMA
@@ -229,11 +229,6 @@ directive @server(
   """
   cacheControlHeader: Boolean
   """
-  `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). 
-  @default `null`.
-  """
-  cert: String
-  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
@@ -253,10 +248,6 @@ directive @server(
   `true`.
   """
   introspection: Boolean
-  """
-  `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-  """
-  key: String
   """
   `pipelineFlush` allows to control flushing behavior of the server pipeline.
   """
@@ -617,6 +608,8 @@ input JS {
 enum LinkType {
   Config
   Protobuf
+  Key
+  Cert
   Script
 }
 enum Method {
