@@ -67,7 +67,7 @@ pub struct Server {
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// A link to an external JS file that listens on every HTTP request response event.
-    pub script: Option<Script>,
+    pub script: Option<ScriptOptions>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `showcase` enables the /showcase/graphql endpoint.
@@ -88,15 +88,7 @@ pub struct Server {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum Script {
-    Path(ScriptOptions),
-    File(ScriptOptions),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
 pub struct ScriptOptions {
-    pub src: String,
     pub timeout: Option<u64>,
 }
 

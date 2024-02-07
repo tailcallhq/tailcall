@@ -9,7 +9,7 @@ use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
 
 pub fn compile_http(
-    config_set: &config::ConfigSet,
+    config_set: &config::ConfigModule,
     field: &config::Field,
     http: &config::Http,
 ) -> Valid<Expression, String> {
@@ -71,8 +71,9 @@ pub fn compile_http(
 }
 
 pub fn update_http<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config_set, field, type_of, _), b_field| {
             let Some(http) = &field.http else {
                 return Valid::succeed(b_field);

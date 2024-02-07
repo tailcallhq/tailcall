@@ -284,7 +284,7 @@ directive @server(
   """
   A link to an external JS file that listens on every HTTP request response event.
   """
-  script: Script
+  script: ScriptOptions
   """
   `showcase` enables the /showcase/graphql endpoint.
   """
@@ -617,6 +617,7 @@ input JS {
 enum LinkType {
   Config
   Protobuf
+  Script
 }
 enum Method {
   GET
@@ -636,12 +637,7 @@ input Modify {
 input Proxy {
   url: String!
 }
-input Script {
-  path: ScriptOptions
-  file: ScriptOptions
-}
 input ScriptOptions {
-  src: String!
   timeout: Int
 }
 input Schema {

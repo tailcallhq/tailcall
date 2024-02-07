@@ -3,7 +3,7 @@ use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, ConfigSet, Field, GraphQLOperationType, Grpc};
+use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
@@ -112,7 +112,7 @@ fn validate_group_by(
 }
 
 pub struct CompileGrpc<'a> {
-    pub config_set: &'a ConfigSet,
+    pub config_set: &'a ConfigModule,
     pub operation_type: &'a GraphQLOperationType,
     pub field: &'a Field,
     pub grpc: &'a Grpc,
@@ -153,58 +153,56 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
 
-    Valid::from_option(
-        GrpcMethod::try_from(grpc.method.clone()).ok(),
-        "Fail to parse id, service and method name".to_string(),
-    )
-    .and_then(|method| {
-        Valid::from_option(
-            config_set.extensions.get_file_descriptor(&method.id),
-            format!("File descriptor not found for proto id: {}", method.id),
-        )
-        .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
-        .fuse(to_url(grpc, &method, config_set))
-        .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
-        .fuse(helpers::body::to_body(grpc.body.as_deref()))
-        .into()
-    })
-    .and_then(|(operation, url, headers, body)| {
-        let validation = if validate_with_schema {
-            let field_schema = json_schema_from_field(config_set, field);
-            if grpc.group_by.is_empty() {
-                validate_schema(field_schema, &operation, field.name()).unit()
+    Valid::from(GrpcMethod::try_from(grpc.method.clone()))
+        .and_then(|method| {
+            Valid::from_option(
+                config_set.extensions.get_file_descriptor(&method.id),
+                format!("File descriptor not found for proto id: {}", method.id),
+            )
+            .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
+            .fuse(to_url(grpc, &method, config_set))
+            .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
+            .fuse(helpers::body::to_body(grpc.body.as_deref()))
+            .into()
+        })
+        .and_then(|(operation, url, headers, body)| {
+            let validation = if validate_with_schema {
+                let field_schema = json_schema_from_field(config_set, field);
+                if grpc.group_by.is_empty() {
+                    validate_schema(field_schema, &operation, field.name()).unit()
+                } else {
+                    validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
+                }
             } else {
-                validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
+                Valid::succeed(())
+            };
+            validation.map(|_| (url, headers, operation, body))
+        })
+        .map(|(url, headers, operation, body)| {
+            let req_template = RequestTemplate {
+                url,
+                headers,
+                operation,
+                body,
+                operation_type: operation_type.clone(),
+            };
+            if !grpc.group_by.is_empty() {
+                Expression::IO(IO::Grpc {
+                    req_template,
+                    group_by: Some(GroupBy::new(grpc.group_by.clone())),
+                    dl_id: None,
+                })
+            } else {
+                Expression::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
             }
-        } else {
-            Valid::succeed(())
-        };
-        validation.map(|_| (url, headers, operation, body))
-    })
-    .map(|(url, headers, operation, body)| {
-        let req_template = RequestTemplate {
-            url,
-            headers,
-            operation,
-            body,
-            operation_type: operation_type.clone(),
-        };
-        if !grpc.group_by.is_empty() {
-            Expression::IO(IO::Grpc {
-                req_template,
-                group_by: Some(GroupBy::new(grpc.group_by.clone())),
-                dl_id: None,
-            })
-        } else {
-            Expression::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
-        }
-    })
+        })
 }
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config_set, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);
@@ -225,10 +223,10 @@ pub fn update_grpc<'a>(
 
 #[cfg(test)]
 mod tests {
-    use crate::valid::ValidationError;
+    use std::convert::TryFrom;
 
     use super::GrpcMethod;
-    use std::convert::TryFrom;
+    use crate::valid::ValidationError;
 
     #[test]
     fn try_from_grpc_method() {

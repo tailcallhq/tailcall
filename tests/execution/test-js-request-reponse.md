@@ -3,7 +3,7 @@
 #### server:
 
 ```graphql
-schema @server(script: {path: {src: "tests/http/scripts/test.js"}}) {
+schema @server @link(type: Script, src: "../http/scripts/test.js") {
   query: Query
 }
 
@@ -19,7 +19,6 @@ type Query {
 - request:
     method: GET
     url: http://localhost:3000/bye
-    body: '""'
   response:
     status: 200
     body: hello world

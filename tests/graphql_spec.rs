@@ -17,7 +17,7 @@ use serde_json::Value;
 use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigSet};
+use tailcall::config::{Config, ConfigModule};
 use tailcall::directive::DirectiveCodec;
 use tailcall::http::{AppContext, RequestContext};
 use tailcall::print_schema;
@@ -326,7 +326,7 @@ async fn test_execution() -> std::io::Result<()> {
                     .to_result()
                     .unwrap();
                 config.server.query_validation = Some(false);
-                let config_set = ConfigSet::from(config);
+                let config_set = ConfigModule::from(config);
                 let blueprint = Valid::from(Blueprint::try_from(&config_set))
                     .trace(spec.path.to_str().unwrap_or_default())
                     .to_result()

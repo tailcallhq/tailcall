@@ -20,7 +20,7 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::{init_hook_http, init_in_memory_cache, init_runtime};
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigSet, Source};
+use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::target_runtime::TargetRuntime;
 use tailcall::{EnvIO, HttpIO};
@@ -208,7 +208,7 @@ impl HttpSpec {
                 let reader = ConfigReader::init(runtime.clone());
                 reader.read_all(&[file]).await.unwrap()
             }
-            ConfigSource::Inline(config) => ConfigSet::from(config),
+            ConfigSource::Inline(config) => ConfigModule::from(config),
         };
         let blueprint = Blueprint::try_from(&config).unwrap();
         let client = init_hook_http(

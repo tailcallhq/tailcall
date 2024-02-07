@@ -1266,7 +1266,8 @@
       "type": "string",
       "enum": [
         "Config",
-        "Protobuf"
+        "Protobuf",
+        "Script"
       ]
     },
     "Method": {
@@ -1334,43 +1335,9 @@
         }
       }
     },
-    "Script": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "path"
-          ],
-          "properties": {
-            "path": {
-              "$ref": "#/definitions/ScriptOptions"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "file"
-          ],
-          "properties": {
-            "file": {
-              "$ref": "#/definitions/ScriptOptions"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "ScriptOptions": {
       "type": "object",
-      "required": [
-        "src"
-      ],
       "properties": {
-        "src": {
-          "type": "string"
-        },
         "timeout": {
           "type": [
             "integer",
@@ -1491,7 +1458,7 @@
           "description": "A link to an external JS file that listens on every HTTP request response event.",
           "anyOf": [
             {
-              "$ref": "#/definitions/Script"
+              "$ref": "#/definitions/ScriptOptions"
             },
             {
               "type": "null"
