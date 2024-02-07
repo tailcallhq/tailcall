@@ -222,10 +222,10 @@ pub fn update_grpc<'a>(
 
 #[cfg(test)]
 mod tests {
-    use crate::valid::ValidationError;
+    use std::convert::TryFrom;
 
     use super::GrpcMethod;
-    use std::convert::TryFrom;
+    use crate::valid::ValidationError;
 
     #[test]
     fn try_from_grpc_method() {
