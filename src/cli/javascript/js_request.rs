@@ -61,8 +61,9 @@ impl TryFrom<reqwest::Request> for JsRequest {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     #[test]
     fn test_js_request_to_reqwest_request() {
