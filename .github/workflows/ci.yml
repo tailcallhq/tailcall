@@ -112,9 +112,7 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, draft_release, check_if_build, test_cf]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -228,8 +226,8 @@ jobs:
       - name: Install Correct Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
+          override: true
 
       - name: Build
         env:
