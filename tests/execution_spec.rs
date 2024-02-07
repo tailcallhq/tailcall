@@ -684,8 +684,6 @@ async fn assert_spec(spec: ExecutionSpec) {
         log::info!("\tmerged ok");
     }
 
-    dbg!(spec.path.to_string_lossy().to_string());
-
     // Resolve all configs
     let server: Vec<ConfigModule> = join_all(
         server
