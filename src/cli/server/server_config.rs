@@ -1,8 +1,9 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use crate::blueprint::{Blueprint, Http};
+use crate::blueprint::Blueprint;
 use crate::cli::init_runtime;
+use crate::config::HttpVersion;
 use crate::http::AppContext;
 
 pub struct ServerConfig {
@@ -25,7 +26,7 @@ impl ServerConfig {
 
     pub fn http_version(&self) -> String {
         match self.blueprint.server.http {
-            Http::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
+            HttpVersion::HTTP2 => "HTTP/2".to_string(),
             _ => "HTTP/1.1".to_string(),
         }
     }

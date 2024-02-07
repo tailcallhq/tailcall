@@ -132,6 +132,12 @@ impl ConfigReader {
                         content: file_descriptor_set,
                     });
                 }
+                LinkType::Key => {
+                    config_set.extensions.tls_key = Some(content);
+                }
+                LinkType::Cert => {
+                    config_set.extensions.tls_cert = Some(content);
+                }
             }
         }
 

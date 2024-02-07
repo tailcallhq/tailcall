@@ -9,6 +9,8 @@ pub enum LinkType {
     #[default]
     Config,
     Protobuf,
+    Key,
+    Cert,
 }
 
 impl Display for LinkType {
@@ -16,6 +18,8 @@ impl Display for LinkType {
         f.write_str(match self {
             LinkType::Config => "Config",
             LinkType::Protobuf => "Protobuf",
+            LinkType::Key => "TlsKey",
+            LinkType::Cert => "TlsCert",
         })
     }
 }

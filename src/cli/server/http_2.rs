@@ -1,8 +1,8 @@
 #![allow(clippy::too_many_arguments)]
-use std::io::BufReader;
+use std::io::{BufReader, Cursor};
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use hyper::server::conn::AddrIncoming;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::Server;
@@ -10,30 +10,26 @@ use hyper_rustls::TlsAcceptor;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
-use tokio::fs::File;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use crate::cli::server::server::TlsCert;
 use crate::cli::CLIError;
 use crate::http::handle_request;
 
-async fn load_cert(filename: String) -> Result<Vec<CertificateDer<'static>>, std::io::Error> {
-    let file = File::open(filename).await?;
-    let file = file.into_std().await;
-    let mut file = BufReader::new(file);
-
-    let certificates = rustls_pemfile::certs(&mut file)?;
+async fn load_cert(crt: String) -> Result<Vec<CertificateDer<'static>>, std::io::Error> {
+    let cursor = Cursor::new(crt.into_bytes()); // Convert the string into bytes and create a Cursor
+    let mut crt = BufReader::new(cursor);
+    let certificates = rustls_pemfile::certs(&mut crt)?;
 
     Ok(certificates.into_iter().map(CertificateDer::from).collect())
 }
 
-async fn load_private_key(filename: String) -> anyhow::Result<PrivateKeyDer<'static>> {
-    let file = File::open(filename).await?;
-    let file = file.into_std().await;
-    let mut file = BufReader::new(file);
-
-    let keys = rustls_pemfile::read_all(&mut file)?;
+async fn load_private_key(key: String) -> anyhow::Result<PrivateKeyDer<'static>> {
+    let cursor = Cursor::new(key.into_bytes()); // Convert the string into bytes and create a Cursor
+    let mut key = BufReader::new(cursor);
+    let keys = rustls_pemfile::read_all(&mut key)?;
 
     if keys.len() != 1 {
         return Err(CLIError::new("Expected a single private key").into());
@@ -55,11 +51,16 @@ async fn load_private_key(filename: String) -> anyhow::Result<PrivateKeyDer<'sta
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
-    cert: String,
-    key: String,
+    tls_cert: Option<TlsCert>,
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
+    if tls_cert.is_none() {
+        return Err(anyhow!("HTTP/2 without TLS is not yet supported."));
+    }
+    let tls_cert = tls_cert.unwrap();
+    let cert = tls_cert.cert;
+    let key = tls_cert.key;
     let cert_chain = load_cert(cert).await?;
     let key = load_private_key(key).await?;
     let incoming = AddrIncoming::bind(&addr)?;

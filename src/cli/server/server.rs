@@ -7,9 +7,15 @@ use tokio::sync::oneshot::{self};
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
-use crate::blueprint::{Blueprint, Http};
+use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
-use crate::config::ConfigSet;
+use crate::config::{ConfigSet, HttpVersion};
+
+// TODO: Move this to cfg set ext
+pub struct TlsCert {
+    pub key: String,
+    pub cert: String,
+}
 
 pub struct Server {
     config_set: ConfigSet,
@@ -33,12 +39,18 @@ impl Server {
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_set).map_err(CLIError::from)?;
         let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
-
+        let cert = self.config_set.extensions.tls_cert;
+        let key = self.config_set.extensions.tls_key;
+        let tls_cert = if cert.is_some() && key.is_some() {
+            Some(TlsCert { key: key.unwrap(), cert: cert.unwrap() })
+        } else {
+            None
+        };
         match blueprint.server.http.clone() {
-            Http::HTTP2 { cert, key } => {
-                start_http_2(server_config, cert, key, self.server_up_sender).await
+            HttpVersion::HTTP2 => {
+                start_http_2(server_config, tls_cert, self.server_up_sender).await
             }
-            Http::HTTP1 => start_http_1(server_config, self.server_up_sender).await,
+            HttpVersion::HTTP1 => start_http_1(server_config, self.server_up_sender).await,
         }
     }
 

@@ -25,7 +25,7 @@ pub struct Server {
     pub hostname: IpAddr,
     pub vars: BTreeMap<String, String>,
     pub response_headers: HeaderMap,
-    pub http: Http,
+    pub http: HttpVersion,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
 }
@@ -36,13 +36,6 @@ pub struct Script {
     pub source: String,
     pub timeout: Option<Duration>,
 }
-
-#[derive(Clone, Debug)]
-pub enum Http {
-    HTTP1,
-    HTTP2 { cert: String, key: String },
-}
-
 impl Default for Server {
     fn default() -> Self {
         // NOTE: Using unwrap because try_from default will never fail
@@ -71,21 +64,7 @@ impl TryFrom<crate::config::Server> for Server {
     type Error = ValidationError<String>;
 
     fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
-        let http_server = match config_server.clone().get_version() {
-            HttpVersion::HTTP2 => {
-                let cert = Valid::from_option(
-                    config_server.cert.clone(),
-                    "Certificate is required for HTTP2".to_string(),
-                );
-                let key = Valid::from_option(
-                    config_server.key.clone(),
-                    "Key is required for HTTP2".to_string(),
-                );
-
-                cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
-            }
-            _ => Valid::succeed(Http::HTTP1),
-        };
+        let http_server = Valid::succeed(config_server.clone().get_version());
 
         validate_hostname((config_server).get_hostname().to_lowercase())
             .fuse(http_server)

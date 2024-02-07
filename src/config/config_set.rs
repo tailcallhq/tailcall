@@ -35,6 +35,12 @@ pub struct Extensions {
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
+
+    /// Contains content of tls key
+    pub tls_key: Option<String>,
+
+    /// Contains content of tls cert
+    pub tls_cert: Option<String>,
 }
 
 impl Extensions {
@@ -42,6 +48,8 @@ impl Extensions {
         self.grpc_file_descriptors
             .extend(other.grpc_file_descriptors.clone());
         self.script = other.script.clone().or(self.script.take());
+        self.tls_cert = other.tls_cert.clone().or(self.tls_cert.take());
+        self.tls_key = other.tls_key.clone().or(self.tls_key.take());
         self
     }
 

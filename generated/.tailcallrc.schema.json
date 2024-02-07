@@ -1266,7 +1266,9 @@
       "type": "string",
       "enum": [
         "Config",
-        "Protobuf"
+        "Protobuf",
+        "Key",
+        "Cert"
       ]
     },
     "Method": {
@@ -1406,13 +1408,6 @@
             "null"
           ]
         },
-        "cert": {
-          "description": "`cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
@@ -1439,13 +1434,6 @@
           "description": "`introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.",
           "type": [
             "boolean",
-            "null"
-          ]
-        },
-        "key": {
-          "description": "`key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
             "null"
           ]
         },
