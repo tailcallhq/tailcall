@@ -40,7 +40,7 @@ pub struct Link {
     #[serde(default, skip_serializing_if = "is_default")]
     pub src: String,
     ///
-    /// The type of the link. It can be `Config`, or `Protobuf`.
+    /// The type of the link. It can be `Config`, `Protobuf`, `Key` or `Cert`.
     ///
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,

@@ -1253,7 +1253,7 @@
           "type": "string"
         },
         "type": {
-          "description": "The type of the link. It can be `Config`, or `Protobuf`.",
+          "description": "The type of the link. It can be `Config`, `Protobuf`, `Key` or `Cert`.",
           "allOf": [
             {
               "$ref": "#/definitions/LinkType"
