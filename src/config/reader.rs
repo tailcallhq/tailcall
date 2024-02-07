@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 
 use anyhow::Context;
 use async_std::path::{Path, PathBuf};
@@ -6,6 +7,9 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+use rustls_pki_types::{
+    CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
+};
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
@@ -135,10 +139,50 @@ impl ConfigReader {
                 LinkType::Script => {
                     config_set.extensions.script = Some(content);
                 }
+                LinkType::Cert => {
+                    config_set.extensions.cert = self.load_cert(content.clone()).await.ok();
+                }
+                LinkType::Key => {
+                    config_set.extensions.keys =
+                        Arc::new(self.load_private_key(content.clone()).await?)
+                }
             }
         }
 
         Ok(config_set)
+    }
+
+    /// Reads the certificate from a given file
+    pub async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+        let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
+
+        Ok(certificates.into_iter().map(CertificateDer::from).collect())
+    }
+
+    /// Reads a private key from a given file
+    async fn load_private_key(
+        &self,
+        content: String,
+    ) -> anyhow::Result<Vec<PrivateKeyDer<'static>>> {
+        let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
+
+        Ok(keys
+            .into_iter()
+            .filter_map(|key| match key {
+                rustls_pemfile::Item::RSAKey(key) => {
+                    Some(PrivateKeyDer::Pkcs1(PrivatePkcs1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::ECKey(key) => {
+                    Some(PrivateKeyDer::Sec1(PrivateSec1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::PKCS8Key(key) => {
+                    Some(PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key)))
+                }
+                _ => None,
+            })
+            .collect())
+
+        // key.ok_or(CLIError::new("Invalid private key").into())
     }
 
     /// Reads a single file and returns the config

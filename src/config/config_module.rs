@@ -1,7 +1,8 @@
-use std::ops::Deref;
+use std::{ops::Deref, sync::Arc};
 
 use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
+use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::config::Config;
 
@@ -35,6 +36,12 @@ pub struct Extensions {
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
+
+    /// Contains the certificate used on HTTP2 with TLS
+    pub cert: Option<Vec<CertificateDer<'static>>>,
+
+    /// Contains the key used on HTTP2 with TLS
+    pub keys: Arc<Vec<PrivateKeyDer<'static>>>,
 }
 
 impl Extensions {
@@ -42,6 +49,10 @@ impl Extensions {
         self.grpc_file_descriptors
             .extend(other.grpc_file_descriptors.clone());
         self.script = other.script.clone().or(self.script.take());
+        self.cert = other.cert.clone().or(self.cert.take());
+        if !other.keys.is_empty() {
+            self.keys = other.keys.clone();
+        }
         self
     }
 

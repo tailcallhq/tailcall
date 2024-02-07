@@ -39,6 +39,18 @@ impl TryFrom<Vec<Link>> for Links {
                 Valid::succeed(links)
             }
         })
+        .and_then(|links| {
+            let key_links = links
+                .iter()
+                .filter(|l| l.type_of == LinkType::Key)
+                .collect::<Vec<&Link>>();
+
+            if key_links.len() > 1 {
+                Valid::fail("Only one key link is allowed".to_string())
+            } else {
+                Valid::succeed(links)
+            }
+        })
         .trace(Link::trace_name().as_str())
         .trace("schema")
         .map_to(Links)
