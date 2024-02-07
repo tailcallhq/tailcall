@@ -73,3 +73,10 @@ pub trait ScriptIO<Event, Command>: Send + Sync {
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
 }
+
+#[macro_export]
+macro_rules! write2 {
+    ($dst:expr, $($arg:tt)*) => {{
+        write!($dst, $($arg)*).unwrap()
+    }};
+}

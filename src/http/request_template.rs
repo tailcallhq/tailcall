@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
+use std::fmt::Write;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -14,6 +15,7 @@ use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
 use crate::path::PathString;
+use crate::write2;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -54,11 +56,12 @@ impl RequestTemplate {
         let qp_string = base_qp
             .chain(extra_qp)
             .map(|(k, v)| format!("{}={}", k, v))
-            .fold("".to_string(), |str, item| {
+            .fold("".to_string(), |mut str, item| {
                 if str.is_empty() {
                     item
                 } else {
-                    format!("{}&{}", str, item)
+                    write2!(&mut str, "&{item}");
+                    str
                 }
             });
 

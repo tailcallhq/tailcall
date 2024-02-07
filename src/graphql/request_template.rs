@@ -1,6 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use std::collections::hash_map::DefaultHasher;
+use std::fmt::Write;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -14,6 +15,7 @@ use crate::http::Method::POST;
 use crate::lambda::{CacheKey, GraphQLOperationContext};
 use crate::mustache::Mustache;
 use crate::path::PathGraphql;
+use crate::write2;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -83,20 +85,31 @@ impl RequestTemplate {
         ctx: &C,
     ) -> String {
         let operation_type = &self.operation_type;
+        let operation_name = &self.operation_name;
         let selection_set = ctx.selection_set().unwrap_or_default();
-        let operation = self
-            .operation_arguments
-            .as_ref()
-            .map(|args| {
-                args.iter()
-                    .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            })
-            .map(|args| format!("{}({})", self.operation_name, args))
-            .unwrap_or(self.operation_name.clone());
 
-        format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#)
+        let mut query_str = format!(r#"{{ "query": "{operation_type} {{ {operation_name}"#);
+        let writer = &mut query_str;
+
+        if let Some(args) = self.operation_arguments.as_ref() {
+            write2!(writer, "(");
+            args.iter().enumerate().for_each(|(i, (k, v))| {
+                write2!(
+                    writer,
+                    r#"{}: {}"#,
+                    k,
+                    v.render_graphql(ctx).escape_default()
+                );
+                if i != args.len() - 1 {
+                    write2!(writer, ", ");
+                }
+            });
+            write2!(writer, ")");
+        }
+
+        write2!(writer, r#" {selection_set} }}" }}"#);
+
+        query_str
     }
 
     pub fn new(

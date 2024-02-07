@@ -1,6 +1,9 @@
+use std::fmt::Write;
+
 use nom::{Finish, IResult};
 
 use crate::path::{PathGraphql, PathString};
+use crate::write2;
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
@@ -41,30 +44,43 @@ impl Mustache {
     }
 
     pub fn render(&self, value: &impl PathString) -> String {
+        let mut rendered_result = String::new();
+        let writer = &mut rendered_result;
+
         match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.clone(),
-                    Segment::Expression(parts) => value
-                        .path_string(parts)
-                        .map(|a| a.to_string())
-                        .unwrap_or_default(),
-                })
-                .collect(),
+            Mustache(segments) => segments.iter().for_each(|segment| match segment {
+                Segment::Literal(text) => {
+                    write2!(writer, "{text}");
+                }
+                Segment::Expression(parts) => {
+                    if let Some(a) = value.path_string(parts) {
+                        write2!(writer, "{a}")
+                    }
+                }
+            }),
         }
+
+        rendered_result
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
+        let mut rendered_graphql = String::new();
+        let writer = &mut rendered_graphql;
+
         match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.to_string(),
-                    Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
-                })
-                .collect(),
+            Mustache(segments) => segments.iter().for_each(|segment| match segment {
+                Segment::Literal(text) => {
+                    write2!(writer, "{text}");
+                }
+                Segment::Expression(parts) => {
+                    if let Some(a) = value.path_graphql(parts) {
+                        write2!(writer, "{a}")
+                    }
+                }
+            }),
         }
+
+        rendered_graphql
     }
 
     pub fn expression_segments(&self) -> Vec<&Vec<String>> {
