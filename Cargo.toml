@@ -111,7 +111,6 @@ cli = [
     "dep:moka",
     "dep:hyper-rustls",
     "dep:rustls",
-    "dep:rustls-pemfile",
     "dep:inquire",
     "dep:which",
     "dep:update-informer",
