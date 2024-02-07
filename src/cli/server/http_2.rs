@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_arguments)]
+
 use std::io::{BufReader, Cursor};
 use std::sync::Arc;
 
@@ -14,7 +15,6 @@ use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use crate::cli::server::server::TlsCert;
 use crate::cli::CLIError;
 use crate::http::handle_request;
 
@@ -51,19 +51,14 @@ async fn load_private_key(key: String) -> anyhow::Result<PrivateKeyDer<'static>>
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
-    tls_cert: Option<TlsCert>,
+    cert: String,
+    key: String,
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
-    if tls_cert.is_none() {
-        return Err(anyhow!("HTTP/2 without TLS is not yet supported."));
-    }
-    let tls_cert = tls_cert.unwrap();
-    let cert = tls_cert.cert;
-    let key = tls_cert.key;
+    let incoming = AddrIncoming::bind(&addr)?;
     let cert_chain = load_cert(cert).await?;
     let key = load_private_key(key).await?;
-    let incoming = AddrIncoming::bind(&addr)?;
     let acceptor = TlsAcceptor::builder()
         .with_single_cert(cert_chain, key)?
         .with_http2_alpn()

@@ -1,11 +1,13 @@
 use std::collections::{HashMap, VecDeque};
 
-use anyhow::Context;
+
+use anyhow::{Context};
 use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
