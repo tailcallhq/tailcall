@@ -11,13 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
+        "message": "ExprEvalError: \"median can not be negative\"",
         "locations": [
           {
-            "column": 9,
-            "line": 1
+            "line": 1,
+            "column": 9
           }
-        ],
-        "message": "ExprEvalError: \"median can not be negative\""
+        ]
       }
     ]
   }
