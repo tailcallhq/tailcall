@@ -32,64 +32,72 @@ impl AppContext {
         for def in blueprint.definitions.iter_mut() {
             if let Definition::ObjectTypeDefinition(def) = def {
                 for field in &mut def.fields {
-                    if let Some(Expression::IO(expr)) = &mut field.resolver {
-                        match expr {
-                            IO::Http { req_template, group_by, .. } => {
-                                let data_loader = HttpDataLoader::new(
-                                    runtime.http.clone(),
-                                    group_by.clone(),
-                                    matches!(&field.of_type, ListType { .. }),
-                                )
-                                .to_data_loader(
-                                    blueprint.upstream.batch.clone().unwrap_or_default(),
-                                );
+                    let of_type = field.of_type.clone();
+                    let upstream_batch = &blueprint.upstream.batch;
+                    field.map_expr(|expr| {
+                        expr.modify(|expr| match expr {
+                            Expression::IO(io) => match io {
+                                IO::Http { req_template, group_by, .. } => {
+                                    let data_loader = HttpDataLoader::new(
+                                        runtime.http.clone(),
+                                        group_by.clone(),
+                                        matches!(of_type, ListType { .. }),
+                                    )
+                                    .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
-                                field.resolver = Some(Expression::IO(IO::Http {
-                                    req_template: req_template.clone(),
-                                    group_by: group_by.clone(),
-                                    dl_id: Some(DataLoaderId(http_data_loaders.len())),
-                                }));
+                                    let result = Some(Expression::IO(IO::Http {
+                                        req_template: req_template.clone(),
+                                        group_by: group_by.clone(),
+                                        dl_id: Some(DataLoaderId(http_data_loaders.len())),
+                                    }));
 
-                                http_data_loaders.push(data_loader);
-                            }
+                                    http_data_loaders.push(data_loader);
 
-                            IO::GraphQLEndpoint { req_template, field_name, batch, .. } => {
-                                let graphql_data_loader =
-                                    GraphqlDataLoader::new(runtime.http.clone(), *batch)
-                                        .to_data_loader(
-                                            blueprint.upstream.batch.clone().unwrap_or_default(),
-                                        );
+                                    result
+                                }
 
-                                field.resolver = Some(Expression::IO(IO::GraphQLEndpoint {
-                                    req_template: req_template.clone(),
-                                    field_name: field_name.clone(),
-                                    batch: *batch,
-                                    dl_id: Some(DataLoaderId(gql_data_loaders.len())),
-                                }));
+                                IO::GraphQL { req_template, field_name, batch, .. } => {
+                                    let graphql_data_loader =
+                                        GraphqlDataLoader::new(runtime.http.clone(), *batch)
+                                            .to_data_loader(
+                                                upstream_batch.clone().unwrap_or_default(),
+                                            );
 
-                                gql_data_loaders.push(graphql_data_loader);
-                            }
+                                    let result = Some(Expression::IO(IO::GraphQL {
+                                        req_template: req_template.clone(),
+                                        field_name: field_name.clone(),
+                                        batch: *batch,
+                                        dl_id: Some(DataLoaderId(gql_data_loaders.len())),
+                                    }));
 
-                            IO::Grpc { req_template, group_by, .. } => {
-                                let data_loader = GrpcDataLoader {
-                                    client: runtime.http2_only.clone(),
-                                    operation: req_template.operation.clone(),
-                                    group_by: group_by.clone(),
-                                };
-                                let data_loader = data_loader.to_data_loader(
-                                    blueprint.upstream.batch.clone().unwrap_or_default(),
-                                );
+                                    gql_data_loaders.push(graphql_data_loader);
 
-                                field.resolver = Some(Expression::IO(IO::Grpc {
-                                    req_template: req_template.clone(),
-                                    group_by: group_by.clone(),
-                                    dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
-                                }));
+                                    result
+                                }
 
-                                grpc_data_loaders.push(data_loader);
-                            }
-                        }
-                    }
+                                IO::Grpc { req_template, group_by, .. } => {
+                                    let data_loader = GrpcDataLoader {
+                                        client: runtime.http2_only.clone(),
+                                        operation: req_template.operation.clone(),
+                                        group_by: group_by.clone(),
+                                    };
+                                    let data_loader = data_loader
+                                        .to_data_loader(upstream_batch.clone().unwrap_or_default());
+
+                                    let result = Some(Expression::IO(IO::Grpc {
+                                        req_template: req_template.clone(),
+                                        group_by: group_by.clone(),
+                                        dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
+                                    }));
+
+                                    grpc_data_loaders.push(data_loader);
+
+                                    result
+                                }
+                            },
+                            _ => None,
+                        })
+                    });
                 }
             }
         }

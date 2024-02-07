@@ -11,13 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
+        "message": "IOException: Status code error",
         "locations": [
           {
-            "column": 9,
-            "line": 1
+            "line": 1,
+            "column": 9
           }
-        ],
-        "message": "IOException: Status code error"
+        ]
       }
     ]
   }

@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 
-use crate::config::{self, HttpVersion};
+use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
@@ -46,7 +46,7 @@ pub enum Http {
 impl Default for Server {
     fn default() -> Self {
         // NOTE: Using unwrap because try_from default will never fail
-        Server::try_from(config::Server::default()).unwrap()
+        Server::try_from(ConfigModule::default()).unwrap()
     }
 }
 
@@ -67,10 +67,12 @@ impl Server {
     }
 }
 
-impl TryFrom<crate::config::Server> for Server {
+impl TryFrom<crate::config::ConfigModule> for Server {
     type Error = ValidationError<String>;
 
-    fn try_from(config_server: config::Server) -> Result<Self, Self::Error> {
+    fn try_from(config_set: config::ConfigModule) -> Result<Self, Self::Error> {
+        let config_server = config_set.server.clone();
+
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
                 let cert = Valid::from_option(
@@ -92,7 +94,7 @@ impl TryFrom<crate::config::Server> for Server {
             .fuse(handle_response_headers(
                 (config_server).get_response_headers().0,
             ))
-            .fuse(to_script(&config_server))
+            .fuse(to_script(&config_set))
             .map(|(hostname, http, response_headers, script)| Server {
                 enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                 enable_cache_control_header: (config_server).enable_cache_control(),
@@ -116,21 +118,19 @@ impl TryFrom<crate::config::Server> for Server {
     }
 }
 
-fn to_script(server: &config::Server) -> Valid<Option<Script>, String> {
-    server.script.as_ref().map_or_else(
+fn to_script(config_set: &crate::config::ConfigModule) -> Valid<Option<Script>, String> {
+    config_set.extensions.script.as_ref().map_or_else(
         || Valid::succeed(None),
-        |script| match script {
-            config::Script::File(script) => Valid::succeed(Some(Script {
-                source: script.src.clone(),
-                timeout: script.timeout.map(Duration::from_millis),
-            })),
-
-            config::Script::Path(_) => {
-                // NOTE:
-                // Making sure that we panic if we try to use Script::Path
-                // Need to convert all Script::Path to Script::File before passing it for BP conversion
-                unreachable!("Script::Path is not supported")
-            }
+        |script| {
+            Valid::succeed(Some(Script {
+                source: script.clone(),
+                timeout: config_set
+                    .server
+                    .script
+                    .clone()
+                    .map_or_else(|| None, |script| script.timeout)
+                    .map(Duration::from_millis),
+            }))
         },
     )
 }
@@ -168,11 +168,11 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
 
 #[cfg(test)]
 mod tests {
-    use crate::config;
+    use crate::config::ConfigModule;
 
     #[test]
     fn test_try_from_default() {
-        let actual = super::Server::try_from(config::Server::default());
+        let actual = super::Server::try_from(ConfigModule::default());
         assert!(actual.is_ok())
     }
 }
