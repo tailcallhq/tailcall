@@ -23,7 +23,7 @@ fn validate_data_with_schema(
 }
 
 pub struct CompileConst<'a> {
-    pub config_set: &'a config::ConfigSet,
+    pub config_set: &'a config::ConfigModule,
     pub field: &'a config::Field,
     pub value: &'a serde_json::Value,
     pub validate: bool,
@@ -50,8 +50,9 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
 }
 
 pub fn update_const_field<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         |(config_set, field, _, _), b_field| {
             let Some(const_field) = &field.const_field else {
                 return Valid::succeed(b_field);

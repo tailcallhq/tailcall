@@ -148,9 +148,11 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-    let tailcall::config::Config { server, upstream, .. } = tailcall::config::Config::default();
+    let config_set = tailcall::config::ConfigModule::default();
+
+    let tailcall::config::Config { upstream, .. } = config_set.config.clone();
     //TODO: default is used only in tests. Drop default and move it to test.
-    let server = Server::try_from(server).unwrap();
+    let server = Server::try_from(config_set).unwrap();
     let upstream = Upstream::try_from(upstream).unwrap();
 
     let h_client = init_http(&upstream, None);
