@@ -5,18 +5,12 @@
 #### server:
 
 ```graphql
-schema {
+schema @link(id: "news", src: "../graphql/errors/proto/news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  news: NewsData
-    @grpc(
-      service: "news.NewsService"
-      method: "GetAllNews"
-      baseURL: "http://localhost:4000"
-      protoPath: "tests/graphql/errors/proto/news.proto"
-    )
+  news: NewsData @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:4000")
 }
 
 type NewsData {

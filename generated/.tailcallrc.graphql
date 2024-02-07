@@ -87,7 +87,7 @@ specified when the `users` field is queried.
 directive @grpc(
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -111,16 +111,6 @@ directive @grpc(
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
-  """
-  The `protoPath` parameter allows you to specify the path to the proto file which 
-  contains service and method definitions and is used to encode and decode the request 
-  and response body.
-  """
-  protoPath: String!
-  """
-  This refers to the gRPC service you're going to call. For instance `NewsService`.
-  """
-  service: String!
 ) on FIELD_DEFINITION
 
 """
@@ -134,7 +124,7 @@ is queried.
 directive @http(
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -173,7 +163,7 @@ directive @http(
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.For 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
@@ -189,6 +179,27 @@ directive @http(
 directive @js(
   script: String!
 ) on FIELD_DEFINITION
+
+"""
+The @link directive allows you to import external resources, such as configuration 
+– which will be merged into the config importing it –, or a .proto file – which
+ will be later used by `@grpc` directive –.
+"""
+directive @link(
+  """
+  The id of the link. It is used to reference the link in the schema.
+  """
+  id: String
+  """
+  The source of the link. It can be a URL or a path to a file. If a path is provided, 
+  it is relative to the file that imports the link.
+  """
+  src: String!
+  """
+  The type of the link. It can be `Config`, or `Protobuf`.
+  """
+  type: LinkType
+) repeatable  on SCHEMA
 
 directive @modify(
   name: String
@@ -208,7 +219,7 @@ directive @server(
   apolloTracing: Boolean
   """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
-  introducing latency and complicating debugging. Use judiciously. @default `false`
+  introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
   batchRequests: Boolean
   """
@@ -246,6 +257,9 @@ directive @server(
   `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
   """
   key: String
+  """
+  `pipelineFlush` allows to control flushing behavior of the server pipeline.
+  """
   pipelineFlush: Boolean
   """
   `port` sets the Tailcall running port. @default `8000`.
@@ -257,9 +271,9 @@ directive @server(
   """
   queryValidation: Boolean
   """
-  The responseHeader is a key-value pair array. These headers are included in every 
-  server response. Useful for headers like Access-Control-Allow-Origin for cross-origin 
-  requests, or additional headers like X-Allowed-Roles for downstream services.
+  The `responseHeaders` are key-value pairs included in every server response. Useful 
+  for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
+  or additional headers for downstream services.
   """
   responseHeaders: KeyValues
   """
@@ -270,7 +284,7 @@ directive @server(
   """
   A link to an external JS file that listens on every HTTP request response event.
   """
-  script: Script
+  script: ScriptOptions
   """
   `showcase` enables the /showcase/graphql endpoint.
   """
@@ -506,7 +520,7 @@ specified when the `users` field is queried.
 input Grpc {
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -530,16 +544,6 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
-  """
-  The `protoPath` parameter allows you to specify the path to the proto file which 
-  contains service and method definitions and is used to encode and decode the request 
-  and response body.
-  """
-  protoPath: String!
-  """
-  This refers to the gRPC service you're going to call. For instance `NewsService`.
-  """
-  service: String!
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
@@ -552,7 +556,7 @@ is queried.
 input Http {
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
-  the one specified in the `@upstream` operator
+  the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
@@ -591,7 +595,7 @@ input Http {
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.For 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
@@ -609,6 +613,11 @@ enum HttpVersion {
 }
 input JS {
   script: String!
+}
+enum LinkType {
+  Config
+  Protobuf
+  Script
 }
 enum Method {
   GET
@@ -628,12 +637,7 @@ input Modify {
 input Proxy {
   url: String!
 }
-input Script {
-  path: ScriptOptions
-  file: ScriptOptions
-}
 input ScriptOptions {
-  src: String!
   timeout: Int
 }
 input Schema {

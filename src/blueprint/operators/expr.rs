@@ -8,13 +8,13 @@ use crate::valid::{Valid, Validator};
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
     operation_type: &'a config::GraphQLOperationType,
-    config_set: &'a config::ConfigSet,
+    config_set: &'a config::ConfigModule,
 }
 
 pub fn update_expr(
     operation_type: &config::GraphQLOperationType,
-) -> TryFold<'_, (&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         |(config_set, field, _, _), b_field| {
             let Some(expr) = &field.expr else {
                 return Valid::succeed(b_field);
@@ -178,7 +178,7 @@ mod tests {
     use serde_json::{json, Number};
 
     use super::{compile, CompilationContext};
-    use crate::config::{ConfigSet, Expr, Field, GraphQLOperationType};
+    use crate::config::{ConfigModule, Expr, Field, GraphQLOperationType};
     use crate::http::RequestContext;
     use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
     use crate::valid::Validator;
@@ -218,7 +218,7 @@ mod tests {
     impl Expr {
         async fn eval(expr: serde_json::Value) -> anyhow::Result<serde_json::Value> {
             let expr = serde_json::from_value::<Expr>(expr)?;
-            let config_set = ConfigSet::default();
+            let config_set = ConfigModule::default();
             let field = Field::default();
             let operation_type = GraphQLOperationType::Query;
             let context = CompilationContext {
