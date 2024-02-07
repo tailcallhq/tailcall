@@ -3,9 +3,10 @@ schema
     port: 8801
     version: HTTP2
     hostname: "localhost"
-    cert: "./tests/server/config/example.crt"
-    key: "./tests/server/config/example-pkcs8.key"
-  ) {
+  )
+  @link(src: "example.crt", type: Cert)
+  @link(src: "example-pkcs8.key", type: Key)
+{
   query: Query
 }
 

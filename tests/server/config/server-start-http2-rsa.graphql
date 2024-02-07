@@ -3,10 +3,11 @@ schema
     port: 8802
     version: HTTP2
     hostname: "localhost"
-    cert: "./tests/server/config/example.crt"
-    key: "./tests/server/config/example-rsa.key"
     batchRequests: true
-  ) {
+  )
+  @link(src: "example.crt", type: Cert)
+  @link(src: "example-rsa.key", type: Key)
+{
   query: Query
 }
 
