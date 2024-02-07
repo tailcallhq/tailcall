@@ -11,6 +11,7 @@ pub enum LinkType {
     Protobuf,
     Key,
     Cert,
+    Script,
 }
 
 impl Display for LinkType {
@@ -20,6 +21,7 @@ impl Display for LinkType {
             LinkType::Protobuf => "Protobuf",
             LinkType::Key => "TlsKey",
             LinkType::Cert => "TlsCert",
+            LinkType::Script => "Script",
         })
     }
 }
@@ -40,7 +42,7 @@ pub struct Link {
     #[serde(default, skip_serializing_if = "is_default")]
     pub src: String,
     ///
-    /// The type of the link. It can be `Config`, `Protobuf`, `Key` or `Cert`.
+    /// The type of the link. It can be `Config`, `Protobuf`, `Script`, `Key` or `Cert`.
     ///
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,

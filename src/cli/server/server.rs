@@ -9,7 +9,7 @@ use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::blueprint::Blueprint;
 use crate::cli::CLIError;
-use crate::config::{ConfigSet, HttpVersion};
+use crate::config::{ConfigModule, HttpVersion};
 
 // TODO: Move this to cfg set ext
 pub struct TlsCert {
@@ -18,12 +18,12 @@ pub struct TlsCert {
 }
 
 pub struct Server {
-    config_set: ConfigSet,
+    config_set: ConfigModule,
     server_up_sender: Option<oneshot::Sender<()>>,
 }
 
 impl Server {
-    pub fn new(config_set: ConfigSet) -> Self {
+    pub fn new(config_set: ConfigModule) -> Self {
         Self { config_set, server_up_sender: None }
     }
 

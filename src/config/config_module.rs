@@ -7,7 +7,7 @@ use crate::config::Config;
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default, Setters)]
-pub struct ConfigSet {
+pub struct ConfigModule {
     pub config: Config,
     pub extensions: Extensions,
 }
@@ -61,7 +61,7 @@ impl Extensions {
     }
 }
 
-impl ConfigSet {
+impl ConfigModule {
     pub fn merge_right(mut self, other: &Self) -> Self {
         self.config = self.config.merge_right(&other.config);
         self.extensions = self.extensions.merge_right(&other.extensions);
@@ -69,15 +69,15 @@ impl ConfigSet {
     }
 }
 
-impl Deref for ConfigSet {
+impl Deref for ConfigModule {
     type Target = Config;
     fn deref(&self) -> &Self::Target {
         &self.config
     }
 }
 
-impl From<Config> for ConfigSet {
+impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        ConfigSet { config, ..Default::default() }
+        ConfigModule { config, ..Default::default() }
     }
 }

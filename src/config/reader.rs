@@ -8,11 +8,11 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigSet, Content, Link, LinkType, Script, ScriptOptions};
+use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
+/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
 }
@@ -66,9 +66,9 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        mut config_set: ConfigSet,
+        mut config_set: ConfigModule,
         path: Option<String>,
-    ) -> anyhow::Result<ConfigSet> {
+    ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_set
             .config
             .links
@@ -107,12 +107,12 @@ impl ConfigReader {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                    config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
+                    config_set = config_set.merge_right(&ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
                         config_set = config_set.merge_right(
                             &self
-                                .ext_links(ConfigSet::from(config), Some(source.path))
+                                .ext_links(ConfigModule::from(config), Some(source.path))
                                 .await?,
                         );
                     }
@@ -138,32 +138,25 @@ impl ConfigReader {
                 LinkType::Cert => {
                     config_set.extensions.tls_cert = Some(content);
                 }
+                LinkType::Script => {
+                    config_set.extensions.script = Some(content);
+                }
             }
         }
 
         Ok(config_set)
     }
 
-    /// Reads the script file and replaces the path with the content
-    async fn ext_script(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
-        let config = &mut config_set.config;
-        if let Some(Script::Path(ref options)) = &config.server.script {
-            let timeout = options.timeout;
-            let script = self.read_file(options.src.clone()).await?.content;
-            config.server.script = Some(Script::File(ScriptOptions { src: script, timeout }));
-        }
-        Ok(config_set)
-    }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigSet> {
+    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigSet> {
+    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.read_files(files).await?;
-        let mut config_set = ConfigSet::default();
+        let mut config_set = ConfigModule::default();
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
@@ -184,13 +177,14 @@ impl ConfigReader {
         Ok(config_set)
     }
 
-    /// Resolves all the links in a Config to create a ConfigSet
-    pub async fn resolve(&self, config: Config, path: Option<String>) -> anyhow::Result<ConfigSet> {
+    /// Resolves all the links in a Config to create a ConfigModule
+    pub async fn resolve(
+        &self,
+        config: Config,
+        path: Option<String>,
+    ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
-        let config_set = ConfigSet::from(config);
-
-        // Extend it with the worker script
-        let config_set = self.ext_script(config_set).await?;
+        let config_set = ConfigModule::from(config);
 
         // Extend it with the links
         let config_set = self.ext_links(config_set, path).await?;
@@ -295,6 +289,7 @@ mod test_proto_config {
 
         Ok(())
     }
+
     fn path_to_file_name(path: &Path) -> Option<String> {
         let components: Vec<_> = path.components().collect();
 
@@ -324,7 +319,7 @@ mod reader_tests {
     use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Script, ScriptOptions, Type};
+    use crate::config::{Config, Type};
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
@@ -363,9 +358,9 @@ mod reader_tests {
             format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
             format!("http://localhost:{port}/foo.json").as_str(), // with url extension
         ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
@@ -391,9 +386,9 @@ mod reader_tests {
             "examples/jsonplaceholder.graphql",
             "examples/jsonplaceholder.json",
         ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
@@ -424,16 +419,13 @@ mod reader_tests {
             .unwrap();
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
-        let file = ScriptOptions {
-            src: String::from_utf8(
-                tokio::fs::read(&path)
-                    .await
-                    .context(path.to_string())
-                    .unwrap(),
-            )
-            .unwrap(),
-            timeout: None,
-        };
-        assert_eq!(config.server.script, Some(Script::File(file)),);
+        let content = String::from_utf8(
+            tokio::fs::read(&path)
+                .await
+                .context(path.to_string())
+                .unwrap(),
+        );
+
+        assert_eq!(content.unwrap(), config.extensions.script.unwrap());
     }
 }

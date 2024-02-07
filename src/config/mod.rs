@@ -1,5 +1,5 @@
 pub use config::*;
-pub use config_set::*;
+pub use config_module::*;
 pub use expr::*;
 pub use key_values::*;
 pub use link::*;
@@ -7,7 +7,7 @@ pub use server::*;
 pub use source::*;
 pub use upstream::*;
 mod config;
-mod config_set;
+mod config_module;
 mod expr;
 mod from_document;
 pub mod group_by;

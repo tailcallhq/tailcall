@@ -1,9 +1,11 @@
 # Js Hello World
 
+###### sdl error
+
 #### server:
 
 ```graphql
-schema @server @link(type: Script, src: "../http/scripts/test.js") {
+schema @server @link(type: Script, src: "../http/scripts/test.js") @link(type: Script, src: "../http/scripts/test.js") {
   query: Query
 }
 

@@ -1,4 +1,4 @@
-use crate::config::Link;
+use crate::config::{Link, LinkType};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -26,9 +26,21 @@ impl TryFrom<Vec<Link>> for Links {
                     Valid::succeed(link)
                 })
                 .trace(&pos.to_string())
-                .trace(Link::trace_name().as_str())
-                .trace("schema")
         })
+        .and_then(|links| {
+            let script_links = links
+                .iter()
+                .filter(|l| l.type_of == LinkType::Script)
+                .collect::<Vec<&Link>>();
+
+            if script_links.len() > 1 {
+                Valid::fail("Only one script link is allowed".to_string())
+            } else {
+                Valid::succeed(links)
+            }
+        })
+        .trace(Link::trace_name().as_str())
+        .trace("schema")
         .map_to(Links)
         .to_result()
     }
