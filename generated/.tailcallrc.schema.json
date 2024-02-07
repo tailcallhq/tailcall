@@ -23,9 +23,7 @@
     },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
-      "default": {
-        "script": null
-      },
+      "default": {},
       "allOf": [
         {
           "$ref": "#/definitions/Server"
