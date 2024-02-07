@@ -2247,8 +2247,19 @@ version = "5.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59bb584eaeeab6bd0226ccf3509a69d7936d148cf3d036ad350abe35e8c6856e"
 dependencies = [
- "miette-derive",
+ "miette-derive 5.10.0",
  "once_cell",
+ "thiserror",
+ "unicode-width",
+]
+
+[[package]]
+name = "miette"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98a72adfa0c7ae88ba0abcbd00047a476616c66b831d628b8ac7f1e9de0cfd67"
+dependencies = [
+ "miette-derive 7.0.0",
  "thiserror",
  "unicode-width",
 ]
@@ -2258,6 +2269,17 @@ name = "miette-derive"
 version = "5.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49e7bc1560b95a3c4a25d03de42fe76ca718ab92d1a22a55b9b4cf67b3ae635c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
+]
+
+[[package]]
+name = "miette-derive"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "279def6bf114a34b3cf887489eb440d4dfcf709ab3ce9955e4a6f957ce5cce77"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2834,13 +2856,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "057237efdb71cf4b3f9396302a3d6599a92fa94063ba537b66130980ea9909f3"
 dependencies = [
  "base64 0.21.7",
- "logos",
- "miette",
  "once_cell",
  "prost",
  "prost-types",
  "serde",
  "serde-value",
+]
+
+[[package]]
+name = "prost-reflect"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ae9372e3227f3685376a0836e5c248611eafc95a0be900d44bc6cdf225b700f"
+dependencies = [
+ "logos",
+ "miette 7.0.0",
+ "once_cell",
+ "prost",
+ "prost-types",
 ]
 
 [[package]]
@@ -2854,16 +2887,16 @@ dependencies = [
 
 [[package]]
 name = "protox"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00bb76c5f6221de491fe2c8f39b106330bbd9762c6511119c07940e10eb9ff11"
+checksum = "a29b3c5596eb23a849deba860b53ffd468199d9ad5fe4402a7d55379e16aa2d2"
 dependencies = [
  "bytes",
- "miette",
+ "miette 7.0.0",
  "prost",
- "prost-reflect",
+ "prost-reflect 0.13.0",
  "prost-types",
- "protox-parse",
+ "protox-parse 0.6.0",
  "thiserror",
 ]
 
@@ -2874,7 +2907,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b4581f441c58863525a3e6bec7b8de98188cf75239a56c725a3e7288450a33f"
 dependencies = [
  "logos",
- "miette",
+ "miette 5.10.0",
+ "prost-types",
+ "thiserror",
+]
+
+[[package]]
+name = "protox-parse"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "033b939d76d358f7c32120c86c71f515bae45e64f2bde455200356557276276c"
+dependencies = [
+ "logos",
+ "miette 7.0.0",
  "prost-types",
  "thiserror",
 ]
@@ -3775,9 +3820,9 @@ dependencies = [
  "once_cell",
  "pretty_assertions",
  "prost",
- "prost-reflect",
+ "prost-reflect 0.12.0",
  "protox",
- "protox-parse",
+ "protox-parse 0.5.0",
  "regex",
  "reqwest",
  "reqwest-middleware",
