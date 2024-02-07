@@ -1,4 +1,5 @@
-use std::{ops::Deref, sync::Arc};
+use std::ops::Deref;
+use std::sync::Arc;
 
 use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;

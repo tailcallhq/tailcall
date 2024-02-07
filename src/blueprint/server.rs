@@ -87,13 +87,9 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 let key_file: PrivateKeyDer<'_> = config_set
                     .extensions
                     .keys
-                    .get(0)
+                    .first()
                     .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
                     .clone_key();
-
-                // let key: Arc<PrivateKeyDer<'_>> = Arc::new(*key_file.get(0).ok_or_else(|| {
-                //     ValidationError::new("Key is required for HTTP2".to_string())
-                // })?);
 
                 let key: Arc<PrivateKeyDer<'_>> = Arc::new(key_file);
 
