@@ -124,7 +124,7 @@ default = ["cli", "js"]
 
 
 [workspace]
-members = [".", "autogen", "cloudflare", "lambda", "testconv"]
+members = [".", "autogen", "aws-lambda", "cloudflare", "testconv"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
