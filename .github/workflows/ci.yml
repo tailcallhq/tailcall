@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./lambda
+        working-directory: ./aws-lambda
 
     steps:
       - uses: actions/checkout@v4
