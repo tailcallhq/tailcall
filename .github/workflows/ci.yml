@@ -355,7 +355,7 @@ jobs:
         uses: xresloader/upload-to-github-release@v1
         with:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
-          file: target/lambda/aws-lambda/bootstrap target/lambda/aws-lambda/tailcall-aws-lambda-bootstrap
+          file: target/lambda/aws-lambda/tailcall-aws-lambda-bootstrap
           overwrite: true
   semantic_release:
     name: Semantic Release
