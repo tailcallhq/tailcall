@@ -33,8 +33,8 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
-  build_lambda:
-    name: Build (Lambda)
+  test_aws_build:
+    name: Test AWS Lambda Build
     if: (github.event_name == 'pull_request') || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     defaults:
@@ -308,8 +308,8 @@ jobs:
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
   release_lambda:
-    name: Release (Lambda)
-    needs: [test, draft_release, check_if_build, test_cf, build_lambda]
+    name: Release (AWS Lambda)
+    needs: [test, draft_release, check_if_build, test_cf, test_aws_build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ubuntu-latest
     permissions:
