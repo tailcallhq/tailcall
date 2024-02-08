@@ -24,6 +24,7 @@ pub mod print_schema;
 pub mod runtime;
 pub mod try_fold;
 pub mod valid;
+mod plan;
 
 use std::hash::Hash;
 use std::num::NonZeroU64;
