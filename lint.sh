@@ -1,5 +1,36 @@
 #!/bin/bash
 
+# Flag to keep track of when we're inside the desired section
+inside_section=false
+
+# Read the file line by line
+while IFS= read -r line; do
+    # Check if we've reached the tooling-version section
+    if [[ "$line" == "[tooling-version]" ]]; then
+        inside_section=true
+        continue
+    fi
+
+    # Check if we've reached the next section (denoted by [])
+    if [[ "$inside_section" == true && "$line" =~ ^\[.*\]$ ]]; then
+        break
+    fi
+
+    # If we're inside the section, extract key and value
+    if [[ "$inside_section" == true && "$line" != "" ]]; then
+        # Extract key and value using bash string manipulation
+        key=$(echo "$line" | cut -d '=' -f 1 | xargs)
+        value=$(echo "$line" | cut -d '=' -f 2 | xargs | tr -d '"')
+
+        # Add _version suffix to the key
+        key="${key}_expected_version"
+
+        # Assign to variables with _expected_version suffix and print (for demonstration)
+        declare "$key=$value"
+        echo "$key is locked to '${!key}'"
+    fi
+done < "Cargo.toml"
+
 # Configuration for file types to be tested via prettier
 FILE_TYPES="{graphql,yml,json,md,ts,js}"
 
@@ -13,8 +44,24 @@ run_cargo_fmt() {
     return $?
 }
 
+match_lib_version() {
+    actual=$1
+    lib=$2
+    var_name="${lib}_expected_version"
+    expected="${!var_name}"
+
+    # Check if the resolved version contains the expected version string
+    if [[ "$actual" != "$expected"* ]]; then
+        echo "Expected $lib version: $expected, found: $actual"
+        exit 1
+    fi
+}
+
 run_cargo_clippy() {
     MODE=$1
+
+    match_lib_version "$(cargo clippy --version)" "clippy"
+
     CMD="cargo clippy --all --all-targets --all-features"
     if [ "$MODE" == "fix" ]; then
         $CMD --fix --allow-staged --allow-dirty
@@ -26,6 +73,9 @@ run_cargo_clippy() {
 
 run_prettier() {
     MODE=$1
+
+    match_lib_version "$(prettier --version)" "prettier"
+
     if [ "$MODE" == "check" ]; then
         prettier -c .prettierrc --check "**/*.$FILE_TYPES"
     else
