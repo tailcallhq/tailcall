@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use http::{to_request, to_response};
+use http::to_request;
 use lambda_http::{run, service_fn, Error, Response};
 use runtime::init_runtime;
 use tailcall::async_graphql_hyper::GraphQLRequest;
@@ -30,8 +30,8 @@ async fn main() -> Result<(), Error> {
     let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
 
     run(service_fn(|event| async {
-        let resp = handle_request::<GraphQLRequest>(to_request(event), app_ctx.clone()).await?;
-        Ok::<Response<hyper::Body>, Error>(to_response(resp)?)
+        let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;
+        Ok::<Response<hyper::Body>, Error>(resp)
     }))
     .await
 }

@@ -27,28 +27,21 @@ impl LambdaHttp {
 impl HttpIO for LambdaHttp {
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
         let client = self.client.clone();
-        let method = request.method().clone();
-        let url = request.url().clone();
-        let response = client.execute(request).await?.error_for_status()?;
+        let req_str = format!("{} {}", request.method(), request.url());
+        let response = client.execute(request).await?;
         let res = Response::from_reqwest(response).await?;
-        tracing::info!("{} {} {}", method, url, res.status.as_u16());
+        tracing::info!("{} {}", req_str, res.status.as_u16());
         Ok(res)
     }
 }
 
-pub fn to_response(
-    response: hyper::Response<hyper::Body>,
-) -> anyhow::Result<lambda_http::Response<hyper::Body>> {
-    Ok(response)
-}
-
-pub fn to_request(req: lambda_http::Request) -> hyper::Request<hyper::Body> {
-    let builder = hyper::Request::builder()
+pub fn to_request(
+    req: lambda_http::Request,
+) -> Result<hyper::Request<hyper::Body>, lambda_http::http::Error> {
+    hyper::Request::builder()
         .method(req.method())
         .uri(req.uri())
-        .body(hyper::Body::from(req.body().as_ref().to_vec()));
-
-    builder.unwrap()
+        .body(hyper::Body::from(req.body().to_vec()))
 }
 
 pub fn init_http() -> Arc<LambdaHttp> {
