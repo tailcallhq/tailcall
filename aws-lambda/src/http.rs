@@ -27,7 +27,7 @@ impl LambdaHttp {
 impl HttpIO for LambdaHttp {
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
         let req_str = format!("{} {}", request.method(), request.url());
-        let response = self.client.execute(request).await?;
+        let response = self.client.execute(request).await?.error_for_status()?;
         let res = Response::from_reqwest(response).await?;
         tracing::info!("{} {}", req_str, res.status.as_u16());
         Ok(res)
