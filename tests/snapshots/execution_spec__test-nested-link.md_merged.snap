@@ -2,6 +2,6 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server @upstream @link(src: "../fixtures/graphql-with-link.graphql", type: Config) {
+schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {
   query: Query
 }

@@ -11,6 +11,7 @@ A Markdown-based snapshot testing framework for Tailcall.
     - [`mock`](#mock)
     - [`env`](#env)
     - [`assert`](#assert)
+    - [`file`](#file)
   - [Instruction](#instruction)
 - [Test process](#test-process)
 - [Snapshots](#snapshots)
@@ -145,6 +146,33 @@ Example:
 ```
 ````
 
+#### `#### file:<filename>`
+
+A `file` block creates a file in the spec's virtual file system. The [`server` block](#server) will only be able to access files created in this way: the true filesystem is not available to it.
+
+Every `file` block has the filename declared in the header. The language of the code block is optional and does not matter.
+
+Example:
+
+````md
+#### file:enum.graphql
+
+```graphql
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo @http(path: "/foo")
+}
+```
+````
+
 ### Instruction
 
 A level 6 heading (`######`), with the text being one of the following:
@@ -181,6 +209,7 @@ There must be exactly zero or one instruction in a test.
       1. If the snapshot doesn't match the generated schema, the runner generates a new snapshot and throws an error.
    1. If the test has an [`assert` block](#assert), the runner performs `assert` checks:
       1. If there is a [`mock` block](#mock), the runner sets up the mock HTTP client based on it.
+      1. If there is at least one [`file` block](#file), the runner sets up the mock filesystem based on them.
       1. If there is an [`env` block](#env), the runner uses it for the app context.
       1. Creates an app context based on the [`server` block](#server).
       1. For each assertion in the block (0-based index `i`), the runner does the following:
