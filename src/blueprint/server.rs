@@ -80,9 +80,12 @@ impl TryFrom<crate::config::ConfigModule> for Server {
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
-                let cert = config_set.extensions.cert.clone().ok_or_else(|| {
-                    ValidationError::new("Certificate is required for HTTP2".to_string())
-                })?;
+                if config_set.extensions.cert.is_empty() {
+                    return Valid::fail("Certificate is required for HTTP2".to_string())
+                        .to_result();
+                }
+
+                let cert = config_set.extensions.cert.clone();
 
                 let key_file: PrivateKeyDer<'_> = config_set
                     .extensions

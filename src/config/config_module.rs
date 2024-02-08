@@ -39,7 +39,7 @@ pub struct Extensions {
     pub script: Option<String>,
 
     /// Contains the certificate used on HTTP2 with TLS
-    pub cert: Option<Vec<CertificateDer<'static>>>,
+    pub cert: Vec<CertificateDer<'static>>,
 
     /// Contains the key used on HTTP2 with TLS
     pub keys: Arc<Vec<PrivateKeyDer<'static>>>,
@@ -50,7 +50,7 @@ impl Extensions {
         self.grpc_file_descriptors
             .extend(other.grpc_file_descriptors.clone());
         self.script = other.script.clone().or(self.script.take());
-        self.cert = other.cert.clone().or(self.cert.take());
+        self.cert.extend(other.cert.clone());
         if !other.keys.is_empty() {
             self.keys = other.keys.clone();
         }

@@ -141,7 +141,10 @@ impl ConfigReader {
                     config_set.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    config_set.extensions.cert = self.load_cert(content.clone()).await.ok();
+                    config_set
+                        .extensions
+                        .cert
+                        .extend(self.load_cert(content.clone()).await?);
                 }
                 LinkType::Key => {
                     config_set.extensions.keys =
