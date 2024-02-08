@@ -76,10 +76,14 @@ jobs:
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: Wandalen/wretry.action@v1
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-          files: lcov.info
+          action: codecov/codecov-action@v3
+          attempt_limit: 10
+          attempt_delay: 10000
+          with: |
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: lcov.info
 
   draft_release:
     name: Draft Release
