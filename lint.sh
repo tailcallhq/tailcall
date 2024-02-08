@@ -6,7 +6,7 @@ inside_section=false
 # Read the file line by line
 while IFS= read -r line; do
     # Check if we've reached the tooling-version section
-    if [[ "$line" == "[tooling-version]" ]]; then
+    if [[ "$line" == "[package.metadata.tooling-version]" ]]; then
         inside_section=true
         continue
     fi
