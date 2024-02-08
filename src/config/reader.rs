@@ -154,7 +154,7 @@ impl ConfigReader {
     }
 
     /// Reads the certificate from a given file
-    pub async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+    async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
         let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
 
         Ok(certificates.into_iter().map(CertificateDer::from).collect())
