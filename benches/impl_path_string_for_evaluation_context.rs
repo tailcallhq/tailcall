@@ -4,17 +4,52 @@ use std::sync::{Arc, Mutex};
 
 use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
+use async_trait::async_trait;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
+use reqwest::{Client, Request};
 use tailcall::blueprint::{Server, Upstream};
 use tailcall::cache::InMemoryCache;
-use tailcall::cli::{init_env, init_http, init_http2_only};
-use tailcall::http::RequestContext;
+use tailcall::http::{RequestContext, Response};
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
+use tailcall::target_runtime::TargetRuntime;
+use tailcall::{EnvIO, FileIO, HttpIO};
+
+struct Http {
+    client: Client,
+}
+#[async_trait]
+impl HttpIO for Http {
+    async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
+        let resp = self.client.execute(request).await?;
+        Response::from_reqwest(resp).await
+    }
+}
+
+struct Env {}
+
+impl EnvIO for Env {
+    fn get(&self, _: &str) -> Option<String> {
+        unimplemented!("Not needed for this bench")
+    }
+}
+
+struct File;
+#[async_trait]
+impl FileIO for File {
+    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
+        unimplemented!("Not needed for this bench")
+    }
+
+    async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
+        unimplemented!("Not needed for this bench")
+    }
+}
 
 const INPUT_VALUE: &[&[&str]] = &[
     // existing values
@@ -154,22 +189,24 @@ fn request_context() -> RequestContext {
     //TODO: default is used only in tests. Drop default and move it to test.
     let server = Server::try_from(config_set).unwrap();
     let upstream = Upstream::try_from(upstream).unwrap();
-
-    let h_client = init_http(&upstream, None);
-    let h2_client = init_http2_only(&upstream, None);
+    let http = Arc::new(Http { client: Client::new() });
+    let runtime = TargetRuntime {
+        http2_only: http.clone(),
+        http,
+        env: Arc::new(Env {}),
+        file: Arc::new(File {}),
+        cache: Arc::new(InMemoryCache::new()),
+    };
     RequestContext {
         req_headers: HeaderMap::new(),
-        h_client,
-        h2_client,
         server,
         upstream,
         http_data_loaders: Arc::new(vec![]),
         gql_data_loaders: Arc::new(vec![]),
-        cache: Arc::new(InMemoryCache::new()),
         grpc_data_loaders: Arc::new(vec![]),
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
-        env_vars: init_env(),
+        runtime,
     }
 }
 
