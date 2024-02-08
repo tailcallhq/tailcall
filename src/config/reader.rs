@@ -185,8 +185,6 @@ impl ConfigReader {
                 _ => None,
             })
             .collect())
-
-        // key.ok_or(CLIError::new("Invalid private key").into())
     }
 
     /// Reads a single file and returns the config
