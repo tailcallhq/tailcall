@@ -1,2 +1,2 @@
 mod store;
-mod table;
+mod query_plan;
