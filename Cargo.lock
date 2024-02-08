@@ -1105,7 +1105,7 @@ dependencies = [
  "pin-project",
  "serde",
  "serde_json",
- "serde_v8 0.169.0",
+ "serde_v8",
  "smallvec",
  "sourcemap",
  "static_assertions",
@@ -3630,21 +3630,6 @@ dependencies = [
 
 [[package]]
 name = "serde_v8"
-version = "0.168.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a64d740e74bee1f5bc3f4fe49aab63b08ee6dcc606e9321dec71628ba80e4293"
-dependencies = [
- "bytes",
- "derive_more",
- "num-bigint",
- "serde",
- "smallvec",
- "thiserror",
- "v8",
-]
-
-[[package]]
-name = "serde_v8"
 version = "0.169.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad4064ec3eeb8e013080e269242d3f074ca74d4a3806672d91da4cbfdc7ef6d8"
@@ -3972,7 +3957,7 @@ dependencies = [
  "serde_path_to_error",
  "serde_qs",
  "serde_urlencoded",
- "serde_v8 0.168.0",
+ "serde_v8",
  "serde_yaml",
  "stripmargin",
  "tempfile",
