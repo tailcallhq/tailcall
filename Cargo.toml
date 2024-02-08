@@ -6,7 +6,7 @@ rust-version = "1.75.0"
 
 # Version of tooling used to lint the project.
 [package.metadata.tooling-version]
-clippy = "clippy 0.1.77 (11f32b73 2024-01-31)"
+clippy = "clippy 0.1.77"
 prettier = "3.2.5"
 
 [[bin]]
