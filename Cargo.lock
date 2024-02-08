@@ -2243,36 +2243,13 @@ dependencies = [
 
 [[package]]
 name = "miette"
-version = "5.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59bb584eaeeab6bd0226ccf3509a69d7936d148cf3d036ad350abe35e8c6856e"
-dependencies = [
- "miette-derive 5.10.0",
- "once_cell",
- "thiserror",
- "unicode-width",
-]
-
-[[package]]
-name = "miette"
 version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98a72adfa0c7ae88ba0abcbd00047a476616c66b831d628b8ac7f1e9de0cfd67"
 dependencies = [
- "miette-derive 7.0.0",
+ "miette-derive",
  "thiserror",
  "unicode-width",
-]
-
-[[package]]
-name = "miette-derive"
-version = "5.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49e7bc1560b95a3c4a25d03de42fe76ca718ab92d1a22a55b9b4cf67b3ae635c"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.48",
 ]
 
 [[package]]
@@ -2857,7 +2834,7 @@ checksum = "9ae9372e3227f3685376a0836e5c248611eafc95a0be900d44bc6cdf225b700f"
 dependencies = [
  "base64 0.21.7",
  "logos",
- "miette 7.0.0",
+ "miette",
  "once_cell",
  "prost",
  "prost-types",
@@ -2881,23 +2858,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a29b3c5596eb23a849deba860b53ffd468199d9ad5fe4402a7d55379e16aa2d2"
 dependencies = [
  "bytes",
- "miette 7.0.0",
+ "miette",
  "prost",
  "prost-reflect",
  "prost-types",
- "protox-parse 0.6.0",
- "thiserror",
-]
-
-[[package]]
-name = "protox-parse"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b4581f441c58863525a3e6bec7b8de98188cf75239a56c725a3e7288450a33f"
-dependencies = [
- "logos",
- "miette 5.10.0",
- "prost-types",
+ "protox-parse",
  "thiserror",
 ]
 
@@ -2908,7 +2873,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "033b939d76d358f7c32120c86c71f515bae45e64f2bde455200356557276276c"
 dependencies = [
  "logos",
- "miette 7.0.0",
+ "miette",
  "prost-types",
  "thiserror",
 ]
@@ -3811,7 +3776,7 @@ dependencies = [
  "prost",
  "prost-reflect",
  "protox",
- "protox-parse 0.5.0",
+ "protox-parse",
  "regex",
  "reqwest",
  "reqwest-middleware",

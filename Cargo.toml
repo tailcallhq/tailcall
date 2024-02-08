@@ -75,7 +75,7 @@ async-std = { version = "1.12.0", features = [
 ] }
 ttl_cache = "0.5.1"
 protox = "0.6.0"
-protox-parse = "0.5.0"
+protox-parse = "0.6.0"
 prost-reflect = { version = "0.13.0", features = ["serde"] }
 prost = "0.12.3"
 update-informer = { version = "1.1.0", default-features = false, features = ["github", "reqwest"], optional = true }
