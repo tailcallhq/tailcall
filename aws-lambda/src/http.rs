@@ -26,9 +26,8 @@ impl LambdaHttp {
 #[async_trait::async_trait]
 impl HttpIO for LambdaHttp {
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
-        let client = self.client.clone();
         let req_str = format!("{} {}", request.method(), request.url());
-        let response = client.execute(request).await?;
+        let response = self.client.execute(request).await?;
         let res = Response::from_reqwest(response).await?;
         tracing::info!("{} {}", req_str, res.status.as_u16());
         Ok(res)
