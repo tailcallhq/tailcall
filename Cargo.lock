@@ -522,7 +522,6 @@ dependencies = [
  "hyper",
  "lambda_http",
  "lambda_runtime",
- "lazy_static",
  "reqwest",
  "tailcall",
  "tokio",
