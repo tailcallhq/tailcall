@@ -309,7 +309,7 @@ jobs:
           overwrite: true
   release_lambda:
     name: Release (AWS Lambda)
-    needs: [test, draft_release, check_if_build, test_cf, test_aws_build]
+    needs: [test, draft_release, check_if_build, test_cf]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ubuntu-latest
     permissions:
