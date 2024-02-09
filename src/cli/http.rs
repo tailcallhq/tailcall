@@ -85,9 +85,10 @@ impl HttpIO for NativeHttp {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use reqwest::Method;
     use tokio;
+
+    use super::*;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
