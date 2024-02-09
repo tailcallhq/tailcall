@@ -3,28 +3,18 @@ use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 use deno_core::v8::{self, Function, Global, Local, Object, Value};
-use deno_core::{extension, op2, FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions};
+use deno_core::{FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 use tokio::sync::oneshot;
 use tokio::task::spawn_local;
 use tokio::time::{timeout_at, Instant};
 
+use super::{JsResponse, JsRequest};
 use super::channel::Message;
 use crate::blueprint;
+use crate::cli::javascript::extensions::{console, fetch, timer_promises};
 
 pub type WorkerMessage = (oneshot::Sender<Message>, Message);
-
-#[op2(async)]
-async fn op_sleep(ms: u32) {
-    tokio::time::sleep(Duration::from_millis(ms.into())).await;
-}
-
-extension!(console, js = ["src/cli/javascript/shim/console.js",]);
-extension!(
-    timer_promises,
-    ops = [op_sleep],
-    js = ["src/cli/javascript/shim/timer_promises.js"]
-);
 
 pub struct Worker {
     js_runtime: JsRuntime,
@@ -33,14 +23,18 @@ pub struct Worker {
 
 // TODO: remove unwraps and handle errors
 impl Worker {
-    pub async fn new(script: blueprint::Script) -> anyhow::Result<Self> {
+    pub async fn new(script: blueprint::Script, http_sender: mpsc::UnboundedSender<(oneshot::Sender<JsResponse>, JsRequest)>) -> anyhow::Result<Self> {
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
             extensions: vec![
                 console::init_ops_and_esm(),
                 timer_promises::init_ops_and_esm(),
+                fetch::init_ops_and_esm(),
             ],
             ..Default::default()
         });
+
+        js_runtime.op_state().borrow_mut().put(http_sender);
+
         let value = {
             let value = js_runtime.lazy_load_es_module_from_code(
                 "file:///anon.js",
@@ -61,7 +55,8 @@ impl Worker {
     }
 
     pub async fn listen(mut self, mut receiver: UnboundedReceiver<WorkerMessage>) -> Result<()> {
-        let (tx, mut rx) = mpsc::unbounded_channel::<(oneshot::Sender<Message>, Result<Global<Value>>)>();
+        let (tx, mut rx) =
+            mpsc::unbounded_channel::<(oneshot::Sender<Message>, Result<Global<Value>>)>();
         let mut has_tasks = false;
         loop {
             tokio::select! {

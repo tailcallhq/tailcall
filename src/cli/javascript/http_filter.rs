@@ -10,16 +10,16 @@ use crate::{HttpIO, WorkerIO};
 
 #[derive(Clone)]
 pub struct HttpFilter {
-    client: Arc<dyn HttpIO + Send + Sync>,
+    client: Arc<dyn HttpIO>,
     worker: Arc<dyn WorkerIO<Message, Message> + Send + Sync>,
 }
 
 impl HttpFilter {
     pub fn new(
-        http: impl HttpIO + Send + Sync,
+        client: Arc<dyn HttpIO>,
         script: impl WorkerIO<Message, Message> + Send + Sync + 'static,
     ) -> Self {
-        HttpFilter { client: Arc::new(http), worker: Arc::new(script) }
+        HttpFilter { client, worker: Arc::new(script) }
     }
 
     fn on_command<'a>(

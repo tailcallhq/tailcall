@@ -4,6 +4,7 @@ pub use std::sync::Arc;
 use hyper::header::{HeaderName, HeaderValue};
 
 mod channel;
+mod extensions;
 mod http_filter;
 mod js_request;
 mod js_response;
@@ -19,7 +20,8 @@ use crate::{blueprint, HttpIO};
 
 pub fn init_http(http: impl HttpIO, script: blueprint::Script) -> Arc<dyn HttpIO + Sync + Send> {
     log::debug!("Initializing JavaScript HTTP filter: {}", script.source);
-    let script_io = Runtime::new(script);
+    let http: Arc<dyn HttpIO> = Arc::new(http);
+    let script_io = Runtime::new(script, Arc::clone(&http));
     Arc::new(HttpFilter::new(http, script_io))
 }
 
