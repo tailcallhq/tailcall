@@ -2,24 +2,21 @@ use std::sync::Arc;
 
 use tokio::runtime::Builder;
 use tokio::spawn;
-use tokio::sync::mpsc::{self, UnboundedSender};
-use tokio::sync::oneshot;
 use tokio::task::LocalSet;
 
-use super::channel::Message;
-use super::worker::{Worker, WorkerMessage};
+use super::channel::{wait_channel, Message, WaitSender};
+use super::worker::Worker;
 use super::{JsRequest, JsResponse};
 use crate::{blueprint, HttpIO, WorkerIO};
 
 pub struct Runtime {
-    sender: UnboundedSender<WorkerMessage>,
+    work_sender: WaitSender<Message, Message>,
 }
 
 impl Runtime {
     pub fn new(script: blueprint::Script, http: Arc<dyn HttpIO>) -> Self {
-        let (sender, receiver) = mpsc::unbounded_channel::<WorkerMessage>();
-        let (http_sender, mut http_receiver) =
-            mpsc::unbounded_channel::<(oneshot::Sender<JsResponse>, JsRequest)>();
+        let (work_sender, work_receiver) = wait_channel::<Message, Message>();
+        let (http_sender, mut http_receiver) = wait_channel::<JsRequest, JsResponse>();
 
         spawn(async move {
             while let Some((send_response, request)) = http_receiver.recv().await {
@@ -41,7 +38,7 @@ impl Runtime {
 
             local.spawn_local(async move {
                 let worker = Worker::new(script, http_sender).await?;
-                worker.listen(receiver).await?;
+                worker.listen(work_receiver).await?;
 
                 Ok::<_, anyhow::Error>(())
             });
@@ -49,7 +46,7 @@ impl Runtime {
             rt.block_on(local);
         });
 
-        Self { sender }
+        Self { work_sender }
     }
 }
 
@@ -57,10 +54,6 @@ impl Runtime {
 impl WorkerIO<Message, Message> for Runtime {
     async fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
         log::debug!("event: {:?}", event);
-        let (tx, rx) = oneshot::channel();
-
-        self.sender.send((tx, event))?;
-
-        Ok(rx.await?)
+        self.work_sender.wait_send(event).await
     }
 }

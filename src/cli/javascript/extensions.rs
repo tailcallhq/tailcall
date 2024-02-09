@@ -4,11 +4,11 @@ use std::time::Duration;
 
 use anyhow::Result;
 use deno_core::{extension, op2, OpState};
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 
 use crate::cli::javascript::JsRequest;
 
-use super::JsResponse;
+use super::{channel::WaitSender, JsResponse};
 
 #[op2(async)]
 async fn op_sleep(ms: u32) {
@@ -18,11 +18,14 @@ async fn op_sleep(ms: u32) {
 #[op2(async)]
 #[serde]
 async fn op_fetch(state: Rc<RefCell<OpState>>, #[string] url: String) -> Result<JsResponse> {
+    // use channel instead of direct call of HttpIO to be able to run it outside single-threaded
+    // runtime specific js and run the actual fetch on multithreaded runtime.
+    // can't use WaitChannel here because it will hold reference to state between await points
+    // that could panic eventually
     let (tx, rx) = oneshot::channel::<JsResponse>();
     let rx = {
         let state = state.borrow();
-        let client =
-            state.borrow::<mpsc::UnboundedSender<(oneshot::Sender<JsResponse>, JsRequest)>>();
+        let client = state.borrow::<WaitSender<JsRequest, JsResponse>>();
 
         // TODO: extend options
         let request = JsRequest {

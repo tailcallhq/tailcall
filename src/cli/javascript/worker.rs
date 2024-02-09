@@ -4,17 +4,14 @@ use std::time::Duration;
 use anyhow::{anyhow, Result};
 use deno_core::v8::{self, Function, Global, Local, Object, Value};
 use deno_core::{FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions};
-use tokio::sync::mpsc::{self, UnboundedReceiver};
 use tokio::sync::oneshot;
 use tokio::task::spawn_local;
 use tokio::time::{timeout_at, Instant};
 
-use super::{JsResponse, JsRequest};
-use super::channel::Message;
+use super::channel::{wait_channel, Message, WaitReceiver, WaitSender};
+use super::{JsRequest, JsResponse};
 use crate::blueprint;
 use crate::cli::javascript::extensions::{console, fetch, timer_promises};
-
-pub type WorkerMessage = (oneshot::Sender<Message>, Message);
 
 pub struct Worker {
     js_runtime: JsRuntime,
@@ -23,7 +20,10 @@ pub struct Worker {
 
 // TODO: remove unwraps and handle errors
 impl Worker {
-    pub async fn new(script: blueprint::Script, http_sender: mpsc::UnboundedSender<(oneshot::Sender<JsResponse>, JsRequest)>) -> anyhow::Result<Self> {
+    pub async fn new(
+        script: blueprint::Script,
+        http_sender: WaitSender<JsRequest, JsResponse>,
+    ) -> anyhow::Result<Self> {
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
             extensions: vec![
                 console::init_ops_and_esm(),
@@ -54,26 +54,42 @@ impl Worker {
         Ok(Self { function: value, js_runtime })
     }
 
-    pub async fn listen(mut self, mut receiver: UnboundedReceiver<WorkerMessage>) -> Result<()> {
-        let (tx, mut rx) =
-            mpsc::unbounded_channel::<(oneshot::Sender<Message>, Result<Global<Value>>)>();
-        let mut has_tasks = false;
+    pub async fn listen(mut self, mut work_receiver: WaitReceiver<Message, Message>) -> Result<()> {
+        let (result_tx, mut result_rx) = wait_channel::<Result<Global<Value>>, Message>();
+        let mut event_loop_has_tasks = false;
         loop {
+            // runs js event-loop with the ability to stop it
+            // to react to external or internal events
             tokio::select! {
+                // use biased mode to prioritize workload by its appearance
+                // so handling new work will be executed first
                 biased;
-                Some((send_response, request)) = receiver.recv() => {
-                    has_tasks = true;
-                    self.handle(request, send_response, tx.clone()).unwrap();
+                // accept new work for execute inside the script
+                Some((send_work_response, message)) = work_receiver.recv() => {
+                    event_loop_has_tasks = true;
+                    self.handle(message, send_work_response, result_tx.clone()).unwrap();
                 },
-                Some((send, value)) = rx.recv() => {
+                // wait until the response from js is ready
+                // to convert the value back to rust we need to use &mut js_runtime
+                // that is also required for run_event_loop, so here we're
+                // stopping event-loop and handle the response value
+                Some((send_work_response, result)) = result_rx.recv() => {
                     let scope = &mut self.js_runtime.handle_scope();
-                    let value = Local::new(scope, value.unwrap());
+                    let value = Local::new(scope, result.unwrap());
                     let message: Message = serde_v8::from_v8(scope, value).unwrap();
 
-                    let _ = send.send(message);
+                    // ignore error for send since it would only happen
+                    // when receiving channel is closed i.e. no one
+                    // waits for the response and we may just drop it
+                    let _ = send_work_response.send(message);
                 },
-                _ = self.js_runtime.run_event_loop(PollEventLoopOptions::default()), if has_tasks => {
-                    has_tasks = false;
+                // run the js event-loop itself that will execute the script code.
+                // do it only when we have tasks since otherwise that call will return
+                // immediately and we will just burn cpu-cycles for calling this in outer loop
+                _ = self.js_runtime.run_event_loop(PollEventLoopOptions::default()), if event_loop_has_tasks => {
+                    // if this call is finished that means all the calls are executed
+                    // and we need only wait for more work
+                    event_loop_has_tasks = false;
                 }
 
             }
@@ -83,9 +99,8 @@ impl Worker {
     pub fn handle(
         &mut self,
         message: Message,
-        response: oneshot::Sender<Message>,
-        // TODO: use type aliases
-        sender: mpsc::UnboundedSender<(oneshot::Sender<Message>, Result<Global<Value>>)>,
+        send_work_response: oneshot::Sender<Message>,
+        sender: WaitSender<Result<Global<Value>>, Message>,
     ) -> Result<()> {
         let message = {
             let mut scope = self.js_runtime.handle_scope();
@@ -104,7 +119,7 @@ impl Worker {
                 Err(_) => Err(anyhow!("Script timeout")),
             };
 
-            sender.send((response, result)).unwrap()
+            sender.send((send_work_response, result)).unwrap()
         });
 
         Ok(())
