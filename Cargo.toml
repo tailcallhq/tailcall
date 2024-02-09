@@ -94,6 +94,7 @@ stripmargin = "0.1.1"
 markdown = "1.0.0-alpha.16"
 insta = { version = "1.34.0", features = ["json"] }
 tempfile = "3.10.0"
+temp-env = "0.3.6"
 
 [features]
 
