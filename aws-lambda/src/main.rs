@@ -1,5 +1,7 @@
+use std::str::FromStr as _;
 use std::sync::Arc;
 
+use dotenvy::dotenv;
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Request, Response};
 use runtime::init_runtime;
@@ -13,9 +15,17 @@ mod runtime;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    let _ = dotenv();
+
+    let trace: tracing::Level = std::env::var("LOG_LEVEL")
+        .ok()
+        .as_ref()
+        .and_then(|x| tracing::Level::from_str(x).ok())
+        // log everything by default since logs can be filtered by level in CloudWatch.
+        .unwrap_or(tracing::Level::TRACE);
+
     tracing_subscriber::fmt()
-        // log everything here since logs can be filtered by level in CloudWatch.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(trace)
         // disable printing the name of the module in every log line.
         .with_target(false)
         // disabling time is handy because CloudWatch will add the ingestion time.
