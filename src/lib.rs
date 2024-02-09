@@ -25,6 +25,8 @@ pub mod target_runtime;
 pub mod try_fold;
 pub mod valid;
 
+pub mod test_rt;
+
 use std::hash::Hash;
 use std::num::NonZeroU64;
 

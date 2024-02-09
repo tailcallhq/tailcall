@@ -71,10 +71,9 @@ mod tests {
     use serde_json::json;
 
     use crate::async_graphql_hyper::GraphQLRequest;
-    use crate::blueprint::Upstream;
-    use crate::cli::init_runtime;
     use crate::http::handle_request;
     use crate::http::showcase::create_app_ctx;
+    use crate::test_rt::init_test_rt;
 
     #[tokio::test]
     async fn works_with_file() {
@@ -86,7 +85,7 @@ mod tests {
             }).to_string()))
             .unwrap();
 
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = init_test_rt(None);
         let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
             .await
             .unwrap()

@@ -202,10 +202,9 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::blueprint::Upstream;
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
+    use crate::test_rt::init_test_rt;
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -225,7 +224,7 @@ mod tests {
     }
 
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = init_test_rt(None);
         let reader = ConfigReader::init(runtime);
 
         let id = "greetings".to_string();

@@ -277,13 +277,13 @@ mod test_proto_config {
 
     use anyhow::{Context, Result};
 
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
+    use crate::test_rt::init_test_rt;
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
+        let reader = ConfigReader::init(init_test_rt(None));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -309,7 +309,7 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
+        let reader = ConfigReader::init(init_test_rt(None));
         let helper_map = reader
             .resolve_descriptors(HashMap::new(), test_file)
             .await?;
@@ -354,10 +354,9 @@ mod reader_tests {
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
 
-    use crate::blueprint::Upstream;
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
+    use crate::test_rt::init_test_rt;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
@@ -365,7 +364,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = init_test_rt(None);
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -417,7 +416,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = init_test_rt(None);
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -443,7 +442,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = init_test_rt(None);
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);

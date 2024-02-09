@@ -115,9 +115,9 @@ mod test {
     use hyper::HeaderMap;
 
     use crate::blueprint::{Server, Upstream};
-    use crate::cli::init_runtime;
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
+    use crate::test_rt::init_test_rt;
 
     impl Default for RequestContext {
         fn default() -> Self {
@@ -129,7 +129,7 @@ mod test {
             RequestContext {
                 req_headers: HeaderMap::new(),
                 server,
-                runtime: init_runtime(&upstream, None),
+                runtime: init_test_rt(None),
                 upstream,
                 http_data_loaders: Arc::new(vec![]),
                 gql_data_loaders: Arc::new(vec![]),
