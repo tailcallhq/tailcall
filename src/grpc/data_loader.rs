@@ -16,7 +16,7 @@ use crate::data_loader::{DataLoader, Loader};
 use crate::grpc::request::create_grpc_request;
 use crate::http::Response;
 use crate::json::JsonLike;
-use crate::runtime::TargetRuntime;
+use crate::target_runtime::TargetRuntime;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {

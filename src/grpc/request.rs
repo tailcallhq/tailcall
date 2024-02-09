@@ -5,7 +5,7 @@ use url::Url;
 
 use super::protobuf::ProtobufOperation;
 use crate::http::Response;
-use crate::runtime::TargetRuntime;
+use crate::target_runtime::TargetRuntime;
 
 pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
     let mut req = Request::new(Method::POST, url);

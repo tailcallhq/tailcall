@@ -132,7 +132,6 @@ mod tests {
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
-    use crate::runtime::test_rt::init_test_rt;
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -144,7 +143,7 @@ mod tests {
 
         let id = "greetings".to_string();
 
-        let runtime = init_test_rt(None);
+        let runtime = crate::target_runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let mut config = Config::default().links(vec![Link {
             id: Some(id.clone()),

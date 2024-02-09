@@ -10,7 +10,7 @@ use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::Blueprint;
 use crate::config::reader::ConfigReader;
-use crate::runtime::TargetRuntime;
+use crate::target_runtime::TargetRuntime;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,
@@ -73,7 +73,6 @@ mod tests {
     use crate::async_graphql_hyper::GraphQLRequest;
     use crate::http::handle_request;
     use crate::http::showcase::create_app_ctx;
-    use crate::runtime::test_rt::init_test_rt;
 
     #[tokio::test]
     async fn works_with_file() {
@@ -85,7 +84,7 @@ mod tests {
             }).to_string()))
             .unwrap();
 
-        let runtime = init_test_rt(None);
+        let runtime = crate::target_runtime::test::init(None);
         let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
             .await
             .unwrap()

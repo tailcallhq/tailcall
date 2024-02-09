@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
-use tailcall::runtime::TargetRuntime;
+use tailcall::target_runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 
 mod cache;

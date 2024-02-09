@@ -11,7 +11,7 @@ use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::config::Batch;
 use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
-use tailcall::runtime::TargetRuntime;
+use tailcall::target_runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 
 #[derive(Clone)]

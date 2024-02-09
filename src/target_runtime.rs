@@ -17,7 +17,7 @@ pub struct TargetRuntime {
 }
 
 #[cfg(test)]
-pub mod test_rt {
+pub mod test {
     use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
@@ -33,7 +33,7 @@ pub mod test_rt {
     use crate::cache::InMemoryCache;
     use crate::cli::javascript;
     use crate::http::Response;
-    use crate::runtime::TargetRuntime;
+    use crate::target_runtime::TargetRuntime;
     use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
@@ -140,7 +140,7 @@ pub mod test_rt {
         }
     }
 
-    pub fn init_test_rt(script: Option<blueprint::Script>) -> TargetRuntime {
+    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
         let http: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
         } else {

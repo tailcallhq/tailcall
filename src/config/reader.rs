@@ -15,7 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
-use crate::runtime::TargetRuntime;
+use crate::target_runtime::TargetRuntime;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -278,12 +278,11 @@ mod test_proto_config {
     use anyhow::{Context, Result};
 
     use crate::config::reader::ConfigReader;
-    use crate::runtime::test_rt::init_test_rt;
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(init_test_rt(None));
+        let reader = ConfigReader::init(crate::target_runtime::test::init(None));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -309,7 +308,7 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(init_test_rt(None));
+        let reader = ConfigReader::init(crate::target_runtime::test::init(None));
         let helper_map = reader
             .resolve_descriptors(HashMap::new(), test_file)
             .await?;
@@ -356,7 +355,6 @@ mod reader_tests {
 
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
-    use crate::runtime::test_rt::init_test_rt;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
@@ -364,7 +362,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let runtime = init_test_rt(None);
+        let runtime = crate::target_runtime::test::init(None);
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -416,7 +414,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let runtime = init_test_rt(None);
+        let runtime = crate::target_runtime::test::init(None);
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -442,7 +440,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let runtime = init_test_rt(None);
+        let runtime = crate::target_runtime::test::init(None);
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);

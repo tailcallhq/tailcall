@@ -204,7 +204,6 @@ mod tests {
     use super::*;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
-    use crate::runtime::test_rt::init_test_rt;
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -224,7 +223,7 @@ mod tests {
     }
 
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
-        let runtime = init_test_rt(None);
+        let runtime = crate::target_runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
         let id = "greetings".to_string();

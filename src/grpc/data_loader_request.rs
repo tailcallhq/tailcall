@@ -65,7 +65,6 @@ mod tests {
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
-    use crate::runtime::test_rt::init_test_rt;
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -92,7 +91,7 @@ mod tests {
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
 
-        let runtime = init_test_rt(None);
+        let runtime = crate::target_runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let config_set = reader.resolve(config, None).await.unwrap();
 
