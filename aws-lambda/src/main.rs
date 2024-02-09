@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use http::to_request;
+use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Error, Response};
 use runtime::init_runtime;
 use tailcall::async_graphql_hyper::GraphQLRequest;
@@ -31,7 +31,7 @@ async fn main() -> Result<(), Error> {
 
     run(service_fn(|event| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;
-        Ok::<Response<hyper::Body>, Error>(resp)
+        Ok::<Response<lambda_http::Body>, Error>(to_response(resp).await?)
     }))
     .await
 }
