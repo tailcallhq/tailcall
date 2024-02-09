@@ -206,7 +206,7 @@ fn first_char_to_upper(name: &mut String) {
     }
 }
 
-struct WriteParams<'a, W: Write> {
+struct WriteFields<'a, W: Write> {
     writer: &'a mut IndentedWriter<W>,
     name: String,
     schema: SchemaObject,
@@ -219,8 +219,8 @@ struct WriteParams<'a, W: Write> {
     obj_valid: &'a mut ObjectValidation,
 }
 
-fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams { writer, name, schema, defs, extra_it, .. } = params;
+fn write_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+    let WriteFields { writer, name, schema, defs, extra_it, .. } = write_fields;
     match schema.instance_type {
         Some(SingleOrVec::Single(typ))
             if matches!(
@@ -249,17 +249,14 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         }
         _ => {
             if let Some(arr_valid) = schema.array.clone() {
-                write_array_validation(WriteParams {
+                write_array_validation(WriteFields {
                     writer,
                     name,
-                    schema: SchemaObject::default(),
+                    arr_valid: &mut arr_valid.clone(),
                     defs,
                     extra_it,
-                    scalars: &mut HashSet::new(),
-                    types_added: &mut HashSet::new(),
-                    written_directives: &mut HashSet::new(),
-                    arr_valid: &mut arr_valid.clone(),
-                    obj_valid: &mut ObjectValidation::default(),
+                    schema: SchemaObject::default(),
+                    ..write_fields
                 })
             } else if let Some(typ) = schema.object.clone() {
                 if !typ.properties.is_empty() {
@@ -298,15 +295,15 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     }
 }
 
-fn write_field<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams { writer, name, .. } = params;
+fn write_field<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+    let WriteFields { writer, name, .. } = write_fields;
     write!(writer, "{name}: ")?;
-    write_type(WriteParams { writer, name: name.clone(), ..params })?;
+    write_type(WriteFields { writer, name: name.clone(), ..write_fields })?;
     writeln!(writer)
 }
 
-fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams {
+fn write_input_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+    let WriteFields {
         writer,
         name,
         schema: typ,
@@ -315,7 +312,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
         extra_it,
         types_added,
         ..
-    } = params;
+    } = write_fields;
     let name = match input_allow_list_lookup(&name, extra_it) {
         Some(name) => name,
         None => return Ok(()),
@@ -346,7 +343,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                 .as_ref()
                 .and_then(|metadata| metadata.description.as_ref());
             write_description(writer, description)?;
-            write_field(WriteParams {
+            write_field(WriteFields {
                 writer,
                 name,
                 schema: property,
@@ -386,7 +383,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
             write_description(writer, description)?;
             if let Some(obj) = property.object {
                 for (name, schema) in obj.properties {
-                    write_field(WriteParams {
+                    write_field(WriteFields {
                         writer,
                         name,
                         schema: schema.into_object(),
@@ -413,7 +410,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
         for property in list {
             if let Some(obj) = property.clone().into_object().object {
                 for (name, schema) in obj.properties {
-                    write_field(WriteParams {
+                    write_field(WriteFields {
                         writer,
                         name,
                         schema: schema.into_object(),
@@ -441,24 +438,20 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
     Ok(())
 }
 
-fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams { writer, name, schema: property, defs, extra_it, .. } = params;
+fn write_property<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+    let WriteFields { writer, name, schema: property, defs, extra_it, .. } = write_fields;
     let description = property
         .metadata
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
     write_description(writer, description)?;
-    write_field(WriteParams {
+    write_field(WriteFields {
         writer,
         name,
         schema: property,
         defs,
         extra_it,
-        scalars: &mut HashSet::new(),
-        types_added: &mut HashSet::new(),
-        written_directives: &mut HashSet::new(),
-        arr_valid: &mut ArrayValidation::default(),
-        obj_valid: &mut ObjectValidation::default(),
+        ..write_fields
     })?;
     Ok(())
 }
@@ -489,8 +482,8 @@ fn input_allow_list_lookup<'a>(
     None
 }
 
-fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams { writer, name, schema, defs, extra_it, written_directives, .. } = params;
+fn write_directive<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+    let WriteFields { writer, name, schema, defs, extra_it, written_directives, .. } = write_fields;
     let (name, entity, is_repeatable) = match directive_allow_list_lookup(&name) {
         Some(entity) => entity,
         None => return Ok(()),
@@ -514,7 +507,7 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
         if let Some((name, property)) = properties_iter.next() {
             writeln!(writer, "(")?;
             writer.indent();
-            write_property(WriteParams {
+            write_property(WriteFields {
                 writer,
                 name,
                 schema: property.into_object(),
@@ -529,7 +522,7 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
             close_param = true;
         }
         for (name, property) in properties_iter {
-            write_property(WriteParams {
+            write_property(WriteFields {
                 writer,
                 name,
                 schema: property.into_object(),
@@ -568,7 +561,7 @@ fn write_all_directives(
     let defs: BTreeMap<String, Schema> = schema.definitions;
     let dirs: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     for (name, schema) in dirs.into_iter() {
-        write_directive(WriteParams {
+        write_directive(WriteFields {
             writer,
             name: name.clone(),
             schema: schema.clone().into_object(),
@@ -585,11 +578,11 @@ fn write_all_directives(
     Ok(())
 }
 
-fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams { writer, name, arr_valid, defs, extra_it, .. } = params;
+fn write_array_validation<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+    let WriteFields { writer, name, arr_valid, defs, extra_it, .. } = write_fields;
     write!(writer, "[")?;
     if let Some(SingleOrVec::Single(schema)) = &arr_valid.items {
-        write_type(WriteParams {
+        write_type(WriteFields {
             writer,
             name,
             schema: schema.clone().into_object(),
@@ -602,7 +595,7 @@ fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Resu
             obj_valid: &mut ObjectValidation::default(),
         })?;
     } else if let Some(SingleOrVec::Vec(schemas)) = &arr_valid.items {
-        write_type(WriteParams {
+        write_type(WriteFields {
             writer,
             name,
             schema: schemas[0].clone().into_object(),
@@ -622,19 +615,19 @@ fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Resu
     write!(writer, "]")
 }
 
-fn write_object_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
-    let WriteParams { writer, name, obj_valid, defs, extra_it, .. } = params;
+fn write_object_validation<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+    let WriteFields { writer, name, obj_valid, defs, extra_it, .. } = write_fields;
     if !obj_valid.properties.is_empty() {
         writeln!(writer, "input {name} {{")?;
         writer.indent();
         for (name, property) in obj_valid.properties.clone() {
-            write_property(WriteParams {
+            write_property(WriteFields {
                 writer,
                 name,
-                obj_valid: &mut ObjectValidation::default(),
+                schema: property.into_object(),
                 defs,
                 extra_it,
-                schema: property.into_object(),
+                obj_valid: &mut ObjectValidation::default(),
                 scalars: &mut HashSet::new(),
                 types_added: &mut HashSet::new(),
                 written_directives: &mut HashSet::new(),
@@ -660,7 +653,7 @@ fn write_all_input_types(
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
-        write_input_type(WriteParams {
+        write_input_type(WriteFields {
             writer,
             name,
             schema: input_type.clone().into_object(),
@@ -680,7 +673,7 @@ fn write_all_input_types(
         match extra_type {
             ExtraTypes::Schema => {
                 if let Some(schema) = defs.get(&name).cloned() {
-                    write_input_type(WriteParams {
+                    write_input_type(WriteFields {
                         writer,
                         name: name.clone(),
                         schema: schema.into_object(),
@@ -694,7 +687,7 @@ fn write_all_input_types(
                     })?
                 }
             }
-            ExtraTypes::ObjectValidation(obj_valid) => write_object_validation(WriteParams {
+            ExtraTypes::ObjectValidation(obj_valid) => write_object_validation(WriteFields {
                 writer,
                 name: name.clone(),
                 schema: SchemaObject::default(),
