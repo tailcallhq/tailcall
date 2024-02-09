@@ -16,8 +16,8 @@ fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option
 
 pub fn update_call(
     operation_type: &GraphQLOperationType,
-) -> TryFold<'_, (&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, _), b_field| {
             let Some(call) = &field.call else {
                 return Valid::succeed(b_field);
@@ -35,7 +35,7 @@ struct Http {
     pub dl_id: Option<DataLoaderId>,
 }
 
-struct GraphQLEndpoint {
+struct GraphQL {
     pub req_template: graphql::RequestTemplate,
     pub field_name: String,
     pub batch: bool,
@@ -61,13 +61,13 @@ impl TryFrom<Expression> for Http {
     }
 }
 
-impl TryFrom<Expression> for GraphQLEndpoint {
+impl TryFrom<Expression> for GraphQL {
     type Error = String;
 
     fn try_from(expr: Expression) -> Result<Self, Self::Error> {
         match expr {
-            Expression::IO(IO::GraphQLEndpoint { req_template, field_name, batch, dl_id }) => {
-                Ok(GraphQLEndpoint { req_template, field_name, batch, dl_id })
+            Expression::IO(IO::GraphQL { req_template, field_name, batch, dl_id }) => {
+                Ok(GraphQL { req_template, field_name, batch, dl_id })
             }
             _ => Err("not a graphql expression".to_string()),
         }
@@ -89,7 +89,7 @@ impl TryFrom<Expression> for Grpc {
 
 pub fn compile_call(
     field: &Field,
-    config_set: &ConfigSet,
+    config_set: &ConfigModule,
     call: &config::Call,
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
@@ -168,13 +168,13 @@ fn transform_grpc(
 }
 
 fn transform_graphql(
-    config_set: &ConfigSet,
+    config_set: &ConfigModule,
     operation_type: &GraphQLOperationType,
     graphql: config::GraphQL,
     args: &Iter<'_, String, String>,
 ) -> Valid<Expression, String> {
     compile_graphql(config_set, operation_type, &graphql).and_then(|expr| {
-        let graphql = GraphQLEndpoint::try_from(expr).unwrap();
+        let graphql = GraphQL::try_from(expr).unwrap();
 
         Valid::succeed(
             graphql.req_template.clone().headers(
@@ -202,7 +202,7 @@ fn transform_graphql(
             }
         })
         .map(|req_template| {
-            Expression::IO(IO::GraphQLEndpoint {
+            Expression::IO(IO::GraphQL {
                 req_template,
                 field_name: graphql.field_name,
                 batch: graphql.batch,
@@ -213,7 +213,7 @@ fn transform_graphql(
 }
 
 fn transform_http(
-    config_set: &ConfigSet,
+    config_set: &ConfigModule,
     field: &Field,
     http: config::Http,
     args: &Iter<'_, String, String>,
@@ -270,7 +270,7 @@ fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
 
 fn get_field_and_field_name<'a>(
     call: &'a config::Call,
-    config_set: &'a ConfigSet,
+    config_set: &'a ConfigModule,
 ) -> Valid<(&'a Field, String, Iter<'a, String, String>), String> {
     Valid::from_option(
         get_type_and_field(call),
@@ -343,7 +343,7 @@ mod tests {
     fn try_from_graphql_fail() {
         let expr = Expression::Literal("test".into());
 
-        let graphql = GraphQLEndpoint::try_from(expr);
+        let graphql = GraphQL::try_from(expr);
 
         assert!(graphql.is_err());
     }

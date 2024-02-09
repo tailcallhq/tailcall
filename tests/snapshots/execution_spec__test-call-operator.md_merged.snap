@@ -1,0 +1,30 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(baseURL: "http://localhost:3000") {
+  query: Query
+}
+
+scalar Failure
+
+type Post {
+  argumentMismatchGraphQL: User @call(query: "userWithGraphQLResolver", args: {})
+  headersMismatchGraphQL: User @call(query: "userWithGraphQLResolver", args: {})
+  urlMismatchHttp: User @call(query: "user", args: {})
+  userId: Int!
+  withoutOperator: User @call(args: {id: "{{value.userId}}"})
+  withoutResolver: User @call(query: "userWithoutResolver", args: {id: "{{value.userId}}"})
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  userWithGraphQLHeaders(id: Int!): User @graphQL(headers: [{key: "id", value: "{{args.id}}"}], name: "user")
+  userWithGraphQLResolver(id: Int!): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], name: "user")
+  userWithoutResolver(id: Int!): User
+}
+
+type User {
+  id: Int!
+}

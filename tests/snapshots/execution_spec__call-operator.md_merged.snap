@@ -1,0 +1,65 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) @link(id: "news", src: "news.proto", type: Protobuf) {
+  query: Query
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type Post {
+  body: String
+  id: Int
+  news: NewsData! @call(query: "news", args: {})
+  newsWithPortArg: NewsData! @call(query: "news", args: {port: "50051"})
+  title: String
+  user: User @call(query: "user", args: {id: "{{value.userId}}"})
+  user1: User @call(query: "user1", args: {})
+  userFromValue: User @call(query: "userFromValue", args: {})
+  userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
+  userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
+  userHttpHeaders: User @call(query: "userHttpHeaders", args: {id: "{{value.userId}}"})
+  userHttpQuery: User @call(query: "userHttpQuery", args: {id: "{{value.userId}}"})
+  userId: Int!
+}
+
+type Query {
+  news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
+  newsWithPortArg(port: Int!): NewsData! @grpc(baseURL: "http://localhost:{{args.port}}", method: "news.NewsService.GetAllNews")
+  posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user1: User @http(path: "/users/1")
+  userFromValue: User @http(path: "/users/{{value.userId}}")
+  userGraphQL(id: Int): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+  userGraphQLHeaders(id: Int!): User @graphQL(baseURL: "http://upstream/graphql", headers: [{key: "id", value: "{{args.id}}"}], name: "user")
+  userHttpHeaders(id: ID!): User @http(headers: [{key: "id", value: "{{args.id}}"}], path: "/users")
+  userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}])
+  userId: Int! @const(data: 2)
+  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
+  userWithPosts: UserWithPosts @http(path: "/users/1")
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  username: String!
+  website: String
+}
+
+type UserWithPosts {
+  id: Int!
+  name: String!
+  posts: [Post] @call(query: "userPosts", args: {id: "{{value.id}}"})
+}
