@@ -215,8 +215,8 @@ struct WriteParams<'a, W: Write> {
     scalars: &'a mut HashSet<String>,
     types_added: &'a mut HashSet<String>,
     written_directives: &'a mut HashSet<String>,
-    // arr_valid: ArrayValidation,
-    // obj_valid: ObjectValidation,
+    arr_valid: &'a mut ArrayValidation,
+    obj_valid: &'a mut ObjectValidation,
 }
 
 fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
@@ -249,7 +249,19 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         }
         _ => {
             if let Some(arr_valid) = schema.array.clone() {
-                write_array_validation(writer, name, *arr_valid, defs, extra_it)
+                let params = WriteParams {
+                    writer,
+                    name,
+                    schema: SchemaObject::default(),
+                    defs,
+                    extra_it,
+                    scalars: &mut HashSet::new(),
+                    types_added: &mut HashSet::new(),
+                    written_directives: &mut HashSet::new(),
+                    arr_valid: &mut arr_valid.clone(),
+                    obj_valid: &mut ObjectValidation::default(),
+                };
+                write_array_validation(params)
             } else if let Some(typ) = schema.object.clone() {
                 if !typ.properties.is_empty() {
                     let mut name = name;
@@ -345,6 +357,8 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                 scalars: &mut HashSet::new(),
                 types_added: &mut HashSet::new(),
                 written_directives: &mut HashSet::new(),
+                arr_valid: &mut ArrayValidation::default(),
+                obj_valid: &mut ObjectValidation::default(),
             };
             write_field(params)?;
         }
@@ -384,6 +398,8 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         scalars: &mut HashSet::new(),
                         types_added: &mut HashSet::new(),
                         written_directives: &mut HashSet::new(),
+                        arr_valid: &mut ArrayValidation::default(),
+                        obj_valid: &mut ObjectValidation::default(),
                     };
                     write_field(params)?;
                 }
@@ -410,6 +426,8 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         scalars: &mut HashSet::new(),
                         types_added: &mut HashSet::new(),
                         written_directives: &mut HashSet::new(),
+                        arr_valid: &mut ArrayValidation::default(),
+                        obj_valid: &mut ObjectValidation::default(),
                     };
                     write_field(params)?;
                 }
@@ -444,6 +462,8 @@ fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         scalars: &mut HashSet::new(),
         types_added: &mut HashSet::new(),
         written_directives: &mut HashSet::new(),
+        arr_valid: &mut ArrayValidation::default(),
+        obj_valid: &mut ObjectValidation::default(),
     };
     write_field(params)?;
     Ok(())
@@ -509,6 +529,8 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
                 scalars: &mut HashSet::new(),
                 types_added: &mut HashSet::new(),
                 written_directives: &mut HashSet::new(),
+                arr_valid: &mut ArrayValidation::default(),
+                obj_valid: &mut ObjectValidation::default(),
             };
             write_property(params)?;
             close_param = true;
@@ -523,6 +545,8 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
                 scalars: &mut HashSet::new(),
                 types_added: &mut HashSet::new(),
                 written_directives: &mut HashSet::new(),
+                arr_valid: &mut ArrayValidation::default(),
+                obj_valid: &mut ObjectValidation::default(),
             };
             write_property(params)?;
         }
@@ -562,34 +586,33 @@ fn write_all_directives(
             scalars: &mut HashSet::new(),
             types_added: &mut HashSet::new(),
             written_directives,
+            arr_valid: &mut ArrayValidation::default(),
+            obj_valid: &mut ObjectValidation::default(),
         };
         write_directive(params)?;
     }
 
     Ok(())
 }
-#[allow(clippy::too_many_arguments)]
-fn write_array_validation(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    arr_valid: ArrayValidation,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+
+fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, arr_valid, defs, extra_it, .. } = params;
     write!(writer, "[")?;
-    if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
+    if let Some(SingleOrVec::Single(schema)) = &arr_valid.items {
         let params = WriteParams {
             writer,
             name,
-            schema: schema.into_object(),
+            schema: schema.clone().into_object(),
             defs,
             extra_it,
             scalars: &mut HashSet::new(),
             types_added: &mut HashSet::new(),
             written_directives: &mut HashSet::new(),
+            arr_valid: &mut ArrayValidation::default(),
+            obj_valid: &mut ObjectValidation::default(),
         };
         write_type(params)?;
-    } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
+    } else if let Some(SingleOrVec::Vec(schemas)) = &arr_valid.items {
         let params = WriteParams {
             writer,
             name,
@@ -599,6 +622,8 @@ fn write_array_validation(
             scalars: &mut HashSet::new(),
             types_added: &mut HashSet::new(),
             written_directives: &mut HashSet::new(),
+            arr_valid: &mut ArrayValidation::default(),
+            obj_valid: &mut ObjectValidation::default(),
         };
         write_type(params)?;
     } else {
@@ -608,18 +633,13 @@ fn write_array_validation(
     }
     write!(writer, "]")
 }
-#[allow(clippy::too_many_arguments)]
-fn write_object_validation(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    obj_valid: ObjectValidation,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+
+fn write_object_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, obj_valid, defs, extra_it, .. } = params;
     if !obj_valid.properties.is_empty() {
         writeln!(writer, "input {name} {{")?;
         writer.indent();
-        for (name, property) in obj_valid.properties {
+        for (name, property) in obj_valid.properties.clone() {
             let params = WriteParams {
                 writer,
                 name,
@@ -629,6 +649,8 @@ fn write_object_validation(
                 scalars: &mut HashSet::new(),
                 types_added: &mut HashSet::new(),
                 written_directives: &mut HashSet::new(),
+                arr_valid: &mut ArrayValidation::default(),
+                obj_valid: &mut ObjectValidation::default(),
             };
             write_property(params)?;
         }
@@ -660,6 +682,8 @@ fn write_all_input_types(
             extra_it: &mut extra_it,
             types_added: &mut types_added,
             written_directives: &mut HashSet::new(),
+            arr_valid: &mut ArrayValidation::default(),
+            obj_valid: &mut ObjectValidation::default(),
         };
         write_input_type(params)?;
     }
@@ -679,12 +703,26 @@ fn write_all_input_types(
                         extra_it: &mut new_extra_it,
                         types_added: &mut types_added,
                         written_directives: &mut HashSet::new(),
+                        arr_valid: &mut ArrayValidation::default(),
+                        obj_valid: &mut ObjectValidation::default(),
                     };
                     write_input_type(params)?
                 }
             }
             ExtraTypes::ObjectValidation(obj_valid) => {
-                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+                let params = WriteParams {
+                    writer,
+                    name: name.clone(),
+                    schema: SchemaObject::default(),
+                    defs: &defs,
+                    scalars: &mut scalars,
+                    extra_it: &mut new_extra_it,
+                    types_added: &mut types_added,
+                    written_directives: &mut HashSet::new(),
+                    arr_valid: &mut ArrayValidation::default(),
+                    obj_valid: &mut obj_valid.clone(),
+                };
+                write_object_validation(params)?
             }
         }
     }
