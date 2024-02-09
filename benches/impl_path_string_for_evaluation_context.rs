@@ -20,7 +20,7 @@ use tailcall::cache::InMemoryCache;
 use tailcall::http::{RequestContext, Response};
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
-use tailcall::target_runtime::TargetRuntime;
+use tailcall::runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 
 struct Http {

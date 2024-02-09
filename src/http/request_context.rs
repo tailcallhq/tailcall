@@ -12,7 +12,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -128,7 +128,7 @@ mod test {
             RequestContext {
                 req_headers: HeaderMap::new(),
                 server,
-                runtime: crate::target_runtime::test::init(None),
+                runtime: crate::runtime::test::init(None),
                 upstream,
                 http_data_loaders: Arc::new(vec![]),
                 gql_data_loaders: Arc::new(vec![]),

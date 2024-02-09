@@ -223,7 +223,7 @@ mod tests {
     }
 
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
-        let runtime = crate::target_runtime::test::init(None);
+        let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
         let id = "greetings".to_string();

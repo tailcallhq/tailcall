@@ -19,14 +19,14 @@ use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint, Upstream};
 use tailcall::cache::InMemoryCache;
-use tailcall::cli::{init_runtime, javascript};
+use tailcall::cli::javascript;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
-use tailcall::target_runtime::TargetRuntime;
+use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
-use tailcall::{EnvIO, FileIO, HttpIO};
+use tailcall::{cli, EnvIO, FileIO, HttpIO};
 use url::Url;
 
 static INIT: Once = Once::new();
@@ -624,7 +624,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = match config {
             Ok(config) => {
-                let mut runtime = init_runtime(&blueprint::Upstream::default(), None);
+                let mut runtime = cli::runtime::init(&blueprint::Upstream::default(), None);
                 runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
                 let reader = ConfigReader::init(runtime);
                 match reader
@@ -726,7 +726,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // Resolve all configs
-    let mut runtime = init_runtime(&Upstream::default(), None);
+    let mut runtime = cli::runtime::init(&Upstream::default(), None);
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let reader = ConfigReader::init(runtime);
 

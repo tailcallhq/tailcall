@@ -33,7 +33,7 @@ pub mod test {
     use crate::cache::InMemoryCache;
     use crate::cli::javascript;
     use crate::http::Response;
-    use crate::target_runtime::TargetRuntime;
+    use crate::runtime::TargetRuntime;
     use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]

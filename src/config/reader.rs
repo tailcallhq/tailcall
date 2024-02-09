@@ -15,7 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -282,7 +282,7 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(crate::target_runtime::test::init(None));
+        let reader = ConfigReader::init(crate::runtime::test::init(None));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -308,7 +308,7 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(crate::target_runtime::test::init(None));
+        let reader = ConfigReader::init(crate::runtime::test::init(None));
         let helper_map = reader
             .resolve_descriptors(HashMap::new(), test_file)
             .await?;
@@ -362,7 +362,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let runtime = crate::target_runtime::test::init(None);
+        let runtime = crate::runtime::test::init(None);
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -414,7 +414,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let runtime = crate::target_runtime::test::init(None);
+        let runtime = crate::runtime::test::init(None);
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -440,7 +440,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let runtime = crate::target_runtime::test::init(None);
+        let runtime = crate::runtime::test::init(None);
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);

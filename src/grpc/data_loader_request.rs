@@ -91,7 +91,7 @@ mod tests {
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
 
-        let runtime = crate::target_runtime::test::init(None);
+        let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let config_set = reader.resolve(config, None).await.unwrap();
 
