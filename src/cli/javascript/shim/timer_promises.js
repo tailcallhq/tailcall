@@ -1,4 +1,4 @@
-((globalThis) => {
+;((globalThis) => {
   const {
     core: {ops},
   } = Deno

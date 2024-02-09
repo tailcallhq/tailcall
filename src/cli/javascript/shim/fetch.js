@@ -1,12 +1,11 @@
-((globalThis) => {
+;((globalThis) => {
   const {
     core: {ops},
   } = Deno
 
-
   class Response {
     constructor(response) {
-      this.response = response;
+      this.response = response
     }
 
     async text() {
@@ -19,9 +18,9 @@
     }
   }
 
-  globalThis.fetch = async function(url) {
-    let response = await ops.op_fetch(url);
+  globalThis.fetch = async function (url) {
+    let response = await ops.op_fetch(url)
 
-    return new Response(response);
+    return new Response(response)
   }
 })(globalThis)

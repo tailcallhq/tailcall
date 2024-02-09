@@ -1,4 +1,4 @@
-((globalThis) => {
+;((globalThis) => {
   const {core} = Deno
 
   function argsToMessage(...args) {

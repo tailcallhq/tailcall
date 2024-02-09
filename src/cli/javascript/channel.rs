@@ -2,10 +2,8 @@ use std::ops::{Deref, DerefMut};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{
-    mpsc::{self, UnboundedReceiver, UnboundedSender},
-    oneshot,
-};
+use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::sync::oneshot;
 
 use super::{JsRequest, JsResponse};
 

@@ -6,9 +6,9 @@ use anyhow::Result;
 use deno_core::{extension, op2, OpState};
 use tokio::sync::oneshot;
 
+use super::channel::WaitSender;
+use super::JsResponse;
 use crate::cli::javascript::JsRequest;
-
-use super::{channel::WaitSender, JsResponse};
 
 #[op2(async)]
 async fn op_sleep(ms: u32) {
