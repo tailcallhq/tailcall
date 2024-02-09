@@ -39,11 +39,12 @@ impl Eval for Cache {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             let key = self.expr.cache_key(ctx);
-            if let Some(val) = ctx.req_ctx.cache.get(&key).await? {
+            if let Some(val) = ctx.req_ctx.runtime.cache.get(&key).await? {
                 Ok(val)
             } else {
                 let val = self.expr.eval(ctx, conc).await?;
                 ctx.req_ctx
+                    .runtime
                     .cache
                     .set(key, val.clone(), self.max_age)
                     .await?;

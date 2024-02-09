@@ -10,6 +10,8 @@ pub enum LinkType {
     Config,
     Protobuf,
     Script,
+    Cert,
+    Key,
 }
 
 impl Display for LinkType {
@@ -18,6 +20,8 @@ impl Display for LinkType {
             LinkType::Config => "Config",
             LinkType::Protobuf => "Protobuf",
             LinkType::Script => "Script",
+            LinkType::Cert => "Cert",
+            LinkType::Key => "Key",
         })
     }
 }
