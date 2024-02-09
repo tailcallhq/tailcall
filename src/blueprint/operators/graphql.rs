@@ -1,8 +1,8 @@
 use crate::blueprint::FieldDefinition;
-use crate::config::{self, ConfigSet, Field, GraphQLOperationType};
+use crate::config::{self, ConfigModule, Field, GraphQLOperationType};
 use crate::graphql::RequestTemplate;
 use crate::helpers;
-use crate::lambda::{Expression, Lambda};
+use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -34,14 +34,16 @@ pub fn compile_graphql(
     })
     .map(|req_template| {
         let field_name = graphql.name.clone();
-        Lambda::from_graphql_request_template(req_template, field_name, graphql.batch).expression
+        let batch = graphql.batch;
+        Expression::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
     })
 }
 
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), b_field| {
             let Some(graphql) = &field.graphql else {
                 return Valid::succeed(b_field);

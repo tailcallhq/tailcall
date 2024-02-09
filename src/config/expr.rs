@@ -16,13 +16,13 @@ pub struct If {
     /// Condition to evaluate
     pub cond: Box<ExprBody>,
 
-    /// Expression to evaluate if the condition is true
-    #[serde(rename = "then")]
-    pub on_true: Box<ExprBody>,
-
     /// Expression to evaluate if the condition is false
     #[serde(rename = "else")]
     pub on_false: Box<ExprBody>,
+
+    /// Expression to evaluate if the condition is true
+    #[serde(rename = "then")]
+    pub on_true: Box<ExprBody>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

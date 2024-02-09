@@ -10,7 +10,7 @@ use async_graphql::Name;
 
 use super::JS;
 use crate::config::{
-    self, Cache, Call, Config, Expr, GraphQL, Grpc, Modify, Omit, RootSchema, Server, Union,
+    self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
     Upstream,
 };
 use crate::directive::DirectiveCodec;
@@ -43,12 +43,14 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
             .fuse(types)
             .fuse(unions)
             .fuse(schema)
-            .map(|(server, upstream, types, unions, schema)| Config {
+            .fuse(links(sd))
+            .map(|(server, upstream, types, unions, schema, links)| Config {
                 server,
                 upstream,
                 types,
                 unions,
                 schema,
+                links,
             })
     })
 }
@@ -76,15 +78,40 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
     res
 }
 
+fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
+    schema_definition: &SchemaDefinition,
+    directive_name: &str,
+) -> Valid<Vec<T>, String> {
+    let directives: Vec<Valid<T, String>> = schema_definition
+        .directives
+        .iter()
+        .filter_map(|directive| {
+            if directive.node.name.node.as_ref() == directive_name {
+                Some(T::from_directive(&directive.node))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Valid::from_iter(directives, |item| item)
+}
+
 fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
     process_schema_directives(schema_definition, config::Server::directive_name().as_str())
 }
+
 fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
     process_schema_directives(
         schema_definition,
         config::Upstream::directive_name().as_str(),
     )
 }
+
+fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
+    process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
+}
+
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
     let query = schema_definition.query.as_ref().map(pos_name_to_string);
     let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);

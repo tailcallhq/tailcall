@@ -3,13 +3,13 @@ use crate::config::group_by::GroupBy;
 use crate::config::Field;
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
-use crate::lambda::{Expression, Lambda, IO};
+use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
 
 pub fn compile_http(
-    config_set: &config::ConfigSet,
+    config_set: &config::ConfigModule,
     field: &config::Field,
     http: &config::Http,
 ) -> Valid<Expression, String> {
@@ -65,14 +65,15 @@ pub fn compile_http(
                     dl_id: None,
                 })
             } else {
-                Lambda::from_request_template(req_template).expression
+                Expression::IO(IO::Http { req_template, group_by: None, dl_id: None })
             }
         })
 }
 
 pub fn update_http<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config_set, field, type_of, _), b_field| {
             let Some(http) = &field.http else {
                 return Valid::succeed(b_field);

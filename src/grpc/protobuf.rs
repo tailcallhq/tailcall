@@ -202,9 +202,10 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+    use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, Grpc, Type, Upstream};
+    use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -226,12 +227,18 @@ mod tests {
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
         let runtime = init_runtime(&Upstream::default(), None);
         let reader = ConfigReader::init(runtime);
-        let mut config = Config::default();
-        let grpc = Grpc {
-            proto_path: get_test_file(name)
+
+        let id = "greetings".to_string();
+        let mut config = Config::default().links(vec![Link {
+            id: Some(id.clone()),
+            src: get_test_file(name)
                 .to_str()
                 .context("Failed to parse or load proto file")?
                 .to_string(),
+            type_of: LinkType::Protobuf,
+        }]);
+        let grpc = Grpc {
+            method: format!("{}.{}.{}", id, "a", "b"),
             ..Default::default()
         };
         config.types.insert(
@@ -239,10 +246,12 @@ mod tests {
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
         Ok(reader
-            .resolve(config)
+            .resolve(config, None)
             .await?
             .extensions
-            .grpc_file_descriptor)
+            .get_file_descriptor(id.as_str())
+            .unwrap()
+            .to_owned())
     }
 
     #[test]
@@ -333,7 +342,7 @@ mod tests {
     #[tokio::test]
     async fn news_proto_file() -> Result<()> {
         let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
-        let service = file.find_service("NewsService")?;
+        let service = file.find_service("news.NewsService")?;
         let operation = service.find_operation("GetNews")?;
 
         let input = operation.convert_input(r#"{ "id": 1 }"#)?;
@@ -357,7 +366,7 @@ mod tests {
     #[tokio::test]
     async fn news_proto_file_multiple_messages() -> Result<()> {
         let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
-        let service = file.find_service("NewsService")?;
+        let service = file.find_service("news.NewsService")?;
         let multiple_operation = service.find_operation("GetMultipleNews")?;
 
         let child_messages = vec![r#"{ "id": 3 }"#, r#"{ "id": 5 }"#, r#"{ "id": 1 }"#];

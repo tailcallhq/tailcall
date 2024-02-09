@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Parsing failed because of invalid HTTP header name",
+    "trace": [
+      "schema",
+      "@server",
+      "responseHeaders"
+    ],
+    "description": null
+  }
+]

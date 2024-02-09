@@ -1,24 +1,29 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 
 use anyhow::Context;
+use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+use rustls_pemfile;
+use rustls_pki_types::{
+    CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
+};
 use url::Url;
 
-use super::{ConfigSet, ExprBody, Extensions, Script, ScriptOptions};
+use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
-const NULL_STR: &str = "\0\0\0\0\0\0\0";
-
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
+/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
 }
 
 /// Response of a file read operation
+#[derive(Debug)]
 struct FileRead {
     content: String,
     path: String,
@@ -62,81 +67,167 @@ impl ConfigReader {
         Ok(content)
     }
 
-    /// Reads the script file and replaces the path with the content
-    async fn ext_script(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
-        let config = &mut config_set.config;
-        if let Some(Script::Path(ref options)) = &config.server.script {
-            let timeout = options.timeout;
-            let script = self.read_file(options.src.clone()).await?.content;
-            config.server.script = Some(Script::File(ScriptOptions { src: script, timeout }));
+    /// Reads the links in a Config and fill the content
+    #[async_recursion::async_recursion]
+    async fn ext_links(
+        &self,
+        mut config_set: ConfigModule,
+        path: Option<String>,
+    ) -> anyhow::Result<ConfigModule> {
+        let links: Vec<Link> = config_set
+            .config
+            .links
+            .clone()
+            .iter()
+            .filter_map(|link| {
+                if link.src.is_empty() {
+                    return None;
+                }
+                Some(link.to_owned())
+            })
+            .collect();
+
+        if links.is_empty() {
+            return Ok(config_set);
         }
+
+        for config_link in links.iter() {
+            let path = if Path::new(&config_link.src).is_absolute() {
+                config_link.src.clone()
+            } else {
+                let path = path.clone().unwrap_or_default();
+                PathBuf::from(path)
+                    .parent()
+                    .unwrap_or(Path::new(""))
+                    .join(&config_link.src)
+                    .to_string_lossy()
+                    .to_string()
+            };
+
+            let source = self.read_file(&path).await?;
+
+            let content = source.content;
+
+            match config_link.type_of {
+                LinkType::Config => {
+                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+
+                    config_set = config_set.merge_right(&ConfigModule::from(config.clone()));
+
+                    if !config.links.is_empty() {
+                        config_set = config_set.merge_right(
+                            &self
+                                .ext_links(ConfigModule::from(config), Some(source.path))
+                                .await?,
+                        );
+                    }
+                }
+                LinkType::Protobuf => {
+                    let descriptors = self
+                        .resolve_descriptors(HashMap::new(), source.path)
+                        .await?;
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+
+                    for (_, v) in descriptors {
+                        file_descriptor_set.file.push(v);
+                    }
+
+                    config_set.extensions.grpc_file_descriptors.push(Content {
+                        id: config_link.id.to_owned(),
+                        content: file_descriptor_set,
+                    });
+                }
+                LinkType::Script => {
+                    config_set.extensions.script = Some(content);
+                }
+                LinkType::Cert => {
+                    config_set
+                        .extensions
+                        .cert
+                        .extend(self.load_cert(content.clone()).await?);
+                }
+                LinkType::Key => {
+                    config_set.extensions.keys =
+                        Arc::new(self.load_private_key(content.clone()).await?)
+                }
+            }
+        }
+
         Ok(config_set)
     }
 
+    /// Reads the certificate from a given file
+    async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+        let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
+
+        Ok(certificates.into_iter().map(CertificateDer::from).collect())
+    }
+
+    /// Reads a private key from a given file
+    async fn load_private_key(
+        &self,
+        content: String,
+    ) -> anyhow::Result<Vec<PrivateKeyDer<'static>>> {
+        let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
+
+        Ok(keys
+            .into_iter()
+            .filter_map(|key| match key {
+                rustls_pemfile::Item::RSAKey(key) => {
+                    Some(PrivateKeyDer::Pkcs1(PrivatePkcs1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::ECKey(key) => {
+                    Some(PrivateKeyDer::Sec1(PrivateSec1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::PKCS8Key(key) => {
+                    Some(PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key)))
+                }
+                _ => None,
+            })
+            .collect())
+    }
+
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigSet> {
+    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigSet> {
+    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.read_files(files).await?;
-        let mut config_set = ConfigSet::default();
+        let mut config_set = ConfigModule::default();
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
 
             // Create initial config set
-            let new_config_set = self.resolve(Config::from_source(source, schema)?).await?;
+            let new_config_set = self
+                .resolve(
+                    Config::from_source(source, schema)?,
+                    Some(file.path.clone()),
+                )
+                .await?;
 
             // Merge it with the original config set
             config_set = config_set.merge_right(&new_config_set);
         }
+
         Ok(config_set)
     }
 
-    /// Resolves all the links in a Config to create a ConfigSet
-    pub async fn resolve(&self, config: Config) -> anyhow::Result<ConfigSet> {
+    /// Resolves all the links in a Config to create a ConfigModule
+    pub async fn resolve(
+        &self,
+        config: Config,
+        path: Option<String>,
+    ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
-        let config_set = ConfigSet::from(config);
+        let config_set = ConfigModule::from(config);
 
-        // Extend it with the worker script
-        let config_set = self.ext_script(config_set).await?;
+        // Extend it with the links
+        let config_set = self.ext_links(config_set, path).await?;
 
-        // Extend it with protobuf definitions for GRPC
-        let config_set = self.ext_grpc(config_set).await?;
-
-        Ok(config_set)
-    }
-
-    /// Returns final ConfigSet from Config
-    pub async fn ext_grpc(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
-        let config = &config_set.config;
-        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
-        let mut grpc_file_descriptor = FileDescriptorSet::default();
-        for (_, typ) in config.types.iter() {
-            for (_, fld) in typ.fields.iter() {
-                let proto_path = if let Some(grpc) = &fld.grpc {
-                    &grpc.proto_path
-                } else if let Some(ExprBody::Grpc(grpc)) = fld.expr.as_ref().map(|e| &e.body) {
-                    &grpc.proto_path
-                } else {
-                    NULL_STR
-                };
-
-                if proto_path != NULL_STR {
-                    descriptors = self
-                        .resolve_descriptors(descriptors, proto_path.to_string())
-                        .await?;
-                }
-            }
-        }
-        for (_, v) in descriptors {
-            grpc_file_descriptor.file.push(v);
-        }
-
-        config_set.extensions = Extensions { grpc_file_descriptor, ..Default::default() };
         Ok(config_set)
     }
 
@@ -263,9 +354,10 @@ mod reader_tests {
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
 
+    use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Script, ScriptOptions, Type, Upstream};
+    use crate::config::{Config, Type};
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
@@ -365,16 +457,13 @@ mod reader_tests {
             .unwrap();
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
-        let file = ScriptOptions {
-            src: String::from_utf8(
-                tokio::fs::read(&path)
-                    .await
-                    .context(path.to_string())
-                    .unwrap(),
-            )
-            .unwrap(),
-            timeout: None,
-        };
-        assert_eq!(config.server.script, Some(Script::File(file)),);
+        let content = String::from_utf8(
+            tokio::fs::read(&path)
+                .await
+                .context(path.to_string())
+                .unwrap(),
+        );
+
+        assert_eq!(content.unwrap(), config.extensions.script.unwrap());
     }
 }

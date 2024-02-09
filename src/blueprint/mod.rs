@@ -3,6 +3,7 @@ mod compress;
 mod definitions;
 mod from_config;
 mod into_schema;
+mod links;
 mod mustache;
 mod operation;
 mod operators;
@@ -13,6 +14,7 @@ mod upstream;
 pub use blueprint::*;
 pub use definitions::*;
 pub use from_config::*;
+pub use links::*;
 pub use operation::*;
 pub use operators::*;
 pub use schema::*;
@@ -20,10 +22,10 @@ pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
-use crate::config::{Arg, ConfigSet, Field};
+use crate::config::{Arg, ConfigModule, Field};
 use crate::try_fold::TryFold;
 
-pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigSet, A, String>;
+pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
 
 pub(crate) trait TypeLike {
     fn name(&self) -> &str;

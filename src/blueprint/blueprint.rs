@@ -1,6 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeSet, HashMap};
-use std::num::NonZeroU64;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -9,9 +7,8 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::GlobalTimeout;
-use crate::blueprint::Server;
-use crate::config::Upstream;
-use crate::lambda::{Expression, Lambda};
+use crate::blueprint::{Server, Upstream};
+use crate::lambda::Expression;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -127,12 +124,6 @@ pub struct InputFieldDefinition {
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug)]
-pub struct Cache {
-    pub max_age: NonZeroU64,
-    pub hasher: DefaultHasher,
-}
-
 #[derive(Clone, Debug, Setters, Default)]
 pub struct FieldDefinition {
     pub name: String,
@@ -141,24 +132,16 @@ pub struct FieldDefinition {
     pub resolver: Option<Expression>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
-    pub cache: Option<Cache>,
 }
 
 impl FieldDefinition {
-    pub fn to_lambda(self) -> Option<Lambda<serde_json::Value>> {
-        self.resolver.map(Lambda::new)
-    }
-
-    pub fn resolver_or_default(
-        mut self,
-        default_res: Lambda<serde_json::Value>,
-        other: impl Fn(Lambda<serde_json::Value>) -> Lambda<serde_json::Value>,
-    ) -> Self {
-        self.resolver = match self.resolver {
-            None => Some(default_res.expression),
-            Some(expr) => Some(other(Lambda::new(expr)).expression),
-        };
-        self
+    ///
+    /// Transforms the current expression if it exists on the provided field.
+    ///
+    pub fn map_expr<F: FnMut(Expression) -> Expression>(&mut self, mut wrapper: F) {
+        if let Some(resolver) = self.resolver.take() {
+            self.resolver = Some(wrapper(resolver))
+        }
     }
 }
 

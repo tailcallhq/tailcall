@@ -1,0 +1,31 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+input A {
+  b: B
+}
+
+input B {
+  c: C
+}
+
+input C {
+  d: D
+}
+
+input D {
+  e: Int
+}
+
+type Query {
+  a(a: A!): X
+}
+
+type X {
+  a: String
+}
+
+schema {
+  query: Query
+}

@@ -6,7 +6,7 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
 
-use super::{Eval, EvaluationContext, ResolverContextLike};
+use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -28,7 +28,7 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
     },
-    GraphQLEndpoint {
+    GraphQL {
         req_template: graphql::RequestTemplate,
         field_name: String,
         batch: bool,
@@ -77,7 +77,7 @@ impl Eval for IO {
 
                     Ok(res.body)
                 }
-                IO::GraphQLEndpoint { req_template, field_name, dl_id, .. } => {
+                IO::GraphQL { req_template, field_name, dl_id, .. } => {
                     let req = req_template.to_request(ctx)?;
 
                     let res = if ctx.req_ctx.upstream.batch.is_some()
@@ -118,6 +118,16 @@ impl Eval for IO {
     }
 }
 
+impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
+    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> u64 {
+        match self {
+            IO::Http { req_template, .. } => req_template.cache_key(ctx),
+            IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
+            IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
+        }
+    }
+}
+
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
@@ -134,7 +144,8 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     req: Request,
 ) -> Result<Response<async_graphql::Value>> {
     ctx.req_ctx
-        .h_client
+        .runtime
+        .http
         .execute(req)
         .await
         .map_err(|e| EvaluationError::IOException(e.to_string()))?
@@ -146,7 +157,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     req: Request,
     operation: &ProtobufOperation,
 ) -> Result<Response<async_graphql::Value>> {
-    Ok(execute_grpc_request(&ctx.req_ctx.h2_client, operation, req)
+    Ok(execute_grpc_request(&ctx.req_ctx.runtime, operation, req)
         .await
         .map_err(|e| EvaluationError::IOException(e.to_string()))?)
 }
