@@ -25,6 +25,35 @@ directive @cache(
 ) on FIELD_DEFINITION
 
 """
+For instance, if you have a `user(id: Int!): User @http(path: "/users/{{args.id}}")` 
+field on the `Query` type, you can reference it from another field on the `Query` 
+type using the `@call` operator. So, on `Post.user` you can declare `user: User @call(query: 
+"user", args: {id: "{{value.userId}}"})`, and this will replace the `{{args.id}}` 
+used in the `@http` operator with the value of `userId` from the `Post` type.In case 
+you have a `user(input: UserInput!): User @http(path: "/users")` field on the `Mutation` 
+type, you can reference it from another field on the `Mutation` type. So, on `Post.user` 
+you can declare `user: User @call(mutation: "user", args: {input: "{{value.userInput}}"})`, 
+and this will replace the `{{args.input}}` used in the `@http` operator with the 
+value of `userInput` from the `Post` type.
+"""
+directive @call(
+  """
+  The arguments of the field on the `Query` type that you want to call. For instance 
+  `{id: "{{value.userId}}"}`.
+  """
+  args: JSON
+  """
+  The name of the field on the `Mutation` type that you want to call. For instance 
+  `createUser`.
+  """
+  mutation: String
+  """
+  The name of the field on the `Query` type that you want to call. For instance `user`.
+  """
+  query: String
+) on FIELD_DEFINITION
+
+"""
 The `@const` operators allows us to embed a constant response for the schema.
 """
 directive @const(
@@ -175,25 +204,6 @@ directive @http(
   """
   query: KeyValues
 ) on FIELD_DEFINITION
-
-"""
-The @call operator is used to reference a resolver operator (available resolvers are `@http`, `@grpc` and `@graphQL`).
-"""
-directive @call(
-  """
-  The name of the field that has the resolver to be called.
-  """
-  query: String!
-  """
-  The name of the field that has the resolver to be called.
-  """
-  mutation: String!
-  """
-  The arguments to be replace the values on the actual resolver.
-  """
-  args: JSON
-) on FIELD_DEFINITION
-
 
 directive @js(
   script: String!
@@ -618,7 +628,6 @@ input Http {
   """
   query: KeyValues
 }
-
 enum HttpVersion {
   HTTP1
   HTTP2
