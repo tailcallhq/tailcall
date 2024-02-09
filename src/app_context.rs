@@ -77,7 +77,7 @@ impl AppContext {
 
                                 IO::Grpc { req_template, group_by, .. } => {
                                     let data_loader = GrpcDataLoader {
-                                        rumtime: runtime.clone(),
+                                        runtime: runtime.clone(),
                                         operation: req_template.operation.clone(),
                                         group_by: group_by.clone(),
                                     };
