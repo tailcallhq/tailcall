@@ -36,11 +36,40 @@ impl HttpIO for LambdaHttp {
 
 pub fn to_request(
     req: lambda_http::Request,
-) -> Result<hyper::Request<hyper::Body>, lambda_http::http::Error> {
+) -> Result<hyper::Request<hyper::Body>, hyper::http::Error> {
+    // TODO: Update hyper to 1.0 to make conversions easier
+    let method: hyper::Method = match req.method().to_owned() {
+        lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
+        lambda_http::http::Method::DELETE => hyper::Method::DELETE,
+        lambda_http::http::Method::GET => hyper::Method::GET,
+        lambda_http::http::Method::HEAD => hyper::Method::HEAD,
+        lambda_http::http::Method::OPTIONS => hyper::Method::OPTIONS,
+        lambda_http::http::Method::PATCH => hyper::Method::PATCH,
+        lambda_http::http::Method::POST => hyper::Method::POST,
+        lambda_http::http::Method::PUT => hyper::Method::PUT,
+        lambda_http::http::Method::TRACE => hyper::Method::TRACE,
+        _ => unreachable!(),
+    };
+
     hyper::Request::builder()
-        .method(req.method())
-        .uri(req.uri())
+        .method(method)
+        .uri::<String>(req.uri().to_string())
         .body(hyper::Body::from(req.body().to_vec()))
+}
+
+pub async fn to_response(
+    res: hyper::Response<hyper::Body>,
+) -> Result<lambda_http::Response<lambda_http::Body>, lambda_http::http::Error> {
+    // TODO: Update hyper to 1.0 to make conversions easier
+    let mut build = lambda_http::Response::builder().status(res.status().as_u16());
+
+    for (k, v) in res.headers() {
+        build = build.header(k.to_string(), v.as_bytes());
+    }
+
+    build.body(lambda_http::Body::Binary(Vec::from(
+        hyper::body::to_bytes(res.into_body()).await.unwrap(),
+    )))
 }
 
 pub fn init_http() -> Arc<LambdaHttp> {

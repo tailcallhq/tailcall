@@ -15,7 +15,7 @@ edition = "2021"
 # and it will keep the alphabetic ordering for you.
 
 [dependencies]
-lambda_http = "0.8.3"
+lambda_http = "0.9.2"
 lambda_runtime = "0.9.1"
 tokio = { version = "1", features = ["macros", "fs"] }
 tracing = { version = "0.1", features = ["log"] }
