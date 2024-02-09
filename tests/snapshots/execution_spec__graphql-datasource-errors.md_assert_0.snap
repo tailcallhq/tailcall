@@ -15,13 +15,13 @@ expression: response
     },
     "errors": [
       {
+        "message": "Failed to resolve user",
         "locations": [
           {
-            "column": 9,
-            "line": 1
+            "line": 1,
+            "column": 9
           }
         ],
-        "message": "Failed to resolve user",
         "path": [
           "user"
         ]

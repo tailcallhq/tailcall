@@ -1,3 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use anyhow::Result;
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
@@ -10,6 +13,7 @@ use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
+use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
 use crate::path::PathString;
 
@@ -30,6 +34,13 @@ pub struct RenderedRequestTemplate {
     pub headers: HeaderMap,
     pub body: String,
     pub operation: ProtobufOperation,
+}
+
+impl Hash for RenderedRequestTemplate {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.url.hash(state);
+        self.body.hash(state);
+    }
 }
 
 impl RequestTemplate {
@@ -95,9 +106,19 @@ impl RenderedRequestTemplate {
     }
 }
 
+impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+    fn cache_key(&self, ctx: &Ctx) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        let rendered_req = self.render(ctx).unwrap();
+        rendered_req.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
+    use std::collections::HashSet;
     use std::path::PathBuf;
 
     use derive_setters::Setters;
@@ -109,8 +130,9 @@ mod tests {
     use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Type};
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+    use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
@@ -121,11 +143,17 @@ mod tests {
         test_file.push("tests");
         test_file.push("greetings.proto");
 
+        let id = "greetings".to_string();
+
         let runtime = init_runtime(&Upstream::default(), None);
         let reader = ConfigReader::init(runtime);
-        let mut config = Config::default();
+        let mut config = Config::default().links(vec![Link {
+            id: Some(id.clone()),
+            src: test_file.to_str().unwrap().to_string(),
+            type_of: LinkType::Protobuf,
+        }]);
         let grpc = Grpc {
-            proto_path: test_file.to_str().unwrap().to_string(),
+            method: format!("{}.{}.{}", id.clone(), "a", "b"),
             ..Default::default()
         };
         config.types.insert(
@@ -134,12 +162,13 @@ mod tests {
         );
 
         let protobuf_set = ProtobufSet::from_proto_file(
-            &reader
-                .resolve(config)
+            reader
+                .resolve(config, None)
                 .await
                 .unwrap()
                 .extensions
-                .grpc_file_descriptor,
+                .get_file_descriptor(id.as_str())
+                .unwrap(),
         )
         .unwrap();
 
@@ -225,5 +254,39 @@ mod tests {
         if let Some(body) = req.body() {
             assert_eq!(body.as_bytes(), Some(b"\0\0\0\0\x06\n\x04test".as_ref()))
         }
+    }
+
+    async fn request_template_with_body(body_str: &str) -> RequestTemplate {
+        RequestTemplate {
+            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            headers: vec![],
+            operation: get_protobuf_op().await,
+            body: Some(Mustache::parse(body_str).unwrap()),
+            operation_type: GraphQLOperationType::Query,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_grpc_cache_key_collision() {
+        let tmpls = [
+            r#"{ "name": "test" }"#,
+            r#"{ "name": "test1" }"#,
+            r#"{ "name1": "test" }"#,
+            r#"{ "name1": "test1" }"#,
+        ];
+
+        let ctx = Context::default();
+        let tmpl_set: HashSet<_> =
+            futures_util::future::join_all(tmpls.iter().cloned().zip(std::iter::repeat(&ctx)).map(
+                |(body_str, ctx)| async {
+                    let tmpl = request_template_with_body(body_str).await;
+                    tmpl.cache_key(ctx)
+                },
+            ))
+            .await
+            .into_iter()
+            .collect();
+
+        assert_eq!(tmpls.len(), tmpl_set.len());
     }
 }

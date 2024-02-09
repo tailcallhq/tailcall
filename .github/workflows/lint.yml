@@ -24,18 +24,15 @@ jobs:
     env:
       LINT_MODE: "${{ contains(github.event.pull_request.labels.*.name, 'ci: lint') && 'fix' || 'check' }}"
     steps:
+      - uses: actions/checkout@v4
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.11.0"
       - name: Install Prettier
         run: npm install --global prettier
-      - uses: actions/checkout@v4
-      - name: Install Nightly Toolchain
+      - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt, clippy
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed

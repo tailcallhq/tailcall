@@ -13,10 +13,10 @@ type Post {
   userId: Int
   user: User
     @graphQL(
-      baseURL: "http://upstream/graphql"
-      name: "user"
       args: [{key: "id", value: "{{value.userId}}"}]
+      baseURL: "http://upstream/graphql"
       batch: true
+      name: "user"
     )
 }
 

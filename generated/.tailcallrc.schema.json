@@ -1,8 +1,68 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Config",
+  "type": "object",
+  "required": [
+    "schema"
+  ],
+  "properties": {
+    "links": {
+      "description": "A list of all links in the schema.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Link"
+      }
+    },
+    "schema": {
+      "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/RootSchema"
+        }
+      ]
+    },
+    "server": {
+      "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
+      "default": {},
+      "allOf": [
+        {
+          "$ref": "#/definitions/Server"
+        }
+      ]
+    },
+    "types": {
+      "description": "A map of all the types in the schema.",
+      "default": {},
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Type"
+      }
+    },
+    "unions": {
+      "description": "A map of all the union types in the schema.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Union"
+      }
+    },
+    "upstream": {
+      "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections.",
+      "default": {},
+      "allOf": [
+        {
+          "$ref": "#/definitions/Upstream"
+        }
+      ]
+    }
+  },
   "definitions": {
     "AddField": {
       "description": "The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)",
+      "type": "object",
+      "required": [
+        "name",
+        "path"
+      ],
       "properties": {
         "name": {
           "description": "Name of the new field to be added",
@@ -10,19 +70,18 @@
         },
         "path": {
           "description": "Path of the data where the field should point to",
+          "type": "array",
           "items": {
             "type": "string"
-          },
-          "type": "array"
+          }
         }
-      },
-      "required": [
-        "name",
-        "path"
-      ],
-      "type": "object"
+      }
     },
     "Arg": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
       "properties": {
         "default_value": true,
         "doc": {
@@ -50,191 +109,193 @@
         "type": {
           "type": "string"
         }
-      },
-      "required": [
-        "type"
-      ],
-      "type": "object"
+      }
     },
     "Batch": {
+      "type": "object",
       "properties": {
         "delay": {
           "default": 0,
+          "type": "integer",
           "format": "uint",
-          "minimum": 0.0,
-          "type": "integer"
+          "minimum": 0.0
         },
         "headers": {
           "default": [],
+          "type": "array",
           "items": {
             "type": "string"
           },
-          "type": "array",
           "uniqueItems": true
         },
         "maxSize": {
           "default": 100,
+          "type": "integer",
           "format": "uint",
-          "minimum": 0.0,
-          "type": "integer"
+          "minimum": 0.0
         }
-      },
-      "type": "object"
+      }
     },
     "Cache": {
       "description": "The @cache operator enables caching for the query, field or type it is applied to.",
-      "properties": {
-        "maxAge": {
-          "description": "Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.",
-          "format": "uint64",
-          "minimum": 1.0,
-          "type": "integer"
-        }
-      },
+      "type": "object",
       "required": [
         "maxAge"
       ],
-      "type": "object"
+      "properties": {
+        "maxAge": {
+          "description": "Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 1.0
+        }
+      }
     },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
-      "properties": {
-        "data": true
-      },
+      "type": "object",
       "required": [
         "data"
       ],
-      "type": "object"
+      "properties": {
+        "data": true
+      }
     },
     "Encoding": {
+      "type": "string",
       "enum": [
         "ApplicationJson",
         "ApplicationXWwwFormUrlencoded"
-      ],
-      "type": "string"
+      ]
     },
     "Expr": {
       "description": "Allows composing operators as simple expressions",
+      "type": "object",
+      "required": [
+        "body"
+      ],
       "properties": {
         "body": {
+          "description": "Root of the expression AST",
           "allOf": [
             {
               "$ref": "#/definitions/ExprBody"
             }
-          ],
-          "description": "Root of the expression AST"
+          ]
         }
-      },
-      "required": [
-        "body"
-      ],
-      "type": "object"
+      }
     },
     "ExprBody": {
       "oneOf": [
         {
-          "additionalProperties": false,
           "description": "Fetch a resources using the http operator",
+          "type": "object",
+          "required": [
+            "http"
+          ],
           "properties": {
             "http": {
               "$ref": "#/definitions/Http"
             }
           },
-          "required": [
-            "http"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
           "description": "Fetch a resources using the grpc operator",
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
           "properties": {
             "grpc": {
               "$ref": "#/definitions/Grpc"
             }
           },
-          "required": [
-            "grpc"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
           "description": "Fetch a resources using the graphQL operator",
+          "type": "object",
+          "required": [
+            "graphQL"
+          ],
           "properties": {
             "graphQL": {
               "$ref": "#/definitions/GraphQL"
             }
           },
-          "required": [
-            "graphQL"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
           "description": "Evaluate to constant data",
-          "properties": {
-            "const": true
-          },
+          "type": "object",
           "required": [
             "const"
           ],
-          "type": "object"
+          "properties": {
+            "const": true
+          },
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
           "description": "Branch based on a condition",
+          "type": "object",
+          "required": [
+            "if"
+          ],
           "properties": {
             "if": {
               "$ref": "#/definitions/ExprIf"
             }
           },
-          "required": [
-            "if"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
-          "properties": {
-            "and": {
-              "items": {
-                "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
-            }
-          },
+          "type": "object",
           "required": [
             "and"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "or": {
+            "and": {
+              "type": "array",
               "items": {
                 "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
+              }
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "or"
           ],
-          "type": "object"
+          "properties": {
+            "or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "cond"
+          ],
           "properties": {
             "cond": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
                 },
                 {
+                  "type": "array",
                   "items": {
+                    "type": "array",
                     "items": [
                       {
                         "$ref": "#/definitions/ExprBody"
@@ -244,26 +305,24 @@
                       }
                     ],
                     "maxItems": 2,
-                    "minItems": 2,
-                    "type": "array"
-                  },
-                  "type": "array"
+                    "minItems": 2
+                  }
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
-          "required": [
-            "cond"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "defaultTo"
+          ],
           "properties": {
             "defaultTo": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -273,123 +332,101 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
-          "required": [
-            "defaultTo"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "isEmpty"
+          ],
           "properties": {
             "isEmpty": {
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "isEmpty"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "not"
+          ],
           "properties": {
             "not": {
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "not"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
-          "properties": {
-            "concat": {
-              "items": {
-                "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
-            }
-          },
+          "type": "object",
           "required": [
             "concat"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "intersection": {
+            "concat": {
+              "type": "array",
               "items": {
                 "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
+              }
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "intersection"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "difference": {
-              "items": [
-                {
-                  "items": {
-                    "$ref": "#/definitions/ExprBody"
-                  },
-                  "type": "array"
-                },
-                {
-                  "items": {
-                    "$ref": "#/definitions/ExprBody"
-                  },
-                  "type": "array"
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+            "intersection": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "difference"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "eq": {
+            "difference": {
+              "type": "array",
               "items": [
                 {
-                  "$ref": "#/definitions/ExprBody"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  }
                 },
                 {
-                  "$ref": "#/definitions/ExprBody"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  }
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "eq"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "gt": {
+            "eq": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -399,19 +436,19 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "gt"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "gte": {
+            "gt": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -421,19 +458,19 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "gte"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "lt": {
+            "gte": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -443,19 +480,19 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "lt"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "lte": {
+            "lt": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -465,77 +502,99 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "lte"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "max": {
-              "items": {
-                "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
-            }
-          },
-          "required": [
-            "max"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "min": {
-              "items": {
-                "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
-            }
-          },
-          "required": [
-            "min"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "pathEq": {
+            "lte": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
                 },
                 {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "max"
+          ],
+          "properties": {
+            "max": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "min"
+          ],
+          "properties": {
+            "min": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "pathEq"
+          ],
+          "properties": {
+            "pathEq": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "type": "array",
                   "items": {
                     "type": "string"
-                  },
-                  "type": "array"
+                  }
                 },
                 {
                   "$ref": "#/definitions/ExprBody"
                 }
               ],
               "maxItems": 3,
-              "minItems": 3,
-              "type": "array"
+              "minItems": 3
             }
           },
-          "required": [
-            "pathEq"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "propEq"
+          ],
           "properties": {
             "propEq": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -548,122 +607,100 @@
                 }
               ],
               "maxItems": 3,
-              "minItems": 3,
-              "type": "array"
+              "minItems": 3
             }
           },
-          "required": [
-            "propEq"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
-          "properties": {
-            "sortPath": {
-              "items": [
-                {
-                  "$ref": "#/definitions/ExprBody"
-                },
-                {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
-            }
-          },
+          "type": "object",
           "required": [
             "sortPath"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "symmetricDifference": {
+            "sortPath": {
+              "type": "array",
               "items": [
                 {
-                  "items": {
-                    "$ref": "#/definitions/ExprBody"
-                  },
-                  "type": "array"
+                  "$ref": "#/definitions/ExprBody"
                 },
                 {
+                  "type": "array",
                   "items": {
-                    "$ref": "#/definitions/ExprBody"
-                  },
-                  "type": "array"
+                    "type": "string"
+                  }
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "symmetricDifference"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "union": {
+            "symmetricDifference": {
+              "type": "array",
               "items": [
                 {
+                  "type": "array",
                   "items": {
                     "$ref": "#/definitions/ExprBody"
-                  },
-                  "type": "array"
+                  }
                 },
                 {
+                  "type": "array",
                   "items": {
                     "$ref": "#/definitions/ExprBody"
-                  },
-                  "type": "array"
+                  }
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "union"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "mod": {
+            "union": {
+              "type": "array",
               "items": [
                 {
-                  "$ref": "#/definitions/ExprBody"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  }
                 },
                 {
-                  "$ref": "#/definitions/ExprBody"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ExprBody"
+                  }
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "mod"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "add": {
+            "mod": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -673,31 +710,53 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "required": [
             "add"
           ],
-          "type": "object"
+          "properties": {
+            "add": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/ExprBody"
+                },
+                {
+                  "$ref": "#/definitions/ExprBody"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "dec"
+          ],
           "properties": {
             "dec": {
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "dec"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "divide"
+          ],
           "properties": {
             "divide": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -707,31 +766,31 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
-          "required": [
-            "divide"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "inc"
+          ],
           "properties": {
             "inc": {
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "inc"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "multiply"
+          ],
           "properties": {
             "multiply": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -741,46 +800,46 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
-          "required": [
-            "multiply"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "negate"
+          ],
           "properties": {
             "negate": {
               "$ref": "#/definitions/ExprBody"
             }
           },
-          "required": [
-            "negate"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
-          "properties": {
-            "product": {
-              "items": {
-                "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
-            }
-          },
+          "type": "object",
           "required": [
             "product"
           ],
-          "type": "object"
+          "properties": {
+            "product": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "subtract"
+          ],
           "properties": {
             "subtract": {
+              "type": "array",
               "items": [
                 {
                   "$ref": "#/definitions/ExprBody"
@@ -790,77 +849,75 @@
                 }
               ],
               "maxItems": 2,
-              "minItems": 2,
-              "type": "array"
+              "minItems": 2
             }
           },
-          "required": [
-            "subtract"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
-          "properties": {
-            "sum": {
-              "items": {
-                "$ref": "#/definitions/ExprBody"
-              },
-              "type": "array"
-            }
-          },
+          "type": "object",
           "required": [
             "sum"
           ],
-          "type": "object"
+          "properties": {
+            "sum": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
     "ExprIf": {
-      "properties": {
-        "cond": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/ExprBody"
-            }
-          ],
-          "description": "Condition to evaluate"
-        },
-        "else": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/ExprBody"
-            }
-          ],
-          "description": "Expression to evaluate if the condition is false"
-        },
-        "then": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/ExprBody"
-            }
-          ],
-          "description": "Expression to evaluate if the condition is true"
-        }
-      },
+      "type": "object",
       "required": [
         "cond",
         "else",
         "then"
       ],
-      "type": "object"
+      "properties": {
+        "cond": {
+          "description": "Condition to evaluate",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ]
+        },
+        "else": {
+          "description": "Expression to evaluate if the condition is false",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ]
+        },
+        "then": {
+          "description": "Expression to evaluate if the condition is true",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ExprBody"
+            }
+          ]
+        }
+      }
     },
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
+      "type": "object",
       "properties": {
         "args": {
+          "description": "Map of argument name and its definition.",
+          "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/Arg"
-          },
-          "description": "Map of argument name and its definition.",
-          "type": "object"
+          }
         },
         "cache": {
+          "description": "Sets the cache configuration for a field",
           "anyOf": [
             {
               "$ref": "#/definitions/Cache"
@@ -868,10 +925,10 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Sets the cache configuration for a field"
+          ]
         },
         "const": {
+          "description": "Inserts a constant resolver for the field.",
           "anyOf": [
             {
               "$ref": "#/definitions/Const"
@@ -879,8 +936,7 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Inserts a constant resolver for the field."
+          ]
         },
         "doc": {
           "description": "Publicly visible documentation for the field.",
@@ -890,6 +946,7 @@
           ]
         },
         "expr": {
+          "description": "Inserts an Expression resolver for the field.",
           "anyOf": [
             {
               "$ref": "#/definitions/Expr"
@@ -897,10 +954,10 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Inserts an Expression resolver for the field."
+          ]
         },
         "graphql": {
+          "description": "Inserts a GraphQL resolver for the field.",
           "anyOf": [
             {
               "$ref": "#/definitions/GraphQL"
@@ -908,10 +965,10 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Inserts a GraphQL resolver for the field."
+          ]
         },
         "grpc": {
+          "description": "Inserts a GRPC resolver for the field.",
           "anyOf": [
             {
               "$ref": "#/definitions/Grpc"
@@ -919,10 +976,10 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Inserts a GRPC resolver for the field."
+          ]
         },
         "http": {
+          "description": "Inserts an HTTP resolver for the field.",
           "anyOf": [
             {
               "$ref": "#/definitions/Http"
@@ -930,8 +987,7 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Inserts an HTTP resolver for the field."
+          ]
         },
         "list": {
           "description": "Flag to indicate the type is a list.",
@@ -942,6 +998,7 @@
           "type": "boolean"
         },
         "modify": {
+          "description": "Allows modifying existing fields.",
           "anyOf": [
             {
               "$ref": "#/definitions/Modify"
@@ -949,10 +1006,10 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Allows modifying existing fields."
+          ]
         },
         "omit": {
+          "description": "Omits a field from public consumption.",
           "anyOf": [
             {
               "$ref": "#/definitions/Omit"
@@ -960,14 +1017,14 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Omits a field from public consumption."
+          ]
         },
         "required": {
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
         },
         "script": {
+          "description": "Inserts a Javascript resolver for the field.",
           "anyOf": [
             {
               "$ref": "#/definitions/JS"
@@ -975,20 +1032,23 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Inserts a Javascript resolver for the field."
+          ]
         },
         "type": {
           "description": "Refers to the type of the value the field can be resolved to.",
           "type": "string"
         }
-      },
-      "type": "object"
+      }
     },
     "GraphQL": {
       "description": "The @graphQL operator allows to specify GraphQL API server request to fetch data from.",
+      "type": "object",
+      "required": [
+        "name"
+      ],
       "properties": {
         "args": {
+          "description": "Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)",
           "anyOf": [
             {
               "$ref": "#/definitions/KeyValues"
@@ -996,8 +1056,7 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)"
+          ]
         },
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
@@ -1011,28 +1070,28 @@
           "type": "boolean"
         },
         "headers": {
+          "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
           "allOf": [
             {
               "$ref": "#/definitions/KeyValues"
             }
-          ],
-          "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values."
+          ]
         },
         "name": {
           "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
           "type": "string"
         }
-      },
-      "required": [
-        "name"
-      ],
-      "type": "object"
+      }
     },
     "Grpc": {
       "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
+      "type": "object",
+      "required": [
+        "method"
+      ],
       "properties": {
         "baseURL": {
-          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
+          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
           "type": [
             "string",
             "null"
@@ -1047,44 +1106,34 @@
         },
         "groupBy": {
           "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
           "items": {
             "type": "string"
-          },
-          "type": "array"
+          }
         },
         "headers": {
+          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
           "allOf": [
             {
               "$ref": "#/definitions/KeyValues"
             }
-          ],
-          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc"
+          ]
         },
         "method": {
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
-        },
-        "protoPath": {
-          "description": "The `protoPath` parameter allows you to specify the path to the proto file which contains service and method definitions and is used to encode and decode the request and response body.",
-          "type": "string"
-        },
-        "service": {
-          "description": "This refers to the gRPC service you're going to call. For instance `NewsService`.",
-          "type": "string"
         }
-      },
-      "required": [
-        "method",
-        "protoPath",
-        "service"
-      ],
-      "type": "object"
+      }
     },
     "Http": {
       "description": "The @http operator indicates that a field or node is backed by a REST API.\n\nFor instance, if you add the @http operator to the `users` field of the Query type with a path argument of `\"/users\"`, it signifies that the `users` field is backed by a REST API. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
+      "type": "object",
+      "required": [
+        "path"
+      ],
       "properties": {
         "baseURL": {
-          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator",
+          "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
           "type": [
             "string",
             "null"
@@ -1098,29 +1147,30 @@
           ]
         },
         "encoding": {
+          "description": "The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.",
           "allOf": [
             {
               "$ref": "#/definitions/Encoding"
             }
-          ],
-          "description": "The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`."
+          ]
         },
         "groupBy": {
           "description": "The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
           "items": {
             "type": "string"
-          },
-          "type": "array"
+          }
         },
         "headers": {
+          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.",
           "allOf": [
             {
               "$ref": "#/definitions/KeyValues"
             }
-          ],
-          "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values."
+          ]
         },
         "input": {
+          "description": "Schema of the input of the API call. It is automatically inferred in most cases.",
           "anyOf": [
             {
               "$ref": "#/definitions/schema"
@@ -1128,18 +1178,18 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Schema of the input of the API call. It is automatically inferred in most cases."
+          ]
         },
         "method": {
+          "description": "This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.",
           "allOf": [
             {
               "$ref": "#/definitions/Method"
             }
-          ],
-          "description": "This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`."
+          ]
         },
         "output": {
+          "description": "Schema of the output of the API call. It is automatically inferred in most cases.",
           "anyOf": [
             {
               "$ref": "#/definitions/schema"
@@ -1147,52 +1197,83 @@
             {
               "type": "null"
             }
-          ],
-          "description": "Schema of the output of the API call. It is automatically inferred in most cases."
+          ]
         },
         "path": {
-          "description": "This refers to the API endpoint you're going to call. For instance https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
+          "description": "This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.\n\nFor dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.",
           "type": "string"
         },
         "query": {
+          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.",
           "allOf": [
             {
               "$ref": "#/definitions/KeyValues"
             }
-          ],
-          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL."
+          ]
         }
-      },
-      "required": [
-        "path"
-      ],
-      "type": "object"
+      }
     },
     "HttpVersion": {
+      "type": "string",
       "enum": [
         "HTTP1",
         "HTTP2"
-      ],
-      "type": "string"
+      ]
     },
     "JS": {
+      "type": "object",
+      "required": [
+        "script"
+      ],
       "properties": {
         "script": {
           "type": "string"
         }
-      },
-      "required": [
-        "script"
-      ],
-      "type": "object"
+      }
     },
     "KeyValues": {
+      "type": "object",
       "additionalProperties": {
         "type": "string"
-      },
-      "type": "object"
+      }
+    },
+    "Link": {
+      "description": "The @link directive allows you to import external resources, such as configuration – which will be merged into the config importing it –, or a .proto file – which will be later used by `@grpc` directive –.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The id of the link. It is used to reference the link in the schema.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "src": {
+          "description": "The source of the link. It can be a URL or a path to a file. If a path is provided, it is relative to the file that imports the link.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the link. It can be `Config`, or `Protobuf`.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LinkType"
+            }
+          ]
+        }
+      }
+    },
+    "LinkType": {
+      "type": "string",
+      "enum": [
+        "Config",
+        "Protobuf",
+        "Script",
+        "Cert",
+        "Key"
+      ]
     },
     "Method": {
+      "type": "string",
       "enum": [
         "GET",
         "POST",
@@ -1203,10 +1284,10 @@
         "OPTIONS",
         "CONNECT",
         "TRACE"
-      ],
-      "type": "string"
+      ]
     },
     "Modify": {
+      "type": "object",
       "properties": {
         "name": {
           "type": [
@@ -1217,24 +1298,24 @@
         "omit": {
           "type": "boolean"
         }
-      },
-      "type": "object"
+      }
     },
     "Omit": {
       "type": "object"
     },
     "Proxy": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
       "properties": {
         "url": {
           "type": "string"
         }
-      },
-      "required": [
-        "url"
-      ],
-      "type": "object"
+      }
     },
     "RootSchema": {
+      "type": "object",
       "properties": {
         "mutation": {
           "type": [
@@ -1254,58 +1335,24 @@
             "null"
           ]
         }
-      },
-      "type": "object"
-    },
-    "Script": {
-      "oneOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "path": {
-              "$ref": "#/definitions/ScriptOptions"
-            }
-          },
-          "required": [
-            "path"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "file": {
-              "$ref": "#/definitions/ScriptOptions"
-            }
-          },
-          "required": [
-            "file"
-          ],
-          "type": "object"
-        }
-      ]
+      }
     },
     "ScriptOptions": {
+      "type": "object",
       "properties": {
-        "src": {
-          "type": "string"
-        },
         "timeout": {
-          "format": "uint64",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         }
-      },
-      "required": [
-        "src"
-      ],
-      "type": "object"
+      }
     },
     "Server": {
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
+      "type": "object",
       "properties": {
         "apolloTracing": {
           "description": "`apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
@@ -1315,7 +1362,7 @@
           ]
         },
         "batchRequests": {
-          "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`",
+          "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.",
           "type": [
             "boolean",
             "null"
@@ -1328,20 +1375,13 @@
             "null"
           ]
         },
-        "cert": {
-          "description": "`cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
-          "format": "int64",
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "int64"
         },
         "graphiql": {
           "description": "`graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.",
@@ -1364,14 +1404,8 @@
             "null"
           ]
         },
-        "key": {
-          "description": "`key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "pipelineFlush": {
+          "description": "`pipelineFlush` allows to control flushing behavior of the server pipeline.",
           "type": [
             "boolean",
             "null"
@@ -1379,12 +1413,12 @@
         },
         "port": {
           "description": "`port` sets the Tailcall running port. @default `8000`.",
-          "format": "uint16",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint16",
+          "minimum": 0.0
         },
         "queryValidation": {
           "description": "`queryValidation` checks incoming GraphQL queries against the schema, preventing errors from invalid queries. Can be disabled for performance. @default `false`.",
@@ -1394,12 +1428,12 @@
           ]
         },
         "responseHeaders": {
+          "description": "The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
           "allOf": [
             {
               "$ref": "#/definitions/KeyValues"
             }
-          ],
-          "description": "The responseHeader is a key-value pair array. These headers are included in every server response. Useful for headers like Access-Control-Allow-Origin for cross-origin requests, or additional headers like X-Allowed-Roles for downstream services."
+          ]
         },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
@@ -1409,15 +1443,15 @@
           ]
         },
         "script": {
+          "description": "A link to an external JS file that listens on every HTTP request response event.",
           "anyOf": [
             {
-              "$ref": "#/definitions/Script"
+              "$ref": "#/definitions/ScriptOptions"
             },
             {
               "type": "null"
             }
-          ],
-          "description": "A link to an external JS file that listens on every HTTP request response event."
+          ]
         },
         "showcase": {
           "description": "`showcase` enables the /showcase/graphql endpoint.",
@@ -1427,14 +1461,15 @@
           ]
         },
         "vars": {
+          "description": "This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.",
           "allOf": [
             {
               "$ref": "#/definitions/KeyValues"
             }
-          ],
-          "description": "This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information."
+          ]
         },
         "version": {
+          "description": "`version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`.",
           "anyOf": [
             {
               "$ref": "#/definitions/HttpVersion"
@@ -1442,32 +1477,36 @@
             {
               "type": "null"
             }
-          ],
-          "description": "`version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`."
+          ]
         },
         "workers": {
           "description": "`workers` sets the number of worker threads. @default the number of system cores.",
-          "format": "uint",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint",
+          "minimum": 0.0
         }
-      },
-      "type": "object"
+      }
     },
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
+      "type": "object",
+      "required": [
+        "fields"
+      ],
       "properties": {
         "added_fields": {
           "description": "Additional fields to be added to the type",
+          "type": "array",
           "items": {
             "$ref": "#/definitions/AddField"
-          },
-          "type": "array"
+          }
         },
         "cache": {
+          "description": "Setting to indicate if the type can be cached.",
+          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Cache"
@@ -1475,9 +1514,7 @@
             {
               "type": "null"
             }
-          ],
-          "default": null,
-          "description": "Setting to indicate if the type can be cached."
+          ]
         },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",
@@ -1488,28 +1525,28 @@
         },
         "enum": {
           "description": "Variants for the type if it's an enum",
-          "items": {
-            "type": "string"
-          },
           "type": [
             "array",
             "null"
           ],
-          "uniqueItems": true
-        },
-        "fields": {
-          "additionalProperties": {
-            "$ref": "#/definitions/Field"
-          },
-          "description": "A map of field name and its definition.",
-          "type": "object"
-        },
-        "implements": {
-          "description": "Interfaces that the type implements.",
           "items": {
             "type": "string"
           },
+          "uniqueItems": true
+        },
+        "fields": {
+          "description": "A map of field name and its definition.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Field"
+          }
+        },
+        "implements": {
+          "description": "Interfaces that the type implements.",
           "type": "array",
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "interface": {
@@ -1520,13 +1557,13 @@
           "description": "Flag to indicate if the type is a scalar.",
           "type": "boolean"
         }
-      },
-      "required": [
-        "fields"
-      ],
-      "type": "object"
+      }
     },
     "Union": {
+      "type": "object",
+      "required": [
+        "types"
+      ],
       "properties": {
         "doc": {
           "type": [
@@ -1535,30 +1572,27 @@
           ]
         },
         "types": {
+          "type": "array",
           "items": {
             "type": "string"
           },
-          "type": "array",
           "uniqueItems": true
         }
-      },
-      "required": [
-        "types"
-      ],
-      "type": "object"
+      }
     },
     "Upstream": {
       "description": "The `upstream` directive allows you to control various aspects of the upstream server connection. This includes settings like connection timeouts, keep-alive intervals, and more. If not specified, default values are used.",
+      "type": "object",
       "properties": {
         "allowedHeaders": {
           "description": "`allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services. If not set, no headers are forwarded, enhancing security but possibly limiting data flow.",
-          "items": {
-            "type": "string"
-          },
           "type": [
             "array",
             "null"
           ],
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
         "baseURL": {
@@ -1569,6 +1603,7 @@
           ]
         },
         "batch": {
+          "description": "An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch).",
           "anyOf": [
             {
               "$ref": "#/definitions/Batch"
@@ -1576,17 +1611,16 @@
             {
               "type": "null"
             }
-          ],
-          "description": "An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch)."
+          ]
         },
         "connectTimeout": {
           "description": "The time in seconds that the connection will wait for a response before timing out.",
-          "format": "uint64",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "http2Only": {
           "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",
@@ -1604,21 +1638,21 @@
         },
         "keepAliveInterval": {
           "description": "The time in seconds between each keep-alive message sent to maintain the connection.",
-          "format": "uint64",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "keepAliveTimeout": {
           "description": "The time in seconds that the connection will wait for a keep-alive message before closing.",
-          "format": "uint64",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "keepAliveWhileIdle": {
           "description": "A boolean value that determines whether keep-alive messages should be sent while the connection is idle.",
@@ -1629,23 +1663,24 @@
         },
         "poolIdleTimeout": {
           "description": "The time in seconds that the connection pool will wait before closing idle connections.",
-          "format": "uint64",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "poolMaxIdlePerHost": {
           "description": "The maximum number of idle connections that will be maintained per host.",
-          "format": "uint",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint",
+          "minimum": 0.0
         },
         "proxy": {
+          "description": "The `proxy` setting defines an intermediary server through which the upstream requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies.",
           "anyOf": [
             {
               "$ref": "#/definitions/Proxy"
@@ -1653,26 +1688,25 @@
             {
               "type": "null"
             }
-          ],
-          "description": "The `proxy` setting defines an intermediary server through which the upstream requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies."
+          ]
         },
         "tcpKeepAlive": {
           "description": "The time in seconds between each TCP keep-alive message sent to maintain the connection.",
-          "format": "uint64",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "timeout": {
           "description": "The maximum time in seconds that the connection will wait for a response.",
-          "format": "uint64",
-          "minimum": 0.0,
           "type": [
             "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "userAgent": {
           "description": "The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`",
@@ -1681,107 +1715,58 @@
             "null"
           ]
         }
-      },
-      "type": "object"
+      }
     },
     "schema": {
       "oneOf": [
         {
+          "type": "string",
           "enum": [
             "Str",
             "Num",
             "Bool"
-          ],
-          "type": "string"
+          ]
         },
         {
-          "additionalProperties": false,
-          "properties": {
-            "Obj": {
-              "additionalProperties": {
-                "$ref": "#/definitions/schema"
-              },
-              "type": "object"
-            }
-          },
+          "type": "object",
           "required": [
             "Obj"
           ],
-          "type": "object"
+          "properties": {
+            "Obj": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/schema"
+              }
+            }
+          },
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "Arr"
+          ],
           "properties": {
             "Arr": {
               "$ref": "#/definitions/schema"
             }
           },
-          "required": [
-            "Arr"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "Opt"
+          ],
           "properties": {
             "Opt": {
               "$ref": "#/definitions/schema"
             }
           },
-          "required": [
-            "Opt"
-          ],
-          "type": "object"
+          "additionalProperties": false
         }
       ]
     }
-  },
-  "properties": {
-    "schema": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/RootSchema"
-        }
-      ],
-      "description": "Specifies the entry points for query and mutation in the generated GraphQL schema."
-    },
-    "server": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/Server"
-        }
-      ],
-      "default": {},
-      "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here."
-    },
-    "types": {
-      "additionalProperties": {
-        "$ref": "#/definitions/Type"
-      },
-      "default": {},
-      "description": "A map of all the types in the schema.",
-      "type": "object"
-    },
-    "unions": {
-      "additionalProperties": {
-        "$ref": "#/definitions/Union"
-      },
-      "description": "A map of all the union types in the schema.",
-      "type": "object"
-    },
-    "upstream": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/Upstream"
-        }
-      ],
-      "default": {},
-      "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections."
-    }
-  },
-  "required": [
-    "schema"
-  ],
-  "title": "Config",
-  "type": "object"
+  }
 }
