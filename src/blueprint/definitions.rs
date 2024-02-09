@@ -1,6 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
-use std::hash::Hash;
 
 use regex::Regex;
 
@@ -9,7 +7,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
-use crate::lambda::{Expression, Lambda};
+use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
@@ -69,7 +67,7 @@ struct ProcessFieldWithinTypeContext<'a> {
     remaining_path: &'a [String],
     type_info: &'a config::Type,
     is_required: bool,
-    config_set: &'a ConfigSet,
+    config_set: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
     path_resolver_error_handler: &'a PathResolverErrorHandler,
     original_path: &'a [String],
@@ -81,7 +79,7 @@ struct ProcessPathContext<'a> {
     field: &'a config::Field,
     type_info: &'a config::Type,
     is_required: bool,
-    config_set: &'a ConfigSet,
+    config_set: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
     path_resolver_error_handler: &'a PathResolverErrorHandler,
     original_path: &'a [String],
@@ -252,7 +250,7 @@ fn to_enum_type_definition(
 fn to_object_type_definition(
     name: &str,
     type_of: &config::Type,
-    config_set: &ConfigSet,
+    config_set: &ConfigModule,
 ) -> Valid<Definition, String> {
     to_fields(name, type_of, config_set).map(|fields| {
         Definition::ObjectTypeDefinition(ObjectTypeDefinition {
@@ -265,18 +263,10 @@ fn to_object_type_definition(
 }
 
 fn update_args<'a>(
-    hasher: DefaultHasher,
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(_, field, typ, name), _| {
-            let mut hasher = hasher.clone();
-            name.hash(&mut hasher);
-            let cache = field
-                .cache
-                .as_ref()
-                .or(typ.cache.as_ref())
-                .map(|config::Cache { max_age }| Cache { max_age: *max_age, hasher });
-
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        move |(_, field, _typ, name), _| {
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
                 Valid::succeed(InputFieldDefinition {
@@ -293,7 +283,6 @@ fn update_args<'a>(
                 of_type: to_type(*field, None),
                 directives: Vec::new(),
                 resolver: None,
-                cache,
             })
         },
     )
@@ -314,17 +303,18 @@ fn update_resolver_from_path(
 
     process_path(context.clone()).and_then(|of_type| {
         let mut updated_base_field = base_field;
-        let resolver = Lambda::context_path(context.path.to_owned());
+        let resolver = Expression::Context(Context::Path(context.path.to_owned()));
         if has_index {
             updated_base_field.of_type =
                 Type::NamedType { name: of_type.name().to_string(), non_null: false }
         } else {
             updated_base_field.of_type = of_type;
         }
-
-        updated_base_field = updated_base_field
-            .resolver_or_default(resolver, |r| r.to_input_path(context.path.to_owned()));
-        Valid::succeed(updated_base_field)
+        let resolver = match updated_base_field.resolver.clone() {
+            None => resolver,
+            Some(resolver) => Expression::Input(Box::new(resolver), context.path.to_owned()),
+        };
+        Valid::succeed(updated_base_field.resolver(Some(resolver)))
     })
 }
 
@@ -333,8 +323,9 @@ fn update_resolver_from_path(
 /// To solve the problem that by default such fields will be resolved to null value
 /// and nested resolvers won't be called
 pub fn update_nested_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), mut b_field| {
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
@@ -342,6 +333,22 @@ pub fn update_nested_resolvers<'a>(
                 b_field = b_field.resolver(Some(Expression::Literal(serde_json::Value::Object(
                     Default::default(),
                 ))));
+            }
+
+            Valid::succeed(b_field)
+        },
+    )
+}
+
+/// Wraps the IO Expression with Expression::Cached
+/// if `Field::cache` is present for that field
+pub fn update_cache_resolvers<'a>(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        move |(_config, field, _, _name), mut b_field| {
+            if let Some(config::Cache { max_age }) = field.cache.as_ref() {
+                b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
             }
 
             Valid::succeed(b_field)
@@ -361,7 +368,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 fn to_fields(
     object_name: &str,
     type_of: &config::Type,
-    config_set: &ConfigSet,
+    config_set: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, String> {
     let operation_type = if config_set.schema.mutation.as_deref().eq(&Some(object_name)) {
         GraphQLOperationType::Mutation
@@ -379,10 +386,7 @@ fn to_fields(
             ));
         }
 
-        let mut hasher = DefaultHasher::new();
-        object_name.hash(&mut hasher);
-
-        update_args(hasher)
+        update_args()
             .and(update_http().trace(config::Http::trace_name().as_str()))
             .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
             .and(update_const_field().trace(config::Const::trace_name().as_str()))
@@ -390,6 +394,7 @@ fn to_fields(
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
             .and(update_nested_resolvers())
+            .and(update_cache_resolvers())
             .try_fold(
                 &(config_set, field, type_of, name),
                 FieldDefinition::default(),
@@ -484,8 +489,8 @@ fn to_fields(
     })
 }
 
-pub fn to_definitions<'a>() -> TryFold<'a, ConfigSet, Vec<Definition>, String> {
-    TryFold::<ConfigSet, Vec<Definition>, String>::new(|config_set, _| {
+pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String> {
+    TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_set, _| {
         let output_types = config_set.output_types();
         let input_types = config_set.input_types();
         Valid::from_iter(config_set.types.iter(), |(name, type_)| {

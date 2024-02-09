@@ -164,7 +164,7 @@ mod tests {
 
     mod evaluation_context {
         use std::borrow::Cow;
-        use std::collections::{BTreeMap, HashMap};
+        use std::collections::BTreeMap;
         use std::sync::Arc;
 
         use async_graphql::SelectionField;
@@ -180,7 +180,7 @@ mod tests {
         use crate::EnvIO;
 
         struct Env {
-            env: HashMap<String, String>,
+            env: BTreeMap<String, String>,
         }
 
         impl EnvIO for Env {
@@ -190,7 +190,7 @@ mod tests {
         }
 
         impl Env {
-            pub fn init(map: HashMap<String, String>) -> Self {
+            pub fn init(map: BTreeMap<String, String>) -> Self {
                 Self { env: map }
             }
         }
@@ -203,11 +203,10 @@ mod tests {
                 Name::new("existing"),
                 Value::String("nested-test".to_owned()),
             );
-
-            root.insert(Name::new("str"), Value::String("str-test".to_owned()));
-            root.insert(Name::new("number"), Value::Number(Number::from(2)));
             root.insert(Name::new("bool"), Value::Boolean(true));
             root.insert(Name::new("nested"), Value::Object(nested));
+            root.insert(Name::new("number"), Value::Number(Number::from(2)));
+            root.insert(Name::new("str"), Value::String("str-test".to_owned()));
 
             Value::Object(root)
         });
@@ -221,8 +220,8 @@ mod tests {
                 Value::String("nested-test".to_owned()),
             );
 
-            root.insert(Name::new("root"), Value::String("root-test".to_owned()));
             root.insert(Name::new("nested"), Value::Object(nested));
+            root.insert(Name::new("root"), Value::String("root-test".to_owned()));
 
             root
         });
@@ -243,8 +242,8 @@ mod tests {
             map
         });
 
-        static TEST_ENV_VARS: Lazy<HashMap<String, String>> = Lazy::new(|| {
-            let mut map = HashMap::new();
+        static TEST_ENV_VARS: Lazy<BTreeMap<String, String>> = Lazy::new(|| {
+            let mut map = BTreeMap::new();
 
             map.insert("existing".to_owned(), "env".to_owned());
 
@@ -273,7 +272,7 @@ mod tests {
             let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
             req_ctx.server.vars = TEST_VARS.clone();
-            req_ctx.env_vars = Arc::new(Env::init(TEST_ENV_VARS.clone()));
+            req_ctx.runtime.env = Arc::new(Env::init(TEST_ENV_VARS.clone()));
 
             req_ctx
         });
