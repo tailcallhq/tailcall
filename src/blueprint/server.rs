@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 use std::net::{AddrParseError, IpAddr};
+use std::sync::Arc;
 use std::time::Duration;
 
 use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
+use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
@@ -40,7 +42,10 @@ pub struct Script {
 #[derive(Clone, Debug)]
 pub enum Http {
     HTTP1,
-    HTTP2 { cert: String, key: String },
+    HTTP2 {
+        cert: Vec<CertificateDer<'static>>,
+        key: Arc<PrivateKeyDer<'static>>,
+    },
 }
 
 impl Default for Server {
@@ -75,16 +80,23 @@ impl TryFrom<crate::config::ConfigModule> for Server {
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
-                let cert = Valid::from_option(
-                    config_server.cert.clone(),
-                    "Certificate is required for HTTP2".to_string(),
-                );
-                let key = Valid::from_option(
-                    config_server.key.clone(),
-                    "Key is required for HTTP2".to_string(),
-                );
+                if config_set.extensions.cert.is_empty() {
+                    return Valid::fail("Certificate is required for HTTP2".to_string())
+                        .to_result();
+                }
 
-                cert.zip(key).map(|(cert, key)| Http::HTTP2 { cert, key })
+                let cert = config_set.extensions.cert.clone();
+
+                let key_file: PrivateKeyDer<'_> = config_set
+                    .extensions
+                    .keys
+                    .first()
+                    .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
+                    .clone_key();
+
+                let key: Arc<PrivateKeyDer<'_>> = Arc::new(key_file);
+
+                Valid::succeed(Http::HTTP2 { cert, key })
             }
             _ => Valid::succeed(Http::HTTP1),
         };
