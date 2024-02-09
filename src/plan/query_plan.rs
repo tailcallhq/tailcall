@@ -1,11 +1,12 @@
 use async_graphql::parser::types::{ExecutableDocument, SelectionSet};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use crate::blueprint::Definition;
 use crate::{blueprint::Blueprint, lambda::Expression};
 
-#[derive(Debug)]
-pub struct Name(String);
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+pub struct Name(pub String);
 impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)

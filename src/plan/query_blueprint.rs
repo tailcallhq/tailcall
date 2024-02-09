@@ -1,10 +1,11 @@
 use crate::lambda::Expression;
 use crate::lambda::IO;
 use crate::plan::query_plan::{Name, Node, QueryPlan, Resolver};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct QueryBlueprint {
     root: NodeBlueprint,
 }
@@ -21,7 +22,7 @@ impl Display for QueryBlueprint {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct NodeBlueprint {
     pub name: Name,
     pub id: u64,
@@ -107,7 +108,7 @@ impl From<Node> for NodeBlueprint {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 enum IOType {
     Http,
     Grpc,
@@ -129,6 +130,8 @@ mod tests {
     use crate::plan::query_blueprint::QueryBlueprint;
     use crate::valid::Validator;
     use async_graphql::parser::parse_query;
+    use pretty_assertions::assert_eq;
+    use serde_json::json;
 
     #[test]
     fn test_query_plan() {
@@ -169,7 +172,62 @@ mod tests {
         let document = parse_query(r#"{ posts {title body user {name username}} }"#).unwrap();
         let plan = Node::make(blueprint, document).unwrap();
         let blueprint = QueryBlueprint::from(plan);
+        let expected = json!({
+            "root": {
+                "name": "Query",
+                "id": 0,
+                "io_type": "Empty",
+                "is_list": false,
+                "children": [
+                    {
+                        "name": "posts",
+                        "id": 1,
+                        "io_type": "Http",
+                        "is_list": true,
+                        "children": [
+                            {
+                                "name": "title",
+                                "id": 2,
+                                "io_type": "Empty",
+                                "is_list": false,
+                                "children": []
+                            },
+                            {
+                                "name": "body",
+                                "id": 3,
+                                "io_type": "Empty",
+                                "is_list": false,
+                                "children": []
+                            },
+                            {
+                                "name": "user",
+                                "id": 4,
+                                "io_type": "Http",
+                                "is_list": false,
+                                "children": [
+                                    {
+                                        "name": "name",
+                                        "id": 5,
+                                        "io_type": "Empty",
+                                        "is_list": false,
+                                        "children": []
+                                    },
+                                    {
+                                        "name": "username",
+                                        "id": 6,
+                                        "io_type": "Empty",
+                                        "is_list": false,
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+        let expected = serde_json::from_value::<QueryBlueprint>(expected).unwrap();
 
-        println!("{}", blueprint);
+        assert_eq!(blueprint.to_string(), expected.to_string())
     }
 }
