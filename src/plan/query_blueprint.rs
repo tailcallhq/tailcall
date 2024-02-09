@@ -36,19 +36,21 @@ impl fmt::Display for NodeBlueprint {
             f: &mut fmt::Formatter<'_>,
             level: usize,
         ) -> fmt::Result {
-            // Symbols and ANSI codes for enhanced display
-            let indent = " ".repeat(level * 4); // Adjust spacing for clearer hierarchy
-            let branch = if level > 0 { "└── " } else { " " }; // Branch symbol for child nodes
-            let name_color = "\x1B[1;93m"; // Bright Yellow for names, bold
-            let io_type_color = "\x1B[1;92m"; // Bright Green for IO types, bold
-            let list_indicator_color = "\x1B[1;95m"; // Bright Magenta for list indicator, bold
-            let color_end = "\x1B[0m"; // Reset to default
+            let indent = " ".repeat(level * 4);
+            let branch = if level > 0 { "└── " } else { "" };
+            let level_color = "\x1B[1;94m"; // Bright Blue for level, bold
+            let foreach_color = "\x1B[1;95m"; // Bright Magenta for foreach label, bold
+            let name_color = "\x1B[1;93m";
+            let io_type_color = "\x1B[1;92m";
+            let color_end = "\x1B[0m";
 
-            // Compose the display string with vibrant colors and structured layout
+            // Display node name and attributes
             writeln!(
                 f,
-                "{}{}{}{} #{} {}{}{}",
+                "{}{}(Level {}){}{}{} #{}  {}{}",
                 indent,
+                level_color,
+                level,
                 branch,
                 name_color,
                 node.name,
@@ -57,11 +59,21 @@ impl fmt::Display for NodeBlueprint {
                 (node.io_type != IOType::Empty)
                     .then(|| format!(" {}- {}{}", io_type_color, node.io_type, color_end))
                     .unwrap_or_default(),
-                node.is_list
-                    .then(|| format!(" {}(List){}", list_indicator_color, color_end))
-                    .unwrap_or_default()
             )?;
 
+            // Adjust "foreach" line indentation to start directly under the node name
+            if node.is_list {
+                writeln!(
+                    f,
+                    "{}    {}{}foreach{}",
+                    indent, // Use the same indentation as the node
+                    branch, // Reuse the branch symbol to align "foreach" correctly
+                    foreach_color,
+                    color_end
+                )?;
+            }
+
+            // Recursively display child nodes
             for child in &node.children {
                 display_node(child, f, level + 1)?;
             }
@@ -69,7 +81,6 @@ impl fmt::Display for NodeBlueprint {
             Ok(())
         }
 
-        // Start the recursive display with level 0
         display_node(self, f, 0)
     }
 }
