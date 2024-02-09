@@ -13,15 +13,11 @@ use crate::HttpIO;
 #[derive(Clone)]
 pub struct TestHttp {
     client: ClientWithMiddleware,
-    http2_only: bool,
 }
 
 impl Default for TestHttp {
     fn default() -> Self {
-        Self {
-            client: ClientBuilder::new(Client::new()).build(),
-            http2_only: false,
-        }
+        Self { client: ClientBuilder::new(Client::new()).build() }
     }
 }
 
@@ -66,19 +62,8 @@ impl TestHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for TestHttp {
-    async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
-        if self.http2_only {
-            *request.version_mut() = reqwest::Version::HTTP_2;
-        }
-        log::info!(
-            "{} {} {:?}",
-            request.method(),
-            request.url(),
-            request.version()
-        );
-        log::debug!("request: {:?}", request);
+    async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
         let response = self.client.execute(request).await;
-        log::debug!("response: {:?}", response);
-        Ok(Response::from_reqwest(response?.error_for_status()?).await?)
+        Response::from_reqwest(response?.error_for_status()?).await
     }
 }
