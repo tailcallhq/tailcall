@@ -78,7 +78,7 @@ jobs:
       - name: Upload Coverage to Codecov
         uses: Wandalen/wretry.action@v1
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4
           attempt_limit: 10
           attempt_delay: 10000
           with: |
