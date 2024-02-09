@@ -1,11 +1,16 @@
 use async_graphql::parser::types::{ExecutableDocument, SelectionSet};
+use std::fmt;
 
 use crate::blueprint::Definition;
 use crate::{blueprint::Blueprint, lambda::Expression};
 
 #[derive(Debug)]
 pub struct Name(String);
-
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 #[derive(Debug)]
 pub enum Resolver {
     Expression(Expression),
@@ -13,45 +18,17 @@ pub enum Resolver {
 }
 #[derive(Debug)]
 pub struct Node {
-    name: Name,
-    expression: Resolver,
-    is_list: bool,
+    pub(crate) name: Name,
+    pub(crate) expression: Resolver,
+    pub(crate) is_list: bool,
     is_required: bool,
-    children: Vec<Node>,
-    id: u64,
-}
-
-use std::fmt;
-
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Start with a helper function that takes an additional argument for indentation
-        fn display_node(node: &Node, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
-            let indent_str = " ".repeat(indent * 2); // 2 spaces per level of indentation
-            writeln!(f, "{}- [{}] {}", indent_str, node.id, node.name.0)?;
-
-            // Recursively display each child with increased indentation
-            for child in &node.children {
-                display_node(child, f, indent + 1)?;
-            }
-
-            Ok(())
-        }
-
-        // Start the recursive display with no indentation
-        display_node(self, f, 0)
-    }
-}
-
-impl fmt::Display for QueryPlan {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "QueryPlan Tree:\n{}", self.root)
-    }
+    pub(crate) children: Vec<Node>,
+    pub(crate) id: u64,
 }
 
 #[derive(Debug)]
 pub struct QueryPlan {
-    root: Node,
+    pub(crate) root: Node,
 }
 
 impl Node {
@@ -123,9 +100,12 @@ impl Node {
         };
         out
     }
-    fn make(blueprint: Blueprint, document: ExecutableDocument) -> anyhow::Result<QueryPlan> {
+    pub(crate) fn make(
+        blueprint: Blueprint,
+        document: ExecutableDocument,
+    ) -> anyhow::Result<QueryPlan> {
         let mut vec_node = Vec::new();
-        for (name, operation) in document.operations.iter() {
+        for (_, operation) in document.operations.iter() {
             let mut root_name = operation.node.ty.to_string();
             if root_name == "query" {
                 root_name = "Query".to_string();
@@ -191,8 +171,6 @@ mod tests {
 
         let document = parse_query(r#"{ posts {title body user {name username}} }"#).unwrap();
         let plan = Node::make(blueprint, document).unwrap();
-        println!("{}", plan);
-        println!("{:?}", plan);
         assert_eq!(plan.root.name.0, "Query");
         let posts_node = plan.root.children.iter().find(|&n| n.name.0 == "posts");
         assert!(
