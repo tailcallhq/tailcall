@@ -11,13 +11,13 @@ pub mod test {
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-    use crate::blueprint::Upstream;
     use tailcall::cache::InMemoryCache;
     use tailcall::cli::javascript;
     use tailcall::http::Response;
     use tailcall::runtime::TargetRuntime;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    use crate::blueprint::Upstream;
     use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
@@ -181,8 +181,8 @@ mod server_spec {
             .build()
             .unwrap();
         let query = json!({
-        "query": "{ greet }"
-    });
+            "query": "{ greet }"
+        });
 
         let mut tasks = vec![];
         for _ in 0..100 {
@@ -205,10 +205,10 @@ mod server_spec {
                 .expect("Spawned task should success")
                 .expect("Request should success");
             let expected_response = json!({
-            "data": {
-                "greet": "Hello World!"
-            }
-        });
+                "data": {
+                    "greet": "Hello World!"
+                }
+            });
             assert_eq!(
                 response_body, expected_response,
                 "Unexpected response from server"
@@ -222,7 +222,7 @@ mod server_spec {
             &["tests/server/config/server-start.graphql"],
             "http://localhost:8800/graphql",
         )
-            .await
+        .await
     }
 
     #[tokio::test]
@@ -231,7 +231,7 @@ mod server_spec {
             &["tests/server/config/server-start-http2-pkcs8.graphql"],
             "https://localhost:8801/graphql",
         )
-            .await
+        .await
     }
 
     #[tokio::test]
@@ -240,7 +240,7 @@ mod server_spec {
             &["tests/server/config/server-start-http2-rsa.graphql"],
             "https://localhost:8802/graphql",
         )
-            .await
+        .await
     }
 
     #[tokio::test]
@@ -259,6 +259,6 @@ mod server_spec {
             &["tests/server/config/server-start-http2-ec.graphql"],
             "https://localhost:8804/graphql",
         )
-            .await
+        .await
     }
 }
