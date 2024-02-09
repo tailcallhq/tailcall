@@ -62,7 +62,7 @@ async fn generate_client_snapshot(file_stem: &str, config: &ConfigModule) {
 }
 
 async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, reader: &ConfigReader) {
-    let config = Config::from_sdl(sdl).to_result().unwrap();
+    let config = Config::from_sdl(sdl).unwrap();
     let config = reader.resolve(config, None).await.unwrap();
     generate_client_snapshot(file_stem, &config).await
 }
@@ -87,7 +87,7 @@ async fn generate_merged_snapshot(file_stem: &str, config: &Config) {
 }
 
 async fn generate_merged_snapshot_sdl(file_stem: &str, sdl: &str) {
-    let config = Config::from_sdl(sdl).to_result().unwrap();
+    let config = Config::from_sdl(sdl).unwrap();
     generate_merged_snapshot(file_stem, &config).await
 }
 

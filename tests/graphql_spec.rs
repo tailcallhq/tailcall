@@ -247,7 +247,7 @@ fn test_config_identity() -> std::io::Result<()> {
         let content = spec.find_source(Tag::ServerSDL);
         let content = content.as_str();
         let expected = content;
-        let config = Config::from_sdl(content).to_result().unwrap();
+        let config = Config::from_sdl(content).unwrap();
         let actual = config.to_sdl();
 
         if spec
@@ -286,7 +286,7 @@ async fn test_server_to_client_sdl() -> std::io::Result<()> {
         let expected = expected.as_str();
         let content = spec.find_source(Tag::ServerSDL);
         let content = content.as_str();
-        let config = Config::from_sdl(content).to_result().unwrap();
+        let config = Config::from_sdl(content).unwrap();
         let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
         let runtime = init_runtime(&upstream, None);
         let reader = ConfigReader::init(runtime);
@@ -322,9 +322,8 @@ async fn test_execution() -> std::io::Result<()> {
         .into_iter()
         .map(|spec| {
             tokio::spawn(async move {
-                let mut config = Config::from_sdl(spec.find_source(Tag::ServerSDL).as_str())
-                    .to_result()
-                    .unwrap();
+                let mut config =
+                    Config::from_sdl(spec.find_source(Tag::ServerSDL).as_str()).unwrap();
                 config.server.query_validation = Some(false);
                 let config_set = ConfigModule::from(config);
                 let blueprint = Valid::from(Blueprint::try_from(&config_set))
@@ -379,7 +378,7 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
         let content = content.as_str();
         println!("{:?}", spec.path);
 
-        let config = Config::from_sdl(content).to_result();
+        let config = Config::from_sdl(content);
         let actual = match config {
             Ok(config) => {
                 let upstream = Upstream::try_from(config.upstream.clone()).unwrap();
@@ -395,7 +394,7 @@ async fn test_failures_in_client_sdl() -> std::io::Result<()> {
                     Err(e) => Err(ValidationError::new(e.to_string())),
                 }
             }
-            Err(e) => Err(e),
+            Err(e) => Err(e.into()),
         };
         match actual {
             Err(cause) => {
@@ -440,7 +439,7 @@ fn test_merge_sdl() -> std::io::Result<()> {
         let expected = expected.as_str();
         let content = spec
             .get_sources(Tag::ServerSDL)
-            .map(|s| Config::from_sdl(s).to_result().unwrap())
+            .map(|s| Config::from_sdl(s).unwrap())
             .collect::<Vec<_>>();
         let config = content
             .iter()

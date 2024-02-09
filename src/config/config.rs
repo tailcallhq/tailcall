@@ -16,7 +16,7 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 use crate::json::JsonSchema;
-use crate::valid::{Valid, Validator};
+use crate::valid::{ValidationError, Validator};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -662,26 +662,82 @@ pub struct AddField {
     pub path: Vec<String>,
 }
 
+#[derive(Debug)]
+pub enum ParseError {
+    Validation(ValidationError<String>),
+    GraphQL(async_graphql::parser::Error),
+    Json(serde_json::Error),
+    Yaml(serde_yaml::Error),
+}
+
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseError::Validation(x) => std::fmt::Display::fmt(x, f),
+            ParseError::GraphQL(x) => std::fmt::Display::fmt(x, f),
+            ParseError::Json(x) => std::fmt::Display::fmt(x, f),
+            ParseError::Yaml(x) => std::fmt::Display::fmt(x, f),
+        }
+    }
+}
+
+impl std::error::Error for ParseError {}
+
+impl From<async_graphql::parser::Error> for ParseError {
+    fn from(value: async_graphql::parser::Error) -> Self {
+        Self::GraphQL(value)
+    }
+}
+
+impl From<ValidationError<String>> for ParseError {
+    fn from(value: ValidationError<String>) -> Self {
+        Self::Validation(value)
+    }
+}
+
+impl From<serde_json::Error> for ParseError {
+    fn from(value: serde_json::Error) -> Self {
+        Self::Json(value)
+    }
+}
+
+impl From<serde_yaml::Error> for ParseError {
+    fn from(value: serde_yaml::Error) -> Self {
+        Self::Yaml(value)
+    }
+}
+
+impl From<ParseError> for ValidationError<String> {
+    fn from(value: ParseError) -> Self {
+        match value {
+            ParseError::Validation(x) => x,
+            ParseError::GraphQL(x) => ValidationError::new(x.to_string()),
+            ParseError::Json(x) => ValidationError::new(x.to_string()),
+            ParseError::Yaml(x) => ValidationError::new(x.to_string()),
+        }
+    }
+}
+
 impl Config {
-    pub fn from_json(json: &str) -> Result<Self> {
-        Ok(serde_json::from_str(json)?)
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
     }
 
-    pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(yaml)?)
+    pub fn from_yaml(yaml: &str) -> Result<Self, serde_yaml::Error> {
+        serde_yaml::from_str(yaml)
     }
 
-    pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    pub fn from_sdl(sdl: &str) -> Result<Self, ParseError> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
-            Ok(doc) => from_document(doc),
-            Err(e) => Valid::fail(e.to_string()),
+            Ok(doc) => Ok(from_document(doc).to_result()?),
+            Err(e) => Err(e.into()),
         }
     }
 
-    pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    pub fn from_source(source: Source, schema: &str) -> Result<Self, ParseError> {
         match source {
-            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+            Source::GraphQL => Config::from_sdl(schema),
             Source::Json => Ok(Config::from_json(schema)?),
             Source::Yml => Ok(Config::from_yaml(schema)?),
         }
@@ -735,7 +791,7 @@ mod tests {
 
     #[test]
     fn test_from_sdl_empty() {
-        let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+        let actual = Config::from_sdl("type Foo {a: Int}").unwrap();
         let expected = Config::default().types(vec![(
             "Foo",
             Type::default().fields(vec![("a", Field::int())]),

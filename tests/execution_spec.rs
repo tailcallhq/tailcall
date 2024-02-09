@@ -24,7 +24,7 @@ use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::target_runtime::TargetRuntime;
-use tailcall::valid::{Cause, ValidationError, Validator as _};
+use tailcall::valid::{Cause, ValidationError};
 use tailcall::{EnvIO, HttpIO};
 use url::Url;
 
@@ -580,7 +580,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
         }
 
-        let config = Config::from_sdl(content).to_result();
+        let config = Config::from_sdl(content);
 
         let config = match config {
             Ok(config) => {
@@ -594,7 +594,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                     Err(e) => Err(ValidationError::new(e.to_string())),
                 }
             }
-            Err(e) => Err(e),
+            Err(e) => Err(e.into()),
         };
 
         match config {
