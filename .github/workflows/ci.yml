@@ -79,7 +79,7 @@ jobs:
         uses: Wandalen/wretry.action@v1
         with:
           action: codecov/codecov-action@v4
-          attempt_limit: 10
+          attempt_limit: 3
           attempt_delay: 10000
           with: |
             token: ${{ secrets.CODECOV_TOKEN }}
