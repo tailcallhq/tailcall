@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Query type is not defined",
+    "trace": [
+      "QueryType"
+    ],
+    "description": null
+  },
+  {
+    "message": "Mutation type is not defined",
+    "trace": [
+      "MutationDef"
+    ],
+    "description": null
+  }
+]

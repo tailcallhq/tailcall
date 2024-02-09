@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "post": {
+        "id": 1,
+        "user": {
+          "name": "Leanne Graham"
+        }
+      }
+    }
+  }
+}

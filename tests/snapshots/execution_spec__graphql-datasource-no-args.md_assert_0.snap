@@ -1,0 +1,22 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "users_list": [
+        {
+          "name": "Leanne Graham"
+        },
+        {
+          "name": "Ervin Howell"
+        }
+      ]
+    }
+  }
+}

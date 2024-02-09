@@ -1,0 +1,33 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  user: User @http(path: "/users/{{value.userId}}")
+  userId: Int!
+}
+
+type Query {
+  post: Post @http(path: "/posts/1")
+}
+
+type Todo {
+  completed: Boolean
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  todos: [Todo] @http(path: "/users/{{value.id}}/todos")
+  username: String!
+  website: String
+}

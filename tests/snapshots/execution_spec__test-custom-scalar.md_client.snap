@@ -1,0 +1,13 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+scalar Json
+
+type Query {
+  foo: [Json]
+}
+
+schema {
+  query: Query
+}

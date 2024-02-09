@@ -1,0 +1,32 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "post1": {
+        "id": 1,
+        "title": "Post 1",
+        "body": "Post 1 body",
+        "userId": 1
+      },
+      "post2": {
+        "id": 2,
+        "title": "Post 2",
+        "body": "Post 2 body",
+        "userId": 2
+      },
+      "post3": {
+        "id": 3,
+        "title": "Post 3",
+        "body": "Post 3 body",
+        "userId": 3
+      }
+    }
+  }
+}

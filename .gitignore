@@ -1,6 +1,6 @@
 /target
 /.idea
-.vscode
+/.vscode
 .DS_Store
 .bsp
 /cloudflare/node_modules
@@ -19,3 +19,5 @@ cloudflare/node_modules
 cloudflare/pkg
 
 .wrangler/
+
+/tests/snapshots/*.new

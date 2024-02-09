@@ -1,0 +1,7 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream @link(src: "link-const.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
+  query: Query
+}

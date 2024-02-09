@@ -1,0 +1,28 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type Query {
+  user: User
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  posts: [Post]
+  username: String!
+  website: String
+}
+
+schema {
+  query: Query
+}
