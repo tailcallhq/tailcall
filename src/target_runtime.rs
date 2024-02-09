@@ -37,7 +37,7 @@ pub mod test {
     use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
-    pub struct TestHttp {
+    struct TestHttp {
         client: ClientWithMiddleware,
     }
 
@@ -48,7 +48,7 @@ pub mod test {
     }
 
     impl TestHttp {
-        pub fn init(upstream: &Upstream) -> Self {
+        fn init(upstream: &Upstream) -> Self {
             let mut builder = Client::builder()
                 .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
                 .timeout(Duration::from_secs(upstream.timeout))
@@ -95,10 +95,10 @@ pub mod test {
     }
 
     #[derive(Clone)]
-    pub struct TestFileIO {}
+    struct TestFileIO {}
 
     impl TestFileIO {
-        pub fn init() -> Self {
+        fn init() -> Self {
             TestFileIO {}
         }
     }
@@ -124,7 +124,7 @@ pub mod test {
     }
 
     #[derive(Clone)]
-    pub struct TestEnvIO {
+    struct TestEnvIO {
         vars: HashMap<String, String>,
     }
 
