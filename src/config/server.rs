@@ -256,6 +256,7 @@ impl Upstream {
     self.tcp_keep_alive = other.tcp_keep_alive.or(self.tcp_keep_alive);
     self.timeout = other.timeout.or(self.timeout);
     self.user_agent = other.user_agent.or(self.user_agent);
+    self.rate_limit = other.rate_limit;
     self.batch = other.batch.map(|other| {
       let mut batch = self.batch.unwrap_or_default();
       batch.max_size = other.max_size;

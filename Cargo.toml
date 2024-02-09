@@ -78,6 +78,7 @@ prost-reflect = { version = "0.12.0", features = ["serde"] }
 prost = "0.12.3"
 tower ={ version = "0.4.13", features = ["limit", "util"] }
 worker = "0.0.18"
+futures = "0.3.30"
 
 [dev-dependencies]
 criterion = "0.5.1"

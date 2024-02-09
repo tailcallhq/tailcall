@@ -1,9 +1,10 @@
 use core::future::Future;
+use std::pin::{Pin, pin};
 use std::sync::Arc;
-use std::task::Poll;
+use std::task::{Context, Poll};
 use std::time::Duration;
 
-use futures_util::FutureExt;
+use futures::future::FutureExt;
 use reqwest_middleware::ClientWithMiddleware;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
@@ -33,9 +34,96 @@ impl HttpService {
   pub async fn call(&self, req: reqwest::Request) -> anyhow::Result<reqwest::Response> {
     use HttpService::*;
     match self {
-      RateLimited(service) => service.lock().await.call(req).await,
+      RateLimited(service) => {
+        ServiceCaller {
+          service: &mut *service.lock().await,
+          state: Some(ServiceCallerState::PendingRequest(req)),
+        }
+            .await
+      },
       Simple(service) => service.lock().await.call(req).await,
     }
+  }
+}
+
+
+pub struct ServiceCaller<'a, S: Service<reqwest::Request>> {
+  service: &'a mut S,
+  state: Option<ServiceCallerState>,
+}
+
+enum ServiceCallerState {
+  PendingRequest(reqwest::Request),
+  RequestInProgress(HttpClientServiceFuture),
+}
+
+impl<'a, S: Service<reqwest::Request, Error = anyhow::Error, Future = HttpClientServiceFuture>> Future for ServiceCaller<'a, S> {
+  type Output = anyhow::Result<reqwest::Response>;
+
+  fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    use ServiceCallerState::*;
+    let cur_state = self.state.take();
+    let service_poll = self.service.poll_ready(cx);
+
+    match cur_state {
+      Some(PendingRequest(req)) => {
+        match self.service.poll_ready(cx) {
+          Poll::Pending => Poll::Ready(Err(anyhow::anyhow!("RATE_LIMIT_EXCEEDED"))),
+          Poll::Ready(Err(err)) => Poll::Ready(Err(err)),
+          Poll::Ready(Ok(())) => {
+            let fut = self.service.call(req);
+            self.state = Some(RequestInProgress(fut));
+            self.poll(cx)
+          }
+        }
+      }
+      Some(RequestInProgress(mut fut)) => {
+        let result = fut.poll_unpin(cx);
+        match result {
+          Poll::Pending => {
+            self.state = Some(RequestInProgress(fut));
+            Poll::Pending
+          }
+          Poll::Ready(Ok(res)) => Poll::Ready(Ok(res)),
+          Poll::Ready(Err(err)) => Poll::Ready(Err(err)),
+        }
+      }
+      None => unreachable!()
+    }
+    //
+    // match (&mut self.state, self.service.poll_ready(cx)) {
+    //   (PendingRequest(_), Poll::Pending) => Poll::Pending,
+    //   (PendingRequest(_), Poll::Ready(Err(err))) => Poll::Ready(Err(err)),
+    //   (PendingRequest(req), Poll::Ready(Ok(()))) => {
+    //     let req = req.take().unwrap();
+    //     self.state = RequestInProgress(self.service.call(req));
+    //     match &mut self.state {
+    //       RequestInProgress(fut) => fut.poll_unpin(cx),
+    //       _ => unreachable!(),
+    //     }
+    //   }
+    //   (RequestInProgress(fut), _) => fut.poll_unpin(cx),
+    // }
+    //
+    // let fut = self.service.poll_ready(cx);
+    // let state = self.state;
+    // match state {
+    //   (Poll::Pending, _) => Poll::Pending,
+    //   (Poll::Ready(Ok(())), ) => {
+    //     if self.fut.is_none() {
+    //       let req = self.req.take().unwrap();
+    //       self.fut = Some(self.service.call(req));
+    //     }
+    //
+    //     let fut = self.fut.as_mut().unwrap();
+    //     match pin!(fut).poll_unpin(cx) {
+    //       Poll::Pending => Poll::Pending,
+    //       Poll::Ready(Ok(res)) => Poll::Ready(Ok(res)),
+    //       Poll::Ready(Err(err)) => Poll::Ready(Err(err)),
+    //     }
+    //   }
+    //   Poll::Ready(Err(err)) => Poll::Ready(Err(err)),
+    // }
   }
 }
 
@@ -56,7 +144,7 @@ impl Service<reqwest::Request> for HttpClientService {
   type Future = HttpClientServiceFuture;
 
   fn poll_ready(&mut self, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
-    todo!()
+    Poll::Ready(Ok(()))
   }
 
   fn call(&mut self, req: reqwest::Request) -> Self::Future {
@@ -65,14 +153,6 @@ impl Service<reqwest::Request> for HttpClientService {
     HttpClientServiceFuture { fut }
   }
 }
-
-pub trait CustomFuture
-where
-  Self: Future<Output = anyhow::Result<reqwest::Response>> + Send + Sync,
-{
-}
-
-impl<T> CustomFuture for T where T: Future<Output = anyhow::Result<reqwest::Response>> + Send + Sync {}
 
 pub struct HttpClientServiceFuture {
   fut: JoinHandle<anyhow::Result<reqwest::Response>>,
