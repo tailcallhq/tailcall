@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint, Upstream};
+use tailcall::cache::InMemoryCache;
 use tailcall::cli::{init_runtime, javascript};
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
@@ -262,7 +263,7 @@ impl ExecutionSpec {
                                             "Unexpected runner annotation {:?} in {:?}",
                                             text.value,
                                             path,
-                                        ))
+                                        ));
                                     }
                                 });
                             } else {
@@ -292,7 +293,7 @@ impl ExecutionSpec {
                                         "Unexpected flag {:?} in {:?}",
                                         text.value,
                                         path,
-                                    ))
+                                    ));
                                 }
                             };
                         } else {
@@ -377,7 +378,7 @@ impl ExecutionSpec {
                                             name,
                                             path,
                                             heading
-                                        ))
+                                        ));
                                     }
                                 }
                             }
@@ -433,16 +434,11 @@ impl ExecutionSpec {
         env: HashMap<String, String>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
-        let rt = init_runtime(&Default::default(), blueprint.server.script.clone());
-        let http = if self.mock.is_some() {
-            let http = MockHttpClient::new(self.clone());
-            if let Some(script) = blueprint.server.script.clone() {
-                javascript::init_http(http, script)
-            } else {
-                Arc::new(http)
-            }
+        let http = MockHttpClient::new(self.clone());
+        let http = if let Some(script) = blueprint.server.script.clone() {
+            javascript::init_http(http, script)
         } else {
-            rt.http
+            Arc::new(http)
         };
 
         let http2_only = if self.mock.is_some() {
@@ -456,7 +452,7 @@ impl ExecutionSpec {
             http2_only,
             file: Arc::new(MockFileSystem::new(self.clone())),
             env: Arc::new(Env::init(env)),
-            cache: rt.cache,
+            cache: Arc::new(InMemoryCache::new()),
         };
         Arc::new(AppContext::new(blueprint, runtime))
     }
@@ -466,6 +462,7 @@ impl ExecutionSpec {
 struct MockHttpClient {
     spec: ExecutionSpec,
 }
+
 impl MockHttpClient {
     fn new(spec: ExecutionSpec) -> Self {
         MockHttpClient { spec }
