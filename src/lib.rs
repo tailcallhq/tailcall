@@ -21,9 +21,7 @@ pub mod lambda;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
-pub mod target_runtime;
-#[cfg(feature = "cli")] // temporary flag for restructure
-pub mod test_rt;
+pub mod runtime;
 pub mod try_fold;
 pub mod valid;
 

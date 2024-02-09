@@ -12,7 +12,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -117,7 +117,7 @@ mod test {
     use crate::blueprint::{Server, Upstream};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
-    use crate::test_rt::init_test_rt;
+    use crate::runtime::test_rt::init_test_rt;
 
     impl Default for RequestContext {
         fn default() -> Self {

@@ -204,7 +204,7 @@ mod tests {
     use super::*;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
-    use crate::test_rt::init_test_rt;
+    use crate::runtime::test_rt::init_test_rt;
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

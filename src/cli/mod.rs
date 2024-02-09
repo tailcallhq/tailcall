@@ -21,7 +21,7 @@ pub use tc::run;
 
 use crate::blueprint::Upstream;
 use crate::cache::InMemoryCache;
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
 // Provides access to env in native rust environment

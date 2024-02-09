@@ -15,7 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -278,7 +278,7 @@ mod test_proto_config {
     use anyhow::{Context, Result};
 
     use crate::config::reader::ConfigReader;
-    use crate::test_rt::init_test_rt;
+    use crate::runtime::test_rt::init_test_rt;
 
     #[tokio::test]
     async fn test_resolve() {
@@ -356,7 +356,7 @@ mod reader_tests {
 
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
-    use crate::test_rt::init_test_rt;
+    use crate::runtime::test_rt::init_test_rt;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
