@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use hyper::body::Bytes;
+use lambda_http::RequestExt;
 use reqwest::Client;
 use tailcall::http::Response;
 use tailcall::HttpIO;
@@ -51,9 +52,20 @@ pub fn to_request(
         _ => unreachable!(),
     };
 
+    // Re-construct real URL from parameters
+    let url = format!(
+        "{}://{}/{}",
+        req.uri().scheme_str().unwrap_or("http"),
+        req.uri().host().unwrap_or("fakedomain"),
+        req.path_parameters()
+            .all("proxy")
+            .unwrap_or(Vec::with_capacity(0))
+            .join("/")
+    );
+
     hyper::Request::builder()
         .method(method)
-        .uri::<String>(req.uri().to_string())
+        .uri(url)
         .body(hyper::Body::from(req.body().to_vec()))
 }
 

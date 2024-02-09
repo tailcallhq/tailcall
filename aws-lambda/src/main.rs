@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use http::{to_request, to_response};
-use lambda_http::{run, service_fn, Body, Error, Response};
+use lambda_http::{run, service_fn, Body, Error, Request, Response};
 use runtime::init_runtime;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
@@ -14,7 +14,8 @@ mod runtime;
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::WARN)
+        // log everything here since logs can be filtered by level in CloudWatch.
+        .with_max_level(tracing::Level::TRACE)
         // disable printing the name of the module in every log line.
         .with_target(false)
         // disabling time is handy because CloudWatch will add the ingestion time.
@@ -29,7 +30,7 @@ async fn main() -> Result<(), Error> {
 
     let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
 
-    run(service_fn(|event| async {
+    run(service_fn(|event: Request| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;
         Ok::<Response<Body>, Error>(to_response(resp).await?)
     }))
