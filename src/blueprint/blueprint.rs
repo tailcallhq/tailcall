@@ -48,6 +48,13 @@ impl Type {
             Type::ListType { non_null, .. } => *non_null,
         }
     }
+    /// checks if the type is a list
+    pub fn is_list(&self) -> bool {
+        match self {
+            Type::NamedType { .. } => false,
+            Type::ListType { .. } => true,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
