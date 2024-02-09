@@ -211,9 +211,10 @@ struct WriteParams<'a, W: Write> {
     name: String,
     schema: SchemaObject,
     defs: &'a BTreeMap<String, Schema>,
-    scalars: &'a mut HashSet<String>,
     extra_it: &'a mut BTreeMap<String, ExtraTypes>,
+    scalars: &'a mut HashSet<String>,
     types_added: &'a mut HashSet<String>,
+    written_directives: &'a mut HashSet<String>,
     // arr_valid: ArrayValidation,
     // obj_valid: ObjectValidation,
 }
@@ -293,7 +294,7 @@ fn write_field<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     write_type(params_clone)?;
     writeln!(writer)
 }
-#[allow(clippy::too_many_arguments)]
+
 fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     let WriteParams {
         writer,
@@ -303,6 +304,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
         scalars,
         extra_it,
         types_added,
+        ..
     } = params;
     let name = match input_allow_list_lookup(&name, extra_it) {
         Some(name) => name,
@@ -342,6 +344,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                 extra_it,
                 scalars: &mut HashSet::new(),
                 types_added: &mut HashSet::new(),
+                written_directives: &mut HashSet::new(),
             };
             write_field(params)?;
         }
@@ -380,6 +383,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         extra_it,
                         scalars: &mut HashSet::new(),
                         types_added: &mut HashSet::new(),
+                        written_directives: &mut HashSet::new(),
                     };
                     write_field(params)?;
                 }
@@ -405,6 +409,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         extra_it,
                         scalars: &mut HashSet::new(),
                         types_added: &mut HashSet::new(),
+                        written_directives: &mut HashSet::new(),
                     };
                     write_field(params)?;
                 }
@@ -422,15 +427,9 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
 
     Ok(())
 }
-#[allow(clippy::too_many_arguments)]
-fn write_property(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    property: Schema,
-    defs: &BTreeMap<String, Schema>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
-    let property = property.into_object();
+
+fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, schema: property, defs, extra_it, .. } = params;
     let description = property
         .metadata
         .as_ref()
@@ -444,6 +443,7 @@ fn write_property(
         extra_it,
         scalars: &mut HashSet::new(),
         types_added: &mut HashSet::new(),
+        written_directives: &mut HashSet::new(),
     };
     write_field(params)?;
     Ok(())
@@ -474,15 +474,9 @@ fn input_allow_list_lookup<'a>(
 
     None
 }
-#[allow(clippy::too_many_arguments)]
-fn write_directive(
-    writer: &mut IndentedWriter<impl Write>,
-    name: String,
-    schema: SchemaObject,
-    defs: &BTreeMap<String, Schema>,
-    written_directives: &mut HashSet<String>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+
+fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
+    let WriteParams { writer, name, schema, defs, extra_it, written_directives, .. } = params;
     let (name, entity, is_repeatable) = match directive_allow_list_lookup(&name) {
         Some(entity) => entity,
         None => return Ok(()),
@@ -506,11 +500,31 @@ fn write_directive(
         if let Some((name, property)) = properties_iter.next() {
             writeln!(writer, "(")?;
             writer.indent();
-            write_property(writer, name, property, defs, extra_it)?;
+            let params = WriteParams {
+                writer,
+                name,
+                schema: property.into_object(),
+                defs,
+                extra_it,
+                scalars: &mut HashSet::new(),
+                types_added: &mut HashSet::new(),
+                written_directives: &mut HashSet::new(),
+            };
+            write_property(params)?;
             close_param = true;
         }
         for (name, property) in properties_iter {
-            write_property(writer, name, property, defs, extra_it)?;
+            let params = WriteParams {
+                writer,
+                name,
+                schema: property.into_object(),
+                defs,
+                extra_it,
+                scalars: &mut HashSet::new(),
+                types_added: &mut HashSet::new(),
+                written_directives: &mut HashSet::new(),
+            };
+            write_property(params)?;
         }
         if close_param {
             writer.unindent();
@@ -539,14 +553,17 @@ fn write_all_directives(
     let dirs: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     for (name, schema) in dirs.into_iter() {
         let schema = schema.clone().into_object();
-        write_directive(
+        let params = WriteParams {
             writer,
-            name.clone(),
+            name: name.clone(),
             schema,
-            &defs,
-            written_directives,
+            defs: &defs,
             extra_it,
-        )?;
+            scalars: &mut HashSet::new(),
+            types_added: &mut HashSet::new(),
+            written_directives,
+        };
+        write_directive(params)?;
     }
 
     Ok(())
@@ -569,6 +586,7 @@ fn write_array_validation(
             extra_it,
             scalars: &mut HashSet::new(),
             types_added: &mut HashSet::new(),
+            written_directives: &mut HashSet::new(),
         };
         write_type(params)?;
     } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
@@ -580,6 +598,7 @@ fn write_array_validation(
             extra_it,
             scalars: &mut HashSet::new(),
             types_added: &mut HashSet::new(),
+            written_directives: &mut HashSet::new(),
         };
         write_type(params)?;
     } else {
@@ -601,7 +620,17 @@ fn write_object_validation(
         writeln!(writer, "input {name} {{")?;
         writer.indent();
         for (name, property) in obj_valid.properties {
-            write_property(writer, name, property, defs, extra_it)?;
+            let params = WriteParams {
+                writer,
+                name,
+                schema: property.into_object(),
+                defs,
+                extra_it,
+                scalars: &mut HashSet::new(),
+                types_added: &mut HashSet::new(),
+                written_directives: &mut HashSet::new(),
+            };
+            write_property(params)?;
         }
         writer.unindent();
         writeln!(writer, "}}")
@@ -630,6 +659,7 @@ fn write_all_input_types(
             scalars: &mut scalars,
             extra_it: &mut extra_it,
             types_added: &mut types_added,
+            written_directives: &mut HashSet::new(),
         };
         write_input_type(params)?;
     }
@@ -648,6 +678,7 @@ fn write_all_input_types(
                         scalars: &mut scalars,
                         extra_it: &mut new_extra_it,
                         types_added: &mut types_added,
+                        written_directives: &mut HashSet::new(),
                     };
                     write_input_type(params)?
                 }
