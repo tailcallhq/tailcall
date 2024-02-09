@@ -36,45 +36,34 @@ impl fmt::Display for NodeBlueprint {
             f: &mut fmt::Formatter<'_>,
             level: usize,
         ) -> fmt::Result {
-            let indent = "   ".repeat(level); // Adjusted for a cleaner look
-            let prefix = if level > 0 { "└── " } else { "" }; // More refined branch symbol
-                                                              // Directly apply vibrant colors
-            let name_color = "\x1B[35m"; // Magenta for names
-            let id_color = "\x1B[36m"; // Cyan for IDs
-            let io_type_color = "\x1B[33m"; // Yellow for IO types
-            let list_indicator_color = "\x1B[31m"; // Red for list indicator
+            // Symbols and ANSI codes for enhanced display
+            let indent = " ".repeat(level * 4); // Adjust spacing for clearer hierarchy
+            let branch = if level > 0 { "└── " } else { " " }; // Branch symbol for child nodes
+            let name_color = "\x1B[1;93m"; // Bright Yellow for names, bold
+            let io_type_color = "\x1B[1;92m"; // Bright Green for IO types, bold
+            let list_indicator_color = "\x1B[1;95m"; // Bright Magenta for list indicator, bold
             let color_end = "\x1B[0m"; // Reset to default
 
-            let list_indicator = if node.is_list {
-                format!(" {}(List){}", list_indicator_color, color_end)
-            } else {
-                "".to_string()
-            };
-            let io_type_display = match node.io_type {
-                IOType::Empty => "".to_string(),
-                _ => format!(" - {}{}{}", io_type_color, node.io_type, color_end),
-            };
-
+            // Compose the display string with vibrant colors and structured layout
             writeln!(
                 f,
-                "{}{}{}{}({}){}{}{}{}{}",
+                "{}{}{}{} #{} {}{}{}",
                 indent,
-                prefix,
+                branch,
                 name_color,
                 node.name,
                 node.id,
                 color_end,
-                io_type_display,
-                list_indicator,
-                id_color,
-                color_end
+                (node.io_type != IOType::Empty)
+                    .then(|| format!(" {}- {}{}", io_type_color, node.io_type, color_end))
+                    .unwrap_or_default(),
+                node.is_list
+                    .then(|| format!(" {}(List){}", list_indicator_color, color_end))
+                    .unwrap_or_default()
             )?;
 
-            // Recursively display each child with the same level (since indentation is cumulative)
-            if !node.children.is_empty() {
-                for child in &node.children {
-                    display_node(child, f, level + 1)?;
-                }
+            for child in &node.children {
+                display_node(child, f, level + 1)?;
             }
 
             Ok(())
