@@ -6,8 +6,9 @@ use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
 pub fn update_modify<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), mut b_field| {
             if let Some(modify) = field.modify.as_ref() {
                 if let Some(new_name) = &modify.name {

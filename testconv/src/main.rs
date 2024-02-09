@@ -8,7 +8,7 @@ use http::ConfigSource;
 use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli::init_runtime;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigSet};
+use tailcall::config::{Config, ConfigModule};
 use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::Validator as _;
@@ -42,7 +42,7 @@ fn graphql_iter_spec_part(spec: &str) -> impl Iterator<Item = (String, String)> 
     })
 }
 
-async fn generate_client_snapshot(file_stem: &str, config: &ConfigSet) {
+async fn generate_client_snapshot(file_stem: &str, config: &ConfigModule) {
     let snapshots_dir =
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 

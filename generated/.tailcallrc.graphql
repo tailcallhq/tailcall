@@ -229,11 +229,6 @@ directive @server(
   """
   cacheControlHeader: Boolean
   """
-  `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). 
-  @default `null`.
-  """
-  cert: String
-  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
@@ -253,10 +248,6 @@ directive @server(
   `true`.
   """
   introspection: Boolean
-  """
-  `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-  """
-  key: String
   """
   `pipelineFlush` allows to control flushing behavior of the server pipeline.
   """
@@ -284,7 +275,7 @@ directive @server(
   """
   A link to an external JS file that listens on every HTTP request response event.
   """
-  script: Script
+  script: ScriptOptions
   """
   `showcase` enables the /showcase/graphql endpoint.
   """
@@ -617,6 +608,9 @@ input JS {
 enum LinkType {
   Config
   Protobuf
+  Script
+  Cert
+  Key
 }
 enum Method {
   GET
@@ -636,12 +630,7 @@ input Modify {
 input Proxy {
   url: String!
 }
-input Script {
-  path: ScriptOptions
-  file: ScriptOptions
-}
 input ScriptOptions {
-  src: String!
   timeout: Int
 }
 input Schema {

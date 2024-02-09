@@ -67,7 +67,7 @@ struct ProcessFieldWithinTypeContext<'a> {
     remaining_path: &'a [String],
     type_info: &'a config::Type,
     is_required: bool,
-    config_set: &'a ConfigSet,
+    config_set: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
     path_resolver_error_handler: &'a PathResolverErrorHandler,
     original_path: &'a [String],
@@ -79,7 +79,7 @@ struct ProcessPathContext<'a> {
     field: &'a config::Field,
     type_info: &'a config::Type,
     is_required: bool,
-    config_set: &'a ConfigSet,
+    config_set: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
     path_resolver_error_handler: &'a PathResolverErrorHandler,
     original_path: &'a [String],
@@ -250,7 +250,7 @@ fn to_enum_type_definition(
 fn to_object_type_definition(
     name: &str,
     type_of: &config::Type,
-    config_set: &ConfigSet,
+    config_set: &ConfigModule,
 ) -> Valid<Definition, String> {
     to_fields(name, type_of, config_set).map(|fields| {
         Definition::ObjectTypeDefinition(ObjectTypeDefinition {
@@ -263,8 +263,9 @@ fn to_object_type_definition(
 }
 
 fn update_args<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_, field, _typ, name), _| {
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -322,8 +323,9 @@ fn update_resolver_from_path(
 /// To solve the problem that by default such fields will be resolved to null value
 /// and nested resolvers won't be called
 pub fn update_nested_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), mut b_field| {
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
@@ -341,8 +343,9 @@ pub fn update_nested_resolvers<'a>(
 /// Wraps the IO Expression with Expression::Cached
 /// if `Field::cache` is present for that field
 pub fn update_cache_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_config, field, _, _name), mut b_field| {
             if let Some(config::Cache { max_age }) = field.cache.as_ref() {
                 b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
@@ -365,7 +368,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 fn to_fields(
     object_name: &str,
     type_of: &config::Type,
-    config_set: &ConfigSet,
+    config_set: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, String> {
     let operation_type = if config_set.schema.mutation.as_deref().eq(&Some(object_name)) {
         GraphQLOperationType::Mutation
@@ -486,8 +489,8 @@ fn to_fields(
     })
 }
 
-pub fn to_definitions<'a>() -> TryFold<'a, ConfigSet, Vec<Definition>, String> {
-    TryFold::<ConfigSet, Vec<Definition>, String>::new(|config_set, _| {
+pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String> {
+    TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_set, _| {
         let output_types = config_set.output_types();
         let input_types = config_set.input_types();
         Valid::from_iter(config_set.types.iter(), |(name, type_)| {

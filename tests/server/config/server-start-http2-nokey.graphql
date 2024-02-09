@@ -1,11 +1,7 @@
 schema
-  @server(
-    port: 8803
-    version: HTTP2
-    hostname: "localhost"
-    cert: "./tests/server/config/example.crt"
-    key: "./tests/server/config/example-nokey.key"
-  ) {
+  @server(port: 8803, version: HTTP2, hostname: "localhost")
+  @link(type: Cert, src: "./example.crt")
+  @link(type: Key, src: "./example-nokey.key") {
   query: Query
 }
 

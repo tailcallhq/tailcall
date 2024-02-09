@@ -50,7 +50,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn env_var(&self, key: &str) -> Option<String> {
-        self.req_ctx.env_vars.get(key)
+        self.req_ctx.runtime.env.get(key)
     }
 
     pub fn var(&self, key: &str) -> Option<&str> {

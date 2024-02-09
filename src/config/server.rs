@@ -22,10 +22,6 @@ pub struct Server {
     pub cache_control_header: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
-    pub cert: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.
     pub global_response_timeout: Option<i64>,
 
@@ -40,10 +36,6 @@ pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
     /// `introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.
     pub introspection: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-    pub key: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `pipelineFlush` allows to control flushing behavior of the server pipeline.
@@ -67,7 +59,7 @@ pub struct Server {
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// A link to an external JS file that listens on every HTTP request response event.
-    pub script: Option<Script>,
+    pub script: Option<ScriptOptions>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `showcase` enables the /showcase/graphql endpoint.
@@ -88,15 +80,7 @@ pub struct Server {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum Script {
-    Path(ScriptOptions),
-    File(ScriptOptions),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
 pub struct ScriptOptions {
-    pub src: String,
     pub timeout: Option<u64>,
 }
 
@@ -186,8 +170,6 @@ impl Server {
         response_headers.extend(other.response_headers.0);
         self.response_headers = KeyValues(response_headers);
         self.version = other.version.or(self.version);
-        self.cert = other.cert.or(self.cert);
-        self.key = other.key.or(self.key);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
         self

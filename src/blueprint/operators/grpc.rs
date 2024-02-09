@@ -3,7 +3,7 @@ use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, ConfigSet, Field, GraphQLOperationType, Grpc};
+use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
@@ -112,7 +112,7 @@ fn validate_group_by(
 }
 
 pub struct CompileGrpc<'a> {
-    pub config_set: &'a ConfigSet,
+    pub config_set: &'a ConfigModule,
     pub operation_type: &'a GraphQLOperationType,
     pub field: &'a Field,
     pub grpc: &'a Grpc,
@@ -200,8 +200,9 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config_set, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);
@@ -222,10 +223,10 @@ pub fn update_grpc<'a>(
 
 #[cfg(test)]
 mod tests {
-    use crate::valid::ValidationError;
+    use std::convert::TryFrom;
 
     use super::GrpcMethod;
-    use std::convert::TryFrom;
+    use crate::valid::ValidationError;
 
     #[test]
     fn try_from_grpc_method() {

@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 
 use anyhow::Context;
 use async_std::path::{Path, PathBuf};
@@ -6,13 +7,17 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+use rustls_pemfile;
+use rustls_pki_types::{
+    CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
+};
 use url::Url;
 
-use super::{ConfigSet, Content, Link, LinkType, Script, ScriptOptions};
+use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
 
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigSet.
+/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
 }
@@ -66,9 +71,9 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        mut config_set: ConfigSet,
+        mut config_set: ConfigModule,
         path: Option<String>,
-    ) -> anyhow::Result<ConfigSet> {
+    ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_set
             .config
             .links
@@ -107,12 +112,12 @@ impl ConfigReader {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                    config_set = config_set.merge_right(&ConfigSet::from(config.clone()));
+                    config_set = config_set.merge_right(&ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
                         config_set = config_set.merge_right(
                             &self
-                                .ext_links(ConfigSet::from(config), Some(source.path))
+                                .ext_links(ConfigModule::from(config), Some(source.path))
                                 .await?,
                         );
                     }
@@ -132,32 +137,65 @@ impl ConfigReader {
                         content: file_descriptor_set,
                     });
                 }
+                LinkType::Script => {
+                    config_set.extensions.script = Some(content);
+                }
+                LinkType::Cert => {
+                    config_set
+                        .extensions
+                        .cert
+                        .extend(self.load_cert(content.clone()).await?);
+                }
+                LinkType::Key => {
+                    config_set.extensions.keys =
+                        Arc::new(self.load_private_key(content.clone()).await?)
+                }
             }
         }
 
         Ok(config_set)
     }
 
-    /// Reads the script file and replaces the path with the content
-    async fn ext_script(&self, mut config_set: ConfigSet) -> anyhow::Result<ConfigSet> {
-        let config = &mut config_set.config;
-        if let Some(Script::Path(ref options)) = &config.server.script {
-            let timeout = options.timeout;
-            let script = self.read_file(options.src.clone()).await?.content;
-            config.server.script = Some(Script::File(ScriptOptions { src: script, timeout }));
-        }
-        Ok(config_set)
+    /// Reads the certificate from a given file
+    async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+        let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
+
+        Ok(certificates.into_iter().map(CertificateDer::from).collect())
+    }
+
+    /// Reads a private key from a given file
+    async fn load_private_key(
+        &self,
+        content: String,
+    ) -> anyhow::Result<Vec<PrivateKeyDer<'static>>> {
+        let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
+
+        Ok(keys
+            .into_iter()
+            .filter_map(|key| match key {
+                rustls_pemfile::Item::RSAKey(key) => {
+                    Some(PrivateKeyDer::Pkcs1(PrivatePkcs1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::ECKey(key) => {
+                    Some(PrivateKeyDer::Sec1(PrivateSec1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::PKCS8Key(key) => {
+                    Some(PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key)))
+                }
+                _ => None,
+            })
+            .collect())
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigSet> {
+    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigSet> {
+    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.read_files(files).await?;
-        let mut config_set = ConfigSet::default();
+        let mut config_set = ConfigModule::default();
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
@@ -178,13 +216,14 @@ impl ConfigReader {
         Ok(config_set)
     }
 
-    /// Resolves all the links in a Config to create a ConfigSet
-    pub async fn resolve(&self, config: Config, path: Option<String>) -> anyhow::Result<ConfigSet> {
+    /// Resolves all the links in a Config to create a ConfigModule
+    pub async fn resolve(
+        &self,
+        config: Config,
+        path: Option<String>,
+    ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
-        let config_set = ConfigSet::from(config);
-
-        // Extend it with the worker script
-        let config_set = self.ext_script(config_set).await?;
+        let config_set = ConfigModule::from(config);
 
         // Extend it with the links
         let config_set = self.ext_links(config_set, path).await?;
@@ -318,7 +357,7 @@ mod reader_tests {
     use crate::blueprint::Upstream;
     use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Script, ScriptOptions, Type};
+    use crate::config::{Config, Type};
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
@@ -418,16 +457,13 @@ mod reader_tests {
             .unwrap();
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
-        let file = ScriptOptions {
-            src: String::from_utf8(
-                tokio::fs::read(&path)
-                    .await
-                    .context(path.to_string())
-                    .unwrap(),
-            )
-            .unwrap(),
-            timeout: None,
-        };
-        assert_eq!(config.server.script, Some(Script::File(file)),);
+        let content = String::from_utf8(
+            tokio::fs::read(&path)
+                .await
+                .context(path.to_string())
+                .unwrap(),
+        );
+
+        assert_eq!(content.unwrap(), config.extensions.script.unwrap());
     }
 }
