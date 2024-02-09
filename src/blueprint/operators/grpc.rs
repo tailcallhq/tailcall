@@ -39,7 +39,7 @@ fn to_operation(
     )
     .and_then(|set| {
         Valid::from(
-            set.find_service(&method.service)
+            set.find_service(&method.package_and_service)
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
@@ -121,6 +121,7 @@ pub struct CompileGrpc<'a> {
 
 struct GrpcMethod {
     pub id: String,
+    pub package_and_service: String,
     pub service: String,
     pub name: String,
 }
@@ -139,10 +140,11 @@ impl TryFrom<String> for GrpcMethod {
         }
 
         let id = method[0].to_string();
-        let service = format!("{}.{}", id, method[1]);
+        let service = method[1].to_string();
+        let package_and_service = format!("{}.{}", id, service);
         let name = method[2].to_string();
 
-        Ok(GrpcMethod { id, service, name })
+        Ok(GrpcMethod { id, package_and_service, service, name })
     }
 }
 
@@ -238,7 +240,8 @@ mod tests {
             GrpcMethod::try_from("package_name.ServiceName.MethodName".to_string()).unwrap();
 
         assert_eq!(method.id, "package_name");
-        assert_eq!(method.service, "package_name.ServiceName");
+        assert_eq!(method.package_and_service, "package_name.ServiceName");
+        assert_eq!(method.service, "ServiceName");
         assert_eq!(method.name, "MethodName");
     }
 
