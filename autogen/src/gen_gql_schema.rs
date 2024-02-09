@@ -249,7 +249,7 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         }
         _ => {
             if let Some(arr_valid) = schema.array.clone() {
-                let params = WriteParams {
+                write_array_validation(WriteParams {
                     writer,
                     name,
                     schema: SchemaObject::default(),
@@ -260,8 +260,7 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
                     written_directives: &mut HashSet::new(),
                     arr_valid: &mut arr_valid.clone(),
                     obj_valid: &mut ObjectValidation::default(),
-                };
-                write_array_validation(params)
+                })
             } else if let Some(typ) = schema.object.clone() {
                 if !typ.properties.is_empty() {
                     let mut name = name;
@@ -302,8 +301,7 @@ fn write_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
 fn write_field<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
     let WriteParams { writer, name, .. } = params;
     write!(writer, "{name}: ")?;
-    let params_clone = WriteParams { writer, name: name.clone(), ..params };
-    write_type(params_clone)?;
+    write_type(WriteParams { writer, name: name.clone(), ..params })?;
     writeln!(writer)
 }
 
@@ -348,19 +346,18 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                 .as_ref()
                 .and_then(|metadata| metadata.description.as_ref());
             write_description(writer, description)?;
-            let params = WriteParams {
+            write_field(WriteParams {
                 writer,
                 name,
                 schema: property,
                 defs,
-                extra_it,
                 scalars: &mut HashSet::new(),
+                extra_it,
                 types_added: &mut HashSet::new(),
                 written_directives: &mut HashSet::new(),
                 arr_valid: &mut ArrayValidation::default(),
                 obj_valid: &mut ObjectValidation::default(),
-            };
-            write_field(params)?;
+            })?;
         }
         writer.unindent();
         writeln!(writer, "}}")?;
@@ -389,7 +386,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
             write_description(writer, description)?;
             if let Some(obj) = property.object {
                 for (name, schema) in obj.properties {
-                    let params = WriteParams {
+                    write_field(WriteParams {
                         writer,
                         name,
                         schema: schema.into_object(),
@@ -400,8 +397,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         written_directives: &mut HashSet::new(),
                         arr_valid: &mut ArrayValidation::default(),
                         obj_valid: &mut ObjectValidation::default(),
-                    };
-                    write_field(params)?;
+                    })?;
                 }
             }
         }
@@ -417,7 +413,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
         for property in list {
             if let Some(obj) = property.clone().into_object().object {
                 for (name, schema) in obj.properties {
-                    let params = WriteParams {
+                    write_field(WriteParams {
                         writer,
                         name,
                         schema: schema.into_object(),
@@ -428,8 +424,7 @@ fn write_input_type<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()>
                         written_directives: &mut HashSet::new(),
                         arr_valid: &mut ArrayValidation::default(),
                         obj_valid: &mut ObjectValidation::default(),
-                    };
-                    write_field(params)?;
+                    })?;
                 }
             }
         }
@@ -453,7 +448,7 @@ fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
     write_description(writer, description)?;
-    let params = WriteParams {
+    write_field(WriteParams {
         writer,
         name,
         schema: property,
@@ -464,8 +459,7 @@ fn write_property<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> {
         written_directives: &mut HashSet::new(),
         arr_valid: &mut ArrayValidation::default(),
         obj_valid: &mut ObjectValidation::default(),
-    };
-    write_field(params)?;
+    })?;
     Ok(())
 }
 
@@ -520,7 +514,7 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
         if let Some((name, property)) = properties_iter.next() {
             writeln!(writer, "(")?;
             writer.indent();
-            let params = WriteParams {
+            write_property(WriteParams {
                 writer,
                 name,
                 schema: property.into_object(),
@@ -531,12 +525,11 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
                 written_directives: &mut HashSet::new(),
                 arr_valid: &mut ArrayValidation::default(),
                 obj_valid: &mut ObjectValidation::default(),
-            };
-            write_property(params)?;
+            })?;
             close_param = true;
         }
         for (name, property) in properties_iter {
-            let params = WriteParams {
+            write_property(WriteParams {
                 writer,
                 name,
                 schema: property.into_object(),
@@ -547,8 +540,7 @@ fn write_directive<W: Write>(params: WriteParams<'_, W>) -> std::io::Result<()> 
                 written_directives: &mut HashSet::new(),
                 arr_valid: &mut ArrayValidation::default(),
                 obj_valid: &mut ObjectValidation::default(),
-            };
-            write_property(params)?;
+            })?;
         }
         if close_param {
             writer.unindent();
@@ -576,20 +568,18 @@ fn write_all_directives(
     let defs: BTreeMap<String, Schema> = schema.definitions;
     let dirs: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     for (name, schema) in dirs.into_iter() {
-        let schema = schema.clone().into_object();
-        let params = WriteParams {
+        write_directive(WriteParams {
             writer,
             name: name.clone(),
-            schema,
+            schema: schema.clone().into_object(),
             defs: &defs,
+            written_directives,
             extra_it,
             scalars: &mut HashSet::new(),
             types_added: &mut HashSet::new(),
-            written_directives,
             arr_valid: &mut ArrayValidation::default(),
             obj_valid: &mut ObjectValidation::default(),
-        };
-        write_directive(params)?;
+        })?;
     }
 
     Ok(())
@@ -599,7 +589,7 @@ fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Resu
     let WriteParams { writer, name, arr_valid, defs, extra_it, .. } = params;
     write!(writer, "[")?;
     if let Some(SingleOrVec::Single(schema)) = &arr_valid.items {
-        let params = WriteParams {
+        write_type(WriteParams {
             writer,
             name,
             schema: schema.clone().into_object(),
@@ -610,10 +600,9 @@ fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Resu
             written_directives: &mut HashSet::new(),
             arr_valid: &mut ArrayValidation::default(),
             obj_valid: &mut ObjectValidation::default(),
-        };
-        write_type(params)?;
+        })?;
     } else if let Some(SingleOrVec::Vec(schemas)) = &arr_valid.items {
-        let params = WriteParams {
+        write_type(WriteParams {
             writer,
             name,
             schema: schemas[0].clone().into_object(),
@@ -624,8 +613,7 @@ fn write_array_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Resu
             written_directives: &mut HashSet::new(),
             arr_valid: &mut ArrayValidation::default(),
             obj_valid: &mut ObjectValidation::default(),
-        };
-        write_type(params)?;
+        })?;
     } else {
         println!("{name}: {arr_valid:?}");
 
@@ -640,19 +628,18 @@ fn write_object_validation<W: Write>(params: WriteParams<'_, W>) -> std::io::Res
         writeln!(writer, "input {name} {{")?;
         writer.indent();
         for (name, property) in obj_valid.properties.clone() {
-            let params = WriteParams {
+            write_property(WriteParams {
                 writer,
                 name,
-                schema: property.into_object(),
+                obj_valid: &mut ObjectValidation::default(),
                 defs,
                 extra_it,
+                schema: property.into_object(),
                 scalars: &mut HashSet::new(),
                 types_added: &mut HashSet::new(),
                 written_directives: &mut HashSet::new(),
                 arr_valid: &mut ArrayValidation::default(),
-                obj_valid: &mut ObjectValidation::default(),
-            };
-            write_property(params)?;
+            })?;
         }
         writer.unindent();
         writeln!(writer, "}}")
@@ -673,7 +660,7 @@ fn write_all_input_types(
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
-        let params = WriteParams {
+        write_input_type(WriteParams {
             writer,
             name,
             schema: input_type.clone().into_object(),
@@ -684,8 +671,7 @@ fn write_all_input_types(
             written_directives: &mut HashSet::new(),
             arr_valid: &mut ArrayValidation::default(),
             obj_valid: &mut ObjectValidation::default(),
-        };
-        write_input_type(params)?;
+        })?;
     }
 
     let mut new_extra_it = BTreeMap::new();
@@ -694,7 +680,7 @@ fn write_all_input_types(
         match extra_type {
             ExtraTypes::Schema => {
                 if let Some(schema) = defs.get(&name).cloned() {
-                    let params = WriteParams {
+                    write_input_type(WriteParams {
                         writer,
                         name: name.clone(),
                         schema: schema.into_object(),
@@ -705,25 +691,21 @@ fn write_all_input_types(
                         written_directives: &mut HashSet::new(),
                         arr_valid: &mut ArrayValidation::default(),
                         obj_valid: &mut ObjectValidation::default(),
-                    };
-                    write_input_type(params)?
+                    })?
                 }
             }
-            ExtraTypes::ObjectValidation(obj_valid) => {
-                let params = WriteParams {
-                    writer,
-                    name: name.clone(),
-                    schema: SchemaObject::default(),
-                    defs: &defs,
-                    scalars: &mut scalars,
-                    extra_it: &mut new_extra_it,
-                    types_added: &mut types_added,
-                    written_directives: &mut HashSet::new(),
-                    arr_valid: &mut ArrayValidation::default(),
-                    obj_valid: &mut obj_valid.clone(),
-                };
-                write_object_validation(params)?
-            }
+            ExtraTypes::ObjectValidation(obj_valid) => write_object_validation(WriteParams {
+                writer,
+                name: name.clone(),
+                schema: SchemaObject::default(),
+                defs: &defs,
+                scalars: &mut scalars,
+                extra_it: &mut new_extra_it,
+                types_added: &mut types_added,
+                written_directives: &mut HashSet::new(),
+                arr_valid: &mut ArrayValidation::default(),
+                obj_valid: &mut obj_valid.clone(),
+            })?,
         }
     }
 
