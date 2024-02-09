@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use gen_gql_schema::update_gql;
 use schemars::schema::RootSchema;
 use serde_json::{json, Value};
-use tailcall::cli::init_file;
+use tailcall::cli::init_runtime;
 use tailcall::config;
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
@@ -47,7 +47,8 @@ async fn main() {
 
 async fn mode_check() -> Result<()> {
     let json_schema = get_file_path();
-    let file_io = init_file();
+    let rt = init_runtime(&Default::default(), None);
+    let file_io = rt.file;
     let content = file_io
         .read(
             json_schema
@@ -72,7 +73,8 @@ async fn mode_fix() -> Result<()> {
 async fn update_json() -> Result<()> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
-    let file_io = init_file();
+    let rt = init_runtime(&Default::default(), None);
+    let file_io = rt.file;
     log::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
         .write(
