@@ -56,7 +56,7 @@ impl TestHttp {
                 options: HttpCacheOptions::default(),
             }))
         }
-        Self { client: client.build(), http2_only: upstream.http2_only }
+        Self { client: client.build() }
     }
 }
 
