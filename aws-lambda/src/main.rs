@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use dotenvy::dotenv;
 use http::{to_request, to_response};
-use lambda_http::{run, service_fn, Body, Error, Request, Response};
+use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
@@ -40,7 +40,7 @@ async fn main() -> Result<(), Error> {
 
     let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
 
-    run(service_fn(|event: Request| async {
+    run(service_fn(|event| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;
         Ok::<Response<Body>, Error>(to_response(resp).await?)
     }))
