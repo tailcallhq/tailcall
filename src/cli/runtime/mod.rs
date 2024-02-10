@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use crate::blueprint::Upstream;
 use crate::cache::InMemoryCache;
-use crate::cli::javascript;
 use crate::runtime::TargetRuntime;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
@@ -24,7 +23,7 @@ fn init_file() -> Arc<dyn FileIO> {
 fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     #[cfg(feature = "js")]
     if let Some(script) = script {
-        return javascript::init_http(http, script);
+        return crate::cli::javascript::init_http(http, script);
     }
 
     #[cfg(not(feature = "js"))]
