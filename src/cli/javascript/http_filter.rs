@@ -58,10 +58,9 @@ impl HttpIO for HttpFilter {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        let command = self.worker.dispatch(Message {
-            message: MessageContent::Request(request.try_into()?),
-            id: None,
-        })?;
+        let command = self
+            .worker
+            .dispatch(Message { message: MessageContent::Request(request.try_into()?), id: 0 })?;
         self.on_command(command).await
     }
 }

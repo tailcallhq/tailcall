@@ -34,10 +34,10 @@ impl TryFrom<JsRequest> for reqwest::Request {
     }
 }
 
-impl TryFrom<reqwest::Request> for JsRequest {
+impl TryFrom<&reqwest::Request> for JsRequest {
     type Error = anyhow::Error;
 
-    fn try_from(req: reqwest::Request) -> Result<Self, Self::Error> {
+    fn try_from(req: &reqwest::Request) -> Result<Self, Self::Error> {
         let url = req.url().to_string();
         let method = req.method().as_str().to_string();
         let headers = req
@@ -99,7 +99,7 @@ mod tests {
         let _ = reqwest_request
             .body_mut()
             .insert(reqwest::Body::from("Hello, World!"));
-        let js_request: JsRequest = reqwest_request.try_into().unwrap();
+        let js_request: JsRequest = (&reqwest_request).try_into().unwrap();
         assert_eq!(js_request.method, "GET");
         assert_eq!(js_request.url, "http://example.com/");
         let body_out = js_request.body.unwrap();

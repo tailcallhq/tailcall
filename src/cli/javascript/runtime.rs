@@ -3,12 +3,12 @@ use std::thread;
 
 use deno_core::{extension, serde_v8, v8, FastString, JsRuntime, RuntimeOptions};
 
-use super::channel::{Message, MessageContent};
+use super::channel::{Command, Event};
 use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime {
-    value: v8::Global<v8::Value>,
     js_runtime: JsRuntime,
+    channel: v8::Global<v8::Value>,
 }
 
 thread_local! {
@@ -17,20 +17,20 @@ thread_local! {
 
 impl LocalRuntime {
     fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
-        let source = create_closure(script.source.as_str());
+        let source = script.source;
         extension!(console, js = ["src/cli/javascript/shim/console.js",]);
+        extension!(channel, js = ["src/cli/javascript/shim/channel.js",]);
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
-            extensions: vec![console::init_ops_and_esm()],
+            extensions: vec![console::init_ops_and_esm(), channel::init_ops_and_esm()],
             ..Default::default()
         });
-        let value = js_runtime.execute_script("<anon>", FastString::from(source))?;
+        let channel =
+            js_runtime.execute_script("<anon>", FastString::from_static("globalThis.channel"))?;
+        js_runtime.execute_script("<anon>", FastString::from(source))?;
         log::debug!("JS Runtime created: {:?}", thread::current().name());
-        Ok(Self { value, js_runtime })
-    }
-}
 
-fn create_closure(script: &str) -> String {
-    format!("(function() {{{} return onEvent}})();", script)
+        Ok(Self { js_runtime, channel })
+    }
 }
 
 pub struct Runtime {
@@ -44,12 +44,11 @@ impl Runtime {
 }
 
 #[async_trait::async_trait]
-impl WorkerIO<Message, Message> for Runtime {
-    fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
+impl WorkerIO<Event, Command> for Runtime {
+    fn dispatch(&self, event: Event) -> anyhow::Result<Vec<Command>> {
         log::debug!("event: {:?}", event);
         let command = LOCAL_RUNTIME.with(move |cell| {
             let script = self.script.clone();
-            // TODO: use `get_or_try_init`. Currently it is an unstable feature
             cell.borrow()
                 .get_or_init(|| LocalRuntime::try_new(script).expect("JS runtime not initialized"));
             on_event(event)
@@ -58,22 +57,25 @@ impl WorkerIO<Message, Message> for Runtime {
     }
 }
 
-fn on_event(message: Message) -> anyhow::Result<Message> {
+fn on_event(event: Event) -> anyhow::Result<Vec<Command>> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let local_runtime = cell
+        let runtime = cell
             .get_mut()
             .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
-        let scope = &mut local_runtime.js_runtime.handle_scope();
-        let value = &local_runtime.value;
-        let local_value = v8::Local::new(scope, value);
-        let closure: v8::Local<v8::Function> = local_value.try_into()?;
-        let input = serde_v8::to_v8(scope, message)?;
-        log::debug!("js input: {:?}", input);
-        let null_ctx = v8::null(scope);
+        let scope = &mut runtime.js_runtime.handle_scope();
+        let channel = v8::Local::<v8::Object>::try_from(v8::Local::new(scope, &runtime.channel))?;
+        let server_emit_key = v8::String::new(scope, "serverEmit").unwrap();
 
-        let output = closure.call(scope, null_ctx.into(), &[input]);
-        match output {
-            None => Ok(Message { message: MessageContent::Empty, id: None }),
+        let function = channel
+            .get(scope, server_emit_key.into())
+            .ok_or(anyhow::anyhow!("channel not initialized"))?;
+
+        let function = v8::Local::<v8::Function>::try_from(function)?;
+        let event = serde_v8::to_v8(scope, event)?;
+        let command = function.call(scope, channel.into(), &[event]);
+
+        match command {
+            None => Ok(vec![]),
             Some(output) => Ok(serde_v8::from_v8(scope, output)?),
         }
     })
