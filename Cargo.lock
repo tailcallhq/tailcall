@@ -249,7 +249,7 @@ dependencies = [
  "futures-util",
  "handlebars",
  "http 1.0.0",
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
  "lru 0.7.8",
  "mime",
  "multer",
@@ -301,7 +301,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cf4d4e86208f4f9b81a503943c07e6e7f29ad3505e6c9ce6431fe64dc241681"
 dependencies = [
  "bytes",
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
  "serde",
  "serde_json",
 ]
@@ -1142,7 +1142,7 @@ dependencies = [
  "sourcemap",
  "static_assertions",
  "tokio",
- "url",
+ "url 2.5.0",
  "v8",
 ]
 
@@ -1648,7 +1648,7 @@ dependencies = [
  "anyhow",
  "google-apis-common",
  "http 0.2.11",
- "hyper",
+ "hyper 0.14.28",
  "hyper-rustls 0.24.2",
  "itertools 0.10.5",
  "mime",
@@ -1668,7 +1668,7 @@ dependencies = [
  "base64 0.13.1",
  "chrono",
  "http 0.2.11",
- "hyper",
+ "hyper 0.14.28",
  "itertools 0.10.5",
  "mime",
  "serde",
@@ -1692,7 +1692,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.11",
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
  "slab",
  "tokio",
  "tokio-util",
@@ -1988,6 +1988,7 @@ dependencies = [
  "futures-util",
  "http 0.2.11",
  "hyper 0.14.28",
+ "log",
  "rustls 0.21.10",
  "rustls-native-certs 0.6.3",
  "tokio",
@@ -2299,13 +2300,13 @@ dependencies = [
  "hyper 1.1.0",
  "lambda_runtime",
  "mime",
- "percent-encoding",
+ "percent-encoding 2.3.1",
  "pin-project-lite",
  "serde",
  "serde_json",
  "serde_urlencoded",
  "tokio-stream",
- "url",
+ "url 2.5.0",
 ]
 
 [[package]]
@@ -2879,7 +2880,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1d3afd2628e69da2be385eb6f2fd57c8ac7977ceeff6dc166ff1657b0e386a9"
 dependencies = [
  "fixedbitset",
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
 ]
 
 [[package]]
@@ -3738,7 +3739,7 @@ version = "1.0.113"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69801b70b1c3dac963ecb03a364ba0ceda9cf60c71cfe475e99864759c8b8a79"
 dependencies = [
- "indexmap",
+ "indexmap 2.2.2",
  "itoa",
  "ryu",
  "serde",
@@ -3803,12 +3804,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_with"
+version = "2.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07ff71d2c147a7b57362cead5e22f772cd52f6ab31cfcd9edcd7f6aeb2a0afbe"
+dependencies = [
+ "base64 0.13.1",
+ "chrono",
+ "hex",
+ "indexmap 1.9.3",
+ "serde",
+ "serde_json",
+ "serde_with_macros",
+ "time",
+]
+
+[[package]]
+name = "serde_with_macros"
+version = "2.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "881b6f881b17d13214e5d494c939ebab463d01264ce1811e9d4ac3a882e7695f"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
+]
+
+[[package]]
 name = "serde_yaml"
 version = "0.9.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adf8a49373e98a4c5f0ceb5d05aa7c648d75f63774981ed95b7c7443bbd50c6e"
 dependencies = [
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
  "itoa",
  "ryu",
  "serde",
@@ -3940,7 +3969,7 @@ dependencies = [
  "serde",
  "serde_json",
  "unicode-id",
- "url",
+ "url 2.5.0",
 ]
 
 [[package]]
@@ -4102,7 +4131,7 @@ dependencies = [
  "httpmock",
  "hyper 0.14.28",
  "hyper-rustls 0.25.0",
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
  "inquire",
  "insta",
  "lazy_static",
@@ -4192,7 +4221,7 @@ version = "0.1.0"
 dependencies = [
  "async-graphql",
  "derive_setters",
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
  "regex",
  "serde",
  "serde_json",
@@ -4240,7 +4269,9 @@ checksum = "c8248b6521bb14bc45b4067159b9b6ad792e2d6d754d6c41fb50e29fefe38749"
 dependencies = [
  "deranged",
  "itoa",
+ "libc",
  "num-conv",
+ "num_threads",
  "powerfmt",
  "serde",
  "time-core",
@@ -4385,7 +4416,7 @@ version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
- "indexmap 2.2.1",
+ "indexmap 2.2.2",
  "toml_datetime",
  "winnow",
 ]
@@ -5170,7 +5201,7 @@ dependencies = [
  "base64 0.21.7",
  "futures",
  "http 0.2.11",
- "hyper",
+ "hyper 0.14.28",
  "hyper-rustls 0.24.2",
  "itertools 0.12.1",
  "log",
