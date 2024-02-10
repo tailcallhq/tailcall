@@ -43,10 +43,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     let config = match reader.read(config_url).await {
         Ok(config) => config,
         Err(e) => {
-            let mut response = async_graphql::Response::default();
-            let server_error = ServerError::new(format!("Failed to read config: {}", e), None);
-            response.errors = vec![server_error];
-            return Ok(Err(GraphQLResponse::from(response).to_response()?));
+            return Ok(Err(GraphQLResponse::from(e).to_response()?));
         }
     };
 

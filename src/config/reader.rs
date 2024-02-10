@@ -1,6 +1,8 @@
 use std::collections::{HashMap, VecDeque};
 
 use anyhow::Context;
+use async_graphql::{ErrorExtensionValues, ServerError};
+use async_graphql_value::ConstValue;
 use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
@@ -8,9 +10,96 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use super::{ConfigModule, Content, Link, LinkType};
+use super::{ConfigModule, Content, Link, LinkType, ParseError, UnsupportedFileFormat};
+use crate::async_graphql_hyper::GraphQLResponse;
 use crate::config::{Config, Source};
 use crate::target_runtime::TargetRuntime;
+use crate::valid::ValidationError;
+
+#[derive(Debug)]
+pub enum ConfigReaderError {
+    Parse(ParseError),
+    Validation(ValidationError<String>),
+    UnsupportedFileFormat(UnsupportedFileFormat),
+    Anyhow(anyhow::Error),
+}
+
+impl std::fmt::Display for ConfigReaderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Parse(x) => std::fmt::Display::fmt(x, f),
+            Self::Validation(x) => std::fmt::Display::fmt(x, f),
+            Self::UnsupportedFileFormat(x) => std::fmt::Display::fmt(x, f),
+            Self::Anyhow(x) => std::fmt::Display::fmt(x, f),
+        }
+    }
+}
+
+impl std::error::Error for ConfigReaderError {}
+
+impl From<ParseError> for ConfigReaderError {
+    fn from(value: ParseError) -> Self {
+        ConfigReaderError::Parse(value)
+    }
+}
+
+impl From<UnsupportedFileFormat> for ConfigReaderError {
+    fn from(value: UnsupportedFileFormat) -> Self {
+        ConfigReaderError::UnsupportedFileFormat(value)
+    }
+}
+
+impl From<anyhow::Error> for ConfigReaderError {
+    fn from(value: anyhow::Error) -> Self {
+        ConfigReaderError::Anyhow(value)
+    }
+}
+
+impl From<ConfigReaderError> for GraphQLResponse {
+    fn from(e: ConfigReaderError) -> GraphQLResponse {
+        let mut response = async_graphql::Response::default();
+
+        match e {
+            ConfigReaderError::Validation(e)
+            | ConfigReaderError::Parse(ParseError::Validation(e)) => {
+                response.errors = e
+                    .as_vec()
+                    .iter()
+                    .map(|cause| {
+                        let mut error = ServerError::new(cause.message.to_owned(), None);
+
+                        let mut ext: ErrorExtensionValues = ErrorExtensionValues::default();
+
+                        if let Some(description) = &cause.description {
+                            ext.set("description", ConstValue::String(description.to_owned()));
+                        }
+
+                        if !cause.trace.is_empty() {
+                            ext.set(
+                                "trace",
+                                ConstValue::List(cause.trace.iter().map(|x| x.into()).collect()),
+                            );
+                        }
+
+                        error.extensions = Some(ext);
+                        error
+                    })
+                    .collect();
+            }
+            ConfigReaderError::Parse(ParseError::GraphQL(e)) => {
+                response.errors = vec![ServerError::from(e)];
+            }
+            _ => {
+                response.errors = vec![ServerError::new(
+                    format!("Failed to read config: {}", e),
+                    None,
+                )]
+            }
+        }
+
+        GraphQLResponse::from(response)
+    }
+}
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -142,12 +231,15 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
+    pub async fn read<T: ToString>(&self, file: T) -> Result<ConfigModule, ConfigReaderError> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
+    pub async fn read_all<T: ToString>(
+        &self,
+        files: &[T],
+    ) -> Result<ConfigModule, ConfigReaderError> {
         let files = self.read_files(files).await?;
         let mut config_set = ConfigModule::default();
 

@@ -11,7 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Failed to read config: Validation Error\n•  --> 1:1\n  |\n1 | \"dsjfsjdfjdsfjkdskjfjkds\"\n  | ^---\n  |\n  = expected type_system_definition\n"
+        "message": " --> 1:1\n  |\n1 | \"dsjfsjdfjdsfjkdskjfjkds\"\n  | ^---\n  |\n  = expected type_system_definition",
+        "locations": [
+          {
+            "line": 1,
+            "column": 1
+          }
+        ]
       }
     ]
   }
