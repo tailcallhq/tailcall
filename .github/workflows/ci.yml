@@ -33,6 +33,31 @@ jobs:
     outputs:
       check_if_build: ${{ steps.check.outputs.check_if_build }}
 
+  test_aws_build:
+    name: Test AWS Lambda Build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./aws-lambda
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install cargo-lambda
+        run: pip install cargo-lambda
+
+      - name: Build
+        run: cargo lambda build
+
   test_cf:
     name: Run Tests (WASM)
     runs-on: ubuntu-latest
@@ -76,11 +101,15 @@ jobs:
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: Wandalen/wretry.action@v1
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-          files: lcov.info
-          fail_ci_if_error: true
+          action: codecov/codecov-action@v4
+          attempt_limit: 3
+          attempt_delay: 10000
+          with: |
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: lcov.info
+            fail_ci_if_error: true
 
   draft_release:
     name: Draft Release
@@ -282,11 +311,54 @@ jobs:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
+  release_lambda:
+    name: Release (AWS Lambda)
+    needs: [test, draft_release, check_if_build, test_cf]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
+      APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
 
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+
+      - name: Install Correct Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install cargo-lambda
+        run: pip install cargo-lambda
+
+      - name: Build
+        env:
+          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: cargo lambda build -p aws-lambda --release
+
+      - name: Rename Binary with Target Name
+        run: |
+          pwd
+          cp target/lambda/aws-lambda/bootstrap target/lambda/aws-lambda/tailcall-aws-lambda-bootstrap
+
+      - name: Upload AWS Lambda Bootstrap Binary
+        uses: xresloader/upload-to-github-release@v1
+        with:
+          release_id: ${{ needs.draft_release.outputs.create_release_id }}
+          file: target/lambda/aws-lambda/tailcall-aws-lambda-bootstrap
+          overwrite: true
   semantic_release:
     name: Semantic Release
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: [draft_release, release]
+    needs: [draft_release, release, release_lambda]
     runs-on: ubuntu-latest
     permissions:
       contents: write

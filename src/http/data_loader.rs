@@ -11,7 +11,7 @@ use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, Response};
 use crate::json::JsonLike;
-use crate::HttpIO;
+use crate::runtime::TargetRuntime;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
@@ -33,14 +33,14 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 
 #[derive(Clone)]
 pub struct HttpDataLoader {
-    pub client: Arc<dyn HttpIO>,
+    pub runtime: TargetRuntime,
     pub group_by: Option<GroupBy>,
     pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
-    pub fn new(client: Arc<dyn HttpIO>, group_by: Option<GroupBy>, is_list: bool) -> Self {
+    pub fn new(runtime: TargetRuntime, group_by: Option<GroupBy>, is_list: bool) -> Self {
         HttpDataLoader {
-            client,
+            runtime,
             group_by,
             body: if is_list {
                 get_body_value_list
@@ -79,7 +79,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 first_url.query_pairs_mut().extend_pairs(url.query_pairs());
             }
 
-            let res = self.client.execute(request).await?.to_json()?;
+            let res = self.runtime.http.execute(request).await?.to_json()?;
             #[allow(clippy::mutable_key_type)]
             let mut hashmap = HashMap::with_capacity(keys.len());
             let path = &group_by.path();
@@ -97,7 +97,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             Ok(hashmap)
         } else {
             let results = keys.iter().map(|key| async {
-                let result = self.client.execute(key.to_request()).await;
+                let result = self.runtime.http.execute(key.to_request()).await;
                 (key.clone(), result)
             });
 

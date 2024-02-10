@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 
 use anyhow::Context;
 use async_graphql::{ErrorExtensionValues, ServerError};
@@ -8,12 +9,16 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+use rustls_pemfile;
+use rustls_pki_types::{
+    CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
+};
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType, ParseError, UnsupportedFileFormat};
 use crate::async_graphql_hyper::GraphQLResponse;
 use crate::config::{Config, Source};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 use crate::valid::ValidationError;
 
 #[derive(Debug)]
@@ -224,10 +229,51 @@ impl ConfigReader {
                 LinkType::Script => {
                     config_set.extensions.script = Some(content);
                 }
+                LinkType::Cert => {
+                    config_set
+                        .extensions
+                        .cert
+                        .extend(self.load_cert(content.clone()).await?);
+                }
+                LinkType::Key => {
+                    config_set.extensions.keys =
+                        Arc::new(self.load_private_key(content.clone()).await?)
+                }
             }
         }
 
         Ok(config_set)
+    }
+
+    /// Reads the certificate from a given file
+    async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+        let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
+
+        Ok(certificates.into_iter().map(CertificateDer::from).collect())
+    }
+
+    /// Reads a private key from a given file
+    async fn load_private_key(
+        &self,
+        content: String,
+    ) -> anyhow::Result<Vec<PrivateKeyDer<'static>>> {
+        let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
+
+        Ok(keys
+            .into_iter()
+            .filter_map(|key| match key {
+                rustls_pemfile::Item::RSAKey(key) => {
+                    Some(PrivateKeyDer::Pkcs1(PrivatePkcs1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::ECKey(key) => {
+                    Some(PrivateKeyDer::Sec1(PrivateSec1KeyDer::from(key)))
+                }
+                rustls_pemfile::Item::PKCS8Key(key) => {
+                    Some(PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key)))
+                }
+                _ => None,
+            })
+            .collect())
     }
 
     /// Reads a single file and returns the config
@@ -323,13 +369,12 @@ mod test_proto_config {
 
     use anyhow::{Context, Result};
 
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
+        let reader = ConfigReader::init(crate::runtime::test::init(None));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -355,7 +400,7 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
+        let reader = ConfigReader::init(crate::runtime::test::init(None));
         let helper_map = reader
             .resolve_descriptors(HashMap::new(), test_file)
             .await?;
@@ -400,8 +445,6 @@ mod reader_tests {
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
 
-    use crate::blueprint::Upstream;
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
 
@@ -411,7 +454,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -463,7 +506,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -489,7 +532,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);
