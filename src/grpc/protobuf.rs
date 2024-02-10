@@ -202,8 +202,6 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::blueprint::Upstream;
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
 
@@ -225,7 +223,7 @@ mod tests {
     }
 
     async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
         let id = "greetings".to_string();
