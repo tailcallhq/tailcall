@@ -82,3 +82,42 @@ impl HttpIO for NativeHttp {
         Ok(Response::from_reqwest(response?.error_for_status()?).await?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use reqwest::Method;
+    use tokio;
+
+    use super::*;
+
+    fn start_mock_server() -> httpmock::MockServer {
+        httpmock::MockServer::start()
+    }
+
+    #[tokio::test]
+    async fn test_native_http_get_request() {
+        let server = start_mock_server();
+
+        let header_serv = server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/test");
+            then.status(200).body("Alo");
+        });
+
+        let native_http = NativeHttp::init(&Default::default());
+        let port = server.port();
+        // Build a GET request to the mock server
+        let request_url = format!("http://localhost:{}/test", port);
+        let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
+
+        // Execute the request
+        let result = native_http.execute(request).await;
+
+        // Assert the response is as expected
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.body, Bytes::from("Alo"));
+
+        header_serv.assert();
+    }
+}
