@@ -23,14 +23,14 @@ fn validate_data_with_schema(
 }
 
 pub struct CompileConst<'a> {
-    pub config_set: &'a config::ConfigModule,
+    pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
     pub value: &'a serde_json::Value,
     pub validate: bool,
 }
 
 pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
-    let config_set = inputs.config_set;
+    let config_module = inputs.config_module;
     let field = inputs.field;
     let value = inputs.value;
     let validate = inputs.validate;
@@ -39,7 +39,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
     match ConstValue::from_json(data.to_owned()) {
         Ok(gql) => {
             let validation = if validate {
-                validate_data_with_schema(config_set, field, gql)
+                validate_data_with_schema(config_module, field, gql)
             } else {
                 Valid::succeed(())
             };
@@ -53,13 +53,13 @@ pub fn update_const_field<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config_set, field, _, _), b_field| {
+        |(config_module, field, _, _), b_field| {
             let Some(const_field) = &field.const_field else {
                 return Valid::succeed(b_field);
             };
 
             compile_const(CompileConst {
-                config_set,
+                config_module,
                 field,
                 value: &const_field.data,
                 validate: true,
