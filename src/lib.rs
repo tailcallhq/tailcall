@@ -3,6 +3,7 @@
 mod app_context;
 pub mod async_graphql_hyper;
 pub mod blueprint;
+pub mod builder;
 pub mod cache;
 #[cfg(feature = "cli")]
 pub mod cli;
