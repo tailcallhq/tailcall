@@ -671,17 +671,14 @@ impl Config {
         Ok(serde_yaml::from_str(yaml)?)
     }
 
-    pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    pub fn from_sdl(sdl: &str) -> Result<Self> {
         let doc = async_graphql::parser::parse_schema(sdl);
-        match doc {
-            Ok(doc) => from_document(doc),
-            Err(e) => Valid::fail(e.to_string()),
-        }
+        Ok(from_document(doc?).to_result()?)
     }
 
     pub fn from_source(source: Source, schema: &str) -> Result<Self> {
         match source {
-            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+            Source::GraphQL => Ok(Config::from_sdl(schema)?),
             Source::Json => Ok(Config::from_json(schema)?),
             Source::Yml => Ok(Config::from_yaml(schema)?),
         }
