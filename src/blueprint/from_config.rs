@@ -10,8 +10,8 @@ use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
-    let server = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Server::try_from(config_set.clone())).map(|server| blueprint.server(server))
+    let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
+        Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
     });
 
     let schema = to_schema().transform::<Blueprint>(
@@ -24,13 +24,13 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
         |blueprint| blueprint.definitions,
     );
 
-    let upstream = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Upstream::try_from(config_set.upstream.clone()))
+    let upstream = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
+        Valid::from(Upstream::try_from(config_module.upstream.clone()))
             .map(|upstream| blueprint.upstream(upstream))
     });
 
-    let links = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Links::try_from(config_set.links.clone())).map_to(blueprint)
+    let links = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
+        Valid::from(Links::try_from(config_module.links.clone())).map_to(blueprint)
     });
 
     server
@@ -113,9 +113,9 @@ where
 impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
-    fn try_from(config_set: &ConfigModule) -> Result<Self, Self::Error> {
+    fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()
-            .try_fold(config_set, Blueprint::default())
+            .try_fold(config_module, Blueprint::default())
             .to_result()
     }
 }
