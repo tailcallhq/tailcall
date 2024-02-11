@@ -2,12 +2,6 @@
 name = "tailcall"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75.0"
-
-# Version of tooling used to lint the project.
-[package.metadata.tooling-version]
-clippy = "clippy 0.1.77"
-prettier = "3.2.5"
 
 [[bin]]
 name = "tailcall"
