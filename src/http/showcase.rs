@@ -3,20 +3,17 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::{Body, Request, Response};
-use serde::de::DeserializeOwned;
 use url::Url;
 
-use super::AppContext;
-use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::blueprint::Blueprint;
-use crate::config::reader::ConfigReader;
+use crate::async_graphql_hyper::GraphQLResponse;
+use crate::builder::{Tailcall, TailcallBuilder};
 use crate::runtime::TargetRuntime;
 
-pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
+pub async fn create_tailcall_executor(
     req: &Request<Body>,
     runtime: TargetRuntime,
     enable_fs: bool,
-) -> Result<Result<AppContext, Response<Body>>> {
+) -> Result<Result<Tailcall, Response<Body>>> {
     let config_url = req
         .uri()
         .query()
@@ -39,9 +36,9 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         return Ok(Err(GraphQLResponse::from(response).to_response()?));
     }
 
-    let reader = ConfigReader::init(runtime.clone());
-    let config = match reader.read(config_url).await {
-        Ok(config) => config,
+    let tc_builder = TailcallBuilder::init(runtime.clone());
+    let tailcall = match tc_builder.with_config_paths(&[config_url]).await {
+        Ok(tailcall) => tailcall,
         Err(e) => {
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("Failed to read config: {}", e), None);
@@ -50,29 +47,15 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    let blueprint = match Blueprint::try_from(&config) {
-        Ok(blueprint) => blueprint,
-        Err(e) => {
-            let mut response = async_graphql::Response::default();
-            let server_error = ServerError::new(format!("{}", e), None);
-            response.errors = vec![server_error];
-            return Ok(Err(GraphQLResponse::from(response).to_response()?));
-        }
-    };
-
-    Ok(Ok(AppContext::new(blueprint, runtime)))
+    Ok(Ok(tailcall))
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use hyper::Request;
     use serde_json::json;
 
-    use crate::async_graphql_hyper::GraphQLRequest;
-    use crate::http::handle_request;
-    use crate::http::showcase::create_app_ctx;
+    use crate::http::showcase::create_tailcall_executor;
 
     #[tokio::test]
     async fn works_with_file() {
@@ -85,7 +68,7 @@ mod tests {
             .unwrap();
 
         let runtime = crate::runtime::test::init(None);
-        let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
+        let tailcall = create_tailcall_executor(&req, runtime, true)
             .await
             .unwrap()
             .unwrap();
@@ -101,9 +84,7 @@ mod tests {
             ))
             .unwrap();
 
-        let res = handle_request::<GraphQLRequest>(req, Arc::new(app))
-            .await
-            .unwrap();
+        let res = tailcall.execute(req).await.unwrap();
 
         println!("{:#?}", res);
         assert!(res.status().is_success())

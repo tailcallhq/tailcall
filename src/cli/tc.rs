@@ -10,6 +10,7 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
+use crate::builder::TailcallBuilder;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
@@ -29,9 +30,12 @@ pub async fn run() -> Result<()> {
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
-            let config_module = config_reader.read_all(&file_paths).await?;
-            log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
-            let server = Server::new(config_module);
+            let tailcall_executor = TailcallBuilder::init(runtime)
+                .with_config_paths(&file_paths)
+                .await?;
+
+            // log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
+            let server = Server::new(tailcall_executor);
             server.fork_start().await?;
             Ok(())
         }

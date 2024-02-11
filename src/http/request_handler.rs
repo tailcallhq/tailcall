@@ -120,12 +120,14 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             if app_ctx.blueprint.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>
         {
-            let app_ctx =
-                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
+            let tailcall_executor =
+                match showcase::create_tailcall_executor(&req, app_ctx.runtime.clone(), false)
+                    .await?
+                {
                     Ok(app_ctx) => app_ctx,
                     Err(res) => return Ok(res),
                 };
-
+            let app_ctx = tailcall_executor.app_ctx;
             graphql_request::<T>(req, &app_ctx).await
         }
 
