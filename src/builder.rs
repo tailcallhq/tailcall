@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -27,6 +28,14 @@ impl TailcallBuilder {
         let reader = ConfigReader::init(self.runtime.clone());
         let config = Config::from_source(source, schema)?;
         let config_module = reader.resolve(config, None).await?;
+        let blueprint = Blueprint::try_from(&config_module)?;
+        let app_ctx = AppContext::new(blueprint, self.runtime);
+        let app_ctx = Arc::new(app_ctx);
+        Ok(Tailcall { app_ctx })
+    }
+    pub async fn with_config_paths<T: AsRef<Path>>(self, files: &[T]) -> Result<Tailcall> {
+        let reader = ConfigReader::init(self.runtime.clone());
+        let config_module = reader.read_all(files).await;
         let blueprint = Blueprint::try_from(&config_module)?;
         let app_ctx = AppContext::new(blueprint, self.runtime);
         let app_ctx = Arc::new(app_ctx);
