@@ -3,6 +3,7 @@ use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
+use dotenvy::dotenv;
 use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
@@ -22,6 +23,7 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub async fn run() -> Result<()> {
+    let _ = dotenv(); // dotenvy fails if .env is not found, but we don't care if it doesn't exist.
     let cli = Cli::parse();
     logger_init();
     update_checker::check_for_update().await;

@@ -11,6 +11,7 @@ path = "src/main.rs"
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 
+dotenvy = { version = "0.15", optional = true }
 mimalloc = { version = "0.1.39", default-features = false, optional = true }
 http-cache-reqwest = { version = "0.13.0", features = [
     "manager-moka",
@@ -108,6 +109,7 @@ js = ["dep:deno_core", "dep:serde_v8"]
 cli = [
     "tokio/fs",
     "tokio/rt-multi-thread",
+    "dep:dotenvy",
     "dep:mimalloc",
     "dep:http-cache-reqwest",
     "dep:moka",
