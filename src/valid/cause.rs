@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::fmt::Display;
 
+use async_graphql::{ErrorExtensionValues, ServerError};
+use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use thiserror::Error;
 
@@ -52,14 +54,69 @@ impl<E> Cause<E> {
     }
 }
 
+impl From<Cause<String>> for ServerError {
+    fn from(value: Cause<String>) -> Self {
+        let mut error = ServerError::new(value.message.to_owned(), None);
+
+        let mut ext: ErrorExtensionValues = ErrorExtensionValues::default();
+
+        if let Some(description) = &value.description {
+            ext.set("description", ConstValue::String(description.to_owned()));
+        }
+
+        if !value.trace.is_empty() {
+            ext.set(
+                "trace",
+                ConstValue::List(value.trace.iter().map(|x| x.into()).collect()),
+            );
+        }
+
+        error.extensions = Some(ext);
+        error
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use async_graphql::ServerError;
+    use async_graphql_value::ConstValue;
+
+    use super::Cause;
+
     #[test]
     fn test_display() {
-        use super::Cause;
         let cause = Cause::new("error")
             .trace(vec!["trace0", "trace1"])
             .description("description");
         assert_eq!(cause.to_string(), "[trace0, trace1] error: description");
+    }
+
+    #[test]
+    fn test_server_error() {
+        let cause: Cause<String> = Cause::new("Error".to_string())
+            .description("This is a fake error".to_string())
+            .trace(vec!["fake".to_string(), "trace".to_string()]);
+        let err = ServerError::from(cause.clone());
+
+        assert_eq!(err.message, cause.message);
+
+        let ext = err.extensions.unwrap();
+        assert_eq!(
+            ext.get("description"),
+            cause.description.map(ConstValue::String).as_ref()
+        );
+
+        let trace = ext.get("trace").unwrap().to_owned();
+        if let ConstValue::List(trace) = trace {
+            for (i, x) in trace.into_iter().enumerate() {
+                if let ConstValue::String(s) = x {
+                    assert_eq!(s, cause.trace[i]);
+                } else {
+                    panic!("Element {} of trace wasn't a string", i);
+                }
+            }
+        } else {
+            panic!("trace was not a list");
+        }
     }
 }

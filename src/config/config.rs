@@ -4,11 +4,13 @@ use std::num::NonZeroU64;
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
+use async_graphql::ServerError;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{Expr, Link, Server, Upstream};
+use crate::async_graphql_hyper::GraphQLResponse;
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::KeyValues;
@@ -718,6 +720,29 @@ impl From<ParseError> for ValidationError<String> {
     }
 }
 
+impl From<ParseError> for GraphQLResponse {
+    fn from(e: ParseError) -> GraphQLResponse {
+        let mut response = async_graphql::Response::default();
+
+        match e {
+            ParseError::Validation(e) => {
+                return GraphQLResponse::from(e);
+            }
+            ParseError::GraphQL(e) => {
+                response.errors = vec![ServerError::from(e)];
+            }
+            _ => {
+                response.errors = vec![ServerError::new(
+                    format!("Failed to parse config: {}", e),
+                    None,
+                )]
+            }
+        }
+
+        GraphQLResponse::from(response)
+    }
+}
+
 impl Config {
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
         serde_json::from_str(json)
@@ -797,5 +822,104 @@ mod tests {
             Type::default().fields(vec![("a", Field::int())]),
         )]);
         assert_eq!(actual, expected);
+    }
+}
+
+#[cfg(test)]
+mod error_tests {
+    use async_graphql::{BatchResponse, Pos, ServerError};
+
+    use super::ParseError;
+    use crate::async_graphql_hyper::GraphQLResponse;
+    use crate::valid::ValidationError;
+
+    fn get_graphql() -> async_graphql::parser::Error {
+        async_graphql::parser::Error::Syntax {
+            message: "Error".to_string(),
+            start: Pos { line: 1, column: 1 },
+            end: None,
+        }
+    }
+
+    fn get_json() -> serde_json::Error {
+        match serde_json::from_str::<serde_json::Value>("") {
+            Err(e) => e,
+            Ok(x) => panic!("Expected serde_json to fail but didnt, value: {:#?}", x),
+        }
+    }
+
+    fn get_yaml() -> serde_yaml::Error {
+        match serde_yaml::from_str::<serde_yaml::Value>("%") {
+            Err(e) => e,
+            Ok(x) => panic!("Expected serde_yaml to fail but didnt, value: {:#?}", x),
+        }
+    }
+
+    #[test]
+    fn debug_works() {
+        // This line will fail to compile if Debug is not supported.
+        let _ = format!(
+            "{:#?}",
+            ParseError::from(ValidationError::new("Error".to_string()))
+        );
+    }
+
+    #[test]
+    fn display_works() {
+        assert_eq!(
+            format!(
+                "{}",
+                ParseError::from(ValidationError::new("Error".to_string()))
+            ),
+            format!("{}", ValidationError::new("Error".to_string())),
+        );
+
+        assert_eq!(
+            format!("{}", ParseError::from(get_graphql())),
+            format!("{}", get_graphql()),
+        );
+
+        assert_eq!(
+            format!("{}", ParseError::from(get_json())),
+            format!("{}", get_json()),
+        );
+
+        assert_eq!(
+            format!("{}", ParseError::from(get_yaml())),
+            format!("{}", get_yaml()),
+        );
+    }
+
+    #[test]
+    fn to_graphql_response_works() {
+        let err = ValidationError::new("Error".to_string());
+        let res = GraphQLResponse::from(ParseError::from(err.clone()));
+
+        assert_eq!(
+            format!("{:?}", res),
+            format!("{:?}", GraphQLResponse::from(err))
+        );
+
+        let res = GraphQLResponse::from(ParseError::from(get_graphql()));
+        let res = match res.0 {
+            BatchResponse::Single(x) => x,
+            BatchResponse::Batch(x) => x.into_iter().next().unwrap(),
+        };
+
+        assert_eq!(res.errors.len(), 1);
+        assert_eq!(res.errors[0], ServerError::from(get_graphql()));
+
+        let err = get_json();
+        let res = GraphQLResponse::from(ParseError::from(get_json()));
+        let res = match res.0 {
+            BatchResponse::Single(x) => x,
+            BatchResponse::Batch(x) => x.into_iter().next().unwrap(),
+        };
+
+        assert_eq!(res.errors.len(), 1);
+        assert_eq!(
+            res.errors[0].message,
+            format!("Failed to parse config: {}", err)
+        );
     }
 }

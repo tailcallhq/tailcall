@@ -1,8 +1,10 @@
 use std::fmt::{Debug, Display};
 
+use async_graphql::ServerError;
 use regex::Regex;
 
 use super::Cause;
+use crate::async_graphql_hyper::GraphQLResponse;
 
 #[derive(Debug, PartialEq, Default, Clone)]
 pub struct ValidationError<E>(Vec<Cause<E>>);
@@ -36,6 +38,10 @@ impl<E: Display> Display for ValidationError<E> {
 impl<E> ValidationError<E> {
     pub fn as_vec(&self) -> &Vec<Cause<E>> {
         &self.0
+    }
+
+    pub fn into_vec(self) -> Vec<Cause<E>> {
+        self.0
     }
 
     pub fn combine(mut self, mut other: ValidationError<E>) -> ValidationError<E> {
@@ -125,11 +131,27 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
     }
 }
 
+impl From<ValidationError<String>> for GraphQLResponse {
+    fn from(value: ValidationError<String>) -> Self {
+        let mut response = async_graphql::Response::default();
+
+        response.errors = value
+            .into_vec()
+            .into_iter()
+            .map(ServerError::from)
+            .collect();
+
+        GraphQLResponse::from(response)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use async_graphql::{BatchResponse, ServerError};
     use pretty_assertions::assert_eq;
     use stripmargin::StripMargin;
 
+    use crate::async_graphql_hyper::GraphQLResponse;
     use crate::valid::{Cause, ValidationError};
 
     #[derive(Debug, PartialEq, serde::Deserialize)]
@@ -164,5 +186,20 @@ mod tests {
         )
         .trace("a");
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_to_graphql_response() {
+        let err = ValidationError::from(
+            Cause::new("1".to_string()).trace(vec!["a".to_string(), "b".to_string()]),
+        );
+        let res = GraphQLResponse::from(err.clone());
+        let res = match res.0 {
+            BatchResponse::Single(x) => x,
+            BatchResponse::Batch(x) => x.into_iter().next().unwrap(),
+        };
+
+        assert_eq!(res.errors.len(), 1);
+        assert_eq!(ServerError::from(err.as_vec()[0].to_owned()), res.errors[0]);
     }
 }

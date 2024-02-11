@@ -2,8 +2,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use anyhow::Context;
-use async_graphql::{ErrorExtensionValues, ServerError};
-use async_graphql_value::ConstValue;
+use async_graphql::ServerError;
 use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
@@ -19,12 +18,10 @@ use super::{ConfigModule, Content, Link, LinkType, ParseError, UnsupportedFileFo
 use crate::async_graphql_hyper::GraphQLResponse;
 use crate::config::{Config, Source};
 use crate::runtime::TargetRuntime;
-use crate::valid::ValidationError;
 
 #[derive(Debug)]
 pub enum ConfigReaderError {
     Parse(ParseError),
-    Validation(ValidationError<String>),
     UnsupportedFileFormat(UnsupportedFileFormat),
     Anyhow(anyhow::Error),
 }
@@ -33,7 +30,6 @@ impl std::fmt::Display for ConfigReaderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Parse(x) => std::fmt::Display::fmt(x, f),
-            Self::Validation(x) => std::fmt::Display::fmt(x, f),
             Self::UnsupportedFileFormat(x) => std::fmt::Display::fmt(x, f),
             Self::Anyhow(x) => std::fmt::Display::fmt(x, f),
         }
@@ -62,47 +58,19 @@ impl From<anyhow::Error> for ConfigReaderError {
 
 impl From<ConfigReaderError> for GraphQLResponse {
     fn from(e: ConfigReaderError) -> GraphQLResponse {
-        let mut response = async_graphql::Response::default();
-
         match e {
-            ConfigReaderError::Validation(e)
-            | ConfigReaderError::Parse(ParseError::Validation(e)) => {
-                response.errors = e
-                    .as_vec()
-                    .iter()
-                    .map(|cause| {
-                        let mut error = ServerError::new(cause.message.to_owned(), None);
-
-                        let mut ext: ErrorExtensionValues = ErrorExtensionValues::default();
-
-                        if let Some(description) = &cause.description {
-                            ext.set("description", ConstValue::String(description.to_owned()));
-                        }
-
-                        if !cause.trace.is_empty() {
-                            ext.set(
-                                "trace",
-                                ConstValue::List(cause.trace.iter().map(|x| x.into()).collect()),
-                            );
-                        }
-
-                        error.extensions = Some(ext);
-                        error
-                    })
-                    .collect();
-            }
-            ConfigReaderError::Parse(ParseError::GraphQL(e)) => {
-                response.errors = vec![ServerError::from(e)];
-            }
+            ConfigReaderError::Parse(x) => x.into(),
             _ => {
+                let mut response = async_graphql::Response::default();
+
                 response.errors = vec![ServerError::new(
                     format!("Failed to read config: {}", e),
                     None,
-                )]
+                )];
+
+                GraphQLResponse::from(response)
             }
         }
-
-        GraphQLResponse::from(response)
     }
 }
 
@@ -557,5 +525,79 @@ mod reader_tests {
         );
 
         assert_eq!(content.unwrap(), config.extensions.script.unwrap());
+    }
+}
+
+#[cfg(test)]
+mod error_tests {
+    use std::str::FromStr as _;
+
+    use anyhow::anyhow;
+    use async_graphql::BatchResponse;
+
+    use super::ConfigReaderError;
+    use crate::async_graphql_hyper::GraphQLResponse;
+    use crate::config::{ParseError, Source, UnsupportedFileFormat};
+    use crate::valid::ValidationError;
+
+    fn get_uff() -> UnsupportedFileFormat {
+        match Source::from_str("fakeformat") {
+            Err(e) => e,
+            _ => unreachable!(),
+        }
+    }
+
+    #[test]
+    fn debug_works() {
+        // This line will fail to compile if Debug is not supported.
+        let _ = format!("{:#?}", ConfigReaderError::from(anyhow!("Error")));
+    }
+
+    #[test]
+    fn display_works() {
+        assert_eq!(
+            format!(
+                "{}",
+                ConfigReaderError::from(ParseError::Validation(ValidationError::new(
+                    "Error".to_string()
+                )))
+            ),
+            format!(
+                "{}",
+                ParseError::Validation(ValidationError::new("Error".to_string()))
+            ),
+        );
+
+        assert_eq!(
+            format!("{}", ConfigReaderError::from(get_uff())),
+            format!("{}", get_uff()),
+        );
+
+        assert_eq!(
+            format!("{}", ConfigReaderError::from(anyhow!("Error"))),
+            format!("{}", anyhow!("Error")),
+        );
+    }
+
+    #[test]
+    fn to_graphql_response_works() {
+        let res = GraphQLResponse::from(ConfigReaderError::from(anyhow!("Error")));
+        let res = match res.0 {
+            BatchResponse::Single(x) => x,
+            BatchResponse::Batch(x) => x.into_iter().next().unwrap(),
+        };
+
+        assert_eq!(res.errors.len(), 1);
+        assert_eq!(res.errors[0].message, "Failed to read config: Error");
+
+        let res =
+            GraphQLResponse::from(ParseError::from(ValidationError::new("Error".to_string())));
+        let res = match res.0 {
+            BatchResponse::Single(x) => x,
+            BatchResponse::Batch(x) => x.into_iter().next().unwrap(),
+        };
+
+        assert_eq!(res.errors.len(), 1);
+        assert_eq!(res.errors[0].message, "Error");
     }
 }
