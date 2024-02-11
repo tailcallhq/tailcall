@@ -1,0 +1,22 @@
+{
+  "$schema": ".tailcallrc.schema.json",
+  "server": {
+    "port": 8000
+  },
+  "schema": {
+    "query": "Query"
+  },
+  "types": {
+    "Query": {
+      "fields": {
+        "hello": {
+          "type": "String",
+          "required": true,
+          "const": {
+            "data": "world"
+          }
+        }
+      }
+    }
+  }
+}
