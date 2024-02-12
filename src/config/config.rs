@@ -663,17 +663,17 @@ pub struct AddField {
 }
 
 impl Config {
-    pub fn from_json(json: &str) -> Result<Self, ValidationError<String>>{
-        serde_json::from_str(json).map_err(|e|ValidationError::new(e.to_string()))
+    pub fn from_json(json: &str) -> Result<Self, ValidationError<String>> {
+        serde_json::from_str(json).map_err(|e| ValidationError::new(e.to_string()))
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self, ValidationError<String>> {
-        serde_yaml::from_str(yaml).map_err(|e|ValidationError::new(e.to_string()))
+        serde_yaml::from_str(yaml).map_err(|e| ValidationError::new(e.to_string()))
     }
 
     pub fn from_sdl(sdl: &str) -> Result<Self, ValidationError<String>> {
         let doc = async_graphql::parser::parse_schema(sdl);
-        from_document(doc.map_err(|e|ValidationError::new(e.to_string()))?).to_result()
+        from_document(doc.map_err(|e| ValidationError::new(e.to_string()))?).to_result()
     }
 
     pub fn from_source(source: Source, schema: &str) -> Result<Self, ValidationError<String>> {
