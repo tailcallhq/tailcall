@@ -2,6 +2,7 @@ mod command;
 mod error;
 #[cfg(feature = "js")]
 pub mod javascript;
+mod operation;
 pub mod server;
 mod tc;
 
