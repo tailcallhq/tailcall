@@ -7,15 +7,15 @@ use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::blueprint::Http;
-use crate::builder::Tailcall;
+use crate::builder::TailcallExecutor;
 
 pub struct Server {
-    tailcall_executor: Tailcall,
+    tailcall_executor: TailcallExecutor,
     server_up_sender: Option<oneshot::Sender<()>>,
 }
 
 impl Server {
-    pub fn new(tailcall_executor: Tailcall) -> Self {
+    pub fn new(tailcall_executor: TailcallExecutor) -> Self {
         Self { tailcall_executor, server_up_sender: None }
     }
 

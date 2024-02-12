@@ -9,15 +9,10 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
+use crate::blueprint::{OperationQuery, Upstream};
 use crate::builder::TailcallBuilder;
-use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{self, CLIError};
-use crate::config::reader::ConfigReader;
-use crate::config::Config;
-use crate::print_schema;
-use crate::valid::Validator;
+use crate::cli::{self};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -27,58 +22,51 @@ pub async fn run() -> Result<()> {
     logger_init();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Upstream::default(), None);
-    let config_reader = ConfigReader::init(runtime.clone());
+    let tailcall_builder = TailcallBuilder::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
-            let tailcall_executor = TailcallBuilder::init(runtime)
-                .with_config_paths(&file_paths)
-                .await?;
+            let tailcall_executor = tailcall_builder.with_config_paths(&file_paths).await?;
 
-            log::info!("N + 1: {}", tailcall_executor.config_module.n_plus_one().len().to_string());
+            log::info!(
+                "N + 1: {}",
+                tailcall_executor
+                    .config_module
+                    .n_plus_one()
+                    .len()
+                    .to_string()
+            );
             let server = Server::new(tailcall_executor);
             server.fork_start().await?;
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
-            let config_module = (config_reader.read_all(&file_paths)).await?;
-            let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
-
-            match blueprint {
-                Ok(blueprint) => {
-                    log::info!("{}", "Config successfully validated".to_string());
-                    display_config(&config_module, n_plus_one_queries);
-                    if schema {
-                        display_schema(&blueprint);
-                    }
-
-                    let ops: Vec<OperationQuery> =
-                        futures_util::future::join_all(operations.iter().map(|op| async {
-                            runtime
-                                .file
-                                .read(op)
-                                .await
-                                .map(|query| OperationQuery::new(query, op.clone()))
-                        }))
+            let ops: Vec<OperationQuery> =
+                futures_util::future::join_all(operations.iter().map(|op| async {
+                    runtime
+                        .file
+                        .read(op)
                         .await
-                        .into_iter()
-                        .collect::<Result<Vec<_>>>()?;
+                        .map(|query| OperationQuery::new(query, op.clone()))
+                }))
+                .await
+                .into_iter()
+                .collect::<Result<Vec<_>>>()?;
 
-                    validate_operations(&blueprint, ops)
-                        .await
-                        .to_result()
-                        .map_err(|e| {
-                            CLIError::from(e)
-                                .message("Invalid Operation".to_string())
-                                .into()
-                        })
-                }
-                Err(e) => Err(e.into()),
-            }
+            let tailcall_executor = tailcall_builder
+                .with_config_paths(&file_paths)
+                .await
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let result = tailcall_executor
+                .validate(n_plus_one_queries, schema, ops)
+                .await?;
+            println!("{}", result);
+            Ok(())
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Compose { file_paths, format } => {
-            let config = (config_reader.read_all(&file_paths).await)?;
-            Fmt::display(format.encode(&config)?);
+            let executor = tailcall_builder.with_config_paths(&file_paths).await?;
+            let encoded = format.encode(&executor.config_module)?;
+            println!("{encoded}");
             Ok(())
         }
     }
@@ -165,17 +153,6 @@ pub async fn init(folder_path: &str) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub fn display_schema(blueprint: &Blueprint) {
-    Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
-    let sdl = blueprint.to_schema();
-    Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
-}
-
-fn display_config(config: &Config, n_plus_one_queries: bool) {
-    let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
-    Fmt::display(Fmt::table(seq));
 }
 
 // initialize logger

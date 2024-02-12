@@ -16,7 +16,7 @@ use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::builder::{Tailcall, TailcallBuilder};
+use tailcall::builder::{TailcallBuilder, TailcallExecutor};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
 use tailcall::config::{Config, Source};
@@ -532,9 +532,9 @@ impl ExecutionSpec {
 
     async fn server_context(
         &self,
-        tailcall_executor: &Tailcall,
+        tailcall_executor: &TailcallExecutor,
         env: HashMap<String, String>,
-    ) -> Tailcall {
+    ) -> TailcallExecutor {
         let http = MockHttpClient::new(self.clone());
         let http = if let Some(script) = tailcall_executor.app_ctx.blueprint.server.script.clone() {
             javascript::init_http(http, script)
@@ -747,14 +747,14 @@ async fn assert_spec(spec: ExecutionSpec) {
                 );
             }
             Err(cause) => {
-                let _errors: Vec<SDLError> =
+                let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
                 log::info!("\terrors... (snapshot)");
 
-                let _snapshot_name = format!("{}_errors", spec.safe_name);
+                let snapshot_name = format!("{}_errors", spec.safe_name);
 
-                // insta::assert_json_snapshot!(snapshot_name, errors);
+                insta::assert_json_snapshot!(snapshot_name, errors);
 
                 if will_insta_panic {
                     log::info!("\terrors ok");
@@ -830,7 +830,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let tailcall_builder = TailcallBuilder::init(runtime);
 
-    let server: Vec<Tailcall> = join_all(
+    let server: Vec<TailcallExecutor> = join_all(
         server // todo check
             .into_iter()
             .map(|config| {
@@ -951,7 +951,7 @@ async fn run_assert(
     spec: &ExecutionSpec,
     env: &HashMap<String, String>,
     request: &APIRequest,
-    tailcall_executor: &Tailcall,
+    tailcall_executor: &TailcallExecutor,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();

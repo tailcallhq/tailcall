@@ -12,6 +12,7 @@ mod data_loader;
 pub mod directive; // todo
 mod document;
 pub mod endpoint; // todo
+mod fmt;
 mod graphql;
 mod grpc;
 pub mod has_headers; // todo
@@ -23,7 +24,7 @@ mod mustache;
 pub mod path; // todo
 pub mod print_schema; // todo
 pub mod runtime;
-mod try_fold;
+pub mod try_fold; // todo
 pub mod valid;
 
 // pub use http::{Response,graphiql, showcase::create_tailcall_executor, };

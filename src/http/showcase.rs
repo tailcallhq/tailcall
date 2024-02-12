@@ -6,14 +6,14 @@ use hyper::{Body, Request, Response};
 use url::Url;
 
 use crate::async_graphql_hyper::GraphQLResponse;
-use crate::builder::{Tailcall, TailcallBuilder};
+use crate::builder::{TailcallBuilder, TailcallExecutor};
 use crate::runtime::TargetRuntime;
 
 pub async fn create_tailcall_executor(
     req: &Request<Body>,
     runtime: TargetRuntime,
     enable_fs: bool,
-) -> Result<Result<Tailcall, Response<Body>>> {
+) -> Result<Result<TailcallExecutor, Response<Body>>> {
     let config_url = req
         .uri()
         .query()

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
-use tailcall::builder::{Tailcall, TailcallBuilder};
+use tailcall::builder::{TailcallBuilder, TailcallExecutor};
 use tailcall::cli;
 use tailcall::config::{ConfigModule, Source};
 use tailcall::directive::DirectiveCodec;
@@ -42,7 +42,7 @@ fn graphql_iter_spec_part(spec: &str) -> impl Iterator<Item = (String, String)> 
     })
 }
 
-async fn generate_client_snapshot(file_stem: &str, tailcall_executor: &Tailcall) {
+async fn generate_client_snapshot(file_stem: &str, tailcall_executor: &TailcallExecutor) {
     let snapshots_dir =
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 
@@ -69,7 +69,7 @@ async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, runtime: Targe
     generate_client_snapshot(file_stem, &tailcall_executor).await
 }
 
-async fn generate_merged_snapshot(file_stem: &str, config: &Tailcall) {
+async fn generate_merged_snapshot(file_stem: &str, config: &TailcallExecutor) {
     let snapshots_dir =
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 

@@ -5,7 +5,7 @@ use std::sync::RwLock;
 
 use hyper::{Body, Method, Request, Response};
 use lazy_static::lazy_static;
-use tailcall::builder::Tailcall;
+use tailcall::builder::TailcallExecutor;
 use tailcall::http::graphiql;
 use tailcall::http::showcase::create_tailcall_executor;
 
@@ -13,7 +13,7 @@ use crate::http::{to_request, to_response};
 use crate::runtime;
 
 lazy_static! {
-    static ref APP_CTX: RwLock<Option<(String, Tailcall)>> = RwLock::new(None);
+    static ref APP_CTX: RwLock<Option<(String, TailcallExecutor)>> = RwLock::new(None);
 }
 ///
 /// The handler which handles requests on cloudflare
@@ -53,7 +53,7 @@ pub async fn fetch(
 async fn get_app_ctx(
     env: worker::Env,
     req: &Request<Body>,
-) -> anyhow::Result<Result<Tailcall, Response<Body>>> {
+) -> anyhow::Result<Result<TailcallExecutor, Response<Body>>> {
     // Read context from cache
     let file_path = req
         .uri()
@@ -83,6 +83,6 @@ async fn get_app_ctx(
     }
 }
 
-fn read_app_ctx() -> Option<(String, Tailcall)> {
+fn read_app_ctx() -> Option<(String, TailcallExecutor)> {
     APP_CTX.read().unwrap().clone()
 }
