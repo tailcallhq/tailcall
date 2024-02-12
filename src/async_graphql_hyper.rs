@@ -99,7 +99,7 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    pub fn to_response(self) -> Result<Response<hyper::Body>> {
+    pub fn hyper_response(self) -> Result<Response<hyper::Body>> {
         let mut response = Response::builder()
             .status(StatusCode::OK)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())

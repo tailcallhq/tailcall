@@ -26,7 +26,7 @@ pub struct GrpcDataLoader {
 }
 
 impl GrpcDataLoader {
-    pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GrpcDataLoader> {
+    pub fn data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GrpcDataLoader> {
         DataLoader::new(self)
             .delay(Duration::from_millis(batch.delay as u64))
             .max_batch_size(batch.max_size)

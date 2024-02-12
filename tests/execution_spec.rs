@@ -31,15 +31,11 @@ use url::Url;
 pub mod test {
     use std::collections::HashMap;
     use std::sync::Arc;
-    
 
     use anyhow::{anyhow, Result};
-    
     use hyper::body::Bytes;
     use reqwest::Client;
-    
     use tailcall::cache::InMemoryCache;
-    
     use tailcall::http::Response;
     use tailcall::runtime::TargetRuntime;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};

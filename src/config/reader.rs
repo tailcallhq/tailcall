@@ -444,12 +444,10 @@ mod reader_tests {
         let reader = ConfigReader::init(runtime);
 
         let config = reader
-            .read_all(&[
-                format!(
-                    "{}/examples/jsonplaceholder_script.graphql",
-                    cargo_manifest
-                )
-            ])
+            .read_all(&[format!(
+                "{}/examples/jsonplaceholder_script.graphql",
+                cargo_manifest
+            )])
             .await
             .unwrap();
 

@@ -59,7 +59,7 @@ impl AppContext {
                                 IO::GraphQL { req_template, field_name, batch, .. } => {
                                     let graphql_data_loader =
                                         GraphqlDataLoader::new(runtime.clone(), *batch)
-                                            .to_data_loader(
+                                            .data_loader(
                                                 upstream_batch.clone().unwrap_or_default(),
                                             );
 
@@ -82,7 +82,7 @@ impl AppContext {
                                         group_by: group_by.clone(),
                                     };
                                     let data_loader = data_loader
-                                        .to_data_loader(upstream_batch.clone().unwrap_or_default());
+                                        .data_loader(upstream_batch.clone().unwrap_or_default());
 
                                     let result = Some(Expression::IO(IO::Grpc {
                                         req_template: req_template.clone(),
