@@ -72,12 +72,12 @@ async fn get_executor(
     let env = Rc::new(env);
     let runtime = runtime::init(env)?;
     match create_tailcall_executor(req, runtime, true).await? {
-        Ok(tailcall) => {
+        Ok(tailcall_executor) => {
             if let Some(file_path) = file_path {
-                *EXECUTOR.write().unwrap() = Some((file_path, tailcall.clone()));
+                *EXECUTOR.write().unwrap() = Some((file_path, tailcall_executor.clone()));
             }
             log::info!("Initialized new tailcall executor");
-            Ok(Ok(tailcall))
+            Ok(Ok(tailcall_executor))
         }
         Err(e) => Ok(Err(e)),
     }
