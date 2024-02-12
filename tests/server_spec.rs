@@ -133,6 +133,7 @@ mod server_spec {
     use serde_json::json;
     use tailcall::builder::TailcallBuilder;
     use tailcall::cli::server::Server;
+
     use crate::test;
 
     async fn test_server(configs: &[&str], url: &str) {
