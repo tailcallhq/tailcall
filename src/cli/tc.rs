@@ -34,7 +34,7 @@ pub async fn run() -> Result<()> {
                 .with_config_paths(&file_paths)
                 .await?;
 
-            // log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
+            log::info!("N + 1: {}", tailcall_executor.config_module.n_plus_one().len().to_string());
             let server = Server::new(tailcall_executor);
             server.fork_start().await?;
             Ok(())
