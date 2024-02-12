@@ -74,7 +74,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
             response = update_cache_control_header(response, app_ctx, req_ctx);
-            let mut resp = response.hyper_response()?;
+            let mut resp = response.into_response()?;
             update_response_headers(&mut resp, app_ctx);
             Ok(resp)
         }
@@ -89,7 +89,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                 ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
             response.errors = vec![server_error];
 
-            Ok(GraphQLResponse::from(response).hyper_response()?)
+            Ok(GraphQLResponse::from(response).into_response()?)
         }
     }
 }
