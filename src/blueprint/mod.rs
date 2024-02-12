@@ -5,6 +5,7 @@ mod from_config;
 mod into_schema;
 mod links;
 mod mustache;
+#[allow(dead_code)] // todo probably refactor it to cli
 mod operation;
 mod operators;
 mod schema;
@@ -15,6 +16,7 @@ pub use blueprint::*;
 pub use definitions::*;
 pub use from_config::*;
 pub use links::*;
+#[allow(unused_imports)]
 pub use operation::*;
 pub use operators::*;
 pub use schema::*;
