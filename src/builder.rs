@@ -52,7 +52,7 @@ impl TailcallBuilder {
     ) -> Result<TailcallExecutor, ValidationError<String>> {
         let reader = ConfigReader::init(self.runtime.clone());
         let config_module = reader.read_all(files).await?;
-        let blueprint = Blueprint::try_from(&config_module.clone())?;
+        let blueprint = Blueprint::try_from(&config_module)?;
         let app_ctx = AppContext::new(blueprint, self.runtime);
         let app_ctx = Arc::new(app_ctx);
         Ok(TailcallExecutor { config_module, app_ctx })

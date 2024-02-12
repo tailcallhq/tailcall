@@ -287,7 +287,7 @@ mod tests {
 
         assert_eq!(
             error.to_string(),
-            "No such file or directory (os error 2)".to_string()
+            "Validation Error\n• No such file or directory (os error 2)\n".to_string()
         );
 
         Ok(())
