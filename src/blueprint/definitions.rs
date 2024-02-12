@@ -12,7 +12,7 @@ use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
-    Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
+    Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
         name: name.to_string(),
         directive: Vec::new(),
         description: None,
@@ -20,7 +20,7 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
 }
 
 pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
-    Definition::UnionTypeDefinition(UnionTypeDefinition {
+    Definition::Union(UnionTypeDefinition {
         name: name.to_owned(),
         description: u.doc.clone(),
         directives: Vec::new(),
@@ -31,32 +31,28 @@ pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
 pub fn to_input_object_type_definition(
     definition: ObjectTypeDefinition,
 ) -> Valid<Definition, String> {
-    Valid::succeed(Definition::InputObjectTypeDefinition(
-        InputObjectTypeDefinition {
-            name: definition.name,
-            fields: definition
-                .fields
-                .iter()
-                .map(|field| InputFieldDefinition {
-                    name: field.name.clone(),
-                    description: field.description.clone(),
-                    default_value: None,
-                    of_type: field.of_type.clone(),
-                })
-                .collect(),
-            description: definition.description,
-        },
-    ))
+    Valid::succeed(Definition::InputObject(InputObjectTypeDefinition {
+        name: definition.name,
+        fields: definition
+            .fields
+            .iter()
+            .map(|field| InputFieldDefinition {
+                name: field.name.clone(),
+                description: field.description.clone(),
+                default_value: None,
+                of_type: field.of_type.clone(),
+            })
+            .collect(),
+        description: definition.description,
+    }))
 }
 
 pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
-    Valid::succeed(Definition::InterfaceTypeDefinition(
-        InterfaceTypeDefinition {
-            name: definition.name,
-            fields: definition.fields,
-            description: definition.description,
-        },
-    ))
+    Valid::succeed(Definition::Interface(InterfaceTypeDefinition {
+        name: definition.name,
+        fields: definition.fields,
+        description: definition.description,
+    }))
 }
 
 type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, String>;
@@ -231,7 +227,7 @@ fn to_enum_type_definition(
     type_: &config::Type,
     variants: &BTreeSet<String>,
 ) -> Valid<Definition, String> {
-    let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
+    let enum_type_definition = Definition::Enum(EnumTypeDefinition {
         name: name.to_string(),
         directives: Vec::new(),
         description: type_.doc.clone(),
@@ -253,7 +249,7 @@ fn to_object_type_definition(
     config_module: &ConfigModule,
 ) -> Valid<Definition, String> {
     to_fields(name, type_of, config_module).map(|fields| {
-        Definition::ObjectTypeDefinition(ObjectTypeDefinition {
+        Definition::Object(ObjectTypeDefinition {
             name: name.to_string(),
             description: type_of.doc.clone(),
             fields,
@@ -514,7 +510,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                 to_object_type_definition(name, type_, config_module)
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
-                        Definition::ObjectTypeDefinition(object_type_definition) => {
+                        Definition::Object(object_type_definition) => {
                             if config_module.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
                             } else if type_.interface {
