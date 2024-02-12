@@ -2,6 +2,7 @@ use std::thread;
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
+use deno_core::serde_v8;
 use deno_core::v8::{self, Function, Global, Local, Object, Value};
 use deno_core::{FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions};
 use tokio::sync::{oneshot, mpsc};

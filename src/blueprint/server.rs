@@ -75,19 +75,19 @@ impl Server {
 impl TryFrom<crate::config::ConfigModule> for Server {
     type Error = ValidationError<String>;
 
-    fn try_from(config_set: config::ConfigModule) -> Result<Self, Self::Error> {
-        let config_server = config_set.server.clone();
+    fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
+        let config_server = config_module.server.clone();
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
-                if config_set.extensions.cert.is_empty() {
+                if config_module.extensions.cert.is_empty() {
                     return Valid::fail("Certificate is required for HTTP2".to_string())
                         .to_result();
                 }
 
-                let cert = config_set.extensions.cert.clone();
+                let cert = config_module.extensions.cert.clone();
 
-                let key_file: PrivateKeyDer<'_> = config_set
+                let key_file: PrivateKeyDer<'_> = config_module
                     .extensions
                     .keys
                     .first()
@@ -106,7 +106,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             .fuse(handle_response_headers(
                 (config_server).get_response_headers().0,
             ))
-            .fuse(to_script(&config_set))
+            .fuse(to_script(&config_module))
             .map(|(hostname, http, response_headers, script)| Server {
                 enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                 enable_cache_control_header: (config_server).enable_cache_control(),
@@ -130,13 +130,13 @@ impl TryFrom<crate::config::ConfigModule> for Server {
     }
 }
 
-fn to_script(config_set: &crate::config::ConfigModule) -> Valid<Option<Script>, String> {
-    config_set.extensions.script.as_ref().map_or_else(
+fn to_script(config_module: &crate::config::ConfigModule) -> Valid<Option<Script>, String> {
+    config_module.extensions.script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
             Valid::succeed(Some(Script {
                 source: script.clone(),
-                timeout: config_set
+                timeout: config_module
                     .server
                     .script
                     .clone()
