@@ -29,7 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.11.0"
-      - name: Install Prettier
         run: npm install --global prettier@3.2.5
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
