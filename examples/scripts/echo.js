@@ -14,7 +14,7 @@ function str2ab(str) {
 }
 
 export async function onEvent(event) {
-  await timerPromises.setTimeout(200)
+  // await timerPromises.setTimeout(200)
 
   if (event.message.request) {
     event.id = asyncId()

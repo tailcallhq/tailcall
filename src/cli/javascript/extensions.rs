@@ -4,10 +4,9 @@ use std::time::Duration;
 
 use anyhow::Result;
 use deno_core::{extension, op2, OpState};
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc, oneshot};
 
-use super::channel::WaitSender;
-use super::JsResponse;
+use super::{channel::CallbackMessage, JsResponse};
 use crate::cli::javascript::JsRequest;
 
 #[op2(async)]
@@ -25,7 +24,8 @@ async fn op_fetch(state: Rc<RefCell<OpState>>, #[string] url: String) -> Result<
     let (tx, rx) = oneshot::channel::<JsResponse>();
     let rx = {
         let state = state.borrow();
-        let client = state.borrow::<WaitSender<JsRequest, JsResponse>>();
+        let client =
+            state.borrow::<mpsc::UnboundedSender<CallbackMessage<JsRequest, JsResponse>>>();
 
         // TODO: extend options
         let request = JsRequest {
@@ -35,7 +35,7 @@ async fn op_fetch(state: Rc<RefCell<OpState>>, #[string] url: String) -> Result<
             body: Default::default(),
         };
 
-        client.send((tx, request)).unwrap();
+        client.send((tx, request))?;
 
         rx
     };

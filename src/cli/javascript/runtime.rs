@@ -2,21 +2,25 @@ use std::sync::Arc;
 
 use tokio::runtime::Builder;
 use tokio::spawn;
+use tokio::sync::mpsc;
 use tokio::task::LocalSet;
 
-use super::channel::{wait_channel, Message, WaitSender};
+use super::channel::{CallbackMessage, Message};
 use super::worker::Worker;
 use super::{JsRequest, JsResponse};
+use crate::cli::javascript::channel::CallbackSender;
 use crate::{blueprint, HttpIO, WorkerIO};
 
 pub struct Runtime {
-    work_sender: WaitSender<Message, Message>,
+    work_sender: async_channel::Sender<CallbackMessage<Message, Message>>,
 }
 
 impl Runtime {
     pub fn new(script: blueprint::Script, http: Arc<dyn HttpIO>) -> Self {
-        let (work_sender, work_receiver) = wait_channel::<Message, Message>();
-        let (http_sender, mut http_receiver) = wait_channel::<JsRequest, JsResponse>();
+        let (work_sender, work_receiver) =
+            async_channel::unbounded::<CallbackMessage<Message, Message>>();
+        let (http_sender, mut http_receiver) =
+            mpsc::unbounded_channel::<CallbackMessage<JsRequest, JsResponse>>();
 
         spawn(async move {
             while let Some((send_response, request)) = http_receiver.recv().await {
@@ -31,20 +35,27 @@ impl Runtime {
             }
         });
 
-        // TODO: add support for multiple threads
-        std::thread::spawn(move || {
-            let rt = Builder::new_current_thread().enable_time().build().unwrap();
-            let local = LocalSet::new();
+        // TODO: make configurable
+        for _ in 0..4 {
+            let work_receiver = work_receiver.clone();
+            let http_sender = http_sender.clone();
+            let script = script.clone();
 
-            local.spawn_local(async move {
-                let worker = Worker::new(script, http_sender).await?;
-                worker.listen(work_receiver).await?;
+            std::thread::spawn(move || {
+                let rt = Builder::new_current_thread().enable_time().build().unwrap();
 
-                Ok::<_, anyhow::Error>(())
+                let local = LocalSet::new();
+
+                local.spawn_local(async move {
+                    let worker = Worker::new(script, http_sender).await?;
+                    worker.listen(work_receiver).await?;
+
+                    Ok::<_, anyhow::Error>(())
+                });
+
+                rt.block_on(local);
             });
-
-            rt.block_on(local);
-        });
+        }
 
         Self { work_sender }
     }
@@ -54,6 +65,7 @@ impl Runtime {
 impl WorkerIO<Message, Message> for Runtime {
     async fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
         log::debug!("event: {:?}", event);
-        self.work_sender.wait_send(event).await
+
+        Ok(self.work_sender.send_with_callback(event).await?)
     }
 }

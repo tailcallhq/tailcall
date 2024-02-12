@@ -3960,6 +3960,7 @@ name = "tailcall"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-channel 2.2.0",
  "async-graphql",
  "async-graphql-value",
  "async-recursion",

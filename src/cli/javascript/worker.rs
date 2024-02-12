@@ -4,13 +4,14 @@ use std::time::Duration;
 use anyhow::{anyhow, Result};
 use deno_core::v8::{self, Function, Global, Local, Object, Value};
 use deno_core::{FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions};
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, mpsc};
 use tokio::task::spawn_local;
 use tokio::time::{timeout_at, Instant};
 
-use super::channel::{wait_channel, Message, WaitReceiver, WaitSender};
+use super::channel::CallbackMessage;
 use super::{JsRequest, JsResponse};
 use crate::blueprint;
+use crate::cli::javascript::channel::Message;
 use crate::cli::javascript::extensions::{console, fetch, timer_promises};
 
 pub struct Worker {
@@ -22,7 +23,7 @@ pub struct Worker {
 impl Worker {
     pub async fn new(
         script: blueprint::Script,
-        http_sender: WaitSender<JsRequest, JsResponse>,
+        http_sender: mpsc::UnboundedSender<CallbackMessage<JsRequest, JsResponse>>,
     ) -> anyhow::Result<Self> {
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
             extensions: vec![
@@ -54,21 +55,15 @@ impl Worker {
         Ok(Self { function: value, js_runtime })
     }
 
-    pub async fn listen(mut self, mut work_receiver: WaitReceiver<Message, Message>) -> Result<()> {
-        let (result_tx, mut result_rx) = wait_channel::<Result<Global<Value>>, Message>();
+    pub async fn listen(mut self, work_receiver: async_channel::Receiver<CallbackMessage<Message, Message>>) -> Result<()> {
+        let (result_tx, mut result_rx) = mpsc::unbounded_channel::<CallbackMessage<Result<Global<Value>>, Message>>();
         let mut event_loop_has_tasks = false;
         loop {
             // runs js event-loop with the ability to stop it
             // to react to external or internal events
             tokio::select! {
-                // use biased mode to prioritize workload by its appearance
-                // so handling new work will be executed first
+                // use biased mode to prioritize workload by its appearance below
                 biased;
-                // accept new work for execute inside the script
-                Some((send_work_response, message)) = work_receiver.recv() => {
-                    event_loop_has_tasks = true;
-                    self.handle(message, send_work_response, result_tx.clone()).unwrap();
-                },
                 // wait until the response from js is ready
                 // to convert the value back to rust we need to use &mut js_runtime
                 // that is also required for run_event_loop, so here we're
@@ -83,6 +78,11 @@ impl Worker {
                     // waits for the response and we may just drop it
                     let _ = send_work_response.send(message);
                 },
+                // accept new work for execute inside the script
+                Ok((send_work_response, message)) = work_receiver.recv() => {
+                    event_loop_has_tasks = true;
+                    self.handle(message, send_work_response, result_tx.clone()).unwrap();
+                },
                 // run the js event-loop itself that will execute the script code.
                 // do it only when we have tasks since otherwise that call will return
                 // immediately and we will just burn cpu-cycles for calling this in outer loop
@@ -90,7 +90,7 @@ impl Worker {
                     // if this call is finished that means all the calls are executed
                     // and we need only wait for more work
                     event_loop_has_tasks = false;
-                }
+                },
 
             }
         }
@@ -100,7 +100,7 @@ impl Worker {
         &mut self,
         message: Message,
         send_work_response: oneshot::Sender<Message>,
-        sender: WaitSender<Result<Global<Value>>, Message>,
+        sender: mpsc::UnboundedSender<CallbackMessage<Result<Global<Value>>, Message>>,
     ) -> Result<()> {
         let message = {
             let mut scope = self.js_runtime.handle_scope();
