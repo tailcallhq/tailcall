@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use async_graphql::dynamic::Schema;
 
-use crate::blueprint::{Blueprint, SchemaModifiers};
+use super::{Blueprint, SchemaModifiers};
 use crate::valid::{Cause, Valid, Validator};
 
 #[derive(Debug)]
