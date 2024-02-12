@@ -11,7 +11,7 @@ use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 
 pub struct AppContext {
     pub schema: dynamic::Schema,

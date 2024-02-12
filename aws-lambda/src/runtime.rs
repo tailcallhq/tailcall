@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use tailcall::cache::InMemoryCache;
-use tailcall::target_runtime::TargetRuntime;
+use tailcall::runtime::TargetRuntime;
 use tailcall::{EntityCache, EnvIO, FileIO};
 use tokio::io::AsyncReadExt;
 

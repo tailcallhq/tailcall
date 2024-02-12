@@ -12,13 +12,13 @@ use crate::cli::CLIError;
 use crate::config::ConfigModule;
 
 pub struct Server {
-    config_set: ConfigModule,
+    config_module: ConfigModule,
     server_up_sender: Option<oneshot::Sender<()>>,
 }
 
 impl Server {
-    pub fn new(config_set: ConfigModule) -> Self {
-        Self { config_set, server_up_sender: None }
+    pub fn new(config_module: ConfigModule) -> Self {
+        Self { config_module, server_up_sender: None }
     }
 
     pub fn server_up_receiver(&mut self) -> oneshot::Receiver<()> {
@@ -31,7 +31,7 @@ impl Server {
 
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
-        let blueprint = Blueprint::try_from(&self.config_set).map_err(CLIError::from)?;
+        let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
         let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
         match blueprint.server.http.clone() {
@@ -45,7 +45,7 @@ impl Server {
     /// Starts the server in its own multithreaded Runtime
     pub async fn fork_start(self) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(self.config_set.deref().server.get_workers())
+            .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
 
