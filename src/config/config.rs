@@ -16,7 +16,7 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 use crate::json::JsonSchema;
-use crate::valid::{Valid, Validator};
+use crate::valid::Validator;
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -732,7 +732,7 @@ mod tests {
 
     #[test]
     fn test_from_sdl_empty() {
-        let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+        let actual = Config::from_sdl("type Foo {a: Int}").unwrap();
         let expected = Config::default().types(vec![(
             "Foo",
             Type::default().fields(vec![("a", Field::int())]),

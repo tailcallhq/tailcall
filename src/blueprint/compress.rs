@@ -48,33 +48,33 @@ fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&str>> {
         let mut dependencies: Vec<&str> = Vec::new();
 
         match def {
-            Definition::ObjectTypeDefinition(def) => {
+            Definition::ObjectType(def) => {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
                 for field in &def.fields {
                     dependencies.extend(field.args.iter().map(|arg| arg.of_type.name()));
                 }
                 dependencies.extend(def.implements.iter().map(|s| s.as_str()));
             }
-            Definition::InterfaceTypeDefinition(def) => {
+            Definition::InterfaceType(def) => {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
                 for def_inner in &blueprint.definitions {
-                    if let Definition::ObjectTypeDefinition(def_inner) = def_inner {
+                    if let Definition::ObjectType(def_inner) = def_inner {
                         if def_inner.implements.contains(&def.name) {
                             dependencies.push(&def_inner.name);
                         }
                     }
                 }
             }
-            Definition::InputObjectTypeDefinition(def) => {
+            Definition::InputObjectType(def) => {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
             }
-            Definition::EnumTypeDefinition(def) => {
+            Definition::EnumType(def) => {
                 dependencies.extend(def.enum_values.iter().map(|value| value.name.as_str()));
             }
-            Definition::UnionTypeDefinition(def) => {
+            Definition::UnionType(def) => {
                 dependencies.extend(def.types.iter().map(|s| s.as_str()));
             }
-            Definition::ScalarTypeDefinition(sc) => {
+            Definition::ScalarType(sc) => {
                 dependencies.push(sc.name.as_str());
             }
         }

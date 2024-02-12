@@ -12,7 +12,7 @@ use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
-    Valid::succeed(Definition::ScalarTypeDefinition(ScalarTypeDefinition {
+    Valid::succeed(Definition::ScalarType(ScalarTypeDefinition {
         name: name.to_string(),
         directive: Vec::new(),
         description: None,
@@ -20,7 +20,7 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
 }
 
 pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
-    Definition::UnionTypeDefinition(UnionTypeDefinition {
+    Definition::UnionType(UnionTypeDefinition {
         name: name.to_owned(),
         description: u.doc.clone(),
         directives: Vec::new(),
@@ -31,7 +31,7 @@ pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
 pub fn to_input_object_type_definition(
     definition: ObjectTypeDefinition,
 ) -> Valid<Definition, String> {
-    Valid::succeed(Definition::InputObjectTypeDefinition(
+    Valid::succeed(Definition::InputObjectType(
         InputObjectTypeDefinition {
             name: definition.name,
             fields: definition
@@ -50,7 +50,7 @@ pub fn to_input_object_type_definition(
 }
 
 pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<Definition, String> {
-    Valid::succeed(Definition::InterfaceTypeDefinition(
+    Valid::succeed(Definition::InterfaceType(
         InterfaceTypeDefinition {
             name: definition.name,
             fields: definition.fields,
@@ -231,7 +231,7 @@ fn to_enum_type_definition(
     type_: &config::Type,
     variants: &BTreeSet<String>,
 ) -> Valid<Definition, String> {
-    let enum_type_definition = Definition::EnumTypeDefinition(EnumTypeDefinition {
+    let enum_type_definition = Definition::EnumType(EnumTypeDefinition {
         name: name.to_string(),
         directives: Vec::new(),
         description: type_.doc.clone(),
@@ -253,7 +253,7 @@ fn to_object_type_definition(
     config_module: &ConfigModule,
 ) -> Valid<Definition, String> {
     to_fields(name, type_of, config_module).map(|fields| {
-        Definition::ObjectTypeDefinition(ObjectTypeDefinition {
+        Definition::ObjectType(ObjectTypeDefinition {
             name: name.to_string(),
             description: type_of.doc.clone(),
             fields,
@@ -514,7 +514,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                 to_object_type_definition(name, type_, config_module)
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
-                        Definition::ObjectTypeDefinition(object_type_definition) => {
+                        Definition::ObjectType(object_type_definition) => {
                             if config_module.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
                             } else if type_.interface {

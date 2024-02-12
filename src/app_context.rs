@@ -30,7 +30,7 @@ impl AppContext {
         let mut grpc_data_loaders = vec![];
 
         for def in blueprint.definitions.iter_mut() {
-            if let Definition::ObjectTypeDefinition(def) = def {
+            if let Definition::ObjectType(def) = def {
                 for field in &mut def.fields {
                     let of_type = field.of_type.clone();
                     let upstream_batch = &blueprint.upstream.batch;

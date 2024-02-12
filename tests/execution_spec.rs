@@ -23,9 +23,117 @@ use tailcall::config::{Config, Source};
 use tailcall::http::{AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
-use tailcall::valid::{Cause, ValidationError, Validator as _};
+use tailcall::valid::{Cause, ValidationError};
 use tailcall::{EnvIO, FileIO, HttpIO};
 use url::Url;
+
+#[cfg(test)]
+pub mod test {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    
+
+    use anyhow::{anyhow, Result};
+    
+    use hyper::body::Bytes;
+    use reqwest::Client;
+    
+    use tailcall::cache::InMemoryCache;
+    
+    use tailcall::http::Response;
+    use tailcall::runtime::TargetRuntime;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    use crate::{EnvIO, FileIO, HttpIO};
+
+    #[derive(Clone)]
+    struct TestHttp {
+        client: Client,
+    }
+
+    impl Default for TestHttp {
+        fn default() -> Self {
+            Self { client: Client::new() }
+        }
+    }
+
+    impl TestHttp {
+        fn init() -> Self {
+            Default::default()
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl HttpIO for TestHttp {
+        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+            let response = self.client.execute(request).await;
+            Response::from_reqwest(response?.error_for_status()?).await
+        }
+    }
+
+    #[derive(Clone)]
+    struct TestFileIO {}
+
+    impl TestFileIO {
+        fn init() -> Self {
+            TestFileIO {}
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl FileIO for TestFileIO {
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+            let mut file = tokio::fs::File::create(path).await?;
+            file.write_all(content)
+                .await
+                .map_err(|e| anyhow!("{}", e))?;
+            Ok(())
+        }
+
+        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+            let mut file = tokio::fs::File::open(path).await?;
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer)
+                .await
+                .map_err(|e| anyhow!("{}", e))?;
+            Ok(String::from_utf8(buffer)?)
+        }
+    }
+
+    #[derive(Clone)]
+    struct TestEnvIO {
+        vars: HashMap<String, String>,
+    }
+
+    impl EnvIO for TestEnvIO {
+        fn get(&self, key: &str) -> Option<String> {
+            self.vars.get(key).cloned()
+        }
+    }
+
+    impl TestEnvIO {
+        pub fn init() -> Self {
+            Self { vars: std::env::vars().collect() }
+        }
+    }
+
+    pub fn init() -> TargetRuntime {
+        let http: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init());
+
+        let http2: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init());
+
+        let file = TestFileIO::init();
+        let env = TestEnvIO::init();
+
+        TargetRuntime {
+            http,
+            http2_only: http2,
+            env: Arc::new(env),
+            file: Arc::new(file),
+            cache: Arc::new(InMemoryCache::new()),
+        }
+    }
+}
 
 static INIT: Once = Once::new();
 
@@ -621,7 +729,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         if !matches!(source, Source::GraphQL) {
             panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
         }
-        let mut runtime = tailcall::cli::runtime::init(&Default::default(), None);
+        let mut runtime = test::init();
         runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
         let tailcall_builder = TailcallBuilder::init(runtime);
 
@@ -722,7 +830,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // Resolve all configs
-    let mut runtime = tailcall::cli::runtime::init(&Default::default(), None);
+    let mut runtime = test::init();
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let tailcall_builder = TailcallBuilder::init(runtime);
 
