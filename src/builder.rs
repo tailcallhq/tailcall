@@ -35,8 +35,8 @@ impl TailcallBuilder {
         relative_path: Option<String>,
     ) -> Result<TailcallExecutor, ValidationError<String>> {
         let reader = ConfigReader::init(self.runtime.clone());
-        let config = Config::from_source(source, &schema.to_string())
-            .map_err(|e| ValidationError::new(e.to_string()))?;
+        let config = Config::from_source(source, &schema.to_string())?;
+
         let config_module = reader
             .resolve(config, relative_path)
             .await
@@ -53,8 +53,7 @@ impl TailcallBuilder {
         let reader = ConfigReader::init(self.runtime.clone());
         let config_module = reader
             .read_all(files)
-            .await
-            .map_err(|e| ValidationError::new(e.to_string()))?;
+            .await?;
         let blueprint = Blueprint::try_from(&config_module.clone())?;
         let app_ctx = AppContext::new(blueprint, self.runtime);
         let app_ctx = Arc::new(app_ctx);

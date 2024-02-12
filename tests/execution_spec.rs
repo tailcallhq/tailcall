@@ -23,7 +23,7 @@ use tailcall::config::{Config, Source};
 use tailcall::http::{AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
-use tailcall::valid::{Cause, ValidationError};
+use tailcall::valid::Cause;
 use tailcall::{EnvIO, FileIO, HttpIO};
 use url::Url;
 
@@ -735,8 +735,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 content,
                 Some(spec.path.to_string_lossy().to_string()),
             )
-            .await
-            .map_err(ValidationError::from);
+            .await;
 
         match tailcall_executor {
             Ok(_) => {

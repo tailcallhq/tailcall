@@ -16,7 +16,7 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 use crate::json::JsonSchema;
-use crate::valid::Validator;
+use crate::valid::{ValidationError, Validator};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -663,24 +663,24 @@ pub struct AddField {
 }
 
 impl Config {
-    pub fn from_json(json: &str) -> Result<Self> {
-        Ok(serde_json::from_str(json)?)
+    pub fn from_json(json: &str) -> Result<Self, ValidationError<String>>{
+        serde_json::from_str(json).map_err(|e|ValidationError::new(e.to_string()))
     }
 
-    pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(yaml)?)
+    pub fn from_yaml(yaml: &str) -> Result<Self, ValidationError<String>> {
+        serde_yaml::from_str(yaml).map_err(|e|ValidationError::new(e.to_string()))
     }
 
-    pub fn from_sdl(sdl: &str) -> Result<Self> {
+    pub fn from_sdl(sdl: &str) -> Result<Self, ValidationError<String>> {
         let doc = async_graphql::parser::parse_schema(sdl);
-        Ok(from_document(doc?).to_result()?)
+        from_document(doc.map_err(|e|ValidationError::new(e.to_string()))?).to_result()
     }
 
-    pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    pub fn from_source(source: Source, schema: &str) -> Result<Self, ValidationError<String>> {
         match source {
-            Source::GraphQL => Ok(Config::from_sdl(schema)?),
-            Source::Json => Ok(Config::from_json(schema)?),
-            Source::Yml => Ok(Config::from_yaml(schema)?),
+            Source::GraphQL => Config::from_sdl(schema),
+            Source::Json => Config::from_json(schema),
+            Source::Yml => Config::from_yaml(schema),
         }
     }
 

@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use futures_util::future::join_all;
-use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use rustls_pemfile;
@@ -16,6 +15,7 @@ use url::Url;
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::runtime::TargetRuntime;
+use crate::valid::ValidationError;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -35,35 +35,34 @@ impl ConfigReader {
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read_file<T: ToString>(&self, file: T) -> Result<FileRead, ValidationError<String>> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             let response = self
                 .runtime
                 .http
                 .execute(reqwest::Request::new(reqwest::Method::GET, url))
-                .await?;
+                .await.map_err(|e|ValidationError::new(e.to_string()))?;
 
-            String::from_utf8(response.body.to_vec())?
+            String::from_utf8(response.body.to_vec()).map_err(|e|ValidationError::new(e.to_string()))?
         } else {
             // Is a file path
 
-            self.runtime.file.read(&file.to_string()).await?
+            self.runtime.file.read(&file.to_string()).await.map_err(|e|ValidationError::new(e.to_string()))?
         };
 
         Ok(FileRead { content, path: file.to_string() })
     }
 
     /// Reads all the files in parallel
-    async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
+    async fn read_files<T: ToString>(&self, files: &[T]) -> Result<Vec<FileRead>, ValidationError<String>> {
         let files = files.iter().map(|x| {
             self.read_file(x.to_string())
-                .map_err(|e| e.context(x.to_string()))
         });
         let content = join_all(files)
             .await
             .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
+            .collect::<Result<Vec<_>, ValidationError<String>>>()?;
         Ok(content)
     }
 
@@ -73,7 +72,7 @@ impl ConfigReader {
         &self,
         mut config_module: ConfigModule,
         path: Option<String>,
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> Result<ConfigModule, ValidationError<String>> {
         let links: Vec<Link> = config_module
             .config
             .links
@@ -110,7 +109,7 @@ impl ConfigReader {
 
             match config_link.type_of {
                 LinkType::Config => {
-                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+                    let config = Config::from_source(Source::detect(&source.path).map_err(|e|ValidationError::new(e.to_string()))?, &content)?;
 
                     config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
@@ -125,7 +124,7 @@ impl ConfigReader {
                 LinkType::Protobuf => {
                     let descriptors = self
                         .resolve_descriptors(HashMap::new(), source.path)
-                        .await?;
+                        .await.map_err(|e|ValidationError::new(e.to_string()))?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
                     for (_, v) in descriptors {
@@ -147,11 +146,11 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .cert
-                        .extend(self.load_cert(content.clone()).await?);
+                        .extend(self.load_cert(content.clone()).await.map_err(|e|ValidationError::new(e.to_string()))?);
                 }
                 LinkType::Key => {
                     config_module.extensions.keys =
-                        Arc::new(self.load_private_key(content.clone()).await?)
+                        Arc::new(self.load_private_key(content.clone()).await.map_err(|e|ValidationError::new(e.to_string()))?)
                 }
             }
         }
@@ -191,12 +190,12 @@ impl ConfigReader {
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
+    pub async fn read_all<T: ToString>(&self, files: &[T]) -> Result<ConfigModule, ValidationError<String>> {
         let files = self.read_files(files).await?;
         let mut config_module = ConfigModule::default();
 
         for file in files.iter() {
-            let source = Source::detect(&file.path)?;
+            let source = Source::detect(&file.path).map_err(|e|ValidationError::new(e.to_string()))?;
             let schema = &file.content;
 
             // Create initial config module
@@ -205,7 +204,7 @@ impl ConfigReader {
                     Config::from_source(source, schema)?,
                     Some(file.path.clone()),
                 )
-                .await?;
+                .await.map_err(|e|ValidationError::new(e.to_string()))?;
 
             // Merge it with the original config set
             config_module = config_module.merge_right(&new_config_module);
