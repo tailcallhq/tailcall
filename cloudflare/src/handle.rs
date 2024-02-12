@@ -13,7 +13,7 @@ use crate::http::{to_request, to_response};
 use crate::runtime;
 
 lazy_static! {
-    static ref APP_CTX: RwLock<Option<(String, TailcallExecutor)>> = RwLock::new(None);
+    static ref EXECUTOR: RwLock<Option<(String, TailcallExecutor)>> = RwLock::new(None);
 }
 ///
 /// The handler which handles requests on cloudflare
@@ -33,13 +33,13 @@ pub async fn fetch(
     // Quick exit to GraphiQL
     //
     // Has to be done here, since when using GraphiQL, a config query parameter is not specified,
-    // and get_app_ctx will fail without it.
+    // and get_executor will fail without it.
     if req.method() == Method::GET {
         return to_response(graphiql(&req)?).await;
     }
 
-    let tailcall_executor = match get_app_ctx(env, &req).await? {
-        Ok(app_ctx) => app_ctx,
+    let tailcall_executor = match get_executor(env, &req).await? {
+        Ok(tailcall_executor) => tailcall_executor,
         Err(e) => return to_response(e).await,
     };
     let resp = tailcall_executor.execute(req).await?;
@@ -47,10 +47,10 @@ pub async fn fetch(
 }
 
 ///
-/// Initializes the worker once and caches the app context
+/// Initializes the worker once and caches the executor
 /// for future requests.
 ///
-async fn get_app_ctx(
+async fn get_executor(
     env: worker::Env,
     req: &Request<Body>,
 ) -> anyhow::Result<Result<TailcallExecutor, Response<Body>>> {
@@ -62,10 +62,10 @@ async fn get_app_ctx(
         .and_then(|x| x.get("config").cloned());
 
     if let Some(file_path) = &file_path {
-        if let Some(app_ctx) = read_app_ctx() {
-            if app_ctx.0 == file_path.borrow() {
+        if let Some(executor) = read_executor() {
+            if executor.0 == file_path.borrow() {
                 log::info!("Using cached application context");
-                return Ok(Ok(app_ctx.clone().1));
+                return Ok(Ok(executor.clone().1));
             }
         }
     }
@@ -74,7 +74,7 @@ async fn get_app_ctx(
     match create_tailcall_executor(req, runtime, true).await? {
         Ok(tailcall) => {
             if let Some(file_path) = file_path {
-                *APP_CTX.write().unwrap() = Some((file_path, tailcall.clone()));
+                *EXECUTOR.write().unwrap() = Some((file_path, tailcall.clone()));
             }
             log::info!("Initialized new tailcall executor");
             Ok(Ok(tailcall))
@@ -83,6 +83,6 @@ async fn get_app_ctx(
     }
 }
 
-fn read_app_ctx() -> Option<(String, TailcallExecutor)> {
-    APP_CTX.read().unwrap().clone()
+fn read_executor() -> Option<(String, TailcallExecutor)> {
+    EXECUTOR.read().unwrap().clone()
 }

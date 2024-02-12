@@ -71,12 +71,10 @@ impl TailcallExecutor {
     ) -> Result<String> {
         log::info!("{}", "Config successfully validated".to_string());
 
-        let mut result = String::new();
-
-        display_config(&self.config_module, n_plus_one_queries);
+        let mut result_str = display_config(&self.config_module, n_plus_one_queries);
         if schema {
             let tbp = display_schema(&self.app_ctx.blueprint);
-            result = tbp;
+            result_str = format!("{result_str}\n{tbp}");
         }
 
         validate_operations(&self.app_ctx.blueprint, ops)
@@ -84,7 +82,7 @@ impl TailcallExecutor {
             .to_result()
             .map_err(|e| anyhow!("Invalid Operation: {e}"))?;
 
-        Ok(result)
+        Ok(result_str)
     }
     pub async fn execute(&self, req: Request<Body>) -> Result<Response<Body>> {
         if self.app_ctx.blueprint.server.enable_batch_requests {
