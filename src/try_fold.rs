@@ -106,6 +106,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     ///
     /// # Returns
     /// Returns a `TryFold` that always succeeds with the provided state.
+    #[allow(unused)] // todo needs review
     pub fn succeed(f: impl Fn(&I, O) -> O + 'a) -> Self {
         TryFold(Box::new(move |i, o| Valid::succeed(f(i, o))))
     }
@@ -125,6 +126,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     ///
     /// # Returns
     /// Returns a `TryFold` that always fails with the provided error.
+    #[allow(unused)] // todo needs review
     pub fn fail(e: E) -> Self
     where
         E: Clone,

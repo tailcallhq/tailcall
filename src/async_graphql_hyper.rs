@@ -95,17 +95,6 @@ pub struct GraphQLQuery {
     variables: Option<String>,
 }
 
-impl GraphQLQuery {
-    /// Shortcut method to execute the request on the schema.
-    pub async fn execute<E>(self, executor: &E) -> GraphQLResponse
-    where
-        E: Executor,
-    {
-        let request: GraphQLRequest = self.into();
-        request.execute(executor).await
-    }
-}
-
 static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
