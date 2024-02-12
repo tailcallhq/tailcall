@@ -17,8 +17,9 @@ mod runtime;
 async fn main() -> Result<(), Error> {
     let _ = dotenv();
 
-    let trace: tracing::Level = std::env::var("LOG_LEVEL")
+    let trace: tracing::Level = std::env::var("TC_LOG_LEVEL")
         .ok()
+        .or_else(|| std::env::var("TAILCALL_LOG_LEVEL").ok())
         .as_ref()
         .and_then(|x| tracing::Level::from_str(x).ok())
         // log everything by default since logs can be filtered by level in CloudWatch.
