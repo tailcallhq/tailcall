@@ -46,7 +46,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
 
 pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     for def in blueprint.definitions.iter() {
-        if let Definition::ObjectType(object_type_definition) = def {
+        if let Definition::Object(object_type_definition) = def {
             for field in object_type_definition.fields.iter() {
                 if let Some(Expression::IO(IO::Http { group_by: Some(_), .. })) =
                     field.resolver.clone()
