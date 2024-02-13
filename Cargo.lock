@@ -1136,7 +1136,7 @@ dependencies = [
  "pin-project",
  "serde",
  "serde_json",
- "serde_v8 0.170.0",
+ "serde_v8",
  "smallvec",
  "sourcemap",
  "static_assertions",
@@ -3669,21 +3669,6 @@ dependencies = [
 
 [[package]]
 name = "serde_v8"
-version = "0.169.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad4064ec3eeb8e013080e269242d3f074ca74d4a3806672d91da4cbfdc7ef6d8"
-dependencies = [
- "bytes",
- "derive_more",
- "num-bigint",
- "serde",
- "smallvec",
- "thiserror",
- "v8",
-]
-
-[[package]]
-name = "serde_v8"
 version = "0.170.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43cce12a1cbf76530919847280a975a7831dab85a73d513161a5e6153a8e75d6"
@@ -4025,7 +4010,7 @@ dependencies = [
  "serde_path_to_error",
  "serde_qs",
  "serde_urlencoded",
- "serde_v8 0.169.0",
+ "serde_v8",
  "serde_yaml",
  "stripmargin",
  "temp-env",
@@ -4098,18 +4083,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.56"
+version = "1.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d54378c645627613241d077a3a79db965db602882668f9136ac42af9ecb730ad"
+checksum = "1e45bcbe8ed29775f228095caf2cd67af7a4ccf756ebff23a306bf3e8b47b24b"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.56"
+version = "1.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa0faa943b50f3db30a20aa7e265dbc66076993efed8463e8de414e5d06d3471"
+checksum = "a953cb265bef375dae3de6663da4d3804eee9682ea80d8e2542529b73c531c81"
 dependencies = [
  "proc-macro2",
  "quote",
