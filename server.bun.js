@@ -8,6 +8,7 @@ const asyncId = () => {
 
 serve({
   port: 3000,
+  reusePort: true,
   fetch(req) {
     // Only accept POST requests
     if (req.method !== "POST") {
