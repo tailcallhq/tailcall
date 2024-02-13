@@ -15,7 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -71,10 +71,10 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        mut config_set: ConfigModule,
+        mut config_module: ConfigModule,
         path: Option<String>,
     ) -> anyhow::Result<ConfigModule> {
-        let links: Vec<Link> = config_set
+        let links: Vec<Link> = config_module
             .config
             .links
             .clone()
@@ -88,7 +88,7 @@ impl ConfigReader {
             .collect();
 
         if links.is_empty() {
-            return Ok(config_set);
+            return Ok(config_module);
         }
 
         for config_link in links.iter() {
@@ -112,10 +112,10 @@ impl ConfigReader {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                    config_set = config_set.merge_right(&ConfigModule::from(config.clone()));
+                    config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
-                        config_set = config_set.merge_right(
+                        config_module = config_module.merge_right(
                             &self
                                 .ext_links(ConfigModule::from(config), Some(source.path))
                                 .await?,
@@ -132,28 +132,31 @@ impl ConfigReader {
                         file_descriptor_set.file.push(v);
                     }
 
-                    config_set.extensions.grpc_file_descriptors.push(Content {
-                        id: config_link.id.to_owned(),
-                        content: file_descriptor_set,
-                    });
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: config_link.id.to_owned(),
+                            content: file_descriptor_set,
+                        });
                 }
                 LinkType::Script => {
-                    config_set.extensions.script = Some(content);
+                    config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    config_set
+                    config_module
                         .extensions
                         .cert
                         .extend(self.load_cert(content.clone()).await?);
                 }
                 LinkType::Key => {
-                    config_set.extensions.keys =
+                    config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
             }
         }
 
-        Ok(config_set)
+        Ok(config_module)
     }
 
     /// Reads the certificate from a given file
@@ -195,14 +198,14 @@ impl ConfigReader {
     /// Reads all the files and returns a merged config
     pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.read_files(files).await?;
-        let mut config_set = ConfigModule::default();
+        let mut config_module = ConfigModule::default();
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
 
-            // Create initial config set
-            let new_config_set = self
+            // Create initial config module
+            let new_config_module = self
                 .resolve(
                     Config::from_source(source, schema)?,
                     Some(file.path.clone()),
@@ -210,10 +213,10 @@ impl ConfigReader {
                 .await?;
 
             // Merge it with the original config set
-            config_set = config_set.merge_right(&new_config_set);
+            config_module = config_module.merge_right(&new_config_module);
         }
 
-        Ok(config_set)
+        Ok(config_module)
     }
 
     /// Resolves all the links in a Config to create a ConfigModule
@@ -223,12 +226,12 @@ impl ConfigReader {
         path: Option<String>,
     ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
-        let config_set = ConfigModule::from(config);
+        let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_set = self.ext_links(config_set, path).await?;
+        let config_module = self.ext_links(config_module, path).await?;
 
-        Ok(config_set)
+        Ok(config_module)
     }
 
     /// Performs BFS to import all nested proto files
@@ -277,13 +280,12 @@ mod test_proto_config {
 
     use anyhow::{Context, Result};
 
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
+        let reader = ConfigReader::init(crate::runtime::test::init(None));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -309,7 +311,7 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(init_runtime(&Default::default(), None));
+        let reader = ConfigReader::init(crate::runtime::test::init(None));
         let helper_map = reader
             .resolve_descriptors(HashMap::new(), test_file)
             .await?;
@@ -354,8 +356,6 @@ mod reader_tests {
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
 
-    use crate::blueprint::Upstream;
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
 
@@ -365,7 +365,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -417,7 +417,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -443,7 +443,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);

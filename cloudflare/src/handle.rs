@@ -9,7 +9,7 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::http::{graphiql, handle_request, showcase, AppContext};
 
 use crate::http::{to_request, to_response};
-use crate::init_runtime;
+use crate::runtime;
 
 lazy_static! {
     static ref APP_CTX: RwLock<Option<(String, Arc<AppContext>)>> = RwLock::new(None);
@@ -70,7 +70,7 @@ async fn get_app_ctx(
         }
     }
 
-    let runtime = init_runtime(env)?;
+    let runtime = runtime::init(env)?;
     match showcase::create_app_ctx::<GraphQLRequest>(req, runtime, true).await? {
         Ok(app_ctx) => {
             let app_ctx: Arc<AppContext> = Arc::new(app_ctx);

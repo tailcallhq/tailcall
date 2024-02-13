@@ -9,7 +9,7 @@ use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
 
 pub fn compile_http(
-    config_set: &config::ConfigModule,
+    config_module: &config::ConfigModule,
     field: &config::Field,
     http: &config::Http,
 ) -> Valid<Expression, String> {
@@ -20,14 +20,15 @@ pub fn compile_http(
                 "GroupBy can only be applied if batching is enabled".to_string(),
             )
             .when(|| {
-                (config_set.upstream.get_delay() < 1 || config_set.upstream.get_max_size() < 1)
+                (config_module.upstream.get_delay() < 1
+                    || config_module.upstream.get_max_size() < 1)
                     && !http.group_by.is_empty()
             }),
         )
         .and(Valid::from_option(
             http.base_url
                 .as_ref()
-                .or(config_set.upstream.base_url.as_ref()),
+                .or(config_module.upstream.base_url.as_ref()),
             "No base URL defined".to_string(),
         ))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
@@ -41,8 +42,8 @@ pub fn compile_http(
                 .iter()
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect();
-            let output_schema = to_json_schema_for_field(field, config_set);
-            let input_schema = to_json_schema_for_args(&field.args, config_set);
+            let output_schema = to_json_schema_for_field(field, config_module);
+            let input_schema = to_json_schema_for_args(&field.args, config_module);
 
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
@@ -74,14 +75,18 @@ pub fn update_http<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config_set, field, type_of, _), b_field| {
+        |(config_module, field, type_of, _), b_field| {
             let Some(http) = &field.http else {
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_set, field, http)
+            compile_http(config_module, field, http)
                 .map(|resolver| b_field.resolver(Some(resolver)))
-                .and_then(|b_field| b_field.validate_field(type_of, config_set).map_to(b_field))
+                .and_then(|b_field| {
+                    b_field
+                        .validate_field(type_of, config_module)
+                        .map_to(b_field)
+                })
         },
     )
 }

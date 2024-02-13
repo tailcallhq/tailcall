@@ -61,8 +61,6 @@ mod tests {
     use url::Url;
 
     use super::DataLoaderRequest;
-    use crate::blueprint::Upstream;
-    use crate::cli::init_runtime;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -93,12 +91,12 @@ mod tests {
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
 
-        let runtime = init_runtime(&Upstream::default(), None);
+        let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
-        let config_set = reader.resolve(config, None).await.unwrap();
+        let config_module = reader.resolve(config, None).await.unwrap();
 
         let protobuf_set = ProtobufSet::from_proto_file(
-            config_set
+            config_module
                 .extensions
                 .get_file_descriptor(id.as_str())
                 .unwrap(),
