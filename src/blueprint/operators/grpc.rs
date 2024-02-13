@@ -2,8 +2,7 @@ use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
-use crate::config::group_by::GroupBy;
-use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
+use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, GroupBy, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;

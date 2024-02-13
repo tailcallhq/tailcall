@@ -13,7 +13,6 @@ use crate::blueprint::{OperationQuery, Upstream};
 use crate::builder::TailcallBuilder;
 use crate::cli::server::Server;
 use crate::cli::{self};
-use crate::fmt::Fmt;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -57,14 +56,14 @@ pub async fn run() -> Result<()> {
             let result = tailcall_executor
                 .validate(n_plus_one_queries, schema, ops)
                 .await?;
-            Fmt::display(result);
+            display(result);
             Ok(())
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Compose { file_paths, format } => {
             let executor = tailcall_builder.with_config_paths(&file_paths).await?;
             let encoded = format.encode(&executor.config_module)?;
-            Fmt::display(encoded);
+            display(encoded);
             Ok(())
         }
     }
@@ -151,6 +150,10 @@ pub async fn init(folder_path: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn display(s: String) {
+    println!("{}", s);
 }
 
 // initialize logger
