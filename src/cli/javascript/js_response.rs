@@ -14,7 +14,7 @@ pub struct JsResponse {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    body: Option<Bytes>,
+    body: Option<serde_json::Value>,
 }
 
 impl TryFrom<JsResponse> for Response<Bytes> {
@@ -23,8 +23,8 @@ impl TryFrom<JsResponse> for Response<Bytes> {
     fn try_from(res: JsResponse) -> Result<Self, Self::Error> {
         let status = reqwest::StatusCode::from_u16(res.status)?;
         let headers = create_header_map(res.headers)?;
-        let body = res.body.unwrap_or_default();
-        Ok(Response { status, headers, body })
+        let body = serde_json::to_vec(&res.body)?;
+        Ok(Response { status, headers, body: Bytes::from(body) })
     }
 }
 
@@ -40,7 +40,7 @@ impl TryFrom<Response<Bytes>> for JsResponse {
             headers.insert(key, value);
         }
 
-        let body = Some(res.body);
+        let body = serde_json::from_slice(res.body.as_ref())?;
         Ok(JsResponse { status, headers, body })
     }
 }

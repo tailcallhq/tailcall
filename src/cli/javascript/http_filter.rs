@@ -38,7 +38,7 @@ impl HttpFilter {
                     let command = self.worker.dispatch(Message {
                         message: MessageContent::Response(JsResponse::try_from(response)?),
                         id,
-                    })?;
+                    }).await?;
                     Ok(self.on_command(command).await?)
                 }
                 Message { message: MessageContent::Response(response), id: _ } => {
@@ -61,7 +61,7 @@ impl HttpIO for HttpFilter {
         let command = self.worker.dispatch(Message {
             message: MessageContent::Request(request.try_into()?),
             id: None,
-        })?;
+        }).await?;
         self.on_command(command).await
     }
 }

@@ -13,7 +13,7 @@ pub struct JsRequest {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    body: Option<Bytes>,
+    body: Option<serde_json::Value>,
 }
 
 impl TryFrom<JsRequest> for reqwest::Request {
@@ -26,8 +26,9 @@ impl TryFrom<JsRequest> for reqwest::Request {
         );
         let headers = create_header_map(req.headers)?;
         request.headers_mut().extend(headers);
-        if let Some(bytes) = req.body {
-            let _ = request.body_mut().insert(reqwest::Body::from(bytes));
+        if let Some(body) = req.body {
+            let body = serde_json::to_vec(&body)?;
+            let _ = request.body_mut().insert(reqwest::Body::from(body));
         }
 
         Ok(request)
@@ -50,10 +51,10 @@ impl TryFrom<reqwest::Request> for JsRequest {
                 )
             })
             .collect::<BTreeMap<String, String>>();
-        let body = req.body().map(|body| {
-            let bytes = body.as_bytes().unwrap_or_default();
-            Bytes::from_iter(bytes.to_vec())
-        });
+        let body = req
+            .body()
+            .and_then(|body| body.as_bytes())
+            .and_then(|body| serde_json::from_slice(body).ok());
 
         Ok(JsRequest { url, method, headers, body })
     }

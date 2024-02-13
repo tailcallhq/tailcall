@@ -5,6 +5,7 @@ use hyper::header::{HeaderName, HeaderValue};
 
 mod channel;
 mod http_filter;
+mod external;
 mod js_request;
 mod js_response;
 mod runtime;
@@ -14,11 +15,11 @@ pub use js_request::JsRequest;
 pub use js_response::JsResponse;
 pub use runtime::Runtime;
 
-use crate::{blueprint, HttpIO};
+use crate::{blueprint, cli::javascript::external::ExternalRuntime, HttpIO};
 
 pub fn init_http(http: impl HttpIO, script: blueprint::Script) -> Arc<dyn HttpIO + Sync + Send> {
     log::debug!("Initializing JavaScript HTTP filter: {}", script.source);
-    let script_io = Runtime::new(script);
+    let script_io = ExternalRuntime::new("http://localhost:3000".to_owned());
     Arc::new(HttpFilter::new(http, script_io))
 }
 
