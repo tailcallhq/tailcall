@@ -66,8 +66,9 @@ pub trait Cache: Send + Sync {
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
-pub trait WorkerIO<Event, Command>: Send + Sync {
-    fn dispatch(&self, event: Event) -> anyhow::Result<Vec<Command>>;
+#[async_trait::async_trait]
+pub trait WorkerIO<Event, Command>: Send + Sync + 'static {
+    async fn dispatch(&self, event: Event) -> anyhow::Result<Vec<Command>>;    
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {

@@ -52,7 +52,7 @@ pub struct Channel {
 impl Channel {
     pub fn new(
         client: impl HttpIO + Send + Sync + 'static,
-        worker: impl WorkerIO<Event, Command> + Send + Sync + 'static,
+        worker: impl WorkerIO<Event, Command>,
     ) -> Self {
         Self { worker: Arc::new(worker), client: Arc::new(client) }
     }
@@ -64,7 +64,9 @@ impl Channel {
     }
 
     async fn on_event(&self, event: Event) -> anyhow::Result<Option<JsResponse>> {
-        let commands = self.worker.dispatch(event)?;
+        log::debug!("event: {:?}", event);
+        let worker = self.worker.clone();
+        let commands = worker.dispatch(event).await?;
         let responses = join_all(commands.into_iter().map(|command| self.on_command(command)))
             .await
             .into_iter()
@@ -75,6 +77,7 @@ impl Channel {
 
     #[async_recursion::async_recursion]
     async fn on_command(&self, command: Command) -> anyhow::Result<Option<JsResponse>> {
+        log::debug!("command: {:?}", command);
         match command {
             Command::Request(Continue { message, id }) => {
                 let response = self.client.execute(message.try_into()?).await?;

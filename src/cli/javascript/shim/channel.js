@@ -1,7 +1,8 @@
 class Channel {
   constructor() {
-    this._listeners = []
+    this._listeners = {}
     this._outbox = []
+    this._id = 0
   }
 
   /**
@@ -9,7 +10,13 @@ class Channel {
    * This is called from the client (JS) side.
    */
   addListener(listener) {
-    this._listeners.push(listener)
+    const id = this.get_id()
+    this._listeners[id] = listener
+    return id
+  }
+
+  removeListener(id) {
+    delete this._listeners[id]
   }
 
   /**
@@ -29,6 +36,14 @@ class Channel {
    */
   dispatch(message) {
     this._outbox.push(message)
+  }
+
+  /**
+   * Creates a unique id for a message.
+   * TODO: move to a separate module.
+   */
+  get_id() {
+    return this._id++
   }
 }
 

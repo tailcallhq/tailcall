@@ -12,7 +12,16 @@ struct LocalRuntime {
 }
 
 thread_local! {
+    // Practically only one JS runtime is created because CHANNEL_RUNTIME is single threaded.
   static LOCAL_RUNTIME: RefCell<OnceCell<LocalRuntime>> = const { RefCell::new(OnceCell::new()) };
+}
+
+// Single threaded JS runtime, that's shared across all tokio workers.
+lazy_static::lazy_static! {
+    static ref CHANNEL_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .build()
+        .expect("JS runtime not initialized");
 }
 
 impl LocalRuntime {
@@ -45,15 +54,19 @@ impl Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    fn dispatch(&self, event: Event) -> anyhow::Result<Vec<Command>> {
-        log::debug!("event: {:?}", event);
-        let command = LOCAL_RUNTIME.with(move |cell| {
-            let script = self.script.clone();
-            cell.borrow()
-                .get_or_init(|| LocalRuntime::try_new(script).expect("JS runtime not initialized"));
-            on_event(event)
-        });
-        command
+    async fn dispatch(&self, event: Event) -> anyhow::Result<Vec<Command>> {
+        let script = self.script.clone();
+        CHANNEL_RUNTIME
+            .spawn(async move {
+                LOCAL_RUNTIME.with(move |cell| {
+                    let script = script.clone();
+                    cell.borrow().get_or_init(|| {
+                        LocalRuntime::try_new(script).expect("JS runtime not initialized")
+                    });
+                });
+                on_event(event)
+            })
+            .await?
     }
 }
 
