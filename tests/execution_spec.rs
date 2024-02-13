@@ -23,7 +23,7 @@ use tailcall::config::{Config, Source};
 use tailcall::http::{AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
-use tailcall::valid::Cause;
+use tailcall::valid::{Cause, ValidationError};
 use tailcall::{EnvIO, FileIO, HttpIO};
 use url::Url;
 
@@ -532,9 +532,10 @@ impl ExecutionSpec {
 
     async fn server_context(
         &self,
-        tailcall_executor: &TailcallExecutor,
+        tailcall_executor: Result<TailcallExecutor, ValidationError<String>>,
         env: HashMap<String, String>,
     ) -> TailcallExecutor {
+        let tailcall_executor = tailcall_executor.unwrap();
         let http = MockHttpClient::new(self.clone());
         let http = if let Some(script) = tailcall_executor.app_ctx.blueprint.server.script.clone() {
             javascript::init_http(http, script)
@@ -829,7 +830,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let tailcall_builder = TailcallBuilder::init(runtime);
 
-    let server: Vec<TailcallExecutor> = join_all(
+    let server: Vec<Result<TailcallExecutor, ValidationError<String>>> = join_all(
         server // todo check
             .into_iter()
             .map(|config| {
@@ -842,21 +843,10 @@ async fn assert_spec(spec: ExecutionSpec) {
     )
     .await
     .into_iter()
-    .enumerate()
-    .map(|(i, result)| {
-        result.unwrap_or_else(|e| {
-            panic!(
-                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
-                i + 1,
-                spec.path,
-                e
-            )
-        })
-    })
     .collect();
 
     if server.len() == 1 {
-        let tailcall_executor = &server[0];
+        let tailcall_executor = server.first().cloned().unwrap().unwrap();
 
         // client: Check if client spec matches snapshot
         let client = print_schema(tailcall_executor.app_ctx.blueprint.to_schema());
@@ -880,7 +870,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                     .clone()
                     .unwrap_or_else(|| HashMap::with_capacity(0)),
                 assertion,
-                server.first().unwrap(),
+                server.first().cloned().unwrap(),
             )
             .await
             .context(spec.path.to_str().unwrap().to_string())
@@ -950,7 +940,7 @@ async fn run_assert(
     spec: &ExecutionSpec,
     env: &HashMap<String, String>,
     request: &APIRequest,
-    tailcall_executor: &TailcallExecutor,
+    tailcall_executor: Result<TailcallExecutor, ValidationError<String>>,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();
