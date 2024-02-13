@@ -10,6 +10,7 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
+use crate::cli::analytics_request::ApiClient;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
@@ -22,6 +23,7 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub async fn run() -> Result<()> {
+    let api_client = ApiClient::new();
     let cli = Cli::parse();
     logger_init();
     update_checker::check_for_update().await;
@@ -29,6 +31,15 @@ pub async fn run() -> Result<()> {
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
+            match api_client.post_data("start").await {
+                Ok(response_text) => {
+                    log::info!("API Response: {}", response_text);
+                }
+                Err(err) => {
+                    log::info!("Error: {}", err);
+                }
+            }
+
             let config_module = config_reader.read_all(&file_paths).await?;
             log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
             let server = Server::new(config_module);
@@ -36,6 +47,15 @@ pub async fn run() -> Result<()> {
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
+            match api_client.post_data("check").await {
+                Ok(response_text) => {
+                    log::info!("API Response: {}", response_text);
+                }
+                Err(err) => {
+                    log::info!("Error: {}", err);
+                }
+            }
+
             let config_module = (config_reader.read_all(&file_paths)).await?;
             let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
@@ -71,8 +91,28 @@ pub async fn run() -> Result<()> {
                 Err(e) => Err(e.into()),
             }
         }
-        Command::Init { folder_path } => init(&folder_path).await,
+        Command::Init { folder_path } => {
+            match api_client.post_data("init").await {
+                Ok(response_text) => {
+                    log::info!("API Response: {}", response_text);
+                }
+                Err(err) => {
+                    log::info!("Error: {}", err);
+                }
+            }
+
+            init(&folder_path).await
+        }
         Command::Compose { file_paths, format } => {
+            match api_client.post_data("compose").await {
+                Ok(response_text) => {
+                    log::info!("API Response: {}", response_text);
+                }
+                Err(err) => {
+                    log::info!("Error: {}", err);
+                }
+            }
+
             let config = (config_reader.read_all(&file_paths).await)?;
             Fmt::display(format.encode(&config)?);
             Ok(())

@@ -1,60 +1,123 @@
-use reqwest::{Client, header, StatusCode};
-use serde_json::json;
-use anyhow::{anyhow, Result};
-use lazy_static::lazy_static;
+use anyhow::{Context, Result};
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 
-const API_ENDPOINT: &str = "https://www.google-analytics.com/mp/collect";
-const MEASUREMENT_ID: &str = "measurement_id_here";
-const API_SECRET: &str = "api_secret_here";
+const API_SECRET: &str = "api-secret";
+const MEASUREMENT_ID: &str = "measurement-id";
+const BASE_URL: &str = "https://www.google-analytics.com";
 
-lazy_static! {
-    static ref URL: String = format!(
-        "{}?api_secret={}&measurement_id={}",
-        API_ENDPOINT, API_SECRET, MEASUREMENT_ID
-    );
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Params {
+    #[serde(rename = "command_name")]
+    pub command_name: String,
 }
 
-pub async fn ga_request(command: &str) -> Result<()> {
-    const USER_AGENT: &str = "tailcall/1.0";
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Event {
+    pub name: String,
+    pub params: Params,
+}
 
-    let client = Client::new();
-    let mut headers = header::HeaderMap::new();
-    headers.insert(header::USER_AGENT, header::HeaderValue::from_str(USER_AGENT)?);
-    headers.insert(header::CONTENT_TYPE, header::HeaderValue::from_static("application/json"));
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PostData {
+    #[serde(rename = "client_id")]
+    pub client_id: String,
+    pub events: Vec<Event>,
+}
 
-    let json_body = json!({
-        "client_id": "1",
-        "events": [
-            {
-                "name": "track_cli_usage",
-                "params": {
-                    "command_name": command
-                }
-            }
-        ]
-    });
+pub struct ApiClient {
+    client: Client,
+    base_url: String,
+    api_secret: String,
+    measurement_id: String,
+}
 
-    let response = client
-        .post(&URL)
-        .headers(headers)
-        .json(&json_body)
-        .send()
-        .await?;
+impl ApiClient {
+    pub fn new() -> Self {
+        let client = Client::new();
+        ApiClient {
+            client,
+            base_url: BASE_URL.trim_end_matches('/').to_string(),
+            api_secret: API_SECRET.to_string(),
+            measurement_id: MEASUREMENT_ID.to_string(),
+        }
+    }
 
-    if response.status() == StatusCode::OK {
-        Ok(())
-    } else {
-        Err(anyhow!("Failed to send analytics request"))
+    pub async fn post_data(&self, command_name: &str) -> Result<String, anyhow::Error> {
+        let post_data = PostData {
+            client_id: "1".to_string(),
+            events: vec![Event {
+                name: "track_cli_usage".to_string(),
+                params: Params { command_name: command_name.to_string() },
+            }],
+        };
+
+        let json_data =
+            serde_json::to_string(&post_data).with_context(|| "Failed to serialize data")?;
+
+        let response = self
+            .client
+            .post(format!("{}/debug/mp/collect", self.base_url))
+            .query(&[
+                ("api_secret", &self.api_secret),
+                ("measurement_id", &self.measurement_id),
+            ])
+            .header("Content-Type", "application/json")
+            .body(json_data.clone())
+            .send()
+            .await
+            .with_context(|| "Failed to send request")?;
+
+        let response_text = response
+            .text()
+            .await
+            .with_context(|| "Failed to read response")?;
+        let response_json: serde_json::Value = serde_json::from_str(&response_text)
+            .with_context(|| "Failed to parse response JSON")?;
+
+        let validation_messages = response_json.get("validationMessages");
+
+        if validation_messages
+            .as_ref()
+            .map(|v| v.as_array().map_or(true, Vec::is_empty))
+            .unwrap_or_default()
+        {
+            self.client
+                .post(format!("{}/mp/collect", self.base_url))
+                .query(&[
+                    ("api_secret", &self.api_secret),
+                    ("measurement_id", &self.measurement_id),
+                ])
+                .header("Content-Type", "application/json")
+                .body(json_data)
+                .send()
+                .await?;
+
+            Ok("Success!".to_string())
+        } else {
+            Err(anyhow::Error::msg("API request failed"))
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use tokio::test;
+
     use super::*;
 
     #[test]
-    async fn test_ga_request_success() {
-        let result = ga_request("start").await;
-        assert!(result.is_ok());
+    async fn test_new_api_client() {
+        let api_client = ApiClient::new();
+
+        assert_eq!(api_client.base_url, BASE_URL.trim_end_matches('/'));
+        assert_eq!(api_client.api_secret, API_SECRET);
+        assert_eq!(api_client.measurement_id, MEASUREMENT_ID);
     }
+
+    /* TODO: success case
+    #[test]
+    async fn test_post_data_success() {
+
+    }*/
 }
