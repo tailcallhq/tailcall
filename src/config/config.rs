@@ -16,10 +16,10 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 use crate::json::JsonSchema;
-use crate::valid::{ValidationError, Validator};
+use crate::valid::{Valid, Validator};
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -294,7 +294,7 @@ fn merge_unions(
 }
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
 #[setters(strip_option)]
 pub struct RootSchema {
@@ -323,7 +323,7 @@ pub struct Omit {}
 /// A field definition containing all the metadata information about resolving a field.
 ///
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
 #[setters(strip_option)]
 pub struct Field {
@@ -450,9 +450,9 @@ impl Field {
             .is_some_and(|http| !http.group_by.is_empty())
             || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
             || self
-                .grpc
-                .as_ref()
-                .is_some_and(|grpc| !grpc.group_by.is_empty())
+            .grpc
+            .as_ref()
+            .is_some_and(|grpc| !grpc.group_by.is_empty())
     }
     pub fn to_list(mut self) -> Self {
         self.list = true;
@@ -663,24 +663,27 @@ pub struct AddField {
 }
 
 impl Config {
-    pub fn from_json(json: &str) -> Result<Self, ValidationError<String>> {
-        serde_json::from_str(json).map_err(|e| ValidationError::new(e.to_string()))
+    pub fn from_json(json: &str) -> Result<Self> {
+        Ok(serde_json::from_str(json)?)
     }
 
-    pub fn from_yaml(yaml: &str) -> Result<Self, ValidationError<String>> {
-        serde_yaml::from_str(yaml).map_err(|e| ValidationError::new(e.to_string()))
+    pub fn from_yaml(yaml: &str) -> Result<Self> {
+        Ok(serde_yaml::from_str(yaml)?)
     }
 
-    pub fn from_sdl(sdl: &str) -> Result<Self, ValidationError<String>> {
+    pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
         let doc = async_graphql::parser::parse_schema(sdl);
-        from_document(doc.map_err(|e| ValidationError::new(e.to_string()))?).to_result()
+        match doc {
+            Ok(doc) => from_document(doc),
+            Err(e) => Valid::fail(e.to_string()),
+        }
     }
 
-    pub fn from_source(source: Source, schema: &str) -> Result<Self, ValidationError<String>> {
+    pub fn from_source(source: Source, schema: &str) -> Result<Self> {
         match source {
-            Source::GraphQL => Config::from_sdl(schema),
-            Source::Json => Config::from_json(schema),
-            Source::Yml => Config::from_yaml(schema),
+            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+            Source::Json => Ok(Config::from_json(schema)?),
+            Source::Yml => Ok(Config::from_yaml(schema)?),
         }
     }
 
@@ -690,7 +693,7 @@ impl Config {
 }
 
 #[derive(
-    Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema,
+Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema,
 )]
 pub enum Encoding {
     #[default]
@@ -732,7 +735,7 @@ mod tests {
 
     #[test]
     fn test_from_sdl_empty() {
-        let actual = Config::from_sdl("type Foo {a: Int}").unwrap();
+        let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
         let expected = Config::default().types(vec![(
             "Foo",
             Type::default().fields(vec![("a", Field::int())]),

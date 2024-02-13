@@ -33,7 +33,7 @@ impl TailcallBuilder {
         source: Source,
         schema: T,
         relative_path: Option<String>,
-    ) -> Result<TailcallExecutor, ValidationError<String>> {
+    ) -> Result<TailcallExecutor> {
         let reader = ConfigReader::init(self.runtime.clone());
         let config = Config::from_source(source, &schema.to_string())?;
 
@@ -46,10 +46,7 @@ impl TailcallBuilder {
         let app_ctx = Arc::new(app_ctx);
         Ok(TailcallExecutor { config_module, app_ctx })
     }
-    pub async fn with_config_paths<T: ToString>(
-        self,
-        files: &[T],
-    ) -> Result<TailcallExecutor, ValidationError<String>> {
+    pub async fn with_config_paths<T: ToString>(self, files: &[T]) -> Result<TailcallExecutor> {
         let reader = ConfigReader::init(self.runtime.clone());
         let config_module = reader.read_all(files).await?;
         let blueprint = Blueprint::try_from(&config_module)?;

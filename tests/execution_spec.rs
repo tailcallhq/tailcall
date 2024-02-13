@@ -736,7 +736,8 @@ async fn assert_spec(spec: ExecutionSpec) {
                 content,
                 Some(spec.path.to_string_lossy().to_string()),
             )
-            .await;
+            .await
+            .map_err(|e| ValidationError::new(e.to_string()));
 
         match tailcall_executor {
             Ok(_) => {
@@ -843,6 +844,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     )
     .await
     .into_iter()
+    .map(|executor| executor.map_err(|e| ValidationError::new(e.to_string())))
     .collect();
 
     if server.len() == 1 {

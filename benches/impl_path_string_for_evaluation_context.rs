@@ -15,11 +15,10 @@ use tailcall::path::PathString;
 
 #[cfg(test)]
 pub mod test {
-    use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::{anyhow, Result};
+    use anyhow::Result;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
     use hyper::body::Bytes;
     use reqwest::Client;
@@ -28,7 +27,6 @@ pub mod test {
     use tailcall::http::Response;
     use tailcall::runtime::TargetRuntime;
     use tailcall::{EnvIO, FileIO, HttpIO};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -90,29 +88,27 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
             unimplemented!("Not needed in this test")
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
             unimplemented!("Not needed in this test ")
         }
     }
 
     #[derive(Clone)]
-    struct TestEnvIO {
-        vars: HashMap<String, String>,
-    }
+    struct TestEnvIO {}
 
     impl EnvIO for TestEnvIO {
-        fn get(&self, key: &str) -> Option<String> {
+        fn get(&self, _: &str) -> Option<String> {
             None
         }
     }
 
     impl TestEnvIO {
         pub fn init() -> Self {
-            Self { vars: Hashmap::new() }
+            Self {}
         }
     }
 
