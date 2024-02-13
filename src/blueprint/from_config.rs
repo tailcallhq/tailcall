@@ -33,11 +33,16 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
         Valid::from(Links::try_from(config_set.links.clone())).map_to(blueprint)
     });
 
+    let rest_apis = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
+        Valid::succeed(config_set.rest_apis.clone()).map(|rest_apis| blueprint.rest_apis(rest_apis))
+    });
+
     server
         .and(schema)
         .and(definitions)
         .and(upstream)
         .and(links)
+        .and(rest_apis)
         .update(apply_batching)
         .update(compress)
 }

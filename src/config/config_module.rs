@@ -11,6 +11,7 @@ use crate::config::Config;
 #[derive(Clone, Debug, Default, Setters)]
 pub struct ConfigModule {
     pub config: Config,
+    pub gql_requests: Arc<Vec<async_graphql::Request>>,
     pub extensions: Extensions,
 }
 

@@ -8,6 +8,7 @@ use serde_json::Value;
 
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
+use crate::config::RestApis;
 use crate::lambda::Expression;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
@@ -20,6 +21,7 @@ pub struct Blueprint {
     pub schema: SchemaDefinition,
     pub server: Server,
     pub upstream: Upstream,
+    pub rest_apis: RestApis,
 }
 
 #[derive(Clone, Debug)]

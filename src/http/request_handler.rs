@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
-use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike, GraphQLResponse};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
@@ -94,6 +94,22 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+
+pub async fn graphql_query(
+    query: String,
+    app_ctx: &AppContext,
+) -> Result<Response<Body>> {
+    // let req_ctx = Arc::new(create_request_context(&req, app_ctx));
+    let request = GraphQLRequest(async_graphql::Request::new(query));
+    // let bytes = hyper::body::to_bytes(req.into_body()).await?;
+    // let request = serde_json::from_slice::<T>(&bytes);
+    let mut response = request.execute(&app_ctx.schema).await;
+    // response = update_cache_control_header(response, app_ctx, req_ctx);
+    let mut resp = response.to_response()?;
+    update_response_headers(&mut resp, app_ctx);
+    Ok(resp)
+}
+
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
     let mut new_headers = HeaderMap::new();
     for (k, v) in headers.iter() {
@@ -130,6 +146,11 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         }
 
         hyper::Method::GET if app_ctx.blueprint.server.enable_graphiql => graphiql(&req),
-        _ => not_found(),
+        ref method => {
+            let query = app_ctx.blueprint.rest_apis.dispatch_path(method.clone(), req.uri().path());
+            println!("{query:?}");
+            graphql_query(query?, &app_ctx).await
+        },
+        // _ => not_found(),
     }
 }

@@ -95,6 +95,19 @@ pub trait Validator<A, E>: Sized {
     }
 }
 
+impl<A, E, C: FromIterator<A>> FromIterator<Valid<A, E>> for Valid<C, E> {
+    fn from_iter<I: IntoIterator<Item = Valid<A, E>>>(iter: I) -> Self {
+        let result = iter
+            .into_iter()
+            .map(|v| v.to_result())
+            .collect::<Result<C, _>>();
+        match result {
+            Ok(a) => Valid::succeed(a),
+            Err(e) => Valid(Err(e)),
+        }
+    }
+}
+
 impl<A, E> Valid<A, E> {
     pub fn fail(e: E) -> Valid<A, E> {
         Valid(Err((vec![Cause::new(e)]).into()))

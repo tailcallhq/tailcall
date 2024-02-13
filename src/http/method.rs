@@ -30,3 +30,22 @@ impl Method {
         }
     }
 }
+
+impl TryFrom<hyper::Method> for Method {
+    type Error = anyhow::Error;
+
+    fn try_from(method: hyper::Method) -> anyhow::Result<Self> {
+        Ok(match method {
+            hyper::Method::GET => Method::GET,
+            hyper::Method::POST => Method::POST,
+            hyper::Method::PUT => Method::PUT,
+            hyper::Method::PATCH => Method::PATCH,
+            hyper::Method::DELETE => Method::DELETE,
+            hyper::Method::HEAD => Method::HEAD,
+            hyper::Method::OPTIONS => Method::OPTIONS,
+            hyper::Method::CONNECT => Method::CONNECT,
+            hyper::Method::TRACE => Method::TRACE,
+            _ => Err(anyhow::anyhow!("Unsupported HTTP method"))?,
+        })
+    }
+}
