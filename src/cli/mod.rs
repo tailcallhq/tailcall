@@ -1,11 +1,11 @@
 mod command;
 mod error;
 mod fmt;
+pub mod http_service;
 #[cfg(feature = "js")]
 pub mod javascript;
 pub mod server;
 mod tc;
-pub mod http_service;
 
 pub mod runtime;
 pub(crate) mod update_checker;
