@@ -91,11 +91,7 @@ pub mod test {
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
         async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
-            let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
-            Ok(())
+            unimplemented!("Not needed in this test")
         }
 
         async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
