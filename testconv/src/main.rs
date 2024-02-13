@@ -117,7 +117,6 @@ async fn main() {
     let mut files_already_processed: HashSet<String> = HashSet::new();
 
     let runtime = cli::runtime::init(&Default::default(), None);
-    
 
     if http_dir.exists() {
         for x in read_dir(http_dir).expect("Could not read http directory") {
