@@ -121,7 +121,7 @@ pub mod test {
 
     impl TestEnvIO {
         pub fn init() -> Self {
-            Self { vars: std::env::vars().collect() }
+            Self { vars: Hashmap::new() }
         }
     }
 
