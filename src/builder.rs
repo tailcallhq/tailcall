@@ -39,8 +39,7 @@ impl TailcallBuilder {
 
         let config_module = reader
             .resolve(config, relative_path)
-            .await
-            .map_err(|e| ValidationError::new(e.to_string()))?;
+            .await?;
         let blueprint = Blueprint::try_from(&config_module.clone())?;
         let app_ctx = AppContext::new(blueprint, self.runtime);
         let app_ctx = Arc::new(app_ctx);
@@ -73,8 +72,7 @@ impl TailcallExecutor {
 
         validate_operations(&self.app_ctx.blueprint, ops)
             .await
-            .to_result()
-            .map_err(|e| anyhow!("Invalid Operation: {e}"))?;
+            .to_result()?;
 
         Ok(result_str)
     }

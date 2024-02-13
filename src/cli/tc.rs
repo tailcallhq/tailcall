@@ -55,8 +55,7 @@ pub async fn run() -> Result<()> {
 
             let tailcall_executor = tailcall_builder
                 .with_config_paths(&file_paths)
-                .await
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+                .await?;
             let result = tailcall_executor
                 .validate(n_plus_one_queries, schema, ops)
                 .await?;
