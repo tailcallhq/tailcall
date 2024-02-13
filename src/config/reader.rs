@@ -1,9 +1,10 @@
 use std::collections::{HashMap, VecDeque};
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
+use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use rustls_pemfile;
@@ -34,7 +35,7 @@ impl ConfigReader {
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read_file<T: ToString>(&self, file: T) -> Result<FileRead> {
+    async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             let response = self
@@ -54,12 +55,15 @@ impl ConfigReader {
     }
 
     /// Reads all the files in parallel
-    async fn read_files<T: ToString>(&self, files: &[T]) -> Result<Vec<FileRead>> {
-        let files = files.iter().map(|x| self.read_file(x.to_string()));
+    async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
+        let files = files.iter().map(|x| {
+            self.read_file(x.to_string())
+                .map_err(|e| e.context(x.to_string()))
+        });
         let content = join_all(files)
             .await
             .into_iter()
-            .collect::<Result<Vec<_>>>()?;
+            .collect::<anyhow::Result<Vec<_>>>()?;
         Ok(content)
     }
 
@@ -69,7 +73,7 @@ impl ConfigReader {
         &self,
         mut config_module: ConfigModule,
         path: Option<String>,
-    ) -> Result<ConfigModule> {
+    ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config
             .links
@@ -187,7 +191,7 @@ impl ConfigReader {
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> Result<ConfigModule> {
+    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.read_files(files).await?;
         let mut config_module = ConfigModule::default();
 
