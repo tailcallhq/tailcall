@@ -146,7 +146,7 @@ mod server_spec {
         let server_up_receiver = server.server_up_receiver();
 
         tokio::spawn(async move {
-            server.start().await.unwrap();
+            server.fork_start().await.unwrap();
         });
 
         server_up_receiver
