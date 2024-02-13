@@ -69,8 +69,7 @@ async fn get_executor(
             }
         }
     }
-    let env = Rc::new(env);
-    let runtime = runtime::init(env)?;
+    let runtime = runtime::init(Rc::new(env))?;
     match create_tailcall_executor(req, runtime, true).await? {
         Ok(tailcall_executor) => {
             if let Some(file_path) = file_path {
