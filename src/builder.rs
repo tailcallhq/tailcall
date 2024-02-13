@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use hyper::{Body, Request, Response};
 
 use crate::app_context::AppContext;
@@ -12,7 +12,7 @@ use crate::fmt::Fmt;
 use crate::http::handle_request;
 use crate::print_schema;
 use crate::runtime::TargetRuntime;
-use crate::valid::{ValidationError, Validator};
+use crate::valid::Validator;
 
 #[derive(Clone)]
 pub struct TailcallBuilder {
@@ -37,9 +37,7 @@ impl TailcallBuilder {
         let reader = ConfigReader::init(self.runtime.clone());
         let config = Config::from_source(source, &schema.to_string())?;
 
-        let config_module = reader
-            .resolve(config, relative_path)
-            .await?;
+        let config_module = reader.resolve(config, relative_path).await?;
         let blueprint = Blueprint::try_from(&config_module.clone())?;
         let app_ctx = AppContext::new(blueprint, self.runtime);
         let app_ctx = Arc::new(app_ctx);
