@@ -95,12 +95,7 @@ pub mod test {
         }
 
         async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-            let mut file = tokio::fs::File::open(path).await?;
-            let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
-            Ok(String::from_utf8(buffer)?)
+            unimplemented!("Not needed in this test ")
         }
     }
 
