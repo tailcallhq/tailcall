@@ -8,11 +8,12 @@ use inquire::Confirm;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
-use super::update_checker;
+use super::{update_checker, CLIError};
 use crate::blueprint::{OperationQuery, Upstream};
 use crate::builder::TailcallBuilder;
 use crate::cli::server::Server;
 use crate::cli::{self};
+use crate::valid::ValidationError;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -55,7 +56,11 @@ pub async fn run() -> Result<()> {
             let tailcall_executor = tailcall_builder.with_config_paths(&file_paths).await?;
             let result = tailcall_executor
                 .validate(n_plus_one_queries, schema, ops)
-                .await?;
+                .await
+                .map_err(|e| {
+                    let e = e.downcast::<ValidationError<String>>().unwrap();
+                    CLIError::from(e).message("Invalid Operation".to_string())
+                })?;
             display(result);
             Ok(())
         }
