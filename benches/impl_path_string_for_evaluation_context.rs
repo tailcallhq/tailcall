@@ -115,7 +115,7 @@ pub mod test {
 
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<String> {
-            self.vars.get(key).cloned()
+            None
         }
     }
 
