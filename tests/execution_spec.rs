@@ -835,21 +835,18 @@ async fn assert_spec(spec: ExecutionSpec) {
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let tailcall_builder = TailcallBuilder::init(runtime);
 
-    let server: Vec<Result<TailcallExecutor, ValidationError<String>>> = join_all(
-        server // todo check
-            .into_iter()
-            .map(|config| {
-                tailcall_builder.clone().with_config(
-                    Source::GraphQL,
-                    config.to_sdl(),
-                    Some(spec.path.to_string_lossy().to_string()),
-                )
-            }),
-    )
-    .await
-    .into_iter()
-    .map(|executor| executor.map_err(|e| ValidationError::new(e.to_string())))
-    .collect();
+    let server: Vec<Result<TailcallExecutor, ValidationError<String>>> =
+        join_all(server.into_iter().map(|config| {
+            tailcall_builder.clone().with_config(
+                Source::GraphQL,
+                config.to_sdl(),
+                Some(spec.path.to_string_lossy().to_string()),
+            )
+        }))
+        .await
+        .into_iter()
+        .map(|executor| executor.map_err(|e| ValidationError::new(e.to_string())))
+        .collect();
 
     if server.len() == 1 {
         let tailcall_executor = server.first().cloned().unwrap().unwrap();

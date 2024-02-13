@@ -57,7 +57,7 @@ impl TailcallExecutor {
         &self,
         n_plus_one_queries: bool,
         schema: bool,
-        ops: Vec<OperationQuery>,
+        ops: Vec<OperationQuery>, // TODO: check if we can carryout IO for OperationQuery in this function
     ) -> Result<String> {
         log::info!("{}", "Config successfully validated".to_string());
 
