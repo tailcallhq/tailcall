@@ -13,6 +13,7 @@ use crate::blueprint::{OperationQuery, Upstream};
 use crate::builder::TailcallBuilder;
 use crate::cli::server::Server;
 use crate::cli::{self};
+use crate::fmt::Fmt;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -59,14 +60,14 @@ pub async fn run() -> Result<()> {
             let result = tailcall_executor
                 .validate(n_plus_one_queries, schema, ops)
                 .await?;
-            println!("{}", result);
+            Fmt::display(result);
             Ok(())
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Compose { file_paths, format } => {
             let executor = tailcall_builder.with_config_paths(&file_paths).await?;
             let encoded = format.encode(&executor.config_module)?;
-            println!("{encoded}");
+            Fmt::display(encoded);
             Ok(())
         }
     }
