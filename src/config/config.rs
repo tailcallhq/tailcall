@@ -19,7 +19,7 @@ use crate::json::JsonSchema;
 use crate::valid::{Valid, Validator};
 
 #[derive(
-Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -294,7 +294,7 @@ fn merge_unions(
 }
 
 #[derive(
-Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
 #[setters(strip_option)]
 pub struct RootSchema {
@@ -323,7 +323,7 @@ pub struct Omit {}
 /// A field definition containing all the metadata information about resolving a field.
 ///
 #[derive(
-Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
 #[setters(strip_option)]
 pub struct Field {
@@ -450,9 +450,9 @@ impl Field {
             .is_some_and(|http| !http.group_by.is_empty())
             || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
             || self
-            .grpc
-            .as_ref()
-            .is_some_and(|grpc| !grpc.group_by.is_empty())
+                .grpc
+                .as_ref()
+                .is_some_and(|grpc| !grpc.group_by.is_empty())
     }
     pub fn to_list(mut self) -> Self {
         self.list = true;
@@ -693,7 +693,7 @@ impl Config {
 }
 
 #[derive(
-Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema,
+    Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema,
 )]
 pub enum Encoding {
     #[default]

@@ -737,7 +737,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 Some(spec.path.to_string_lossy().to_string()),
             )
             .await
-            .map_err(|e| ValidationError::new(e.to_string()));
+            .map_err(|e| e.downcast::<ValidationError<String>>().unwrap());
 
         match tailcall_executor {
             Ok(_) => {

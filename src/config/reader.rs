@@ -47,10 +47,7 @@ impl ConfigReader {
         } else {
             // Is a file path
 
-            self.runtime
-                .file
-                .read(&file.to_string())
-                .await?
+            self.runtime.file.read(&file.to_string()).await?
         };
 
         Ok(FileRead { content, path: file.to_string() })
@@ -109,10 +106,7 @@ impl ConfigReader {
 
             match config_link.type_of {
                 LinkType::Config => {
-                    let config = Config::from_source(
-                        Source::detect(&source.path)?,
-                        &content,
-                    )?;
+                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
                     config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
@@ -146,16 +140,14 @@ impl ConfigReader {
                     config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    config_module.extensions.cert.extend(
-                        self.load_cert(content.clone())
-                            .await?,
-                    );
+                    config_module
+                        .extensions
+                        .cert
+                        .extend(self.load_cert(content.clone()).await?);
                 }
                 LinkType::Key => {
-                    config_module.extensions.keys = Arc::new(
-                        self.load_private_key(content.clone())
-                            .await?,
-                    )
+                    config_module.extensions.keys =
+                        Arc::new(self.load_private_key(content.clone()).await?)
                 }
             }
         }
@@ -200,8 +192,7 @@ impl ConfigReader {
         let mut config_module = ConfigModule::default();
 
         for file in files.iter() {
-            let source =
-                Source::detect(&file.path)?;
+            let source = Source::detect(&file.path)?;
             let schema = &file.content;
 
             // Create initial config module
