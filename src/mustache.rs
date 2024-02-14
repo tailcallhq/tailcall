@@ -1,5 +1,5 @@
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_till, take_until, take_while1};
+use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::char;
 use nom::combinator::map;
 use nom::multi::many0;
@@ -107,24 +107,31 @@ fn parse_expression(input: &str) -> IResult<&str, Segment> {
         tag("{{"),
         map(
             nom::multi::separated_list1(char('.'), parse_name),
-            |names| Segment::Expression(names),
+            Segment::Expression,
         ),
         tag("}}"),
     )(input)
 }
 
 fn parse_segment(input: &str) -> IResult<&str, Vec<Segment>> {
-    many0(alt((
+    let expression_result = many0(alt((
         parse_expression,
-        // Use `take_until` with a lookahead for `{{` to capture literals more accurately.
         map(take_until("{{"), |txt: &str| {
             Segment::Literal(txt.to_string())
         }),
-        // Catch all for literals that do not precede an expression directly.
-        map(take_while1(|c: char| c != '{'), |r: &str| {
-            Segment::Literal(r.to_string())
-        }),
-    )))(input)
+    )))(input);
+
+    if let Ok((remaining, segments)) = expression_result {
+        if remaining.is_empty() {
+            Ok((remaining, segments))
+        } else {
+            let mut segments = segments;
+            segments.push(Segment::Literal(remaining.to_string()));
+            Ok(("", segments))
+        }
+    } else {
+        Ok(("", vec![Segment::Literal(input.to_string())]))
+    }
 }
 
 fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
