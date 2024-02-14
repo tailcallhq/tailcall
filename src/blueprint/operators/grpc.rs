@@ -131,16 +131,22 @@ impl TryFrom<String> for GrpcMethod {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let method: Vec<&str> = value.split('.').collect();
 
-        if method.len() != 3 {
+        if method.len() < 3 {
             return Err(ValidationError::new(format!(
-                "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
+                "Invalid method format: {}. Expected format is <link_id>.<package.service>.<method>",
                 value
             )));
         }
 
         let id = method[0].to_string();
-        let service = format!("{}.{}", id, method[1]);
-        let name = method[2].to_string();
+        // TODO: some of implementation (like tonic) will use file name as default package name
+        // if the package is not specified in proto explicitly, that affect the request url.
+        // but `prost_reflect` crate won't find the service if we try to specify the package name if there is
+        // no package definition in proto file, so we may end up with case that we forced to specify
+        // package name to be able to get response, but in the same time we can't do that
+        // because prost won't find that definition for same proto file.
+        let service = method[1..method.len() - 1].join(".");
+        let name = method.last().unwrap().to_string();
 
         Ok(GrpcMethod { id, service, name })
     }
@@ -235,21 +241,21 @@ mod tests {
     #[test]
     fn try_from_grpc_method() {
         let method =
-            GrpcMethod::try_from("package_name.ServiceName.MethodName".to_string()).unwrap();
+            GrpcMethod::try_from("link_id.package_name.space.ServiceName.MethodName".to_string()).unwrap();
 
-        assert_eq!(method.id, "package_name");
-        assert_eq!(method.service, "package_name.ServiceName");
+        assert_eq!(method.id, "link_id");
+        assert_eq!(method.service, "package_name.space.ServiceName");
         assert_eq!(method.name, "MethodName");
     }
 
     #[test]
     fn try_from_grpc_method_invalid() {
-        let result = GrpcMethod::try_from("package_name.ServiceName".to_string());
+        let result = GrpcMethod::try_from("link_id.ServiceName".to_string());
 
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            ValidationError::new("Invalid method format: package_name.ServiceName. Expected format is <package/proto_id>.<service>.<method>".to_string())
+            ValidationError::new("Invalid method format: link_id.ServiceName. Expected format is <link_id>.<package.service>.<method>".to_string())
         );
     }
 }

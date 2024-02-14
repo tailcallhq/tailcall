@@ -1,7 +1,15 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+type HelloReply {
+  message: String
+}
+
+input HelloRequest {
+  name: String!
+}
+
 type News {
   body: String
   id: Int
@@ -21,6 +29,7 @@ input NewsInput {
 }
 
 type Query {
+  greetings(request: HelloRequest): HelloReply!
   news: NewsData!
   newsById(news: NewsInput!): News!
   newsByIdBatch(news: NewsInput!): News!

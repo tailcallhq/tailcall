@@ -7,8 +7,6 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
-package news;
-
 message News {
     int32 id = 1;
     string title = 2;
@@ -76,7 +74,7 @@ type News {
 ```yml
 - request:
     method: POST
-    url: http://localhost:50051/news.NewsService/GetAllNews
+    url: http://localhost:50051/NewsService/GetAllNews
     body: null
   response:
     status: 200

@@ -7,15 +7,13 @@ schema
 }
 
 type Query {
-  news: NewsData! @grpc(service: "news.NewsService", method: "GetAllNews", protoId: "news")
+  news: NewsData! @grpc(method: "news.news.NewsService.GetAllNews")
   newsById(news: NewsInput!): News!
-    @grpc(service: "news.NewsService", method: "GetNews", body: "{{args.news}}", protoId: "news")
+    @grpc(method: "news.news.NewsService.GetNews", body: "{{args.news}}")
   newsByIdBatch(news: NewsInput!): News!
     @grpc(
-      service: "news.NewsService"
-      method: "GetMultipleNews"
+      method: "news.news.NewsService.GetMultipleNews"
       body: "{{args.news}}"
-      protoId: "news"
       groupBy: ["news", "id"]
     )
 }
