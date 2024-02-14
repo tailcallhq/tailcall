@@ -34,6 +34,7 @@ impl Expression {
                 match expr {
                     Expression::Context(_) => expr,
                     Expression::Literal(_) => expr,
+                    Expression::Mustache(_) => expr,
                     Expression::EqualTo(expr1, expr2) => {
                         Expression::EqualTo(expr1.modify_box(modifier), expr2.modify_box(modifier))
                     }

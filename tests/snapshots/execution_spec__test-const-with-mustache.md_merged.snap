@@ -1,0 +1,23 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream {
+  query: Query
+}
+
+type A {
+  a: Int
+  b: Int @modify(omit: true)
+  bc: BC @const(data: {b: "{{value.b}}", c: "{{value.c}}"})
+  c: Int @modify(omit: true)
+}
+
+type BC {
+  b: String
+  c: String
+}
+
+type Query {
+  a: A @const(data: {a: 0, b: 1, c: 2})
+}
