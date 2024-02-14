@@ -3,7 +3,7 @@
 mod app_context;
 mod async_graphql_hyper;
 mod blueprint;
-pub mod builder;
+mod builder;
 pub mod cache;
 #[cfg(feature = "cli")]
 pub mod cli;
@@ -31,6 +31,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
+pub use builder::*;
 
 use crate::http::Response;
 

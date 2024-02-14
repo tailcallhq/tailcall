@@ -131,8 +131,8 @@ pub mod test {
 mod server_spec {
     use reqwest::Client;
     use serde_json::json;
-    use tailcall::builder::TailcallBuilder;
     use tailcall::cli::server::Server;
+    use tailcall::TailcallBuilder;
 
     use crate::test;
 

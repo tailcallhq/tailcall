@@ -1,7 +1,7 @@
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;
-use tailcall::builder::TailcallBuilder;
+use tailcall::TailcallBuilder;
 
 mod http;
 mod runtime;

@@ -5,13 +5,12 @@ use std::path::{Path, PathBuf};
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
-use tailcall::builder::{TailcallBuilder, TailcallExecutor};
-use tailcall::cli;
 use tailcall::config::{ConfigModule, Source};
 use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::Validator as _;
+use tailcall::{cli, TailcallBuilder, TailcallExecutor};
 
 use crate::common::{APIRequest, Annotation, SDLError};
 

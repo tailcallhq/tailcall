@@ -5,9 +5,9 @@ use std::sync::RwLock;
 
 use hyper::{Body, Method, Request, Response};
 use lazy_static::lazy_static;
-use tailcall::builder::TailcallExecutor;
 use tailcall::http::graphiql;
 use tailcall::http::showcase::create_tailcall_executor;
+use tailcall::TailcallExecutor;
 
 use crate::http::{to_request, to_response};
 use crate::runtime;

@@ -16,7 +16,6 @@ use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::builder::{TailcallBuilder, TailcallExecutor};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
 use tailcall::config::{Config, Source};
@@ -24,7 +23,7 @@ use tailcall::http::{AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError};
-use tailcall::{EnvIO, FileIO, HttpIO};
+use tailcall::{EnvIO, FileIO, HttpIO, TailcallBuilder, TailcallExecutor};
 use url::Url;
 
 #[cfg(test)]
