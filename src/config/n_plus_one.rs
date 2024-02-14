@@ -67,7 +67,7 @@ mod tests {
                     "f1",
                     Field::default()
                         .type_of("F1".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),
@@ -77,7 +77,7 @@ mod tests {
                     "f2",
                     Field::default()
                         .type_of("F2".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),
@@ -105,7 +105,7 @@ mod tests {
                     "f1",
                     Field::default()
                         .type_of("F1".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),
@@ -115,7 +115,7 @@ mod tests {
                     "f2",
                     Field::default()
                         .type_of("F2".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http { group_by: vec!["id".into()], ..Default::default() }),
                 )]),
             ),
@@ -140,7 +140,7 @@ mod tests {
                     "f1",
                     Field::default()
                         .type_of("F1".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),
@@ -148,14 +148,14 @@ mod tests {
                 "F1",
                 Type::default().fields(vec![(
                     "f2",
-                    Field::default().type_of("F2".to_string()).to_list(),
+                    Field::default().type_of("F2".to_string()).into_list(),
                 )]),
             ),
             (
                 "F2",
                 Type::default().fields(vec![(
                     "f3",
-                    Field::default().type_of("F3".to_string()).to_list(),
+                    Field::default().type_of("F3".to_string()).into_list(),
                 )]),
             ),
             (
@@ -195,14 +195,14 @@ mod tests {
                 "F1",
                 Type::default().fields(vec![(
                     "f2",
-                    Field::default().type_of("F2".to_string()).to_list(),
+                    Field::default().type_of("F2".to_string()).into_list(),
                 )]),
             ),
             (
                 "F2",
                 Type::default().fields(vec![(
                     "f3",
-                    Field::default().type_of("F3".to_string()).to_list(),
+                    Field::default().type_of("F3".to_string()).into_list(),
                 )]),
             ),
             (
@@ -235,7 +235,7 @@ mod tests {
                     "f1",
                     Field::default()
                         .type_of("F1".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),
@@ -243,7 +243,7 @@ mod tests {
                 "F1",
                 Type::default().fields(vec![(
                     "f2",
-                    Field::default().type_of("F2".to_string()).to_list(),
+                    Field::default().type_of("F2".to_string()).into_list(),
                 )]),
             ),
             (
@@ -267,7 +267,7 @@ mod tests {
                     "f1",
                     Field::default()
                         .type_of("F1".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),
@@ -275,7 +275,7 @@ mod tests {
                 "F1",
                 Type::default().fields(vec![
                     ("f1", Field::default().type_of("F1".to_string())),
-                    ("f2", Field::default().type_of("F2".to_string()).to_list()),
+                    ("f2", Field::default().type_of("F2".to_string()).into_list()),
                 ]),
             ),
             (
@@ -299,14 +299,14 @@ mod tests {
                     "f1",
                     Field::default()
                         .type_of("F1".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),
             (
                 "F1",
                 Type::default().fields(vec![
-                    ("f1", Field::default().type_of("F1".to_string()).to_list()),
+                    ("f1", Field::default().type_of("F1".to_string()).into_list()),
                     (
                         "f2",
                         Field::default()
@@ -352,7 +352,7 @@ mod tests {
                     "g",
                     Field::default()
                         .type_of("G".to_string())
-                        .to_list()
+                        .into_list()
                         .http(Http::default()),
                 )]),
             ),

@@ -77,7 +77,7 @@ fn benchmark_data_loader(c: &mut Criterion) {
                     cache: Arc::new(Cache {}),
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
-                let loader = loader.to_data_loader(Batch::default().delay(1));
+                let loader = loader.into_data_loader(Batch::default().delay(1));
 
                 let request1 = reqwest::Request::new(
                     reqwest::Method::GET,

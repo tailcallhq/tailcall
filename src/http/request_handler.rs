@@ -74,7 +74,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
             response = update_cache_control_header(response, app_ctx, req_ctx);
-            let mut resp = response.to_response()?;
+            let mut resp = response.into_response()?;
             update_response_headers(&mut resp, app_ctx);
             Ok(resp)
         }
@@ -89,7 +89,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                 ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
             response.errors = vec![server_error];
 
-            Ok(GraphQLResponse::from(response).to_response()?)
+            Ok(GraphQLResponse::from(response).into_response()?)
         }
     }
 }
@@ -120,12 +120,14 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             if app_ctx.blueprint.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>
         {
-            let app_ctx =
-                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
+            let tailcall_executor =
+                match showcase::create_tailcall_executor(&req, app_ctx.runtime.clone(), false)
+                    .await?
+                {
                     Ok(app_ctx) => app_ctx,
                     Err(res) => return Ok(res),
                 };
-
+            let app_ctx = tailcall_executor.app_ctx;
             graphql_request::<T>(req, &app_ctx).await
         }
 

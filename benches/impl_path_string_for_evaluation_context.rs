@@ -1,100 +1,132 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
-use async_trait::async_trait;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use reqwest::{Client, Request};
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::blueprint::{Server, Upstream};
-use tailcall::cache::InMemoryCache;
-use tailcall::http::{RequestContext, Response};
+use tailcall::http::RequestContext;
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
-use tailcall::runtime::TargetRuntime;
-use tailcall::{EnvIO, FileIO, HttpIO};
 
-struct Http {
-    client: ClientWithMiddleware,
-    http2_only: bool,
-}
+#[cfg(test)]
+pub mod test {
+    use std::sync::Arc;
+    use std::time::Duration;
 
-impl Http {
-    fn init(upstream: &Upstream) -> Self {
-        let mut builder = Client::builder()
-            .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
-            .timeout(Duration::from_secs(upstream.timeout))
-            .connect_timeout(Duration::from_secs(upstream.connect_timeout))
-            .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
-            .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
-            .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
-            .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
-            .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
-            .user_agent(upstream.user_agent.clone());
+    use anyhow::Result;
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+    use hyper::body::Bytes;
+    use reqwest::Client;
+    use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+    use tailcall::cache::InMemoryCache;
+    use tailcall::http::Response;
+    use tailcall::runtime::TargetRuntime;
+    use tailcall::{EnvIO, FileIO, HttpIO};
 
-        // Add Http2 Prior Knowledge
-        if upstream.http2_only {
-            builder = builder.http2_prior_knowledge();
+    #[derive(Clone)]
+    struct TestHttp {
+        client: ClientWithMiddleware,
+    }
+
+    impl Default for TestHttp {
+        fn default() -> Self {
+            Self { client: ClientBuilder::new(Client::new()).build() }
         }
+    }
 
-        // Add Http Proxy
-        if let Some(ref proxy) = upstream.proxy {
-            builder = builder.proxy(
-                reqwest::Proxy::http(proxy.url.clone())
-                    .expect("Failed to set proxy in http client"),
-            );
-        }
+    impl TestHttp {
+        fn init(h2only: bool) -> Self {
+            let mut builder = Client::builder()
+                .tcp_keepalive(Some(Duration::from_secs(5)))
+                .timeout(Duration::from_secs(60))
+                .connect_timeout(Duration::from_secs(60))
+                .http2_keep_alive_interval(Some(Duration::from_secs(60)))
+                .http2_keep_alive_timeout(Duration::from_secs(60))
+                .http2_keep_alive_while_idle(false)
+                .pool_idle_timeout(Some(Duration::from_secs(60)))
+                .pool_max_idle_per_host(60)
+                .user_agent("Tailcall/1.0".to_string());
 
-        let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
+            // Add Http2 Prior Knowledge
+            if h2only {
+                builder = builder.http2_prior_knowledge();
+            }
 
-        if upstream.http_cache {
+            let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
+
             client = client.with(Cache(HttpCache {
                 mode: CacheMode::Default,
                 manager: MokaManager::default(),
                 options: HttpCacheOptions::default(),
-            }))
+            }));
+
+            Self { client: client.build() }
         }
-        Self { client: client.build(), http2_only: upstream.http2_only }
     }
-}
 
-#[async_trait]
-impl HttpIO for Http {
-    async fn execute(&self, mut request: Request) -> anyhow::Result<Response<Bytes>> {
-        if self.http2_only {
-            *request.version_mut() = reqwest::Version::HTTP_2;
+    #[async_trait::async_trait]
+    impl HttpIO for TestHttp {
+        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+            let response = self.client.execute(request).await;
+            Response::from_reqwest(response?.error_for_status()?).await
         }
-        let resp = self.client.execute(request).await?;
-        Response::from_reqwest(resp).await
-    }
-}
-
-struct Env {}
-
-impl EnvIO for Env {
-    fn get(&self, _: &str) -> Option<String> {
-        unimplemented!("Not needed for this bench")
-    }
-}
-
-struct File;
-#[async_trait]
-impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
-        unimplemented!("Not needed for this bench")
     }
 
-    async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
-        unimplemented!("Not needed for this bench")
+    #[derive(Clone)]
+    struct TestFileIO {}
+
+    impl TestFileIO {
+        fn init() -> Self {
+            TestFileIO {}
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl FileIO for TestFileIO {
+        async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
+            unimplemented!("Not needed in this test")
+        }
+
+        async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
+            unimplemented!("Not needed in this test ")
+        }
+    }
+
+    #[derive(Clone)]
+    struct TestEnvIO {}
+
+    impl EnvIO for TestEnvIO {
+        fn get(&self, _: &str) -> Option<String> {
+            None
+        }
+    }
+
+    impl TestEnvIO {
+        pub fn init() -> Self {
+            Self {}
+        }
+    }
+
+    pub fn init() -> TargetRuntime {
+        let http: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init(false));
+
+        let http2: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init(true));
+
+        let file = TestFileIO::init();
+        let env = TestEnvIO::init();
+
+        TargetRuntime {
+            http,
+            http2_only: http2,
+            env: Arc::new(env),
+            file: Arc::new(file),
+            cache: Arc::new(InMemoryCache::new()),
+        }
     }
 }
 
@@ -230,25 +262,11 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-    let config_module = tailcall::config::ConfigModule::default();
-
-    let tailcall::config::Config { upstream, .. } = config_module.config.clone();
-    //TODO: default is used only in tests. Drop default and move it to test.
-    let server = Server::try_from(config_module).unwrap();
-    let upstream = Upstream::try_from(upstream).unwrap();
-    let http = Arc::new(Http::init(&upstream));
-    let http2 = Arc::new(Http::init(&upstream.clone().http2_only(true)));
-    let runtime = TargetRuntime {
-        http2_only: http2,
-        http,
-        env: Arc::new(Env {}),
-        file: Arc::new(File {}),
-        cache: Arc::new(InMemoryCache::new()),
-    };
+    let runtime = test::init();
     RequestContext {
         req_headers: HeaderMap::new(),
-        server,
-        upstream,
+        upstream: Default::default(),
+        server: Default::default(),
         http_data_loaders: Arc::new(vec![]),
         gql_data_loaders: Arc::new(vec![]),
         grpc_data_loaders: Arc::new(vec![]),

@@ -1,12 +1,7 @@
-use std::sync::Arc;
-
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;
-use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::blueprint::Blueprint;
-use tailcall::config::reader::ConfigReader;
-use tailcall::http::{handle_request, AppContext};
+use tailcall::builder::TailcallBuilder;
 
 mod http;
 mod runtime;
@@ -22,15 +17,11 @@ async fn main() -> Result<(), Error> {
         .init();
 
     let runtime = init_runtime();
-    let config = ConfigReader::init(runtime.clone())
-        .read("./config.graphql")
+    let tailcall_executor = TailcallBuilder::init(runtime)
+        .with_config_paths(&["./config.graphql"])
         .await?;
-    let blueprint = Blueprint::try_from(&config)?;
-
-    let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
-
     run(service_fn(|event| async {
-        let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;
+        let resp = tailcall_executor.execute(to_request(event)?).await?;
         Ok::<Response<Body>, Error>(to_response(resp).await?)
     }))
     .await
