@@ -9,9 +9,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
-use crate::http::handle_request;
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
@@ -25,22 +23,9 @@ pub async fn start_http_2(
         .with_single_cert(cert, key.clone_key())?
         .with_http2_alpn()
         .with_incoming(incoming);
-    let make_svc_single_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
-
-    let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
-            }))
-        }
+    let make_svc_req = make_service_fn(|_conn| {
+        let state = sc.tailcall_executor.clone();
+        async move { Ok::<_, anyhow::Error>(service_fn(move |req| state.clone().execute(req))) }
     });
 
     let builder = Server::builder(acceptor).http2_only(true);
@@ -53,12 +38,7 @@ pub async fn start_http_2(
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.app_ctx.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
+    let server: std::prelude::v1::Result<(), hyper::Error> = builder.serve(make_svc_req).await;
 
     let result = server.map_err(CLIError::from);
 

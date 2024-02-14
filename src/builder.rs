@@ -73,7 +73,7 @@ impl TailcallExecutor {
 
         Ok(result_str)
     }
-    pub async fn execute(&self, req: Request<Body>) -> Result<Response<Body>> {
+    pub async fn execute(self, req: Request<Body>) -> Result<Response<Body>> {
         if self.app_ctx.blueprint.server.enable_batch_requests {
             handle_request::<GraphQLBatchRequest>(req, self.app_ctx.clone()).await
         } else {

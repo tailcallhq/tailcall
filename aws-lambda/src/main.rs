@@ -21,7 +21,10 @@ async fn main() -> Result<(), Error> {
         .with_config_paths(&["./config.graphql"])
         .await?;
     run(service_fn(|event| async {
-        let resp = tailcall_executor.execute(to_request(event)?).await?;
+        let resp = tailcall_executor
+            .clone()
+            .execute(to_request(event)?)
+            .await?;
         Ok::<Response<Body>, Error>(to_response(resp).await?)
     }))
     .await

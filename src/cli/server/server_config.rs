@@ -1,28 +1,27 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::sync::Arc;
 
 use crate::blueprint::Http;
-use crate::http::AppContext;
+use crate::builder::TailcallExecutor;
 
 pub struct ServerConfig {
-    pub app_ctx: Arc<AppContext>,
+    pub tailcall_executor: TailcallExecutor,
 }
 
 impl ServerConfig {
-    pub fn new(app_ctx: Arc<AppContext>) -> Self {
-        Self { app_ctx }
+    pub fn new(tailcall_executor: TailcallExecutor) -> Self {
+        Self { tailcall_executor }
     }
 
     pub fn addr(&self) -> SocketAddr {
         (
-            self.app_ctx.blueprint.server.hostname,
-            self.app_ctx.blueprint.server.port,
+            self.tailcall_executor.app_ctx.blueprint.server.hostname,
+            self.tailcall_executor.app_ctx.blueprint.server.port,
         )
             .into()
     }
 
     pub fn http_version(&self) -> String {
-        match self.app_ctx.blueprint.server.http {
+        match self.tailcall_executor.app_ctx.blueprint.server.http {
             Http::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
             _ => "HTTP/1.1".to_string(),
         }
@@ -43,6 +42,10 @@ impl ServerConfig {
     }
 
     pub fn graphiql(&self) -> bool {
-        self.app_ctx.blueprint.server.enable_graphiql
+        self.tailcall_executor
+            .app_ctx
+            .blueprint
+            .server
+            .enable_graphiql
     }
 }
