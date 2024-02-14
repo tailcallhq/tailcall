@@ -190,3 +190,72 @@ fn logger_init() {
 
     env_logger::Builder::from_env(env).init();
 }
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use super::*;
+    use crate::config::Source;
+
+    #[tokio::test]
+    async fn test_init_creates_files() {
+        let temp_dir = tempdir().unwrap();
+        let folder_path = temp_dir.path().to_str().unwrap();
+
+        init(folder_path).await.unwrap();
+
+        assert!(Path::new(folder_path).join(FILE_NAME).exists());
+        assert!(Path::new(folder_path).join(YML_FILE_NAME).exists());
+    }
+    #[test]
+    fn test_cli_parsing() {
+        let mut checks = vec![];
+        let start = vec!["tailcall", "start", "foo.yml", "bar.json"];
+        let check = vec![
+            "tailcall",
+            "check",
+            "-n",
+            "-s",
+            "alo.graphql",
+            "-o",
+            "examples/foo.graphql",
+        ];
+        let compose = vec![
+            "tailcall",
+            "compose",
+            "alo.graphql",
+            "examples/foo.graphql",
+            "-f",
+            "graphql",
+        ];
+        let init = vec!["tailcall", "init", "examples"];
+        checks.push(start);
+        checks.push(check);
+        checks.push(compose);
+        checks.push(init);
+
+        for check in checks {
+            let cli = Cli::parse_from(check);
+
+            match cli.command {
+                Command::Start { file_paths } => {
+                    assert_eq!(file_paths, vec!["foo.yml", "bar.json"]);
+                }
+                Command::Check { file_paths, schema, n_plus_one_queries, operations } => {
+                    assert!(schema);
+                    assert!(n_plus_one_queries);
+                    assert_eq!(file_paths, vec!["alo.graphql"]);
+                    assert_eq!(operations, vec!["examples/foo.graphql"]);
+                }
+                Command::Compose { file_paths, format } => {
+                    assert_eq!(file_paths, vec!["alo.graphql", "examples/foo.graphql"]);
+                    assert_eq!(format, Source::GraphQL);
+                }
+                Command::Init { folder_path } => {
+                    assert_eq!(folder_path, "examples");
+                }
+            }
+        }
+    }
+}

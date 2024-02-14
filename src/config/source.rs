@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use super::Config;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Source {
     Json,
     Yml,
