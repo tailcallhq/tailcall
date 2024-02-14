@@ -8,10 +8,17 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "post1": {
-        "title": "post title"
+    "data": null,
+    "errors": [
+      {
+        "message": "IOException: No mock found for request: GET http://jsonplaceholder.typicode.com/posts/ in tests/execution/resolve-with-headers.md",
+        "locations": [
+          {
+            "line": 1,
+            "column": 9
+          }
+        ]
       }
-    }
+    ]
   }
 }

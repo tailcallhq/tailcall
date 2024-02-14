@@ -125,8 +125,6 @@ pub fn from_query(sdl: &str, doc: ExecutableDocument) -> Valid<Config, String> {
         }
     }
 
-    println!("{rest_apis:?}");
-
     Valid::succeed(Config { rest_apis, ..Default::default() })
 }
 

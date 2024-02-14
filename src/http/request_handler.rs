@@ -152,13 +152,12 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         {
             graphiql(&req)
         }
-        ref method if req.uri().path().starts_with("/api/") => {
-            let path = &req.uri().path()[4..];
+        ref method if req.uri().path().strip_prefix("/api").is_some() => {
+            let path = req.uri().path().strip_prefix("/api").unwrap();
             let request = app_ctx
                 .blueprint
                 .rest_apis
                 .dispatch_path(method.clone(), path);
-            println!("{request:?}");
             match request {
                 Ok(request) => graphql_query(&req, request, &app_ctx).await,
                 Err(err) => error_response(StatusCode::NOT_FOUND, format!("{err:?}")),

@@ -287,7 +287,6 @@ impl RestApis {
         let mut deserializer = serde_json::Deserializer::new(StrRead::new(path.as_str()));
         let path = RestPath::deserialize(&mut deserializer)?;
         let req_rest = Rest { method: method.try_into()?, path };
-        println!("{req_rest:?}");
 
         let (rest, query) = self
             .0
@@ -295,7 +294,6 @@ impl RestApis {
             .map(|(k, v)| (k.clone(), v))
             .ok_or(anyhow::anyhow!("path not found"))?;
         let vars_json = rest.path.extract_variable_values_from(req_rest.path);
-        println!("{vars_json}");
 
         let req = async_graphql::Request::new(query)
             .variables(async_graphql::Variables::from_json(vars_json));
@@ -894,11 +892,11 @@ impl Config {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
             Ok(doc) => from_document(doc),
-            Err(_) => {
+            Err(e) => {
                 let doc = async_graphql::parser::parse_query(sdl);
                 match doc {
                     Ok(doc) => from_query(sdl, doc),
-                    Err(e) => Valid::fail(e.to_string()),
+                    Err(_) => Valid::fail(e.to_string()),
                 }
             }
         }

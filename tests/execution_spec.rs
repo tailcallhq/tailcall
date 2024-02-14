@@ -290,6 +290,7 @@ struct ExecutionSpec {
     safe_name: String,
 
     server: Vec<(Source, String)>,
+    rest: Vec<String>,
     mock: Option<Vec<Mock>>,
     env: Option<HashMap<String, String>>,
     assert: Option<Vec<APIRequest>>,
@@ -370,6 +371,7 @@ impl ExecutionSpec {
 
         let mut name: Option<String> = None;
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
+        let mut rest: Vec<String> = vec![];
         let mut mock: Option<Vec<Mock>> = None;
         let mut env: Option<HashMap<String, String>> = None;
         let mut files: BTreeMap<String, String> = BTreeMap::new();
@@ -525,6 +527,9 @@ impl ExecutionSpec {
                                             return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
                                         }
                                     }
+                                    "rest:" => {
+                                        rest.push(content);
+                                    }
                                     _ => {
                                         return Err(anyhow!(
                                             "Unexpected component {:?} in {:?}: {:#?}",
@@ -568,6 +573,7 @@ impl ExecutionSpec {
             safe_name: path.file_name().unwrap().to_str().unwrap().to_string(),
 
             server,
+            rest,
             mock,
             env,
             assert,
@@ -765,6 +771,16 @@ async fn assert_spec(spec: ExecutionSpec) {
     // Parse and validate all server configs + check for identity
     log::info!("{} {} ...", spec.name, spec.path.display());
 
+    let rest_config = spec
+        .rest
+        .iter()
+        .map(|content| Config::from_sdl(content).to_result())
+        .try_fold(Config::default(), |mut acc, config| {
+            acc = acc.merge_right(&config?);
+            Ok::<_, ValidationError<String>>(acc)
+        })
+        .unwrap();
+
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
         let (source, content) = &spec.server[0];
@@ -773,7 +789,9 @@ async fn assert_spec(spec: ExecutionSpec) {
             panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
         }
 
-        let config = Config::from_sdl(content).to_result();
+        let config = Config::from_sdl(content)
+            .map(|config| config.merge_right(&rest_config))
+            .to_result();
 
         let config = match config {
             Ok(config) => {
@@ -886,7 +904,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     let server: Vec<ConfigModule> = join_all(
         server
             .into_iter()
-            .map(|config| reader.resolve(config, Some(spec.path.to_string_lossy().to_string()))),
+            .map(|config| reader.resolve(config.merge_right(&rest_config), Some(spec.path.to_string_lossy().to_string()))),
     )
     .await
     .into_iter()
