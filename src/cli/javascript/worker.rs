@@ -56,7 +56,7 @@ impl Worker {
         Ok(Self { function: value, js_runtime })
     }
 
-    pub async fn listen(mut self, work_receiver: async_channel::Receiver<CallbackMessage<Message, Message>>) -> Result<()> {
+    pub async fn listen(mut self, work_receiver: loole::Receiver<CallbackMessage<Message, Message>>) -> Result<()> {
         let (result_tx, mut result_rx) = mpsc::unbounded_channel::<CallbackMessage<Result<Global<Value>>, Message>>();
         let mut event_loop_has_tasks = false;
         loop {
@@ -80,7 +80,7 @@ impl Worker {
                     let _ = send_work_response.send(message);
                 },
                 // accept new work for execute inside the script
-                Ok((send_work_response, message)) = work_receiver.recv() => {
+                Ok((send_work_response, message)) = work_receiver.recv_async() => {
                     event_loop_has_tasks = true;
                     self.handle(message, send_work_response, result_tx.clone()).unwrap();
                 },

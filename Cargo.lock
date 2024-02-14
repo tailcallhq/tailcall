@@ -2381,6 +2381,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "loole"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6725f0feab07fcf90f6de5417c06d7fef976fa6e5912fa9e21cb5e4dc6ae5da"
+
+[[package]]
 name = "lru"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3960,7 +3966,6 @@ name = "tailcall"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-channel 2.2.0",
  "async-graphql",
  "async-graphql-value",
  "async-recursion",
@@ -3987,6 +3992,7 @@ dependencies = [
  "insta",
  "lazy_static",
  "log",
+ "loole",
  "lru 0.12.2",
  "markdown",
  "mimalloc",

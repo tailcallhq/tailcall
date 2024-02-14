@@ -12,13 +12,13 @@ use crate::cli::javascript::channel::CallbackSender;
 use crate::{blueprint, HttpIO, WorkerIO};
 
 pub struct Runtime {
-    work_sender: async_channel::Sender<CallbackMessage<Message, Message>>,
+    work_sender: loole::Sender<CallbackMessage<Message, Message>>,
 }
 
 impl Runtime {
     pub fn new(script: blueprint::Script, http: Arc<dyn HttpIO>) -> Self {
         let (work_sender, work_receiver) =
-            async_channel::unbounded::<CallbackMessage<Message, Message>>();
+            loole::unbounded::<CallbackMessage<Message, Message>>();
         let (http_sender, mut http_receiver) =
             mpsc::unbounded_channel::<CallbackMessage<JsRequest, JsResponse>>();
 
@@ -36,7 +36,7 @@ impl Runtime {
         });
 
         // TODO: make configurable
-        for _ in 0..4 {
+        for _ in 0..std::env::var("TEST_THREADS").unwrap().parse().unwrap() {
             let work_receiver = work_receiver.clone();
             let http_sender = http_sender.clone();
             let script = script.clone();

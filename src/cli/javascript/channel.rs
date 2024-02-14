@@ -39,12 +39,12 @@ impl<I: Send + Sync + 'static, O: Send + Sync + 'static> CallbackSender<I, O>
 }
 
 impl<I: Send + Sync + 'static, O: Send + Sync + 'static> CallbackSender<I, O>
-    for async_channel::Sender<CallbackMessage<I, O>>
+    for loole::Sender<CallbackMessage<I, O>>
 {
     async fn send_with_callback(&self, input: I) -> Result<O> {
         let (tx, rx) = oneshot::channel::<O>();
 
-        self.send((tx, input)).await?;
+        self.send_async((tx, input)).await?;
 
         Ok(rx.await?)
     }
