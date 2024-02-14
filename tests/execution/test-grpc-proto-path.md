@@ -10,8 +10,7 @@ schema @link(id: "news", src: "tailcall/src/grpcnews.proto", type: Protobuf) {
 }
 
 type Query {
-  news: NewsData
-    @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:4000")
+  news: NewsData @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:4000")
 }
 
 type NewsData {

@@ -8,14 +8,9 @@ schema
 
 type Query {
   news: NewsData! @grpc(method: "news.news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News!
-    @grpc(method: "news.news.NewsService.GetNews", body: "{{args.news}}")
+  newsById(news: NewsInput!): News! @grpc(method: "news.news.NewsService.GetNews", body: "{{args.news}}")
   newsByIdBatch(news: NewsInput!): News!
-    @grpc(
-      method: "news.news.NewsService.GetMultipleNews"
-      body: "{{args.news}}"
-      groupBy: ["news", "id"]
-    )
+    @grpc(method: "news.news.NewsService.GetMultipleNews", body: "{{args.news}}", groupBy: ["news", "id"])
 }
 
 type News {

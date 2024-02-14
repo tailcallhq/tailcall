@@ -241,7 +241,8 @@ mod tests {
     #[test]
     fn try_from_grpc_method() {
         let method =
-            GrpcMethod::try_from("link_id.package_name.space.ServiceName.MethodName".to_string()).unwrap();
+            GrpcMethod::try_from("link_id.package_name.space.ServiceName.MethodName".to_string())
+                .unwrap();
 
         assert_eq!(method.id, "link_id");
         assert_eq!(method.service, "package_name.space.ServiceName");
