@@ -15,11 +15,10 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{args.id}}", baseURL: "http://api.com")
 }
 
-
 type User {
-    id: Int
-    name: String
-    address: Address
+  id: Int
+  name: String
+  address: Address
 }
 ```
 
@@ -27,13 +26,13 @@ type User {
 
 ```graphql
 query GetUser($id: Int!) @rest(path: "/users/$id") {
-    user(id: $id) {
-        id
-        name
-        address {
-            street
-        }
+  user(id: $id) {
+    id
+    name
+    address {
+      street
     }
+  }
 }
 ```
 
@@ -70,9 +69,9 @@ query GetUser($id: Int!) @rest(path: "/users/$id") {
 - method: GET
   url: http://localhost:8080/api/users/1
   body:
-    query: 'query { user(id: 1) { id address } }'
+    query: "query { user(id: 1) { id address } }"
 - method: GET
   url: http://localhost:8080/api/users/2
   body:
-    query: 'query { user(id: 2) { id address } }'
+    query: "query { user(id: 2) { id address } }"
 ```

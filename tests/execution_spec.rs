@@ -901,11 +901,12 @@ async fn assert_spec(spec: ExecutionSpec) {
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let reader = ConfigReader::init(runtime);
 
-    let server: Vec<ConfigModule> = join_all(
-        server
-            .into_iter()
-            .map(|config| reader.resolve(config.merge_right(&rest_config), Some(spec.path.to_string_lossy().to_string()))),
-    )
+    let server: Vec<ConfigModule> = join_all(server.into_iter().map(|config| {
+        reader.resolve(
+            config.merge_right(&rest_config),
+            Some(spec.path.to_string_lossy().to_string()),
+        )
+    }))
     .await
     .into_iter()
     .enumerate()
