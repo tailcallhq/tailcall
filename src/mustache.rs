@@ -339,6 +339,14 @@ mod tests {
         }
 
         #[test]
+        fn test_json_like() {
+            let mustache = Mustache::parse("{registered: {{foo}}, display: {{bar}}}").unwrap();
+            let ctx = json!({"foo": "baz", "bar": "qux"});
+            let result = mustache.render(&ctx);
+            assert_eq!(result, r#"{registered: "baz", display: "qux"}"#);
+        }
+
+        #[test]
         fn test_render_preserves_spaces() {
             struct DummyPath;
 
