@@ -54,22 +54,22 @@ impl Type {
 
 #[derive(Clone, Debug)]
 pub enum Definition {
-    InterfaceTypeDefinition(InterfaceTypeDefinition),
-    ObjectTypeDefinition(ObjectTypeDefinition),
-    InputObjectTypeDefinition(InputObjectTypeDefinition),
-    ScalarTypeDefinition(ScalarTypeDefinition),
-    EnumTypeDefinition(EnumTypeDefinition),
-    UnionTypeDefinition(UnionTypeDefinition),
+    Interface(InterfaceTypeDefinition),
+    Object(ObjectTypeDefinition),
+    InputObject(InputObjectTypeDefinition),
+    Scalar(ScalarTypeDefinition),
+    Enum(EnumTypeDefinition),
+    Union(UnionTypeDefinition),
 }
 impl Definition {
     pub fn name(&self) -> &str {
         match self {
-            Definition::InterfaceTypeDefinition(def) => &def.name,
-            Definition::ObjectTypeDefinition(def) => &def.name,
-            Definition::InputObjectTypeDefinition(def) => &def.name,
-            Definition::ScalarTypeDefinition(def) => &def.name,
-            Definition::EnumTypeDefinition(def) => &def.name,
-            Definition::UnionTypeDefinition(def) => &def.name,
+            Definition::Interface(def) => &def.name,
+            Definition::Object(def) => &def.name,
+            Definition::InputObject(def) => &def.name,
+            Definition::Scalar(def) => &def.name,
+            Definition::Enum(def) => &def.name,
+            Definition::Union(def) => &def.name,
         }
     }
 }
@@ -195,7 +195,7 @@ impl Blueprint {
 
     fn drop_resolvers(mut self) -> Self {
         for def in self.definitions.iter_mut() {
-            if let Definition::ObjectTypeDefinition(def) = def {
+            if let Definition::Object(def) = def {
                 for field in def.fields.iter_mut() {
                     field.resolver = None;
                 }

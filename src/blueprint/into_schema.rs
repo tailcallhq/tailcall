@@ -32,7 +32,7 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
 
 fn to_type(def: &Definition) -> dynamic::Type {
     match def {
-        Definition::ObjectTypeDefinition(def) => {
+        Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
             for field in def.fields.iter() {
                 let field = field.clone();
@@ -81,7 +81,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
             dynamic::Type::Object(object)
         }
-        Definition::InterfaceTypeDefinition(def) => {
+        Definition::Interface(def) => {
             let mut interface = dynamic::Interface::new(def.name.clone());
             for field in def.fields.iter() {
                 interface = interface.field(dynamic::InterfaceField::new(
@@ -92,7 +92,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
             dynamic::Type::Interface(interface)
         }
-        Definition::InputObjectTypeDefinition(def) => {
+        Definition::InputObject(def) => {
             let mut input_object = dynamic::InputObject::new(def.name.clone());
             for field in def.fields.iter() {
                 input_object = input_object.field(dynamic::InputValue::new(
@@ -103,21 +103,21 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
             dynamic::Type::InputObject(input_object)
         }
-        Definition::ScalarTypeDefinition(def) => {
+        Definition::Scalar(def) => {
             let mut scalar = dynamic::Scalar::new(def.name.clone());
             if let Some(description) = &def.description {
                 scalar = scalar.description(description);
             }
             dynamic::Type::Scalar(scalar)
         }
-        Definition::EnumTypeDefinition(def) => {
+        Definition::Enum(def) => {
             let mut enum_type = dynamic::Enum::new(def.name.clone());
             for value in def.enum_values.iter() {
                 enum_type = enum_type.item(dynamic::EnumItem::new(value.name.clone()));
             }
             dynamic::Type::Enum(enum_type)
         }
-        Definition::UnionTypeDefinition(def) => {
+        Definition::Union(def) => {
             let mut union = dynamic::Union::new(def.name.clone());
             for type_ in def.types.iter() {
                 union = union.possible_type(type_.clone());
