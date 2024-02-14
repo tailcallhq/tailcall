@@ -1,19 +1,18 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use hyper::{Body, Method, Request, Response};
 use lazy_static::lazy_static;
-use tailcall::builder::TailcallExecutor;
-use tailcall::http::graphiql;
-use tailcall::http::showcase::create_tailcall_executor;
+use tailcall::async_graphql_hyper::GraphQLRequest;
+use tailcall::http::{graphiql, handle_request, showcase, AppContext};
 
 use crate::http::{to_request, to_response};
 use crate::runtime;
 
 lazy_static! {
-    static ref EXECUTOR: RwLock<Option<(String, TailcallExecutor)>> = RwLock::new(None);
+    static ref APP_CTX: RwLock<Option<(String, Arc<AppContext>)>> = RwLock::new(None);
 }
 ///
 /// The handler which handles requests on cloudflare
@@ -33,27 +32,28 @@ pub async fn fetch(
     // Quick exit to GraphiQL
     //
     // Has to be done here, since when using GraphiQL, a config query parameter is not specified,
-    // and get_executor will fail without it.
+    // and get_app_ctx will fail without it.
     if req.method() == Method::GET {
         return to_response(graphiql(&req)?).await;
     }
 
-    let tailcall_executor = match get_executor(env, &req).await? {
-        Ok(tailcall_executor) => tailcall_executor,
+    let env = Rc::new(env);
+    let app_ctx = match get_app_ctx(env, &req).await? {
+        Ok(app_ctx) => app_ctx,
         Err(e) => return to_response(e).await,
     };
-    let resp = tailcall_executor.execute(req).await?;
+    let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
     to_response(resp).await
 }
 
 ///
-/// Initializes the worker once and caches the executor
+/// Initializes the worker once and caches the app context
 /// for future requests.
 ///
-async fn get_executor(
-    env: worker::Env,
+async fn get_app_ctx(
+    env: Rc<worker::Env>,
     req: &Request<Body>,
-) -> anyhow::Result<Result<TailcallExecutor, Response<Body>>> {
+) -> anyhow::Result<Result<Arc<AppContext>, Response<Body>>> {
     // Read context from cache
     let file_path = req
         .uri()
@@ -62,26 +62,28 @@ async fn get_executor(
         .and_then(|x| x.get("config").cloned());
 
     if let Some(file_path) = &file_path {
-        if let Some(executor) = read_executor() {
-            if executor.0 == file_path.borrow() {
+        if let Some(app_ctx) = read_app_ctx() {
+            if app_ctx.0 == file_path.borrow() {
                 log::info!("Using cached application context");
-                return Ok(Ok(executor.clone().1));
+                return Ok(Ok(app_ctx.clone().1));
             }
         }
     }
-    let runtime = runtime::init(Rc::new(env))?;
-    match create_tailcall_executor(req, runtime, true).await? {
-        Ok(tailcall_executor) => {
+
+    let runtime = runtime::init(env)?;
+    match showcase::create_app_ctx::<GraphQLRequest>(req, runtime, true).await? {
+        Ok(app_ctx) => {
+            let app_ctx: Arc<AppContext> = Arc::new(app_ctx);
             if let Some(file_path) = file_path {
-                *EXECUTOR.write().unwrap() = Some((file_path, tailcall_executor.clone()));
+                *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
             }
-            log::info!("Initialized new tailcall executor");
-            Ok(Ok(tailcall_executor))
+            log::info!("Initialized new application context");
+            Ok(Ok(app_ctx))
         }
         Err(e) => Ok(Err(e)),
     }
 }
 
-fn read_executor() -> Option<(String, TailcallExecutor)> {
-    EXECUTOR.read().unwrap().clone()
+fn read_app_ctx() -> Option<(String, Arc<AppContext>)> {
+    APP_CTX.read().unwrap().clone()
 }

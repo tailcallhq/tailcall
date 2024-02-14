@@ -127,9 +127,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;
-    use crate::config::{
-        Config, ConfigReader, Field, GraphQLOperationType, Grpc, Link, LinkType, Type,
-    };
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::lambda::CacheKey;
     use crate::mustache::Mustache;

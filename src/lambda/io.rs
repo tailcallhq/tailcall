@@ -7,7 +7,8 @@ use async_graphql_value::ConstValue;
 use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
-use crate::config::{GraphQLOperationType, GroupBy};
+use crate::config::group_by::GroupBy;
+use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc::data_loader::GrpcDataLoader;

@@ -1,3 +1,5 @@
+use tailcall::{blueprint, EnvIO, FileIO, HttpIO};
+
 #[cfg(test)]
 pub mod test {
     use std::collections::HashMap;
@@ -10,10 +12,13 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cache::InMemoryCache;
+    use tailcall::cli::javascript;
     use tailcall::http::Response;
     use tailcall::runtime::TargetRuntime;
-    use tailcall::{EnvIO, FileIO, HttpIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    use crate::blueprint::Upstream;
+    use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -27,31 +32,40 @@ pub mod test {
     }
 
     impl TestHttp {
-        fn init(h2only: bool) -> Self {
+        fn init(upstream: &Upstream) -> Self {
             let mut builder = Client::builder()
-                .tcp_keepalive(Some(Duration::from_secs(5)))
-                .timeout(Duration::from_secs(60))
-                .connect_timeout(Duration::from_secs(60))
-                .http2_keep_alive_interval(Some(Duration::from_secs(60)))
-                .http2_keep_alive_timeout(Duration::from_secs(60))
-                .http2_keep_alive_while_idle(false)
-                .pool_idle_timeout(Some(Duration::from_secs(60)))
-                .pool_max_idle_per_host(60)
-                .user_agent("Tailcall/1.0".to_string());
+                .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
+                .timeout(Duration::from_secs(upstream.timeout))
+                .connect_timeout(Duration::from_secs(upstream.connect_timeout))
+                .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
+                .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
+                .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
+                .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
+                .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
+                .user_agent(upstream.user_agent.clone());
 
             // Add Http2 Prior Knowledge
-            if h2only {
+            if upstream.http2_only {
                 builder = builder.http2_prior_knowledge();
+            }
+
+            // Add Http Proxy
+            if let Some(ref proxy) = upstream.proxy {
+                builder = builder.proxy(
+                    reqwest::Proxy::http(proxy.url.clone())
+                        .expect("Failed to set proxy in http client"),
+                );
             }
 
             let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-            client = client.with(Cache(HttpCache {
-                mode: CacheMode::Default,
-                manager: MokaManager::default(),
-                options: HttpCacheOptions::default(),
-            }));
-
+            if upstream.http_cache {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: MokaManager::default(),
+                    options: HttpCacheOptions::default(),
+                }))
+            }
             Self { client: client.build() }
         }
     }
@@ -110,10 +124,21 @@ pub mod test {
         }
     }
 
-    pub fn init() -> TargetRuntime {
-        let http: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init(false));
+    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+        let http: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script.clone() {
+            javascript::init_http(TestHttp::init(&Default::default()), script)
+        } else {
+            Arc::new(TestHttp::init(&Default::default()))
+        };
 
-        let http2: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init(true));
+        let http2: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script {
+            javascript::init_http(
+                TestHttp::init(&Upstream::default().http2_only(true)),
+                script,
+            )
+        } else {
+            Arc::new(TestHttp::init(&Upstream::default().http2_only(true)))
+        };
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();
@@ -127,26 +152,23 @@ pub mod test {
         }
     }
 }
+
 #[cfg(test)]
 mod server_spec {
     use reqwest::Client;
     use serde_json::json;
-    use tailcall::builder::TailcallBuilder;
     use tailcall::cli::server::Server;
-
-    use crate::test;
+    use tailcall::config::reader::ConfigReader;
 
     async fn test_server(configs: &[&str], url: &str) {
-        let runtime = tailcall::cli::runtime::init(&Default::default(), None);
-        let tailcall_executor = TailcallBuilder::init(runtime)
-            .with_config_paths(configs)
-            .await
-            .unwrap();
-        let mut server = Server::new(tailcall_executor);
+        let runtime = crate::test::init(None);
+        let reader = ConfigReader::init(runtime);
+        let config = reader.read_all(configs).await.unwrap();
+        let mut server = Server::new(config);
         let server_up_receiver = server.server_up_receiver();
 
         tokio::spawn(async move {
-            server.fork_start().await.unwrap();
+            server.start().await.unwrap();
         });
 
         server_up_receiver
@@ -224,9 +246,11 @@ mod server_spec {
     #[tokio::test]
     async fn server_start_http2_nokey() {
         let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
-        let runtime = test::init();
-        let tailcall_executor = TailcallBuilder::init(runtime).with_config_paths(configs);
-        assert!(tailcall_executor.await.is_err())
+        let runtime = crate::test::init(None);
+        let reader = ConfigReader::init(runtime);
+        let config = reader.read_all(configs).await.unwrap();
+        let server = Server::new(config);
+        assert!(server.start().await.is_err())
     }
 
     #[tokio::test]

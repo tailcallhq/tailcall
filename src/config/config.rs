@@ -454,7 +454,7 @@ impl Field {
                 .as_ref()
                 .is_some_and(|grpc| !grpc.group_by.is_empty())
     }
-    pub fn into_list(mut self) -> Self {
+    pub fn to_list(mut self) -> Self {
         self.list = true;
         self
     }

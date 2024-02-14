@@ -202,7 +202,8 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::config::{Config, ConfigReader, Field, Grpc, Link, LinkType, Type};
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
 
     static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

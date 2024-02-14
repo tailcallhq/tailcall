@@ -16,14 +16,16 @@ use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::builder::{TailcallBuilder, TailcallExecutor};
+use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use tailcall::blueprint::{self, Blueprint};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
-use tailcall::config::{Config, Source};
-use tailcall::http::{AppContext, Method, Response};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, ConfigModule, Source};
+use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
-use tailcall::valid::{Cause, ValidationError};
+use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
 use url::Url;
 
@@ -31,31 +33,69 @@ use url::Url;
 pub mod test {
     use std::collections::HashMap;
     use std::sync::Arc;
+    use std::time::Duration;
 
     use anyhow::{anyhow, Result};
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
     use hyper::body::Bytes;
     use reqwest::Client;
+    use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cache::InMemoryCache;
+    use tailcall::cli::javascript;
     use tailcall::http::Response;
     use tailcall::runtime::TargetRuntime;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::{EnvIO, FileIO, HttpIO};
+    use crate::blueprint::Upstream;
+    use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
-        client: Client,
+        client: ClientWithMiddleware,
     }
 
     impl Default for TestHttp {
         fn default() -> Self {
-            Self { client: Client::new() }
+            Self { client: ClientBuilder::new(Client::new()).build() }
         }
     }
 
     impl TestHttp {
-        fn init() -> Self {
-            Default::default()
+        fn init(upstream: &Upstream) -> Self {
+            let mut builder = Client::builder()
+                .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
+                .timeout(Duration::from_secs(upstream.timeout))
+                .connect_timeout(Duration::from_secs(upstream.connect_timeout))
+                .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
+                .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
+                .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
+                .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
+                .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
+                .user_agent(upstream.user_agent.clone());
+
+            // Add Http2 Prior Knowledge
+            if upstream.http2_only {
+                builder = builder.http2_prior_knowledge();
+            }
+
+            // Add Http Proxy
+            if let Some(ref proxy) = upstream.proxy {
+                builder = builder.proxy(
+                    reqwest::Proxy::http(proxy.url.clone())
+                        .expect("Failed to set proxy in http client"),
+                );
+            }
+
+            let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
+
+            if upstream.http_cache {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: MokaManager::default(),
+                    options: HttpCacheOptions::default(),
+                }))
+            }
+            Self { client: client.build() }
         }
     }
 
@@ -113,10 +153,21 @@ pub mod test {
         }
     }
 
-    pub fn init() -> TargetRuntime {
-        let http: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init());
+    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+        let http: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script.clone() {
+            javascript::init_http(TestHttp::init(&Default::default()), script)
+        } else {
+            Arc::new(TestHttp::init(&Default::default()))
+        };
 
-        let http2: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init());
+        let http2: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script {
+            javascript::init_http(
+                TestHttp::init(&Upstream::default().http2_only(true)),
+                script,
+            )
+        } else {
+            Arc::new(TestHttp::init(&Upstream::default().http2_only(true)))
+        };
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();
@@ -532,12 +583,12 @@ impl ExecutionSpec {
 
     async fn server_context(
         &self,
-        tailcall_executor: Result<TailcallExecutor, ValidationError<String>>,
+        config: &ConfigModule,
         env: HashMap<String, String>,
-    ) -> TailcallExecutor {
-        let tailcall_executor = tailcall_executor.unwrap();
+    ) -> Arc<AppContext> {
+        let blueprint = Blueprint::try_from(config).unwrap();
         let http = MockHttpClient::new(self.clone());
-        let http = if let Some(script) = tailcall_executor.app_ctx.blueprint.server.script.clone() {
+        let http = if let Some(script) = blueprint.server.script.clone() {
             javascript::init_http(http, script)
         } else {
             Arc::new(http)
@@ -556,12 +607,7 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
         };
-        let mut tailcall_executor = tailcall_executor.clone();
-        tailcall_executor.app_ctx = Arc::new(AppContext::new(
-            tailcall_executor.app_ctx.blueprint.clone(),
-            runtime,
-        ));
-        tailcall_executor.clone()
+        Arc::new(AppContext::new(blueprint, runtime))
     }
 }
 
@@ -726,24 +772,26 @@ async fn assert_spec(spec: ExecutionSpec) {
         if !matches!(source, Source::GraphQL) {
             panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
         }
-        let mut runtime = test::init();
-        runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
-        let tailcall_builder = TailcallBuilder::init(runtime);
 
-        let tailcall_executor = tailcall_builder
-            .with_config(
-                Source::GraphQL,
-                content,
-                Some(spec.path.to_string_lossy().to_string()),
-            )
-            .await
-            .map_err(|e| {
-                let err_str = e.to_string();
-                e.downcast::<ValidationError<String>>()
-                    .unwrap_or(ValidationError::new(err_str))
-            });
+        let config = Config::from_sdl(content).to_result();
 
-        match tailcall_executor {
+        let config = match config {
+            Ok(config) => {
+                let mut runtime = test::init(None);
+                runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
+                let reader = ConfigReader::init(runtime);
+                match reader
+                    .resolve(config, Some(spec.path.to_string_lossy().to_string()))
+                    .await
+                {
+                    Ok(config) => Blueprint::try_from(&config),
+                    Err(e) => Err(ValidationError::new(e.to_string())),
+                }
+            }
+            Err(e) => Err(e),
+        };
+
+        match config {
             Ok(_) => {
                 log::error!("\terror FAIL");
                 panic!(
@@ -831,28 +879,35 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // Resolve all configs
-    let mut runtime = test::init();
+    let mut runtime = test::init(None);
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
-    let tailcall_builder = TailcallBuilder::init(runtime);
+    let reader = ConfigReader::init(runtime);
 
-    let server: Vec<Result<TailcallExecutor, ValidationError<String>>> =
-        join_all(server.into_iter().map(|config| {
-            tailcall_builder.clone().with_config(
-                Source::GraphQL,
-                config.to_sdl(),
-                Some(spec.path.to_string_lossy().to_string()),
+    let server: Vec<ConfigModule> = join_all(
+        server
+            .into_iter()
+            .map(|config| reader.resolve(config, Some(spec.path.to_string_lossy().to_string()))),
+    )
+    .await
+    .into_iter()
+    .enumerate()
+    .map(|(i, result)| {
+        result.unwrap_or_else(|e| {
+            panic!(
+                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
+                i + 1,
+                spec.path,
+                e
             )
-        }))
-        .await
-        .into_iter()
-        .map(|executor| executor.map_err(|e| ValidationError::new(e.to_string())))
-        .collect();
+        })
+    })
+    .collect();
 
     if server.len() == 1 {
-        let tailcall_executor = server.first().cloned().unwrap().unwrap();
+        let config = &server[0];
 
         // client: Check if client spec matches snapshot
-        let client = print_schema(tailcall_executor.app_ctx.blueprint.to_schema());
+        let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
 
         log::info!("\tclient... (snapshot)");
@@ -873,7 +928,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                     .clone()
                     .unwrap_or_else(|| HashMap::with_capacity(0)),
                 assertion,
-                server.first().cloned().unwrap(),
+                server.first().unwrap(),
             )
             .await
             .context(spec.path.to_str().unwrap().to_string())
@@ -943,13 +998,13 @@ async fn run_assert(
     spec: &ExecutionSpec,
     env: &HashMap<String, String>,
     request: &APIRequest,
-    tailcall_executor: Result<TailcallExecutor, ValidationError<String>>,
+    config: &ConfigModule,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();
     let headers = request.headers.clone();
     let url = request.url.clone();
-    let server_context = spec.server_context(tailcall_executor, env.clone()).await;
+    let server_context = spec.server_context(config, env.clone()).await;
     let req = headers
         .into_iter()
         .fold(
@@ -960,5 +1015,10 @@ async fn run_assert(
         )
         .body(Body::from(query_string))?;
 
-    server_context.execute(req).await
+    // TODO: reuse logic from server.rs to select the correct handler
+    if server_context.blueprint.server.enable_batch_requests {
+        handle_request::<GraphQLBatchRequest>(req, server_context).await
+    } else {
+        handle_request::<GraphQLRequest>(req, server_context).await
+    }
 }

@@ -5,12 +5,12 @@ use std::path::{Path, PathBuf};
 
 use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
-use tailcall::builder::{TailcallBuilder, TailcallExecutor};
+use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cli;
-use tailcall::config::{ConfigModule, Source};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, ConfigModule};
 use tailcall::directive::DirectiveCodec;
 use tailcall::print_schema::print_schema;
-use tailcall::runtime::TargetRuntime;
 use tailcall::valid::Validator as _;
 
 use crate::common::{APIRequest, Annotation, SDLError};
@@ -42,11 +42,11 @@ fn graphql_iter_spec_part(spec: &str) -> impl Iterator<Item = (String, String)> 
     })
 }
 
-async fn generate_client_snapshot(file_stem: &str, tailcall_executor: &TailcallExecutor) {
+async fn generate_client_snapshot(file_stem: &str, config: &ConfigModule) {
     let snapshots_dir =
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 
-    let client = print_schema(tailcall_executor.app_ctx.blueprint.to_schema());
+    let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
 
     let snap = format!(
         "---\nsource: tests/execution_spec.rs\nexpression: client\n---\n{}\n",
@@ -61,21 +61,17 @@ async fn generate_client_snapshot(file_stem: &str, tailcall_executor: &TailcallE
     write(target, snap).unwrap();
 }
 
-async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, runtime: TargetRuntime) {
-    let tailcall_executor = TailcallBuilder::init(runtime)
-        .with_config(Source::GraphQL, sdl, None)
-        .await
-        .unwrap();
-    generate_client_snapshot(file_stem, &tailcall_executor).await
+async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, reader: &ConfigReader) {
+    let config = Config::from_sdl(sdl).to_result().unwrap();
+    let config = reader.resolve(config, None).await.unwrap();
+    generate_client_snapshot(file_stem, &config).await
 }
 
-async fn generate_merged_snapshot(file_stem: &str, config: &TailcallExecutor) {
+async fn generate_merged_snapshot(file_stem: &str, config: &Config) {
     let snapshots_dir =
         canonicalize(PathBuf::from("tests/snapshots")).expect("Could not find snapshots directory");
 
-    let merged = ConfigModule::default()
-        .merge_right(&config.config_module)
-        .to_sdl();
+    let merged = Config::default().merge_right(config).to_sdl();
 
     let snap = format!(
         "---\nsource: tests/execution_spec.rs\nexpression: merged\n---\n{}\n",
@@ -90,12 +86,9 @@ async fn generate_merged_snapshot(file_stem: &str, config: &TailcallExecutor) {
     write(target, snap).unwrap();
 }
 
-async fn generate_merged_snapshot_sdl(file_stem: &str, sdl: &str, target_runtime: TargetRuntime) {
-    let tailcall_executor = TailcallBuilder::init(target_runtime)
-        .with_config(Source::GraphQL, sdl, None)
-        .await
-        .unwrap();
-    generate_merged_snapshot(file_stem, &tailcall_executor).await
+async fn generate_merged_snapshot_sdl(file_stem: &str, sdl: &str) {
+    let config = Config::from_sdl(sdl).to_result().unwrap();
+    generate_merged_snapshot(file_stem, &config).await
 }
 
 #[tokio::main]
@@ -116,7 +109,7 @@ async fn main() {
 
     let mut files_already_processed: HashSet<String> = HashSet::new();
 
-    let runtime = cli::runtime::init(&Default::default(), None);
+    let reader = ConfigReader::init(cli::runtime::init(&Upstream::default(), None));
 
     if http_dir.exists() {
         for x in read_dir(http_dir).expect("Could not read http directory") {
@@ -136,10 +129,7 @@ async fn main() {
 
                 let has_fail_annotation = matches!(old.runner, Some(Annotation::Fail));
                 let bad_graphql_skip: bool = match &old.config {
-                    ConfigSource::File(x) => TailcallBuilder::init(runtime.clone())
-                        .with_config_paths(&[x])
-                        .await
-                        .is_err(),
+                    ConfigSource::File(x) => reader.read(x).await.is_err(),
                     ConfigSource::Inline(_) => false,
                 };
 
@@ -291,20 +281,16 @@ async fn main() {
                         http::ConfigSource::File(path) => {
                             let path = PathBuf::from(path);
                             let sdl = fs::read_to_string(path).expect("Failed to read config file");
-                            generate_client_snapshot_sdl(&file_stem, &sdl, runtime.clone()).await;
-                            generate_merged_snapshot_sdl(&file_stem, &sdl, runtime.clone()).await;
+                            generate_client_snapshot_sdl(&file_stem, &sdl, &reader).await;
+                            generate_merged_snapshot_sdl(&file_stem, &sdl).await;
                         }
                         http::ConfigSource::Inline(config) => {
-                            let tailcall_executor = TailcallBuilder::init(runtime.clone())
-                                .with_config(
-                                    Source::GraphQL,
-                                    &config.to_sdl(),
-                                    Some(file_stem.clone()),
-                                )
+                            let config = reader
+                                .resolve(config.to_owned(), Some(file_stem.clone()))
                                 .await
                                 .expect("Failed to resolve config");
-                            generate_client_snapshot(&file_stem, &tailcall_executor).await;
-                            generate_merged_snapshot(&file_stem, &tailcall_executor).await;
+                            generate_client_snapshot(&file_stem, &config).await;
+                            generate_merged_snapshot(&file_stem, &config).await;
                         }
                     };
                 }
@@ -393,7 +379,7 @@ async fn main() {
                 write(target, snap).expect("Failed to write merged snapshot");
 
                 if server.len() == 1 {
-                    generate_client_snapshot_sdl(&file_stem, &server[0], runtime.clone()).await;
+                    generate_client_snapshot_sdl(&file_stem, &server[0], &reader).await;
                 }
 
                 files_already_processed.insert(file_stem);
@@ -490,7 +476,7 @@ async fn main() {
 
                 write(target, snap).expect("Failed to write client snapshot");
 
-                generate_merged_snapshot_sdl(&file_stem, &server, runtime.clone()).await;
+                generate_merged_snapshot_sdl(&file_stem, &server).await;
 
                 files_already_processed.insert(file_stem);
 

@@ -61,7 +61,8 @@ mod tests {
     use url::Url;
 
     use super::DataLoaderRequest;
-    use crate::config::{Config, ConfigReader, Field, Grpc, Link, LinkType, Type};
+    use crate::config::reader::ConfigReader;
+    use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 

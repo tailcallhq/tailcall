@@ -3,17 +3,20 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::{Body, Request, Response};
+use serde::de::DeserializeOwned;
 use url::Url;
 
-use crate::async_graphql_hyper::GraphQLResponse;
-use crate::builder::{TailcallBuilder, TailcallExecutor};
+use super::AppContext;
+use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::blueprint::Blueprint;
+use crate::config::reader::ConfigReader;
 use crate::runtime::TargetRuntime;
 
-pub async fn create_tailcall_executor(
+pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,
     runtime: TargetRuntime,
     enable_fs: bool,
-) -> Result<Result<TailcallExecutor, Response<Body>>> {
+) -> Result<Result<AppContext, Response<Body>>> {
     let config_url = req
         .uri()
         .query()
@@ -26,36 +29,50 @@ pub async fn create_tailcall_executor(
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("No Config URL specified", None);
         response.errors = vec![server_error];
-        return Ok(Err(GraphQLResponse::from(response).into_response()?));
+        return Ok(Err(GraphQLResponse::from(response).to_response()?));
     };
 
     if !enable_fs && Url::parse(&config_url).is_err() {
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("Invalid Config URL specified", None);
         response.errors = vec![server_error];
-        return Ok(Err(GraphQLResponse::from(response).into_response()?));
+        return Ok(Err(GraphQLResponse::from(response).to_response()?));
     }
 
-    let tc_builder = TailcallBuilder::init(runtime.clone());
-    let tailcall = match tc_builder.with_config_paths(&[config_url]).await {
-        Ok(tailcall) => tailcall,
+    let reader = ConfigReader::init(runtime.clone());
+    let config = match reader.read(config_url).await {
+        Ok(config) => config,
         Err(e) => {
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("Failed to read config: {}", e), None);
             response.errors = vec![server_error];
-            return Ok(Err(GraphQLResponse::from(response).into_response()?));
+            return Ok(Err(GraphQLResponse::from(response).to_response()?));
         }
     };
 
-    Ok(Ok(tailcall))
+    let blueprint = match Blueprint::try_from(&config) {
+        Ok(blueprint) => blueprint,
+        Err(e) => {
+            let mut response = async_graphql::Response::default();
+            let server_error = ServerError::new(format!("{}", e), None);
+            response.errors = vec![server_error];
+            return Ok(Err(GraphQLResponse::from(response).to_response()?));
+        }
+    };
+
+    Ok(Ok(AppContext::new(blueprint, runtime)))
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use hyper::Request;
     use serde_json::json;
 
-    use crate::http::showcase::create_tailcall_executor;
+    use crate::async_graphql_hyper::GraphQLRequest;
+    use crate::http::handle_request;
+    use crate::http::showcase::create_app_ctx;
 
     #[tokio::test]
     async fn works_with_file() {
@@ -68,7 +85,7 @@ mod tests {
             .unwrap();
 
         let runtime = crate::runtime::test::init(None);
-        let tailcall = create_tailcall_executor(&req, runtime, true)
+        let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
             .await
             .unwrap()
             .unwrap();
@@ -84,7 +101,9 @@ mod tests {
             ))
             .unwrap();
 
-        let res = tailcall.execute(req).await.unwrap();
+        let res = handle_request::<GraphQLRequest>(req, Arc::new(app))
+            .await
+            .unwrap();
 
         println!("{:#?}", res);
         assert!(res.status().is_success())
