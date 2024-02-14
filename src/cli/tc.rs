@@ -26,7 +26,10 @@ pub async fn run() -> Result<()> {
     let tailcall_builder = TailcallBuilder::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
-            let tailcall_executor = tailcall_builder.with_config_paths(&file_paths).await?;
+            let tailcall_executor = tailcall_builder
+                .with_config_paths(&file_paths)
+                .build()
+                .await?;
 
             log::info!(
                 "N + 1: {}",
@@ -53,7 +56,10 @@ pub async fn run() -> Result<()> {
                 .into_iter()
                 .collect::<Result<Vec<_>>>()?;
 
-            let tailcall_executor = tailcall_builder.with_config_paths(&file_paths).await?;
+            let tailcall_executor = tailcall_builder
+                .with_config_paths(&file_paths)
+                .build()
+                .await?;
             let result = tailcall_executor
                 .validate(n_plus_one_queries, schema, ops)
                 .await
@@ -66,7 +72,10 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Compose { file_paths, format } => {
-            let executor = tailcall_builder.with_config_paths(&file_paths).await?;
+            let executor = tailcall_builder
+                .with_config_paths(&file_paths)
+                .build()
+                .await?;
             let encoded = format.encode(&executor.config_module)?;
             display(encoded);
             Ok(())

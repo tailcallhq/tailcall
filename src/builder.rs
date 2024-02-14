@@ -15,8 +15,17 @@ use crate::valid::Validator;
 
 #[derive(Clone)]
 pub struct TailcallBuilder {
+    files: Vec<String>,
+    schemas: Vec<SchemaHolder>,
     runtime: TargetRuntime,
 }
+#[derive(Clone)]
+struct SchemaHolder {
+    source: Source,
+    schema: String,
+    parent: Option<String>,
+}
+
 #[derive(Clone)]
 pub struct TailcallExecutor {
     pub config_module: ConfigModule,
@@ -25,26 +34,34 @@ pub struct TailcallExecutor {
 
 impl TailcallBuilder {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { runtime }
+        Self { files: vec![], schemas: vec![], runtime }
     }
-    pub async fn with_config<T: ToString>(
-        self,
+    pub fn with_config<T: ToString>(
+        mut self,
         source: Source,
         schema: T,
         relative_path: Option<String>,
-    ) -> Result<TailcallExecutor> {
-        let reader = ConfigReader::init(self.runtime.clone());
-        let config = Config::from_source(source, &schema.to_string())?;
-
-        let config_module = reader.resolve(config, relative_path).await?;
-        let blueprint = Blueprint::try_from(&config_module.clone())?;
-        let app_ctx = AppContext::new(blueprint, self.runtime);
-        let app_ctx = Arc::new(app_ctx);
-        Ok(TailcallExecutor { config_module, app_ctx })
+    ) -> Self {
+        self.schemas.push(SchemaHolder {
+            source,
+            schema: schema.to_string(),
+            parent: relative_path,
+        });
+        self
     }
-    pub async fn with_config_paths<T: ToString>(self, files: &[T]) -> Result<TailcallExecutor> {
+    pub fn with_config_paths<T: ToString>(mut self, files: &[T]) -> Self {
+        self.files
+            .push(files.iter().map(|v| v.to_string()).collect());
+        self
+    }
+    pub async fn build(self) -> Result<TailcallExecutor> {
         let reader = ConfigReader::init(self.runtime.clone());
-        let config_module = reader.read_all(files).await?;
+        let mut config_module = reader.read_all(&self.files).await?;
+        for holder in self.schemas {
+            let config = Config::from_source(holder.source, &holder.schema)?;
+            let new_config_module = reader.resolve(config, holder.parent).await?;
+            config_module = config_module.merge_right(&new_config_module);
+        }
         let blueprint = Blueprint::try_from(&config_module)?;
         let app_ctx = AppContext::new(blueprint, self.runtime);
         let app_ctx = Arc::new(app_ctx);

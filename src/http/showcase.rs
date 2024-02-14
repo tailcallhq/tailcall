@@ -37,7 +37,7 @@ pub async fn create_tailcall_executor(
     }
 
     let tc_builder = TailcallBuilder::init(runtime.clone());
-    let tailcall = match tc_builder.with_config_paths(&[config_url]).await {
+    let tailcall = match tc_builder.with_config_paths(&[config_url]).build().await {
         Ok(tailcall) => tailcall,
         Err(e) => {
             let mut response = async_graphql::Response::default();

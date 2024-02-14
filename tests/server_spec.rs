@@ -140,6 +140,7 @@ mod server_spec {
         let runtime = tailcall::cli::runtime::init(&Default::default(), None);
         let tailcall_executor = TailcallBuilder::init(runtime)
             .with_config_paths(configs)
+            .build()
             .await
             .unwrap();
         let mut server = Server::new(tailcall_executor);
@@ -226,7 +227,7 @@ mod server_spec {
         let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
         let runtime = test::init();
         let tailcall_executor = TailcallBuilder::init(runtime).with_config_paths(configs);
-        assert!(tailcall_executor.await.is_err())
+        assert!(tailcall_executor.build().await.is_err())
     }
 
     #[tokio::test]

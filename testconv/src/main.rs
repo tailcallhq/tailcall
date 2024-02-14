@@ -64,6 +64,7 @@ async fn generate_client_snapshot(file_stem: &str, tailcall_executor: &TailcallE
 async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, runtime: TargetRuntime) {
     let tailcall_executor = TailcallBuilder::init(runtime)
         .with_config(Source::GraphQL, sdl, None)
+        .build()
         .await
         .unwrap();
     generate_client_snapshot(file_stem, &tailcall_executor).await
@@ -93,6 +94,7 @@ async fn generate_merged_snapshot(file_stem: &str, config: &TailcallExecutor) {
 async fn generate_merged_snapshot_sdl(file_stem: &str, sdl: &str, target_runtime: TargetRuntime) {
     let tailcall_executor = TailcallBuilder::init(target_runtime)
         .with_config(Source::GraphQL, sdl, None)
+        .build()
         .await
         .unwrap();
     generate_merged_snapshot(file_stem, &tailcall_executor).await
@@ -138,6 +140,7 @@ async fn main() {
                 let bad_graphql_skip: bool = match &old.config {
                     ConfigSource::File(x) => TailcallBuilder::init(runtime.clone())
                         .with_config_paths(&[x])
+                        .build()
                         .await
                         .is_err(),
                     ConfigSource::Inline(_) => false,
@@ -301,6 +304,7 @@ async fn main() {
                                     &config.to_sdl(),
                                     Some(file_stem.clone()),
                                 )
+                                .build()
                                 .await
                                 .expect("Failed to resolve config");
                             generate_client_snapshot(&file_stem, &tailcall_executor).await;

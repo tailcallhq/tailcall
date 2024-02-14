@@ -736,6 +736,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 content,
                 Some(spec.path.to_string_lossy().to_string()),
             )
+            .build()
             .await
             .map_err(|e| {
                 let err_str = e.to_string();
@@ -837,11 +838,14 @@ async fn assert_spec(spec: ExecutionSpec) {
 
     let server: Vec<Result<TailcallExecutor, ValidationError<String>>> =
         join_all(server.into_iter().map(|config| {
-            tailcall_builder.clone().with_config(
-                Source::GraphQL,
-                config.to_sdl(),
-                Some(spec.path.to_string_lossy().to_string()),
-            )
+            tailcall_builder
+                .clone()
+                .with_config(
+                    Source::GraphQL,
+                    config.to_sdl(),
+                    Some(spec.path.to_string_lossy().to_string()),
+                )
+                .build()
         }))
         .await
         .into_iter()
