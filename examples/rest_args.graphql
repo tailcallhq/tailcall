@@ -1,0 +1,13 @@
+query GetPost($id: Int!) @rest(path: "/posts/$id", method: "GET") {
+  post(id: $id) {
+    id
+    title
+  }
+}
+
+query GetUser($input: Int!) @rest(path: "/users/$input", method: "GET") {
+  user(id: $input) {
+    id
+    title
+  }
+}

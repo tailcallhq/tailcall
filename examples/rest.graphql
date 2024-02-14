@@ -1,9 +1,6 @@
-#
-#query GetPosts($input: GetPostsInput!) @rest(path: "/posts/$input") {
-#    post(input: $input)
-#}
-query GetPosts($input: Int) @rest(path: "/posts/$input", method: "GET") {
-  post(input: $input) {
+query GetPosts @rest(path: "/posts", method: "GET") {
+  posts {
     id
+    title
   }
 }
