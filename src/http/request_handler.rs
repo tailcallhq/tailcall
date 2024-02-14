@@ -36,6 +36,12 @@ fn not_found() -> Result<Response<Body>> {
         .body(Body::empty())?)
 }
 
+fn error_response(status_code: StatusCode, msg: impl Into<String>) -> Result<Response<Body>> {
+    Ok(Response::builder()
+        .status(status_code)
+        .body(Body::from(msg.into()))?)
+}
+
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
@@ -94,19 +100,16 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
-
 pub async fn graphql_query(
-    query: String,
+    req: &Request<Body>,
+    request: GraphQLRequest,
     app_ctx: &AppContext,
 ) -> Result<Response<Body>> {
-    // let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let request = GraphQLRequest(async_graphql::Request::new(query));
-    // let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    // let request = serde_json::from_slice::<T>(&bytes);
-    let mut response = request.execute(&app_ctx.schema).await;
-    // response = update_cache_control_header(response, app_ctx, req_ctx);
+    let req_ctx = Arc::new(create_request_context(req, app_ctx));
+    let response = request.data(req_ctx).execute(&app_ctx.schema).await;
     let mut resp = response.to_response()?;
     update_response_headers(&mut resp, app_ctx);
+    println!("{resp:?}");
     Ok(resp)
 }
 
@@ -144,13 +147,23 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &app_ctx).await
         }
-
-        hyper::Method::GET if app_ctx.blueprint.server.enable_graphiql => graphiql(&req),
-        ref method => {
-            let query = app_ctx.blueprint.rest_apis.dispatch_path(method.clone(), req.uri().path());
-            println!("{query:?}");
-            graphql_query(query?, &app_ctx).await
-        },
-        // _ => not_found(),
+        hyper::Method::GET
+            if req.uri().path() == "/" && app_ctx.blueprint.server.enable_graphiql =>
+        {
+            graphiql(&req)
+        }
+        ref method if req.uri().path().starts_with("/api/") => {
+            let path = &req.uri().path()[4..];
+            let request = app_ctx
+                .blueprint
+                .rest_apis
+                .dispatch_path(method.clone(), path);
+            println!("{request:?}");
+            match request {
+                Ok(request) => graphql_query(&req, request, &app_ctx).await,
+                Err(err) => error_response(StatusCode::NOT_FOUND, format!("{err:?}")),
+            }
+        }
+        _ => not_found(),
     }
 }

@@ -1,21 +1,19 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet, HashMap};
-use std::fmt::{self, Display, Formatter};
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::fmt::{self, Display, Formatter, Write as _};
 use std::num::NonZeroU64;
-use std::sync::Arc;
-use std::fmt::Write as _;
-use std::io::{Read, Write};
 
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
-use async_graphql::Request;
 use derive_setters::Setters;
-use itertools::{Itertools, EitherOrBoth};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::{de::{self, Visitor}, ser};
+use itertools::{EitherOrBoth, Itertools};
+use serde::de::{self, Visitor};
+use serde::{ser, Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::de::StrRead;
 use serde_json::Value;
-use serde_json::de::{IoRead, StrRead};
 
 use super::{Expr, Link, Server, Upstream};
+use crate::async_graphql_hyper::GraphQLRequest;
 use crate::config::from_document::{from_document, from_query};
 use crate::config::source::Source;
 use crate::config::KeyValues;
@@ -281,22 +279,28 @@ pub struct Cache {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct RestApis(pub HashMap<Rest, String>);
-
-pub struct Quoted<R> {
-    is_first_call: bool,
-    reader: R,
-    ended: bool,
-}
+pub struct RestApis(pub BTreeMap<Rest, String>);
 
 impl RestApis {
-    pub fn dispatch_path(&self, method: hyper::Method, path: &str) -> Result<String> {
+    pub fn dispatch_path(&self, method: hyper::Method, path: &str) -> Result<GraphQLRequest> {
         let path = format!("\"{path}\"");
         let mut deserializer = serde_json::Deserializer::new(StrRead::new(path.as_str()));
         let path = RestPath::deserialize(&mut deserializer)?;
+        let req_rest = Rest { method: method.try_into()?, path };
+        println!("{req_rest:?}");
 
-        let rest = Rest { method: method.try_into()?, path };
-        self.0.get(&rest).cloned().ok_or(anyhow::anyhow!("path not found"))
+        let (rest, query) = self
+            .0
+            .get_key_value(&req_rest)
+            .map(|(k, v)| (k.clone(), v))
+            .ok_or(anyhow::anyhow!("path not found"))?;
+        let vars_json = rest.path.extract_variable_values_from(req_rest.path);
+        println!("{vars_json}");
+
+        let req = async_graphql::Request::new(query)
+            .variables(async_graphql::Variables::from_json(vars_json));
+
+        Ok(GraphQLRequest(req))
     }
 }
 
@@ -314,12 +318,12 @@ impl Eq for RestApis {}
 
 impl RestApis {
     fn merge_right(mut self, other: Self) -> Self {
-        self.0.extend(other.0.into_iter());
+        self.0.extend(other.0);
         self
     }
 
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(BTreeMap::new())
     }
 
     pub fn insert(&mut self, rest: Rest, query: impl Into<String>) {
@@ -327,7 +331,9 @@ impl RestApis {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Hash, Serialize, Eq, schemars::JsonSchema)]
+#[derive(
+    Clone, Debug, PartialEq, Deserialize, PartialOrd, Ord, Serialize, Eq, schemars::JsonSchema,
+)]
 /// The @rest operator creates a rest api for the operation it is applied to
 #[serde(rename_all = "camelCase")]
 pub struct Rest {
@@ -338,38 +344,74 @@ pub struct Rest {
     pub method: Method,
 }
 
-#[derive(Clone, Debug, Hash, schemars::JsonSchema)]
+#[derive(Clone, Debug, schemars::JsonSchema)]
 pub struct RestPath {
     tokens: Vec<Token>,
 }
 
 impl PartialEq for RestPath {
     fn eq(&self, other: &Self) -> bool {
-        self.tokens.iter().zip_longest(other.tokens.iter()).all(|either_or_both| match either_or_both {
-            EitherOrBoth::Both(Token::Static(a), Token::Static(b)) => a.eq(b),
-            EitherOrBoth::Both(Token::Variable(_), _) => true,
-            EitherOrBoth::Both(_, Token::Variable(_)) => true,
-            _ => false,
-        })
+        self.tokens
+            .iter()
+            .zip_longest(other.tokens.iter())
+            .all(|either_or_both| match either_or_both {
+                EitherOrBoth::Both(Token::Static(a), Token::Static(b)) => a.eq(b),
+                EitherOrBoth::Both(Token::Variable(_), _) => true,
+                EitherOrBoth::Both(_, Token::Variable(_)) => true,
+                _ => false,
+            })
     }
 }
 
 impl Eq for RestPath {}
 
+impl PartialOrd for RestPath {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for RestPath {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.tokens.len().cmp(&other.tokens.len()) {
+            Ordering::Equal => self
+                .tokens
+                .iter()
+                .zip(other.tokens.iter())
+                .find_map(|(a, b)| match (a, b) {
+                    (Token::Static(a), Token::Static(b)) => Some(a.cmp(b)),
+                    _ => None,
+                })
+                .unwrap_or(Ordering::Equal),
+            res => res,
+        }
+    }
+}
+
 impl RestPath {
-    pub fn variables(&self) -> impl Iterator<Item=&String> {
-        self
-            .tokens
-            .iter()
-            .filter_map(|token| match token {
-                Token::Variable(val) => Some(val),
-                _ => None
-            })
+    pub fn variables(&self) -> impl Iterator<Item = &String> {
+        self.tokens.iter().filter_map(|token| match token {
+            Token::Variable(val) => Some(val),
+            _ => None,
+        })
+    }
+
+    pub fn extract_variable_values_from(self, req_path: RestPath) -> serde_json::Value {
+        let mut values = serde_json::Map::new();
+        for (token, req_token) in self.tokens.into_iter().zip(req_path.tokens.into_iter()) {
+            if let (Token::Variable(name), Token::Static(val)) = (token, req_token) {
+                values.insert(name, serde_json::Value::String(val));
+            }
+        }
+        serde_json::Value::Object(values)
     }
 }
 
 impl<'de> Deserialize<'de> for RestPath {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         struct TokensVisitor;
 
         impl<'de> Visitor<'de> for TokensVisitor {
@@ -379,23 +421,28 @@ impl<'de> Deserialize<'de> for RestPath {
                 formatter.write_str("a valid path")
             }
 
-            fn visit_str<E>(self, mut v: &str) -> std::result::Result<Self::Value, E> where E: de::Error {
-                if v != "" && &v[v.len()-1..] == "/" {
-                    v = &v[..v.len()-1];
+            fn visit_str<E>(self, mut v: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                if !v.is_empty() && &v[v.len() - 1..] == "/" {
+                    v = &v[..v.len() - 1];
                 }
 
                 let mut tokens = v.split('/');
 
                 tokens
                     .next()
-                    .filter(|token| *token == "")
+                    .filter(|token| token.is_empty())
                     .ok_or(E::custom("path should start with \"/\""))?;
 
                 let tokens = tokens
-                    .map(|val| if val.starts_with('$') {
-                        Token::Variable(val[1..].to_string())
-                    } else {
-                        Token::Static(val.to_string())
+                    .map(|val| {
+                        if let Some(var_name) = val.strip_prefix('$') {
+                            Token::Variable(var_name.to_string())
+                        } else {
+                            Token::Static(val.to_string())
+                        }
                     })
                     .collect();
                 Ok(RestPath { tokens })
@@ -407,10 +454,12 @@ impl<'de> Deserialize<'de> for RestPath {
 }
 
 impl Serialize for RestPath {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         let mut result_str = String::new();
-        self
-            .tokens
+        self.tokens
             .iter()
             .map(|token| write!(&mut result_str, "{token}"))
             .collect::<Result<Vec<_>, _>>()
@@ -849,9 +898,9 @@ impl Config {
                 let doc = async_graphql::parser::parse_query(sdl);
                 match doc {
                     Ok(doc) => from_query(sdl, doc),
-                    Err(e) => Valid::fail(e.to_string())
+                    Err(e) => Valid::fail(e.to_string()),
                 }
-            },
+            }
         }
     }
 

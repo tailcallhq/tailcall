@@ -1,11 +1,15 @@
 use std::collections::BTreeMap;
 
-use async_graphql::parser::types::{BaseType, ConstDirective, EnumType, ExecutableDocument, FieldDefinition, InputObjectType, InputValueDefinition, InterfaceType, ObjectType, OperationDefinition, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType};
+use async_graphql::parser::types::{
+    BaseType, ConstDirective, EnumType, ExecutableDocument, FieldDefinition, InputObjectType,
+    InputValueDefinition, InterfaceType, ObjectType, OperationDefinition, SchemaDefinition,
+    ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
+};
 use async_graphql::parser::Positioned;
-use async_graphql::{Name, Pos, Request};
+use async_graphql::{Name, Pos};
 use itertools::{EitherOrBoth, Itertools};
 
-use super::{JS, Rest, RestApis};
+use super::{Rest, RestApis, JS};
 use crate::config::{
     self, Cache, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
     Upstream,
@@ -29,13 +33,17 @@ struct LocalPos {
 
 fn get_pos_index(sdl: &str, pos: &LocalPos) -> usize {
     // print!("Index for pos {pos:?} ");
-    let index = sdl.lines().enumerate().take(pos.line).map(|(index, line)| {
-        if index == pos.line - 1 {
-            pos.column - 1
-        } else {
-            line.len() + 1
-        }
-    })
+    let index = sdl
+        .lines()
+        .enumerate()
+        .take(pos.line)
+        .map(|(index, line)| {
+            if index == pos.line - 1 {
+                pos.column - 1
+            } else {
+                line.len() + 1
+            }
+        })
         .sum();
     println!("{index}");
     index
@@ -47,39 +55,45 @@ fn str_between_pos<'a>(sdl: &'a str, start: &'a LocalPos, end: Option<&'a LocalP
 
     match end_index {
         Some(end_index) => &sdl[start_index..end_index],
-        None => &sdl[start_index..]
+        None => &sdl[start_index..],
     }
 }
 
-fn extract_rest_directive(OperationDefinition { directives, variable_definitions, .. }: &OperationDefinition) -> Valid<Option<Rest>, String> {
+fn extract_rest_directive(
+    OperationDefinition { directives, variable_definitions, .. }: &OperationDefinition,
+) -> Valid<Option<Rest>, String> {
     let directives: Vec<Positioned<ConstDirective>> = directives
         .iter()
-        .map(|Positioned { pos, node, }| Positioned { pos: *pos, node: node.clone().into_const().unwrap() })
+        .map(|Positioned { pos, node }| Positioned {
+            pos: *pos,
+            node: node.clone().into_const().unwrap(),
+        })
         .collect();
 
-    Rest::from_directives(directives.iter())
-        .and_then(|rest| {
-            match rest {
-                Some(rest) => {
-                    let variables = rest.path.variables().sorted();
-                    let variable_definitions = variable_definitions
-                        .iter()
-                        .map(|pos| pos.node.name.clone())
-                        .sorted();
+    Rest::from_directives(directives.iter()).and_then(|rest| match rest {
+        Some(rest) => {
+            let variables = rest.path.variables().sorted();
+            let variable_definitions = variable_definitions
+                .iter()
+                .map(|pos| pos.node.name.clone())
+                .sorted();
 
-                    variables
-                        .zip_longest(variable_definitions)
-                        .map(|either_or_both| match either_or_both {
-                            EitherOrBoth::Both(_, _) => Valid::succeed(()),
-                            EitherOrBoth::Left(val) => Valid::fail(format!("${val} is not bounded to any argument")),
-                            EitherOrBoth::Right(val) => Valid::fail(format!("${val} is not present in the path")),
-                        })
-                        .collect::<Valid<Vec<_>, _>>()
-                        .map(|_| Some(rest))
-                },
-                None => Valid::succeed(None),
-            }
-        })
+            variables
+                .zip_longest(variable_definitions)
+                .map(|either_or_both| match either_or_both {
+                    EitherOrBoth::Both(_, _) => Valid::succeed(()),
+                    EitherOrBoth::Left(val) => {
+                        Valid::fail(format!("${val} is not bounded to any argument"))
+                    }
+                    EitherOrBoth::Right(val) => {
+                        Valid::fail(format!("${val} is not present in the path"))
+                    }
+                })
+                .collect::<Valid<Vec<_>, _>>()
+                .map(|_| Some(rest))
+        }
+        None => Valid::succeed(None),
+    })
 }
 
 pub fn from_query(sdl: &str, doc: ExecutableDocument) -> Valid<Config, String> {
@@ -107,7 +121,7 @@ pub fn from_query(sdl: &str, doc: ExecutableDocument) -> Valid<Config, String> {
                 let query = str_between_pos(sdl, start, None);
                 rest_apis.insert(rest.clone(), query);
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
