@@ -1,5 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 
+use crate::app_context::AppContext;
 use crate::blueprint::Http;
 use crate::builder::TailcallExecutor;
 
@@ -8,7 +10,14 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn new(tailcall_executor: TailcallExecutor) -> Self {
+    pub fn new(mut tailcall_executor: TailcallExecutor) -> Self {
+        let blueprint = tailcall_executor.app_ctx.blueprint.clone();
+        let rt = crate::cli::runtime::init(
+            &blueprint.upstream,
+            tailcall_executor.app_ctx.blueprint.server.script.clone(),
+        );
+        let app_ctx = Arc::new(AppContext::new(blueprint, rt));
+        tailcall_executor.app_ctx = app_ctx;
         Self { tailcall_executor }
     }
 
