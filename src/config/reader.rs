@@ -7,6 +7,7 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
@@ -187,6 +188,11 @@ impl ConfigReader {
                 _ => None,
             })
             .collect())
+    }
+
+    /// Reads a single file and returns the config
+    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
+        self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
@@ -443,10 +449,10 @@ mod reader_tests {
         let reader = ConfigReader::init(runtime);
 
         let config = reader
-            .read_all(&[format!(
+            .read(&format!(
                 "{}/examples/jsonplaceholder_script.graphql",
                 cargo_manifest
-            )])
+            ))
             .await
             .unwrap();
 

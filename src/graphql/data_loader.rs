@@ -20,10 +20,8 @@ impl GraphqlDataLoader {
     pub fn new(runtime: TargetRuntime, batch: bool) -> Self {
         GraphqlDataLoader { runtime, batch }
     }
-    pub fn into_data_loader(
-        self,
-        batch: Batch,
-    ) -> DataLoader<DataLoaderRequest, GraphqlDataLoader> {
+
+    pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GraphqlDataLoader> {
         DataLoader::new(self)
             .delay(Duration::from_millis(batch.delay as u64))
             .max_batch_size(batch.max_size)

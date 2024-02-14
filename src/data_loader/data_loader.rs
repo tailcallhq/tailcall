@@ -387,7 +387,7 @@ mod tests {
     use fnv::FnvBuildHasher;
 
     use super::*;
-    use crate::data_loader::cache::HashMapCache;
+    use crate::data_loader::HashMapCache;
 
     struct MyLoader;
 

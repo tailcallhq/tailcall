@@ -1,5 +1,6 @@
 use crate::blueprint::*;
-use crate::config::{Field, GroupBy};
+use crate::config::group_by::GroupBy;
+use crate::config::Field;
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, IO};

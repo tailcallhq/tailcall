@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -6,17 +7,18 @@ use tokio::sync::oneshot::{self};
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
-use crate::blueprint::Http;
-use crate::builder::TailcallExecutor;
+use crate::blueprint::{Blueprint, Http};
+use crate::cli::CLIError;
+use crate::config::ConfigModule;
 
 pub struct Server {
-    tailcall_executor: TailcallExecutor,
+    config_module: ConfigModule,
     server_up_sender: Option<oneshot::Sender<()>>,
 }
 
 impl Server {
-    pub fn new(tailcall_executor: TailcallExecutor) -> Self {
-        Self { tailcall_executor, server_up_sender: None }
+    pub fn new(config_module: ConfigModule) -> Self {
+        Self { config_module, server_up_sender: None }
     }
 
     pub fn server_up_receiver(&mut self) -> oneshot::Receiver<()> {
@@ -29,9 +31,10 @@ impl Server {
 
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
-        let server_config = Arc::new(ServerConfig::new(self.tailcall_executor.app_ctx.clone()));
+        let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
+        let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
-        match self.tailcall_executor.app_ctx.blueprint.server.http.clone() {
+        match blueprint.server.http.clone() {
             Http::HTTP2 { cert, key } => {
                 start_http_2(server_config, cert, key, self.server_up_sender).await
             }
@@ -42,7 +45,7 @@ impl Server {
     /// Starts the server in its own multithreaded Runtime
     pub async fn fork_start(self) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(self.tailcall_executor.config_module.server.get_workers())
+            .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
 

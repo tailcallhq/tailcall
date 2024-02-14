@@ -13,6 +13,10 @@ impl Fmt {
         format!("{}", meta.yellow())
     }
 
+    pub fn display(s: String) {
+        println!("{}", s);
+    }
+
     pub fn table(labels: Vec<(String, String)>) -> String {
         let max_length = labels.iter().map(|(key, _)| key.len()).max().unwrap_or(0) + 1;
         let padding = " ".repeat(max_length);
