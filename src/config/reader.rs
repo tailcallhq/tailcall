@@ -92,17 +92,7 @@ impl ConfigReader {
         }
 
         for config_link in links.iter() {
-            let path = if Path::new(&config_link.src).is_absolute() {
-                config_link.src.clone()
-            } else {
-                let path = path.clone().unwrap_or_default();
-                PathBuf::from(path)
-                    .parent()
-                    .unwrap_or(Path::new(""))
-                    .join(&config_link.src)
-                    .to_string_lossy()
-                    .to_string()
-            };
+            let path = Self::resolve_path(&config_link.src, &path);
 
             let source = self.read_file(&path).await?;
 
@@ -270,6 +260,17 @@ impl ConfigReader {
         };
 
         Ok(protox_parse::parse(path, &content)?)
+    }
+
+    /// Checks if path is absolute else it joins file path with relative dir path
+    fn resolve_path(src: &str, root_dir: &Option<String>) -> String {
+        if Path::new(&src).is_absolute() {
+            src.to_string()
+        } else {
+            let path = root_dir.clone().unwrap_or_default();
+            let path = PathBuf::from(path);
+            path.join(src).to_string_lossy().to_string()
+        }
     }
 }
 
@@ -465,5 +466,20 @@ mod reader_tests {
         );
 
         assert_eq!(content.unwrap(), config.extensions.script.unwrap());
+    }
+
+    #[test]
+    fn test_relative_path() {
+        let path_dir = "abc/xyz".to_string();
+        let file_relative = "foo/bar/my.proto";
+        let file_absolute = "/foo/bar/my.proto";
+        assert_eq!(
+            "abc/xyz/foo/bar/my.proto",
+            ConfigReader::resolve_path(file_relative, &Some(path_dir.clone()))
+        );
+        assert_eq!(
+            "/foo/bar/my.proto",
+            ConfigReader::resolve_path(file_absolute, &Some(path_dir))
+        );
     }
 }
