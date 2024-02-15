@@ -730,7 +730,11 @@ async fn assert_spec(spec: ExecutionSpec) {
         let tailcall_builder = TailcallBuilder::new();
 
         let tailcall_executor = tailcall_builder
-            .with_config_source(Source::GraphQL, content)
+            .with_config_source(
+                Source::GraphQL,
+                content,
+                Some(spec.path.to_string_lossy().to_string()),
+            )
             .build(runtime)
             .await
             .map_err(|e| {
@@ -836,7 +840,11 @@ async fn assert_spec(spec: ExecutionSpec) {
             let runtime = runtime.clone();
             tailcall_builder
                 .clone()
-                .with_config_source(Source::GraphQL, config.to_sdl())
+                .with_config_source(
+                    Source::GraphQL,
+                    config.to_sdl(),
+                    Some(spec.path.to_string_lossy().to_string()),
+                )
                 .build(runtime)
         }))
         .await

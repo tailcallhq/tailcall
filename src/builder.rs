@@ -27,6 +27,8 @@ struct SchemaHolder {
     source: Source,
     /// Holds content of schema
     schema: String,
+    /// Holds path to parent dir for content in @link
+    parent_dir: Option<String>,
 }
 
 #[derive(Clone)]
@@ -41,9 +43,14 @@ impl TailcallBuilder {
     }
 
     /// This function takes content and type of source as input
-    pub fn with_config_source<T: ToString>(mut self, source: Source, schema: T) -> Self {
+    pub fn with_config_source<T: ToString>(
+        mut self,
+        source: Source,
+        schema: T,
+        parent_dir: Option<String>,
+    ) -> Self {
         self.schemas
-            .push(SchemaHolder { source, schema: schema.to_string() });
+            .push(SchemaHolder { source, schema: schema.to_string(), parent_dir });
         self
     }
 
@@ -59,7 +66,7 @@ impl TailcallBuilder {
         let mut config_module = reader.read_all(&self.files).await?;
         for holder in self.schemas {
             let config = Config::from_source(holder.source, &holder.schema)?;
-            let new_config_module = reader.resolve(config, None).await?;
+            let new_config_module = reader.resolve(config, holder.parent_dir).await?;
             config_module = config_module.merge_right(&new_config_module);
         }
         let blueprint = Blueprint::try_from(&config_module)?;
