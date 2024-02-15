@@ -17,7 +17,6 @@ use crate::valid::Validator;
 pub struct TailcallBuilder {
     files: Vec<String>,
     schemas: Vec<SchemaHolder>,
-    runtime: TargetRuntime,
 }
 #[derive(Clone)]
 struct SchemaHolder {
@@ -33,8 +32,8 @@ pub struct TailcallExecutor {
 }
 
 impl TailcallBuilder {
-    pub fn init(runtime: TargetRuntime) -> Self {
-        Self { files: vec![], schemas: vec![], runtime }
+    pub fn init() -> Self {
+        Self { files: vec![], schemas: vec![] }
     }
     pub fn with_config<T: ToString>(
         mut self,
@@ -54,8 +53,8 @@ impl TailcallBuilder {
             .push(files.iter().map(|v| v.to_string()).collect());
         self
     }
-    pub async fn build(self) -> Result<TailcallExecutor> {
-        let reader = ConfigReader::init(self.runtime.clone());
+    pub async fn build(self, runtime: TargetRuntime) -> Result<TailcallExecutor> {
+        let reader = ConfigReader::init(runtime.clone());
         let mut config_module = reader.read_all(&self.files).await?;
         for holder in self.schemas {
             let config = Config::from_source(holder.source, &holder.schema)?;
@@ -63,7 +62,7 @@ impl TailcallBuilder {
             config_module = config_module.merge_right(&new_config_module);
         }
         let blueprint = Blueprint::try_from(&config_module)?;
-        let app_ctx = AppContext::new(blueprint, self.runtime);
+        let app_ctx = AppContext::new(blueprint, runtime);
         let app_ctx = Arc::new(app_ctx);
         Ok(TailcallExecutor { config_module, app_ctx })
     }
