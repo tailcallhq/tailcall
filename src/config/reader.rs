@@ -72,7 +72,7 @@ impl ConfigReader {
     async fn ext_links(
         &self,
         mut config_module: ConfigModule,
-        parent_dir: Option<PathBuf>,
+        parent_dir: &Option<PathBuf>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config
@@ -92,7 +92,7 @@ impl ConfigReader {
         }
 
         for config_link in links.iter() {
-            let path = Self::resolve_path(&config_link.src, &parent_dir);
+            let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.read_file(&path).await?;
 
@@ -105,11 +105,9 @@ impl ConfigReader {
                     config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
-                        let mut parent_dir = PathBuf::from(&source.path); // path to file
-                        parent_dir.pop(); // parent dir
                         config_module = config_module.merge_right(
                             &self
-                                .ext_links(ConfigModule::from(config), Some(parent_dir))
+                                .ext_links(ConfigModule::from(config), parent_dir)
                                 .await?,
                         );
                     }
@@ -220,7 +218,7 @@ impl ConfigReader {
         let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_module = self.ext_links(config_module, parent_dir).await?;
+        let config_module = self.ext_links(config_module, &parent_dir).await?;
 
         Ok(config_module)
     }
