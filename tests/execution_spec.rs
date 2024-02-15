@@ -780,10 +780,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 let mut runtime = test::init(None);
                 runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
                 let reader = ConfigReader::init(runtime);
-                match reader
-                    .resolve(config, Some(spec.path.to_string_lossy().to_string()))
-                    .await
-                {
+                match reader.resolve(config, spec.path.parent()).await {
                     Ok(config) => Blueprint::try_from(&config),
                     Err(e) => Err(ValidationError::new(e.to_string())),
                 }
@@ -886,7 +883,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     let server: Vec<ConfigModule> = join_all(
         server
             .into_iter()
-            .map(|config| reader.resolve(config, Some(spec.path.to_string_lossy().to_string()))),
+            .map(|config| reader.resolve(config, spec.path.parent())),
     )
     .await
     .into_iter()
