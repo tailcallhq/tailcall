@@ -15,12 +15,17 @@ use crate::valid::Validator;
 
 #[derive(Clone)]
 pub struct TailcallBuilder {
+    /// Holds a list of file paths
     files: Vec<String>,
+    /// Holds a list of schema information
     schemas: Vec<SchemaHolder>,
 }
+
 #[derive(Clone)]
 struct SchemaHolder {
+    /// Holds a type of schema
     source: Source,
+    /// Holds content of schema
     schema: String,
 }
 
