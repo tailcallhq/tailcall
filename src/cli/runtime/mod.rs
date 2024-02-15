@@ -42,7 +42,8 @@ fn init_http(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn 
 // Provides access to http in native rust environment
 fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     let http_io = http::NativeHttp::init(&upstream.clone().http2_only(true));
-    init_hook_http(http_io, script)
+    // init_hook_http(http_io, script)
+    Arc::new(http_io)
 }
 
 fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {

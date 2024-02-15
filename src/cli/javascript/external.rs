@@ -6,11 +6,12 @@ use super::channel::Message;
 
 pub struct ExternalRuntime {
     url: String,
+    client: reqwest::Client
 }
 
 impl ExternalRuntime {
     pub fn new(url: String) -> Self {
-        Self { url }
+        Self { url, client: reqwest::Client::new() }
     }
 }
 
@@ -19,11 +20,8 @@ impl WorkerIO<Message, Message> for ExternalRuntime {
     async fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
         log::debug!("event: {:?}", event);
 
-        // Create a client
-        let client = reqwest::Client::new();
-
         // Send the POST request
-        let res = client.post(&self.url).json(&event).send().await?;
+        let res = self.client.post(&self.url).json(&event).send().await?;
 
         // Check if the response status is success
         if res.status().is_success() {

@@ -8,7 +8,7 @@ use tailcall::cli::CLIError;
 static GLOBAL: MiMalloc = MiMalloc;
 
 fn run_blocking() -> anyhow::Result<()> {
-    let rt = tokio::runtime::Runtime::new()?;
+    let rt = tokio::runtime::Builder::new_current_thread().build()?;
     rt.block_on(async { tailcall::cli::run().await })
 }
 
