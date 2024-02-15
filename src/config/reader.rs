@@ -69,10 +69,10 @@ impl ConfigReader {
 
     /// Reads the links in a Config and fill the content
     #[async_recursion::async_recursion]
-    async fn ext_links(
+    async fn ext_links<'a: 'async_recursion>(
         &self,
         mut config_module: ConfigModule,
-        parent_dir: &Option<PathBuf>,
+        parent_dir: Option<&'a Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config
@@ -195,10 +195,10 @@ impl ConfigReader {
             let schema = &file.content;
 
             // Create initial config module
-            let mut parent_dir = PathBuf::from(&file.path); // path to config
-            parent_dir.pop(); // parent dir
+            let config_path = PathBuf::from(&file.path); // path to config
+            let parent_dir = config_path.parent();
             let new_config_module = self
-                .resolve(Config::from_source(source, schema)?, Some(parent_dir))
+                .resolve(Config::from_source(source, schema)?, parent_dir)
                 .await?;
 
             // Merge it with the original config set
@@ -212,13 +212,13 @@ impl ConfigReader {
     pub async fn resolve(
         &self,
         config: Config,
-        parent_dir: Option<PathBuf>,
+        parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
         let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_module = self.ext_links(config_module, &parent_dir).await?;
+        let config_module = self.ext_links(config_module, parent_dir).await?;
 
         Ok(config_module)
     }
@@ -262,11 +262,11 @@ impl ConfigReader {
     }
 
     /// Checks if path is absolute else it joins file path with relative dir path
-    fn resolve_path(src: &str, root_dir: &Option<PathBuf>) -> String {
+    fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if Path::new(&src).is_absolute() {
             src.to_string()
         } else {
-            let path = root_dir.clone().unwrap_or_default();
+            let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
     }
@@ -351,7 +351,7 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
-    use std::path::PathBuf;
+    use std::path::Path;
 
     use anyhow::Context;
     use pretty_assertions::assert_eq;
@@ -470,16 +470,16 @@ mod reader_tests {
 
     #[test]
     fn test_relative_path() {
-        let path_dir = PathBuf::from("abc/xyz");
+        let path_dir = Path::new("abc/xyz");
         let file_relative = "foo/bar/my.proto";
         let file_absolute = "/foo/bar/my.proto";
         assert_eq!(
             "abc/xyz/foo/bar/my.proto",
-            ConfigReader::resolve_path(file_relative, &Some(path_dir.clone()))
+            ConfigReader::resolve_path(file_relative, Some(path_dir))
         );
         assert_eq!(
             "/foo/bar/my.proto",
-            ConfigReader::resolve_path(file_absolute, &Some(path_dir))
+            ConfigReader::resolve_path(file_absolute, Some(path_dir))
         );
     }
 }
