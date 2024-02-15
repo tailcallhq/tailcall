@@ -36,8 +36,12 @@ pub async fn create_tailcall_executor(
         return Ok(Err(GraphQLResponse::from(response).into_response()?));
     }
 
-    let tc_builder = TailcallBuilder::init(runtime.clone());
-    let tailcall = match tc_builder.with_config_paths(&[config_url]).build().await {
+    let tc_builder = TailcallBuilder::new();
+    let tailcall = match tc_builder
+        .with_config_files(&[config_url])
+        .build(runtime.clone())
+        .await
+    {
         Ok(tailcall) => tailcall,
         Err(e) => {
             let mut response = async_graphql::Response::default();

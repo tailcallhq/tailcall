@@ -22,7 +22,6 @@ pub struct TailcallBuilder {
 struct SchemaHolder {
     source: Source,
     schema: String,
-    parent: Option<String>,
 }
 
 #[derive(Clone)]
@@ -32,23 +31,20 @@ pub struct TailcallExecutor {
 }
 
 impl TailcallBuilder {
-    pub fn init() -> Self {
+    pub fn new() -> Self {
         Self { files: vec![], schemas: vec![] }
     }
-    pub fn with_config<T: ToString>(
-        mut self,
-        source: Source,
-        schema: T,
-        relative_path: Option<String>,
-    ) -> Self {
-        self.schemas.push(SchemaHolder {
-            source,
-            schema: schema.to_string(),
-            parent: relative_path,
-        });
+
+    /// This function takes content and type of source as input
+    pub fn with_config_source<T: ToString>(mut self, source: Source, schema: T) -> Self {
+        self.schemas
+            .push(SchemaHolder { source, schema: schema.to_string() });
         self
     }
-    pub fn with_config_paths<T: ToString>(mut self, files: &[T]) -> Self {
+
+    /// This function takes an array paths to config files
+    /// The file IO is carried out using runtime passed in build function
+    pub fn with_config_files<T: ToString>(mut self, files: &[T]) -> Self {
         self.files
             .push(files.iter().map(|v| v.to_string()).collect());
         self
@@ -58,7 +54,7 @@ impl TailcallBuilder {
         let mut config_module = reader.read_all(&self.files).await?;
         for holder in self.schemas {
             let config = Config::from_source(holder.source, &holder.schema)?;
-            let new_config_module = reader.resolve(config, holder.parent).await?;
+            let new_config_module = reader.resolve(config, None).await?;
             config_module = config_module.merge_right(&new_config_module);
         }
         let blueprint = Blueprint::try_from(&config_module)?;
@@ -89,12 +85,20 @@ impl TailcallExecutor {
 
         Ok(result_str)
     }
+
+    /// This function executes the request
     pub async fn execute(self, req: Request<Body>) -> Result<Response<Body>> {
         if self.app_ctx.blueprint.server.enable_batch_requests {
             handle_request::<GraphQLBatchRequest>(req, self.app_ctx.clone()).await
         } else {
             handle_request::<GraphQLRequest>(req, self.app_ctx.clone()).await
         }
+    }
+}
+
+impl Default for TailcallBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

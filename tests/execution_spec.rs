@@ -727,15 +727,11 @@ async fn assert_spec(spec: ExecutionSpec) {
         }
         let mut runtime = test::init();
         runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
-        let tailcall_builder = TailcallBuilder::init(runtime);
+        let tailcall_builder = TailcallBuilder::new();
 
         let tailcall_executor = tailcall_builder
-            .with_config(
-                Source::GraphQL,
-                content,
-                Some(spec.path.to_string_lossy().to_string()),
-            )
-            .build()
+            .with_config_source(Source::GraphQL, content)
+            .build(runtime)
             .await
             .map_err(|e| {
                 let err_str = e.to_string();
@@ -833,18 +829,15 @@ async fn assert_spec(spec: ExecutionSpec) {
     // Resolve all configs
     let mut runtime = test::init();
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
-    let tailcall_builder = TailcallBuilder::init(runtime);
+    let tailcall_builder = TailcallBuilder::new();
 
     let server: Vec<Result<TailcallExecutor, ValidationError<String>>> =
         join_all(server.into_iter().map(|config| {
+            let runtime = runtime.clone();
             tailcall_builder
                 .clone()
-                .with_config(
-                    Source::GraphQL,
-                    config.to_sdl(),
-                    Some(spec.path.to_string_lossy().to_string()),
-                )
-                .build()
+                .with_config_source(Source::GraphQL, config.to_sdl())
+                .build(runtime)
         }))
         .await
         .into_iter()

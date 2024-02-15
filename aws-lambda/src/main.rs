@@ -17,9 +17,9 @@ async fn main() -> Result<(), Error> {
         .init();
 
     let runtime = init_runtime();
-    let tailcall_executor = TailcallBuilder::init(runtime)
-        .with_config_paths(&["./config.graphql"])
-        .build()
+    let tailcall_executor = TailcallBuilder::new()
+        .with_config_files(&["./config.graphql"])
+        .build(runtime)
         .await?;
     run(service_fn(|event| async {
         let resp = tailcall_executor

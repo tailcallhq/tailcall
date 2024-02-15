@@ -23,12 +23,12 @@ pub async fn run() -> Result<()> {
     logger_init();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Upstream::default(), None);
-    let tailcall_builder = TailcallBuilder::init(runtime.clone());
+    let tailcall_builder = TailcallBuilder::new();
     match cli.command {
         Command::Start { file_paths } => {
             let tailcall_executor = tailcall_builder
-                .with_config_paths(&file_paths)
-                .build()
+                .with_config_files(&file_paths)
+                .build(runtime.clone())
                 .await?;
 
             log::info!(
@@ -57,8 +57,8 @@ pub async fn run() -> Result<()> {
                 .collect::<Result<Vec<_>>>()?;
 
             let tailcall_executor = tailcall_builder
-                .with_config_paths(&file_paths)
-                .build()
+                .with_config_files(&file_paths)
+                .build(runtime.clone())
                 .await?;
             let result = tailcall_executor
                 .validate(n_plus_one_queries, schema, ops)
@@ -73,8 +73,8 @@ pub async fn run() -> Result<()> {
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Compose { file_paths, format } => {
             let executor = tailcall_builder
-                .with_config_paths(&file_paths)
-                .build()
+                .with_config_files(&file_paths)
+                .build(runtime.clone())
                 .await?;
             let encoded = format.encode(&executor.config_module)?;
             display(encoded);
