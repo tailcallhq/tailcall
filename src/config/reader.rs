@@ -1,8 +1,8 @@
 use std::collections::{HashMap, VecDeque};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::Context;
-use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -72,7 +72,7 @@ impl ConfigReader {
     async fn ext_links(
         &self,
         mut config_module: ConfigModule,
-        path: Option<String>,
+        path: Option<PathBuf>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config
@@ -105,9 +105,11 @@ impl ConfigReader {
                     config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
+                        let mut parent_dir = PathBuf::from(&source.path); // path to file
+                        parent_dir.pop(); // parent dir
                         config_module = config_module.merge_right(
                             &self
-                                .ext_links(ConfigModule::from(config), Some(source.path))
+                                .ext_links(ConfigModule::from(config), Some(parent_dir))
                                 .await?,
                         );
                     }
@@ -195,11 +197,10 @@ impl ConfigReader {
             let schema = &file.content;
 
             // Create initial config module
+            let mut parent_dir = PathBuf::from(&file.path); // path to config
+            parent_dir.pop(); // parent dir
             let new_config_module = self
-                .resolve(
-                    Config::from_source(source, schema)?,
-                    Some(file.path.clone()),
-                )
+                .resolve(Config::from_source(source, schema)?, Some(parent_dir))
                 .await?;
 
             // Merge it with the original config set
@@ -213,7 +214,7 @@ impl ConfigReader {
     pub async fn resolve(
         &self,
         config: Config,
-        path: Option<String>,
+        path: Option<PathBuf>,
     ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
         let config_module = ConfigModule::from(config);
@@ -263,12 +264,13 @@ impl ConfigReader {
     }
 
     /// Checks if path is absolute else it joins file path with relative dir path
-    fn resolve_path(src: &str, root_dir: &Option<String>) -> String {
+    fn resolve_path(src: &str, root_dir: &Option<PathBuf>) -> String {
+        println!("{}", src);
+        println!("{:?}", root_dir);
         if Path::new(&src).is_absolute() {
             src.to_string()
         } else {
             let path = root_dir.clone().unwrap_or_default();
-            let path = PathBuf::from(path);
             path.join(src).to_string_lossy().to_string()
         }
     }
@@ -353,6 +355,8 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
+    use std::path::PathBuf;
+
     use anyhow::Context;
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
@@ -448,14 +452,10 @@ mod reader_tests {
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);
+        let x = format!("{}/examples/jsonplaceholder_script.graphql", cargo_manifest);
+        println!("{}", x);
 
-        let config = reader
-            .read(&format!(
-                "{}/examples/jsonplaceholder_script.graphql",
-                cargo_manifest
-            ))
-            .await
-            .unwrap();
+        let config = reader.read(&x).await.unwrap();
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
         let content = String::from_utf8(
@@ -470,7 +470,7 @@ mod reader_tests {
 
     #[test]
     fn test_relative_path() {
-        let path_dir = "abc/xyz".to_string();
+        let path_dir = PathBuf::from("abc/xyz");
         let file_relative = "foo/bar/my.proto";
         let file_absolute = "/foo/bar/my.proto";
         assert_eq!(

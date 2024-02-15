@@ -286,7 +286,7 @@ async fn main() {
                         }
                         http::ConfigSource::Inline(config) => {
                             let config = reader
-                                .resolve(config.to_owned(), Some(file_stem.clone()))
+                                .resolve(config.to_owned(), Some(PathBuf::from(&file_stem)))
                                 .await
                                 .expect("Failed to resolve config");
                             generate_client_snapshot(&file_stem, &config).await;
