@@ -107,7 +107,10 @@ impl ConfigReader {
                     if !config.links.is_empty() {
                         config_module = config_module.merge_right(
                             &self
-                                .ext_links(ConfigModule::from(config), parent_dir)
+                                .ext_links(
+                                    ConfigModule::from(config),
+                                    Path::new(&config_link.src).parent(),
+                                )
                                 .await?,
                         );
                     }
