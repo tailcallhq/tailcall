@@ -72,7 +72,7 @@ impl ConfigReader {
     async fn ext_links(
         &self,
         mut config_module: ConfigModule,
-        path: Option<PathBuf>,
+        parent_dir: Option<PathBuf>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config
@@ -92,7 +92,7 @@ impl ConfigReader {
         }
 
         for config_link in links.iter() {
-            let path = Self::resolve_path(&config_link.src, &path);
+            let path = Self::resolve_path(&config_link.src, &parent_dir);
 
             let source = self.read_file(&path).await?;
 
@@ -214,13 +214,13 @@ impl ConfigReader {
     pub async fn resolve(
         &self,
         config: Config,
-        path: Option<PathBuf>,
+        parent_dir: Option<PathBuf>,
     ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
         let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_module = self.ext_links(config_module, path).await?;
+        let config_module = self.ext_links(config_module, parent_dir).await?;
 
         Ok(config_module)
     }
@@ -265,8 +265,6 @@ impl ConfigReader {
 
     /// Checks if path is absolute else it joins file path with relative dir path
     fn resolve_path(src: &str, root_dir: &Option<PathBuf>) -> String {
-        println!("{}", src);
-        println!("{:?}", root_dir);
         if Path::new(&src).is_absolute() {
             src.to_string()
         } else {
@@ -452,10 +450,14 @@ mod reader_tests {
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);
-        let x = format!("{}/examples/jsonplaceholder_script.graphql", cargo_manifest);
-        println!("{}", x);
 
-        let config = reader.read(&x).await.unwrap();
+        let config = reader
+            .read(&format!(
+                "{}/examples/jsonplaceholder_script.graphql",
+                cargo_manifest
+            ))
+            .await
+            .unwrap();
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
         let content = String::from_utf8(
