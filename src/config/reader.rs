@@ -1,5 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -195,10 +195,11 @@ impl ConfigReader {
             let schema = &file.content;
 
             // Create initial config module
-            let config_path = PathBuf::from(&file.path); // path to config
-            let parent_dir = config_path.parent();
             let new_config_module = self
-                .resolve(Config::from_source(source, schema)?, parent_dir)
+                .resolve(
+                    Config::from_source(source, schema)?,
+                    Path::new(&file.path).parent(),
+                )
                 .await?;
 
             // Merge it with the original config set
