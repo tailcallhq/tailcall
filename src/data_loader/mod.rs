@@ -1,5 +1,4 @@
-#[allow(dead_code)]
-mod cache; // TODO needed for future implementations
+mod cache;
 mod data_loader;
 mod factory;
 mod loader;

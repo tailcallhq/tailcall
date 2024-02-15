@@ -69,7 +69,7 @@ impl<S: Send + Sync + BuildHasher + Default + 'static> HashMapCache<S> {
 
 impl Default for HashMapCache<RandomState> {
     fn default() -> Self {
-        Self { _mark: PhantomData }
+        Self::new()
     }
 }
 
@@ -124,13 +124,6 @@ where
 /// LRU cache.
 pub struct LruCache {
     cap: usize,
-}
-
-impl LruCache {
-    /// Creates a new LRU Cache that holds at most `cap` items.
-    pub fn new(cap: usize) -> Self {
-        Self { cap }
-    }
 }
 
 impl<K, V> CacheFactory<K, V> for LruCache
