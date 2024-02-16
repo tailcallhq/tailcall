@@ -733,7 +733,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             .with_config_source(
                 Source::GraphQL,
                 content,
-                Some(spec.path.to_string_lossy().to_string()),
+                spec.path.parent(),
             )
             .build(runtime)
             .await
@@ -843,7 +843,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                 .with_config_source(
                     Source::GraphQL,
                     config.to_sdl(),
-                    Some(spec.path.to_string_lossy().to_string()),
+                    spec.path.parent(),
                 )
                 .build(runtime)
         }))
@@ -877,7 +877,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                     .clone()
                     .unwrap_or_else(|| HashMap::with_capacity(0)),
                 assertion,
-                server.first().cloned().unwrap(),
+                server.first().unwrap(),
             )
             .await
             .context(spec.path.to_str().unwrap().to_string())

@@ -301,7 +301,7 @@ async fn main() {
                                 .with_config_source(
                                     Source::GraphQL,
                                     &config.to_sdl(),
-                                    Some(file_stem.clone()),
+                                    Some(Path::new(&file_stem)),
                                 )
                                 .build(runtime.clone())
                                 .await
