@@ -2,7 +2,8 @@ use tailcall::{blueprint, EnvIO, FileIO, HttpIO};
 
 #[cfg(test)]
 pub mod test {
-    use std::{borrow::Cow, collections::HashMap};
+    use std::borrow::Cow;
+    use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
 

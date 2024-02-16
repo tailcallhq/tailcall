@@ -82,7 +82,7 @@ impl HttpIO for Http {
 struct Env {}
 
 impl EnvIO for Env {
-    fn get(&self, _: &str) -> Option<String> {
+    fn get(&self, _: &str) -> Option<Cow<'_, str>> {
         unimplemented!("Not needed for this bench")
     }
 }
@@ -234,7 +234,7 @@ fn request_context() -> RequestContext {
     let config_module = tailcall::config::ConfigModule::default();
 
     let tailcall::config::Config { upstream, .. } = config_module.config.clone();
-      let server = Server::try_from(config_module).unwrap();
+    let server = Server::try_from(config_module).unwrap();
     let upstream = Upstream::try_from(upstream).unwrap();
     let http = Arc::new(Http::init(&upstream));
     let http2 = Arc::new(Http::init(&upstream.clone().http2_only(true)));
@@ -257,11 +257,11 @@ fn request_context() -> RequestContext {
         cache_public: Arc::new(Mutex::new(None)),
         runtime,
         auth_ctx: AuthContext::default(),
-  }
+    }
 }
 
 fn bench_main(c: &mut Criterion) {
-  let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
+    let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
 
     req_ctx.server.vars = TEST_VARS.clone();
     let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);

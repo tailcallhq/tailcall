@@ -22,7 +22,8 @@
         "test-expr-success.graphql",
         "test-expr-success.md",
         "omit-many.graphql",
-        "omit-many.md"
+        "omit-many.md",
+        "auth.md"
       ],
       "options": {
         "printWidth": 210

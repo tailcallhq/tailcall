@@ -2,10 +2,10 @@ use std::collections::BTreeSet;
 
 use regex::Regex;
 
-use crate::{blueprint::Type::ListType, config::Protected};
+use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Config, Field, GraphQLOperationType, Union};
+use crate::config::{Config, Field, GraphQLOperationType, Protected, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
@@ -398,9 +398,9 @@ fn to_fields(
             .and(update_cache_resolvers())
             .and(update_protected().trace(Protected::trace_name().as_str()))
             .try_fold(
-                        &(config_module, field, type_of, name),
-                        FieldDefinition::default(),
-                    )
+                &(config_module, field, type_of, name),
+                FieldDefinition::default(),
+            )
     };
 
     // Process fields that are not marked as `omit`

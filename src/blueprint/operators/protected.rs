@@ -1,13 +1,12 @@
+use crate::blueprint::FieldDefinition;
 use crate::config::{self, ConfigModule, Field};
+use crate::lambda::{Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
-use crate::{
-    blueprint::FieldDefinition,
-    lambda::{Context, Expression},
-};
 
 pub fn update_protected<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected || type_.protected {

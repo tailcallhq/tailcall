@@ -115,12 +115,12 @@ impl Eval for Expression {
                     expr.eval(ctx, conc).await
                 }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,
-                        Expression::Cache(cached) => cached.eval(ctx, conc).await,
-                        Expression::Relation(relation) => relation.eval(ctx, conc).await,
-                        Expression::Logic(logic) => logic.eval(ctx, conc).await,
-                        Expression::List(list) => list.eval(ctx, conc).await,
-                        Expression::Math(math) => math.eval(ctx, conc).await,
-                    }
-                })
+                Expression::Cache(cached) => cached.eval(ctx, conc).await,
+                Expression::Relation(relation) => relation.eval(ctx, conc).await,
+                Expression::Logic(logic) => logic.eval(ctx, conc).await,
+                Expression::List(list) => list.eval(ctx, conc).await,
+                Expression::Math(math) => math.eval(ctx, conc).await,
+            }
+        })
     }
 }

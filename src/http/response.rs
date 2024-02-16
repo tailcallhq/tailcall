@@ -28,7 +28,6 @@ impl Response<Bytes> {
         }
     }
 
-
     pub fn to_json<T: DeserializeOwned>(self) -> Result<Response<T>> {
         let body = serde_json::from_slice::<T>(&self.body)?;
         Ok(Response { status: self.status, headers: self.headers, body })

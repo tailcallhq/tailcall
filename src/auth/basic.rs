@@ -64,7 +64,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
     #[tokio::test]
     async fn verify_passwords() -> Result<()> {
-      let init_context = crate::init_context::test::test_value();
+        let init_context = crate::init_context::test::test_value();
         let provider = BasicVerifier::try_new(
             blueprint::BasicProvider { htpasswd: Mustache::parse(HTPASSWD_TEST)? },
             &init_context,

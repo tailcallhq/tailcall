@@ -1,4 +1,5 @@
-use std::{borrow::Cow, sync::Arc};
+use std::borrow::Cow;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use tailcall::cache::InMemoryCache;

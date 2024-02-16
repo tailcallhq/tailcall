@@ -218,6 +218,11 @@ directive @server(
   """
   apolloTracing: Boolean
   """
+  `auth` specified list of auth providers that could be used to verify access to protected 
+  fields (that marked with @protected)
+  """
+  auth: Auth
+  """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
@@ -380,6 +385,7 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
+#/definitions/AuthEntry
 input Batch {
   delay: Int!
   headers: [String!]

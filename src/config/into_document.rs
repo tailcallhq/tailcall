@@ -253,7 +253,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
         } else {
             None
         },
-  ];
+    ];
 
     directives.into_iter().flatten().collect()
 }

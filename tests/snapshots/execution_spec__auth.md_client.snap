@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+type Query {
+  data: String
+}
+
+schema {
+  query: Query
+}

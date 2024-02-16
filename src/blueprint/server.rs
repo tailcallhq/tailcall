@@ -128,7 +128,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 pipeline_flush: (config_server).get_pipeline_flush(),
                 response_headers,
                 script,
-                auth
+                auth,
             })
             .to_result()
     }

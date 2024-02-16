@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -30,7 +31,7 @@ impl HttpIO for MockHttpClient {
 struct Env {}
 #[async_trait]
 impl EnvIO for Env {
-    fn get(&self, _: &str) -> Option<String> {
+    fn get(&self, _: &str) -> Option<Cow<'_, str>> {
         unimplemented!("Not needed for this bench")
     }
 }

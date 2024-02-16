@@ -1,12 +1,10 @@
 extern crate core;
 
+use std::borrow::Cow;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::{Arc, Once};
-use std::{
-    borrow::Cow,
-    collections::{BTreeMap, HashMap},
-};
 use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
@@ -34,9 +32,10 @@ use url::Url;
 
 #[cfg(test)]
 pub mod test {
+    use std::borrow::Cow;
+    use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
-    use std::{borrow::Cow, collections::HashMap};
 
     use anyhow::{anyhow, Result};
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};

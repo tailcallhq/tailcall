@@ -304,8 +304,8 @@ mod tests {
                 result,
                 Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())])
             );
-            }
         }
+    }
     mod render {
         use std::borrow::Cow;
 

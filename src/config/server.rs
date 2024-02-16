@@ -15,6 +15,10 @@ pub struct Server {
     pub apollo_tracing: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    /// `auth` specified list of auth providers that could be used to verify access to protected fields (that marked with @protected)
+    pub auth: Auth,
+
+    #[serde(default, skip_serializing_if = "is_default")]
     /// `batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.
     pub batch_requests: Option<bool>,
 
@@ -77,9 +81,6 @@ pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
     /// `workers` sets the number of worker threads. @default the number of system cores.
     pub workers: Option<usize>,
-    /// `auth` specified list of auth providers that could be used to verify access to protected fields (that marked with @protected)
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub auth: Auth,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

@@ -112,36 +112,37 @@
       }
     },
     "Auth": {
+      "type": "array",
       "items": {
         "$ref": "#/definitions/AuthEntry"
-      },
-      "type": "array"
+      }
     },
     "AuthEntry": {
+      "type": "object",
       "oneOf": [
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "jwt"
+          ],
           "properties": {
             "jwt": {
               "$ref": "#/definitions/Jwt"
             }
           },
-          "required": [
-            "jwt"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "basic"
+          ],
           "properties": {
             "basic": {
               "$ref": "#/definitions/Basic"
             }
           },
-          "required": [
-            "basic"
-          ],
-          "type": "object"
+          "additionalProperties": false
         }
       ],
       "properties": {
@@ -151,22 +152,21 @@
             "null"
           ]
         }
-      },
-      "type": "object"
+      }
     },
     "Basic": {
       "oneOf": [
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "htpasswd"
+          ],
           "properties": {
             "htpasswd": {
               "type": "string"
             }
           },
-          "required": [
-            "htpasswd"
-          ],
-          "type": "object"
+          "additionalProperties": false
         }
       ]
     },
@@ -1079,6 +1079,7 @@
           ]
         },
         "protected": {
+          "description": "Marks field as protected by auth provider",
           "default": false,
           "type": "boolean"
         },
@@ -1297,52 +1298,56 @@
     "Jwks": {
       "oneOf": [
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "data"
+          ],
           "properties": {
             "data": {
               "type": "string"
             }
           },
-          "required": [
-            "data"
-          ],
-          "type": "object"
+          "additionalProperties": false
         },
         {
-          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "remote"
+          ],
           "properties": {
             "remote": {
+              "type": "object",
+              "required": [
+                "url"
+              ],
               "properties": {
                 "maxAge": {
                   "default": 300000,
+                  "type": "integer",
                   "format": "uint64",
-                  "minimum": 1.0,
-                  "type": "integer"
+                  "minimum": 1.0
                 },
                 "url": {
                   "type": "string"
                 }
-              },
-              "required": [
-                "url"
-              ],
-              "type": "object"
+              }
             }
           },
-          "required": [
-            "remote"
-          ],
-          "type": "object"
+          "additionalProperties": false
         }
       ]
     },
     "Jwt": {
+      "type": "object",
+      "required": [
+        "jwks"
+      ],
       "properties": {
         "audiences": {
+          "type": "array",
           "items": {
             "type": "string"
           },
-          "type": "array",
           "uniqueItems": true
         },
         "issuer": {
@@ -1357,11 +1362,7 @@
         "optionalKid": {
           "type": "boolean"
         }
-      },
-      "required": [
-        "jwks"
-      ],
-      "type": "object"
+      }
     },
     "KeyValues": {
       "type": "object",
@@ -1494,7 +1495,12 @@
           ]
         },
         "auth": {
-          "$ref": "#/definitions/Auth"
+          "description": "`auth` specified list of auth providers that could be used to verify access to protected fields (that marked with @protected)",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Auth"
+            }
+          ]
         },
         "batchRequests": {
           "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.",
@@ -1689,6 +1695,7 @@
           "type": "boolean"
         },
         "protected": {
+          "description": "Marks field as protected by auth providers",
           "default": false,
           "type": "boolean"
         },

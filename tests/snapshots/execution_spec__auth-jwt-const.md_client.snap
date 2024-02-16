@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Nested {
+  name: String!
+  protected: String!
+}
+
+type ProtectedType {
+  name: String!
+  nested: String!
+}
+
+type Query {
+  nested: Nested!
+  protectedScalar: String!
+  protectedType: ProtectedType
+  scalar: String!
+}
+
+schema {
+  query: Query
+}

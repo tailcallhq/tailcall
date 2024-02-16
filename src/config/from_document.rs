@@ -10,8 +10,8 @@ use async_graphql::Name;
 
 use super::JS;
 use crate::config::{
-    self, Cache, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema, Server, Union,
-    Upstream,
+    self, Cache, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema, Server,
+    Union, Upstream,
 };
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, Validator};
@@ -200,20 +200,20 @@ where
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
         .map(|(cache, fields, protected)| {
-                let doc = description.to_owned().map(|pos| pos.node);
-                let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-                let added_fields = to_add_fields_from_directives(directives);
-                config::Type {
-                    fields,
-                    added_fields,
-                    doc,
-                    interface,
-                    implements,
-                    cache,
-                    protected: protected.is_some(),
-                    ..Default::default()
-                }
-            })
+            let doc = description.to_owned().map(|pos| pos.node);
+            let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
+            let added_fields = to_add_fields_from_directives(directives);
+            config::Type {
+                fields,
+                added_fields,
+                doc,
+                interface,
+                implements,
+                cache,
+                protected: protected.is_some(),
+                ..Default::default()
+            }
+        })
 }
 fn to_enum(enum_type: EnumType) -> config::Type {
     let variants = enum_type
@@ -284,27 +284,29 @@ where
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(JS::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(http, graphql, cache, grpc, expr, omit, modify, script, protected)| {
-            let const_field = to_const_field(directives);
-            config::Field {
-                type_of,
-                list,
-                required: !nullable,
-                list_type_required,
-                args,
-                doc,
-                modify,
-                omit,
-                http,
-                grpc,
-                script,
-                const_field,
-                graphql,
-                expr,
-                cache,
-                protected: protected.is_some()
-            }
-        })
+        .map(
+            |(http, graphql, cache, grpc, expr, omit, modify, script, protected)| {
+                let const_field = to_const_field(directives);
+                config::Field {
+                    type_of,
+                    list,
+                    required: !nullable,
+                    list_type_required,
+                    args,
+                    doc,
+                    modify,
+                    omit,
+                    http,
+                    grpc,
+                    script,
+                    const_field,
+                    graphql,
+                    expr,
+                    cache,
+                    protected: protected.is_some(),
+                }
+            },
+        )
 }
 
 fn to_type_of(type_: &Type) -> String {

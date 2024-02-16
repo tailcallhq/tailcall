@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
+use crate::config;
 use crate::directive::DirectiveCodec;
 use crate::mustache::Mustache;
-use crate::valid::{Valid, ValidationError};
-use crate::{config, valid::Validator};
+use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(Debug, Clone)]
 pub struct BasicProvider {

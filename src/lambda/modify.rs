@@ -204,9 +204,7 @@ impl Expression {
                             Expression::Math(super::Math::Sum(Self::modify_vec(exprs, modifier)))
                         }
                     },
-                    Expression::Protected(expr) => {
-                        Expression::Protected(expr.modify_box(modifier))
-                    }
+                    Expression::Protected(expr) => Expression::Protected(expr.modify_box(modifier)),
                 }
             }
         }

@@ -2,7 +2,8 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use crate::blueprint;
-use crate::{path::PathString, runtime::TargetRuntime};
+use crate::path::PathString;
+use crate::runtime::TargetRuntime;
 
 pub struct InitContext {
     pub vars: BTreeMap<String, String>,

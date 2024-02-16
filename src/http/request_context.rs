@@ -121,7 +121,7 @@ mod test {
     use hyper::HeaderMap;
 
     use crate::auth::context::AuthContext;
-  use crate::blueprint::{Server, Upstream};
+    use crate::blueprint::{Server, Upstream};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
 
@@ -144,7 +144,7 @@ mod test {
                 min_max_age: Arc::new(Mutex::new(None)),
                 cache_public: Arc::new(Mutex::new(None)),
                 auth_ctx: AuthContext::default(),
-      }
+            }
         }
     }
 
