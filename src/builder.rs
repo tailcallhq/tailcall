@@ -1,3 +1,4 @@
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -28,7 +29,7 @@ struct SchemaHolder {
     /// Holds content of schema
     schema: String,
     /// Holds path to parent dir for content in @link
-    parent_dir: Option<String>,
+    parent_dir: Option<dyn AsRef<Path>>,
 }
 
 #[derive(Clone)]
@@ -43,11 +44,11 @@ impl TailcallBuilder {
     }
 
     /// This function takes content and type of source as input
-    pub fn with_config_source<T: ToString>(
+    pub fn with_config_source<T: ToString, P: AsRef<Path>>(
         mut self,
         source: Source,
         schema: T,
-        parent_dir: Option<String>,
+        parent_dir: Option<P>,
     ) -> Self {
         self.schemas
             .push(SchemaHolder { source, schema: schema.to_string(), parent_dir });
@@ -118,6 +119,7 @@ fn display_config(config: &Config, n_plus_one_queries: bool) -> String {
     let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
     Fmt::table(seq)
 }
+
 pub fn display_schema(blueprint: &Blueprint) -> String {
     let p1 = Fmt::heading(&"GraphQL Schema:\n".to_string());
     let sdl = blueprint.to_schema();
