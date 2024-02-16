@@ -1,0 +1,21 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "cache-control": "no-cache, private",
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "u3": {
+        "id": 3
+      },
+      "u4": {
+        "id": 4
+      }
+    }
+  }
+}

@@ -8,16 +8,30 @@
     {
       "files": [
         "add-field-many-list.graphql",
+        "add-field-many-list.md",
         "add-field-many.graphql",
+        "add-field-many.md",
         "inline-many.graphql",
+        "inline-many.md",
         "inline-many-list.graphql",
+        "inline-many-list.md",
         "test-grpc.graphql",
+        "test-add-link-to-empty-config.graphql",
+        "test-add-link-to-empty-config.md",
+        "test-grpc.md",
         "test-expr-success.graphql",
+        "test-expr-success.md",
         "omit-many.graphql",
-        "tests/graphql/auth.graphql"
+        "omit-many.md"
       ],
       "options": {
-        "printWidth": 200
+        "printWidth": 210
+      }
+    },
+    {
+      "files": ["devcontainer.json"],
+      "options": {
+        "trailingComma": "none"
       }
     }
   ]

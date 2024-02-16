@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Cannot add field",
+    "trace": [
+      "Query",
+      "@addField"
+    ],
+    "description": "Path: [post, user, name] contains resolver const at [Post.user]"
+  }
+]

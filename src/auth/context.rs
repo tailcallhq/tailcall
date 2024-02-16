@@ -8,7 +8,6 @@ use super::verify::{AuthVerifier, Verify};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
 use crate::init_context::InitContext;
-use crate::{EnvIO, HttpIO};
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
@@ -46,7 +45,7 @@ impl GlobalAuthContext {
 }
 
 impl GlobalAuthContext {
-  pub fn try_new<Http: HttpIO, Env: EnvIO>(auth: Auth, init_context: &InitContext<Http, Env>) -> Result<Self> {
+  pub fn try_new(auth: Auth, init_context: &InitContext) -> Result<Self> {
     let providers = auth
       .0
       .into_iter()
@@ -85,35 +84,11 @@ mod tests {
   use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
   use crate::auth::jwt::jwt_verify::JwtVerifier;
   use crate::blueprint;
-  use crate::http::Response;
   use crate::mustache::Mustache;
-
-  struct MockHttpClient;
-
-  #[async_trait::async_trait]
-  impl HttpIO for MockHttpClient {
-    async fn execute(&self, _request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
-      todo!()
-    }
-  }
-
-  struct MockEnv;
-
-  impl EnvIO for MockEnv {
-    fn get(&self, _key: &str) -> Option<std::borrow::Cow<'_, str>> {
-      todo!()
-    }
-  }
-
-  impl InitContext<MockHttpClient, MockEnv> {
-    fn test_value() -> Self {
-      InitContext { vars: Default::default(), env: Arc::new(MockEnv), http_client: Arc::new(MockHttpClient) }
-    }
-  }
 
   #[tokio::test]
   async fn validate_request() -> Result<()> {
-    let init_context = InitContext::test_value();
+    let init_context = crate::init_context::test::test_value();
     let basic_provider = BasicVerifier::try_new(
       blueprint::BasicProvider { htpasswd: Mustache::parse(HTPASSWD_TEST)? },
       &init_context,

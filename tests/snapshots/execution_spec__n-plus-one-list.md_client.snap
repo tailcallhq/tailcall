@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Bar {
+  foo: [Foo]
+  fooId: Int!
+  id: Int!
+}
+
+type Foo {
+  bar: Bar
+  id: Int!
+  name: String!
+}
+
+type Query {
+  bars: [Bar]
+  foos: [Foo]
+}
+
+schema {
+  query: Query
+}

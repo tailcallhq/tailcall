@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+type InPost {
+  get: [Post]
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+}
+
+type Query {
+  posts: InPost
+}
+
+schema {
+  query: Query
+}

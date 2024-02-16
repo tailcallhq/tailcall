@@ -6,16 +6,16 @@ FILE_TYPES="{graphql,yml,json,md,ts,js}"
 run_cargo_fmt() {
     MODE=$1
     if [ "$MODE" == "check" ]; then
-        cargo +nightly fmt -- --check
+        cargo fmt --all -- --check
     else
-        cargo +nightly fmt
+        cargo fmt --all
     fi
     return $?
 }
 
 run_cargo_clippy() {
     MODE=$1
-    CMD="cargo +nightly clippy --all-targets --all-features"
+    CMD="cargo clippy --all --all-targets --all-features"
     if [ "$MODE" == "fix" ]; then
         $CMD --fix --allow-staged --allow-dirty
     fi
@@ -40,6 +40,13 @@ run_autogen_schema() {
     return $?
 }
 
+run_testconv() {
+    MODE=$1
+    if [ "$MODE" == "fix" ]; then
+        cargo run -p testconv
+    fi
+}
+
 # Extract the mode from the argument
 if [[ $1 == "--mode="* ]]; then
     MODE=${1#--mode=}
@@ -53,10 +60,18 @@ case $MODE in
     check|fix)
         run_autogen_schema $MODE
         AUTOGEN_SCHEMA_EXIT_CODE=$?
+
+        # Commands that uses nightly toolchains are run from `.nightly` directory
+        # to read the nightly version from `rust-toolchain.toml` file
+        pushd .nightly
         run_cargo_fmt $MODE
         FMT_EXIT_CODE=$?
         run_cargo_clippy $MODE
         CLIPPY_EXIT_CODE=$?
+        popd
+
+        run_testconv $MODE
+        TESTCONV_EXIT_CODE=$?
         run_prettier $MODE
         PRETTIER_EXIT_CODE=$?
         ;;
@@ -67,6 +82,6 @@ case $MODE in
 esac
 
 # If any command failed, exit with a non-zero status code
-if [ $FMT_EXIT_CODE -ne 0 ] || [ $CLIPPY_EXIT_CODE -ne 0 ] || [ $PRETTIER_EXIT_CODE -ne 0 ] || [ $AUTOGEN_SCHEMA_EXIT_CODE -ne 0 ]; then
+if [ $FMT_EXIT_CODE -ne 0 ] || [ $CLIPPY_EXIT_CODE -ne 0 ] || [ $PRETTIER_EXIT_CODE -ne 0 ] || [ $AUTOGEN_SCHEMA_EXIT_CODE -ne 0 ] || [ $TESTCONV_EXIT_CODE -ne 0 ]; then
     exit 1
 fi

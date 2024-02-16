@@ -1,0 +1,40 @@
+name: autofix.ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled]
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Run Formatter and Lint Check
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    env:
+      LINT_MODE: "${{ contains(github.event.pull_request.labels.*.name, 'ci: lint') && 'fix' || 'check' }}"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+      - name: Install Prettier
+        run: npm install --global prettier
+      - name: Install Stable Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Run Lint Script
+        run: ./lint.sh --mode=$LINT_MODE
+      - name: Commit and push if changed
+        if: env.LINT_MODE == 'fix'
+        uses: autofix-ci/action@ea32e3a12414e6d3183163c3424a7d7a8631ad84

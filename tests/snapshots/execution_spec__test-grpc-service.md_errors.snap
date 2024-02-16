@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Couldn't find definitions for service news.YourServiceName",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc"
+    ],
+    "description": null
+  }
+]

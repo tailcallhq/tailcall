@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Invalid method format: abc.NewsService. Expected format is <package/proto_id>.<service>.<method>",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc"
+    ],
+    "description": null
+  }
+]

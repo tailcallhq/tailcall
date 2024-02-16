@@ -1,0 +1,29 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type A {
+  b: B
+  bid: Int!
+  c: C
+  cid: Int!
+  id: Int!
+}
+
+type B {
+  id: Int!
+  y: String!
+}
+
+type C {
+  id: Int!
+  x: String!
+}
+
+type Query {
+  a: [A]
+}
+
+schema {
+  query: Query
+}

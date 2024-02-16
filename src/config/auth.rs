@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
 
-use super::is_default;
+use crate::is_default;
 
 mod default {
   pub mod jwt {

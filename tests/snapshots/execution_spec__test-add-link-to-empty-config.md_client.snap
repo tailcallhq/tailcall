@@ -1,0 +1,17 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo
+  hello: String
+}
+
+schema {
+  query: Query
+}

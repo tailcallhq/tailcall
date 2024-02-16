@@ -1,0 +1,25 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Address {
+  geo: Geo
+  street: String
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query @addField(name: "lat", path: ["user", "address", "geo", "lat"]) @addField(name: "lng", path: ["user", "address", "geo", "lng"]) {
+  user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+}
+
+type User {
+  address: Address
+}
