@@ -730,11 +730,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         let tailcall_builder = TailcallBuilder::new();
 
         let tailcall_executor = tailcall_builder
-            .with_config_source(
-                Source::GraphQL,
-                content,
-                spec.path.parent(),
-            )
+            .with_config_source(Source::GraphQL, content, spec.path.parent())
             .build(runtime)
             .await
             .map_err(|e| {
@@ -840,11 +836,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             let runtime = runtime.clone();
             tailcall_builder
                 .clone()
-                .with_config_source(
-                    Source::GraphQL,
-                    config.to_sdl(),
-                    spec.path.parent(),
-                )
+                .with_config_source(Source::GraphQL, config.to_sdl(), spec.path.parent())
                 .build(runtime)
         }))
         .await
@@ -877,7 +869,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                     .clone()
                     .unwrap_or_else(|| HashMap::with_capacity(0)),
                 assertion,
-                server.first().unwrap(),
+                server.first().unwrap().clone(),
             )
             .await
             .context(spec.path.to_str().unwrap().to_string())

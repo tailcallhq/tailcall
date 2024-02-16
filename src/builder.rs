@@ -29,7 +29,7 @@ struct SchemaHolder {
     /// Holds content of schema
     schema: String,
     /// Holds path to parent dir for content in @link
-    parent_dir: Option<dyn AsRef<Path>>,
+    parent_dir: Option<PathBuf>,
 }
 
 #[derive(Clone)]
@@ -50,6 +50,7 @@ impl TailcallBuilder {
         schema: T,
         parent_dir: Option<P>,
     ) -> Self {
+        let parent_dir = parent_dir.map(|p| p.as_ref().into());
         self.schemas
             .push(SchemaHolder { source, schema: schema.to_string(), parent_dir });
         self
@@ -67,7 +68,7 @@ impl TailcallBuilder {
         let mut config_module = reader.read_all(&self.files).await?;
         for holder in self.schemas {
             let config = Config::from_source(holder.source, &holder.schema)?;
-            let new_config_module = reader.resolve(config, holder.parent_dir).await?;
+            let new_config_module = reader.resolve(config, holder.parent_dir.as_deref()).await?;
             config_module = config_module.merge_right(&new_config_module);
         }
         let blueprint = Blueprint::try_from(&config_module)?;

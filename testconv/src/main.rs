@@ -62,7 +62,7 @@ async fn generate_client_snapshot(file_stem: &str, tailcall_executor: &TailcallE
 
 async fn generate_client_snapshot_sdl(file_stem: &str, sdl: &str, runtime: TargetRuntime) {
     let tailcall_executor = TailcallBuilder::new()
-        .with_config_source(Source::GraphQL, sdl, None)
+        .with_config_source(Source::GraphQL, sdl, None::<PathBuf>)
         .build(runtime)
         .await
         .unwrap();
@@ -92,7 +92,7 @@ async fn generate_merged_snapshot(file_stem: &str, config: &TailcallExecutor) {
 
 async fn generate_merged_snapshot_sdl(file_stem: &str, sdl: &str, target_runtime: TargetRuntime) {
     let tailcall_executor = TailcallBuilder::new()
-        .with_config_source(Source::GraphQL, sdl, None)
+        .with_config_source(Source::GraphQL, sdl, None::<PathBuf>)
         .build(target_runtime)
         .await
         .unwrap();
