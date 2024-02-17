@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::ops::Deref;
 use std::sync::Arc;
 
-use crate::app_context::AppContext;
 use crate::blueprint::Http;
 use crate::builder::TailcallExecutor;
 
@@ -16,8 +16,9 @@ impl ServerConfig {
             &blueprint.upstream,
             tailcall_executor.app_ctx.blueprint.server.script.clone(),
         );
-        let app_ctx = Arc::new(AppContext::new(blueprint, rt));
-        tailcall_executor.app_ctx = app_ctx;
+        let mut app_ctx = (*tailcall_executor.app_ctx.deref()).clone();
+        app_ctx.runtime = rt;
+        tailcall_executor.app_ctx = Arc::new(app_ctx);
         Self { tailcall_executor }
     }
 
