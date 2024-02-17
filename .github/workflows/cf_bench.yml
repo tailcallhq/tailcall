@@ -12,7 +12,11 @@ on:
 jobs:
   cloudflare_worker_benchmark:
     name: Cloudflare Worker Benchmark
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
+    permissions:
+      pull-requests: write
+      contents: write
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
 
     steps:
       - name: Checkout Repository
@@ -53,10 +57,16 @@ jobs:
         run: |
           node wrk-output-to-md.js wrk-output-cf.txt > cloudflare_benchmark.md
 
+      - id: cat_md
+        name: Cat Markdown
+        working-directory: ci-benchmark
+        run: |
+          cat cloudflare_benchmark.md
+
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v4
         with:
-          name: body
+          name: cloudflare_benchmark
           path: ci-benchmark/cloudflare_benchmark.md
 
   Cache_Benchmarks:
