@@ -60,7 +60,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    Ok(Ok(AppContext::try_new(blueprint, runtime)?))
+    Ok(Ok(AppContext::new(blueprint, runtime)))
 }
 
 #[cfg(test)]

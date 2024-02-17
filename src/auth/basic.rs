@@ -7,7 +7,6 @@ use super::error::Error;
 use super::verify::Verify;
 use crate::blueprint;
 use crate::http::RequestContext;
-use crate::init_context::InitContext;
 
 pub struct BasicVerifier {
     verifier: Htpasswd<'static>,
@@ -31,17 +30,14 @@ impl Verify for BasicVerifier {
 }
 
 impl BasicVerifier {
-    pub fn try_new(options: blueprint::BasicProvider, init_context: &InitContext) -> Result<Self> {
-        let htpasswd = options.htpasswd.render(init_context);
-
-        Ok(Self { verifier: Htpasswd::new_owned(&htpasswd) })
+    pub fn new(options: blueprint::BasicProvider) -> Self {
+        Self { verifier: Htpasswd::new_owned(&options.htpasswd) }
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::mustache::Mustache;
 
     // testuser1:password123
     // testuser2:mypassword
@@ -64,11 +60,8 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
     #[tokio::test]
     async fn verify_passwords() -> Result<()> {
-        let init_context = crate::init_context::test::test_value();
-        let provider = BasicVerifier::try_new(
-            blueprint::BasicProvider { htpasswd: Mustache::parse(HTPASSWD_TEST)? },
-            &init_context,
-        )?;
+        let provider =
+            BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
 
         let validation = provider.verify(&RequestContext::default()).await.err();
         assert_eq!(validation, Some(Error::Missing));

@@ -1,8 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use anyhow::Result;
-
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::runtime::init;
 use crate::http::AppContext;
@@ -13,12 +11,12 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn try_new(blueprint: Blueprint) -> Result<Self> {
-        let app_ctx = Arc::new(AppContext::try_new(
+    pub fn new(blueprint: Blueprint) -> Self {
+        let app_ctx = Arc::new(AppContext::new(
             blueprint.clone(),
             init(&blueprint.upstream, blueprint.server.script.clone()),
-        )?);
-        Ok(Self { app_ctx, blueprint })
+        ));
+        Self { app_ctx, blueprint }
     }
 
     pub fn addr(&self) -> SocketAddr {

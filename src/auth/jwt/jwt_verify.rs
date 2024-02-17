@@ -8,7 +8,7 @@ use crate::auth::error::Error;
 use crate::auth::verify::Verify;
 use crate::blueprint;
 use crate::http::RequestContext;
-use crate::init_context::InitContext;
+use crate::runtime::TargetRuntime;
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -29,11 +29,8 @@ pub struct JwtVerifier {
 }
 
 impl JwtVerifier {
-    pub fn try_new(options: blueprint::JwtProvider, init_context: &InitContext) -> Result<Self> {
-        Ok(Self {
-            decoder: JwksDecoder::try_new(&options, init_context)?,
-            options,
-        })
+    pub fn new(options: blueprint::JwtProvider, runtime: &TargetRuntime) -> Self {
+        Self { decoder: JwksDecoder::new(options.clone(), runtime), options }
     }
 
     fn resolve_token(&self, request: &RequestContext) -> Option<String> {
@@ -106,13 +103,11 @@ pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool
 #[cfg(test)]
 pub mod tests {
     use std::collections::HashSet;
-    use std::ops::Deref;
 
     use jsonwebtoken::jwk::JwkSet;
     use once_cell::sync::Lazy;
 
     use super::*;
-    use crate::mustache::Mustache;
 
     // tokens are valid for 10 years. If it is expired, update it =)
     // to parse the token and see its content use https://jwt.io
@@ -148,9 +143,7 @@ pub mod tests {
 
     impl blueprint::JwtProvider {
         pub fn test_value() -> Self {
-            let jwks = blueprint::Jwks::Local(
-                Mustache::parse(&serde_json::to_string(JWK_SET.deref()).unwrap()).unwrap(),
-            );
+            let jwks = blueprint::Jwks::Local(JWK_SET.clone());
 
             Self {
                 issuer: Default::default(),
@@ -174,8 +167,8 @@ pub mod tests {
     #[tokio::test]
     async fn validate_token_iss() -> Result<()> {
         let jwt_options = blueprint::JwtProvider::test_value();
-        let init_context = crate::init_context::test::test_value();
-        let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
+        let runtime = crate::runtime::test::init(None);
+        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
 
         let valid = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -187,7 +180,7 @@ pub mod tests {
             issuer: Some("me".to_owned()),
             ..blueprint::JwtProvider::test_value()
         };
-        let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
+        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
 
         let valid = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -199,7 +192,7 @@ pub mod tests {
             issuer: Some("another".to_owned()),
             ..blueprint::JwtProvider::test_value()
         };
-        let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
+        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
 
         let error = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -214,8 +207,8 @@ pub mod tests {
     #[tokio::test]
     async fn validate_token_aud() -> Result<()> {
         let jwt_options = blueprint::JwtProvider::test_value();
-        let init_context = crate::init_context::test::test_value();
-        let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
+        let runtime = crate::runtime::test::init(None);
+        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
 
         let valid = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -227,7 +220,7 @@ pub mod tests {
             audiences: HashSet::from_iter(["them".to_string()]),
             ..blueprint::JwtProvider::test_value()
         };
-        let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
+        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
 
         let valid = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
@@ -239,7 +232,7 @@ pub mod tests {
             audiences: HashSet::from_iter(["anothem".to_string()]),
             ..blueprint::JwtProvider::test_value()
         };
-        let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
+        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
 
         let error = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))

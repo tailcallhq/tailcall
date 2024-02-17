@@ -155,20 +155,15 @@
       }
     },
     "Basic": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "htpasswd"
-          ],
-          "properties": {
-            "htpasswd": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+      "type": "object",
+      "required": [
+        "htpasswd"
+      ],
+      "properties": {
+        "htpasswd": {
+          "type": "string"
         }
-      ]
+      }
     },
     "Batch": {
       "type": "object",
@@ -1402,7 +1397,9 @@
         "Protobuf",
         "Script",
         "Cert",
-        "Key"
+        "Key",
+        "Htpasswd",
+        "Jwks"
       ]
     },
     "Method": {

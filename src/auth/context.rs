@@ -7,7 +7,7 @@ use super::error::Error;
 use super::verify::{AuthVerifier, Verify};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
-use crate::init_context::InitContext;
+use crate::runtime::TargetRuntime;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
@@ -50,14 +50,14 @@ impl GlobalAuthContext {
 }
 
 impl GlobalAuthContext {
-    pub fn try_new(auth: Auth, init_context: &InitContext) -> Result<Self> {
+    pub fn new(auth: Auth, runtime: &TargetRuntime) -> Self {
         let providers = auth
             .0
             .into_iter()
-            .map(|provider| AuthVerifier::try_new(provider.provider, init_context))
-            .collect::<Result<_>>()?;
+            .map(|provider| AuthVerifier::new(provider.provider, runtime))
+            .collect::<Vec<_>>();
 
-        Ok(Self { providers })
+        Self { providers }
     }
 }
 
@@ -92,17 +92,14 @@ mod tests {
     use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
     use crate::auth::jwt::jwt_verify::JwtVerifier;
     use crate::blueprint;
-    use crate::mustache::Mustache;
 
     #[tokio::test]
     async fn validate_request() -> Result<()> {
-        let init_context = crate::init_context::test::test_value();
-        let basic_provider = BasicVerifier::try_new(
-            blueprint::BasicProvider { htpasswd: Mustache::parse(HTPASSWD_TEST)? },
-            &init_context,
-        )?;
+        let runtime = crate::runtime::test::init(None);
+        let basic_provider =
+            BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
         let jwt_options = blueprint::JwtProvider::test_value();
-        let jwt_provider = JwtVerifier::try_new(jwt_options, &init_context)?;
+        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
 
         let auth_context = GlobalAuthContext {
             providers: vec![

@@ -1,9 +1,12 @@
 use std::collections::HashSet;
 use std::num::NonZeroU64;
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::is_default;
+use crate::mustache::Mustache;
+use crate::runtime::TargetRuntimeContext;
 
 mod default {
     pub mod jwt {
@@ -19,8 +22,8 @@ mod default {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum Basic {
-    Htpasswd(String),
+pub struct Basic {
+    pub htpasswd: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, schemars::JsonSchema)]
@@ -75,6 +78,32 @@ impl Auth {
 
     pub fn is_some(&self) -> bool {
         !self.0.is_empty()
+    }
+
+    pub fn render_mustache(&mut self, runtime_ctx: &TargetRuntimeContext) -> Result<()> {
+        for entry in self.0.iter_mut() {
+            match &mut entry.provider {
+                AuthProvider::Jwt(jwt) => match &mut jwt.jwks {
+                    Jwks::Data(ref mut jwks) => {
+                        let tmpl = Mustache::parse(jwks)?;
+
+                        *jwks = tmpl.render(runtime_ctx);
+                    }
+                    Jwks::Remote { ref mut url, .. } => {
+                        let tmpl = Mustache::parse(url)?;
+
+                        *url = tmpl.render(runtime_ctx);
+                    }
+                },
+                AuthProvider::Basic(Basic { ref mut htpasswd }) => {
+                    let tmpl = Mustache::parse(htpasswd)?;
+
+                    *htpasswd = tmpl.render(runtime_ctx);
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 

@@ -15,7 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
-use crate::runtime::TargetRuntime;
+use crate::runtime::{TargetRuntime, TargetRuntimeContext};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -91,6 +91,7 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
+        // TODO: load in parallel and combine errors
         for config_link in links.iter() {
             let path = Self::resolve_path(&config_link.src, parent_dir);
 
@@ -146,6 +147,8 @@ impl ConfigReader {
                     config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
+                LinkType::Htpasswd => todo!(),
+                LinkType::Jwks => todo!(),
             }
         }
 
@@ -212,6 +215,13 @@ impl ConfigReader {
         Ok(config_module)
     }
 
+    pub fn update_auth(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
+        let server = &mut config_module.config.server;
+        let runtime_ctx = TargetRuntimeContext::new(&self.runtime, &server.vars);
+
+        server.auth.render_mustache(&runtime_ctx)
+    }
+
     /// Resolves all the links in a Config to create a ConfigModule
     pub async fn resolve(
         &self,
@@ -222,7 +232,9 @@ impl ConfigReader {
         let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_module = self.ext_links(config_module, parent_dir).await?;
+        let mut config_module = self.ext_links(config_module, parent_dir).await?;
+
+        self.update_auth(&mut config_module)?;
 
         Ok(config_module)
     }

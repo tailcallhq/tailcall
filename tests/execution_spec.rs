@@ -150,12 +150,15 @@ pub mod test {
     }
 
     impl TestEnvIO {
-        pub fn init() -> Self {
-            Self { vars: std::env::vars().collect() }
+        pub fn init(vars: Option<HashMap<String, String>>) -> Self {
+            Self { vars: vars.unwrap_or_default() }
         }
     }
 
-    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+    pub fn init(
+        env: Option<HashMap<String, String>>,
+        script: Option<blueprint::Script>,
+    ) -> TargetRuntime {
         let http: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
         } else {
@@ -172,7 +175,7 @@ pub mod test {
         };
 
         let file = TestFileIO::init();
-        let env = TestEnvIO::init();
+        let env = TestEnvIO::init(env);
 
         TargetRuntime {
             http,
@@ -609,7 +612,7 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
         };
-        Arc::new(AppContext::try_new(blueprint, runtime).unwrap())
+        Arc::new(AppContext::new(blueprint, runtime))
     }
 }
 
@@ -779,7 +782,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = match config {
             Ok(config) => {
-                let mut runtime = test::init(None);
+                let mut runtime = test::init(spec.env.clone(), None);
                 runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
                 let reader = ConfigReader::init(runtime);
                 match reader.resolve(config, spec.path.parent()).await {
@@ -878,7 +881,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // Resolve all configs
-    let mut runtime = test::init(None);
+    let mut runtime = test::init(spec.env.clone(), None);
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let reader = ConfigReader::init(runtime);
 
@@ -922,10 +925,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         for (i, assertion) in assert_spec.iter().enumerate() {
             let response = run_assert(
                 &spec,
-                &spec
-                    .env
-                    .clone()
-                    .unwrap_or_else(|| HashMap::with_capacity(0)),
+                &spec.env.clone().unwrap_or_default(),
                 assertion,
                 server.first().unwrap(),
             )

@@ -17,7 +17,6 @@ pub mod grpc;
 pub mod has_headers;
 pub mod helpers;
 pub mod http;
-pub mod init_context;
 pub mod json;
 pub mod lambda;
 pub mod mustache;

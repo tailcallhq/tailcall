@@ -27,7 +27,7 @@ async fn main() -> Result<(), Error> {
         .await?;
     let blueprint = Blueprint::try_from(&config)?;
 
-    let app_ctx = Arc::new(AppContext::try_new(blueprint, runtime)?);
+    let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
 
     run(service_fn(|event| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;

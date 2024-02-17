@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anyhow::Result;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
@@ -12,7 +11,6 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::init_context::InitContext;
 use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::runtime::TargetRuntime;
 
@@ -28,7 +26,7 @@ pub struct AppContext {
 
 impl AppContext {
     #[allow(clippy::too_many_arguments)]
-    pub fn try_new(mut blueprint: Blueprint, runtime: TargetRuntime) -> Result<Self> {
+    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -107,12 +105,10 @@ impl AppContext {
         }
 
         let schema = blueprint.to_schema();
-        let init_context = InitContext::new(&blueprint.server, runtime.clone());
         let auth = blueprint.server.auth.clone();
+        let auth_ctx = GlobalAuthContext::new(auth, &runtime);
 
-        let auth_ctx = GlobalAuthContext::try_new(auth, &init_context)?;
-
-        Ok(AppContext {
+        AppContext {
             schema,
             runtime,
             blueprint,
@@ -120,7 +116,7 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             auth_ctx: Arc::new(auth_ctx),
-        })
+        }
     }
 
     pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
