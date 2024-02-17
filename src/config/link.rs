@@ -12,8 +12,7 @@ pub enum LinkType {
     Script,
     Cert,
     Key,
-    Htpasswd,
-    Jwks,
+    File,
 }
 
 impl Display for LinkType {
@@ -24,8 +23,7 @@ impl Display for LinkType {
             LinkType::Script => "Script",
             LinkType::Cert => "Cert",
             LinkType::Key => "Key",
-            LinkType::Htpasswd => "Htpasswd",
-            LinkType::Jwks => "Jwks",
+            LinkType::File => "File",
         })
     }
 }

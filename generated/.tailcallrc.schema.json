@@ -1398,8 +1398,7 @@
         "Script",
         "Cert",
         "Key",
-        "Htpasswd",
-        "Jwks"
+        "File"
       ]
     },
     "Method": {

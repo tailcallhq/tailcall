@@ -1,8 +1,9 @@
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -92,7 +93,7 @@ impl ConfigReader {
         }
 
         // TODO: load in parallel and combine errors
-        for config_link in links.iter() {
+        for config_link in links {
             let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.read_file(&path).await?;
@@ -147,8 +148,16 @@ impl ConfigReader {
                     config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
-                LinkType::Htpasswd => todo!(),
-                LinkType::Jwks => todo!(),
+                LinkType::File => {
+                    if let Some(id) = config_link.id {
+                        match config_module.extensions.files.entry(id) {
+                            Entry::Occupied(entry) => {
+                                bail!("File with id: '{}' is already registered", entry.key());
+                            }
+                            Entry::Vacant(entry) => entry.insert(content),
+                        };
+                    }
+                }
             }
         }
 
@@ -217,7 +226,11 @@ impl ConfigReader {
 
     pub fn update_auth(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
         let server = &mut config_module.config.server;
-        let runtime_ctx = TargetRuntimeContext::new(&self.runtime, &server.vars);
+        let runtime_ctx = TargetRuntimeContext {
+            runtime: &self.runtime,
+            vars: &server.vars,
+            files: &config_module.extensions.files,
+        };
 
         server.auth.render_mustache(&runtime_ctx)
     }

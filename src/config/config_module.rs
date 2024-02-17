@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -32,6 +33,8 @@ impl<A> Deref for Content<A> {
 /// reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default)]
 pub struct Extensions {
+    pub files: HashMap<String, String>,
+
     /// Contains the file descriptor sets resolved from the links
     pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
 

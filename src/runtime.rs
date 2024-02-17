@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
@@ -20,14 +20,9 @@ pub struct TargetRuntime {
 }
 
 pub struct TargetRuntimeContext<'a> {
-    runtime: &'a TargetRuntime,
-    vars: &'a BTreeMap<String, String>,
-}
-
-impl<'a> TargetRuntimeContext<'a> {
-    pub fn new(runtime: &'a TargetRuntime, vars: &'a BTreeMap<String, String>) -> Self {
-        Self { runtime, vars }
-    }
+    pub runtime: &'a TargetRuntime,
+    pub vars: &'a BTreeMap<String, String>,
+    pub files: &'a HashMap<String, String>,
 }
 
 impl<'a> PathString for TargetRuntimeContext<'a> {
@@ -40,6 +35,7 @@ impl<'a> PathString for TargetRuntimeContext<'a> {
             .and_then(|(head, tail)| match head.as_ref() {
                 "vars" => self.vars.get(tail[0].as_ref()).map(|v| v.into()),
                 "env" => self.runtime.env.get(tail[0].as_ref()),
+                "link" => self.files.get(tail[0].as_ref()).map(|v| v.into()),
                 _ => None,
             })
     }

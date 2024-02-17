@@ -617,8 +617,7 @@ enum LinkType {
   Script
   Cert
   Key
-  Htpasswd
-  Jwks
+  File
 }
 enum Method {
   GET
