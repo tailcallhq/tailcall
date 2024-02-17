@@ -41,12 +41,12 @@ jobs:
       - name: Warmup Wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 10 -t 4 -c 100 -s wrk.lua http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql
+          wrk -d 10 -t 4 -c 100 -s wrk.lua 'http://localhost:19194/graphql?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql'
 
       - name: Benchmark with Wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql > wrk-output-cf.txt
+          wrk -d 30 -t 4 -c 100 -s wrk.lua 'http://localhost:19194/graphql?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql' > wrk-output-cf.txt
 
       - name: Convert Wrk Output to Markdown
         working-directory: ci-benchmark
