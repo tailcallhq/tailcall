@@ -14,6 +14,7 @@ use crate::print_schema;
 use crate::runtime::TargetRuntime;
 use crate::valid::Validator;
 
+/// Struct to build TailcallExecutor
 #[derive(Clone)]
 pub struct TailcallBuilder {
     /// Holds a list of file paths
@@ -22,6 +23,7 @@ pub struct TailcallBuilder {
     schemas: Vec<SchemaHolder>,
 }
 
+/// Struct to hold schema information while building executor
 #[derive(Clone)]
 struct SchemaHolder {
     /// Holds a type of schema
@@ -39,11 +41,12 @@ pub struct TailcallExecutor {
 }
 
 impl TailcallBuilder {
+    /// Creates a new instance of TailcallBuilder
     pub fn new() -> Self {
         Self { files: vec![], schemas: vec![] }
     }
 
-    /// This function takes content and type of source as input
+    /// Adds a configuration source with schema and optional parent directory
     pub fn with_config_source<T: ToString, P: AsRef<Path>>(
         mut self,
         source: Source,
@@ -56,21 +59,30 @@ impl TailcallBuilder {
         self
     }
 
-    /// This function takes an array paths to config files
+    /// Adds an array of paths to configuration files
     /// The file IO is carried out using runtime passed in build function
     pub fn with_config_files<T: ToString>(mut self, files: &[T]) -> Self {
         self.files
             .push(files.iter().map(|v| v.to_string()).collect());
         self
     }
+
+    /// Builds TailcallExecutor with the provided runtime
     pub async fn build(self, runtime: TargetRuntime) -> Result<TailcallExecutor> {
+        // Configuration reader initialization
         let reader = ConfigReader::init(runtime.clone());
+
+        // Read configuration from files
         let mut config_module = reader.read_all(&self.files).await?;
+
+        // Iterate over schema holders and merge configs
         for holder in self.schemas {
             let config = Config::from_source(holder.source, &holder.schema)?;
             let new_config_module = reader.resolve(config, holder.parent_dir.as_deref()).await?;
             config_module = config_module.merge_right(&new_config_module);
         }
+
+        // Init AppContext
         let blueprint = Blueprint::try_from(&config_module)?;
         let app_ctx = AppContext::new(blueprint, runtime);
         let app_ctx = Arc::new(app_ctx);
@@ -79,6 +91,7 @@ impl TailcallBuilder {
 }
 
 impl TailcallExecutor {
+    /// Validates configuration and performs optional schema validation
     pub async fn validate(
         &self,
         n_plus_one_queries: bool,
@@ -100,7 +113,7 @@ impl TailcallExecutor {
         Ok(result_str)
     }
 
-    /// This function executes the request
+    /// Executes GraphQL request
     pub async fn execute(self, req: Request<Body>) -> Result<Response<Body>> {
         if self.app_ctx.blueprint.server.enable_batch_requests {
             handle_request::<GraphQLBatchRequest>(req, self.app_ctx.clone()).await
