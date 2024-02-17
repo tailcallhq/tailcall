@@ -89,11 +89,11 @@ impl TryFrom<Expression> for Grpc {
 
 pub fn compile_call(
     field: &Field,
-    config_set: &ConfigModule,
+    config_module: &ConfigModule,
     call: &config::Call,
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
-    get_field_and_field_name(call, config_set).and_then(|(_field, field_name, args)| {
+    get_field_and_field_name(call, config_module).and_then(|(_field, field_name, args)| {
         let empties: Vec<(&String, &config::Arg)> = _field
             .args
             .iter()
@@ -113,13 +113,13 @@ pub fn compile_call(
         }
 
         if let Some(http) = _field.http.clone() {
-            transform_http(config_set, field, http, &args)
+            transform_http(config_module, field, http, &args)
         } else if let Some(graphql) = _field.graphql.clone() {
-            transform_graphql(config_set, operation_type, graphql, &args)
+            transform_graphql(config_module, operation_type, graphql, &args)
         } else if let Some(grpc) = _field.grpc.clone() {
             transform_grpc(
                 CompileGrpc {
-                    config_set,
+                    config_module,
                     operation_type,
                     field,
                     grpc: &grpc,
@@ -168,12 +168,12 @@ fn transform_grpc(
 }
 
 fn transform_graphql(
-    config_set: &ConfigModule,
+    config_module: &ConfigModule,
     operation_type: &GraphQLOperationType,
     graphql: config::GraphQL,
     args: &Iter<'_, String, String>,
 ) -> Valid<Expression, String> {
-    compile_graphql(config_set, operation_type, &graphql).and_then(|expr| {
+    compile_graphql(config_module, operation_type, &graphql).and_then(|expr| {
         let graphql = GraphQL::try_from(expr).unwrap();
 
         Valid::succeed(
@@ -213,12 +213,12 @@ fn transform_graphql(
 }
 
 fn transform_http(
-    config_set: &ConfigModule,
+    config_module: &ConfigModule,
     field: &Field,
     http: config::Http,
     args: &Iter<'_, String, String>,
 ) -> Valid<Expression, String> {
-    compile_http(config_set, field, &http).and_then(|expr| {
+    compile_http(config_module, field, &http).and_then(|expr| {
         let http = Http::try_from(expr).unwrap();
 
         Valid::succeed(
@@ -270,7 +270,7 @@ fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
 
 fn get_field_and_field_name<'a>(
     call: &'a config::Call,
-    config_set: &'a ConfigModule,
+    config_module: &'a ConfigModule,
 ) -> Valid<(&'a Field, String, Iter<'a, String, String>), String> {
     Valid::from_option(
         get_type_and_field(call),
@@ -278,7 +278,7 @@ fn get_field_and_field_name<'a>(
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config_set.config.find_type(&type_name),
+            config_module.config.find_type(&type_name),
             format!("{} type not found on config", type_name),
         )
         .and_then(|query_type| {
