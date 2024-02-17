@@ -1,3 +1,4 @@
+use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
@@ -122,36 +123,53 @@ impl TryFrom<String> for GrpcMethod {
     }
 }
 
+fn to_operation(
+    file_descriptor_set: &FileDescriptorSet,
+    method: &GrpcMethod,
+) -> Valid<ProtobufOperation, String> {
+    Valid::from(
+        ProtobufSet::from_proto_file(file_descriptor_set)
+            .map_err(|e| ValidationError::new(e.to_string())),
+    )
+    .and_then(|set| {
+        Valid::from(
+            set.find_service(format!("{}.{}", &method.id, &method.service).as_str())
+                .map_err(|e| ValidationError::new(e.to_string())),
+        )
+    })
+    .and_then(|service| {
+        Valid::from(
+            service
+                .find_operation(&method.name)
+                .map_err(|e| ValidationError::new(e.to_string())),
+        )
+    })
+}
+
+fn filter_operation<'a>(
+    config_module: &'a ConfigModule,
+    method: &'a GrpcMethod,
+) -> Vec<ProtobufOperation> {
+    config_module
+        .extensions
+        .grpc_file_descriptors
+        .iter()
+        .filter_map(|content| to_operation(content, method).to_result().ok())
+        .collect::<Vec<ProtobufOperation>>()
+}
+
 fn get_operation<'a>(
     config_module: &'a ConfigModule,
     method: &'a GrpcMethod,
 ) -> Valid<ProtobufOperation, String> {
+    let operations = filter_operation(config_module, method);
+
+    if operations.len() > 1 {
+        return Valid::fail("Multiple proto files with same signature are not allowed".to_string());
+    }
+
     Valid::from_option(
-        config_module
-            .extensions
-            .grpc_file_descriptors
-            .iter()
-            .find_map(|content| {
-                Valid::from(
-                    ProtobufSet::from_proto_file(&content.content)
-                        .map_err(|e| ValidationError::new(e.to_string())),
-                )
-                .and_then(|set| {
-                    Valid::from(
-                        set.find_service(format!("{}.{}", &method.id, &method.service).as_str())
-                            .map_err(|e| ValidationError::new(e.to_string())),
-                    )
-                })
-                .and_then(|service| {
-                    Valid::from(
-                        service
-                            .find_operation(&method.name)
-                            .map_err(|e| ValidationError::new(e.to_string())),
-                    )
-                })
-                .to_result()
-                .ok()
-            }),
+        operations.first().cloned(),
         format!(
             "Operation {}.{}.{} not found",
             method.id, method.service, method.name

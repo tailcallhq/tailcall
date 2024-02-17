@@ -1,0 +1,33 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Multiple proto files with same signature are not allowed",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc"
+    ],
+    "description": null
+  },
+  {
+    "message": "Multiple proto files with same signature are not allowed",
+    "trace": [
+      "Query",
+      "newsById",
+      "@grpc"
+    ],
+    "description": null
+  },
+  {
+    "message": "Multiple proto files with same signature are not allowed",
+    "trace": [
+      "Query",
+      "newsByIdBatch",
+      "@grpc"
+    ],
+    "description": null
+  }
+]
