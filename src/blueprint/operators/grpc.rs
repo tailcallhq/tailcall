@@ -179,7 +179,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
     Valid::from(GrpcMethod::try_from(grpc.method.clone()))
         .and_then(|method| {
-            get_operation(&config_module, &method)
+            get_operation(config_module, &method)
                 .fuse(to_url(grpc, &method, config_module))
                 .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
                 .fuse(helpers::body::to_body(grpc.body.as_deref()))
