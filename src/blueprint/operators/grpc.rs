@@ -29,6 +29,29 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
     })
 }
 
+fn to_operation(
+    method: &GrpcMethod,
+    file_descriptor_set: &FileDescriptorSet,
+) -> Valid<ProtobufOperation, String> {
+    Valid::from(
+        ProtobufSet::from_proto_file(file_descriptor_set)
+            .map_err(|e| ValidationError::new(e.to_string())),
+    )
+    .and_then(|set| {
+        Valid::from(
+            set.find_service(format!("{}.{}", &method.id, &method.service).as_str())
+                .map_err(|e| ValidationError::new(e.to_string())),
+        )
+    })
+    .and_then(|service| {
+        Valid::from(
+            service
+                .find_operation(&method.name)
+                .map_err(|e| ValidationError::new(e.to_string())),
+        )
+    })
+}
+
 fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
     let field_schema = crate::blueprint::to_json_schema_for_field(field, config);
     let args_schema = crate::blueprint::to_json_schema_for_args(&field.args, config);
@@ -123,29 +146,6 @@ impl TryFrom<String> for GrpcMethod {
     }
 }
 
-fn to_operation(
-    file_descriptor_set: &FileDescriptorSet,
-    method: &GrpcMethod,
-) -> Valid<ProtobufOperation, String> {
-    Valid::from(
-        ProtobufSet::from_proto_file(file_descriptor_set)
-            .map_err(|e| ValidationError::new(e.to_string())),
-    )
-    .and_then(|set| {
-        Valid::from(
-            set.find_service(format!("{}.{}", &method.id, &method.service).as_str())
-                .map_err(|e| ValidationError::new(e.to_string())),
-        )
-    })
-    .and_then(|service| {
-        Valid::from(
-            service
-                .find_operation(&method.name)
-                .map_err(|e| ValidationError::new(e.to_string())),
-        )
-    })
-}
-
 fn filter_operation<'a>(
     config_module: &'a ConfigModule,
     method: &'a GrpcMethod,
@@ -154,7 +154,7 @@ fn filter_operation<'a>(
         .extensions
         .grpc_file_descriptors
         .iter()
-        .filter_map(|content| to_operation(content, method).to_result().ok())
+        .filter_map(|content| to_operation(method, content).to_result().ok())
         .collect::<Vec<ProtobufOperation>>()
 }
 
