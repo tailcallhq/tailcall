@@ -56,7 +56,7 @@ jobs:
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v4
         with:
-          name: cloudflare_benchmark
+          name: body
           path: ci-benchmark/cloudflare_benchmark.md
 
   Cache_Benchmarks:

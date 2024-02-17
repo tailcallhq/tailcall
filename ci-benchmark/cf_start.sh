@@ -8,6 +8,6 @@ while true; do
         break
     else
         echo "Waiting for Cloudflare Worker to be ready..."
-        sleep 5
+        sleep 10
     fi
 done
