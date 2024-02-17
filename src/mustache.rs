@@ -1,3 +1,9 @@
+use nom::branch::alt;
+use nom::bytes::complete::{tag, take_until};
+use nom::character::complete::char;
+use nom::combinator::map;
+use nom::multi::many0;
+use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
 use crate::path::{PathGraphql, PathString};
@@ -102,29 +108,50 @@ fn parse_name(input: &str) -> IResult<&str, String> {
     })(input)
 }
 
-fn parse_expression(input: &str) -> IResult<&str, Vec<String>> {
-    nom::combinator::map(
-        nom::sequence::tuple((
-            nom::bytes::complete::tag("{{"),
-            nom::multi::separated_list1(nom::character::complete::char('.'), parse_name),
-            nom::bytes::complete::tag("}}"),
-        )),
-        |(_, vec, _)| vec,
+fn parse_expression(input: &str) -> IResult<&str, Segment> {
+    delimited(
+        tag("{{"),
+        map(
+            nom::multi::separated_list1(char('.'), parse_name),
+            Segment::Expression,
+        ),
+        tag("}}"),
     )(input)
 }
 
-fn parse_segment(input: &str) -> IResult<&str, Segment> {
-    let expression = nom::combinator::map(parse_expression, Segment::Expression);
-    let literal = nom::combinator::map(
-        nom::bytes::complete::take_while1(|c| c != '{'),
-        |r: &str| Segment::Literal(r.to_string()),
-    );
+fn parse_segment(input: &str) -> IResult<&str, Vec<Segment>> {
+    let expression_result = many0(alt((
+        parse_expression,
+        map(take_until("{{"), |txt: &str| {
+            Segment::Literal(txt.to_string())
+        }),
+    )))(input);
 
-    nom::branch::alt((expression, literal))(input)
+    if let Ok((remaining, segments)) = expression_result {
+        if remaining.is_empty() {
+            Ok((remaining, segments))
+        } else {
+            let mut segments = segments;
+            segments.push(Segment::Literal(remaining.to_string()));
+            Ok(("", segments))
+        }
+    } else {
+        Ok(("", vec![Segment::Literal(input.to_string())]))
+    }
 }
 
 fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
-    nom::combinator::map(nom::multi::many1(parse_segment), Mustache)(input)
+    map(parse_segment, |segments| {
+        Mustache(
+            segments
+                .into_iter()
+                .filter(|seg| match seg {
+                    Segment::Literal(s) => !s.is_empty(),
+                    _ => true,
+                })
+                .collect(),
+        )
+    })(input)
 }
 
 #[cfg(test)]
@@ -342,6 +369,23 @@ mod tests {
             ]);
 
             assert_eq!(mustache.render(&DummyPath), "prefix  suffix");
+        }
+
+        #[test]
+        fn test_json_like() {
+            let mustache =
+                Mustache::parse(r#"{registered: "{{foo}}", display: "{{bar}}"}"#).unwrap();
+            let ctx = json!({"foo": "baz", "bar": "qux"});
+            let result = mustache.render(&ctx);
+            assert_eq!(result, r#"{registered: "baz", display: "qux"}"#);
+        }
+
+        #[test]
+        fn test_json_like_static() {
+            let mustache = Mustache::parse(r#"{registered: "foo", display: "bar"}"#).unwrap();
+            let ctx = json!({}); // Context is not used in this case
+            let result = mustache.render(&ctx);
+            assert_eq!(result, r#"{registered: "foo", display: "bar"}"#);
         }
 
         #[test]

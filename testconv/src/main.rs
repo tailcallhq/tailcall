@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use async_graphql::parser::types::TypeSystemDefinition;
 use http::ConfigSource;
 use tailcall::blueprint::{Blueprint, Upstream};
-use tailcall::cli::init_runtime;
+use tailcall::cli;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule};
 use tailcall::directive::DirectiveCodec;
@@ -109,7 +109,7 @@ async fn main() {
 
     let mut files_already_processed: HashSet<String> = HashSet::new();
 
-    let reader = ConfigReader::init(init_runtime(&Upstream::default(), None));
+    let reader = ConfigReader::init(cli::runtime::init(&Upstream::default(), None));
 
     if http_dir.exists() {
         for x in read_dir(http_dir).expect("Could not read http directory") {
@@ -286,7 +286,7 @@ async fn main() {
                         }
                         http::ConfigSource::Inline(config) => {
                             let config = reader
-                                .resolve(config.to_owned(), Some(file_stem.clone()))
+                                .resolve(config.to_owned(), Some(Path::new(&file_stem)))
                                 .await
                                 .expect("Failed to resolve config");
                             generate_client_snapshot(&file_stem, &config).await;
