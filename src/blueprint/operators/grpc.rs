@@ -146,23 +146,16 @@ impl TryFrom<String> for GrpcMethod {
     }
 }
 
-fn filter_operation<'a>(
-    config_module: &'a ConfigModule,
-    method: &'a GrpcMethod,
-) -> Vec<ProtobufOperation> {
-    config_module
-        .extensions
-        .grpc_file_descriptors
-        .iter()
-        .filter_map(|content| to_operation(method, content).to_result().ok())
-        .collect::<Vec<ProtobufOperation>>()
-}
-
 fn get_operation<'a>(
     config_module: &'a ConfigModule,
     method: &'a GrpcMethod,
 ) -> Valid<ProtobufOperation, String> {
-    let operations = filter_operation(config_module, method);
+    let operations = config_module
+        .extensions
+        .grpc_file_descriptors
+        .iter()
+        .filter_map(|content| to_operation(method, content).to_result().ok())
+        .collect::<Vec<ProtobufOperation>>();
 
     if operations.len() > 1 {
         return Valid::fail("Multiple proto files with same signature are not allowed".to_string());
