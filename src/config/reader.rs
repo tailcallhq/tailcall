@@ -1,8 +1,8 @@
 use std::collections::{HashMap, VecDeque};
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context;
-use async_std::path::{Path, PathBuf};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -69,12 +69,12 @@ impl ConfigReader {
 
     /// Reads the links in a Config and fill the content
     #[async_recursion::async_recursion]
-    async fn ext_links(
+    async fn ext_links<'a: 'async_recursion>(
         &self,
-        mut config_set: ConfigModule,
-        path: Option<String>,
+        mut config_module: ConfigModule,
+        parent_dir: Option<&'a Path>,
     ) -> anyhow::Result<ConfigModule> {
-        let links: Vec<Link> = config_set
+        let links: Vec<Link> = config_module
             .config
             .links
             .clone()
@@ -88,21 +88,11 @@ impl ConfigReader {
             .collect();
 
         if links.is_empty() {
-            return Ok(config_set);
+            return Ok(config_module);
         }
 
         for config_link in links.iter() {
-            let path = if Path::new(&config_link.src).is_absolute() {
-                config_link.src.clone()
-            } else {
-                let path = path.clone().unwrap_or_default();
-                PathBuf::from(path)
-                    .parent()
-                    .unwrap_or(Path::new(""))
-                    .join(&config_link.src)
-                    .to_string_lossy()
-                    .to_string()
-            };
+            let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.read_file(&path).await?;
 
@@ -112,12 +102,15 @@ impl ConfigReader {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                    config_set = config_set.merge_right(&ConfigModule::from(config.clone()));
+                    config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
-                        config_set = config_set.merge_right(
+                        config_module = config_module.merge_right(
                             &self
-                                .ext_links(ConfigModule::from(config), Some(source.path))
+                                .ext_links(
+                                    ConfigModule::from(config),
+                                    Path::new(&config_link.src).parent(),
+                                )
                                 .await?,
                         );
                     }
@@ -132,28 +125,31 @@ impl ConfigReader {
                         file_descriptor_set.file.push(v);
                     }
 
-                    config_set.extensions.grpc_file_descriptors.push(Content {
-                        id: config_link.id.to_owned(),
-                        content: file_descriptor_set,
-                    });
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: config_link.id.to_owned(),
+                            content: file_descriptor_set,
+                        });
                 }
                 LinkType::Script => {
-                    config_set.extensions.script = Some(content);
+                    config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    config_set
+                    config_module
                         .extensions
                         .cert
                         .extend(self.load_cert(content.clone()).await?);
                 }
                 LinkType::Key => {
-                    config_set.extensions.keys =
+                    config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
             }
         }
 
-        Ok(config_set)
+        Ok(config_module)
     }
 
     /// Reads the certificate from a given file
@@ -195,40 +191,40 @@ impl ConfigReader {
     /// Reads all the files and returns a merged config
     pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.read_files(files).await?;
-        let mut config_set = ConfigModule::default();
+        let mut config_module = ConfigModule::default();
 
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
 
-            // Create initial config set
-            let new_config_set = self
+            // Create initial config module
+            let new_config_module = self
                 .resolve(
                     Config::from_source(source, schema)?,
-                    Some(file.path.clone()),
+                    Path::new(&file.path).parent(),
                 )
                 .await?;
 
             // Merge it with the original config set
-            config_set = config_set.merge_right(&new_config_set);
+            config_module = config_module.merge_right(&new_config_module);
         }
 
-        Ok(config_set)
+        Ok(config_module)
     }
 
     /// Resolves all the links in a Config to create a ConfigModule
     pub async fn resolve(
         &self,
         config: Config,
-        path: Option<String>,
+        parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
-        let config_set = ConfigModule::from(config);
+        let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_set = self.ext_links(config_set, path).await?;
+        let config_module = self.ext_links(config_module, parent_dir).await?;
 
-        Ok(config_set)
+        Ok(config_module)
     }
 
     /// Performs BFS to import all nested proto files
@@ -267,6 +263,16 @@ impl ConfigReader {
         };
 
         Ok(protox_parse::parse(path, &content)?)
+    }
+
+    /// Checks if path is absolute else it joins file path with relative dir path
+    fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
+        if Path::new(&src).is_absolute() {
+            src.to_string()
+        } else {
+            let path = root_dir.unwrap_or(Path::new(""));
+            path.join(src).to_string_lossy().to_string()
+        }
     }
 }
 
@@ -349,6 +355,8 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
+    use std::path::Path;
+
     use anyhow::Context;
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
@@ -462,5 +470,20 @@ mod reader_tests {
         );
 
         assert_eq!(content.unwrap(), config.extensions.script.unwrap());
+    }
+
+    #[test]
+    fn test_relative_path() {
+        let path_dir = Path::new("abc/xyz");
+        let file_relative = "foo/bar/my.proto";
+        let file_absolute = "/foo/bar/my.proto";
+        assert_eq!(
+            "abc/xyz/foo/bar/my.proto",
+            ConfigReader::resolve_path(file_relative, Some(path_dir))
+        );
+        assert_eq!(
+            "/foo/bar/my.proto",
+            ConfigReader::resolve_path(file_absolute, Some(path_dir))
+        );
     }
 }

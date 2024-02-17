@@ -93,10 +93,10 @@ mod tests {
 
         let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
-        let config_set = reader.resolve(config, None).await.unwrap();
+        let config_module = reader.resolve(config, None).await.unwrap();
 
         let protobuf_set = ProtobufSet::from_proto_file(
-            config_set
+            config_module
                 .extensions
                 .get_file_descriptor(id.as_str())
                 .unwrap(),

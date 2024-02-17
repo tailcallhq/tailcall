@@ -671,7 +671,7 @@ mod tests {
                 .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#).unwrap()));
             let ctx = Context::default().value(json!({"baz": "baz"}));
             let body = tmpl.to_body(&ctx).unwrap();
-            assert_eq!(body, "foo=%7B%7Bbaz%7D%7D");
+            assert_eq!(body, "foo=baz");
         }
 
         #[test]

@@ -112,7 +112,7 @@ fn validate_group_by(
 }
 
 pub struct CompileGrpc<'a> {
-    pub config_set: &'a ConfigModule,
+    pub config_module: &'a ConfigModule,
     pub operation_type: &'a GraphQLOperationType,
     pub field: &'a Field,
     pub grpc: &'a Grpc,
@@ -149,7 +149,7 @@ impl TryFrom<String> for GrpcMethod {
 }
 
 pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
-    let config_set = inputs.config_set;
+    let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
     let grpc = inputs.grpc;
@@ -158,18 +158,18 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     Valid::from(GrpcMethod::try_from(grpc.method.clone()))
         .and_then(|method| {
             Valid::from_option(
-                config_set.extensions.get_file_descriptor(&method.id),
+                config_module.extensions.get_file_descriptor(&method.id),
                 format!("File descriptor not found for proto id: {}", method.id),
             )
             .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
-            .fuse(to_url(grpc, &method, config_set))
+            .fuse(to_url(grpc, &method, config_module))
             .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
             .fuse(helpers::body::to_body(grpc.body.as_deref()))
             .into()
         })
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
-                let field_schema = json_schema_from_field(config_set, field);
+                let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
                     validate_schema(field_schema, &operation, field.name()).unit()
                 } else {
@@ -205,13 +205,13 @@ pub fn update_grpc<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config_set, field, type_of, _name), b_field| {
+        |(config_module, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);
             };
 
             compile_grpc(CompileGrpc {
-                config_set,
+                config_module,
                 operation_type,
                 field,
                 grpc,
