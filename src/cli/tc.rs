@@ -12,7 +12,7 @@ use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{init_runtime, CLIError};
+use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::Config;
 use crate::print_schema;
@@ -25,24 +25,24 @@ pub async fn run() -> Result<()> {
     let cli = Cli::parse();
     logger_init();
     update_checker::check_for_update().await;
-    let runtime = init_runtime(&Upstream::default(), None);
+    let runtime = cli::runtime::init(&Upstream::default(), None);
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
-            let config_set = config_reader.read_all(&file_paths).await?;
-            log::info!("N + 1: {}", config_set.n_plus_one().len().to_string());
-            let server = Server::new(config_set);
+            let config_module = config_reader.read_all(&file_paths).await?;
+            log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
+            let server = Server::new(config_module);
             server.fork_start().await?;
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
-            let config_set = (config_reader.read_all(&file_paths)).await?;
-            let blueprint = Blueprint::try_from(&config_set).map_err(CLIError::from);
+            let config_module = (config_reader.read_all(&file_paths)).await?;
+            let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
             match blueprint {
                 Ok(blueprint) => {
                     log::info!("{}", "Config successfully validated".to_string());
-                    display_config(&config_set, n_plus_one_queries);
+                    display_config(&config_module, n_plus_one_queries);
                     if schema {
                         display_schema(&blueprint);
                     }

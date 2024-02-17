@@ -8,19 +8,19 @@ use crate::valid::{Valid, Validator};
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
     operation_type: &'a config::GraphQLOperationType,
-    config_set: &'a config::ConfigModule,
+    config_module: &'a config::ConfigModule,
 }
 
 pub fn update_expr(
     operation_type: &config::GraphQLOperationType,
 ) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config_set, field, _, _), b_field| {
+        |(config_module, field, _, _), b_field| {
             let Some(expr) = &field.expr else {
                 return Valid::succeed(b_field);
             };
 
-            let context = CompilationContext { config_set, operation_type, config_field: field };
+            let context = CompilationContext { config_module, operation_type, config_field: field };
 
             compile(&context, expr.body.clone()).map(|compiled| b_field.resolver(Some(compiled)))
         },
@@ -51,15 +51,15 @@ fn compile_ab(
 /// Compiles expr into Expression
 ///
 fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-    let config_set = ctx.config_set;
+    let config_module = ctx.config_module;
     let field = ctx.config_field;
     let operation_type = ctx.operation_type;
     match expr {
         // Io Expr
-        ExprBody::Http(http) => compile_http(config_set, field, &http),
+        ExprBody::Http(http) => compile_http(config_module, field, &http),
         ExprBody::Grpc(grpc) => {
             let grpc = CompileGrpc {
-                config_set,
+                config_module,
                 field,
                 operation_type,
                 grpc: &grpc,
@@ -67,11 +67,11 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
             };
             compile_grpc(grpc)
         }
-        ExprBody::GraphQL(gql) => compile_graphql(config_set, operation_type, &gql),
+        ExprBody::GraphQL(gql) => compile_graphql(config_module, operation_type, &gql),
 
         // Safe Expr
         ExprBody::Const(value) => {
-            compile_const(CompileConst { config_set, field, value: &value, validate: false })
+            compile_const(CompileConst { config_module, field, value: &value, validate: false })
         }
 
         // Logic
@@ -218,11 +218,11 @@ mod tests {
     impl Expr {
         async fn eval(expr: serde_json::Value) -> anyhow::Result<serde_json::Value> {
             let expr = serde_json::from_value::<Expr>(expr)?;
-            let config_set = ConfigModule::default();
+            let config_module = ConfigModule::default();
             let field = Field::default();
             let operation_type = GraphQLOperationType::Query;
             let context = CompilationContext {
-                config_set: &config_set,
+                config_module: &config_module,
                 config_field: &field,
                 operation_type: &operation_type,
             };

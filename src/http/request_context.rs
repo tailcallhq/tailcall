@@ -12,7 +12,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::target_runtime::TargetRuntime;
+use crate::runtime::TargetRuntime;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -115,21 +115,20 @@ mod test {
     use hyper::HeaderMap;
 
     use crate::blueprint::{Server, Upstream};
-    use crate::cli::init_runtime;
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
 
     impl Default for RequestContext {
         fn default() -> Self {
-            let config_set = crate::config::ConfigModule::default();
+            let config_module = crate::config::ConfigModule::default();
 
-            let crate::config::Config { upstream, .. } = config_set.config.clone();
-            let server = Server::try_from(config_set).unwrap();
+            let crate::config::Config { upstream, .. } = config_module.config.clone();
+            let server = Server::try_from(config_module).unwrap();
             let upstream = Upstream::try_from(upstream).unwrap();
             RequestContext {
                 req_headers: HeaderMap::new(),
                 server,
-                runtime: init_runtime(&upstream, None),
+                runtime: crate::runtime::test::init(None),
                 upstream,
                 http_data_loaders: Arc::new(vec![]),
                 gql_data_loaders: Arc::new(vec![]),
@@ -180,9 +179,9 @@ mod test {
     #[test]
     fn test_is_batching_enabled_default() {
         // create ctx with default batch
-        let config_set = config::ConfigModule::default();
-        let server = Server::try_from(config_set.clone()).unwrap();
-        let mut upstream = Upstream::try_from(config_set.upstream.clone()).unwrap();
+        let config_module = config::ConfigModule::default();
+        let server = Server::try_from(config_module.clone()).unwrap();
+        let mut upstream = Upstream::try_from(config_module.upstream.clone()).unwrap();
         upstream.batch = Some(Batch::default());
         let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 
