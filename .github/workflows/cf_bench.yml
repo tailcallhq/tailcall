@@ -31,7 +31,7 @@ jobs:
         run: npm run dev &
 
   run_bench:
-    name: Run Benchmark
+    name: Run Cloudflare Benchmark
     runs-on: ubuntu-latest
     needs: start_wrangler_dev
     if: needs.start_wrangler_dev.outputs.job1-ready == 'true'
