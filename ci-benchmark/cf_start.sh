@@ -1,6 +1,6 @@
 #!/bin/bash
 
-url="http://localhost:19194/\?config\=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql"
+url="http://localhost:19194/"
 while true; do
     response_code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
 
