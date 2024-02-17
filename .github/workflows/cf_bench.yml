@@ -2,12 +2,12 @@ name: Cloudflare Worker Benchmark
 
 on:
   push:
-    paths-ignore: ["docs/**", "**.md"]
+    paths-ignore: [ "docs/**", "**.md" ]
     branches:
       - main
   pull_request:
-    paths-ignore: ["docs/**", "**.md"]
-    types: [opened, reopened, synchronize, labeled]
+    paths-ignore: [ "docs/**", "**.md" ]
+    types: [ opened, reopened, synchronize, labeled ]
 
 jobs:
   cloudflare_worker_benchmark:
@@ -28,40 +28,43 @@ jobs:
         run: npm install
 
       - name: Compile Cloudflare Worker
-        uses: ./
-        with:
-          working-directory: ./cloudflare
-          wait-on: "http://localhost:19194"
-          start: npm run dev
+        run: npm run dev &
 
-      - name: Warm-up Requests
-        run: |
-          curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql
+  run_bench:
+    name: Run Benchmark
+    runs-on: ubuntu-latest
+    needs: start_wrangler_dev
+    if: needs.start_wrangler_dev.outputs.job1-ready == 'true'
+        
+        - name: Warm-up Requests
+      run: |
+        curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql
 
-      - name: Install Wrk
-        run: |
-          sudo apt-get install -y wrk
+    - name: Install Wrk
+      run: |
+        sudo apt-get install -y wrk
 
-      - name: Warmup Wrk
-        working-directory: ci-benchmark
-        run: |
-          wrk -d 10 -t 4 -c 100 -s wrk.lua http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql
+    - name: Warmup Wrk
+      working-directory: ci-benchmark
+      run: |
+        wrk -d 10 -t 4 -c 100 -s wrk.lua http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql
 
-      - name: Benchmark with Wrk
-        working-directory: ci-benchmark
-        run: |
-          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql > wrk-output-cf.txt
+    - name: Benchmark with Wrk
+      working-directory: ci-benchmark
+      run: |
+        wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:19194/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/ci-benchmark/benchmark.graphql > wrk-output-cf.txt
 
-      - name: Convert Wrk Output to Markdown
-        working-directory: ci-benchmark
-        run: |
-          node wrk-output-to-md.js wrk-output-cf.txt > cloudflare_benchmark.md
+    - name: Convert Wrk Output to Markdown
+      working-directory: ci-benchmark
+      run: |
+        node wrk-output-to-md.js wrk-output-cf.txt > cloudflare_benchmark.md
 
-      - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v4
-        with:
-          name: cloudflare_benchmark
-          path: ci-benchmark/cloudflare_benchmark.md
+    - name: Upload Benchmark Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: cloudflare_benchmark
+        path: ci-benchmark/cloudflare_benchmark.md
+
 
   Cache_Benchmarks:
     name: Cache Micro Benchmarks result

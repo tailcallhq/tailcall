@@ -31,6 +31,7 @@ fn start() {
     // Initialize Logger
     wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
     panic::set_hook(Box::new(console_error_panic_hook::hook));
+    log::info!("\n::set-output name=job1-ready::true");
 }
 
 fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {
