@@ -28,6 +28,7 @@ jobs:
         run: npm install
 
       - name: Compile Cloudflare Worker
+        working-directory: ./cloudflare
         run: npm run dev &
 
       - name: Warm-up Requests
