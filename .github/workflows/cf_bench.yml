@@ -33,7 +33,7 @@ jobs:
 
       - name: Compile Cloudflare Worker
         working-directory: ./cloudflare
-        run: npm run dev-remote &
+        run: npm run dev &
 
       - name: Warm-up Requests
         run: chmod +x ./ci-benchmark/cf_start.sh && ./ci-benchmark/cf_start.sh
