@@ -25,3 +25,15 @@ jobs:
         with:
           sha: ${{ github.event.workflow_run.head_sha }}
           body-path: body.md
+      - name: Download artifact with cf bench body message
+        uses: actions/download-artifact@v4
+        with:
+          name: cloudflare_benchmark
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Create CF Bench Commit Comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          sha: ${{ github.event.workflow_run.head_sha }}
+          body-path: cloudflare_benchmark.md
