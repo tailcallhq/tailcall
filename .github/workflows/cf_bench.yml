@@ -32,7 +32,7 @@ jobs:
         with:
           working-directory: ./cloudflare
           wait-on: "http://localhost:19194"
-          start: npm run dev &
+          start: npm run dev
 
       - name: Warm-up Requests
         run: |
