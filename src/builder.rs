@@ -30,7 +30,7 @@ struct SchemaHolder {
     source: Source,
     /// Holds content of schema
     schema: String,
-    /// Holds path to parent dir for content in @link
+    /// Holds a path to parent dir for content in @link
     parent_dir: Option<PathBuf>,
 }
 
