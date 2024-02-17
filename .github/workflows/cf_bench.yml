@@ -28,9 +28,11 @@ jobs:
         run: npm install
 
       - name: Compile Cloudflare Worker
-        run: npm run dev &
+        uses: ./
         with:
+          working-directory: ./cloudflare
           wait-on: "http://localhost:19194"
+          start: npm run dev &
 
       - name: Warm-up Requests
         run: |
