@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -126,10 +127,10 @@ impl ConfigReader {
 
     /// Reads the links in a Config and fill the content
     #[async_recursion::async_recursion]
-    async fn ext_links(
+    async fn ext_links<'a: 'async_recursion>(
         &self,
         mut config_module: ConfigModule,
-        path: Option<String>,
+        parent_dir: Option<&'a Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config
@@ -149,17 +150,7 @@ impl ConfigReader {
         }
 
         for config_link in links.iter() {
-            let path = if Path::new(&config_link.src).is_absolute() {
-                config_link.src.clone()
-            } else {
-                let path = path.clone().unwrap_or_default();
-                PathBuf::from(path)
-                    .parent()
-                    .unwrap_or(Path::new(""))
-                    .join(&config_link.src)
-                    .to_string_lossy()
-                    .to_string()
-            };
+            let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.read_file(&path).await?;
 
@@ -174,7 +165,10 @@ impl ConfigReader {
                     if !config.links.is_empty() {
                         config_module = config_module.merge_right(
                             &self
-                                .ext_links(ConfigModule::from(config), Some(source.path))
+                                .ext_links(
+                                    ConfigModule::from(config),
+                                    Path::new(&config_link.src).parent(),
+                                )
                                 .await?,
                         );
                     }
@@ -268,7 +262,7 @@ impl ConfigReader {
             let new_config_module = self
                 .resolve(
                     Config::from_source(source, schema)?,
-                    Some(file.path.clone()),
+                    Path::new(&file.path).parent(),
                 )
                 .await?;
 
@@ -283,13 +277,13 @@ impl ConfigReader {
     pub async fn resolve(
         &self,
         config: Config,
-        path: Option<String>,
+        parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
         // Create initial config set
         let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_module = self.ext_links(config_module, path).await?;
+        let config_module = self.ext_links(config_module, parent_dir).await?;
 
         Ok(config_module)
     }
@@ -330,6 +324,16 @@ impl ConfigReader {
         };
 
         Ok(protox_parse::parse(path, &content)?)
+    }
+
+    /// Checks if path is absolute else it joins file path with relative dir path
+    fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
+        if Path::new(&src).is_absolute() {
+            src.to_string()
+        } else {
+            let path = root_dir.unwrap_or(Path::new(""));
+            path.join(src).to_string_lossy().to_string()
+        }
     }
 }
 
@@ -412,6 +416,8 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
+    use std::path::Path;
+
     use anyhow::Context;
     use pretty_assertions::assert_eq;
     use tokio::io::AsyncReadExt;
@@ -525,6 +531,21 @@ mod reader_tests {
         );
 
         assert_eq!(content.unwrap(), config.extensions.script.unwrap());
+    }
+
+    #[test]
+    fn test_relative_path() {
+        let path_dir = Path::new("abc/xyz");
+        let file_relative = "foo/bar/my.proto";
+        let file_absolute = "/foo/bar/my.proto";
+        assert_eq!(
+            "abc/xyz/foo/bar/my.proto",
+            ConfigReader::resolve_path(file_relative, Some(path_dir))
+        );
+        assert_eq!(
+            "/foo/bar/my.proto",
+            ConfigReader::resolve_path(file_absolute, Some(path_dir))
+        );
     }
 }
 
