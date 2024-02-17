@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "Couldn't find definitions for service news.YourServiceName",
+    "message": "Operation news.YourServiceName.GetAllNews not found",
     "trace": [
       "Query",
       "news",

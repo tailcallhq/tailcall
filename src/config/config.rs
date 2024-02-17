@@ -603,6 +603,10 @@ pub struct Grpc {
     pub headers: KeyValues,
     /// This refers to the gRPC method you're going to call. For instance `GetAllNews`.
     pub method: String,
+    // #[serde(default, skip_serializing_if = "is_default")]
+    // /// The id declared on `@link` directive with `Protobuf` type.
+    // /// If not provided, the package name provided on `method` will be used.
+    // link_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

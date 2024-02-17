@@ -1,4 +1,3 @@
-use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
@@ -26,29 +25,6 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
         base_url.push_str(&method.name);
 
         helpers::url::to_url(&base_url)
-    })
-}
-
-fn to_operation(
-    method: &GrpcMethod,
-    file_descriptor_set: &FileDescriptorSet,
-) -> Valid<ProtobufOperation, String> {
-    Valid::from(
-        ProtobufSet::from_proto_file(file_descriptor_set)
-            .map_err(|e| ValidationError::new(e.to_string())),
-    )
-    .and_then(|set| {
-        Valid::from(
-            set.find_service(format!("{}.{}", &method.id, &method.service).as_str())
-                .map_err(|e| ValidationError::new(e.to_string())),
-        )
-    })
-    .and_then(|service| {
-        Valid::from(
-            service
-                .find_operation(&method.name)
-                .map_err(|e| ValidationError::new(e.to_string())),
-        )
     })
 }
 
@@ -146,6 +122,43 @@ impl TryFrom<String> for GrpcMethod {
     }
 }
 
+fn get_operation<'a>(
+    config_module: &'a ConfigModule,
+    method: &'a GrpcMethod,
+) -> Valid<ProtobufOperation, String> {
+    Valid::from_option(
+        config_module
+            .extensions
+            .grpc_file_descriptors
+            .iter()
+            .find_map(|content| {
+                Valid::from(
+                    ProtobufSet::from_proto_file(&content.content)
+                        .map_err(|e| ValidationError::new(e.to_string())),
+                )
+                .and_then(|set| {
+                    Valid::from(
+                        set.find_service(format!("{}.{}", &method.id, &method.service).as_str())
+                            .map_err(|e| ValidationError::new(e.to_string())),
+                    )
+                })
+                .and_then(|service| {
+                    Valid::from(
+                        service
+                            .find_operation(&method.name)
+                            .map_err(|e| ValidationError::new(e.to_string())),
+                    )
+                })
+                .to_result()
+                .ok()
+            }),
+        format!(
+            "Operation {}.{}.{} not found",
+            method.id, method.service, method.name
+        ),
+    )
+}
+
 pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
@@ -155,15 +168,11 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
     Valid::from(GrpcMethod::try_from(grpc.method.clone()))
         .and_then(|method| {
-            Valid::from_option(
-                config_module.extensions.get_file_descriptor(&method.id),
-                format!("File descriptor not found for proto id: {}", method.id),
-            )
-            .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
-            .fuse(to_url(grpc, &method, config_module))
-            .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
-            .fuse(helpers::body::to_body(grpc.body.as_deref()))
-            .into()
+            get_operation(&config_module, &method)
+                .fuse(to_url(grpc, &method, config_module))
+                .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
+                .fuse(helpers::body::to_body(grpc.body.as_deref()))
+                .into()
         })
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {

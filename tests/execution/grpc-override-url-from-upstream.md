@@ -44,7 +44,7 @@ message NewsList {
 schema
   @server(port: 8000, graphiql: true)
   @upstream(httpCache: true, batch: {delay: 10}, baseURL: "http://not-a-valid-grpc-url.com")
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+  @link(src: "news.proto", type: Protobuf) {
   query: Query
 }
 

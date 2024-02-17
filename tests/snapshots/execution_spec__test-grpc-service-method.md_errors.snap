@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "Couldn't find method X",
+    "message": "Operation news.NewsService.X not found",
     "trace": [
       "Query",
       "news",

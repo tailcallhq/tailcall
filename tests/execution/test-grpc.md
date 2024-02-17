@@ -43,7 +43,7 @@ message NewsList {
 #### server:
 
 ```graphql
-schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000}) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000}) @link(src: "news.proto", type: Protobuf) {
   query: Query
 }
 
