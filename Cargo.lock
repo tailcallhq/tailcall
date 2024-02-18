@@ -1126,7 +1126,6 @@ dependencies = [
  "bit-vec",
  "bytes",
  "cooked-waker",
- "deno_core_icudata",
  "deno_ops",
  "deno_unsync",
  "futures",
@@ -1145,12 +1144,6 @@ dependencies = [
  "url",
  "v8",
 ]
-
-[[package]]
-name = "deno_core_icudata"
-version = "0.0.73"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a13951ea98c0a4c372f162d669193b4c9d991512de9f2381dd161027f34b26b1"
 
 [[package]]
 name = "deno_ops"
