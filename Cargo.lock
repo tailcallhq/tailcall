@@ -1118,9 +1118,9 @@ dependencies = [
 
 [[package]]
 name = "deno_core"
-version = "0.261.0"
+version = "0.263.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7743b191a1004e4989caf50c4ace8e3208732456118e79d433e2aff246772066"
+checksum = "51813f22cdde234648c7aa7b070f92ba176ec5f5b48c232218102917e8c8672c"
 dependencies = [
  "anyhow",
  "bit-set",
@@ -1148,9 +1148,9 @@ dependencies = [
 
 [[package]]
 name = "deno_ops"
-version = "0.137.0"
+version = "0.139.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ee5973f100f3ff9dea83a5b6261276d233c51ebc7f4c4fcdebd4c0d476b4fe5"
+checksum = "cd7ceebc85c86baad21fff65fd8c603ee14430dd560e0c63591ed0c75b538f51"
 dependencies = [
  "proc-macro-rules",
  "proc-macro2",
@@ -3790,9 +3790,9 @@ dependencies = [
 
 [[package]]
 name = "serde_v8"
-version = "0.170.0"
+version = "0.172.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43cce12a1cbf76530919847280a975a7831dab85a73d513161a5e6153a8e75d6"
+checksum = "b1700eea7391e2979f456a77f735cadacfb63b557d638950f64f81accecba980"
 dependencies = [
  "bytes",
  "derive_more",
@@ -4160,7 +4160,6 @@ dependencies = [
  "serde_path_to_error",
  "serde_qs",
  "serde_urlencoded",
- "serde_v8",
  "serde_yaml",
  "stripmargin",
  "temp-env",
