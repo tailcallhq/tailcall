@@ -29,7 +29,9 @@ pub struct Basic {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum Jwks {
+    /// JWKS data as a string or a template
     Data(String),
+    /// JWKS data loaded from the remote server
     #[serde(rename_all = "camelCase")]
     Remote {
         url: String,
@@ -45,20 +47,27 @@ pub struct Jwt {
     pub issuer: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub audiences: HashSet<String>,
+    /// Specifies if the kid value inside request's JWT token is required to get validated with the JWKS
     #[serde(default, skip_serializing_if = "is_default")]
     pub optional_kid: bool,
+    /// Specifies JWKS data that is used for JWT validation.
+    /// More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517).
+    /// If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)
     pub jwks: Jwks,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum AuthProvider {
+    /// Settings for JWT auth provider
     Jwt(Jwt),
+    /// Settings for Basic auth provider
     Basic(Basic),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct AuthEntry {
+    /// Unique id for the auth provider. For future use
     pub id: Option<String>,
     #[serde(flatten)]
     pub provider: AuthProvider,

@@ -206,6 +206,8 @@ directive @modify(
   omit: Boolean!
 ) on FIELD_DEFINITION
 
+directive @protected on OBJECT | FIELD_DEFINITION
+
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
 set of server configurations. It dictates how the server behaves and helps tune tailcall 
@@ -386,6 +388,15 @@ directive @upstream(
 ) on SCHEMA
 
 #/definitions/AuthEntry
+input AuthEntry {
+  """
+  Unique id for the auth provider. For future use
+  """
+  id: String
+}
+input Basic {
+  htpasswd: String!
+}
 input Batch {
   delay: Int!
   headers: [String!]
@@ -611,6 +622,24 @@ enum HttpVersion {
 input JS {
   script: String!
 }
+input Jwks {
+  data: String!
+  remote: Remote
+}
+input Jwt {
+  audiences: [String!]
+  issuer: String
+  """
+  Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517). 
+  If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)
+  """
+  jwks: Jwks
+  """
+  Specifies if the kid value inside request's JWT token is required to get validated 
+  with the JWKS
+  """
+  optionalKid: Boolean!
+}
 enum LinkType {
   Config
   Protobuf
@@ -644,6 +673,10 @@ input Schema {
   Obj: JSON
   Arr: Schema
   Opt: Schema
+}
+input Remote {
+  maxAge: Int!
+  url: String!
 }
 scalar KeyValues
 scalar JSON

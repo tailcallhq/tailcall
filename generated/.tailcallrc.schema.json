@@ -121,6 +121,7 @@
       "type": "object",
       "oneOf": [
         {
+          "description": "Settings for JWT auth provider",
           "type": "object",
           "required": [
             "jwt"
@@ -133,6 +134,7 @@
           "additionalProperties": false
         },
         {
+          "description": "Settings for Basic auth provider",
           "type": "object",
           "required": [
             "basic"
@@ -147,6 +149,7 @@
       ],
       "properties": {
         "id": {
+          "description": "Unique id for the auth provider. For future use",
           "type": [
             "string",
             "null"
@@ -1075,8 +1078,15 @@
         },
         "protected": {
           "description": "Marks field as protected by auth provider",
-          "default": false,
-          "type": "boolean"
+          "default": null,
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Protected"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "required": {
           "description": "Flag to indicate the type is required.",
@@ -1293,6 +1303,7 @@
     "Jwks": {
       "oneOf": [
         {
+          "description": "JWKS data as a string or a template",
           "type": "object",
           "required": [
             "data"
@@ -1305,6 +1316,7 @@
           "additionalProperties": false
         },
         {
+          "description": "JWKS data loaded from the remote server",
           "type": "object",
           "required": [
             "remote"
@@ -1352,9 +1364,15 @@
           ]
         },
         "jwks": {
-          "$ref": "#/definitions/Jwks"
+          "description": "Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517). If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Jwks"
+            }
+          ]
         },
         "optionalKid": {
+          "description": "Specifies if the kid value inside request's JWT token is required to get validated with the JWKS",
           "type": "boolean"
         }
       }
@@ -1430,6 +1448,9 @@
       }
     },
     "Omit": {
+      "type": "object"
+    },
+    "Protected": {
       "type": "object"
     },
     "Proxy": {
@@ -1692,8 +1713,15 @@
         },
         "protected": {
           "description": "Marks field as protected by auth providers",
-          "default": false,
-          "type": "boolean"
+          "default": null,
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Protected"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "scalar": {
           "description": "Flag to indicate if the type is a scalar.",

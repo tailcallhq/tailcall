@@ -236,7 +236,7 @@ pub struct Type {
     /// Marks field as protected by auth providers
     ///
     #[serde(default)]
-    pub protected: bool,
+    pub protected: Option<Protected>,
 }
 
 impl Type {
@@ -271,7 +271,7 @@ pub struct Cache {
     pub max_age: NonZeroU64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema)]
 pub struct Protected {}
 
 fn merge_types(
@@ -426,7 +426,7 @@ pub struct Field {
     /// Marks field as protected by auth provider
     ///
     #[serde(default)]
-    pub protected: bool,
+    pub protected: Option<Protected>,
 }
 
 impl Field {

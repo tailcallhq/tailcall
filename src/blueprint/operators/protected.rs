@@ -9,7 +9,7 @@ pub fn update_protected<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
-            if field.protected || type_.protected {
+            if field.protected.is_some() || type_.protected.is_some() {
                 if !config.server.auth.is_some() {
                     return Valid::fail(
                         "@protected operator is used without defining auth @server".to_owned(),

@@ -210,7 +210,7 @@ where
                 interface,
                 implements,
                 cache,
-                protected: protected.is_some(),
+                protected,
                 ..Default::default()
             }
         })
@@ -303,7 +303,7 @@ where
                     graphql,
                     expr,
                     cache,
-                    protected: protected.is_some(),
+                    protected,
                 }
             },
         )

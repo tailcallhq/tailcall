@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config, Protected};
+use super::Config;
 use crate::blueprint::TypeLike;
 use crate::directive::DirectiveCodec;
 
@@ -248,11 +248,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
         field.grpc.as_ref().map(|d| pos(d.to_directive())),
         field.expr.as_ref().map(|d| pos(d.to_directive())),
         field.cache.as_ref().map(|d| pos(d.to_directive())),
-        if field.protected {
-            Some(pos((Protected {}).to_directive()))
-        } else {
-            None
-        },
+        field.protected.as_ref().map(|d| pos(d.to_directive())),
     ];
 
     directives.into_iter().flatten().collect()

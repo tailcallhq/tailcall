@@ -4,21 +4,8 @@
 
 ```graphql
 schema
-  @server(
-    port: 8000
-    graphiql: true
-    auth: [
-      {
-        jwt: {
-          jwks: {
-            data: "{{link.jwks}}"
-          }
-        }
-        id: "jwt"
-      }
-    ]
-  )
-  @link(id: "jwks", type: File, src: "jwks.json"){
+  @server(port: 8000, graphiql: true, auth: [{jwt: {jwks: {data: "{{link.jwks}}"}}, id: "jwt"}])
+  @link(id: "jwks", type: File, src: "jwks.json") {
   query: Query
 }
 

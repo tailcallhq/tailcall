@@ -9,7 +9,7 @@ use schemars::schema::{
 use tailcall::config;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
+static DIRECTIVE_ALLOW_LIST: &[(&str, Entity, bool)] = &[
     ("server", Entity::Schema, false),
     ("link", Entity::Schema, true),
     ("upstream", Entity::Schema, false),
@@ -23,8 +23,9 @@ static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
     ("cache", Entity::FieldDefinition, false),
     ("expr", Entity::FieldDefinition, false),
     ("js", Entity::FieldDefinition, false),
+    ("protected", Entity::ObjectOrFieldDefinition, false),
 ];
-static OBJECT_WHITELIST: [&str; 18] = [
+static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "If",
     "Http",
@@ -43,6 +44,12 @@ static OBJECT_WHITELIST: [&str; 18] = [
     "ExprBody",
     "JS",
     "Modify",
+    "Auth",
+    "AuthEntry",
+    "AuthProvider",
+    "Basic",
+    "Jwt",
+    "Jwks",
 ];
 
 #[derive(Clone, Copy)]
@@ -50,6 +57,7 @@ enum Entity {
     Schema,
     Object,
     FieldDefinition,
+    ObjectOrFieldDefinition,
 }
 
 impl std::fmt::Debug for Entity {
@@ -63,6 +71,9 @@ impl std::fmt::Debug for Entity {
             }
             Entity::FieldDefinition => {
                 write!(f, "FIELD_DEFINITION")
+            }
+            Entity::ObjectOrFieldDefinition => {
+                write!(f, "OBJECT | FIELD_DEFINITION")
             }
         }
     }
@@ -501,8 +512,7 @@ fn write_all_directives(
     let schema = schemars::schema_for!(config::Config);
 
     let defs: BTreeMap<String, Schema> = schema.definitions;
-    let dirs: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-    for (name, schema) in dirs.into_iter() {
+    for (name, schema) in defs.iter() {
         let schema = schema.clone().into_object();
         write_directive(
             writer,

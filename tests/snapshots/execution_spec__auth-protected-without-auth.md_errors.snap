@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "@protected operator is used without defining auth @server",
+    "trace": [
+      "Query",
+      "data",
+      "@protected"
+    ],
+    "description": null
+  }
+]
