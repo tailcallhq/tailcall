@@ -1,7 +1,11 @@
 use std::cell::{OnceCell, RefCell};
+use std::task::{Context, Waker};
 use std::thread;
 
-use deno_core::{extension, serde_v8, v8, FastString, JsRuntime, RuntimeOptions};
+use deno_core::{
+    extension, serde_v8, v8, FastString, JsRuntime, PollEventLoopOptions, RuntimeOptions,
+};
+use futures_util::task::noop_waker;
 
 use super::channel::{Command, Event};
 use crate::{blueprint, WorkerIO};
@@ -60,36 +64,83 @@ impl WorkerIO<Event, Command> for Runtime {
             .spawn(async move {
                 LOCAL_RUNTIME.with(move |cell| {
                     let script = script.clone();
-                    cell.borrow().get_or_init(|| {
-                        LocalRuntime::try_new(script).expect("JS runtime not initialized")
-                    });
+                    cell.borrow()
+                        .get_or_init(|| LocalRuntime::try_new(script).unwrap());
                 });
-                on_event(event)
+                on_event(event)?;
+                poll_event_loop()?;
+                let command = get_commands();
+                command
             })
             .await?
     }
 }
 
-fn on_event(event: Event) -> anyhow::Result<Vec<Command>> {
+fn on_event(event: Event) -> anyhow::Result<()> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell
             .get_mut()
             .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
-        let scope = &mut runtime.js_runtime.handle_scope();
+        let js_runtime = &mut runtime.js_runtime;
+        let scope = &mut js_runtime.handle_scope();
         let channel = v8::Local::<v8::Object>::try_from(v8::Local::new(scope, &runtime.channel))?;
-        let server_emit_key = v8::String::new(scope, "serverEmit").unwrap();
-
-        let function = channel
-            .get(scope, server_emit_key.into())
+        let event = serde_v8::to_v8(scope, event)?;
+        let fn_server_emit = v8::String::new(scope, "serverEmit").unwrap();
+        let fn_server_emit = channel
+            .get(scope, fn_server_emit.into())
             .ok_or(anyhow::anyhow!("channel not initialized"))?;
 
-        let function = v8::Local::<v8::Function>::try_from(function)?;
-        let event = serde_v8::to_v8(scope, event)?;
-        let command = function.call(scope, channel.into(), &[event]);
+        let fn_server_emit = v8::Local::<v8::Function>::try_from(fn_server_emit)?;
+        fn_server_emit.call(scope, channel.into(), &[event]);
 
+        Ok(())
+    })
+}
+
+fn get_commands() -> anyhow::Result<Vec<Command>> {
+    LOCAL_RUNTIME.with_borrow_mut(|cell| {
+        let runtime = cell
+            .get_mut()
+            .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
+        let js_runtime = &mut runtime.js_runtime;
+        let scope = &mut js_runtime.handle_scope();
+        let channel = v8::Local::<v8::Object>::try_from(v8::Local::new(scope, &runtime.channel))?;
+        let func = v8::String::new(scope, "getMessages").unwrap();
+        let func = channel
+            .get(scope, func.into())
+            .ok_or(anyhow::anyhow!("channel not initialized"))?;
+
+        let func = v8::Local::<v8::Function>::try_from(func)?;
+        let command = func.call(scope, channel.into(), &[]);
         match command {
             None => Ok(vec![]),
             Some(output) => Ok(serde_v8::from_v8(scope, output)?),
         }
+    })
+}
+
+fn poll_event_loop() -> anyhow::Result<()> {
+    LOCAL_RUNTIME.with_borrow_mut(|cell| {
+        let runtime = cell
+            .get_mut()
+            .ok_or(anyhow::anyhow!("JS runtime not initialized"))
+            .expect("JS runtime not initialized");
+        let js_runtime = &mut runtime.js_runtime;
+        let waker = &mut Waker::from(noop_waker());
+        let mut context = Context::from_waker(waker);
+        let poll_options =
+            PollEventLoopOptions { wait_for_inspector: true, pump_v8_message_loop: true };
+
+        loop {
+            let poll = js_runtime.poll_event_loop(&mut context, poll_options);
+
+            if poll.is_pending() {
+                log::info!("JS Runtime polling: {:?}", thread::current().name());
+            } else {
+                break;
+            }
+        }
+
+        Ok(())
     })
 }
