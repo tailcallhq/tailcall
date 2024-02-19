@@ -15,12 +15,12 @@ type A {
   a: Int
   b: Int @modify(omit: true)
   c: Int @modify(omit: true)
-  bc: BC @const(data: {b: "{{value.b}}", c: "{{value.c}}"})
+  bc: BC @const(data: "{\"b\": {{value.b}}, \"c\": {{value.c}}}")
 }
 
 type BC {
-  b: String
-  c: String
+  b: Int
+  c: Int
 }
 ```
 

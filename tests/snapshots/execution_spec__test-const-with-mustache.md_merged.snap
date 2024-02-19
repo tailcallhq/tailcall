@@ -9,13 +9,13 @@ schema @server @upstream {
 type A {
   a: Int
   b: Int @modify(omit: true)
-  bc: BC @const(data: {b: "{{value.b}}", c: "{{value.c}}"})
+  bc: BC @const(data: "{\"b\": {{value.b}}, \"c\": {{value.c}}}")
   c: Int @modify(omit: true)
 }
 
 type BC {
-  b: String
-  c: String
+  b: Int
+  c: Int
 }
 
 type Query {
