@@ -1,0 +1,34 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "no argument 'input' found",
+    "trace": [
+      "Query",
+      "user",
+      "@http",
+      "path"
+    ],
+    "description": null
+  },
+  {
+    "message": "Field is already implemented from interface",
+    "trace": [
+      "User",
+      "userId",
+      "@modify"
+    ],
+    "description": null
+  },
+  {
+    "message": "Field is already implemented from interface",
+    "trace": [
+      "User",
+      "userName",
+      "@modify"
+    ],
+    "description": null
+  }
+]

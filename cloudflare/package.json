@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "deploy": "npx wrangler deploy --minify",
-    "publish": "npx wrangler publish --minify",
-    "dev": "npx wrangler dev --port 19194 --remote"
+    "dev-debug": "npx wrangler dev --port 19194 --env debug",
+    "dev": "npx wrangler dev --port 19194",
+    "test": "cargo install -q worker-build && worker-build && vitest --run"
   },
   "devDependencies": {
-    "wrangler": "^3.22.2"
+    "miniflare": "^3.20231218.3",
+    "vitest": "^1.2.1",
+    "wrangler": "^3.24.0",
+    "@cloudflare/workers-types": "^4.20240117.0"
   }
 }

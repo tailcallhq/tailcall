@@ -1,0 +1,10 @@
+schema
+  @server(port: 8802, version: HTTP2, hostname: "localhost", batchRequests: true)
+  @link(type: Cert, src: "./example.crt")
+  @link(type: Key, src: "./example-rsa.key") {
+  query: Query
+}
+
+type Query {
+  greet: String @const(data: "Hello World!")
+}

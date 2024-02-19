@@ -1,0 +1,36 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Parsing failed because of missing field `cond`",
+    "trace": [
+      "@expr",
+      "body",
+      ".",
+      "if"
+    ],
+    "description": null
+  },
+  {
+    "message": "Parsing failed because of missing field `then`",
+    "trace": [
+      "@expr",
+      "body",
+      ".",
+      "if"
+    ],
+    "description": null
+  },
+  {
+    "message": "Parsing failed because of missing field `else`",
+    "trace": [
+      "@expr",
+      "body",
+      ".",
+      "if"
+    ],
+    "description": null
+  }
+]

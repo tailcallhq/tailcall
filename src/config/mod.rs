@@ -1,20 +1,23 @@
 pub use config::*;
+pub use config_module::*;
+pub use expr::*;
 pub use key_values::*;
+pub use link::*;
 pub use opentelemetry::*;
 pub use server::*;
 pub use source::*;
-
+pub use upstream::*;
 mod config;
+mod config_module;
+mod expr;
 mod from_document;
 pub mod group_by;
 mod into_document;
 mod key_values;
+mod link;
 mod n_plus_one;
 mod opentelemetry;
 pub mod reader;
 mod server;
 mod source;
-
-fn is_default<T: Default + Eq>(val: &T) -> bool {
-  *val == T::default()
-}
+mod upstream;

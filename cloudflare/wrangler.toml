@@ -1,4 +1,3 @@
-
 name = "tc-worker"
 main = "build/worker/shim.mjs"
 compatibility_date = "2023-03-22"
@@ -6,13 +5,24 @@ compatibility_date = "2023-03-22"
 account_id = "59eda2a637301830ad43a6e3e4419346"
 
 [build]
-command = "cargo install -q worker-build && worker-build --release"
+command = "cargo install -q worker-build && worker-build"
 
 # the path to config must start with the binding name of respective r2 bucket.
 [vars]
-CONFIG = "/MY_R2/examples/jsonplaceholder.graphql"
+BUCKET = "MY_R2"
 
 [[r2_buckets]]
+binding = 'MY_R2'               # this binding/name is to be used in code
+bucket_name = 'configs'
+preview_bucket_name = 'configs'
+
+[env.debug.build]
+command = "cargo install -q worker-build && worker-build"
+
+[env.debug.vars]
+BUCKET = "MY_R2"
+
+[[env.debug.r2_buckets]]
 binding = 'MY_R2'               # this binding/name is to be used in code
 bucket_name = 'configs'
 preview_bucket_name = 'configs'

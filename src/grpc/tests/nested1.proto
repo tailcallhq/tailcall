@@ -1,0 +1,4 @@
+syntax = "proto3";
+
+import "src/grpc/tests/news.proto";
+import "src/grpc/tests/cycle.proto";
