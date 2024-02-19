@@ -28,13 +28,18 @@ async fn fetch(
 
 #[worker::event(start)]
 fn start() {
-    // Initialize Logger
-    let config = tracing_wasm::WASMLayerConfigBuilder::new()
-        .set_max_level(tracing::Level::INFO)
-        .build();
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
-    tracing_wasm::set_as_global_default_with_config(config)
+    tracing_subscriber::fmt()
+        .with_writer(
+            // To avoid trace events in the browser from showing their JS backtrace
+            tracing_subscriber_wasm::MakeConsoleWriter::default()
+                .map_trace_level_to(tracing::Level::INFO),
+        )
+        // For some reason, if we don't do this in the browser, we get
+        // a runtime error.
+        .without_time()
+        .init();
 }
 
 fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {
