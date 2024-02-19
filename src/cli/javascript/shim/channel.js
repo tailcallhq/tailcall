@@ -10,7 +10,7 @@ class Channel {
    * This is called from the client (JS) side.
    */
   addListener(listener) {
-    const id = this.get_id()
+    const id = this.newId()
     this._listeners[id] = listener
     return id
   }
@@ -24,7 +24,15 @@ class Channel {
    * This is called from the server (Rust) side.
    */
   serverEmit(message) {
-    this._listeners.forEach((listener) => listener(message))
+    for (const listener of Object.values(this._listeners)) {
+      listener(message)
+    }
+  }
+
+  /**
+   * A destructive operation that returns all messages in the outbox.
+   */
+  getMessages() {
     const messages = this._outbox
     this._outbox = []
     return messages
@@ -39,10 +47,9 @@ class Channel {
   }
 
   /**
-   * Creates a unique id for a message.
-   * TODO: move to a separate module.
+   * Creates a unique id for a listener.
    */
-  get_id() {
+  newId() {
     return this._id++
   }
 }
