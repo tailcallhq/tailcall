@@ -10,21 +10,6 @@ use crate::{HttpIO, WorkerIO};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Message {
-    pub message: MessageContent,
-    pub id: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub enum MessageContent {
-    Request(JsRequest),
-    Response(JsResponse),
-    Empty,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub struct Continue<A> {
     message: A,
     id: u64,
