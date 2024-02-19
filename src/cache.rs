@@ -22,19 +22,6 @@ impl<K: Hash + Eq, V: Clone> InMemoryCache<K, V> {
     pub fn new() -> Self {
         InMemoryCache { data: Arc::new(RwLock::new(TtlCache::new(CACHE_CAPACITY))) }
     }
-
-    pub fn hit_rate(&self) -> Option<f64> {
-        let cache = self.data.read().unwrap();
-        let hits = cache.hit_count();
-        let misses = cache.miss_count();
-        drop(cache);
-
-        if hits + misses > 0 {
-            return Some(hits as f64 / (hits + misses) as f64);
-        }
-
-        None
-    }
 }
 
 #[async_trait::async_trait]
@@ -50,6 +37,19 @@ impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> crate::Cache for InMemo
 
     async fn get<'a>(&'a self, key: &'a K) -> anyhow::Result<Option<Self::Value>> {
         Ok(self.data.read().unwrap().get(key).cloned())
+    }
+
+    fn hit_rate(&self) -> Option<f64> {
+        let cache = self.data.read().unwrap();
+        let hits = cache.hit_count();
+        let misses = cache.miss_count();
+        drop(cache);
+
+        if hits + misses > 0 {
+            return Some(hits as f64 / (hits + misses) as f64);
+        }
+
+        None
     }
 }
 

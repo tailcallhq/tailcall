@@ -13,6 +13,14 @@
         "$ref": "#/definitions/Link"
       }
     },
+    "opentelemetry": {
+      "description": "Enable [opentelemetry](https://opentelemetry.io) support",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Opentelemetry"
+        }
+      ]
+    },
     "schema": {
       "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
       "allOf": [
@@ -1303,6 +1311,64 @@
     "Omit": {
       "type": "object"
     },
+    "Opentelemetry": {
+      "type": "object",
+      "properties": {
+        "export": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/OpentelemetryExporter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "OpentelemetryExporter": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "stdout"
+          ],
+          "properties": {
+            "stdout": {
+              "$ref": "#/definitions/StdoutExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "otlp"
+          ],
+          "properties": {
+            "otlp": {
+              "$ref": "#/definitions/OtlpExporter"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "OtlpExporter": {
+      "description": "Output the opentelemetry data to otlp collector",
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "headers": {
+          "$ref": "#/definitions/KeyValues"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
     "Proxy": {
       "type": "object",
       "required": [
@@ -1487,6 +1553,16 @@
           ],
           "format": "uint",
           "minimum": 0.0
+        }
+      }
+    },
+    "StdoutExporter": {
+      "description": "Output the opentelemetry data to the stdout. Mostly used for debug purposes",
+      "type": "object",
+      "properties": {
+        "pretty": {
+          "description": "Output to stdout in pretty human-readable format",
+          "type": "boolean"
         }
       }
     },

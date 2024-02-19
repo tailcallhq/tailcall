@@ -27,6 +27,7 @@ use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
+use tracing_subscriber::layer::SubscriberExt;
 use url::Url;
 
 #[cfg(test)]
@@ -343,7 +344,7 @@ impl ExecutionSpec {
         for spec in specs {
             match spec.runner {
                 Some(Annotation::Skip) => {
-                    log::warn!("{} {} ... skipped", spec.name, spec.path.display())
+                    tracing::warn!("{} {} ... skipped", spec.name, spec.path.display())
                 }
                 Some(Annotation::Only) => only_specs.push(spec),
                 None => filtered_specs.push(spec),
@@ -763,7 +764,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
 
     // Parse and validate all server configs + check for identity
-    log::info!("{} {} ...", spec.name, spec.path.display());
+    tracing::info!("{} {} ...", spec.name, spec.path.display());
 
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
@@ -790,7 +791,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         match config {
             Ok(_) => {
-                log::error!("\terror FAIL");
+                tracing::error!("\terror FAIL");
                 panic!(
                     "Spec {} {:?} with \"sdl error\" directive did not have a validation error.",
                     spec.name, spec.path
@@ -800,14 +801,14 @@ async fn assert_spec(spec: ExecutionSpec) {
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                log::info!("\terrors... (snapshot)");
+                tracing::info!("\terrors... (snapshot)");
 
                 let snapshot_name = format!("{}_errors", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
 
                 if will_insta_panic {
-                    log::info!("\terrors ok");
+                    tracing::info!("\terrors ok");
                 }
             }
         };
@@ -829,7 +830,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = Config::default().merge_right(&config);
 
-        log::info!("\tserver #{} parse ok", i + 1);
+        tracing::info!("\tserver #{} parse ok", i + 1);
 
         // TODO: we should probably figure out a way to do this for every test
         // but GraphQL identity checking is very hard, since a lot depends on the code style
@@ -847,7 +848,7 @@ async fn assert_spec(spec: ExecutionSpec) {
                     spec.path,
                 );
 
-                log::info!("\tserver #{} identity ok", i + 1);
+                tracing::info!("\tserver #{} identity ok", i + 1);
             } else {
                 panic!(
                     "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
@@ -860,7 +861,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // merged: Run merged specs
-    log::info!("\tmerged... (snapshot)");
+    tracing::info!("\tmerged... (snapshot)");
 
     let merged = server
         .iter()
@@ -872,7 +873,7 @@ async fn assert_spec(spec: ExecutionSpec) {
     insta::assert_snapshot!(snapshot_name, merged);
 
     if will_insta_panic {
-        log::info!("\tmerged ok");
+        tracing::info!("\tmerged ok");
     }
 
     // Resolve all configs
@@ -907,11 +908,11 @@ async fn assert_spec(spec: ExecutionSpec) {
         let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
 
-        log::info!("\tclient... (snapshot)");
+        tracing::info!("\tclient... (snapshot)");
         insta::assert_snapshot!(snapshot_name, client);
 
         if will_insta_panic {
-            log::info!("\tclient ok");
+            tracing::info!("\tclient ok");
         }
     }
 
@@ -949,11 +950,11 @@ async fn assert_spec(spec: ExecutionSpec) {
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
-            log::info!("\tassert #{}... (snapshot)", i + 1);
+            tracing::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
 
             if will_insta_panic {
-                log::info!("\tassert #{} ok", i + 1);
+                tracing::info!("\tassert #{} ok", i + 1);
             }
         }
     }
@@ -961,10 +962,13 @@ async fn assert_spec(spec: ExecutionSpec) {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::builder()
-        .filter(Some("execution_spec"), log::LevelFilter::Info)
-        .init();
-
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .compact()
+        .finish()
+        .with(tracing_subscriber::filter::filter_fn(|metadata| {
+            metadata.target().starts_with("execution_spec")
+        }));
     // Explicitly only run one test if specified in command line args
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
     let explicit = std::env::args().skip(1).find(|x| !x.starts_with("--"));

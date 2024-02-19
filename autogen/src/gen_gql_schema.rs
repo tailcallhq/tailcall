@@ -9,7 +9,7 @@ use schemars::schema::{
 use tailcall::config;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
+static DIRECTIVE_ALLOW_LIST: &[(&str, Entity, bool)] = &[
     ("server", Entity::Schema, false),
     ("link", Entity::Schema, true),
     ("upstream", Entity::Schema, false),
@@ -23,8 +23,9 @@ static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
     ("cache", Entity::FieldDefinition, false),
     ("expr", Entity::FieldDefinition, false),
     ("js", Entity::FieldDefinition, false),
+    ("opentelemetry", Entity::Schema, false),
 ];
-static OBJECT_WHITELIST: [&str; 18] = [
+static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "If",
     "Http",
@@ -43,6 +44,11 @@ static OBJECT_WHITELIST: [&str; 18] = [
     "ExprBody",
     "JS",
     "Modify",
+    "OpenTelemetry",
+    "OpenTelemetryInner",
+    "OpenTelemetryExporter",
+    "StdoutExporter",
+    "OtlpExporter",
 ];
 
 #[derive(Clone, Copy)]

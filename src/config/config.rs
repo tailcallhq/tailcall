@@ -62,6 +62,7 @@ pub struct Config {
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
     #[serde(default, skip_serializing_if = "is_default")]
+    /// Enable [opentelemetry](https://opentelemetry.io) support
     pub opentelemetry: Opentelemetry,
 }
 impl Config {
@@ -178,7 +179,15 @@ impl Config {
         let links = merge_links(self.links, other.links.clone());
         let opentelemetry = self.opentelemetry.merge_right(other.opentelemetry.clone());
 
-        Self { server, upstream, types, schema, unions, links, opentelemetry }
+        Self {
+            server,
+            upstream,
+            types,
+            schema,
+            unions,
+            links,
+            opentelemetry,
+        }
     }
 }
 

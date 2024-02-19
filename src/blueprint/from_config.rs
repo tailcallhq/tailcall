@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
 use self::opentelemetry::to_opentelemetry;
-
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;

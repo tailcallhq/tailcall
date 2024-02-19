@@ -30,8 +30,8 @@ async fn fetch(
 fn start() {
     // Initialize Logger
     let config = tracing_wasm::WASMLayerConfigBuilder::new()
-      .set_max_level(tracing::Level::INFO)
-      .build();
+        .set_max_level(tracing::Level::INFO)
+        .build();
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
     tracing_wasm::set_as_global_default_with_config(config)

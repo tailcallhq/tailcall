@@ -15,7 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
-use crate::runtime::TargetRuntime;
+use crate::runtime::{TargetRuntime, TargetRuntimeContext};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -222,7 +222,9 @@ impl ConfigReader {
         let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_module = self.ext_links(config_module, parent_dir).await?;
+        let mut config_module = self.ext_links(config_module, parent_dir).await?;
+
+        self.update_opentelemetry(&mut config_module)?;
 
         Ok(config_module)
     }
@@ -273,6 +275,17 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
+    }
+
+    fn update_opentelemetry(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
+        let server = &mut config_module.config.server;
+        let opentelemetry = &mut config_module.config.opentelemetry;
+
+        let runtime_ctx = TargetRuntimeContext { runtime: &self.runtime, vars: &server.vars };
+
+        opentelemetry.render_mustache(&runtime_ctx)?;
+
+        Ok(())
     }
 }
 
