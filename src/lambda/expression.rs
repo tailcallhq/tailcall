@@ -100,10 +100,7 @@ impl Eval for Expression {
                         .cloned()
                         .unwrap_or(async_graphql::Value::Null)),
                 },
-                Expression::Mustache(mustache) => {
-                    let rendered = mustache.render(ctx);
-                    Ok(serde_json::from_str(&rendered)?)
-                }
+                Expression::Mustache(mustache) => mustache.render_value(ctx),
                 Expression::Input(input, path) => {
                     let inp = &input.eval(ctx, conc).await?;
                     Ok(inp

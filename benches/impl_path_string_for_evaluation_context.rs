@@ -193,11 +193,15 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
     // value
     assert_eq!(
         eval_ctx.path_string(&["value", "root"]),
-        Some(Cow::Borrowed("root-test"))
+        Some(Cow::Owned(async_graphql::Value::String(
+            "root-test".to_owned()
+        )))
     );
     assert_eq!(
         eval_ctx.path_string(&["value", "nested", "existing"]),
-        Some(Cow::Borrowed("nested-test"))
+        Some(Cow::Owned(async_graphql::Value::String(
+            "nested-test".to_owned()
+        )))
     );
     assert_eq!(eval_ctx.path_string(&["value", "missing"]), None);
     assert_eq!(eval_ctx.path_string(&["value", "nested", "missing"]), None);
@@ -205,11 +209,15 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
     // args
     assert_eq!(
         eval_ctx.path_string(&["args", "root"]),
-        Some(Cow::Borrowed("root-test"))
+        Some(Cow::Owned(async_graphql::Value::String(
+            "root-test".to_owned()
+        )))
     );
     assert_eq!(
         eval_ctx.path_string(&["args", "nested", "existing"]),
-        Some(Cow::Borrowed("nested-test"))
+        Some(Cow::Owned(async_graphql::Value::String(
+            "nested-test".to_owned()
+        )))
     );
     assert_eq!(eval_ctx.path_string(&["args", "missing"]), None);
     assert_eq!(eval_ctx.path_string(&["args", "nested", "missing"]), None);
@@ -217,14 +225,16 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
     // headers
     assert_eq!(
         eval_ctx.path_string(&["headers", "x-existing"]),
-        Some(Cow::Borrowed("header"))
+        Some(Cow::Owned(async_graphql::Value::String(
+            "header".to_owned()
+        )))
     );
     assert_eq!(eval_ctx.path_string(&["headers", "x-missing"]), None);
 
     // vars
     assert_eq!(
         eval_ctx.path_string(&["vars", "existing"]),
-        Some(Cow::Borrowed("var"))
+        Some(Cow::Owned(async_graphql::Value::String("var".to_owned())))
     );
     assert_eq!(eval_ctx.path_string(&["vars", "missing"]), None);
 }

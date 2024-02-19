@@ -281,7 +281,7 @@ mod tests {
         }
     }
     impl crate::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, async_graphql::Value>> {
             self.value.path_string(parts)
         }
     }

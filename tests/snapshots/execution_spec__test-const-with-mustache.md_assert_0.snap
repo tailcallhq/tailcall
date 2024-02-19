@@ -11,8 +11,8 @@ expression: response
     "data": {
       "a": {
         "bc": {
-          "b": "1",
-          "c": "2"
+          "b": 1,
+          "c": 2
         }
       }
     }

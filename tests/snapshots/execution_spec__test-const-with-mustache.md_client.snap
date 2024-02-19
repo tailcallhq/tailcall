@@ -8,8 +8,8 @@ type A {
 }
 
 type BC {
-  b: String
-  c: String
+  b: Int
+  c: Int
 }
 
 type Query {

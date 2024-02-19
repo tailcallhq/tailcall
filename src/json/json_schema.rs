@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
+use crate::mustache::Mustache;
 use crate::valid::{Valid, Validator};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -76,6 +77,17 @@ impl JsonSchema {
                             }
                         })
                         .unit()
+                    }
+                    async_graphql::Value::String(string) => {
+                        if let Ok(v) = Mustache::parse(string) {
+                            if !v.is_const() {
+                                Valid::succeed(())
+                            } else {
+                                Valid::fail("expected object")
+                            }
+                        } else {
+                            Valid::fail("expected object")
+                        }
                     }
                     _ => Valid::fail("expected object"),
                 }
