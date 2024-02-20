@@ -231,10 +231,10 @@ impl ConfigReader {
     async fn resolve_descriptors(
         &self,
         mut descriptors: HashMap<String, FileDescriptorProto>,
-        proto: FileDescriptorProto,
+        parent_proto: FileDescriptorProto,
     ) -> anyhow::Result<HashMap<String, FileDescriptorProto>> {
         let mut queue = VecDeque::new();
-        queue.push_back(proto.clone());
+        queue.push_back(parent_proto.clone());
 
         while let Some(file) = queue.pop_front() {
             for import in file.dependency.iter() {
@@ -246,7 +246,7 @@ impl ConfigReader {
             }
         }
 
-        descriptors.insert(String::new(), proto);
+        descriptors.insert(String::new(), parent_proto);
 
         Ok(descriptors)
     }
