@@ -117,7 +117,7 @@ impl ConfigReader {
                 }
                 LinkType::Protobuf => {
                     let descriptors = self
-                        .resolve_descriptors(HashMap::new(), source.path)
+                        .resolve_descriptors(HashMap::new(), self.read_proto(&source.path).await?)
                         .await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
@@ -231,11 +231,10 @@ impl ConfigReader {
     async fn resolve_descriptors(
         &self,
         mut descriptors: HashMap<String, FileDescriptorProto>,
-        proto_path: String,
+        proto: FileDescriptorProto,
     ) -> anyhow::Result<HashMap<String, FileDescriptorProto>> {
-        let parent_proto = self.read_proto(&proto_path).await?;
         let mut queue = VecDeque::new();
-        queue.push_back(parent_proto.clone());
+        queue.push_back(proto.clone());
 
         while let Some(file) = queue.pop_front() {
             for import in file.dependency.iter() {
@@ -247,7 +246,7 @@ impl ConfigReader {
             }
         }
 
-        descriptors.insert(proto_path, parent_proto);
+        descriptors.insert(String::new(), proto);
 
         Ok(descriptors)
     }
@@ -316,7 +315,7 @@ mod test_proto_config {
 
         let reader = ConfigReader::init(crate::runtime::test::init(None));
         let helper_map = reader
-            .resolve_descriptors(HashMap::new(), test_file)
+            .resolve_descriptors(HashMap::new(), reader.read_proto(&test_file).await?)
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {
