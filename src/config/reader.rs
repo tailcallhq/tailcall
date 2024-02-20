@@ -5,12 +5,18 @@ use std::sync::Arc;
 use anyhow::Context;
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
+use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
+use tonic::codegen::tokio_stream::StreamExt;
+use tonic_reflection::pb::server_reflection_client::ServerReflectionClient;
+use tonic_reflection::pb::server_reflection_request::MessageRequest;
+use tonic_reflection::pb::server_reflection_response::MessageResponse;
+use tonic_reflection::pb::ServerReflectionRequest;
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
@@ -143,6 +149,36 @@ impl ConfigReader {
                 LinkType::Key => {
                     config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
+                }
+                LinkType::ReflectionWithFileName => {
+                    let link = config_link.src.clone();
+                    let file_name = config_link.id.clone().context("Expected ID field in link operator as file name")?;
+                    let file_name_req = ServerReflectionRequest {
+                        host: "".to_string(), // we do not need this
+                        message_request: Some(MessageRequest::FileByFilename(file_name)),
+                    };
+                    let file = reflection_req(link, file_name_req).await?;
+                    if let MessageResponse::FileDescriptorResponse(file) = file {
+                        let descriptor = file.file_descriptor_proto.first().context("No descriptor found in response")?;
+                        let descriptor=  FileDescriptorProto::decode(descriptor)?;
+                        
+                    }
+                }
+                LinkType::ReflectionWithService => {}
+                LinkType::ReflectionAllFiles => {
+                    let list_service_req = ServerReflectionRequest {
+                        host: "".to_string(), // we do not need this
+                        message_request: Some(MessageRequest::ListServices(String::new())),
+                    };
+                    let list_service_resp = reflection_req(config_link.src.clone(), list_service_req).await?;
+                    if let MessageResponse::ListServicesResponse(list) = list_service_resp {
+                        for service in list.service {
+                            let list_service_req = ServerReflectionRequest {
+                                host: "".to_string(), // we do not need this
+                                message_request: Some(MessageRequest::ListServices(String::new())),
+                            };
+                        }
+                    }
                 }
             }
         }
@@ -354,6 +390,30 @@ mod test_proto_config {
     }
 }
 
+async fn reflection_req(
+    url: String,
+    request: ServerReflectionRequest,
+) -> anyhow::Result<MessageResponse> {
+    let channel = tonic::transport::Channel::from_shared(url)?
+        .connect()
+        .await?;
+    let mut client = ServerReflectionClient::new(channel);
+
+    let request = tonic::Request::new(tonic::codegen::tokio_stream::once(request));
+    let mut inbound = client.server_reflection_info(request).await?.into_inner();
+
+    let response = inbound
+        .next()
+        .await
+        .context("unable to make request")??
+        .message_response
+        .context("unable to make request")?;
+
+    // We only expect one response per request
+    assert!(inbound.next().await.is_none());
+    Ok(response)
+}
+
 #[cfg(test)]
 mod reader_tests {
     use std::path::Path;
@@ -402,9 +462,9 @@ mod reader_tests {
             format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
             format!("http://localhost:{port}/foo.json").as_str(), // with url extension
         ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
@@ -430,9 +490,9 @@ mod reader_tests {
             "examples/jsonplaceholder.graphql",
             "examples/jsonplaceholder.json",
         ]
-        .iter()
-        .map(|x| x.to_string())
-        .collect();
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(

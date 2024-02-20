@@ -12,6 +12,9 @@ pub enum LinkType {
     Script,
     Cert,
     Key,
+    ReflectionWithFileName,
+    ReflectionWithService,
+    ReflectionAllFiles,
 }
 
 impl Display for LinkType {
@@ -22,6 +25,9 @@ impl Display for LinkType {
             LinkType::Script => "Script",
             LinkType::Cert => "Cert",
             LinkType::Key => "Key",
+            LinkType::ReflectionWithFileName => "ReflectionWithFileName",
+            LinkType::ReflectionWithService => "ReflectionWithService",
+            LinkType::ReflectionAllFiles => "ReflectionAllFiles",
         })
     }
 }
