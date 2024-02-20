@@ -243,7 +243,8 @@ impl ConfigReader {
                 }
             }
         }
-        let mut descriptors = descriptors.into_values()
+        let mut descriptors = descriptors
+            .into_values()
             .collect::<Vec<FileDescriptorProto>>();
         descriptors.push(parent_proto);
         Ok(descriptors)
