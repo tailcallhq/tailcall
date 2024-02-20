@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(graphiql: true, port: 8000) @upstream(batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) @link(id: "news.NewsServicex", src: "http://localhost:50051", type: ReflectionWithService) {
+schema @server(graphiql: true, port: 8000) @upstream(batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) @link(id: "news.NewsService", src: "http://localhost:50051", type: ReflectionWithService) {
   query: Query
 }
 
