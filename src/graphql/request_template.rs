@@ -236,7 +236,7 @@ mod tests {
 
         assert_eq!(
             std::str::from_utf8(&body).unwrap(),
-            r#"{ "query": "mutation { create(id: \"baz\", struct: {bar: \"baz\",header: \"abc\"}) { a,b,c } }" }"#
+            r#"{ "query": "mutation { create(id: \"baz\", struct: {bar: \"baz\", header: \"abc\"}) { a,b,c } }" }"#
         );
     }
 
