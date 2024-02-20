@@ -202,10 +202,10 @@ mod tests {
     #[tokio::test]
     async fn request_with_empty_body() {
         let tmpl = RequestTemplate {
-            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            url: Mustache::parse("http://localhost:3000/"),
             headers: vec![(
                 HeaderName::from_static("test-header"),
-                Mustache::parse("value").unwrap(),
+                Mustache::parse("value"),
             )],
             operation: get_protobuf_op().await,
             body: None,
@@ -239,10 +239,10 @@ mod tests {
     #[tokio::test]
     async fn request_with_body() {
         let tmpl = RequestTemplate {
-            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            url: Mustache::parse("http://localhost:3000/"),
             headers: vec![],
             operation: get_protobuf_op().await,
-            body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
+            body: Some(Mustache::parse(r#"{ "name": "test" }"#)),
             operation_type: GraphQLOperationType::Query,
         };
         let ctx = Context::default();
@@ -256,10 +256,10 @@ mod tests {
 
     async fn request_template_with_body(body_str: &str) -> RequestTemplate {
         RequestTemplate {
-            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            url: Mustache::parse("http://localhost:3000/"),
             headers: vec![],
             operation: get_protobuf_op().await,
-            body: Some(Mustache::parse(body_str).unwrap()),
+            body: Some(Mustache::parse(body_str)),
             operation_type: GraphQLOperationType::Query,
         }
     }

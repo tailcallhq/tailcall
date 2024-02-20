@@ -1,16 +1,12 @@
 use crate::mustache::Mustache;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::Valid;
 
 pub fn to_body(body: Option<&str>) -> Valid<Option<Mustache>, String> {
     let Some(body) = body else {
         return Valid::succeed(None);
     };
 
-    Valid::from(
-        Mustache::parse(body)
-            .map(Some)
-            .map_err(|e| ValidationError::new(e.to_string())),
-    )
+    Valid::succeed(Some(Mustache::parse(body)))
 }
 
 #[cfg(test)]
@@ -30,9 +26,6 @@ mod tests {
     fn body_parse_success() {
         let result = to_body(Some("content"));
 
-        assert_eq!(
-            result,
-            Valid::succeed(Some(Mustache::parse("content").unwrap()))
-        );
+        assert_eq!(result, Valid::succeed(Some(Mustache::parse("content"))));
     }
 }

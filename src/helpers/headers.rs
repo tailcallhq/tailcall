@@ -13,10 +13,7 @@ pub fn to_mustache_headers(headers: &KeyValues) -> Valid<MustacheHeaders, String
         )
         .trace(k);
 
-        let value = Valid::from(
-            Mustache::parse(v.as_str()).map_err(|e| ValidationError::new(e.to_string())),
-        )
-        .trace(v);
+        let value = Valid::succeed(Mustache::parse(v.as_str()));
 
         name.zip(value).map(|(name, value)| (name, value))
     })
@@ -43,8 +40,8 @@ mod tests {
         assert_eq!(
             headers,
             vec![
-                (HeaderName::from_bytes(b"a")?, Mustache::parse("str")?),
-                (HeaderName::from_bytes(b"b")?, Mustache::parse("123")?)
+                (HeaderName::from_bytes(b"a")?, Mustache::parse("str")),
+                (HeaderName::from_bytes(b"b")?, Mustache::parse("123"))
             ]
         );
 

@@ -1,8 +1,8 @@
 use crate::mustache::Mustache;
-use crate::valid::{Valid, ValidationError};
+use crate::valid::Valid;
 
 pub fn to_url(url: &str) -> Valid<Mustache, String> {
-    Valid::from(Mustache::parse(url).map_err(|e| ValidationError::new(e.to_string())))
+    Valid::succeed(Mustache::parse(url))
 }
 
 #[cfg(test)]
@@ -18,7 +18,7 @@ mod tests {
 
         assert_eq!(
             url,
-            Valid::succeed(Mustache::parse("http://localhost:3000").unwrap())
+            Valid::succeed(Mustache::parse("http://localhost:3000"))
         );
     }
 }

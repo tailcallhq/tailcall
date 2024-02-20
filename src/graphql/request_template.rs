@@ -111,7 +111,7 @@ impl RequestTemplate {
         if let Some(args) = args.as_ref() {
             operation_arguments = Some(
                 args.iter()
-                    .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v)?)))
+                    .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v))))
                     .collect::<anyhow::Result<Vec<_>>>()?,
             );
         }

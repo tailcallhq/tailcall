@@ -37,12 +37,12 @@ impl Mustache {
         }
     }
 
-    // TODO: infallible function, no need to return Result
-    pub fn parse(str: &str) -> anyhow::Result<Mustache> {
+    pub fn parse(str: &str) -> Mustache {
         let result = parse_mustache(str).finish();
+
         match result {
-            Ok((_, mustache)) => Ok(mustache),
-            Err(_) => Ok(Mustache::from(vec![Segment::Literal(str.to_string())])),
+            Ok((_, mustache)) => mustache,
+            Err(_) => Mustache::from(vec![Segment::Literal(str.to_string())]),
         }
     }
 
@@ -158,7 +158,7 @@ mod tests {
         #[test]
         fn test_single_literal() {
             let s = r"hello/world";
-            let mustache: Mustache = Mustache::parse(s).unwrap();
+            let mustache: Mustache = Mustache::parse(s);
             assert_eq!(
                 mustache,
                 Mustache::from(vec![Segment::Literal("hello/world".to_string())])
@@ -168,7 +168,7 @@ mod tests {
         #[test]
         fn test_single_template() {
             let s = r"{{hello.world}}";
-            let mustache: Mustache = Mustache::parse(s).unwrap();
+            let mustache: Mustache = Mustache::parse(s);
             assert_eq!(
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
@@ -181,7 +181,7 @@ mod tests {
         #[test]
         fn test_mixed() {
             let s = r"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end";
-            let mustache: Mustache = Mustache::parse(s).unwrap();
+            let mustache: Mustache = Mustache::parse(s);
             assert_eq!(
                 mustache,
                 Mustache::from(vec![
@@ -197,7 +197,7 @@ mod tests {
         #[test]
         fn test_with_spaces() {
             let s = "{{ foo . bar }}";
-            let mustache: Mustache = Mustache::parse(s).unwrap();
+            let mustache: Mustache = Mustache::parse(s);
             assert_eq!(
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
@@ -209,7 +209,7 @@ mod tests {
 
         #[test]
         fn test_parse_expression_with_valid_input() {
-            let result = Mustache::parse("{{ foo.bar }} extra").unwrap();
+            let result = Mustache::parse("{{ foo.bar }} extra");
             let expected = Mustache::from(vec![
                 Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                 Segment::Literal(" extra".to_string()),
@@ -219,14 +219,14 @@ mod tests {
 
         #[test]
         fn test_parse_expression_with_invalid_input() {
-            let result = Mustache::parse("foo.bar }}").unwrap();
+            let result = Mustache::parse("foo.bar }}");
             let expected = Mustache::from(vec![Segment::Literal("foo.bar }}".to_string())]);
             assert_eq!(result, expected);
         }
 
         #[test]
         fn test_parse_segments_mixed() {
-            let result = Mustache::parse("prefix {{foo.bar}} middle {{baz.qux}} suffix").unwrap();
+            let result = Mustache::parse("prefix {{foo.bar}} middle {{baz.qux}} suffix");
             let expected = Mustache::from(vec![
                 Segment::Literal("prefix ".to_string()),
                 Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
@@ -239,14 +239,14 @@ mod tests {
 
         #[test]
         fn test_parse_segments_only_literal() {
-            let result = Mustache::parse("just a string").unwrap();
+            let result = Mustache::parse("just a string");
             let expected = Mustache(vec![Segment::Literal("just a string".to_string())]);
             assert_eq!(result, expected);
         }
 
         #[test]
         fn test_parse_segments_only_expression() {
-            let result = Mustache::parse("{{foo.bar}}").unwrap();
+            let result = Mustache::parse("{{foo.bar}}");
             let expected = Mustache(vec![Segment::Expression(vec![
                 "foo".to_string(),
                 "bar".to_string(),
@@ -257,7 +257,7 @@ mod tests {
         #[test]
         fn test_unfinished_expression() {
             let s = r"{{hello.world";
-            let mustache: Mustache = Mustache::parse(s).unwrap();
+            let mustache: Mustache = Mustache::parse(s);
             assert_eq!(
                 mustache,
                 Mustache::from(vec![Segment::Literal("{{hello.world".to_string())])
@@ -266,7 +266,7 @@ mod tests {
 
         #[test]
         fn test_new_number() {
-            let mustache = Mustache::parse("123").unwrap();
+            let mustache = Mustache::parse("123");
             assert_eq!(
                 mustache,
                 Mustache::from(vec![Segment::Literal("123".to_string())])
@@ -275,7 +275,7 @@ mod tests {
 
         #[test]
         fn parse_env_name() {
-            let result = Mustache::parse("{{env.FOO}}").unwrap();
+            let result = Mustache::parse("{{env.FOO}}");
             assert_eq!(
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
@@ -287,7 +287,7 @@ mod tests {
 
         #[test]
         fn parse_env_with_underscores() {
-            let result = Mustache::parse("{{env.FOO_BAR}}").unwrap();
+            let result = Mustache::parse("{{env.FOO_BAR}}");
             assert_eq!(
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
@@ -308,7 +308,7 @@ mod tests {
         #[test]
         fn test_query_params_template() {
             let s = r"/v1/templates?project-id={{value.projectId}}";
-            let mustache: Mustache = Mustache::parse(s).unwrap();
+            let mustache: Mustache = Mustache::parse(s);
             let ctx = json!(json!({"value": {"projectId": "123"}}));
             let result = mustache.render(&ctx);
             assert_eq!(result, "/v1/templates?project-id=123");
@@ -367,8 +367,7 @@ mod tests {
 
         #[test]
         fn test_json_like() {
-            let mustache =
-                Mustache::parse(r#"{registered: "{{foo}}", display: "{{bar}}"}"#).unwrap();
+            let mustache = Mustache::parse(r#"{registered: "{{foo}}", display: "{{bar}}"}"#);
             let ctx = json!({"foo": "baz", "bar": "qux"});
             let result = mustache.render(&ctx);
             assert_eq!(result, r#"{registered: "baz", display: "qux"}"#);
@@ -376,7 +375,7 @@ mod tests {
 
         #[test]
         fn test_json_like_static() {
-            let mustache = Mustache::parse(r#"{registered: "foo", display: "bar"}"#).unwrap();
+            let mustache = Mustache::parse(r#"{registered: "foo", display: "bar"}"#);
             let ctx = json!({}); // Context is not used in this case
             let result = mustache.render(&ctx);
             assert_eq!(result, r#"{registered: "foo", display: "bar"}"#);
