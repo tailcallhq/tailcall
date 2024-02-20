@@ -47,7 +47,7 @@ async-graphql = { version = "7.0.1", features = [
     "dataloader",
     "apollo_tracing",
 ] }
-async-graphql-value = "7.0.1"
+async-graphql-value = "7.0.2"
 indexmap = "2.2"
 once_cell = "1.19.0"
 clap = { version = "4.5.1", features = ["derive"] }
