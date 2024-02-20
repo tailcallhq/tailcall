@@ -116,14 +116,12 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let descriptors = self
-                        .resolve_descriptors(HashMap::new(), self.read_proto(&source.path).await?)
+                    let mut descriptors = self
+                        .resolve_descriptors(self.read_proto(&source.path).await?)
                         .await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
-                    for (_, v) in descriptors {
-                        file_descriptor_set.file.push(v);
-                    }
+                    file_descriptor_set.file.append(&mut descriptors);
 
                     config_module
                         .extensions
@@ -230,9 +228,9 @@ impl ConfigReader {
     /// Performs BFS to import all nested proto files
     async fn resolve_descriptors(
         &self,
-        mut descriptors: HashMap<String, FileDescriptorProto>,
         parent_proto: FileDescriptorProto,
-    ) -> anyhow::Result<HashMap<String, FileDescriptorProto>> {
+    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
+        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
         let mut queue = VecDeque::new();
         queue.push_back(parent_proto.clone());
 
@@ -245,9 +243,9 @@ impl ConfigReader {
                 }
             }
         }
-
-        descriptors.insert(String::new(), parent_proto);
-
+        let mut descriptors = descriptors.into_values()
+            .collect::<Vec<FileDescriptorProto>>();
+        descriptors.push(parent_proto);
         Ok(descriptors)
     }
 
@@ -277,7 +275,6 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod test_proto_config {
-    use std::collections::HashMap;
     use std::path::{Path, PathBuf};
 
     use anyhow::{Context, Result};
@@ -315,7 +312,7 @@ mod test_proto_config {
 
         let reader = ConfigReader::init(crate::runtime::test::init(None));
         let helper_map = reader
-            .resolve_descriptors(HashMap::new(), reader.read_proto(&test_file).await?)
+            .resolve_descriptors(reader.read_proto(&test_file).await?)
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {
@@ -325,13 +322,17 @@ mod test_proto_config {
                 path_to_file_name(path.as_path()).context("It must be able to extract path")?;
             let source = tokio::fs::read_to_string(path).await?;
             let expected = protox_parse::parse(&path_str, &source)?;
-            let actual = helper_map.get(&expected.name.unwrap()).unwrap();
+            let actual = helper_map
+                .iter()
+                .find(|v| v.name.eq(&expected.name))
+                .unwrap();
 
             assert_eq!(&expected.dependency, &actual.dependency);
         }
 
         Ok(())
     }
+
     fn path_to_file_name(path: &Path) -> Option<String> {
         let components: Vec<_> = path.components().collect();
 
