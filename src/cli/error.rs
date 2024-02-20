@@ -4,7 +4,7 @@ use colored::Colorize;
 use derive_setters::Setters;
 use thiserror::Error;
 
-use crate::valid::ValidationError;
+use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(Debug, Error, Setters)]
 pub struct CLIError {
@@ -213,6 +213,28 @@ impl From<ValidationError<String>> for CLIError {
 impl From<Box<dyn std::error::Error>> for CLIError {
     fn from(value: Box<dyn std::error::Error>) -> Self {
         CLIError::new(value.to_string().as_str())
+    }
+}
+
+pub trait ToCLIResult<T> {
+    fn to_cli_result(self) -> Result<T, CLIError>;
+}
+
+impl<T, E> ToCLIResult<T> for Result<T, E>
+where
+    E: Into<CLIError>,
+{
+    fn to_cli_result(self) -> Result<T, CLIError> {
+        self.map_err(|e| e.into())
+    }
+}
+
+impl<T, E> ToCLIResult<T> for Valid<T, E>
+where
+    CLIError: From<ValidationError<E>>,
+{
+    fn to_cli_result(self) -> Result<T, CLIError> {
+        self.to_result().map_err(|e| e.into())
     }
 }
 

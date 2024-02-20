@@ -109,7 +109,6 @@ pub async fn graphql_query(
     let response = request.data(req_ctx).execute(&app_ctx.schema).await;
     let mut resp = response.to_response()?;
     update_response_headers(&mut resp, app_ctx);
-    println!("{resp:?}");
     Ok(resp)
 }
 

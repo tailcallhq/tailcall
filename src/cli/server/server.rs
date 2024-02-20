@@ -10,6 +10,7 @@ use super::server_config::ServerConfig;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::CLIError;
 use crate::config::ConfigModule;
+use crate::valid::Validator;
 
 pub struct Server {
     config_module: ConfigModule,
@@ -32,6 +33,8 @@ impl Server {
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
+        blueprint.validate_rest_apis().await.to_result()?;
+
         let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
         match blueprint.server.http.clone() {

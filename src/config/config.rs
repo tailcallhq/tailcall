@@ -1,10 +1,13 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display, Formatter, Write as _};
+use std::hash::Hasher;
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
+use async_graphql::parser::types::{Type as GQLType, ServiceDocument, BaseType};
+use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use itertools::{EitherOrBoth, Itertools};
 use serde::de::{self, Visitor};
@@ -14,6 +17,7 @@ use serde_json::Value;
 
 use super::{Expr, Link, Server, Upstream};
 use crate::async_graphql_hyper::GraphQLRequest;
+use crate::blueprint::OperationQuery;
 use crate::config::from_document::{from_document, from_query};
 use crate::config::source::Source;
 use crate::config::KeyValues;
@@ -67,7 +71,7 @@ pub struct Config {
     pub links: Vec<Link>,
 
     ///
-    /// A list of all links in the schema.
+    /// A collection of all the REST API's that have to be exposed.
     ///
     #[serde(default, skip, skip_serializing_if = "is_default")]
     pub rest_apis: RestApis,
@@ -186,6 +190,7 @@ impl Config {
         let links = merge_links(self.links, other.links.clone());
         let rest_apis = self.rest_apis.merge_right(other.rest_apis.clone());
 
+
         Self { server, upstream, types, schema, unions, links, rest_apis }
     }
 }
@@ -282,6 +287,19 @@ pub struct Cache {
 pub struct RestApis(pub BTreeMap<Rest, String>);
 
 impl RestApis {
+    pub fn create_operations(&self) -> Vec<OperationQuery> {
+        self.0.iter().map(|(k, v)| {
+            let variables = ConstValue::Object(k
+                .path
+                .variables()
+                .map(|var| (async_graphql::Name::new(var.name.as_ref()), var.default_value()))
+                .collect());
+            let variables = async_graphql::Variables::from_value(variables);
+            OperationQuery::new_with_variables(v.into(), "".into(), variables)
+        })
+            .collect()
+    }
+
     pub fn dispatch_path(&self, method: hyper::Method, path: &str) -> Result<GraphQLRequest> {
         let path = format!("\"{path}\"");
         let mut deserializer = serde_json::Deserializer::new(StrRead::new(path.as_str()));
@@ -315,7 +333,7 @@ impl PartialEq for RestApis {
 impl Eq for RestApis {}
 
 impl RestApis {
-    fn merge_right(mut self, other: Self) -> Self {
+    pub fn merge_right(mut self, other: Self) -> Self {
         self.0.extend(other.0);
         self
     }
@@ -354,8 +372,8 @@ impl PartialEq for RestPath {
             .zip_longest(other.tokens.iter())
             .all(|either_or_both| match either_or_both {
                 EitherOrBoth::Both(Token::Static(a), Token::Static(b)) => a.eq(b),
-                EitherOrBoth::Both(Token::Variable(_), _) => true,
-                EitherOrBoth::Both(_, Token::Variable(_)) => true,
+                EitherOrBoth::Both(Token::Variable { .. }, _) => true,
+                EitherOrBoth::Both(_, Token::Variable { .. }) => true,
                 _ => false,
             })
     }
@@ -387,9 +405,16 @@ impl Ord for RestPath {
 }
 
 impl RestPath {
-    pub fn variables(&self) -> impl Iterator<Item = &String> {
+    pub fn variables_mut(&mut self) -> impl Iterator<Item = &mut Variable> {
+        self.tokens.iter_mut().filter_map(|token| match token {
+            Token::Variable(var) => Some(var),
+            _ => None,
+        })
+    }
+
+    pub fn variables(&self) -> impl Iterator<Item = &Variable> {
         self.tokens.iter().filter_map(|token| match token {
-            Token::Variable(val) => Some(val),
+            Token::Variable(var) => Some(var),
             _ => None,
         })
     }
@@ -397,8 +422,8 @@ impl RestPath {
     pub fn extract_variable_values_from(self, req_path: RestPath) -> serde_json::Value {
         let mut values = serde_json::Map::new();
         for (token, req_token) in self.tokens.into_iter().zip(req_path.tokens.into_iter()) {
-            if let (Token::Variable(name), Token::Static(val)) = (token, req_token) {
-                values.insert(name, serde_json::Value::String(val));
+            if let (Token::Variable(var), Token::Static(val)) = (token, req_token) {
+                values.insert(var.name.to_string(), serde_json::Value::String(val.to_string()));
             }
         }
         serde_json::Value::Object(values)
@@ -437,9 +462,10 @@ impl<'de> Deserialize<'de> for RestPath {
                 let tokens = tokens
                     .map(|val| {
                         if let Some(var_name) = val.strip_prefix('$') {
-                            Token::Variable(var_name.to_string())
+                            let var = Variable { name: var_name.into(), typ: None };
+                            Token::Variable(var)
                         } else {
-                            Token::Static(val.to_string())
+                            Token::Static(val.into())
                         }
                     })
                     .collect();
@@ -469,15 +495,66 @@ impl Serialize for RestPath {
 
 #[derive(Clone, Debug, PartialEq, Hash, Eq, schemars::JsonSchema)]
 pub enum Token {
-    Static(String),
-    Variable(String),
+    Static(Arc<str>),
+    Variable(Variable)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+pub struct Variable {
+    pub name: Arc<str>,
+    #[serde(skip)]
+    pub typ: Option<GQLType>,
+}
+
+pub fn gql_type_default_value(typ: &GQLType) -> ConstValue {
+    match typ {
+        GQLType { nullable: true, .. } => ConstValue::Null,
+        GQLType { base, .. } => match base {
+            BaseType::Named(name) => match name.as_str() {
+                "Int" => 0.into(),
+                "String" => "".into(),
+                "Boolean" => false.into(),
+                "Float" => 0.0.into(),
+                _ => ConstValue::Null,
+            },
+            BaseType::List(typ) => ConstValue::List(vec![gql_type_default_value(typ.as_ref())])
+        }
+    }
+}
+
+impl Variable {
+    pub fn default_value(&self) -> ConstValue {
+        match &self.typ {
+            None => ConstValue::Null,
+            Some(typ) => gql_type_default_value(typ),
+        }
+    }
+}
+
+impl std::hash::Hash for Variable {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state)
+    }
+}
+
+impl PartialOrd for Variable {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.name.partial_cmp(&other.name)
+    }
+}
+
+
+impl Ord for Variable {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name.cmp(&other.name)
+    }
 }
 
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
             Token::Static(val) => val.to_string(),
-            Token::Variable(val) => format!("${}", val),
+            Token::Variable(var) => format!("${}", var.name),
         };
         write!(f, "{}", str)
     }
@@ -893,10 +970,15 @@ impl Config {
         match doc {
             Ok(doc) => from_document(doc),
             Err(e) => {
+                let msg = e.to_string();
+                if !msg.ends_with("expected type_system_definition") {
+                    return Valid::fail(msg)
+                }
+
                 let doc = async_graphql::parser::parse_query(sdl);
                 match doc {
                     Ok(doc) => from_query(sdl, doc),
-                    Err(_) => Valid::fail(e.to_string()),
+                    Err(e) => Valid::fail(e.to_string()),
                 }
             }
         }

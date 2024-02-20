@@ -5,13 +5,14 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::config::Config;
+use crate::config::{Config, RestApis};
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default, Setters)]
 pub struct ConfigModule {
     pub config: Config,
     pub extensions: Extensions,
+    pub rest_apis: RestApis,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -69,6 +70,7 @@ impl ConfigModule {
     pub fn merge_right(mut self, other: &Self) -> Self {
         self.config = self.config.merge_right(&other.config);
         self.extensions = self.extensions.merge_right(&other.extensions);
+        self.rest_apis = self.rest_apis.merge_right(other.rest_apis.clone());
         self
     }
 }
@@ -82,6 +84,6 @@ impl Deref for ConfigModule {
 
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        ConfigModule { config, ..Default::default() }
+        ConfigModule { rest_apis: config.rest_apis.clone(), config, ..Default::default() }
     }
 }

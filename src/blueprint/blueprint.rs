@@ -1,15 +1,17 @@
 use std::collections::{BTreeSet, HashMap};
 
-use async_graphql::dynamic::{Schema, SchemaBuilder};
+use async_graphql::dynamic::Schema;
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::GlobalTimeout;
+use super::{GlobalTimeout, validate_operations};
 use crate::blueprint::{Server, Upstream};
+use crate::blueprint::into_schema::to_schema_builder_without_resolver;
 use crate::config::RestApis;
 use crate::lambda::Expression;
+use crate::valid::Valid;
 
 /// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
 /// It can only be generated from a valid Config.
@@ -218,13 +220,13 @@ impl Blueprint {
     ///
     pub fn to_schema_with(&self, schema_modifiers: SchemaModifiers) -> Schema {
         let blueprint = if schema_modifiers.no_resolver {
-            self.clone().drop_resolvers()
-        } else {
             self.clone()
+        } else {
+            self.clone().drop_resolvers()
         };
 
         let server = &blueprint.server;
-        let mut schema = SchemaBuilder::from(&blueprint);
+        let mut schema = to_schema_builder_without_resolver(&blueprint);
 
         if server.enable_apollo_tracing {
             schema = schema.extension(ApolloTracing);
@@ -249,5 +251,10 @@ impl Blueprint {
         // We should safely assume the blueprint is correct and,
         // generation of schema cannot fail.
         schema.finish().unwrap()
+    }
+
+    pub async fn validate_rest_apis(&self) -> Valid<(), String> {
+        let operations = self.rest_apis.create_operations();
+        validate_operations(&self, operations).await
     }
 }

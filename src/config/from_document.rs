@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{
@@ -45,7 +46,6 @@ fn get_pos_index(sdl: &str, pos: &LocalPos) -> usize {
             }
         })
         .sum();
-    println!("{index}");
     index
 }
 
@@ -57,6 +57,11 @@ fn str_between_pos<'a>(sdl: &'a str, start: &'a LocalPos, end: Option<&'a LocalP
         Some(end_index) => &sdl[start_index..end_index],
         None => &sdl[start_index..],
     }
+}
+
+fn remove_all_directives(query: &str) -> Cow<str> {
+    let re = regex::Regex::new(r"@\w+\(.*\)").unwrap();
+    re.replace_all(query, "")
 }
 
 fn extract_rest_directive(
@@ -71,22 +76,26 @@ fn extract_rest_directive(
         .collect();
 
     Rest::from_directives(directives.iter()).and_then(|rest| match rest {
-        Some(rest) => {
-            let variables = rest.path.variables().sorted();
+        Some(mut rest) => {
+            let variables = rest.path.variables_mut().sorted();
             let variable_definitions = variable_definitions
                 .iter()
-                .map(|pos| pos.node.name.clone())
-                .sorted();
+                .sorted_by(|l, r| {
+                    l.node.name.cmp(&r.node.name)
+                });
 
             variables
                 .zip_longest(variable_definitions)
                 .map(|either_or_both| match either_or_both {
-                    EitherOrBoth::Both(_, _) => Valid::succeed(()),
+                    EitherOrBoth::Both(var, var_def) => {
+                        var.typ = Some(var_def.node.var_type.node.clone());
+                        Valid::succeed(())
+                    },
                     EitherOrBoth::Left(val) => {
-                        Valid::fail(format!("${val} is not bounded to any argument"))
+                        Valid::fail(format!("${} is not bounded to any argument", val.name))
                     }
                     EitherOrBoth::Right(val) => {
-                        Valid::fail(format!("${val} is not present in the path"))
+                        Valid::fail(format!("${} is not present in the path", val.node.name))
                     }
                 })
                 .collect::<Valid<Vec<_>, _>>()
@@ -115,10 +124,12 @@ pub fn from_query(sdl: &str, doc: ExecutableDocument) -> Valid<Config, String> {
         match either_or_both {
             EitherOrBoth::Both((rest, start), (_, end)) => {
                 let query = str_between_pos(sdl, start, Some(end));
+                let query = remove_all_directives(query);
                 rest_apis.insert(rest.clone(), query);
             }
             EitherOrBoth::Left((rest, start)) => {
                 let query = str_between_pos(sdl, start, None);
+                let query = remove_all_directives(query);
                 rest_apis.insert(rest.clone(), query);
             }
             _ => unreachable!(),
