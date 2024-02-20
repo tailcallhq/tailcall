@@ -5,6 +5,8 @@ use std::sync::Arc;
 use anyhow::Context;
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
+use hyper::body::Bytes;
+use nom::AsBytes;
 use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
@@ -97,16 +99,12 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
-        for config_link in links.iter() {
-            let path = Self::resolve_path(&config_link.src, parent_dir);
-
-            let source = self.read_file(&path).await?;
-
-            let content = source.content;
-
+        for config_link in links {
             match config_link.type_of {
                 LinkType::Config => {
-                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
+                    let config =
+                        Config::from_source(Source::detect(&source.path)?, &source.content)?;
 
                     config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
@@ -122,6 +120,7 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
+                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
                     let mut descriptors = self
                         .resolve_descriptors(self.read_proto(&source.path).await?)
                         .await?;
@@ -138,47 +137,111 @@ impl ConfigReader {
                         });
                 }
                 LinkType::Script => {
-                    config_module.extensions.script = Some(content);
+                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
+                    config_module.extensions.script = Some(source.content);
                 }
                 LinkType::Cert => {
+                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
                     config_module
                         .extensions
                         .cert
-                        .extend(self.load_cert(content.clone()).await?);
+                        .extend(self.load_cert(source.content).await?);
                 }
                 LinkType::Key => {
+                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
                     config_module.extensions.keys =
-                        Arc::new(self.load_private_key(content.clone()).await?)
+                        Arc::new(self.load_private_key(source.content).await?)
                 }
                 LinkType::ReflectionWithFileName => {
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+
                     let link = config_link.src.clone();
-                    let file_name = config_link.id.clone().context("Expected ID field in link operator as file name")?;
+                    let file_name = config_link
+                        .id
+                        .clone()
+                        .context("Expected ID field in link operator as file name")?;
                     let file_name_req = ServerReflectionRequest {
                         host: "".to_string(), // we do not need this
                         message_request: Some(MessageRequest::FileByFilename(file_name)),
                     };
-                    let file = reflection_req(link, file_name_req).await?;
-                    if let MessageResponse::FileDescriptorResponse(file) = file {
-                        let descriptor = file.file_descriptor_proto.first().context("No descriptor found in response")?;
-                        let descriptor=  FileDescriptorProto::decode(descriptor)?;
-                        
-                    }
+                    let file_response = Self::reflection_req(link, file_name_req).await?;
+                    let mut descriptors = self.get_descriptor(file_response).await?;
+                    file_descriptor_set.file.append(&mut descriptors);
+
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: config_link.id.to_owned(),
+                            content: file_descriptor_set,
+                        });
                 }
-                LinkType::ReflectionWithService => {}
+                LinkType::ReflectionWithService => {
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+                    let symbol = config_link
+                        .id
+                        .clone()
+                        .context("Expected id for link type ReflectionWithService")?;
+                    let link = config_link.src.clone();
+
+                    let file_symbol_req = ServerReflectionRequest {
+                        host: "".to_string(), // we do not need this
+                        message_request: Some(MessageRequest::FileContainingSymbol(symbol)),
+                    };
+                    let file_response = Self::reflection_req(link, file_symbol_req).await?;
+                    let mut descriptors = self.get_descriptor(file_response).await?;
+                    file_descriptor_set.file.append(&mut descriptors);
+
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: config_link.id.to_owned(),
+                            content: file_descriptor_set,
+                        });
+                }
                 LinkType::ReflectionAllFiles => {
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+
+                    let link = &config_link.src;
                     let list_service_req = ServerReflectionRequest {
                         host: "".to_string(), // we do not need this
                         message_request: Some(MessageRequest::ListServices(String::new())),
                     };
-                    let list_service_resp = reflection_req(config_link.src.clone(), list_service_req).await?;
+                    let list_service_resp =
+                        Self::reflection_req(link.clone(), list_service_req).await?;
                     if let MessageResponse::ListServicesResponse(list) = list_service_resp {
                         for service in list.service {
-                            let list_service_req = ServerReflectionRequest {
+                            if service.name.eq("grpc.reflection.v1alpha.ServerReflection") {
+                                continue;
+                            }
+                            let file_symbol_req = ServerReflectionRequest {
                                 host: "".to_string(), // we do not need this
-                                message_request: Some(MessageRequest::ListServices(String::new())),
+                                message_request: Some(MessageRequest::FileContainingSymbol(
+                                    service.name,
+                                )),
                             };
+                            let file_response =
+                                Self::reflection_req(link.clone(), file_symbol_req).await?;
+                            let mut descriptors = self.get_descriptor(file_response).await?;
+                            file_descriptor_set.file.append(&mut descriptors);
                         }
                     }
+                    println!(
+                        "{:?}",
+                        file_descriptor_set
+                            .file
+                            .iter()
+                            .map(|v| v.name())
+                            .collect::<Vec<&str>>()
+                    );
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: config_link.id.to_owned(),
+                            content: file_descriptor_set,
+                        });
                 }
             }
         }
@@ -299,6 +362,16 @@ impl ConfigReader {
         Ok(protox_parse::parse(path, &content)?)
     }
 
+    /// Takes reference of link and returns FileRead
+    async fn get_content_from_link(
+        &self,
+        config_link: &Link,
+        parent_dir: Option<&Path>,
+    ) -> anyhow::Result<FileRead> {
+        let path = Self::resolve_path(&config_link.src, parent_dir);
+        self.read_file(&path).await
+    }
+
     /// Checks if path is absolute else it joins file path with relative dir path
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if Path::new(&src).is_absolute() {
@@ -307,6 +380,50 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
+    }
+
+    /// Takes Grpc Reflection response and returns FileDescriptorProto
+    async fn get_descriptor(
+        &self,
+        file_resp: MessageResponse,
+    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
+        if let MessageResponse::FileDescriptorResponse(file) = file_resp {
+            let descriptor = file
+                .file_descriptor_proto
+                .first()
+                .context("No descriptor found in response")?;
+            let descriptor = FileDescriptorProto::decode(descriptor.as_bytes())?;
+            let descriptors = self.resolve_descriptors(descriptor).await?;
+            return Ok(descriptors);
+        }
+        Err(anyhow::anyhow!(
+            "Internal error: The response is not FileDescriptorResponse"
+        ))
+    }
+
+    /// Makes Grpc Reflection requests
+    async fn reflection_req(
+        url: impl Into<Bytes>,
+        request: ServerReflectionRequest,
+    ) -> anyhow::Result<MessageResponse> {
+        let channel = tonic::transport::Channel::from_shared(url)?
+            .connect()
+            .await?;
+        let mut client = ServerReflectionClient::new(channel);
+
+        let request = tonic::Request::new(tonic::codegen::tokio_stream::once(request));
+        let mut inbound = client.server_reflection_info(request).await?.into_inner();
+
+        let response = inbound
+            .next()
+            .await
+            .context("unable to make request")??
+            .message_response
+            .context("unable to make request")?;
+
+        // We only expect one response per request
+        assert!(inbound.next().await.is_none());
+        Ok(response)
     }
 }
 
@@ -389,31 +506,6 @@ mod test_proto_config {
         }
     }
 }
-
-async fn reflection_req(
-    url: String,
-    request: ServerReflectionRequest,
-) -> anyhow::Result<MessageResponse> {
-    let channel = tonic::transport::Channel::from_shared(url)?
-        .connect()
-        .await?;
-    let mut client = ServerReflectionClient::new(channel);
-
-    let request = tonic::Request::new(tonic::codegen::tokio_stream::once(request));
-    let mut inbound = client.server_reflection_info(request).await?.into_inner();
-
-    let response = inbound
-        .next()
-        .await
-        .context("unable to make request")??
-        .message_response
-        .context("unable to make request")?;
-
-    // We only expect one response per request
-    assert!(inbound.next().await.is_none());
-    Ok(response)
-}
-
 #[cfg(test)]
 mod reader_tests {
     use std::path::Path;
@@ -462,9 +554,9 @@ mod reader_tests {
             format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
             format!("http://localhost:{port}/foo.json").as_str(), // with url extension
         ]
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
@@ -490,9 +582,9 @@ mod reader_tests {
             "examples/jsonplaceholder.graphql",
             "examples/jsonplaceholder.json",
         ]
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(

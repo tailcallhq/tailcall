@@ -611,6 +611,9 @@ enum LinkType {
   Script
   Cert
   Key
+  ReflectionWithFileName
+  ReflectionWithService
+  ReflectionAllFiles
 }
 enum Method {
   GET
