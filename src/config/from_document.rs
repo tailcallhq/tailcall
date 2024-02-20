@@ -80,9 +80,7 @@ fn extract_rest_directive(
             let variables = rest.path.variables_mut().sorted();
             let variable_definitions = variable_definitions
                 .iter()
-                .sorted_by(|l, r| {
-                    l.node.name.cmp(&r.node.name)
-                });
+                .sorted_by(|l, r| l.node.name.cmp(&r.node.name));
 
             variables
                 .zip_longest(variable_definitions)
@@ -90,7 +88,7 @@ fn extract_rest_directive(
                     EitherOrBoth::Both(var, var_def) => {
                         var.typ = Some(var_def.node.var_type.node.clone());
                         Valid::succeed(())
-                    },
+                    }
                     EitherOrBoth::Left(val) => {
                         Valid::fail(format!("${} is not bounded to any argument", val.name))
                     }

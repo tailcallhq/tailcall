@@ -5,7 +5,6 @@ query GetPost($id: Int!) @rest(path: "/posts/$id", method: "GET") {
   }
 }
 
-
 query GetUser($input: Int!) @rest(path: "/users/$input") {
   user(id: $input) {
     id

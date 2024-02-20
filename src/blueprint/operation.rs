@@ -15,10 +15,18 @@ pub struct OperationQuery {
 
 impl OperationQuery {
     pub fn new(query: String, trace: String) -> Self {
-        Self { query, file: trace, variables: async_graphql::Variables::from_value(ConstValue::Null) }
+        Self {
+            query,
+            file: trace,
+            variables: async_graphql::Variables::from_value(ConstValue::Null),
+        }
     }
 
-    pub fn new_with_variables(query: String, trace: String, variables: async_graphql::Variables) -> Self {
+    pub fn new_with_variables(
+        query: String,
+        trace: String,
+        variables: async_graphql::Variables,
+    ) -> Self {
         Self { query, file: trace, variables }
     }
 

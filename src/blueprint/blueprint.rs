@@ -6,9 +6,9 @@ use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::{GlobalTimeout, validate_operations};
-use crate::blueprint::{Server, Upstream};
+use super::{validate_operations, GlobalTimeout};
 use crate::blueprint::into_schema::to_schema_builder_without_resolver;
+use crate::blueprint::{Server, Upstream};
 use crate::config::RestApis;
 use crate::lambda::Expression;
 use crate::valid::Valid;
@@ -255,6 +255,6 @@ impl Blueprint {
 
     pub async fn validate_rest_apis(&self) -> Valid<(), String> {
         let operations = self.rest_apis.create_operations();
-        validate_operations(&self, operations).await
+        validate_operations(self, operations).await
     }
 }

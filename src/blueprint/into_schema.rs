@@ -34,7 +34,9 @@ fn type_ref_to_const_value(type_ref: &dynamic::TypeRef) -> ConstValue {
     match type_ref {
         dynamic::TypeRef::Named(_) => ConstValue::Null,
         dynamic::TypeRef::NonNull(typ_ref) => type_ref_to_const_value(typ_ref.as_ref()),
-        dynamic::TypeRef::List(type_ref) => ConstValue::List(vec![type_ref_to_const_value(type_ref.as_ref())]),
+        dynamic::TypeRef::List(type_ref) => {
+            ConstValue::List(vec![type_ref_to_const_value(type_ref.as_ref())])
+        }
     }
 }
 
@@ -143,9 +145,10 @@ fn to_dummy_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-                let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref.clone(), move |_| {
-                    FieldFuture::from_value(Some(type_ref_to_const_value(&type_ref)))
-                });
+                let mut dyn_schema_field =
+                    dynamic::Field::new(field_name, type_ref.clone(), move |_| {
+                        FieldFuture::from_value(Some(type_ref_to_const_value(&type_ref)))
+                    });
                 if let Some(description) = &field.description {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }

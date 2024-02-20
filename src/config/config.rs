@@ -6,7 +6,7 @@ use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::parser::types::{Type as GQLType, ServiceDocument, BaseType};
+use async_graphql::parser::types::{BaseType, ServiceDocument, Type as GQLType};
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use itertools::{EitherOrBoth, Itertools};
@@ -190,7 +190,6 @@ impl Config {
         let links = merge_links(self.links, other.links.clone());
         let rest_apis = self.rest_apis.merge_right(other.rest_apis.clone());
 
-
         Self { server, upstream, types, schema, unions, links, rest_apis }
     }
 }
@@ -288,15 +287,23 @@ pub struct RestApis(pub BTreeMap<Rest, String>);
 
 impl RestApis {
     pub fn create_operations(&self) -> Vec<OperationQuery> {
-        self.0.iter().map(|(k, v)| {
-            let variables = ConstValue::Object(k
-                .path
-                .variables()
-                .map(|var| (async_graphql::Name::new(var.name.as_ref()), var.default_value()))
-                .collect());
-            let variables = async_graphql::Variables::from_value(variables);
-            OperationQuery::new_with_variables(v.into(), "".into(), variables)
-        })
+        self.0
+            .iter()
+            .map(|(k, v)| {
+                let variables = ConstValue::Object(
+                    k.path
+                        .variables()
+                        .map(|var| {
+                            (
+                                async_graphql::Name::new(var.name.as_ref()),
+                                var.default_value(),
+                            )
+                        })
+                        .collect(),
+                );
+                let variables = async_graphql::Variables::from_value(variables);
+                OperationQuery::new_with_variables(v.into(), "".into(), variables)
+            })
             .collect()
     }
 
@@ -423,7 +430,10 @@ impl RestPath {
         let mut values = serde_json::Map::new();
         for (token, req_token) in self.tokens.into_iter().zip(req_path.tokens.into_iter()) {
             if let (Token::Variable(var), Token::Static(val)) = (token, req_token) {
-                values.insert(var.name.to_string(), serde_json::Value::String(val.to_string()));
+                values.insert(
+                    var.name.to_string(),
+                    serde_json::Value::String(val.to_string()),
+                );
             }
         }
         serde_json::Value::Object(values)
@@ -496,7 +506,7 @@ impl Serialize for RestPath {
 #[derive(Clone, Debug, PartialEq, Hash, Eq, schemars::JsonSchema)]
 pub enum Token {
     Static(Arc<str>),
-    Variable(Variable)
+    Variable(Variable),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -517,8 +527,8 @@ pub fn gql_type_default_value(typ: &GQLType) -> ConstValue {
                 "Float" => 0.0.into(),
                 _ => ConstValue::Null,
             },
-            BaseType::List(typ) => ConstValue::List(vec![gql_type_default_value(typ.as_ref())])
-        }
+            BaseType::List(typ) => ConstValue::List(vec![gql_type_default_value(typ.as_ref())]),
+        },
     }
 }
 
@@ -539,10 +549,9 @@ impl std::hash::Hash for Variable {
 
 impl PartialOrd for Variable {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.name.partial_cmp(&other.name)
+        Some(self.name.cmp(&other.name))
     }
 }
-
 
 impl Ord for Variable {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -972,7 +981,7 @@ impl Config {
             Err(e) => {
                 let msg = e.to_string();
                 if !msg.ends_with("expected type_system_definition") {
-                    return Valid::fail(msg)
+                    return Valid::fail(msg);
                 }
 
                 let doc = async_graphql::parser::parse_query(sdl);

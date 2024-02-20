@@ -10,10 +10,10 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
+use crate::cli::error::ToCLIResult;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
-use crate::cli::error::ToCLIResult;
 use crate::config::reader::ConfigReader;
 use crate::config::Config;
 use crate::print_schema;
@@ -59,14 +59,9 @@ pub async fn run() -> Result<()> {
                         .into_iter()
                         .collect::<Result<Vec<_>>>()?;
 
-                    validate_operations(&blueprint, ops)
-                        .await
-                        .to_cli_result()?;
+                    validate_operations(&blueprint, ops).await.to_cli_result()?;
 
-                    blueprint
-                        .validate_rest_apis()
-                        .await
-                        .to_cli_result()?;
+                    blueprint.validate_rest_apis().await.to_cli_result()?;
 
                     Ok(())
                 }

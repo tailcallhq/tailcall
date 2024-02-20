@@ -84,6 +84,10 @@ impl Deref for ConfigModule {
 
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        ConfigModule { rest_apis: config.rest_apis.clone(), config, ..Default::default() }
+        ConfigModule {
+            rest_apis: config.rest_apis.clone(),
+            config,
+            ..Default::default()
+        }
     }
 }
