@@ -1,7 +1,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::thread;
 
-use deno_core::{extension, v8, FastString, JsRuntime, RuntimeOptions};
+use deno_core::{extension, serde_v8, v8, FastString, JsRuntime, RuntimeOptions};
 
 use super::channel::{Message, MessageContent};
 use crate::{blueprint, WorkerIO};
