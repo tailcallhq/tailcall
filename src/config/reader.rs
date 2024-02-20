@@ -127,7 +127,6 @@ impl ConfigReader {
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
                     file_descriptor_set.file.append(&mut descriptors);
-
                     config_module
                         .extensions
                         .grpc_file_descriptors
@@ -165,16 +164,17 @@ impl ConfigReader {
                         message_request: Some(MessageRequest::FileByFilename(file_name)),
                     };
                     let file_response = Self::reflection_req(link, file_name_req).await?;
-                    let mut descriptors = self.get_descriptor(file_response).await?;
-                    file_descriptor_set.file.append(&mut descriptors);
+                    let descriptor = self.get_descriptor(file_response).await?;
+
+                    let mut resolved_descriptor = self.resolve_descriptors(descriptor).await?;
+                    file_descriptor_set.file.append(&mut resolved_descriptor);
+
+                    let id = config_link.id.map(|v| v.replace(".proto", ""));
 
                     config_module
                         .extensions
                         .grpc_file_descriptors
-                        .push(Content {
-                            id: config_link.id.to_owned(),
-                            content: file_descriptor_set,
-                        });
+                        .push(Content { id, content: file_descriptor_set });
                 }
                 LinkType::ReflectionWithService => {
                     let mut file_descriptor_set = FileDescriptorSet::default();
@@ -189,20 +189,22 @@ impl ConfigReader {
                         message_request: Some(MessageRequest::FileContainingSymbol(symbol)),
                     };
                     let file_response = Self::reflection_req(link, file_symbol_req).await?;
-                    let mut descriptors = self.get_descriptor(file_response).await?;
-                    file_descriptor_set.file.append(&mut descriptors);
+                    let descriptor = self.get_descriptor(file_response).await?;
+
+                    let id = descriptor.name.clone().map(|v| v.replace(".proto", ""));
+                    // config_link.id contains the package name which cannot be used here,
+                    // so we are using descriptor.name
+                    // which contains file name
+
+                    let mut resolved_descriptor = self.resolve_descriptors(descriptor).await?;
+                    file_descriptor_set.file.append(&mut resolved_descriptor);
 
                     config_module
                         .extensions
                         .grpc_file_descriptors
-                        .push(Content {
-                            id: config_link.id.to_owned(),
-                            content: file_descriptor_set,
-                        });
+                        .push(Content { id, content: file_descriptor_set });
                 }
                 LinkType::ReflectionAllFiles => {
-                    let mut file_descriptor_set = FileDescriptorSet::default();
-
                     let link = &config_link.src;
                     let list_service_req = ServerReflectionRequest {
                         host: "".to_string(), // we do not need this
@@ -212,6 +214,8 @@ impl ConfigReader {
                         Self::reflection_req(link.clone(), list_service_req).await?;
                     if let MessageResponse::ListServicesResponse(list) = list_service_resp {
                         for service in list.service {
+                            let mut file_descriptor_set = FileDescriptorSet::default();
+
                             if service.name.eq("grpc.reflection.v1alpha.ServerReflection") {
                                 continue;
                             }
@@ -223,25 +227,21 @@ impl ConfigReader {
                             };
                             let file_response =
                                 Self::reflection_req(link.clone(), file_symbol_req).await?;
-                            let mut descriptors = self.get_descriptor(file_response).await?;
-                            file_descriptor_set.file.append(&mut descriptors);
+                            let descriptor = self.get_descriptor(file_response).await?;
+                            let id = descriptor.name.clone().map(|v| v.replace(".proto", ""));
+                            // config_link.id contains the package name which cannot be used here,
+                            // so we are using descriptor.name
+                            // which contains file name
+
+                            let mut resolved_descriptor =
+                                self.resolve_descriptors(descriptor).await?;
+                            file_descriptor_set.file.append(&mut resolved_descriptor);
+                            config_module
+                                .extensions
+                                .grpc_file_descriptors
+                                .push(Content { id, content: file_descriptor_set });
                         }
                     }
-                    println!(
-                        "{:?}",
-                        file_descriptor_set
-                            .file
-                            .iter()
-                            .map(|v| v.name())
-                            .collect::<Vec<&str>>()
-                    );
-                    config_module
-                        .extensions
-                        .grpc_file_descriptors
-                        .push(Content {
-                            id: config_link.id.to_owned(),
-                            content: file_descriptor_set,
-                        });
                 }
             }
         }
@@ -386,15 +386,14 @@ impl ConfigReader {
     async fn get_descriptor(
         &self,
         file_resp: MessageResponse,
-    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
+    ) -> anyhow::Result<FileDescriptorProto> {
         if let MessageResponse::FileDescriptorResponse(file) = file_resp {
             let descriptor = file
                 .file_descriptor_proto
                 .first()
                 .context("No descriptor found in response")?;
             let descriptor = FileDescriptorProto::decode(descriptor.as_bytes())?;
-            let descriptors = self.resolve_descriptors(descriptor).await?;
-            return Ok(descriptors);
+            return Ok(descriptor);
         }
         Err(anyhow::anyhow!(
             "Internal error: The response is not FileDescriptorResponse"
