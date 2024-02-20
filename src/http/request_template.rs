@@ -204,7 +204,10 @@ impl TryFrom<Endpoint> for RequestTemplate {
             .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?))))
             .collect::<anyhow::Result<Vec<_>>>()?;
 
-        let body = endpoint.body.as_ref().map(|body| Mustache::parse(body.as_str()));
+        let body = endpoint
+            .body
+            .as_ref()
+            .map(|body| Mustache::parse(body.as_str()));
         let encoding = endpoint.encoding.clone();
 
         Ok(Self {
