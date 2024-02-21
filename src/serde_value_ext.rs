@@ -1,5 +1,7 @@
-use anyhow::Result;
-use async_graphql::Value as GraphQLValue;
+use std::borrow::Cow;
+
+use anyhow::{anyhow, Result};
+use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 use serde_json::Value;
 
@@ -19,44 +21,48 @@ fn eval_types(value: &Value) -> Result<GraphQLValue> {
         Value::Object(obj) => {
             let out: Result<IndexMap<_, _>> = obj
                 .iter()
-                .map(|(k, v)| Ok((async_graphql::Name::new(k), eval_types(v)?)))
+                .map(|(k, v)| {
+                    let key: Cow<'_, str> = Cow::Borrowed(k);
+                    eval_types(v).map(|val| (Name::new(key), val))
+                })
                 .collect();
             out.map(GraphQLValue::Object)
         }
         Value::String(s) => serde_json::from_str::<Value>(s)
             .map_err(anyhow::Error::new)
-            .and_then(|v| GraphQLValue::from_json(v).map_err(|e| anyhow::anyhow!(e)))
-            .or(Ok(GraphQLValue::String(s.to_owned()))),
-        _ => GraphQLValue::from_json(value.to_owned()).map_err(|e| anyhow::anyhow!(e)),
+            .and_then(|a| eval_types(&a))
+            .or_else(|_| Ok(GraphQLValue::String(Cow::Borrowed(s).into_owned()))),
+        _ => GraphQLValue::from_json(value.clone()).map_err(|e| anyhow!(e)),
     }
 }
 
 impl ValueExt for ValueOrDynamic {
-    fn render_value(&self, ctx: &impl PathString) -> Result<GraphQLValue> {
+    fn render_value<'a>(&self, ctx: &'a impl PathString) -> Result<GraphQLValue> {
         match self {
             ValueOrDynamic::Value(value) => eval_types(value),
             ValueOrDynamic::Mustache(m) => {
-                let s = m.render(ctx);
-                serde_json::from_str(&s)
+                let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
+                serde_json::from_str::<Value>(rendered.as_ref())
                     .map_err(anyhow::Error::new)
-                    .and_then(|v| eval_types(&v))
-                    .or(Ok(GraphQLValue::String(s)))
+                    .and_then(|a| eval_types(&a))
+                    .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
             }
             ValueOrDynamic::MustacheObject(obj) => {
                 let out: Result<IndexMap<_, _>> = obj
                     .iter()
                     .map(|(k, v)| {
-                        let value = match v {
+                        let key: Cow<'_, str> = Cow::Borrowed(k);
+                        match v {
                             MustacheOrValue::Value(value) => eval_types(value),
                             MustacheOrValue::Mustache(m) => {
-                                let s = m.render(ctx);
-                                serde_json::from_str(&s)
+                                let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
+                                serde_json::from_str::<Value>(rendered.as_ref())
                                     .map_err(anyhow::Error::new)
-                                    .and_then(|v| eval_types(&v))
-                                    .or(Ok(GraphQLValue::String(s)))
+                                    .and_then(|a| eval_types(&a))
+                                    .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
                             }
-                        };
-                        value.map(|val| (k.to_owned(), val))
+                        }
+                            .map(|val| (Name::new(&key), val))
                     })
                     .collect();
                 out.map(GraphQLValue::Object)
@@ -67,11 +73,11 @@ impl ValueExt for ValueOrDynamic {
                     .map(|v| match v {
                         MustacheOrValue::Value(value) => eval_types(value),
                         MustacheOrValue::Mustache(m) => {
-                            let s = m.render(ctx);
-                            serde_json::from_str(&s)
+                            let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
+                            serde_json::from_str::<Value>(&rendered)
                                 .map_err(anyhow::Error::new)
-                                .and_then(|v| eval_types(&v))
-                                .or(Ok(GraphQLValue::String(s)))
+                                .and_then(|a| eval_types(&a))
+                                .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
                         }
                     })
                     .collect();
