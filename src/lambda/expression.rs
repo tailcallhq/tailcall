@@ -87,7 +87,7 @@ impl Eval for Expression {
         &'a self,
         ctx: &'a EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output=Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
