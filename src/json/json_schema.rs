@@ -58,7 +58,7 @@ impl JsonSchema {
                     Valid::from_iter(list.iter().enumerate(), |(i, item)| {
                         schema.validate(item).trace(i.to_string().as_str())
                     })
-                        .unit()
+                    .unit()
                 }
                 async_graphql::Value::String(s) => Self::check_mustache(s),
                 _ => Valid::fail("expected array"),
@@ -80,7 +80,7 @@ impl JsonSchema {
                                 Valid::succeed(())
                             }
                         })
-                            .unit()
+                        .unit()
                     }
                     async_graphql::Value::String(s) => Self::check_mustache(s),
                     _ => Valid::fail("expected object"),
@@ -114,8 +114,8 @@ impl JsonSchema {
                         Valid::from_option(a.get(key), format!("missing key: {}", key))
                             .and_then(|a| a.compare(b, key))
                     })
-                        .trace(name)
-                        .unit();
+                    .trace(name)
+                    .unit();
                 } else {
                     return Valid::fail("expected Object type".to_string()).trace(name);
                 }
