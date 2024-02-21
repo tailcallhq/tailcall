@@ -16,7 +16,8 @@ expression: response
             2,
             3
           ],
-          "c": "test"
+          "c": "test",
+          "d": 1
         }
       }
     }

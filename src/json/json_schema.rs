@@ -43,10 +43,13 @@ impl JsonSchema {
             },
             JsonSchema::Num => match value {
                 async_graphql::Value::Number(_) => Valid::succeed(()),
+                async_graphql::Value::String(s) => Self::check_mustache(s),
+
                 _ => Valid::fail("expected number"),
             },
             JsonSchema::Bool => match value {
                 async_graphql::Value::Boolean(_) => Valid::succeed(()),
+                async_graphql::Value::String(s) => Self::check_mustache(s),
                 _ => Valid::fail("expected boolean"),
             },
             JsonSchema::Arr(schema) => match value {
@@ -55,19 +58,9 @@ impl JsonSchema {
                     Valid::from_iter(list.iter().enumerate(), |(i, item)| {
                         schema.validate(item).trace(i.to_string().as_str())
                     })
-                    .unit()
+                        .unit()
                 }
-                async_graphql::Value::String(s) => {
-                    if let Ok(v) = Mustache::parse(s) {
-                        if !v.is_const() {
-                            Valid::succeed(())
-                        } else {
-                            Valid::fail("expected object")
-                        }
-                    } else {
-                        Valid::fail("expected object")
-                    }
-                }
+                async_graphql::Value::String(s) => Self::check_mustache(s),
                 _ => Valid::fail("expected array"),
             },
             JsonSchema::Obj(fields) => {
@@ -87,19 +80,9 @@ impl JsonSchema {
                                 Valid::succeed(())
                             }
                         })
-                        .unit()
+                            .unit()
                     }
-                    async_graphql::Value::String(string) => {
-                        if let Ok(v) = Mustache::parse(string) {
-                            if !v.is_const() {
-                                Valid::succeed(())
-                            } else {
-                                Valid::fail("expected object")
-                            }
-                        } else {
-                            Valid::fail("expected object")
-                        }
-                    }
+                    async_graphql::Value::String(s) => Self::check_mustache(s),
                     _ => Valid::fail("expected object"),
                 }
             }
@@ -107,6 +90,18 @@ impl JsonSchema {
                 async_graphql::Value::Null => Valid::succeed(()),
                 _ => schema.validate(value),
             },
+        }
+    }
+
+    fn check_mustache(s: &str) -> Valid<(), &'static str> {
+        if let Ok(v) = Mustache::parse(s) {
+            if !v.is_const() {
+                Valid::succeed(())
+            } else {
+                Valid::fail("expected number")
+            }
+        } else {
+            Valid::fail("expected number")
         }
     }
 
@@ -119,8 +114,8 @@ impl JsonSchema {
                         Valid::from_option(a.get(key), format!("missing key: {}", key))
                             .and_then(|a| a.compare(b, key))
                     })
-                    .trace(name)
-                    .unit();
+                        .trace(name)
+                        .unit();
                 } else {
                     return Valid::fail("expected Object type".to_string()).trace(name);
                 }
