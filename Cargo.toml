@@ -29,7 +29,7 @@ rustls-pemfile = { version = "1.0.4" }
 schemars = { version = "0.8.16", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"], default-features = false }
 tokio = { version = "1.36.0", features = ["rt", "time"] }
-anyhow = "1.0.79"
+anyhow = "1.0.80"
 derive_setters = "0.1.6"
 thiserror = "1.0.57"
 serde_json = { version = "1.0", features = ["preserve_order"] }
@@ -42,12 +42,12 @@ reqwest = { version = "0.11", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-async-graphql = { version = "7.0.1", features = [
+async-graphql = { version = "7.0.2", features = [
     "dynamic-schema",
     "dataloader",
     "apollo_tracing",
 ] }
-async-graphql-value = "7.0.1"
+async-graphql-value = "7.0.2"
 indexmap = "2.2"
 once_cell = "1.19.0"
 clap = { version = "4.5.1", features = ["derive"] }
@@ -91,7 +91,7 @@ httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 markdown = "1.0.0-alpha.16"
-insta = { version = "1.34.0", features = ["json"] }
+insta = { version = "1.35.1", features = ["json"] }
 tempfile = "3.10.0"
 temp-env = "0.3.6"
 
