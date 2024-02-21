@@ -22,7 +22,6 @@ type BC {
   b: [Int]
   c: String
 }
-
 ```
 
 #### assert:
