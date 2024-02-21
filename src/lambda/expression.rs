@@ -4,12 +4,12 @@ use std::pin::Pin;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
-use serde_json::Value;
 use thiserror::Error;
 
 use super::list::List;
 use super::logic::Logic;
 use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
+use crate::blueprint::ValueOrDynamic;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
@@ -17,8 +17,8 @@ use crate::serde_value_ext::ValueExt;
 #[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
-    Literal(Value),
     // TODO: this should async_graphql::Value
+    Literal(ValueOrDynamic),
     EqualTo(Box<Expression>, Box<Expression>),
     IO(IO),
     Cache(Cache),
@@ -87,7 +87,7 @@ impl Eval for Expression {
         &'a self,
         ctx: &'a EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output=Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),

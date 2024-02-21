@@ -1,12 +1,15 @@
-use async_graphql_value::ConstValue;
+use async_graphql_value::{ConstValue, Name};
+use indexmap::IndexMap;
+use serde_json::Value;
 
 use crate::blueprint::*;
 use crate::config;
 use crate::config::Field;
 use crate::lambda::Expression;
 use crate::lambda::Expression::Literal;
+use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, Validator};
+use crate::valid::{Valid, ValidationError, Validator};
 
 fn validate_data_with_schema(
     config: &config::Config,
@@ -25,8 +28,73 @@ fn validate_data_with_schema(
 pub struct CompileConst<'a> {
     pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
-    pub value: &'a serde_json::Value,
+    pub value: &'a ValueOrDynamic,
     pub validate: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum MustacheOrValue {
+    Mustache(Mustache),
+    Value(serde_json::Value),
+}
+
+impl MustacheOrValue {
+    pub fn is_const(&self) -> bool {
+        match self {
+            MustacheOrValue::Mustache(m) => m.is_const(),
+            _ => true,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ValueOrDynamic {
+    Value(serde_json::Value),
+    Mustache(Mustache),
+    MustacheObject(IndexMap<Name, MustacheOrValue>),
+    MustacheArray(Vec<MustacheOrValue>),
+}
+
+impl TryFrom<&serde_json::Value> for ValueOrDynamic {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        match value {
+            Value::Object(obj) => {
+                let mut out = IndexMap::new();
+                for (k, v) in obj {
+                    let m = Mustache::parse(v.to_string().as_str())?;
+                    if m.is_const() {
+                        out.insert(Name::new(k), MustacheOrValue::Value(v.clone()));
+                    } else {
+                        out.insert(Name::new(k), MustacheOrValue::Mustache(m));
+                    }
+                }
+                Ok(ValueOrDynamic::MustacheObject(out))
+            }
+            Value::Array(arr) => {
+                let mut out = Vec::new();
+                for v in arr {
+                    let m = Mustache::parse(v.to_string().as_str())?;
+                    if m.is_const() {
+                        out.push(MustacheOrValue::Value(v.clone()));
+                    } else {
+                        out.push(MustacheOrValue::Mustache(m));
+                    }
+                }
+                Ok(ValueOrDynamic::MustacheArray(out))
+            }
+            Value::String(s) => {
+                let m = Mustache::parse(s.as_str())?;
+                if m.is_const() {
+                    Ok(ValueOrDynamic::Value(value.clone()))
+                } else {
+                    Ok(ValueOrDynamic::Mustache(m))
+                }
+            }
+            _ => Ok(ValueOrDynamic::Value(value.clone())),
+        }
+    }
 }
 
 pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
@@ -35,17 +103,45 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
     let value = inputs.value;
     let validate = inputs.validate;
 
-    let data = value.to_owned();
-    match ConstValue::from_json(data.to_owned()) {
-        Ok(gql) => {
-            let validation = if validate {
-                validate_data_with_schema(config_module, field, gql)
+    let data = value;
+    match data {
+        ValueOrDynamic::Value(v) => match ConstValue::from_json(v.to_owned().to_owned()) {
+            Ok(gql) => {
+                let validation = if validate {
+                    validate_data_with_schema(config_module, field, gql)
+                } else {
+                    Valid::succeed(())
+                };
+                validation.map(|_| Literal(data.to_owned()))
+            }
+            Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+        },
+        ValueOrDynamic::MustacheObject(map) => {
+            let a = map.into_iter().filter(|(_, v)| !v.is_const()).count();
+            if a > 0 {
+                Valid::succeed(Literal(data.to_owned()))
             } else {
-                Valid::succeed(())
-            };
-            validation.map(|_| Literal(data))
+                let mut out = IndexMap::new();
+                for (k, v) in map {
+                    match v {
+                        MustacheOrValue::Mustache(_) => {
+                            unimplemented!("mustache in const object")
+                        }
+                        MustacheOrValue::Value(v) => {
+                            out.insert(k.clone(), ConstValue::from_json(v.to_owned()).unwrap());
+                        }
+                    }
+                }
+                let obj = ConstValue::Object(out);
+                let validation = if validate {
+                    validate_data_with_schema(config_module, field, obj)
+                } else {
+                    Valid::succeed(())
+                };
+                validation.map(|_| Literal(data.to_owned()))
+            }
         }
-        Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+        _ => Valid::succeed(Literal(data.to_owned())),
     }
 }
 
@@ -58,13 +154,14 @@ pub fn update_const_field<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_const(CompileConst {
-                config_module,
-                field,
-                value: &const_field.data,
-                validate: true,
+            Valid::from(
+                ValueOrDynamic::try_from(&const_field.data.clone())
+                    .map_err(|e| ValidationError::new(e.to_string())),
+            )
+            .and_then(|value| {
+                compile_const(CompileConst { config_module, field, value: &value, validate: true })
+                    .map(|resolver| b_field.resolver(Some(resolver)))
             })
-            .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
 }
