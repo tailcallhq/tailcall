@@ -43,13 +43,13 @@ impl JsonSchema {
             },
             JsonSchema::Num => match value {
                 async_graphql::Value::Number(_) => Valid::succeed(()),
-                async_graphql::Value::String(s) => Self::check_mustache(s),
+                async_graphql::Value::String(s) => Self::check_mustache(s, "expected number"),
 
                 _ => Valid::fail("expected number"),
             },
             JsonSchema::Bool => match value {
                 async_graphql::Value::Boolean(_) => Valid::succeed(()),
-                async_graphql::Value::String(s) => Self::check_mustache(s),
+                async_graphql::Value::String(s) => Self::check_mustache(s, "expected boolean"),
                 _ => Valid::fail("expected boolean"),
             },
             JsonSchema::Arr(schema) => match value {
@@ -60,7 +60,7 @@ impl JsonSchema {
                     })
                     .unit()
                 }
-                async_graphql::Value::String(s) => Self::check_mustache(s),
+                async_graphql::Value::String(s) => Self::check_mustache(s, "expected array"),
                 _ => Valid::fail("expected array"),
             },
             JsonSchema::Obj(fields) => {
@@ -82,7 +82,7 @@ impl JsonSchema {
                         })
                         .unit()
                     }
-                    async_graphql::Value::String(s) => Self::check_mustache(s),
+                    async_graphql::Value::String(s) => Self::check_mustache(s, "expected object"),
                     _ => Valid::fail("expected object"),
                 }
             }
@@ -93,15 +93,15 @@ impl JsonSchema {
         }
     }
 
-    fn check_mustache(s: &str) -> Valid<(), &'static str> {
+    fn check_mustache(s: &str, tpe: &'static str) -> Valid<(), &'static str> {
         if let Ok(v) = Mustache::parse(s) {
             if !v.is_const() {
                 Valid::succeed(())
             } else {
-                Valid::fail("expected number")
+                Valid::fail(tpe)
             }
         } else {
-            Valid::fail("expected number")
+            Valid::fail(tpe)
         }
     }
 
