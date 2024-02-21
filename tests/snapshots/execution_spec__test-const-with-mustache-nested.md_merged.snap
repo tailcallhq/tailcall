@@ -8,12 +8,13 @@ schema @server @upstream {
 
 type A {
   a: Int
-  bc: BC @const(data: {d: "{{value.d}}"})
+  bc: BC @const(data: {d: "{{value.d}}", f: "{{value.f}}"})
   d: D @modify(omit: true)
 }
 
 type BC {
   d: D
+  f: Boolean
 }
 
 type D {
@@ -21,5 +22,5 @@ type D {
 }
 
 type Query {
-  a: A @const(data: {a: 0, d: {e: 1}})
+  a: A @const(data: {a: 0, d: {e: 1}, f: true})
 }
