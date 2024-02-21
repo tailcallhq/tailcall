@@ -4,6 +4,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::Field;
 use crate::lambda::Expression;
+use crate::lambda::Expression::Literal;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
@@ -42,7 +43,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
             } else {
                 Valid::succeed(())
             };
-            validation.map(|_| Expression::Literal(data))
+            validation.map(|_| Literal(data))
         }
         Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
     }
