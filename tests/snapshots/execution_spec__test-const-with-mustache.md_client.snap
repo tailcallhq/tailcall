@@ -10,6 +10,7 @@ type A {
 type BC {
   b: [Int]
   c: String
+  d: Int
 }
 
 type Query {

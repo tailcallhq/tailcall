@@ -110,6 +110,14 @@ impl Expression {
                 }
                 Ok(async_graphql::Value::List(out))
             }
+            Value::String(str) => {
+                let value = Mustache::parse(str)?;
+                if !value.is_const() {
+                    value.render_value(ctx)
+                } else {
+                    Ok(async_graphql::Value::String(str.to_owned()))
+                }
+            }
 
             _ => Ok(serde_json::from_value(value.clone())?),
         }
