@@ -200,7 +200,7 @@ fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
             segments
                 .into_iter()
                 .filter(|seg| match seg {
-                    Segment::Literal(s) => (!s.is_empty()) && !(s == "\""),
+                    Segment::Literal(s) => (!s.is_empty()) && s != "\"",
                     _ => true,
                 })
                 .collect(),
