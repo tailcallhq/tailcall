@@ -19,7 +19,6 @@ use crate::mustache::Mustache;
 pub enum Expression {
     Context(Context),
     Literal(Value), // TODO: this should async_graphql::Value
-    Mustache(Mustache),
     EqualTo(Box<Expression>, Box<Expression>),
     IO(IO),
     Cache(Cache),
@@ -101,7 +100,6 @@ impl Eval for Expression {
                         .cloned()
                         .unwrap_or(async_graphql::Value::Null)),
                 },
-                Expression::Mustache(mustache) => mustache.render_value(ctx),
                 Expression::Input(input, path) => {
                     let inp = &input.eval(ctx, conc).await?;
                     Ok(inp
