@@ -597,10 +597,10 @@ mod tests {
             let endpoint = crate::endpoint::Endpoint::new(
                 "http://localhost:3000/?a={{args.a}}&q=1".to_string(),
             )
-            .query(vec![
-                ("b".to_string(), "1".to_string()),
-                ("c".to_string(), "{{args.c}}".to_string()),
-            ]);
+                .query(vec![
+                    ("b".to_string(), "1".to_string()),
+                    ("c".to_string(), "{{args.c}}".to_string()),
+                ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
@@ -685,9 +685,9 @@ mod tests {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
                 .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#).unwrap()));
-            let ctx = Context::default().value(json!({"baz": "bar"}));
+            let ctx = Context::default().value(json!({"baz": "baz"}));
             let body = tmpl.to_body(&ctx).unwrap();
-            assert_eq!(body, "foo=bar");
+            assert_eq!(body, "foo=baz");
         }
 
         #[test]
