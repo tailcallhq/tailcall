@@ -57,6 +57,17 @@ impl JsonSchema {
                     })
                     .unit()
                 }
+                async_graphql::Value::String(s) => {
+                    if let Ok(v) = Mustache::parse(s) {
+                        if !v.is_const() {
+                            Valid::succeed(())
+                        } else {
+                            Valid::fail("expected object")
+                        }
+                    } else {
+                        Valid::fail("expected object")
+                    }
+                }
                 _ => Valid::fail("expected array"),
             },
             JsonSchema::Obj(fields) => {
