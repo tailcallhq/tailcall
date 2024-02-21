@@ -164,4 +164,24 @@ mod tests {
         let expected = async_graphql::Value::from_json(json!({"a": [1, 2]})).unwrap();
         assert_eq!(result.unwrap(), expected);
     }
+
+    #[test]
+    fn test_mustache_or_value_is_const() {
+        let value = json!("{{foo}}");
+        let value = ValueOrDynamic::try_from(&value).unwrap();
+        let ctx = json!({"foo": "bar"});
+        let result = value.render_value(&ctx).unwrap();
+        let expected = async_graphql::Value::String("bar".to_owned());
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_mustache_arr() {
+        let value = json!(["{{foo.bar.baz}}", "{{foo.bar.qux}}"]);
+        let value = ValueOrDynamic::try_from(&value).unwrap();
+        let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!([1, 2])).unwrap();
+        assert_eq!(result.unwrap(), expected);
+    }
 }
