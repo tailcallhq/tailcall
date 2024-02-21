@@ -65,8 +65,10 @@ impl Mustache {
     }
 
     fn render_and_eval(&self, value: &impl PathString) -> anyhow::Result<async_graphql::Value> {
-        let p = self.render(value);
-        let json = serde_json::from_str::<Value>(&p)?;
+        let json = match serde_json::from_str::<Value>(&self.render(value)) {
+            Ok(v) => v,
+            Err(_) => Value::String(self.render(value)),
+        };
         match json {
             Value::String(s) => {
                 let out = serde_json::from_str::<Value>(s.as_str());
@@ -84,7 +86,7 @@ impl Mustache {
             Value::Object(obj) => {
                 let mut out = IndexMap::new();
                 for (k, v) in obj {
-                    let value = Mustache::parse(serde_json::to_string(&v)?.as_str())?;
+                    let value = Mustache::parse(v.to_string().as_str())?;
                     if !value.is_const() {
                         out.insert(async_graphql::Name::new(k), value.render_and_eval(ctx)?);
                     } else {
@@ -96,7 +98,7 @@ impl Mustache {
             Value::Array(arr) => {
                 let mut out = Vec::new();
                 for v in arr {
-                    let value = Mustache::parse(serde_json::to_string(&v)?.as_str())?;
+                    let value = Mustache::parse(v.to_string().as_str())?;
                     if !value.is_const() {
                         out.push(value.render_and_eval(ctx)?);
                     } else {
@@ -113,8 +115,9 @@ impl Mustache {
                     Ok(async_graphql::Value::String(str.to_owned()))
                 }
             }
-
-            _ => Ok(serde_json::from_value(value.clone())?),
+            Value::Number(num) => Ok(async_graphql::Value::Number(num.clone())),
+            Value::Bool(b) => Ok(async_graphql::Value::Boolean(*b)),
+            Value::Null => Ok(async_graphql::Value::Null),
         }
     }
 
@@ -197,7 +200,7 @@ fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
             segments
                 .into_iter()
                 .filter(|seg| match seg {
-                    Segment::Literal(s) => !s.is_empty(),
+                    Segment::Literal(s) => (!s.is_empty()) && !(s == "\""),
                     _ => true,
                 })
                 .collect(),
@@ -463,6 +466,33 @@ mod tests {
             ]);
 
             assert_eq!(mustache.render(&DummyPath).as_str(), "    bar    ");
+        }
+
+        #[test]
+        fn test_render_value() {
+            let mustache = json!({"a": "{{foo}}"});
+            let ctx = json!({"foo": {"bar": "baz"}});
+            let result = Mustache::render_value(&ctx, &mustache);
+            let expected = async_graphql::Value::from_json(json!({"a": {"bar": "baz"}})).unwrap();
+            assert_eq!(result.unwrap(), expected);
+        }
+
+        #[test]
+        fn test_render_value_nested() {
+            let mustache = json!({"a": "{{foo.bar.baz}}"});
+            let ctx = json!({"foo": {"bar": {"baz": 1}}});
+            let result = Mustache::render_value(&ctx, &mustache);
+            let expected = async_graphql::Value::from_json(json!({"a": 1})).unwrap();
+            assert_eq!(result.unwrap(), expected);
+        }
+
+        #[test]
+        fn test_render_value_nested_str() {
+            let mustache = json!({"a": "{{foo.bar.baz}}"});
+            let ctx = json!({"foo": {"bar": {"baz": "foo"}}});
+            let result = Mustache::render_value(&ctx, &mustache);
+            let expected = async_graphql::Value::from_json(json!({"a": "foo"})).unwrap();
+            assert_eq!(result.unwrap(), expected);
         }
     }
 
