@@ -12,7 +12,7 @@ use super::logic::Logic;
 use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
-use crate::mustache::Mustache;
+use crate::serde_value_ext::ValueExt;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -107,7 +107,7 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Literal(value) => Mustache::render_value(ctx, value),
+                Expression::Literal(value) => value.render_value(ctx),
                 Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
                     left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
                 )),

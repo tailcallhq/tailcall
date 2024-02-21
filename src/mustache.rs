@@ -1,5 +1,3 @@
-use async_graphql_value::ConstValue;
-use indexmap::IndexMap;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::char;
@@ -7,7 +5,6 @@ use nom::combinator::map;
 use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
-use serde_json::Value;
 
 use crate::path::{PathGraphql, PathString};
 
@@ -61,72 +58,6 @@ impl Mustache {
                         .unwrap_or_default(),
                 })
                 .collect(),
-        }
-    }
-
-    fn eval_types(string: String) -> anyhow::Result<async_graphql::Value> {
-        let json = match serde_json::from_str::<Value>(&string) {
-            Ok(v) => v,
-            Err(_) => Value::String(string),
-        };
-        match json {
-            Value::Array(arr) => {
-                let mut out = Vec::new();
-                for v in arr {
-                    let value = Self::eval_types(v.to_string())?;
-                    out.push(value);
-                }
-                Ok(async_graphql::Value::List(out))
-            }
-            Value::String(s) => {
-                let out = serde_json::from_str::<Value>(s.as_str());
-                match out {
-                    Ok(v) => async_graphql::Value::from_json(v).map_err(|e| anyhow::anyhow!(e)),
-                    Err(_) => Ok(async_graphql::Value::String(s)),
-                }
-            }
-            _ => async_graphql::Value::from_json(json).map_err(|e| anyhow::anyhow!(e)),
-        }
-    }
-
-    pub fn render_value(ctx: &impl PathString, value: &Value) -> anyhow::Result<ConstValue> {
-        match value {
-            Value::Object(obj) => {
-                let mut out = IndexMap::new();
-                for (k, v) in obj {
-                    let value = Mustache::parse(v.to_string().as_str())?;
-                    if !value.is_const() {
-                        out.insert(
-                            async_graphql::Name::new(k),
-                            Self::eval_types(value.render(ctx))?,
-                        );
-                    } else {
-                        out.insert(async_graphql::Name::new(k), Self::render_value(ctx, v)?);
-                    }
-                }
-                Ok(async_graphql::Value::Object(out))
-            }
-            Value::Array(arr) => {
-                let mut out = Vec::new();
-                for v in arr {
-                    let value = Mustache::parse(v.to_string().as_str())?;
-                    if !value.is_const() {
-                        out.push(Self::eval_types(value.render(ctx))?);
-                    } else {
-                        out.push(Self::render_value(ctx, v)?);
-                    }
-                }
-                Ok(async_graphql::Value::List(out))
-            }
-            Value::String(str) => {
-                let value = Mustache::parse(str)?;
-                if !value.is_const() {
-                    Self::eval_types(value.render(ctx))
-                } else {
-                    Ok(async_graphql::Value::String(str.to_owned()))
-                }
-            }
-            _ => async_graphql::Value::from_json(value.clone()).map_err(|e| anyhow::anyhow!(e)),
         }
     }
 
@@ -475,69 +406,6 @@ mod tests {
             ]);
 
             assert_eq!(mustache.render(&DummyPath).as_str(), "    bar    ");
-        }
-
-        #[test]
-        fn test_render_value() {
-            let mustache = json!({"a": "{{foo}}"});
-            let ctx = json!({"foo": {"bar": "baz"}});
-            let result = Mustache::render_value(&ctx, &mustache);
-            let expected = async_graphql::Value::from_json(json!({"a": {"bar": "baz"}})).unwrap();
-            assert_eq!(result.unwrap(), expected);
-        }
-
-        #[test]
-        fn test_render_value_nested() {
-            let mustache = json!({"a": "{{foo.bar.baz}}"});
-            let ctx = json!({"foo": {"bar": {"baz": 1}}});
-            let result = Mustache::render_value(&ctx, &mustache);
-            let expected = async_graphql::Value::from_json(json!({"a": 1})).unwrap();
-            assert_eq!(result.unwrap(), expected);
-        }
-
-        #[test]
-        fn test_render_value_nested_str() {
-            let mustache = json!({"a": "{{foo.bar.baz}}"});
-            let ctx = json!({"foo": {"bar": {"baz": "foo"}}});
-            let result = Mustache::render_value(&ctx, &mustache);
-            let expected = async_graphql::Value::from_json(json!({"a": "foo"})).unwrap();
-            assert_eq!(result.unwrap(), expected);
-        }
-
-        #[test]
-        fn test_render_value_nested_bool() {
-            let mustache = json!({"a": "{{foo.bar.baz}}"});
-            let ctx = json!({"foo": {"bar": {"baz": true}}});
-            let result = Mustache::render_value(&ctx, &mustache);
-            let expected = async_graphql::Value::from_json(json!({"a": true})).unwrap();
-            assert_eq!(result.unwrap(), expected);
-        }
-
-        #[test]
-        fn test_render_value_nested_float() {
-            let mustache = json!({"a": "{{foo.bar.baz}}"});
-            let ctx = json!({"foo": {"bar": {"baz": 1.1}}});
-            let result = Mustache::render_value(&ctx, &mustache);
-            let expected = async_graphql::Value::from_json(json!({"a": 1.1})).unwrap();
-            assert_eq!(result.unwrap(), expected);
-        }
-
-        #[test]
-        fn test_render_value_arr() {
-            let mustache = json!({"a": "{{foo.bar.baz}}"});
-            let ctx = json!({"foo": {"bar": {"baz": [1,2,3]}}});
-            let result = Mustache::render_value(&ctx, &mustache);
-            let expected = async_graphql::Value::from_json(json!({"a": [1, 2, 3]})).unwrap();
-            assert_eq!(result.unwrap(), expected);
-        }
-
-        #[test]
-        fn test_render_value_arr_template() {
-            let mustache = json!({"a": ["{{foo.bar.baz}}", "{{foo.bar.qux}}"]});
-            let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
-            let result = Mustache::render_value(&ctx, &mustache);
-            let expected = async_graphql::Value::from_json(json!({"a": [1, 2]})).unwrap();
-            assert_eq!(result.unwrap(), expected);
         }
     }
 
