@@ -126,9 +126,7 @@ impl Mustache {
                     Ok(async_graphql::Value::String(str.to_owned()))
                 }
             }
-            Value::Number(num) => Ok(async_graphql::Value::Number(num.clone())),
-            Value::Bool(b) => Ok(async_graphql::Value::Boolean(*b)),
-            Value::Null => Ok(async_graphql::Value::Null),
+            _ => async_graphql::Value::from_json(value.clone()).map_err(|e| anyhow::anyhow!(e)),
         }
     }
 
