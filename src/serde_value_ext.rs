@@ -13,37 +13,21 @@ pub trait ValueExt {
 fn eval_types(value: &Value) -> Result<GraphQLValue> {
     match value {
         Value::Array(arr) => {
-            let mut out = Vec::new();
-            for v in arr {
-                let value = eval_types(v)?;
-                out.push(value);
-            }
-            Ok(async_graphql::Value::List(out))
+            let out: Result<Vec<_>> = arr.iter().map(eval_types).collect();
+            out.map(GraphQLValue::List)
         }
         Value::Object(obj) => {
-            let mut out = IndexMap::new();
-            for (k, v) in obj {
-                let value = eval_types(v)?;
-                out.insert(async_graphql::Name::new(k.clone()), value);
-            }
-            Ok(async_graphql::Value::Object(out))
+            let out: Result<IndexMap<_, _>> = obj
+                .iter()
+                .map(|(k, v)| Ok((async_graphql::Name::new(k), eval_types(v)?)))
+                .collect();
+            out.map(GraphQLValue::Object)
         }
-        Value::String(s) => {
-            let out = serde_json::from_str::<Value>(s.as_str());
-            match out {
-                Ok(v) => async_graphql::Value::from_json(v).map_err(|e| anyhow::anyhow!(e)),
-                Err(_) => Ok(async_graphql::Value::String(s.to_owned())),
-            }
-        }
-        _ => async_graphql::Value::from_json(value.clone()).map_err(|e| anyhow::anyhow!(e)),
-    }
-}
-
-fn string_to_value(s: String) -> Value {
-    let out = serde_json::from_str::<Value>(&s);
-    match out {
-        Ok(v) => v,
-        Err(_) => Value::String(s),
+        Value::String(s) => serde_json::from_str::<Value>(s)
+            .map_err(anyhow::Error::new)
+            .and_then(|v| GraphQLValue::from_json(v).map_err(|e| anyhow::anyhow!(e)))
+            .or(Ok(GraphQLValue::String(s.to_owned()))),
+        _ => GraphQLValue::from_json(value.to_owned()).map_err(|e| anyhow::anyhow!(e)),
     }
 }
 
@@ -53,44 +37,45 @@ impl ValueExt for ValueOrDynamic {
             ValueOrDynamic::Value(value) => eval_types(value),
             ValueOrDynamic::Mustache(m) => {
                 let s = m.render(ctx);
-                let value = string_to_value(s);
-                eval_types(&value)
+                serde_json::from_str(&s)
+                    .map_err(anyhow::Error::new)
+                    .and_then(|v| eval_types(&v))
+                    .or(Ok(GraphQLValue::String(s)))
             }
             ValueOrDynamic::MustacheObject(obj) => {
-                let mut out = IndexMap::new();
-                for (k, v) in obj {
-                    match v {
-                        MustacheOrValue::Value(value) => {
-                            let value = eval_types(value)?;
-                            out.insert(k.clone(), value);
-                        }
-                        MustacheOrValue::Mustache(m) => {
-                            let s = m.render(ctx);
-                            let value = string_to_value(s);
-                            let value = eval_types(&value)?;
-                            out.insert(k.clone(), value);
-                        }
-                    }
-                }
-                Ok(async_graphql::Value::Object(out))
+                let out: Result<IndexMap<_, _>> = obj
+                    .iter()
+                    .map(|(k, v)| {
+                        let value = match v {
+                            MustacheOrValue::Value(value) => eval_types(value),
+                            MustacheOrValue::Mustache(m) => {
+                                let s = m.render(ctx);
+                                serde_json::from_str(&s)
+                                    .map_err(anyhow::Error::new)
+                                    .and_then(|v| eval_types(&v))
+                                    .or(Ok(GraphQLValue::String(s)))
+                            }
+                        };
+                        value.map(|val| (k.to_owned(), val))
+                    })
+                    .collect();
+                out.map(GraphQLValue::Object)
             }
             ValueOrDynamic::MustacheArray(arr) => {
-                let mut out = Vec::new();
-                for v in arr {
-                    match v {
-                        MustacheOrValue::Value(value) => {
-                            let value = eval_types(value)?;
-                            out.push(value);
-                        }
+                let out: Result<Vec<_>> = arr
+                    .iter()
+                    .map(|v| match v {
+                        MustacheOrValue::Value(value) => eval_types(value),
                         MustacheOrValue::Mustache(m) => {
                             let s = m.render(ctx);
-                            let value = string_to_value(s);
-                            let value = eval_types(&value)?;
-                            out.push(value);
+                            serde_json::from_str(&s)
+                                .map_err(anyhow::Error::new)
+                                .and_then(|v| eval_types(&v))
+                                .or(Ok(GraphQLValue::String(s)))
                         }
-                    }
-                }
-                Ok(async_graphql::Value::List(out))
+                    })
+                    .collect();
+                out.map(GraphQLValue::List)
             }
         }
     }
