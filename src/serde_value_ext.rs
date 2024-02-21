@@ -21,9 +21,9 @@ fn eval_types(value: &Value) -> Result<GraphQLValue> {
             Ok(async_graphql::Value::List(out))
         }
         Value::String(s) => {
-            let out = serde_json::from_str::<Value>(s.as_str());
+            let out = serde_json::from_str::<GraphQLValue>(s.as_str());
             match out {
-                Ok(v) => async_graphql::Value::from_json(v).map_err(|e| anyhow::anyhow!(e)),
+                Ok(v) => Ok(v),
                 Err(_) => Ok(async_graphql::Value::String(s.to_owned())),
             }
         }
@@ -40,7 +40,6 @@ fn string_to_value(s: String) -> Value {
 }
 
 impl ValueExt for ValueOrDynamic {
-    // Optimize render_value to avoid unnecessary conversions
     fn render_value(&self, ctx: &impl PathString) -> Result<GraphQLValue> {
         match self {
             ValueOrDynamic::Value(value) => eval_types(value),
