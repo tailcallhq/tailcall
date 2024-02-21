@@ -62,7 +62,7 @@ impl ValueExt for ValueOrDynamic {
                                     .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
                             }
                         }
-                            .map(|val| (Name::new(&key), val))
+                        .map(|val| (Name::new(&key), val))
                     })
                     .collect();
                 out.map(GraphQLValue::Object)
