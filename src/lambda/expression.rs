@@ -18,7 +18,8 @@ use crate::mustache::Mustache;
 #[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
-    Literal(Value), // TODO: this should async_graphql::Value
+    Literal(Value),
+    // TODO: this should async_graphql::Value
     EqualTo(Box<Expression>, Box<Expression>),
     IO(IO),
     Cache(Cache),
@@ -80,48 +81,6 @@ impl Expression {
     pub fn in_sequence(self) -> Self {
         self.concurrency(Concurrent::Sequential)
     }
-
-    fn eval_literal<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        ctx: &EvaluationContext<'a, Ctx>,
-        value: &Value,
-    ) -> Result<ConstValue> {
-        match value {
-            Value::Object(obj) => {
-                let mut out = IndexMap::new();
-                for (k, v) in obj {
-                    let value = Mustache::parse(serde_json::to_string(&v)?.as_str())?;
-                    if !value.is_const() {
-                        out.insert(async_graphql::Name::new(k), value.render_value(ctx)?);
-                    } else {
-                        out.insert(async_graphql::Name::new(k), Self::eval_literal(ctx, v)?);
-                    }
-                }
-                Ok(async_graphql::Value::Object(out))
-            }
-            Value::Array(arr) => {
-                let mut out = Vec::new();
-                for v in arr {
-                    let value = Mustache::parse(serde_json::to_string(&v)?.as_str())?;
-                    if !value.is_const() {
-                        out.push(value.render_value(ctx)?);
-                    } else {
-                        out.push(Self::eval_literal(ctx, v)?);
-                    }
-                }
-                Ok(async_graphql::Value::List(out))
-            }
-            Value::String(str) => {
-                let value = Mustache::parse(str)?;
-                if !value.is_const() {
-                    value.render_value(ctx)
-                } else {
-                    Ok(async_graphql::Value::String(str.to_owned()))
-                }
-            }
-
-            _ => Ok(serde_json::from_value(value.clone())?),
-        }
-    }
 }
 
 impl Eval for Expression {
@@ -129,7 +88,7 @@ impl Eval for Expression {
         &'a self,
         ctx: &'a EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output=Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
@@ -149,7 +108,7 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Literal(value) => Self::eval_literal(ctx, value),
+                Expression::Literal(value) => Mustache::render_value(ctx, value),
                 Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
                     left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
                 )),

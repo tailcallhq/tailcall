@@ -1,3 +1,6 @@
+use crate::lambda::{EvaluationContext, ResolverContextLike};
+use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::char;
@@ -62,7 +65,7 @@ impl Mustache {
         }
     }
 
-    pub fn render_value(&self, value: &impl PathString) -> anyhow::Result<async_graphql::Value> {
+    fn render_and_eval(&self, value: &impl PathString) -> anyhow::Result<async_graphql::Value> {
         let p = self.render(value);
         let json = serde_json::from_str::<Value>(&p)?;
         match json {
@@ -74,6 +77,45 @@ impl Mustache {
                 }
             }
             _ => async_graphql::Value::from_json(json).map_err(|e| anyhow::anyhow!(e)),
+        }
+    }
+
+    pub fn render_value(ctx: &impl PathString, value: &Value) -> anyhow::Result<ConstValue> {
+        match value {
+            Value::Object(obj) => {
+                let mut out = IndexMap::new();
+                for (k, v) in obj {
+                    let value = Mustache::parse(serde_json::to_string(&v)?.as_str())?;
+                    if !value.is_const() {
+                        out.insert(async_graphql::Name::new(k), value.render_and_eval(ctx)?);
+                    } else {
+                        out.insert(async_graphql::Name::new(k), Self::render_value(ctx, v)?);
+                    }
+                }
+                Ok(async_graphql::Value::Object(out))
+            }
+            Value::Array(arr) => {
+                let mut out = Vec::new();
+                for v in arr {
+                    let value = Mustache::parse(serde_json::to_string(&v)?.as_str())?;
+                    if !value.is_const() {
+                        out.push(value.render_and_eval(ctx)?);
+                    } else {
+                        out.push(Self::render_value(ctx, v)?);
+                    }
+                }
+                Ok(async_graphql::Value::List(out))
+            }
+            Value::String(str) => {
+                let value = Mustache::parse(str)?;
+                if !value.is_const() {
+                    value.render_and_eval(ctx)
+                } else {
+                    Ok(async_graphql::Value::String(str.to_owned()))
+                }
+            }
+
+            _ => Ok(serde_json::from_value(value.clone())?),
         }
     }
 
@@ -189,7 +231,7 @@ mod tests {
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
                     "hello".to_string(),
-                    "world".to_string()
+                    "world".to_string(),
                 ])])
             );
         }
@@ -205,7 +247,7 @@ mod tests {
                     Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                     Segment::Literal("/api/".to_string()),
                     Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
-                    Segment::Literal("/end".to_string())
+                    Segment::Literal("/end".to_string()),
                 ])
             );
         }
@@ -218,7 +260,7 @@ mod tests {
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
                     "foo".to_string(),
-                    "bar".to_string()
+                    "bar".to_string(),
                 ])])
             );
         }
@@ -296,7 +338,7 @@ mod tests {
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
                     "env".to_string(),
-                    "FOO".to_string()
+                    "FOO".to_string(),
                 ])])
             );
         }
@@ -308,11 +350,12 @@ mod tests {
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
                     "env".to_string(),
-                    "FOO_BAR".to_string()
+                    "FOO_BAR".to_string(),
                 ])])
             );
         }
     }
+
     mod render {
         use std::borrow::Cow;
 
