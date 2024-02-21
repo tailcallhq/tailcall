@@ -226,7 +226,7 @@ mod tests {
         let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
-        let id = "greetings".to_string();
+        let id = name.replace(".proto", "");
         let mut config = Config::default().links(vec![Link {
             id: Some(id.clone()),
             src: get_test_file(name)

@@ -129,18 +129,20 @@ impl TryFrom<String> for GrpcMethod {
     type Error = ValidationError<String>;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let method: Vec<&str> = value.split('.').collect();
+        let mut method: Vec<&str> = value.split('.').collect();
 
-        if method.len() != 3 {
+        if method.len() < 3 {
             return Err(ValidationError::new(format!(
                 "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
                 value
             )));
         }
 
-        let id = method[0].to_string();
-        let service = format!("{}.{}", id, method[1]);
-        let name = method[2].to_string();
+        // unwraps should be fine because the length of array is >= 3
+        let name = method.pop().unwrap().to_string();
+        let service_name = method.pop().unwrap().to_string();
+        let id = method.join(".");
+        let service = format!("{}.{}", id, service_name);
 
         Ok(GrpcMethod { id, service, name })
     }
@@ -235,10 +237,10 @@ mod tests {
     #[test]
     fn try_from_grpc_method() {
         let method =
-            GrpcMethod::try_from("package_name.ServiceName.MethodName".to_string()).unwrap();
+            GrpcMethod::try_from("package.name.ServiceName.MethodName".to_string()).unwrap();
 
-        assert_eq!(method.id, "package_name");
-        assert_eq!(method.service, "package_name.ServiceName");
+        assert_eq!(method.id, "package.name");
+        assert_eq!(method.service, "package.name.ServiceName");
         assert_eq!(method.name, "MethodName");
     }
 

@@ -116,9 +116,24 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let mut descriptors = self
-                        .resolve_descriptors(self.read_proto(&source.path).await?)
-                        .await?;
+                    let parent_descriptor = self.read_proto(&source.path).await?;
+                    let id = parent_descriptor
+                        .package // we should ideally take the package name as default id
+                        .clone()
+                        .unwrap_or(
+                            config_link
+                                .id
+                                .to_owned() // if there is no package id then we use link id
+                                .unwrap_or(
+                                    parent_descriptor
+                                        .name // if none of them is available,
+                                        // then we use file name.
+                                        .clone()
+                                        .unwrap_or_default(),
+                                ),
+                        );
+
+                    let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
                     file_descriptor_set.file.append(&mut descriptors);
@@ -126,10 +141,7 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .grpc_file_descriptors
-                        .push(Content {
-                            id: config_link.id.to_owned(),
-                            content: file_descriptor_set,
-                        });
+                        .push(Content { id: Some(id), content: file_descriptor_set });
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);
