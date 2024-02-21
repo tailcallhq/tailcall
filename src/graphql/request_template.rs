@@ -137,7 +137,6 @@ impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for 
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
     use std::collections::HashSet;
 
     use async_graphql::Value;
@@ -158,8 +157,8 @@ mod tests {
     }
 
     impl PathGraphql for Context {
-        fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, async_graphql::Value>> {
-            self.value.get_path(path).map(Cow::Borrowed)
+        fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
+            self.value.get_path(path).map(|v| v.to_string())
         }
     }
 
@@ -237,7 +236,7 @@ mod tests {
 
         assert_eq!(
             std::str::from_utf8(&body).unwrap(),
-            r#"{ "query": "mutation { create(id: baz, struct: {\"bar\":\"baz\",\"header\":\"abc\"}) { a,b,c } }" }"#
+            r#"{ "query": "mutation { create(id: \"baz\", struct: {bar: \"baz\", header: \"abc\"}) { a,b,c } }" }"#
         );
     }
 

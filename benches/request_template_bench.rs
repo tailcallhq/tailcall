@@ -21,7 +21,7 @@ impl Default for Context {
     }
 }
 impl PathString for Context {
-    fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, async_graphql::Value>> {
+    fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
         self.value.path_string(parts)
     }
 }

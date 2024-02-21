@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::char;
@@ -7,7 +5,7 @@ use nom::combinator::map;
 use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::path::{PathGraphql, PathString};
 
@@ -49,16 +47,6 @@ impl Mustache {
         }
     }
 
-    fn convert_value(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
-        match value {
-            async_graphql::Value::String(s) => Some(Cow::Borrowed(s.as_str())),
-            async_graphql::Value::Number(n) => Some(Cow::Owned(n.to_string())),
-            async_graphql::Value::Boolean(b) => Some(Cow::Owned(b.to_string())),
-            async_graphql::Value::Object(map) => Some(json!(map).to_string().into()),
-            async_graphql::Value::List(list) => Some(json!(list).to_string().into()),
-            _ => None,
-        }
-    }
     pub fn render(&self, value: &impl PathString) -> String {
         match self {
             Mustache(segments) => segments
@@ -67,7 +55,7 @@ impl Mustache {
                     Segment::Literal(text) => text.clone(),
                     Segment::Expression(parts) => value
                         .path_string(parts)
-                        .and_then(|a| Mustache::convert_value(a.as_ref()).map(|s| s.to_string()))
+                        .map(|a| a.to_string())
                         .unwrap_or_default(),
                 })
                 .collect(),
@@ -95,10 +83,7 @@ impl Mustache {
                 .iter()
                 .map(|segment| match segment {
                     Segment::Literal(text) => text.to_string(),
-                    Segment::Expression(parts) => value
-                        .path_graphql(parts)
-                        .and_then(|a| Mustache::convert_value(a.as_ref()).map(|s| s.to_string()))
-                        .unwrap_or_default(),
+                    Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
                 })
                 .collect(),
         }
@@ -350,20 +335,13 @@ mod tests {
             struct DummyPath;
 
             impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(
-                    &self,
-                    parts: &[T],
-                ) -> Option<Cow<'_, async_graphql::Value>> {
+                fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
                     let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo", "bar"] {
-                        Some(Cow::Owned(async_graphql::Value::String(
-                            "FOOBAR".to_string(),
-                        )))
+                        Some(Cow::Borrowed("FOOBAR"))
                     } else if parts == ["baz", "qux"] {
-                        Some(Cow::Owned(async_graphql::Value::String(
-                            "BAZQUX".to_string(),
-                        )))
+                        Some(Cow::Borrowed("BAZQUX"))
                     } else {
                         None
                     }
@@ -389,10 +367,7 @@ mod tests {
             struct DummyPath;
 
             impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(
-                    &self,
-                    _: &[T],
-                ) -> Option<Cow<'_, async_graphql::Value>> {
+                fn path_string<T: AsRef<str>>(&self, _: &[T]) -> Option<Cow<'_, str>> {
                     None
                 }
             }
@@ -428,14 +403,11 @@ mod tests {
             struct DummyPath;
 
             impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(
-                    &self,
-                    parts: &[T],
-                ) -> Option<Cow<'_, async_graphql::Value>> {
+                fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
                     let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo"] {
-                        Some(Cow::Owned(async_graphql::Value::String("bar".to_string())))
+                        Some(Cow::Borrowed("bar"))
                     } else {
                         None
                     }
@@ -453,8 +425,6 @@ mod tests {
     }
 
     mod render_graphql {
-        use std::borrow::Cow;
-
         use crate::mustache::{Mustache, Segment};
         use crate::path::PathGraphql;
 
@@ -463,20 +433,13 @@ mod tests {
             struct DummyPath;
 
             impl PathGraphql for DummyPath {
-                fn path_graphql<T: AsRef<str>>(
-                    &self,
-                    parts: &[T],
-                ) -> Option<Cow<'_, async_graphql::Value>> {
+                fn path_graphql<T: AsRef<str>>(&self, parts: &[T]) -> Option<String> {
                     let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo", "bar"] {
-                        Some(Cow::Owned(async_graphql::Value::String(
-                            "FOOBAR".to_string(),
-                        )))
+                        Some("FOOBAR".to_owned())
                     } else if parts == ["baz", "qux"] {
-                        Some(Cow::Owned(async_graphql::Value::String(
-                            "BAZQUX".to_string(),
-                        )))
+                        Some("BAZQUX".to_owned())
                     } else {
                         None
                     }
@@ -502,10 +465,7 @@ mod tests {
             struct DummyPath;
 
             impl PathGraphql for DummyPath {
-                fn path_graphql<T: AsRef<str>>(
-                    &self,
-                    _: &[T],
-                ) -> Option<Cow<'_, async_graphql::Value>> {
+                fn path_graphql<T: AsRef<str>>(&self, _: &[T]) -> Option<String> {
                     None
                 }
             }
