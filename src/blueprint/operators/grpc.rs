@@ -118,7 +118,7 @@ pub struct CompileGrpc<'a> {
     pub grpc: &'a Grpc,
     pub validate_with_schema: bool,
 }
-
+#[derive(Debug)]
 struct GrpcMethod {
     pub id: String,
     pub service: String,
@@ -129,7 +129,7 @@ impl TryFrom<String> for GrpcMethod {
     type Error = ValidationError<String>;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let mut method: Vec<&str> = value.split('.').collect();
+        let method: Vec<&str> = value.rsplitn(3, '.').collect();
 
         if method.len() < 3 {
             return Err(ValidationError::new(format!(
@@ -138,13 +138,23 @@ impl TryFrom<String> for GrpcMethod {
             )));
         }
 
-        // unwraps should be fine because the length of array is >= 3
-        let name = method.pop().unwrap().to_string();
-        let service_name = method.pop().unwrap().to_string();
-        let id = method.join(".");
-        let service = format!("{}.{}", id, service_name);
-
-        Ok(GrpcMethod { id, service, name })
+        match &method[..] {
+            &[name, service, id] => {
+                let method = GrpcMethod {
+                    id: id.to_owned(),
+                    service: format!("{id}.{service}"),
+                    name: name.to_owned(),
+                };
+                println!("{method:?}");
+                Ok(method)
+            }
+            _ => {
+                Err(ValidationError::new(format!(
+                    "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
+                    value
+                )))
+            }
+        }
     }
 }
 
