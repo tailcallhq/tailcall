@@ -20,10 +20,18 @@ fn eval_types(value: &Value) -> Result<GraphQLValue> {
             }
             Ok(async_graphql::Value::List(out))
         }
+        Value::Object(obj) => {
+            let mut out = IndexMap::new();
+            for (k, v) in obj {
+                let value = eval_types(v)?;
+                out.insert(async_graphql::Name::new(k.clone()), value);
+            }
+            Ok(async_graphql::Value::Object(out))
+        }
         Value::String(s) => {
-            let out = serde_json::from_str::<GraphQLValue>(s.as_str());
+            let out = serde_json::from_str::<Value>(s.as_str());
             match out {
-                Ok(v) => Ok(v),
+                Ok(v) => async_graphql::Value::from_json(v).map_err(|e| anyhow::anyhow!(e)),
                 Err(_) => Ok(async_graphql::Value::String(s.to_owned())),
             }
         }
@@ -176,12 +184,24 @@ mod tests {
     }
 
     #[test]
-    fn test_mustache_arr() {
-        let value = json!(["{{foo.bar.baz}}", "{{foo.bar.qux}}"]);
+    fn test_mustache_arr_obj() {
+        let value = json!([{"a": "{{foo.bar.baz}}"}, {"a": "{{foo.bar.qux}}"}]);
         let value = ValueOrDynamic::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
         let result = value.render_value(&ctx);
-        let expected = async_graphql::Value::from_json(json!([1, 2])).unwrap();
+        let expected = async_graphql::Value::from_json(json!([{"a": 1}, {"a":2}])).unwrap();
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_mustache_arr_obj_arr() {
+        let value = json!([{"a": [{"aa": "{{foo.bar.baz}}"}]}, {"a": [{"aa": "{{foo.bar.qux}}"}]}]);
+        let value = ValueOrDynamic::try_from(&value).unwrap();
+        let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
+        let result = value.render_value(&ctx);
+        let expected =
+            async_graphql::Value::from_json(json!([{"a": [{"aa": 1}]}, {"a":[{"aa": 2}]}]))
+                .unwrap();
         assert_eq!(result.unwrap(), expected);
     }
 }
