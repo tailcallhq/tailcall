@@ -4,7 +4,6 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::Field;
 use crate::lambda::Expression;
-use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
@@ -43,11 +42,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
             } else {
                 Valid::succeed(())
             };
-            validation.map(|_| {
-                Expression::Mustache(
-                    Mustache::parse(serde_json::to_string(&data).unwrap().as_str()).unwrap(),
-                )
-            })
+            validation.map(|_| Expression::Literal(data))
         }
         Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
     }

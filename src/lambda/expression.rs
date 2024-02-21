@@ -4,6 +4,7 @@ use std::pin::Pin;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
 use serde_json::Value;
 use thiserror::Error;
 
@@ -108,7 +109,24 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
+                Expression::Literal(value) => match value {
+                    Value::Object(obj) => {
+                        let mut out = IndexMap::new();
+                        for (k, v) in obj {
+                            let value = Mustache::parse(serde_json::to_string(&v)?.as_str())?;
+                            if !value.is_const() {
+                                out.insert(async_graphql::Name::new(k), value.render_value(ctx)?);
+                            } else {
+                                out.insert(
+                                    async_graphql::Name::new(k),
+                                    async_graphql::Value::from_json(v.clone())?,
+                                );
+                            }
+                        }
+                        Ok(async_graphql::Value::Object(out))
+                    }
+                    _ => Ok(serde_json::from_value(value.clone())?),
+                },
                 Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
                     left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
                 )),
