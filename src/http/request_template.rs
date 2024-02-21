@@ -280,11 +280,13 @@ mod tests {
             Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
         }
     }
+
     impl crate::path::PathString for Context {
         fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
         }
     }
+
     impl crate::has_headers::HasHeaders for Context {
         fn headers(&self) -> &HeaderMap {
             &self.headers
@@ -303,6 +305,7 @@ mod tests {
             Ok(std::str::from_utf8(&body)?.to_string())
         }
     }
+
     #[test]
     fn test_url() {
         let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap();
@@ -331,6 +334,7 @@ mod tests {
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
     }
+
     #[test]
     fn test_url_path_template_multi() {
         let tmpl =
@@ -348,6 +352,7 @@ mod tests {
             "http://localhost:3000/foo/bar/boozes/1"
         );
     }
+
     #[test]
     fn test_url_query_params() {
         let query = vec![
@@ -365,6 +370,7 @@ mod tests {
             "http://localhost:3000/?foo=0&bar=1&baz=2"
         );
     }
+
     #[test]
     fn test_url_query_params_template() {
         let query = vec![
@@ -415,6 +421,7 @@ mod tests {
         assert_eq!(req.headers().get("bar").unwrap(), "bar");
         assert_eq!(req.headers().get("baz").unwrap(), "baz");
     }
+
     #[test]
     fn test_header_template() {
         let headers = vec![
@@ -447,6 +454,7 @@ mod tests {
         assert_eq!(req.headers().get("bar").unwrap(), "1");
         assert_eq!(req.headers().get("baz").unwrap(), "2");
     }
+
     #[test]
     fn test_header_encoding_application_json() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -460,6 +468,7 @@ mod tests {
             "application/json"
         );
     }
+
     #[test]
     fn test_header_encoding_application_x_www_form_urlencoded() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -473,6 +482,7 @@ mod tests {
             "application/x-www-form-urlencoded"
         );
     }
+
     #[test]
     fn test_method() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -482,6 +492,7 @@ mod tests {
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.method(), reqwest::Method::POST);
     }
+
     #[test]
     fn test_body() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -491,6 +502,7 @@ mod tests {
         let body = tmpl.to_body(&ctx).unwrap();
         assert_eq!(body, "foo");
     }
+
     #[test]
     fn test_body_template() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -504,6 +516,7 @@ mod tests {
         let body = tmpl.to_body(&ctx).unwrap();
         assert_eq!(body, "baz");
     }
+
     #[test]
     fn test_body_encoding_application_json() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -543,6 +556,7 @@ mod tests {
             assert_eq!(body, "foo".as_bytes());
             assert_eq!(req.url().to_string(), "http://localhost:3000/");
         }
+
         #[test]
         fn test_from_endpoint_template() {
             let mut headers = HeaderMap::new();
@@ -583,10 +597,10 @@ mod tests {
             let endpoint = crate::endpoint::Endpoint::new(
                 "http://localhost:3000/?a={{args.a}}&q=1".to_string(),
             )
-            .query(vec![
-                ("b".to_string(), "1".to_string()),
-                ("c".to_string(), "{{args.c}}".to_string()),
-            ]);
+                .query(vec![
+                    ("b".to_string(), "1".to_string()),
+                    ("c".to_string(), "{{args.c}}".to_string()),
+                ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
@@ -617,10 +631,10 @@ mod tests {
             let endpoint = crate::endpoint::Endpoint::new(
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             )
-            .query(vec![
-                ("e".to_string(), "{{args.e}}".to_string()),
-                ("f".to_string(), "{{args.f}}".to_string()),
-            ]);
+                .query(vec![
+                    ("e".to_string(), "{{args.e}}".to_string()),
+                    ("f".to_string(), "{{args.f}}".to_string()),
+                ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
               "args": {
@@ -635,6 +649,7 @@ mod tests {
                 "http://localhost:3000/foo?b=foo&d=bar&f=baz"
             );
         }
+
         #[test]
         fn test_headers_forward() {
             let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string());
@@ -664,14 +679,15 @@ mod tests {
             let body = request_body.unwrap();
             assert_eq!(body, "baz");
         }
+
         #[test]
         fn test_with_json_template() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
                 .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#).unwrap()));
-            let ctx = Context::default().value(json!({"baz": "baz"}));
+            let ctx = Context::default().value(json!({"baz": "bar"}));
             let body = tmpl.to_body(&ctx).unwrap();
-            assert_eq!(body, "foo=baz");
+            assert_eq!(body, "foo=bar");
         }
 
         #[test]
@@ -695,6 +711,7 @@ mod tests {
             let e = "special+chars=a+%21%40%23%24%25%5E%26*%28%29%3C%3E%3F%3A%7B%7D-%3D1%5B%5D%3B%27%2C.%2F";
             assert_eq!(a, e);
         }
+
         #[test]
         fn test_with_mustache_literal() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
