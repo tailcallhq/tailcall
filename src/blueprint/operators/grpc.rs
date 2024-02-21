@@ -131,13 +131,6 @@ impl TryFrom<String> for GrpcMethod {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let method: Vec<&str> = value.rsplitn(3, '.').collect();
 
-        if method.len() < 3 {
-            return Err(ValidationError::new(format!(
-                "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
-                value
-            )));
-        }
-
         match &method[..] {
             &[name, service, id] => {
                 let method = GrpcMethod {
