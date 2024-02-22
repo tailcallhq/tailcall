@@ -1,9 +1,8 @@
 use std::borrow::Cow;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
-use serde_json::Value;
 
 use crate::blueprint::DynamicValue;
 use crate::path::PathString;
@@ -12,39 +11,17 @@ pub trait ValueExt {
     fn render_value(&self, ctx: &impl PathString) -> Result<GraphQLValue>;
 }
 
-fn eval_types(value: &Value) -> Result<GraphQLValue> {
-    match value {
-        Value::Array(arr) => {
-            let out: Result<Vec<_>> = arr.iter().map(eval_types).collect();
-            out.map(GraphQLValue::List)
-        }
-        Value::Object(obj) => {
-            let out: Result<IndexMap<_, _>> = obj
-                .iter()
-                .map(|(k, v)| {
-                    let key: Cow<'_, str> = Cow::Borrowed(k);
-                    eval_types(v).map(|val| (Name::new(key), val))
-                })
-                .collect();
-            out.map(GraphQLValue::Object)
-        }
-        Value::String(s) => serde_json::from_str::<Value>(s)
-            .map_err(anyhow::Error::new)
-            .and_then(|a| eval_types(&a))
-            .or_else(|_| Ok(GraphQLValue::String(Cow::Borrowed(s).into_owned()))),
-        _ => GraphQLValue::from_json(value.clone()).map_err(|e| anyhow!(e)),
-    }
-}
-
 impl ValueExt for DynamicValue {
     fn render_value<'a>(&self, ctx: &'a impl PathString) -> Result<GraphQLValue> {
         match self {
-            DynamicValue::Value(value) => eval_types(value),
+            DynamicValue::Value(value) => Ok(GraphQLValue::from_json(value.clone())?),
             DynamicValue::Mustache(m) => {
                 let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
-                serde_json::from_str::<Value>(rendered.as_ref())
-                    .map_err(anyhow::Error::new)
-                    .and_then(|a| eval_types(&a))
+
+                serde_json::from_str::<GraphQLValue>(rendered.as_ref())
+                    // parsing can fail when Mustache::render returns bare string and since
+                    // that string is not wrapped with quotes serde_json will fail to parse it
+                    // but we can just use that string as is
                     .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
             }
             DynamicValue::Object(obj) => {
