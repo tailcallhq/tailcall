@@ -80,6 +80,16 @@ mod tests {
     }
 
     #[test]
+    fn test_render_value_null() {
+        let value = json!("{{foo.bar.baz}}");
+        let value = DynamicValue::try_from(&value).unwrap();
+        let ctx = json!({"foo": {"bar": {"baz": null}}});
+        let result = value.render_value(&ctx);
+        let expected = async_graphql::Value::from_json(json!(null)).unwrap();
+        assert_eq!(result.unwrap(), expected);
+    }
+
+    #[test]
     fn test_render_value_nested_bool() {
         let value = json!({"a": "{{foo.bar.baz}}"});
         let value = DynamicValue::try_from(&value).unwrap();

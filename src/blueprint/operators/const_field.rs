@@ -37,6 +37,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
 
     let data = value;
     if !value.is_const() {
+        // TODO: Add validation for const with Mustache here
         Valid::succeed(Literal(data.to_owned()))
     } else {
         match data.try_into() {
