@@ -1,5 +1,4 @@
-query GetPosts {
-  #}@rest(path: "/posts", method: "GET") {
+query GetPosts @rest(path: "/posts", method: "GET") {
   posts {
     id
     title

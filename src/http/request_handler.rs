@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
@@ -106,9 +106,19 @@ pub async fn graphql_query(
     app_ctx: &AppContext,
 ) -> Result<Response<Body>> {
     let req_ctx = Arc::new(create_request_context(req, app_ctx));
-    let response = request.data(req_ctx).execute(&app_ctx.schema).await;
+    let read_from_cache = Arc::new(Mutex::new(false));
+    let response = request
+        .data(req_ctx)
+        .data(read_from_cache.clone())
+        .execute(&app_ctx.schema)
+        .await;
     let mut resp = response.to_response()?;
     update_response_headers(&mut resp, app_ctx);
+
+    if *read_from_cache.lock().unwrap() {
+        *resp.status_mut() = StatusCode::NOT_MODIFIED;
+    }
+
     Ok(resp)
 }
 
@@ -151,7 +161,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         {
             graphiql(&req)
         }
-        ref method if req.uri().path().strip_prefix("/api").is_some() => {
+        ref method if req.uri().path().starts_with("/api") => {
             let path = req.uri().path().strip_prefix("/api").unwrap();
             let request = app_ctx
                 .blueprint

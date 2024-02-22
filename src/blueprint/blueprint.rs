@@ -1,6 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 
-use async_graphql::dynamic::Schema;
+use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
@@ -220,13 +220,17 @@ impl Blueprint {
     ///
     pub fn to_schema_with(&self, schema_modifiers: SchemaModifiers) -> Schema {
         let blueprint = if schema_modifiers.no_resolver {
-            self.clone()
-        } else {
             self.clone().drop_resolvers()
+        } else {
+            self.clone()
         };
 
         let server = &blueprint.server;
-        let mut schema = to_schema_builder_without_resolver(&blueprint);
+        let mut schema = if schema_modifiers.no_resolver {
+            to_schema_builder_without_resolver(&blueprint)
+        } else {
+            SchemaBuilder::from(&blueprint)
+        };
 
         if server.enable_apollo_tracing {
             schema = schema.extension(ApolloTracing);

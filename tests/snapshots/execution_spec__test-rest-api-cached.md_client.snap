@@ -1,0 +1,21 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Address {
+  street: String
+}
+
+type Query {
+  user(id: Int!): User
+}
+
+type User {
+  address: Address
+  id: Int
+  name: String
+}
+
+schema {
+  query: Query
+}

@@ -99,6 +99,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
 mod tests {
 
     mod evaluation_context {
+        use std::any::Any;
         use std::borrow::Cow;
         use std::collections::BTreeMap;
         use std::sync::Arc;
@@ -202,6 +203,10 @@ mod tests {
             }
 
             fn add_error(&'a self, _: async_graphql::ServerError) {}
+
+            fn data<D: Any + Send + Sync>(&'a self) -> Option<&'a D> {
+                None
+            }
         }
 
         static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {

@@ -1,6 +1,7 @@
 use core::future::Future;
 use std::num::NonZeroU64;
 use std::pin::Pin;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
@@ -40,6 +41,10 @@ impl Eval for Cache {
         Box::pin(async move {
             let key = self.expr.cache_key(ctx);
             if let Some(val) = ctx.req_ctx.runtime.cache.get(&key).await? {
+                if let Some(flag) = ctx.graphql_ctx.data::<Arc<Mutex<bool>>>() {
+                    *flag.lock().unwrap() = true;
+                }
+
                 Ok(val)
             } else {
                 let val = self.expr.eval(ctx, conc).await?;

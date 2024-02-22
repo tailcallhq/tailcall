@@ -216,6 +216,10 @@ mod tests {
         fn add_error(&'a self, error: async_graphql::ServerError) {
             self.errors.lock().unwrap().push(error);
         }
+
+        fn data<D>(&'a self) -> Option<&'a D> {
+            None
+        }
     }
 
     impl Expr {

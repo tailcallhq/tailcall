@@ -1,0 +1,21 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Address {
+  street: String
+}
+
+type Query {
+  user(id: Int!): User @http(baseURL: "http://api.com", path: "/users/{{args.id}}") @cache(maxAge: 1000)
+}
+
+type User {
+  address: Address
+  id: Int
+  name: String
+}
