@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
-use crate::mustache::Mustache;
 use crate::valid::{Valid, Validator};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -43,13 +42,10 @@ impl JsonSchema {
             },
             JsonSchema::Num => match value {
                 async_graphql::Value::Number(_) => Valid::succeed(()),
-                async_graphql::Value::String(s) => Self::check_mustache(s, "expected number"),
-
                 _ => Valid::fail("expected number"),
             },
             JsonSchema::Bool => match value {
                 async_graphql::Value::Boolean(_) => Valid::succeed(()),
-                async_graphql::Value::String(s) => Self::check_mustache(s, "expected boolean"),
                 _ => Valid::fail("expected boolean"),
             },
             JsonSchema::Arr(schema) => match value {
@@ -60,7 +56,6 @@ impl JsonSchema {
                     })
                     .unit()
                 }
-                async_graphql::Value::String(s) => Self::check_mustache(s, "expected array"),
                 _ => Valid::fail("expected array"),
             },
             JsonSchema::Obj(fields) => {
@@ -82,7 +77,6 @@ impl JsonSchema {
                         })
                         .unit()
                     }
-                    async_graphql::Value::String(s) => Self::check_mustache(s, "expected object"),
                     _ => Valid::fail("expected object"),
                 }
             }
@@ -90,18 +84,6 @@ impl JsonSchema {
                 async_graphql::Value::Null => Valid::succeed(()),
                 _ => schema.validate(value),
             },
-        }
-    }
-
-    fn check_mustache(s: &str, tpe: &'static str) -> Valid<(), &'static str> {
-        if let Ok(v) = Mustache::parse(s) {
-            if !v.is_const() {
-                Valid::succeed(())
-            } else {
-                Valid::fail(tpe)
-            }
-        } else {
-            Valid::fail(tpe)
         }
     }
 
