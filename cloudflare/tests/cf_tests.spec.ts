@@ -53,7 +53,7 @@ describe("fetch", () => {
       method: "POST",
       body: '{"query":"{ news { news { id } } }"}',
     })
-    let body = await resp.text()
+    let body = await resp.json()
     let expected = {data: {news: {news: [{id: 1}, {id: 2}, {id: 3}, {id: 4}, {id: 5}]}}}
     expect(body).toEqual(expected)
     expect(resp.status).toBe(200)

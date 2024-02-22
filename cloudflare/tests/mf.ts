@@ -3,8 +3,6 @@ import {MockAgent} from "undici"
 
 const mockAgent = new MockAgent()
 
-mockAgent.get("https://cloudflare.com").intercept({path: "/"}).reply(200, "cloudflare!")
-
 mockAgent
   .get("http://jsonplaceholder.typicode.com")
   .intercept({path: "/posts"})
@@ -18,6 +16,21 @@ mockAgent
         email: "alo@alo.com",
       },
     ],
+    {
+      headers: {
+        "content-type": "application/json",
+      },
+    },
+  )
+
+mockAgent
+  .get("http://jsonplaceholder.typicode.com")
+  .intercept({path: "/users/1"})
+  .reply(
+    200,
+    {
+      id: 1,
+    },
     {
       headers: {
         "content-type": "application/json",
