@@ -52,8 +52,7 @@ impl ValueExt for DynamicValue {
                     .iter()
                     .map(|(k, v)| {
                         let key = Cow::Borrowed(k.as_str());
-                        v.render_value(ctx)
-                            .map(|val| (Name::new(&key), val))
+                        v.render_value(ctx).map(|val| (Name::new(&key), val))
                     })
                     .collect();
                 out.map(GraphQLValue::Object)
