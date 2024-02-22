@@ -4,19 +4,20 @@ use std::pin::Pin;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
-use serde_json::Value;
 use thiserror::Error;
 
 use super::list::List;
 use super::logic::Logic;
 use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
+use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
+use crate::serde_value_ext::ValueExt;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
-    Literal(Value), // TODO: this should async_graphql::Value
+    Literal(DynamicValue),
     EqualTo(Box<Expression>, Box<Expression>),
     IO(IO),
     Cache(Cache),
@@ -106,7 +107,7 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Literal(value) => Ok(serde_json::from_value(value.clone())?),
+                Expression::Literal(value) => value.render_value(ctx),
                 Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
                     left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
                 )),
