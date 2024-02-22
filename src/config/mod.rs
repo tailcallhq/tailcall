@@ -16,6 +16,9 @@ mod key_values;
 mod link;
 mod n_plus_one;
 pub mod reader;
+mod rest;
 mod server;
 mod source;
 mod upstream;
+
+pub use rest::*;
