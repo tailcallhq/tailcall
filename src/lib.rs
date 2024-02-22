@@ -1,5 +1,6 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::mutable_key_type)]
+
 mod app_context;
 mod async_graphql_hyper;
 mod blueprint;
@@ -24,6 +25,7 @@ mod mustache;
 pub mod path;
 pub mod print_schema;
 pub mod runtime;
+mod serde_value_ext;
 pub mod try_fold;
 pub mod valid;
 

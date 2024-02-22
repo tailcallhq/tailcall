@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use async_graphql_value::ConstValue;
 use regex::Regex;
 
 use crate::blueprint::Type::ListType;
@@ -57,6 +58,7 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
 
 type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, String>;
 type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, String>;
+
 struct ProcessFieldWithinTypeContext<'a> {
     field: &'a config::Field,
     field_name: &'a str,
@@ -326,8 +328,8 @@ pub fn update_nested_resolvers<'a>(
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
             {
-                b_field = b_field.resolver(Some(Expression::Literal(serde_json::Value::Object(
-                    Default::default(),
+                b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
+                    ConstValue::Object(Default::default()),
                 ))));
             }
 
