@@ -21,7 +21,7 @@ impl ValueExt for DynamicValue {
                 serde_json::from_str::<GraphQLValue>(rendered.as_ref())
                     // parsing can fail when Mustache::render returns bare string and since
                     // that string is not wrapped with quotes serde_json will fail to parse it
-                    // but we can just use that string as is
+                    // but, we can just use that string as is
                     .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
             }
             DynamicValue::Object(obj) => {
