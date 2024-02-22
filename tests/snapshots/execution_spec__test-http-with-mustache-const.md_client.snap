@@ -1,0 +1,25 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type A {
+  a: Int
+  bc: BC
+}
+
+type BC {
+  d: D
+  f: Boolean
+}
+
+type D {
+  e: Int
+}
+
+type Query {
+  a: A
+}
+
+schema {
+  query: Query
+}
