@@ -97,13 +97,6 @@ jobs:
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Build and Run Server
-        run: |
-          git clone https://github.com/tailcallhq/rust-grpc
-          cd rust-grpc
-          cargo run &
-          sleep 30
-
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
