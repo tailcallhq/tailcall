@@ -17,7 +17,11 @@ expression: response
             3
           ],
           "c": "test",
-          "d": 1
+          "d": 1,
+          "f": {
+            "e": 1
+          },
+          "g": true
         }
       }
     }
