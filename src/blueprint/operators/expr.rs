@@ -71,7 +71,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
 
         // Safe Expr
         ExprBody::Const(value) => Valid::from(
-            ValueOrDynamic::try_from(&value).map_err(|e| ValidationError::new(e.to_string())),
+            DynamicValue::try_from(&value).map_err(|e| ValidationError::new(e.to_string())),
         )
         .and_then(|value| {
             compile_const(CompileConst { config_module, field, value: &value, validate: false })
@@ -99,7 +99,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
         .and_then(|mut list| {
             compile(ctx, *default).map(|default| {
                 list.push((
-                    Box::new(Expression::Literal(ValueOrDynamic::Value(true.into()))),
+                    Box::new(Expression::Literal(DynamicValue::Value(true.into()))),
                     Box::new(default),
                 ));
                 Expression::Logic(Logic::Cond(list))

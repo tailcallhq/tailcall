@@ -9,7 +9,7 @@ use thiserror::Error;
 use super::list::List;
 use super::logic::Logic;
 use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
-use crate::blueprint::ValueOrDynamic;
+use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
@@ -18,7 +18,7 @@ use crate::serde_value_ext::ValueExt;
 pub enum Expression {
     Context(Context),
     // TODO: this should async_graphql::Value
-    Literal(ValueOrDynamic),
+    Literal(DynamicValue),
     EqualTo(Box<Expression>, Box<Expression>),
     IO(IO),
     Cache(Cache),
