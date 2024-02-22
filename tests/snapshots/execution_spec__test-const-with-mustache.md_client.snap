@@ -11,6 +11,12 @@ type BC {
   b: [Int]
   c: String
   d: Int
+  f: D
+  g: Boolean
+}
+
+type D {
+  e: Int
 }
 
 type Query {
