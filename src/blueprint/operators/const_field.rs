@@ -28,7 +28,7 @@ fn validate_data_with_schema(
 pub struct CompileConst<'a> {
     pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
-    pub value: &'a ValueOrDynamic,
+    pub value: &'a DynamicValue,
     pub validate: bool,
 }
 
@@ -48,14 +48,14 @@ impl MustacheOrValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum ValueOrDynamic {
+pub enum DynamicValue {
     Value(serde_json::Value),
     Mustache(Mustache),
     MustacheObject(IndexMap<Name, MustacheOrValue>),
     MustacheArray(Vec<MustacheOrValue>),
 }
 
-impl TryFrom<&serde_json::Value> for ValueOrDynamic {
+impl TryFrom<&serde_json::Value> for DynamicValue {
     type Error = anyhow::Error;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
@@ -70,7 +70,7 @@ impl TryFrom<&serde_json::Value> for ValueOrDynamic {
                         out.insert(Name::new(k), MustacheOrValue::Mustache(m));
                     }
                 }
-                Ok(ValueOrDynamic::MustacheObject(out))
+                Ok(DynamicValue::MustacheObject(out))
             }
             Value::Array(arr) => {
                 let mut out = Vec::new();
@@ -82,17 +82,17 @@ impl TryFrom<&serde_json::Value> for ValueOrDynamic {
                         out.push(MustacheOrValue::Mustache(m));
                     }
                 }
-                Ok(ValueOrDynamic::MustacheArray(out))
+                Ok(DynamicValue::MustacheArray(out))
             }
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str())?;
                 if m.is_const() {
-                    Ok(ValueOrDynamic::Value(value.clone()))
+                    Ok(DynamicValue::Value(value.clone()))
                 } else {
-                    Ok(ValueOrDynamic::Mustache(m))
+                    Ok(DynamicValue::Mustache(m))
                 }
             }
-            _ => Ok(ValueOrDynamic::Value(value.clone())),
+            _ => Ok(DynamicValue::Value(value.clone())),
         }
     }
 }
@@ -105,7 +105,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
 
     let data = value;
     match data {
-        ValueOrDynamic::Value(v) => match ConstValue::from_json(v.to_owned().to_owned()) {
+        DynamicValue::Value(v) => match ConstValue::from_json(v.to_owned().to_owned()) {
             Ok(gql) => {
                 let validation = if validate {
                     validate_data_with_schema(config_module, field, gql)
@@ -116,7 +116,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
             }
             Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
         },
-        ValueOrDynamic::MustacheObject(map) => {
+        DynamicValue::MustacheObject(map) => {
             let a = map.into_iter().filter(|(_, v)| !v.is_const()).count();
             if a > 0 {
                 Valid::succeed(Literal(data.to_owned()))
@@ -155,7 +155,7 @@ pub fn update_const_field<'a>(
             };
 
             Valid::from(
-                ValueOrDynamic::try_from(&const_field.data.clone())
+                DynamicValue::try_from(&const_field.data.clone())
                     .map_err(|e| ValidationError::new(e.to_string())),
             )
             .and_then(|value| {
