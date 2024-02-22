@@ -7,16 +7,19 @@ use crate::{blueprint::Blueprint, lambda::Expression};
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Name(pub String);
+
 impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
+
 #[derive(Debug)]
 pub enum Resolver {
     Expression(Expression),
     Empty,
 }
+
 #[derive(Debug)]
 pub struct Node {
     pub(crate) name: Name,
@@ -49,7 +52,7 @@ impl Node {
         });
         let out = if let Some(def) = def {
             match def {
-                Definition::ObjectTypeDefinition(def) => {
+                Definition::Object(def) => {
                     let mut id_counter = id_counter;
                     for selection in selection_set.items.iter() {
                         match &selection.node {
