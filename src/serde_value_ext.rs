@@ -5,7 +5,7 @@ use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::blueprint::{DynamicValue, MustacheOrValue};
+use crate::blueprint::DynamicValue;
 use crate::path::PathString;
 
 pub trait ValueExt {
@@ -47,40 +47,19 @@ impl ValueExt for DynamicValue {
                     .and_then(|a| eval_types(&a))
                     .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
             }
-            DynamicValue::MustacheObject(obj) => {
+            DynamicValue::Object(obj) => {
                 let out: Result<IndexMap<_, _>> = obj
                     .iter()
                     .map(|(k, v)| {
-                        let key: Cow<'_, str> = Cow::Borrowed(k);
-                        match v {
-                            MustacheOrValue::Value(value) => eval_types(value),
-                            MustacheOrValue::Mustache(m) => {
-                                let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
-                                serde_json::from_str::<Value>(rendered.as_ref())
-                                    .map_err(anyhow::Error::new)
-                                    .and_then(|a| eval_types(&a))
-                                    .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
-                            }
-                        }
-                        .map(|val| (Name::new(&key), val))
+                        let key = Cow::Borrowed(k.as_str());
+                        v.render_value(ctx)
+                            .map(|val| (Name::new(&key), val))
                     })
                     .collect();
                 out.map(GraphQLValue::Object)
             }
-            DynamicValue::MustacheArray(arr) => {
-                let out: Result<Vec<_>> = arr
-                    .iter()
-                    .map(|v| match v {
-                        MustacheOrValue::Value(value) => eval_types(value),
-                        MustacheOrValue::Mustache(m) => {
-                            let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
-                            serde_json::from_str::<Value>(&rendered)
-                                .map_err(anyhow::Error::new)
-                                .and_then(|a| eval_types(&a))
-                                .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
-                        }
-                    })
-                    .collect();
+            DynamicValue::Array(arr) => {
+                let out: Result<Vec<_>> = arr.iter().map(|v| v.render_value(ctx)).collect();
                 out.map(GraphQLValue::List)
             }
         }
