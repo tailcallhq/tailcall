@@ -2,7 +2,6 @@ use async_graphql_value::Name;
 use indexmap::IndexMap;
 use serde_json::Value;
 
-use crate::blueprint::MustacheOrValue;
 use crate::mustache::Mustache;
 
 #[derive(Debug, Clone)]
@@ -51,6 +50,21 @@ impl TryFrom<&serde_json::Value> for DynamicValue {
                 }
             }
             _ => Ok(DynamicValue::Value(value.clone())),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum MustacheOrValue {
+    Mustache(Mustache),
+    Value(serde_json::Value),
+}
+
+impl MustacheOrValue {
+    pub fn is_const(&self) -> bool {
+        match self {
+            MustacheOrValue::Mustache(m) => m.is_const(),
+            _ => true,
         }
     }
 }
