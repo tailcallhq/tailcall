@@ -5,20 +5,12 @@ use std::sync::Arc;
 use anyhow::Context;
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
-use hyper::body::Bytes;
-use nom::AsBytes;
-use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
-use tonic::codegen::tokio_stream::StreamExt;
-use tonic_reflection::pb::server_reflection_client::ServerReflectionClient;
-use tonic_reflection::pb::server_reflection_request::MessageRequest;
-use tonic_reflection::pb::server_reflection_response::MessageResponse;
-use tonic_reflection::pb::ServerReflectionRequest;
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
@@ -154,22 +146,24 @@ impl ConfigReader {
                 LinkType::ReflectionWithFileName => {
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
-                    let link = config_link.src.clone();
-                    let file_name = config_link
-                        .id
+                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_proto_name(
+                        config_link.src.as_str(),
+                        &self.runtime,
+                        &config_link
+                            .id
+                            .clone()
+                            .context("Expected link id with method name but found none")?,
+                    )
+                    .await?;
+
+                    let id = file_descriptor_proto
+                        .name
                         .clone()
-                        .context("Expected ID field in link operator as file name")?;
-                    let file_name_req = ServerReflectionRequest {
-                        host: "".to_string(), // we do not need this
-                        message_request: Some(MessageRequest::FileByFilename(file_name)),
-                    };
-                    let file_response = Self::reflection_req(link, file_name_req).await?;
-                    let descriptor = self.get_descriptor(file_response).await?;
+                        .map(|v| v.replace(".proto", "")); // TODO
 
-                    let mut resolved_descriptor = self.resolve_descriptors(descriptor).await?;
+                    let mut resolved_descriptor =
+                        self.resolve_descriptors(file_descriptor_proto).await?;
                     file_descriptor_set.file.append(&mut resolved_descriptor);
-
-                    let id = config_link.id.map(|v| v.replace(".proto", ""));
 
                     config_module
                         .extensions
@@ -178,25 +172,23 @@ impl ConfigReader {
                 }
                 LinkType::ReflectionWithService => {
                     let mut file_descriptor_set = FileDescriptorSet::default();
-                    let symbol = config_link
-                        .id
+
+                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
+                        config_link.src.as_str(),
+                        &self.runtime,
+                        &config_link.id.context(
+                            "Expected link value of link id as package name but found none",
+                        )?,
+                    )
+                    .await?;
+
+                    let id = file_descriptor_proto
+                        .name
                         .clone()
-                        .context("Expected id for link type ReflectionWithService")?;
-                    let link = config_link.src.clone();
+                        .map(|v| v.replace(".proto", "")); // TODO
 
-                    let file_symbol_req = ServerReflectionRequest {
-                        host: "".to_string(), // we do not need this
-                        message_request: Some(MessageRequest::FileContainingSymbol(symbol)),
-                    };
-                    let file_response = Self::reflection_req(link, file_symbol_req).await?;
-                    let descriptor = self.get_descriptor(file_response).await?;
-
-                    let id = descriptor.name.clone().map(|v| v.replace(".proto", ""));
-                    // config_link.id contains the package name which cannot be used here,
-                    // so we are using descriptor.name
-                    // which contains file name
-
-                    let mut resolved_descriptor = self.resolve_descriptors(descriptor).await?;
+                    let mut resolved_descriptor =
+                        self.resolve_descriptors(file_descriptor_proto).await?;
                     file_descriptor_set.file.append(&mut resolved_descriptor);
 
                     config_module
@@ -206,41 +198,35 @@ impl ConfigReader {
                 }
                 LinkType::ReflectionAllFiles => {
                     let link = &config_link.src;
-                    let list_service_req = ServerReflectionRequest {
-                        host: "".to_string(), // we do not need this
-                        message_request: Some(MessageRequest::ListServices(String::new())),
-                    };
-                    let list_service_resp =
-                        Self::reflection_req(link.clone(), list_service_req).await?;
-                    if let MessageResponse::ListServicesResponse(list) = list_service_resp {
-                        for service in list.service {
-                            let mut file_descriptor_set = FileDescriptorSet::default();
+                    let service_list =
+                        crate::config::grpc_fetch::list_all_files(link.as_str(), &self.runtime)
+                            .await?;
+                    for service in service_list {
+                        let mut file_descriptor_set = FileDescriptorSet::default();
 
-                            if service.name.eq("grpc.reflection.v1alpha.ServerReflection") {
-                                continue;
-                            }
-                            let file_symbol_req = ServerReflectionRequest {
-                                host: "".to_string(), // we do not need this
-                                message_request: Some(MessageRequest::FileContainingSymbol(
-                                    service.name,
-                                )),
-                            };
-                            let file_response =
-                                Self::reflection_req(link.clone(), file_symbol_req).await?;
-                            let descriptor = self.get_descriptor(file_response).await?;
-                            let id = descriptor.name.clone().map(|v| v.replace(".proto", ""));
-                            // config_link.id contains the package name which cannot be used here,
-                            // so we are using descriptor.name
-                            // which contains file name
-
-                            let mut resolved_descriptor =
-                                self.resolve_descriptors(descriptor).await?;
-                            file_descriptor_set.file.append(&mut resolved_descriptor);
-                            config_module
-                                .extensions
-                                .grpc_file_descriptors
-                                .push(Content { id, content: file_descriptor_set });
+                        if service.eq("grpc.reflection.v1alpha.ServerReflection") {
+                            continue;
                         }
+                        let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
+                            link.as_str(),
+                            &self.runtime,
+                            &service,
+                        )
+                        .await?;
+
+                        let id = file_descriptor_proto
+                            .name
+                            .clone()
+                            .map(|v| v.replace(".proto", "")); // TODO
+
+                        let mut resolved_descriptor =
+                            self.resolve_descriptors(file_descriptor_proto).await?;
+                        file_descriptor_set.file.append(&mut resolved_descriptor);
+
+                        config_module
+                            .extensions
+                            .grpc_file_descriptors
+                            .push(Content { id, content: file_descriptor_set });
                     }
                 }
             }
@@ -380,49 +366,6 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
-    }
-
-    /// Takes Grpc Reflection response and returns FileDescriptorProto
-    async fn get_descriptor(
-        &self,
-        file_resp: MessageResponse,
-    ) -> anyhow::Result<FileDescriptorProto> {
-        if let MessageResponse::FileDescriptorResponse(file) = file_resp {
-            let descriptor = file
-                .file_descriptor_proto
-                .first()
-                .context("No descriptor found in response")?;
-            let descriptor = FileDescriptorProto::decode(descriptor.as_bytes())?;
-            return Ok(descriptor);
-        }
-        Err(anyhow::anyhow!(
-            "Internal error: The response is not FileDescriptorResponse"
-        ))
-    }
-
-    /// Makes Grpc Reflection requests
-    async fn reflection_req(
-        url: impl Into<Bytes>,
-        request: ServerReflectionRequest,
-    ) -> anyhow::Result<MessageResponse> {
-        let channel = tonic::transport::Channel::from_shared(url)?
-            .connect()
-            .await?;
-        let mut client = ServerReflectionClient::new(channel);
-
-        let request = tonic::Request::new(tonic::codegen::tokio_stream::once(request));
-        let mut inbound = client.server_reflection_info(request).await?.into_inner();
-
-        let response = inbound
-            .next()
-            .await
-            .context("unable to make request")??
-            .message_response
-            .context("unable to make request")?;
-
-        // We only expect one response per request
-        assert!(inbound.next().await.is_none());
-        Ok(response)
     }
 }
 
