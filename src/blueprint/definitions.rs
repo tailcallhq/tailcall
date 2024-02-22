@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use async_graphql_value::ConstValue;
 use regex::Regex;
 
 use crate::blueprint::Type::ListType;
@@ -328,7 +329,7 @@ pub fn update_nested_resolvers<'a>(
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
             {
                 b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
-                    serde_json::Value::Object(Default::default()),
+                    ConstValue::Object(Default::default()),
                 ))));
             }
 

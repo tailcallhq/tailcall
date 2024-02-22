@@ -17,7 +17,6 @@ use crate::serde_value_ext::ValueExt;
 #[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
-    // TODO: this should async_graphql::Value
     Literal(DynamicValue),
     EqualTo(Box<Expression>, Box<Expression>),
     IO(IO),

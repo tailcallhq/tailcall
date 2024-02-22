@@ -14,7 +14,7 @@ pub trait ValueExt {
 impl ValueExt for DynamicValue {
     fn render_value<'a>(&self, ctx: &'a impl PathString) -> Result<GraphQLValue> {
         match self {
-            DynamicValue::Value(value) => Ok(GraphQLValue::from_json(value.clone())?),
+            DynamicValue::Value(value) => Ok(value.to_owned()),
             DynamicValue::Mustache(m) => {
                 let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
 

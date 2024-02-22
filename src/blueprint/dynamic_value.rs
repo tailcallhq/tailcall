@@ -6,7 +6,7 @@ use crate::mustache::Mustache;
 
 #[derive(Debug, Clone)]
 pub enum DynamicValue {
-    Value(Value),
+    Value(ConstValue),
     Mustache(Mustache),
     Object(IndexMap<Name, DynamicValue>),
     Array(Vec<DynamicValue>),
@@ -17,7 +17,7 @@ impl TryFrom<&DynamicValue> for ConstValue {
 
     fn try_from(value: &DynamicValue) -> Result<Self, Self::Error> {
         match value {
-            DynamicValue::Value(v) => Ok(ConstValue::from_json(v.to_owned())?),
+            DynamicValue::Value(v) => Ok(v.to_owned()),
             DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
                 "mustache cannot be converted to const value at compiletime"
             )),
@@ -70,12 +70,12 @@ impl TryFrom<&Value> for DynamicValue {
             Value::String(s) => {
                 let m = Mustache::parse(s.as_str())?;
                 if m.is_const() {
-                    Ok(DynamicValue::Value(value.clone()))
+                    Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                 } else {
                     Ok(DynamicValue::Mustache(m))
                 }
             }
-            _ => Ok(DynamicValue::Value(value.clone())),
+            _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),
         }
     }
 }
