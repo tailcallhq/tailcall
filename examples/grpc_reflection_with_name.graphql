@@ -1,0 +1,29 @@
+# for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
+schema
+  @server(port: 8000, graphiql: true)
+  @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
+  @link(id: "news.proto", src: "http://localhost:50051", type: ReflectionWithFileName) { # to use ReflectionWithFileName, you can pass service name in `id` field
+  query: Query
+}
+
+type Query {
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
+  newsByIdBatch(news: NewsInput!): News!
+    @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.news}}", groupBy: ["news", "id"])
+}
+
+type News {
+  id: Int
+  title: String
+  body: String
+  postImage: String
+}
+
+input NewsInput {
+  id: Int
+}
+
+type NewsData {
+  news: [News]!
+}
