@@ -94,7 +94,8 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
     }
 }
 
-pub fn update_const_field<'a>() -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+pub fn update_const_field<'a>(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         |(config_module, field, _, _), b_field| {
@@ -106,10 +107,10 @@ pub fn update_const_field<'a>() -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a
                 DynamicValue::try_from(&const_field.data.clone())
                     .map_err(|e| ValidationError::new(e.to_string())),
             )
-                .and_then(|value| {
-                    compile_const(CompileConst { config_module, field, value: &value, validate: true })
-                        .map(|resolver| b_field.resolver(Some(resolver)))
-                })
+            .and_then(|value| {
+                compile_const(CompileConst { config_module, field, value: &value, validate: true })
+                    .map(|resolver| b_field.resolver(Some(resolver)))
+            })
         },
     )
 }

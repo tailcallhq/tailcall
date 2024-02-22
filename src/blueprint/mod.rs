@@ -74,8 +74,8 @@ impl TypeLike for Arg {
 }
 
 pub(crate) fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
-    where
-        T: TypeLike,
+where
+    T: TypeLike,
 {
     let name = field.name();
     let list = field.list();
