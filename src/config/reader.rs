@@ -16,6 +16,7 @@ use url::Url;
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::runtime::TargetRuntime;
+use crate::valid::{Valid, Validator};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -156,10 +157,14 @@ impl ConfigReader {
                     )
                     .await?;
 
-                    let id = file_descriptor_proto
-                        .name
-                        .clone()
-                        .map(|v| v.replace(".proto", "")); // TODO
+                    let id = Valid::from_option(
+                        file_descriptor_proto.package.clone(),
+                        format!(
+                            "Expected package name for proto file: {:?} but found none",
+                            file_descriptor_proto.name
+                        ),
+                    )
+                    .to_result()?;
 
                     let mut resolved_descriptor =
                         self.resolve_descriptors(file_descriptor_proto).await?;
@@ -168,7 +173,7 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .grpc_file_descriptors
-                        .push(Content { id, content: file_descriptor_set });
+                        .push(Content { id: Some(id), content: file_descriptor_set });
                 }
                 LinkType::ReflectionWithService => {
                     let mut file_descriptor_set = FileDescriptorSet::default();
@@ -182,10 +187,14 @@ impl ConfigReader {
                     )
                     .await?;
 
-                    let id = file_descriptor_proto
-                        .name
-                        .clone()
-                        .map(|v| v.replace(".proto", "")); // TODO
+                    let id = Valid::from_option(
+                        file_descriptor_proto.package.clone(),
+                        format!(
+                            "Expected package name for proto file: {:?} but found none",
+                            file_descriptor_proto.name
+                        ),
+                    )
+                    .to_result()?;
 
                     let mut resolved_descriptor =
                         self.resolve_descriptors(file_descriptor_proto).await?;
@@ -194,7 +203,7 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .grpc_file_descriptors
-                        .push(Content { id, content: file_descriptor_set });
+                        .push(Content { id: Some(id), content: file_descriptor_set });
                 }
                 LinkType::ReflectionAllFiles => {
                     let link = &config_link.src;
@@ -214,10 +223,14 @@ impl ConfigReader {
                         )
                         .await?;
 
-                        let id = file_descriptor_proto
-                            .name
-                            .clone()
-                            .map(|v| v.replace(".proto", "")); // TODO
+                        let id = Valid::from_option(
+                            file_descriptor_proto.package.clone(),
+                            format!(
+                                "Expected package name for proto file: {:?} but found none",
+                                file_descriptor_proto.name
+                            ),
+                        )
+                        .to_result()?;
 
                         let mut resolved_descriptor =
                             self.resolve_descriptors(file_descriptor_proto).await?;
@@ -226,7 +239,7 @@ impl ConfigReader {
                         config_module
                             .extensions
                             .grpc_file_descriptors
-                            .push(Content { id, content: file_descriptor_set });
+                            .push(Content { id: Some(id), content: file_descriptor_set });
                     }
                 }
             }

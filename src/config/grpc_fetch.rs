@@ -15,6 +15,7 @@ const REFLECTION_PROTO: &str = include_str!(concat!(
     "/proto/reflection.proto"
 ));
 
+/// This function is just used for better exception handling
 fn get_protobuf_set() -> Result<ProtobufSet> {
     let descriptor = protox_parse::parse("reflection", REFLECTION_PROTO)?;
     let mut descriptor_set = FileDescriptorSet::default();
@@ -22,6 +23,7 @@ fn get_protobuf_set() -> Result<ProtobufSet> {
     ProtobufSet::from_proto_file(&descriptor_set)
 }
 
+/// Makes `ListService` request to the grpc reflection server
 pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
     let protobuf_set = get_protobuf_set()?;
 
@@ -68,6 +70,8 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
 
     Ok(methods)
 }
+
+/// Makes `Get Service` request to the grpc reflection server
 
 pub async fn get_by_service(
     url: &str,
@@ -118,6 +122,7 @@ pub async fn get_by_service(
     Ok(file_descriptor_proto)
 }
 
+/// Makes `Get Proto/Symbol Name` request to the grpc reflection server
 pub async fn get_by_proto_name(
     url: &str,
     target_runtime: &TargetRuntime,
