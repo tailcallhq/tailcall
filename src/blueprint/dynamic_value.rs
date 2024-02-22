@@ -17,9 +17,7 @@ impl TryFrom<&DynamicValue> for ConstValue {
 
     fn try_from(value: &DynamicValue) -> Result<Self, Self::Error> {
         match value {
-            DynamicValue::Value(v) => {
-                ConstValue::from_json(v.to_owned()).map_err(anyhow::Error::new)
-            }
+            DynamicValue::Value(v) => Ok(ConstValue::from_json(v.to_owned())?),
             DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
                 "mustache cannot be converted to const value at compiletime"
             )),
