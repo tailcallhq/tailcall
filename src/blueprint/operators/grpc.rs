@@ -118,7 +118,7 @@ pub struct CompileGrpc<'a> {
     pub grpc: &'a Grpc,
     pub validate_with_schema: bool,
 }
-
+#[derive(Debug)]
 struct GrpcMethod {
     pub id: String,
     pub service: String,
@@ -129,20 +129,25 @@ impl TryFrom<String> for GrpcMethod {
     type Error = ValidationError<String>;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let method: Vec<&str> = value.split('.').collect();
+        let method: Vec<&str> = value.rsplitn(3, '.').collect();
 
-        if method.len() != 3 {
-            return Err(ValidationError::new(format!(
-                "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
-                value
-            )));
+        match &method[..] {
+            &[name, service, id] => {
+                let method = GrpcMethod {
+                    id: id.to_owned(),
+                    service: format!("{id}.{service}"),
+                    name: name.to_owned(),
+                };
+                println!("{method:?}");
+                Ok(method)
+            }
+            _ => {
+                Err(ValidationError::new(format!(
+                    "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
+                    value
+                )))
+            }
         }
-
-        let id = method[0].to_string();
-        let service = format!("{}.{}", id, method[1]);
-        let name = method[2].to_string();
-
-        Ok(GrpcMethod { id, service, name })
     }
 }
 
@@ -235,10 +240,10 @@ mod tests {
     #[test]
     fn try_from_grpc_method() {
         let method =
-            GrpcMethod::try_from("package_name.ServiceName.MethodName".to_string()).unwrap();
+            GrpcMethod::try_from("package.name.ServiceName.MethodName".to_string()).unwrap();
 
-        assert_eq!(method.id, "package_name");
-        assert_eq!(method.service, "package_name.ServiceName");
+        assert_eq!(method.id, "package.name");
+        assert_eq!(method.service, "package.name.ServiceName");
         assert_eq!(method.name, "MethodName");
     }
 

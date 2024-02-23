@@ -6,9 +6,9 @@ use nom::AsBytes;
 use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 
-use crate::grpc::protobuf::ProtobufSet;
+use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::runtime::TargetRuntime;
 
 const REFLECTION_PROTO: &str = include_str!(concat!(
@@ -70,19 +70,21 @@ struct CustomResponse {
 pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
     let protobuf_set = get_protobuf_set()?;
 
+    let reflection_service =
+        protobuf_set.find_service("grpc.reflection.v1alpha.ServerReflection")?;
+    let operation = reflection_service.find_operation("ServerReflectionInfo")?;
+
     // let mut methods = vec![];
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
 
     let mut req = reqwest::Request::new(Method::POST, url);
-    *req.body_mut() = Some(reqwest::Body::from(b"\0\0\0\0\x02:\0".to_vec())); // magic :)
+    *req.body_mut() = Some(reqwest::Body::from(
+        operation.convert_input(json!({"list_services": ""}).to_string().as_str())?,
+    ));
 
     let resp = target_runtime.http.execute(req).await?;
     let body = resp.body.as_bytes();
-
-    let reflection_service =
-        protobuf_set.find_service("grpc.reflection.v1alpha.ServerReflection")?;
-    let operation = reflection_service.find_operation("ServerReflectionInfo")?;
 
     let response: Value = serde_json::from_value(operation.convert_output(body)?.into_json()?)?;
     let response: CustomResponse = serde_json::from_value(response)?;
@@ -105,12 +107,24 @@ pub async fn get_by_service(
     target_runtime: &TargetRuntime,
     service: &str,
 ) -> Result<FileDescriptorProto> {
+    let protobuf_set = get_protobuf_set()?;
+
+    let reflection_service =
+        protobuf_set.find_service("grpc.reflection.v1alpha.ServerReflection")?;
+    let operation = reflection_service.find_operation("ServerReflectionInfo")?;
+
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
 
     let mut req = reqwest::Request::new(Method::POST, url);
-    *req.body_mut() = Some(reqwest::Body::from(format!("\0\0\0\0\x12\"\x10{service}")));
-    make_req(req, target_runtime).await
+    *req.body_mut() = Some(reqwest::Body::from(
+        operation.convert_input(
+            json!({"file_containing_symbol": service})
+                .to_string()
+                .as_str(),
+        )?,
+    ));
+    request_proto(req, target_runtime, operation).await
 }
 
 /// Makes `Get Proto/Symbol Name` request to the grpc reflection server
@@ -119,30 +133,30 @@ pub async fn get_by_proto_name(
     target_runtime: &TargetRuntime,
     proto_name: &str,
 ) -> Result<FileDescriptorProto> {
-    let mut url: url::Url = url.parse()?;
-    url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
-
-    let mut req = reqwest::Request::new(Method::POST, url);
-    *req.body_mut() = Some(reqwest::Body::from(format!(
-        "\0\0\0\0\x0c\x1a\n{}",
-        proto_name
-    )));
-
-    make_req(req, target_runtime).await
-}
-
-async fn make_req(
-    req: reqwest::Request,
-    target_runtime: &TargetRuntime,
-) -> Result<FileDescriptorProto> {
     let protobuf_set = get_protobuf_set()?;
-
-    let resp = target_runtime.http.execute(req).await?;
-    let body = resp.body.as_bytes();
 
     let reflection_service =
         protobuf_set.find_service("grpc.reflection.v1alpha.ServerReflection")?;
     let operation = reflection_service.find_operation("ServerReflectionInfo")?;
+
+    let mut url: url::Url = url.parse()?;
+    url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
+
+    let mut req = reqwest::Request::new(Method::POST, url);
+    *req.body_mut() = Some(reqwest::Body::from(
+        operation.convert_input(json!({"file_by_filename": proto_name}).to_string().as_str())?,
+    ));
+
+    request_proto(req, target_runtime, operation).await
+}
+
+async fn request_proto(
+    req: reqwest::Request,
+    target_runtime: &TargetRuntime,
+    operation: ProtobufOperation,
+) -> Result<FileDescriptorProto> {
+    let resp = target_runtime.http.execute(req).await?;
+    let body = resp.body.as_bytes();
 
     let response: CustomResponse =
         serde_json::from_value(operation.convert_output(body)?.into_json()?)?;
@@ -160,8 +174,11 @@ mod grpc_fetch {
     use std::path::PathBuf;
 
     use anyhow::Result;
+    
 
-    use crate::config::grpc_fetch::{get_by_proto_name, get_by_service, list_all_files};
+    use crate::config::grpc_fetch::{
+        get_by_proto_name, get_by_service, list_all_files,
+    };
 
     const NEWS_PROTO: &[u8] = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
