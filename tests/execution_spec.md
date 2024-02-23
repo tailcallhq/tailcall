@@ -236,9 +236,7 @@ cargo insta test --review
 
 This will regenerate all snapshots without interrupting the test every time there's a diff, and it will also open the snapshot review interface, so you can accept or reject `.new` snapshots.
 
-## Porting from `graphql_spec`/`http_spec`
 
-It's converted as a normal test. We do not need to anything additional for testcov.
 
 ### `http_spec`
 
