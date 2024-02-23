@@ -118,7 +118,6 @@ pub struct CompileGrpc<'a> {
     pub grpc: &'a Grpc,
     pub validate_with_schema: bool,
 }
-#[derive(Debug)]
 struct GrpcMethod {
     pub id: String,
     pub service: String,
