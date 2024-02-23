@@ -1,11 +1,14 @@
 #![allow(clippy::too_many_arguments)]
-use std::sync::Arc;
 
-use hyper::server::conn::AddrIncoming;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::Server;
-use hyper_rustls::TlsAcceptor;
+use std::sync::Arc;
+use http_body_util::{BodyExt, Full};
+use hyper::body::Incoming;
+use hyper::Request;
+
+use hyper::service::service_fn;
+use hyper_util::rt::{TokioExecutor, TokioIo};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
@@ -20,30 +23,13 @@ pub async fn start_http_2(
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
-    let incoming = AddrIncoming::bind(&addr)?;
-    let acceptor = TlsAcceptor::builder()
-        .with_single_cert(cert, key.clone_key())?
-        .with_http2_alpn()
-        .with_incoming(incoming);
-    let make_svc_single_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
+    let listener = TcpListener::bind(addr).await?;
+    let server_config = rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert, key.clone_key())
+        .map_err(CLIError::from)?;
 
-    let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
-
-    let builder = Server::builder(acceptor).http2_only(true);
+    let tls_acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(server_config));
 
     super::log_launch_and_open_browser(sc.as_ref());
 
@@ -52,15 +38,128 @@ pub async fn start_http_2(
             .send(())
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
-
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
-
-    let result = server.map_err(CLIError::from);
-
-    Ok(result?)
+    if sc.blueprint.server.enable_batch_requests {
+        loop {
+            let stream_result = listener.accept().await;
+            match stream_result {
+                Ok((stream, _)) => {
+                    let app_ctx = sc.app_ctx.clone();
+                    let io_result = tls_acceptor.accept(stream).await;
+                    match io_result {
+                        Ok(io) => {
+                            let io = TokioIo::new(io);
+                            tokio::spawn(async move {
+                                let server =
+                                    hyper::server::conn::http2::Builder::new(TokioExecutor::new())
+                                        .serve_connection(
+                                            io,
+                                            service_fn(move |req: Request<Incoming>| {
+                                                let app_ctx = app_ctx.clone();
+                                                async move {
+                                                    let (part, body) = req.into_parts();
+                                                    let body = body.collect().await?.to_bytes();
+                                                    let req =
+                                                        Request::from_parts(part, Full::new(body));
+                                                    handle_request::<GraphQLBatchRequest>(
+                                                        req, app_ctx,
+                                                    )
+                                                        .await
+                                                }
+                                            }),
+                                        )
+                                        .await;
+                                if let Err(e) = server {
+                                    log::error!("An error occurred while handling a request: {e}");
+                                }
+                            });
+                        }
+                        Err(e) => log::error!("An error occurred while handling request IO: {e}"),
+                    }
+                }
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
+            }
+        }
+    } else {
+        loop {
+            let stream_result = listener.accept().await;
+            match stream_result {
+                Ok((stream, _)) => {
+                    let app_ctx = sc.app_ctx.clone();
+                    let io_result = tls_acceptor.accept(stream).await;
+                    match io_result {
+                        Ok(io) => {
+                            let io = TokioIo::new(io);
+                            tokio::spawn(async move {
+                                let server =
+                                    hyper::server::conn::http2::Builder::new(TokioExecutor::new())
+                                        .serve_connection(
+                                            io,
+                                            service_fn(move |req: Request<Incoming>| {
+                                                let app_ctx = app_ctx.clone();
+                                                async move {
+                                                    let (part, body) = req.into_parts();
+                                                    let body = body.collect().await?.to_bytes();
+                                                    let req =
+                                                        Request::from_parts(part, Full::new(body));
+                                                    handle_request::<GraphQLRequest>(req, app_ctx)
+                                                        .await
+                                                }
+                                            }),
+                                        )
+                                        .await;
+                                if let Err(e) = server {
+                                    log::error!("An error occurred while handling a request: {e}");
+                                }
+                            });
+                        }
+                        Err(e) => log::error!("An error occurred while handling request IO: {e}"),
+                    }
+                }
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
+            }
+        }
+    };
 }
+
+/*async fn run_server<T: DeserializeOwned + GraphQLRequestLike>(listener: TcpListener, sc: Arc<ServerConfig>, tls_acceptor: TlsAcceptor) -> anyhow::Result<()> {
+    loop {
+        let stream_result = listener.accept().await;
+        match stream_result {
+            Ok((stream,_)) => {
+                let app_ctx = sc.app_ctx.clone();
+                let io_result = tls_acceptor.accept(stream).await;
+                match io_result {
+                    Ok(io) => {
+                        tokio::spawn(async move {
+                            let server =
+                                hyper::server::conn::http2::Builder::new(TokioExecutor::new())
+                                    .serve_connection(
+                                        io,
+                                        service_fn(move |req: Request<Incoming>| {
+                                            let app_ctx = app_ctx.clone();
+                                            async move {
+                                                let (part, body) = req.into_parts();
+                                                let body = body.collect().await?.to_bytes();
+                                                let req =
+                                                    Request::from_parts(part, Full::new(body));
+                                                handle_request::<T>(
+                                                    req, app_ctx,
+                                                )
+                                                    .await
+                                            }
+                                        }),
+                                    )
+                                    .await;
+                            if let Err(e) = server {
+                                log::error!("An error occurred while handling a request: {e}");
+                            }
+                        });
+                    }
+                    Err(e) => log::error!("An error occurred while handling request IO: {e}"),
+                }
+            }
+            Err(e) => log::error!("An error occurred while handling request: {e}"),
+        }
+    }
+}
+*/

@@ -1,11 +1,15 @@
 use std::sync::Arc;
 
-use hyper::service::{make_service_fn, service_fn};
+use http_body_util::{BodyExt, Full};
+use hyper::body::Incoming;
+use hyper::service::service_fn;
+use hyper::Request;
+use hyper_util::rt::TokioIo;
+use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use crate::cli::CLIError;
 use crate::http::handle_request;
 
 pub async fn start_http_1(
@@ -13,26 +17,8 @@ pub async fn start_http_1(
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
-    let make_svc_single_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
+    let listener = TcpListener::bind(addr).await?;
 
-    let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
-    let builder = hyper::Server::try_bind(&addr)
-        .map_err(CLIError::from)?
-        .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
     super::log_launch_and_open_browser(sc.as_ref());
 
     if let Some(sender) = server_up_sender {
@@ -41,14 +27,70 @@ pub async fn start_http_1(
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
-
-    let result = server.map_err(CLIError::from);
-
-    Ok(result?)
+    if sc.blueprint.server.enable_batch_requests {
+        loop {
+            let stream_result = listener.accept().await;
+            match stream_result {
+                Ok((stream, _)) => {
+                    let io = TokioIo::new(stream);
+                    let sc = sc.clone();
+                    tokio::spawn(async move {
+                        let server = hyper::server::conn::http1::Builder::new()
+                            .serve_connection(
+                                io,
+                                service_fn(move |req: Request<Incoming>| {
+                                    let state = sc.clone();
+                                    async move {
+                                        let (part, body) = req.into_parts();
+                                        let body = body.collect().await?.to_bytes();
+                                        let req = Request::from_parts(part, Full::new(body));
+                                        handle_request::<GraphQLBatchRequest>(
+                                            req,
+                                            state.app_ctx.clone(),
+                                        )
+                                            .await
+                                    }
+                                }),
+                            )
+                            .await;
+                        if let Err(e) = server {
+                            log::error!("An error occurred while handling a request: {e}");
+                        }
+                    });
+                }
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
+            }
+        }
+    } else {
+        loop {
+            let stream_result = listener.accept().await;
+            match stream_result {
+                Ok((stream, _)) => {
+                    let io = TokioIo::new(stream);
+                    let sc = sc.clone();
+                    tokio::spawn(async move {
+                        let server = hyper::server::conn::http1::Builder::new()
+                            .serve_connection(
+                                io,
+                                service_fn(move |req: Request<Incoming>| {
+                                    let state = sc.clone();
+                                    async move {
+                                        let (part, body) = req.into_parts();
+                                        let body = body.collect().await?.to_bytes();
+                                        let req = Request::from_parts(part, Full::new(body));
+                                        handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
+                                            .await
+                                    }
+                                }),
+                            )
+                            .await;
+                        if let Err(e) = server {
+                            log::error!("An error occurred while handling a request: {e}");
+                        }
+                    });
+                }
+                Err(e) => log::error!("An error occurred while handling request: {e}"),
+            }
+        }
+    }
 }

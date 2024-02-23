@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 pub use std::sync::Arc;
 
-use hyper::header::{HeaderName, HeaderValue};
+use reqwest::header::{HeaderName, HeaderValue};
 
 mod channel;
 mod http_filter;
