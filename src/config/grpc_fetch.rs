@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use hyper::Method;
+use hyper::header::HeaderName;
 use nom::AsBytes;
 use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-use crate::runtime::TargetRuntime;
+use crate::grpc::RequestTemplate;
+use crate::mustache::Mustache;
+use crate::runtime::{TargetRuntime, TargetRuntimeContext};
 
 const REFLECTION_PROTO: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -78,10 +80,24 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
 
-    let mut req = reqwest::Request::new(Method::POST, url);
-    *req.body_mut() = Some(reqwest::Body::from(
-        operation.convert_input(json!({"list_services": ""}).to_string().as_str())?,
-    ));
+    let req_template = RequestTemplate {
+        url: Mustache::parse(url.as_str())?,
+        headers: vec![(
+            HeaderName::from_static("content-type"),
+            Mustache::parse("application/grpc+proto")?,
+        )],
+        body: Mustache::parse(json!({"list_services": ""}).to_string().as_str()).ok(),
+        operation: operation.clone(),
+        operation_type: Default::default(),
+    };
+
+    let ctx = TargetRuntimeContext {
+        runtime: target_runtime,
+        vars: &Default::default(),
+        headers: Default::default(),
+    };
+
+    let req = req_template.render(&ctx)?.to_request()?;
 
     let resp = target_runtime.http.execute(req).await?;
     let body = resp.body.as_bytes();
@@ -116,14 +132,30 @@ pub async fn get_by_service(
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
 
-    let mut req = reqwest::Request::new(Method::POST, url);
-    *req.body_mut() = Some(reqwest::Body::from(
-        operation.convert_input(
+    let req_template = RequestTemplate {
+        url: Mustache::parse(url.as_str())?,
+        headers: vec![(
+            HeaderName::from_static("content-type"),
+            Mustache::parse("application/grpc+proto")?,
+        )],
+        body: Mustache::parse(
             json!({"file_containing_symbol": service})
                 .to_string()
                 .as_str(),
-        )?,
-    ));
+        )
+        .ok(),
+        operation: operation.clone(),
+        operation_type: Default::default(),
+    };
+
+    let ctx = TargetRuntimeContext {
+        runtime: target_runtime,
+        vars: &Default::default(),
+        headers: Default::default(),
+    };
+
+    let req = req_template.render(&ctx)?.to_request()?;
+
     request_proto(req, target_runtime, operation).await
 }
 
@@ -142,10 +174,24 @@ pub async fn get_by_proto_name(
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
 
-    let mut req = reqwest::Request::new(Method::POST, url);
-    *req.body_mut() = Some(reqwest::Body::from(
-        operation.convert_input(json!({"file_by_filename": proto_name}).to_string().as_str())?,
-    ));
+    let req_template = RequestTemplate {
+        url: Mustache::parse(url.as_str())?,
+        headers: vec![(
+            HeaderName::from_static("content-type"),
+            Mustache::parse("application/grpc+proto")?,
+        )],
+        body: Mustache::parse(json!({"file_by_filename": proto_name}).to_string().as_str()).ok(),
+        operation: operation.clone(),
+        operation_type: Default::default(),
+    };
+
+    let ctx = TargetRuntimeContext {
+        runtime: target_runtime,
+        vars: &Default::default(),
+        headers: Default::default(),
+    };
+
+    let req = req_template.render(&ctx)?.to_request()?;
 
     request_proto(req, target_runtime, operation).await
 }
