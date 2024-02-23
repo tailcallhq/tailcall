@@ -965,24 +965,8 @@ async fn main() -> anyhow::Result<()> {
         .filter(Some("execution_spec"), log::LevelFilter::Info)
         .init();
 
-    // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
-    let explicit = std::env::args().skip(1).find(|x| !x.starts_with("--"));
-    let spec = if let Some(explicit) = explicit {
-        let path = PathBuf::from(&explicit)
-            .canonicalize()
-            .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", explicit));
-
-        let contents = fs::read_to_string(&path)?;
-        let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
-            .await
-            .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
-
-        vec![spec]
-    } else {
-        let spec = ExecutionSpec::cargo_read("tests/execution").await?;
-        ExecutionSpec::filter_specs(spec)
-    };
+    let spec = ExecutionSpec::cargo_read("tests/execution").await?;
+    let spec = ExecutionSpec::filter_specs(spec);
 
     for spec in spec.into_iter() {
         assert_spec(spec).await;
