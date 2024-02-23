@@ -26,7 +26,7 @@ RUN chmod +x docker.sh && ./docker.sh
 RUN RUST_BACKTRACE=1 cargo build --release
 
 # Runner stage
-FROM fedora:34 AS runner
+FROM fedora:41 AS runner
 
 # Copy necessary files from the builder stage
 COPY --from=builder /prod/target/release/tailcall /bin
