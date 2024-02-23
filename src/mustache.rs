@@ -146,7 +146,7 @@ fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
             segments
                 .into_iter()
                 .filter(|seg| match seg {
-                    Segment::Literal(s) => !s.is_empty(),
+                    Segment::Literal(s) => (!s.is_empty()) && s != "\"",
                     _ => true,
                 })
                 .collect(),
@@ -179,7 +179,7 @@ mod tests {
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
                     "hello".to_string(),
-                    "world".to_string()
+                    "world".to_string(),
                 ])])
             );
         }
@@ -195,7 +195,7 @@ mod tests {
                     Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                     Segment::Literal("/api/".to_string()),
                     Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
-                    Segment::Literal("/end".to_string())
+                    Segment::Literal("/end".to_string()),
                 ])
             );
         }
@@ -208,7 +208,7 @@ mod tests {
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
                     "foo".to_string(),
-                    "bar".to_string()
+                    "bar".to_string(),
                 ])])
             );
         }
@@ -286,7 +286,7 @@ mod tests {
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
                     "env".to_string(),
-                    "FOO".to_string()
+                    "FOO".to_string(),
                 ])])
             );
         }
@@ -298,11 +298,12 @@ mod tests {
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
                     "env".to_string(),
-                    "FOO_BAR".to_string()
+                    "FOO_BAR".to_string(),
                 ])])
             );
         }
     }
+
     mod render {
         use std::borrow::Cow;
 
