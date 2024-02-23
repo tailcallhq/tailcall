@@ -969,7 +969,7 @@ async fn test() -> anyhow::Result<()> {
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();
-    let expected_arg = ["insta", "i", "-i", "--insta"];
+    let expected_arg = ["insta", "i"];
 
     let index = args
         .iter()
