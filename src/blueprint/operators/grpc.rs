@@ -238,11 +238,17 @@ mod tests {
     #[test]
     fn try_from_grpc_method() {
         let method =
+            GrpcMethod::try_from("package_name.ServiceName.MethodName".to_string()).unwrap();
+        let method1 =
             GrpcMethod::try_from("package.name.ServiceName.MethodName".to_string()).unwrap();
 
-        assert_eq!(method.id, "package.name");
-        assert_eq!(method.service, "package.name.ServiceName");
+        assert_eq!(method.id, "package_name");
+        assert_eq!(method.service, "package_name.ServiceName");
         assert_eq!(method.name, "MethodName");
+
+        assert_eq!(method1.id, "package.name");
+        assert_eq!(method1.service, "package.name.ServiceName");
+        assert_eq!(method1.name, "MethodName");
     }
 
     #[test]
