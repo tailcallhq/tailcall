@@ -959,8 +959,8 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test() -> anyhow::Result<()> {
     env_logger::builder()
         .filter(Some("execution_spec"), log::LevelFilter::Info)
         .init();
@@ -969,6 +969,7 @@ async fn main() -> anyhow::Result<()> {
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();
+    println!("args: {:?}", args);
     let expected_arg = ["insta", "i", "-i", "--insta"];
 
     let index = args
