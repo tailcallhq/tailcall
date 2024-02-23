@@ -4479,22 +4479,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "testconv"
-version = "0.1.0"
-dependencies = [
- "async-graphql",
- "derive_setters",
- "indexmap 2.2.3",
- "regex",
- "serde",
- "serde_json",
- "serde_yaml",
- "tailcall",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
