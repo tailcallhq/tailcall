@@ -3,9 +3,9 @@ use std::any::Any;
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor};
 use http_body_util::Full;
+use hyper::body::Bytes;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Response, StatusCode};
-use hyper::body::Bytes;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 

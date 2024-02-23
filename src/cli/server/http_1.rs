@@ -48,7 +48,7 @@ pub async fn start_http_1(
                                             req,
                                             state.app_ctx.clone(),
                                         )
-                                            .await
+                                        .await
                                     }
                                 }),
                             )

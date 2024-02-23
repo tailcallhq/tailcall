@@ -2,10 +2,10 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
-use http_body_util::Full;
 
-use hyper::{Method, Request, Response};
+use http_body_util::Full;
 use hyper::body::Bytes;
+use hyper::{Method, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::http::{graphiql, handle_request, showcase, AppContext};

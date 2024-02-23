@@ -6,7 +6,8 @@ use anyhow::{Context, Result};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use http_body_util::{BodyExt, Full};
-use hyper::{body::Bytes, Request, Response, StatusCode};
+use hyper::body::Bytes;
+use hyper::{Request, Response, StatusCode};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::de::DeserializeOwned;
 
@@ -27,11 +28,9 @@ pub fn graphiql(req: &Request<Full<Bytes>>) -> Result<Response<Full<Bytes>>> {
         Cow::Borrowed(endpoint)
     };
 
-    Ok(Response::new(Full::new(
-        Bytes::from(playground_source(
-            GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
-        )
-    ))))
+    Ok(Response::new(Full::new(Bytes::from(playground_source(
+        GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
+    )))))
 }
 
 fn not_found() -> Result<Response<Full<Bytes>>> {

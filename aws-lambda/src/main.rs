@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Result;
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;
@@ -7,7 +8,6 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::http::{handle_request, AppContext};
-use anyhow::Result;
 
 mod http;
 mod runtime;

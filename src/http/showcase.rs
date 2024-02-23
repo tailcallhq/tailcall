@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_graphql::ServerError;
 use http_body_util::Full;
-use hyper::{body::Bytes, Request, Response};
+use hyper::body::Bytes;
+use hyper::{Request, Response};
 use serde::de::DeserializeOwned;
 use url::Url;
 
@@ -67,8 +68,8 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-    use http_body_util::Full;
 
+    use http_body_util::Full;
     use hyper::Request;
     use serde_json::json;
 
@@ -95,14 +96,12 @@ mod tests {
         let req = Request::builder()
             .method("POST")
             .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
-            .body(Full::new(
-                hyper::body::Bytes::from(
-                    json!({
+            .body(Full::new(hyper::body::Bytes::from(
+                json!({
                     "query": "query { user { name } }"
                 })
-                        .to_string(),
-                )
-            ))
+                .to_string(),
+            )))
             .unwrap();
 
         let res = handle_request::<GraphQLRequest>(req, Arc::new(app))

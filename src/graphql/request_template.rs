@@ -4,7 +4,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use reqwest::header::{HeaderValue,HeaderMap};
+use reqwest::header::{HeaderMap, HeaderValue};
 
 use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
@@ -139,8 +139,8 @@ mod tests {
     use std::collections::HashSet;
 
     use async_graphql::Value;
-    use reqwest::header::HeaderMap;
     use pretty_assertions::assert_eq;
+    use reqwest::header::HeaderMap;
     use serde_json::json;
 
     use crate::config::GraphQLOperationType;

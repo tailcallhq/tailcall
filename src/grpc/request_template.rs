@@ -3,10 +3,8 @@ use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use derive_setters::Setters;
-use reqwest::header::CONTENT_TYPE;
-use reqwest::header::HeaderMap;
+use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Method;
-use reqwest::header::HeaderValue;
 use url::Url;
 
 use super::request::create_grpc_request;
@@ -123,9 +121,9 @@ mod tests {
     use std::path::PathBuf;
 
     use derive_setters::Setters;
-    use reqwest::header::{HeaderName, HeaderValue, HeaderMap};
-    use reqwest::Method;
     use pretty_assertions::assert_eq;
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+    use reqwest::Method;
 
     use super::RequestTemplate;
     use crate::config::reader::ConfigReader;

@@ -1,11 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
 use std::sync::Arc;
+
 use http_body_util::{BodyExt, Full};
 use hyper::body::Incoming;
-use hyper::Request;
-
 use hyper::service::service_fn;
+use hyper::Request;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio::net::TcpListener;
@@ -63,7 +63,7 @@ pub async fn start_http_2(
                                                     handle_request::<GraphQLBatchRequest>(
                                                         req, app_ctx,
                                                     )
-                                                        .await
+                                                    .await
                                                 }
                                             }),
                                         )

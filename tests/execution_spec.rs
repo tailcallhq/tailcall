@@ -945,15 +945,13 @@ async fn assert_spec(spec: ExecutionSpec) {
                 .unwrap()
                 .unwrap()
                 .into_data()
-                .map_err(|e| anyhow::anyhow!("{:?}", e)).unwrap();
+                .map_err(|e| anyhow::anyhow!("{:?}", e))
+                .unwrap();
 
             let response: APIResponse = APIResponse {
                 status,
                 headers,
-                body: serde_json::from_slice(
-                    &bytes,
-                )
-                .unwrap(),
+                body: serde_json::from_slice(&bytes).unwrap(),
                 text_body: None,
             };
 

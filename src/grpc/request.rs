@@ -1,7 +1,6 @@
 use anyhow::{bail, Result};
 use reqwest::header::HeaderMap;
-use reqwest::Method;
-use reqwest::Request;
+use reqwest::{Method, Request};
 use url::Url;
 
 use super::protobuf::ProtobufOperation;

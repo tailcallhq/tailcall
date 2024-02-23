@@ -3,8 +3,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use reqwest::header::HeaderMap;
-use reqwest::header::HeaderValue;
+use reqwest::header::{HeaderMap, HeaderValue};
 use url::Url;
 
 use crate::config::Encoding;
@@ -259,9 +258,8 @@ mod tests {
     use std::borrow::Cow;
 
     use derive_setters::Setters;
-    use reqwest::header::HeaderName;
-    use reqwest::header::HeaderMap;
     use pretty_assertions::assert_eq;
+    use reqwest::header::{HeaderMap, HeaderName};
     use serde_json::json;
 
     use super::RequestTemplate;

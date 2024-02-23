@@ -76,11 +76,7 @@ pub async fn to_response(
         .into_data()
         .map_err(|e| anyhow::anyhow!("{:?}", e))?;
 
-    Ok(
-        build.body(lambda_http::Body::Binary(Vec::from(
-            bytes,
-        )))?
-    )
+    Ok(build.body(lambda_http::Body::Binary(Vec::from(bytes)))?)
 }
 
 pub fn init_http() -> Arc<LambdaHttp> {
