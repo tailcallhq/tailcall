@@ -5,6 +5,7 @@ use hyper::Method;
 use nom::AsBytes;
 use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::grpc::protobuf::ProtobufSet;
@@ -23,11 +24,34 @@ fn get_protobuf_set() -> Result<ProtobufSet> {
     ProtobufSet::from_proto_file(&descriptor_set)
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct OriginalRequest {
+    list_services: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Service {
+    name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ListServicesResponse {
+    service: Vec<Service>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct CustomResponse {
+    original_request: OriginalRequest,
+    list_services_response: ListServicesResponse,
+}
+
 /// Makes `ListService` request to the grpc reflection server
 pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
     let protobuf_set = get_protobuf_set()?;
 
-    let mut methods = vec![];
+    // let mut methods = vec![];
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
 
@@ -42,31 +66,16 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
     let operation = reflection_service.find_operation("ServerReflectionInfo")?;
 
     let response: Value = serde_json::from_value(operation.convert_output(body)?.into_json()?)?;
-    let object = response
-        .as_object()
-        .context("Invalid response, expected object.")?;
-    let list_services_response = object
-        .get("listServicesResponse")
-        .context("expected key listServicesResponse, found None")?;
-    let service = list_services_response
-        .as_object()
-        .context("expected listServicesResponse as object")?
-        .get("service")
-        .context("expected key service in listServicesResponse but found none")?;
-    let service_arr = service
-        .as_array()
-        .context("Expected service to be an array")?;
-    for i in service_arr {
-        let value = i.as_object().context("Expected an object in service")?;
-        let name = value
-            .get("name")
-            .context("Expected key `name` in service but found none")?;
-        methods.push(
-            name.as_str()
-                .context("name is expected to be a string")?
-                .to_string(),
-        );
-    }
+    println!("{}",response);
+    let response: CustomResponse = serde_json::from_value(response)?;
+
+    // Extracting names from services
+    let methods: Vec<String> = response
+        .list_services_response
+        .service
+        .iter()
+        .map(|s| s.name.clone())
+        .collect();
 
     Ok(methods)
 }
