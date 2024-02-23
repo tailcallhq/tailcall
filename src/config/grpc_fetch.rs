@@ -237,7 +237,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn foo() -> Result<()> {
+    async fn test_resp_list_all() -> Result<()> {
         let server = start_mock_server();
 
         let http_reflection_list_all = server.mock(|when, then| {
