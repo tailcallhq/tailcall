@@ -24,10 +24,17 @@ pub async fn start_http_2(
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
     let listener = TcpListener::bind(addr).await?;
-    let server_config = rustls::ServerConfig::builder()
+    let mut server_config = rustls::ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(cert, key.clone_key())
         .map_err(CLIError::from)?;
+
+    server_config.alpn_protocols = vec![
+        b"h2".to_vec(),
+        b"http/1.1".to_vec(),
+        b"http/1.0".to_vec(),
+        b"http/0.9".to_vec(),
+    ];
 
     let tls_acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(server_config));
 
