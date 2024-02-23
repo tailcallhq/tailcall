@@ -27,13 +27,6 @@ fn get_protobuf_set() -> Result<ProtobufSet> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct OriginalRequest {
-    list_services: Option<String>,
-    file_containing_symbol: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 struct Service {
     name: String,
 }
@@ -44,7 +37,7 @@ struct ListServicesResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[serde(rename_all = "camelCase")]
 struct FileDescriptorProtoResponse {
     file_descriptor_proto: Vec<String>,
 }
@@ -61,9 +54,8 @@ impl FileDescriptorProtoResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[serde(rename_all = "camelCase")]
 struct CustomResponse {
-    original_request: OriginalRequest,
     list_services_response: Option<ListServicesResponse>,
     file_descriptor_response: Option<FileDescriptorProtoResponse>,
 }
@@ -204,8 +196,9 @@ async fn request_proto(
     let resp = target_runtime.http.execute(req).await?;
     let body = resp.body.as_bytes();
 
-    let response: CustomResponse =
-        serde_json::from_value(operation.convert_output(body)?.into_json()?)?;
+    let response = operation.convert_output(body)?.into_json()?;
+    println!("{}", response);
+    let response: CustomResponse = serde_json::from_value(response)?;
     let file_descriptor_resp = response
         .file_descriptor_response
         .context("Expected fileDescriptorResponse but found none")?;
