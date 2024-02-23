@@ -7,6 +7,7 @@ use std::sync::{Arc, Once};
 use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
+use clap::Parser;
 use derive_setters::Setters;
 use futures_util::future::join_all;
 use hyper::body::Bytes;
@@ -959,14 +960,42 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 }
 
+#[derive(clap::Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    insta: Vec<String>,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::builder()
         .filter(Some("execution_spec"), log::LevelFilter::Info)
         .init();
 
-    let spec = ExecutionSpec::cargo_read("tests/execution").await?;
-    let spec = ExecutionSpec::filter_specs(spec);
+    // Explicitly only run one test if specified in command line args
+    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
+
+    let args = Args::parse();
+
+    let spec = if args.insta.is_empty() {
+        let spec = ExecutionSpec::cargo_read("tests/execution").await?;
+        ExecutionSpec::filter_specs(spec)
+    } else {
+        let mut vec = vec![];
+        for arg in args.insta {
+            let path = PathBuf::from(&arg)
+                .canonicalize()
+                .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", arg));
+
+            let contents = fs::read_to_string(&path)?;
+            let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
+                .await
+                .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+            vec.push(spec);
+        }
+        vec
+    };
 
     for spec in spec.into_iter() {
         assert_spec(spec).await;
