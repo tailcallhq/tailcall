@@ -138,7 +138,6 @@ impl TryFrom<String> for GrpcMethod {
                     service: format!("{id}.{service}"),
                     name: name.to_owned(),
                 };
-                println!("{method:?}");
                 Ok(method)
             }
             _ => {
