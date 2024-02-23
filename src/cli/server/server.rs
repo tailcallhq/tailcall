@@ -35,7 +35,10 @@ impl Server {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
         let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
-        init_opentelemetry(blueprint.opentelemetry.clone(), &server_config)?;
+        init_opentelemetry(
+            blueprint.opentelemetry.clone(),
+            &server_config.app_ctx.runtime,
+        )?;
 
         match blueprint.server.http.clone() {
             Http::HTTP2 { cert, key } => {

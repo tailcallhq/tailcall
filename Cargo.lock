@@ -2977,6 +2977,7 @@ version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f16aec8a98a457a52664d69e0091bac3a0abd18ead9b641cb00202ba4e0efe4"
 dependencies = [
+ "async-std",
  "async-trait",
  "crossbeam-channel",
  "futures-channel",

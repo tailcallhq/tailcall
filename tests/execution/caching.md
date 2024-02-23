@@ -7,8 +7,8 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
   query: Query
 }
 
-type Query @cache(maxAge: 100) {
-  bars: [Bar] @http(path: "/bars")
+type Query {
+  bars: [Bar] @http(path: "/bars") @cache(maxAge: 100)
 }
 
 type Foo {
@@ -52,4 +52,6 @@ type Bar {
   url: http://localhost:8080/graphql
   body:
     query: query { bars { id foo { id } } }
+  assert_traces: true
+  assert_metrics: true
 ```

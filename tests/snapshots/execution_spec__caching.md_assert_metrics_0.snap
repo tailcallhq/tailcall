@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+expression: opentelemetry.get_metrics().unwrap()
+---
+[
+  [
+    {
+      "name": "Cache",
+      "entries": [
+        {
+          "name": "hit_rate"
+        }
+      ]
+    }
+  ]
+]

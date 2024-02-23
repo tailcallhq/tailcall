@@ -1,5 +1,7 @@
 extern crate core;
 
+mod opentelemetry;
+
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -13,6 +15,8 @@ use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
+use opentelemetry::in_memory::InMemoryOpentelemetry;
+use opentelemetry::init::init_opentelemetry;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -20,6 +24,7 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
+use tailcall::cli::opentelemetry::metrics::init_metrics;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
@@ -27,7 +32,6 @@ use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
-use tracing_subscriber::layer::SubscriberExt;
 use url::Url;
 
 #[cfg(test)]
@@ -193,7 +197,6 @@ enum Annotation {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
 struct APIRequest {
     #[serde(default)]
     method: Method,
@@ -202,6 +205,10 @@ struct APIRequest {
     headers: BTreeMap<String, String>,
     #[serde(default)]
     body: serde_json::Value,
+    #[serde(default)]
+    assert_traces: bool,
+    #[serde(default)]
+    assert_metrics: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -582,7 +589,7 @@ impl ExecutionSpec {
         anyhow::Ok(spec)
     }
 
-    async fn server_context(
+    async fn app_context(
         &self,
         config: &ConfigModule,
         env: HashMap<String, String>,
@@ -608,6 +615,10 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
         };
+
+        // TODO: move inside tailcall core if possible
+        init_metrics(&runtime).unwrap();
+
         Arc::new(AppContext::new(blueprint, runtime))
     }
 }
@@ -760,7 +771,7 @@ impl FileIO for MockFileSystem {
     }
 }
 
-async fn assert_spec(spec: ExecutionSpec) {
+async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryOpentelemetry) {
     let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
 
     // Parse and validate all server configs + check for identity
@@ -919,6 +930,8 @@ async fn assert_spec(spec: ExecutionSpec) {
     if let Some(assert_spec) = spec.assert.as_ref() {
         // assert: Run assert specs
         for (i, assertion) in assert_spec.iter().enumerate() {
+            opentelemetry.reset();
+
             let response = run_assert(
                 &spec,
                 &spec
@@ -953,22 +966,28 @@ async fn assert_spec(spec: ExecutionSpec) {
             tracing::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
 
+            if assertion.assert_traces {
+                let snapshot_name = format!("{}_assert_traces_{}", spec.safe_name, i);
+                tracing::info!("\tassert #{}... (traces snapshot)", i + 1);
+                insta::assert_json_snapshot!(snapshot_name, opentelemetry.get_traces().unwrap());
+            }
+
+            if assertion.assert_metrics {
+                let snapshot_name = format!("{}_assert_metrics_{}", spec.safe_name, i);
+                tracing::info!("\tassert #{}... (metrics snapshot)", i + 1);
+                insta::assert_json_snapshot!(snapshot_name, opentelemetry.get_metrics().unwrap());
+            }
+
             if will_insta_panic {
                 tracing::info!("\tassert #{} ok", i + 1);
             }
         }
-    }
+    };
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .compact()
-        .finish()
-        .with(tracing_subscriber::filter::filter_fn(|metadata| {
-            metadata.target().starts_with("execution_spec")
-        }));
+    let opentelemetry = init_opentelemetry();
     // Explicitly only run one test if specified in command line args
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
     let explicit = std::env::args().skip(1).find(|x| !x.starts_with("--"));
@@ -989,7 +1008,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     for spec in spec.into_iter() {
-        assert_spec(spec).await;
+        assert_spec(spec, &opentelemetry).await;
     }
 
     Ok(())
@@ -1005,7 +1024,7 @@ async fn run_assert(
     let method = request.method.clone();
     let headers = request.headers.clone();
     let url = request.url.clone();
-    let server_context = spec.server_context(config, env.clone()).await;
+    let app_context = spec.app_context(config, env.clone()).await;
     let req = headers
         .into_iter()
         .fold(
@@ -1017,9 +1036,9 @@ async fn run_assert(
         .body(Body::from(query_string))?;
 
     // TODO: reuse logic from server.rs to select the correct handler
-    if server_context.blueprint.server.enable_batch_requests {
-        handle_request::<GraphQLBatchRequest>(req, server_context).await
+    if app_context.blueprint.server.enable_batch_requests {
+        handle_request::<GraphQLBatchRequest>(req, app_context).await
     } else {
-        handle_request::<GraphQLRequest>(req, server_context).await
+        handle_request::<GraphQLRequest>(req, app_context).await
     }
 }

@@ -64,7 +64,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                     };
                                     Ok(Some(p))
                                 }
-                                .instrument(tracing::warn_span!("field::resolver")),
+                                .instrument(tracing::info_span!("field::resolver")),
                             )
                         }
                     }

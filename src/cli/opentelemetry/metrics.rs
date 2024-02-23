@@ -1,10 +1,10 @@
 use anyhow::Result;
 
-use crate::cli::server::server_config::ServerConfig;
+use crate::runtime::TargetRuntime;
 
-fn cache_metrics(server_config: &ServerConfig) -> Result<()> {
+fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
     let meter = opentelemetry::global::meter("Cache");
-    let cache = server_config.app_ctx.runtime.cache.clone();
+    let cache = runtime.cache.clone();
     let counter = meter
         .f64_observable_counter("hit_rate")
         .with_description("Cache hit rate ratio")
@@ -19,6 +19,6 @@ fn cache_metrics(server_config: &ServerConfig) -> Result<()> {
     Ok(())
 }
 
-pub fn init_metrics(server_config: &ServerConfig) -> Result<()> {
-    cache_metrics(server_config)
+pub fn init_metrics(runtime: &TargetRuntime) -> Result<()> {
+    cache_metrics(runtime)
 }

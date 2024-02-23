@@ -1,4 +1,4 @@
-mod metrics;
+pub mod metrics;
 
 use std::io::Write;
 
@@ -24,8 +24,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
 use self::metrics::init_metrics;
-use super::server::server_config::ServerConfig;
 use crate::blueprint::opentelemetry::{Opentelemetry, OpentelemetryExporter, OtlpExporter};
+use crate::runtime::TargetRuntime;
 use crate::tracing::{default_filter_target, default_tracing};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
@@ -169,15 +169,12 @@ fn set_meter_provider(exporter: &OpentelemetryExporter) -> MetricsResult<()> {
 
 fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
     // ignore errors since there is only one possible error when the global subscriber
-    // is already set. The init is called multiple times in the same process many times inside
+    // is already set. The init is called multiple times in the same process inside
     // tests, so we want to ignore if it is already set
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
-pub fn init_opentelemetry(
-    config: Opentelemetry,
-    server_config: &ServerConfig,
-) -> anyhow::Result<()> {
+pub fn init_opentelemetry(config: Opentelemetry, runtime: &TargetRuntime) -> anyhow::Result<()> {
     if let Some(config) = &config.0 {
         let trace_layer = set_trace_provider(&config.export)?;
         let log_layer = set_logger_provider(&config.export)?;
@@ -194,7 +191,7 @@ pub fn init_opentelemetry(
             )
             .with(default_filter_target());
 
-        init_metrics(server_config)?;
+        init_metrics(runtime)?;
 
         set_tracing_subscriber(subscriber)
     } else {
