@@ -80,7 +80,7 @@ mod tests {
             src: test_file.to_str().unwrap().to_string(),
             type_of: LinkType::Protobuf,
         }]);
-        let service = "Greeter";
+        let service = "greetings.Greeter";
         let method = "SayHello";
         let grpc = Grpc {
             method: format!("{}.{}.{}", id, service, method),

@@ -309,7 +309,7 @@ mod tests {
     #[tokio::test]
     async fn method_not_found() -> Result<()> {
         let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
-        let service = file.find_service("Greeter")?;
+        let service = file.find_service("greetings.Greeter")?;
         let error = service.find_operation("_unknown").unwrap_err();
 
         assert_eq!(error.to_string(), "Couldn't find method _unknown");
@@ -320,7 +320,7 @@ mod tests {
     #[tokio::test]
     async fn greetings_proto_file() -> Result<()> {
         let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
-        let service = file.find_service("Greeter")?;
+        let service = file.find_service("greetings.Greeter")?;
         let operation = service.find_operation("SayHello")?;
 
         let output = b"\0\0\0\0\x0e\n\x0ctest message";

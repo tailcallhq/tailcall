@@ -170,7 +170,7 @@ mod tests {
         )
         .unwrap();
 
-        let service = protobuf_set.find_service("Greeter").unwrap();
+        let service = protobuf_set.find_service("greetings.Greeter").unwrap();
 
         service.find_operation("SayHello").unwrap()
     }
