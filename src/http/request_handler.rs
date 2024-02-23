@@ -2,17 +2,19 @@ use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use http_body_util::{BodyExt, Full};
+use hyper::{body::Bytes, Request, Response, StatusCode};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 
-pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
+pub fn graphiql(req: &Request<Full<Bytes>>) -> Result<Response<Full<Bytes>>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
     let endpoint = if let Some(query) = query {
@@ -25,22 +27,37 @@ pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
         Cow::Borrowed(endpoint)
     };
 
-    Ok(Response::new(Body::from(playground_source(
-        GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
+    Ok(Response::new(Full::new(
+        Bytes::from(playground_source(
+            GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
+        )
     ))))
 }
 
-fn not_found() -> Result<Response<Body>> {
+fn not_found() -> Result<Response<Full<Bytes>>> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(Body::empty())?)
+        .body(Full::new(Bytes::default()))?)
 }
 
-fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
+fn create_request_context(req: &Request<Full<Bytes>>, app_ctx: &AppContext) -> RequestContext {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
-    let headers = create_allowed_headers(req.headers(), &allowed);
+    let headers = create_allowed_headers(&to_reqwest_hmap(req.headers()), &allowed);
     RequestContext::from(app_ctx).req_headers(headers)
+}
+
+fn to_reqwest_hmap(hyper_headers: &hyper::HeaderMap) -> HeaderMap {
+    let mut reqwest_headers = HeaderMap::new();
+    for (key, value) in hyper_headers.iter() {
+        if let (Ok(name), Ok(value_str)) = (
+            HeaderName::from_bytes(key.as_str().as_bytes()),
+            HeaderValue::from_str(value.to_str().unwrap_or_default()),
+        ) {
+            reqwest_headers.insert(name, value_str);
+        }
+    }
+    reqwest_headers
 }
 
 fn update_cache_control_header(
@@ -56,7 +73,7 @@ fn update_cache_control_header(
     response
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, app_ctx: &AppContext) {
+pub fn update_response_headers(resp: &mut hyper::Response<Full<Bytes>>, app_ctx: &AppContext) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
@@ -64,11 +81,18 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, app_ctx:
 }
 
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Full<Bytes>>,
     app_ctx: &AppContext,
-) -> Result<Response<Body>> {
+) -> Result<Response<Full<Bytes>>> {
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let bytes = hyper::body::to_bytes(req.into_body()).await?;
+    let bytes = req
+        .into_body()
+        .frame()
+        .await
+        .context("unable to extract frame")??
+        .into_data()
+        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+
     let request = serde_json::from_slice::<T>(&bytes);
     match request {
         Ok(request) => {
@@ -106,9 +130,9 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 }
 
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Full<Bytes>>,
     app_ctx: Arc<AppContext>,
-) -> Result<Response<Body>> {
+) -> Result<Response<Full<Bytes>>> {
     match *req.method() {
         // NOTE:
         // The first check for the route should be for `/graphql`

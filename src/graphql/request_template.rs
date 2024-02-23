@@ -4,8 +4,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use reqwest::header::{HeaderValue,HeaderMap};
 
 use crate::config::{GraphQLOperationType, KeyValues};
 use crate::has_headers::HasHeaders;
@@ -62,7 +61,7 @@ impl RequestTemplate {
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
-        let mut req = reqwest::Request::new(POST.to_hyper(), url::Url::parse(self.url.as_str())?);
+        let mut req = reqwest::Request::new(POST.to_reqwest(), url::Url::parse(self.url.as_str())?);
         req = self.set_headers(req, ctx);
         req = self.set_body(req, ctx);
         Ok(req)
@@ -140,7 +139,7 @@ mod tests {
     use std::collections::HashSet;
 
     use async_graphql::Value;
-    use hyper::HeaderMap;
+    use reqwest::header::HeaderMap;
     use pretty_assertions::assert_eq;
     use serde_json::json;
 

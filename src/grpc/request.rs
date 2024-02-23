@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
-use hyper::{HeaderMap, Method};
+use reqwest::header::HeaderMap;
+use reqwest::Method;
 use reqwest::Request;
 use url::Url;
 

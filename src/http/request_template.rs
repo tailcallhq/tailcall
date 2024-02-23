@@ -3,7 +3,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
+use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
 
@@ -197,7 +197,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
             .iter()
             .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
             .collect::<anyhow::Result<Vec<_>>>()?;
-        let method = endpoint.method.clone().to_hyper();
+        let method = endpoint.method.clone().to_reqwest();
         let headers = endpoint
             .headers
             .iter()
@@ -259,8 +259,8 @@ mod tests {
     use std::borrow::Cow;
 
     use derive_setters::Setters;
-    use hyper::header::HeaderName;
-    use hyper::HeaderMap;
+    use reqwest::header::HeaderName;
+    use reqwest::header::HeaderMap;
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
@@ -533,7 +533,7 @@ mod tests {
     }
 
     mod endpoint {
-        use hyper::HeaderMap;
+        use reqwest::header::HeaderMap;
         use serde_json::json;
 
         use crate::http::request_template::tests::Context;
@@ -726,7 +726,7 @@ mod tests {
     mod cache_key {
         use std::collections::HashSet;
 
-        use hyper::HeaderMap;
+        use reqwest::header::HeaderMap;
         use serde_json::json;
 
         use crate::http::request_template::tests::Context;

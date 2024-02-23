@@ -5,7 +5,7 @@ use cache_control::{Cachability, CacheControl};
 use super::Response;
 
 pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
-    let header = res.headers.get(hyper::header::CACHE_CONTROL)?;
+    let header = res.headers.get(reqwest::header::CACHE_CONTROL)?;
     let value = header.to_str().ok()?;
 
     CacheControl::from_value(value)
@@ -49,7 +49,7 @@ mod tests {
 
     use std::time::Duration;
 
-    use hyper::HeaderMap;
+    use reqwest::header::HeaderMap;
 
     use crate::http::Response;
 

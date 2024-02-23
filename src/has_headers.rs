@@ -1,4 +1,4 @@
-use hyper::HeaderMap;
+use reqwest::header::HeaderMap;
 
 use crate::lambda::{EvaluationContext, ResolverContextLike};
 

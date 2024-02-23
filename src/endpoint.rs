@@ -1,5 +1,5 @@
 use derive_setters::Setters;
-use hyper::HeaderMap;
+use reqwest::header::HeaderMap;
 
 use crate::config::Encoding;
 use crate::http::Method;

@@ -55,8 +55,7 @@ mod tests {
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::HeaderMap;
+    use reqwest::header::{HeaderName, HeaderValue, HeaderMap};
     use pretty_assertions::assert_eq;
     use url::Url;
 

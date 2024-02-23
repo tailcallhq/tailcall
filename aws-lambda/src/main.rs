@@ -7,6 +7,7 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::http::{handle_request, AppContext};
+use anyhow::Result;
 
 mod http;
 mod runtime;

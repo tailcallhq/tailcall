@@ -3,8 +3,9 @@ use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use derive_setters::Setters;
-use hyper::header::CONTENT_TYPE;
-use hyper::{HeaderMap, Method};
+use reqwest::header::CONTENT_TYPE;
+use reqwest::header::HeaderMap;
+use reqwest::Method;
 use reqwest::header::HeaderValue;
 use url::Url;
 
@@ -122,8 +123,8 @@ mod tests {
     use std::path::PathBuf;
 
     use derive_setters::Setters;
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::{HeaderMap, Method};
+    use reqwest::header::{HeaderName, HeaderValue, HeaderMap};
+    use reqwest::Method;
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;

@@ -2,8 +2,10 @@ use std::any::Any;
 
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor};
+use http_body_util::Full;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
-use hyper::{Body, Response, StatusCode};
+use hyper::{Response, StatusCode};
+use hyper::body::Bytes;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -110,11 +112,11 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    pub fn to_response(self) -> Result<Response<hyper::Body>> {
+    pub fn to_response(self) -> Result<Response<Full<Bytes>>> {
         let mut response = Response::builder()
             .status(StatusCode::OK)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
-            .body(Body::from(serde_json::to_string(&self.0)?))?;
+            .body(Full::new(Bytes::from(serde_json::to_string(&self.0)?)))?;
 
         if self.0.is_ok() {
             if let Some(cache_control) = self.0.cache_control().value() {
