@@ -1,0 +1,17 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "missing key: id",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData",
+      "news"
+    ],
+    "description": null
+  }
+]

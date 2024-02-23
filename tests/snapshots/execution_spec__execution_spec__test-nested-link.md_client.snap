@@ -1,0 +1,28 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Post {
+  id: Int!
+  user: User
+  userId: Int!
+}
+
+type Query {
+  foo: Foo
+  post(id: Int!): Post
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+schema {
+  query: Query
+}

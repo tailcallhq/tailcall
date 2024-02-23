@@ -1,0 +1,21 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Bar {
+  bar: String
+}
+
+type Foo {
+  foo: String
+}
+
+union FooBar = Bar | Foo
+
+type Query {
+  foo: FooBar
+}
+
+schema {
+  query: Query
+}

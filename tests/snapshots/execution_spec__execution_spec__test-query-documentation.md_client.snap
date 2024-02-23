@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Query {
+  """
+  This is test
+  """
+  foo: String
+}
+
+schema {
+  query: Query
+}

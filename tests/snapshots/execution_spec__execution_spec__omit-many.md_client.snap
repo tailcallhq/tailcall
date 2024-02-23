@@ -1,0 +1,17 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type Query {
+  user: User
+}
+
+type User {
+  complements: [String]
+  name: String
+  zipcode: String
+}
+
+schema {
+  query: Query
+}

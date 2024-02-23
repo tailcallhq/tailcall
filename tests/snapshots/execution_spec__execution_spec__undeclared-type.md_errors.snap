@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Undeclared type 'User' was found",
+    "trace": [
+      "Query",
+      "users"
+    ],
+    "description": null
+  }
+]

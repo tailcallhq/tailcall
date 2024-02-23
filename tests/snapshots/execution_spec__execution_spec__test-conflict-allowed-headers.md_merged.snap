@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(allowedHeaders: ["a", "b", "c", "d"]) {
+  query: Query
+}
+
+type Query {
+  hello: String @const(data: "world")
+}

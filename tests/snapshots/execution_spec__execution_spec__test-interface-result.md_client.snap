@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type B implements IA {
+  a: String
+  b: String
+}
+
+interface IA {
+  a: String
+}
+
+type Query {
+  bar: IA
+}
+
+schema {
+  query: Query
+}

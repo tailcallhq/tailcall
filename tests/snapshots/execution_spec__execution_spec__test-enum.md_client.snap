@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo
+}
+
+schema {
+  query: Query
+}
