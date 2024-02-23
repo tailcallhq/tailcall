@@ -7,7 +7,6 @@ use std::sync::{Arc, Once};
 use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
-use clap::Parser;
 use derive_setters::Setters;
 use futures_util::future::join_all;
 use hyper::body::Bytes;
@@ -960,13 +959,6 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 }
 
-#[derive(clap::Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[arg(short, long)]
-    insta: Vec<String>,
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::builder()
@@ -976,15 +968,22 @@ async fn main() -> anyhow::Result<()> {
     // Explicitly only run one test if specified in command line args
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
 
-    let args = Args::parse();
+    let args: Vec<String> = std::env::args().collect();
+    let expected_arg = ["insta", "i", "-i", "--insta"];
 
-    let spec = if args.insta.is_empty() {
+    let index = args
+        .iter()
+        .position(|arg| expected_arg.contains(&arg.as_str()))
+        .unwrap_or(usize::MAX);
+
+    let spec = if index == usize::MAX {
         let spec = ExecutionSpec::cargo_read("tests/execution").await?;
         ExecutionSpec::filter_specs(spec)
     } else {
         let mut vec = vec![];
-        for arg in args.insta {
-            let path = PathBuf::from(&arg)
+        let insta_values: Vec<&String> = args.iter().skip(index + 1).collect();
+        for arg in insta_values {
+            let path = PathBuf::from(arg)
                 .canonicalize()
                 .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", arg));
 
