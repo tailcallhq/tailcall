@@ -31,5 +31,5 @@ type Query {
 type User {
   id: Int
   name: String
-  post: Post @call(mutation: "insertPost", args: {input: "{\"body\":\"user-body\", \"title\":\"user-title\", \"userId\":1}"})
+  post: Post @call(mutation: "insertPost", args: {input: "{\"body\":\"user-body\",\"title\":\"user-title\",\"userId\":1}"})
 }

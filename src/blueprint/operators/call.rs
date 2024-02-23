@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn try_from_http_fail() {
-        let expr = Expression::Literal("test".into());
+        let expr = Expression::Literal(DynamicValue::Value("test".into()));
 
         let http = Http::try_from(expr);
 
@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn try_from_graphql_fail() {
-        let expr = Expression::Literal("test".into());
+        let expr = Expression::Literal(DynamicValue::Value("test".into()));
 
         let graphql = GraphQL::try_from(expr);
 
@@ -350,7 +350,7 @@ mod tests {
 
     #[test]
     fn try_from_grpc_fail() {
-        let expr = Expression::Literal("test".into());
+        let expr = Expression::Literal(DynamicValue::Value("test".into()));
 
         let grpc = Grpc::try_from(expr);
 
