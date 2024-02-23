@@ -16,6 +16,7 @@ use url::Url;
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::runtime::TargetRuntime;
+use crate::valid::{Valid, Validator};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -117,21 +118,8 @@ impl ConfigReader {
                 }
                 LinkType::Protobuf => {
                     let parent_descriptor = self.read_proto(&source.path).await?;
-                    let id = parent_descriptor
-                        .package // we should ideally take the package name as default id
-                        .clone()
-                        .unwrap_or(
-                            config_link
-                                .id
-                                .to_owned() // if there is no package id then we use link id
-                                .unwrap_or(
-                                    parent_descriptor
-                                        .name // if none of them is available,
-                                        // then we use file name.
-                                        .clone()
-                                        .unwrap_or_default(),
-                                ),
-                        );
+
+                    let id = Valid::from_option(parent_descriptor.package.clone(), format!("Expected package name for proto file: {:?} with link id: {:?}, but found none", parent_descriptor.name, config_link.id)).to_result()?;
 
                     let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
