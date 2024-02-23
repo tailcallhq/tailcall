@@ -236,8 +236,6 @@ cargo insta test --review
 
 This will regenerate all snapshots without interrupting the test every time there's a diff, and it will also open the snapshot review interface, so you can accept or reject `.new` snapshots.
 
-
-
 ### `http_spec`
 
 1. The name, and optionally the description, are read out and put into a [header](#header).
