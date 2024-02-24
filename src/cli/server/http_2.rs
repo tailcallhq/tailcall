@@ -11,6 +11,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use serde::de::DeserializeOwned;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
+use tokio::sync::oneshot::Sender;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
@@ -25,15 +26,10 @@ pub async fn start_http_2(
 ) -> anyhow::Result<()> {
     super::log_launch_and_open_browser(sc.as_ref());
 
-    if let Some(sender) = server_up_sender {
-        sender
-            .send(())
-            .or(Err(anyhow::anyhow!("Failed to send message")))?;
-    }
     if sc.blueprint.server.enable_batch_requests {
-        run::<GraphQLBatchRequest>(sc, cert, key).await
+        run::<GraphQLBatchRequest>(sc, cert, key, server_up_sender).await
     } else {
-        run::<GraphQLRequest>(sc, cert, key).await
+        run::<GraphQLRequest>(sc, cert, key, server_up_sender).await
     }
 }
 
@@ -41,6 +37,7 @@ async fn run<T: DeserializeOwned + GraphQLRequestLike + Send>(
     sc: Arc<ServerConfig>,
     cert: Vec<CertificateDer<'static>>,
     key: Arc<PrivateKeyDer<'static>>,
+    server_up_sender: Option<Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
     let listener = TcpListener::bind(addr).await?;
@@ -57,6 +54,13 @@ async fn run<T: DeserializeOwned + GraphQLRequestLike + Send>(
     ];
 
     let tls_acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(server_config));
+
+    if let Some(sender) = server_up_sender {
+        sender
+            .send(())
+            .or(Err(anyhow::anyhow!("Failed to send message")))?;
+    }
+
     loop {
         let stream_result = listener.accept().await;
         match stream_result {
@@ -95,46 +99,3 @@ async fn run<T: DeserializeOwned + GraphQLRequestLike + Send>(
         }
     }
 }
-
-/*async fn run_server<T: DeserializeOwned + GraphQLRequestLike>(listener: TcpListener, sc: Arc<ServerConfig>, tls_acceptor: TlsAcceptor) -> anyhow::Result<()> {
-    loop {
-        let stream_result = listener.accept().await;
-        match stream_result {
-            Ok((stream,_)) => {
-                let app_ctx = sc.app_ctx.clone();
-                let io_result = tls_acceptor.accept(stream).await;
-                match io_result {
-                    Ok(io) => {
-                        tokio::spawn(async move {
-                            let server =
-                                hyper::server::conn::http2::Builder::new(TokioExecutor::new())
-                                    .serve_connection(
-                                        io,
-                                        service_fn(move |req: Request<Incoming>| {
-                                            let app_ctx = app_ctx.clone();
-                                            async move {
-                                                let (part, body) = req.into_parts();
-                                                let body = body.collect().await?.to_bytes();
-                                                let req =
-                                                    Request::from_parts(part, Full::new(body));
-                                                handle_request::<T>(
-                                                    req, app_ctx,
-                                                )
-                                                    .await
-                                            }
-                                        }),
-                                    )
-                                    .await;
-                            if let Err(e) = server {
-                                log::error!("An error occurred while handling a request: {e}");
-                            }
-                        });
-                    }
-                    Err(e) => log::error!("An error occurred while handling request IO: {e}"),
-                }
-            }
-            Err(e) => log::error!("An error occurred while handling request: {e}"),
-        }
-    }
-}
-*/

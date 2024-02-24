@@ -17,26 +17,26 @@ pub async fn start_http_1(
     sc: Arc<ServerConfig>,
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
-    if let Some(sender) = server_up_sender {
-        sender
-            .send(())
-            .or(Err(anyhow::anyhow!("Failed to send message")))?;
-    }
-
     super::log_launch_and_open_browser(sc.as_ref());
 
     if sc.blueprint.server.enable_batch_requests {
-        run::<GraphQLBatchRequest>(sc).await
+        run::<GraphQLBatchRequest>(sc, server_up_sender).await
     } else {
-        run::<GraphQLRequest>(sc).await
+        run::<GraphQLRequest>(sc, server_up_sender).await
     }
 }
 
 async fn run<T: DeserializeOwned + GraphQLRequestLike + Send>(
     sc: Arc<ServerConfig>,
+    server_up_sender: Option<Some(oneshot::Sender<()>)>
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
     let listener = TcpListener::bind(addr).await?;
+    if let Some(sender) = server_up_sender {
+        sender
+            .send(())
+            .or(Err(anyhow::anyhow!("Failed to send message")))?;
+    }
     loop {
         let stream_result = listener.accept().await;
         match stream_result {
