@@ -1,7 +1,5 @@
-use std::convert::identity;
 use std::sync::Arc;
 
-use futures_util::future::join_all;
 use serde::{Deserialize, Serialize};
 
 use super::{JsRequest, JsResponse};
@@ -51,13 +49,11 @@ impl Channel {
     async fn on_event(&self, event: Event) -> anyhow::Result<Option<JsResponse>> {
         log::debug!("event: {:?}", event);
         let worker = self.worker.clone();
-        let commands = worker.dispatch(event).await?;
-        let responses = join_all(commands.into_iter().map(|command| self.on_command(command)))
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-
-        Ok(responses.into_iter().find_map(identity))
+        let command = worker.call("onRequest".to_string(), event).await?;
+        match command {
+            Some(command) => self.on_command(command).await,
+            None => Ok(None),
+        }
     }
 
     #[async_recursion::async_recursion]
