@@ -10,11 +10,11 @@ use crate::is_default;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JsResponse {
-    status: u16,
+    pub status: u16,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    headers: BTreeMap<String, String>,
+    pub headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    body: Option<Bytes>,
+    pub body: Option<Bytes>,
 }
 
 impl TryFrom<JsResponse> for Response<Bytes> {

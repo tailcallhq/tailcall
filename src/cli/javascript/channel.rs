@@ -40,7 +40,8 @@ impl Channel {
         Self { worker: Arc::new(worker), client: Arc::new(client) }
     }
 
-    async fn on_request(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+    #[async_recursion::async_recursion]
+    async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
         let command = self.worker.call("onRequest".to_string(), event).await?;
@@ -50,7 +51,15 @@ impl Channel {
                     let response = self.client.execute(js_request.try_into()?).await?;
                     Ok(response)
                 }
-                Command::Response(js_response) => Ok(js_response.try_into()?),
+                Command::Response(js_response) => {
+                    // Check if the response is a redirect
+                    if let Some(location) = js_response.headers.get("location") {
+                        request.url_mut().set_path(location);
+                        self.on_request(request).await
+                    } else {
+                        Ok(js_response.try_into()?)
+                    }
+                }
             },
             None => self.client.execute(request).await,
         }
