@@ -3,7 +3,7 @@ use std::thread;
 
 use deno_core::{extension, serde_v8, v8, FastString, JsRuntime, RuntimeOptions};
 
-use super::channel::{Command, Event};
+use super::http_filter::{Command, Event};
 use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime {

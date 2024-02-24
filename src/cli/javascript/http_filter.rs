@@ -20,12 +20,12 @@ pub enum Command {
     Response(JsResponse),
 }
 
-pub struct Channel {
+pub struct HttpFilter {
     worker: Arc<dyn WorkerIO<Event, Command>>,
     client: Arc<dyn HttpIO>,
 }
 
-impl Channel {
+impl HttpFilter {
     pub fn new(
         client: impl HttpIO + Send + Sync + 'static,
         worker: impl WorkerIO<Event, Command>,
@@ -60,7 +60,7 @@ impl Channel {
 }
 
 #[async_trait::async_trait]
-impl HttpIO for Channel {
+impl HttpIO for HttpFilter {
     async fn execute(
         &self,
         request: reqwest::Request,
