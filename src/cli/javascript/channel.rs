@@ -9,13 +9,6 @@ use crate::{HttpIO, WorkerIO};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Continue<A> {
-    message: A,
-    id: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
 pub enum Event {
     Request(JsRequest),
 }
