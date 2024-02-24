@@ -959,29 +959,41 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test() -> anyhow::Result<()> {
     env_logger::builder()
         .filter(Some("execution_spec"), log::LevelFilter::Info)
         .init();
 
     // Explicitly only run one test if specified in command line args
     // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
-    let explicit = std::env::args().skip(1).find(|x| !x.starts_with("--"));
-    let spec = if let Some(explicit) = explicit {
-        let path = PathBuf::from(&explicit)
-            .canonicalize()
-            .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", explicit));
 
-        let contents = fs::read_to_string(&path)?;
-        let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
-            .await
-            .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+    let args: Vec<String> = std::env::args().collect();
+    let expected_arg = ["insta", "i"];
 
-        vec![spec]
-    } else {
+    let index = args
+        .iter()
+        .position(|arg| expected_arg.contains(&arg.as_str()))
+        .unwrap_or(usize::MAX);
+
+    let spec = if index == usize::MAX {
         let spec = ExecutionSpec::cargo_read("tests/execution").await?;
         ExecutionSpec::filter_specs(spec)
+    } else {
+        let mut vec = vec![];
+        let insta_values: Vec<&String> = args.iter().skip(index + 1).collect();
+        for arg in insta_values {
+            let path = PathBuf::from(arg)
+                .canonicalize()
+                .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", arg));
+
+            let contents = fs::read_to_string(&path)?;
+            let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
+                .await
+                .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+            vec.push(spec);
+        }
+        vec
     };
 
     for spec in spec.into_iter() {
