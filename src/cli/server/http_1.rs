@@ -28,7 +28,7 @@ pub async fn start_http_1(
 
 async fn run<T: DeserializeOwned + GraphQLRequestLike + Send>(
     sc: Arc<ServerConfig>,
-    server_up_sender: Option<Some(oneshot::Sender<()>)>
+    server_up_sender: Option<oneshot::Sender<()>>
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
     let listener = TcpListener::bind(addr).await?;
