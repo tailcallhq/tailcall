@@ -196,7 +196,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
             .iter()
             .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
             .collect::<anyhow::Result<Vec<_>>>()?;
-        let method = endpoint.method.clone().to_reqwest();
+        let method = endpoint.method.clone().into_reqwest();
         let headers = endpoint
             .headers
             .iter()

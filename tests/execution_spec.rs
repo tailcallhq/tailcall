@@ -663,7 +663,7 @@ impl HttpIO for MockHttpClient {
         let mock = mocks
             .iter()
             .find(|Mock { request: mock_req, response: _ }| {
-                let method_match = req.method() == mock_req.0.method.clone().to_reqwest();
+                let method_match = req.method() == mock_req.0.method.clone().into_reqwest();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let req_body = match req.body() {
                     Some(body) => {
