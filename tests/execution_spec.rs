@@ -1026,7 +1026,7 @@ async fn run_assert(
         .into_iter()
         .fold(
             Request::builder()
-                .method(method.to_hyper())
+                .method(to_hyper(method))
                 .uri(url.as_str()),
             |acc, (key, value)| acc.header(key, value),
         )
@@ -1037,5 +1037,20 @@ async fn run_assert(
         handle_request::<GraphQLBatchRequest>(req, server_context).await
     } else {
         handle_request::<GraphQLRequest>(req, server_context).await
+    }
+}
+
+pub fn to_hyper(method: Method) -> hyper::Method {
+    println!("{:?}", method);
+    match method {
+        Method::GET => hyper::Method::GET,
+        Method::POST => hyper::Method::POST,
+        Method::PUT => hyper::Method::PUT,
+        Method::PATCH => hyper::Method::PATCH,
+        Method::DELETE => hyper::Method::DELETE,
+        Method::HEAD => hyper::Method::HEAD,
+        Method::OPTIONS => hyper::Method::OPTIONS,
+        Method::CONNECT => hyper::Method::CONNECT,
+        Method::TRACE => hyper::Method::TRACE,
     }
 }
