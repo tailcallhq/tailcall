@@ -26,6 +26,7 @@ pub struct TailcallBuilder {
 }
 
 /// Struct to hold schema information while building executor
+#[derive(Clone)]
 struct SchemaHolder {
     /// Holds a type of schema
     source: Source,

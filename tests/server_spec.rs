@@ -138,7 +138,7 @@ mod server_spec {
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = tailcall::cli::runtime::init(&Default::default(), None);
-        let tailcall_builder = TailcallBuilder::new().with_config_files(configs);
+        let tailcall_builder = TailcallBuilder::default().with_config_files(configs);
 
         let mut server = Server::new(tailcall_builder);
         let server_up_receiver = server.server_up_receiver();
@@ -223,7 +223,7 @@ mod server_spec {
     async fn server_start_http2_nokey() {
         let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
         let runtime = test::init();
-        let tailcall_executor = TailcallBuilder::new().with_config_files(configs);
+        let tailcall_executor = TailcallBuilder::default().with_config_files(configs);
         assert!(tailcall_executor.build(runtime).await.is_err())
     }
 
