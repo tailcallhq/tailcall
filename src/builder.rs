@@ -193,6 +193,16 @@ mod test {
     use crate::config::Source;
     use crate::TailcallBuilder;
 
+    const HELLO_SCHEMA: &str = r#"
+        schema @server(port: 8000) {
+          query: Query
+        }
+
+        type Query {
+          hello: String! @const(data: "world")
+        }
+        "#;
+
     #[tokio::test]
     async fn test_n_plus_one() -> Result<()> {
         let config = "examples/grpc.graphql";
@@ -205,18 +215,9 @@ mod test {
 
     #[tokio::test]
     async fn test_format_config() -> Result<()> {
-        let hello_schema = r#"
-        schema @server(port: 8000) {
-          query: Query
-        }
-
-        type Query {
-          hello: String! @const(data: "world")
-        }
-        "#;
         let runtime = crate::runtime::test::init(None);
         let mut builder = TailcallBuilder::default();
-        builder = builder.with_config_source(Source::GraphQL, hello_schema, None::<PathBuf>);
+        builder = builder.with_config_source(Source::GraphQL, HELLO_SCHEMA, None::<PathBuf>);
         let encoded = builder.format_config(runtime, Source::GraphQL).await;
         assert!(encoded.is_ok());
 
@@ -225,18 +226,9 @@ mod test {
 
     #[tokio::test]
     async fn test_validate() -> Result<()> {
-        let hello_schema = r#"
-        schema @server(port: 8000) {
-          query: Query
-        }
-
-        type Query {
-          hello: String! @const(data: "world")
-        }
-        "#;
         let runtime = crate::runtime::test::init(None);
         let mut builder = TailcallBuilder::default();
-        builder = builder.with_config_source(Source::GraphQL, hello_schema, None::<PathBuf>);
+        builder = builder.with_config_source(Source::GraphQL, HELLO_SCHEMA, None::<PathBuf>);
 
         let validate = builder.validate(true, false, vec![], &runtime).await;
 
