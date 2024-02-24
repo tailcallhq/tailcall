@@ -311,7 +311,10 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(crate::runtime::test::init(None));
+        let runtime = crate::runtime::test::init(None);
+        let file_rt = runtime.file.clone();
+
+        let reader = ConfigReader::init(runtime);
         let helper_map = reader
             .resolve_descriptors(reader.read_proto(&test_file).await?)
             .await?;
@@ -321,7 +324,7 @@ mod test_proto_config {
             let path = file.path();
             let path_str =
                 path_to_file_name(path.as_path()).context("It must be able to extract path")?;
-            let source = tokio::fs::read_to_string(path).await?;
+            let source = file_rt.read(path.to_str().unwrap()).await?;
             let expected = protox_parse::parse(&path_str, &source)?;
             let actual = helper_map
                 .iter()
@@ -358,9 +361,7 @@ mod test_proto_config {
 mod reader_tests {
     use std::path::Path;
 
-    use anyhow::Context;
     use pretty_assertions::assert_eq;
-    use tokio::io::AsyncReadExt;
 
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
@@ -383,11 +384,9 @@ mod reader_tests {
             then.status(200).body(cfg.to_sdl());
         });
 
-        let mut json = String::new();
-        tokio::fs::File::open("examples/jsonplaceholder.json")
-            .await
-            .unwrap()
-            .read_to_string(&mut json)
+        let json = runtime
+            .file
+            .read("examples/jsonplaceholder.json")
             .await
             .unwrap();
 
@@ -450,6 +449,7 @@ mod reader_tests {
     #[tokio::test]
     async fn test_script_loader() {
         let runtime = crate::runtime::test::init(None);
+        let file_rt = runtime.file.clone();
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);
@@ -463,12 +463,7 @@ mod reader_tests {
             .unwrap();
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
-        let content = String::from_utf8(
-            tokio::fs::read(&path)
-                .await
-                .context(path.to_string())
-                .unwrap(),
-        );
+        let content = file_rt.read(&path).await;
 
         assert_eq!(content.unwrap(), config.extensions.script.unwrap());
     }
