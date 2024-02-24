@@ -161,13 +161,16 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 mod test_req_handler {
     use anyhow::Context;
     use http_body_util::{BodyExt, Full};
+
     use crate::http::graphiql;
     use crate::http::request_handler::not_found;
 
     #[tokio::test]
     async fn test_graphiql() -> anyhow::Result<()> {
         let mut req = hyper::Request::new(Full::new(hyper::body::Bytes::new()));
-        *req.uri_mut() = "http://localhost:19194/?config=examples/foo.graphql".parse().unwrap();
+        *req.uri_mut() = "http://localhost:19194/?config=examples/foo.graphql"
+            .parse()
+            .unwrap();
         let resp = graphiql(&req)?;
 
         let bytes = resp
