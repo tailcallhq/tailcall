@@ -156,3 +156,40 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         _ => not_found(),
     }
 }
+
+#[cfg(test)]
+mod test_req_handler {
+    use anyhow::Context;
+    use http_body_util::{BodyExt, Full};
+    use crate::http::graphiql;
+    use crate::http::request_handler::not_found;
+
+    #[tokio::test]
+    async fn test_graphiql() -> anyhow::Result<()> {
+        let mut req = hyper::Request::new(Full::new(hyper::body::Bytes::new()));
+        *req.uri_mut() = "http://localhost:19194/?config=examples/foo.graphql".parse().unwrap();
+        let resp = graphiql(&req)?;
+
+        let bytes = resp
+            .into_body()
+            .frame()
+            .await
+            .context("unable to extract frame")??
+            .into_data()
+            .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+
+        let string = String::from_utf8(bytes.to_vec())?;
+
+        assert!(string.contains("\"endpoint\":\"/graphql?config=examples/foo.graphql\""));
+        assert!(string.contains("Tailcall - GraphQL IDE"));
+
+        Ok(())
+    }
+    #[test]
+    fn test_not_found() -> anyhow::Result<()> {
+        let not_found = not_found()?;
+        assert_eq!(404u16, not_found.status().as_u16());
+        assert_eq!(hyper::http::version::Version::HTTP_11, not_found.version());
+        Ok(())
+    }
+}
