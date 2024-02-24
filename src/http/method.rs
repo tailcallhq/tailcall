@@ -16,20 +16,6 @@ pub enum Method {
 }
 
 impl Method {
-    pub fn to_hyper(self) -> hyper::Method {
-        match self {
-            Method::GET => hyper::Method::GET,
-            Method::POST => hyper::Method::POST,
-            Method::PUT => hyper::Method::PUT,
-            Method::PATCH => hyper::Method::PATCH,
-            Method::DELETE => hyper::Method::DELETE,
-            Method::HEAD => hyper::Method::HEAD,
-            Method::OPTIONS => hyper::Method::OPTIONS,
-            Method::CONNECT => hyper::Method::CONNECT,
-            Method::TRACE => hyper::Method::TRACE,
-        }
-    }
-
     pub fn to_reqwest(self) -> reqwest::Method {
         match self {
             Method::GET => reqwest::Method::GET,
