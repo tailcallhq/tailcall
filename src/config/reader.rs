@@ -324,7 +324,7 @@ mod test_proto_config {
             let path = file.path();
             let path_str =
                 path_to_file_name(path.as_path()).context("It must be able to extract path")?;
-            let source = file_rt.read(path.to_str().unwrap()).await?;
+            let source = file_rt.read(&path_str).await?;
             let expected = protox_parse::parse(&path_str, &source)?;
             let actual = helper_map
                 .iter()
