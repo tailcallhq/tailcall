@@ -16,17 +16,17 @@ pub struct JsRequest {
     body: Option<Bytes>,
 }
 
-impl TryFrom<JsRequest> for reqwest::Request {
+impl TryInto<reqwest::Request> for JsRequest {
     type Error = anyhow::Error;
 
-    fn try_from(req: JsRequest) -> Result<Self, Self::Error> {
+    fn try_into(self) -> Result<reqwest::Request, Self::Error> {
         let mut request = reqwest::Request::new(
-            reqwest::Method::from_bytes(req.method.as_bytes())?,
-            req.url.parse()?,
+            reqwest::Method::from_bytes(self.method.as_bytes())?,
+            self.url.parse()?,
         );
-        let headers = create_header_map(req.headers)?;
+        let headers = create_header_map(self.headers)?;
         request.headers_mut().extend(headers);
-        if let Some(bytes) = req.body {
+        if let Some(bytes) = self.body {
             let _ = request.body_mut().insert(reqwest::Body::from(bytes));
         }
 
@@ -50,12 +50,14 @@ impl TryFrom<&reqwest::Request> for JsRequest {
                 )
             })
             .collect::<BTreeMap<String, String>>();
-        let body = req.body().map(|body| {
-            let bytes = body.as_bytes().unwrap_or_default();
-            Bytes::from_iter(bytes.to_vec())
-        });
 
-        Ok(JsRequest { url, method, headers, body })
+        // NOTE: We don't pass body to worker for performance reasons
+        // let body = req.body().map(|body| {
+        //     let bytes = body.as_bytes().unwrap_or_default();
+        //     Bytes::from_iter(bytes.to_vec())
+        // });
+
+        Ok(JsRequest { url, method, headers, body: None })
     }
 }
 

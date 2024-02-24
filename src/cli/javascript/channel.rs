@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use hyper::body::Bytes;
 use serde::{Deserialize, Serialize};
 
 use super::{JsRequest, JsResponse};
@@ -17,13 +18,12 @@ pub struct Continue<A> {
 #[serde(rename_all = "camelCase")]
 pub enum Event {
     Request(JsRequest),
-    Response(Continue<JsResponse>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum Command {
-    Request(Continue<JsRequest>),
+    Request(JsRequest),
     Response(JsResponse),
 }
 
@@ -40,32 +40,19 @@ impl Channel {
         Self { worker: Arc::new(worker), client: Arc::new(client) }
     }
 
-    async fn dispatch(&self, request: JsRequest) -> anyhow::Result<Option<JsResponse>> {
-        let event = Event::Request(request);
-        let response = self.on_event(event).await?;
-        Ok(response)
-    }
-
-    async fn on_event(&self, event: Event) -> anyhow::Result<Option<JsResponse>> {
-        log::debug!("event: {:?}", event);
-        let worker = self.worker.clone();
-        let command = worker.call("onRequest".to_string(), event).await?;
+    async fn on_request(&self, request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+        let js_request = JsRequest::try_from(&request)?;
+        let event = Event::Request(js_request);
+        let command = self.worker.call("onRequest".to_string(), event).await?;
         match command {
-            Some(command) => self.on_command(command).await,
-            None => Ok(None),
-        }
-    }
-
-    #[async_recursion::async_recursion]
-    async fn on_command(&self, command: Command) -> anyhow::Result<Option<JsResponse>> {
-        log::debug!("command: {:?}", command);
-        match command {
-            Command::Request(Continue { message, id }) => {
-                let response = self.client.execute(message.try_into()?).await?;
-                let event = Event::Response(Continue { message: response.try_into()?, id });
-                self.on_event(event).await
-            }
-            Command::Response(response) => Ok(Some(response)),
+            Some(command) => match command {
+                Command::Request(js_request) => {
+                    let response = self.client.execute(js_request.try_into()?).await?;
+                    Ok(response)
+                }
+                Command::Response(js_response) => Ok(js_response.try_into()?),
+            },
+            None => self.client.execute(request).await,
         }
     }
 }
@@ -76,11 +63,6 @@ impl HttpIO for Channel {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        let js_request = JsRequest::try_from(&request)?;
-        let response = self
-            .dispatch(js_request)
-            .await?
-            .ok_or(anyhow::anyhow!("No response"))?;
-        response.try_into()
+        self.on_request(request).await
     }
 }
