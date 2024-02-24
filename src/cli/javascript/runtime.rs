@@ -28,9 +28,8 @@ impl LocalRuntime {
     fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
         let source = script.source;
         extension!(console, js = ["src/cli/javascript/shim/console.js",]);
-        extension!(channel, js = ["src/cli/javascript/shim/channel.js",]);
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
-            extensions: vec![console::init_ops_and_esm(), channel::init_ops_and_esm()],
+            extensions: vec![console::init_ops_and_esm()],
             ..Default::default()
         });
         let global = js_runtime.execute_script("<anon>", FastString::from_static("globalThis"))?;
