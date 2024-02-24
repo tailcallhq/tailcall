@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
+use hyper::service::Service;
 use hyper::{Body, Method, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::http::{graphiql, handle_request, showcase, AppContext};
+use tailcall::http::{create_request_service, graphiql, showcase, AppContext};
 
 use crate::http::{to_request, to_response};
 use crate::runtime;
@@ -34,7 +35,7 @@ pub async fn fetch(
     // Has to be done here, since when using GraphiQL, a config query parameter is not specified,
     // and get_app_ctx will fail without it.
     if req.method() == Method::GET {
-        return to_response(graphiql(&req)?).await;
+        return to_response(graphiql(req)?).await;
     }
 
     let env = Rc::new(env);
@@ -42,7 +43,10 @@ pub async fn fetch(
         Ok(app_ctx) => app_ctx,
         Err(e) => return to_response(e).await,
     };
-    let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
+    let resp = create_request_service::<GraphQLRequest>(app_ctx, "127.0.0.1".parse()?)?
+        .call(req)
+        .await
+        .unwrap();
     to_response(resp).await
 }
 

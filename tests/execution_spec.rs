@@ -10,6 +10,7 @@ use anyhow::{anyhow, Context};
 use derive_setters::Setters;
 use futures_util::future::join_all;
 use hyper::body::Bytes;
+use hyper::service::Service;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
@@ -22,7 +23,7 @@ use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
-use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::http::{create_request_service, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
@@ -1030,10 +1031,16 @@ async fn run_assert(
         )
         .body(Body::from(query_string))?;
 
+    let addr = "127.0.0.1".parse()?;
+
     // TODO: reuse logic from server.rs to select the correct handler
-    if server_context.blueprint.server.enable_batch_requests {
-        handle_request::<GraphQLBatchRequest>(req, server_context).await
+    Ok(if server_context.blueprint.server.enable_batch_requests {
+        create_request_service::<GraphQLBatchRequest>(server_context.clone(), addr)?
+            .call(req)
+            .await?
     } else {
-        handle_request::<GraphQLRequest>(req, server_context).await
-    }
+        create_request_service::<GraphQLRequest>(server_context.clone(), addr)?
+            .call(req)
+            .await?
+    })
 }

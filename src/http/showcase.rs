@@ -65,13 +65,15 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod tests {
+
     use std::sync::Arc;
 
+    use hyper::service::Service;
     use hyper::Request;
     use serde_json::json;
 
     use crate::async_graphql_hyper::GraphQLRequest;
-    use crate::http::handle_request;
+    use crate::http::create_request_service;
     use crate::http::showcase::create_app_ctx;
 
     #[tokio::test]
@@ -101,7 +103,11 @@ mod tests {
             ))
             .unwrap();
 
-        let res = handle_request::<GraphQLRequest>(req, Arc::new(app))
+        let addr = "127.0.0.1".parse().unwrap();
+
+        let res = create_request_service::<GraphQLRequest>(Arc::new(app), addr)
+            .unwrap()
+            .call(req)
             .await
             .unwrap();
 

@@ -76,8 +76,8 @@ fn extract_rest_directive(
         .collect();
 
     Rest::from_directives(directives.iter()).and_then(|rest| match rest {
-        Some(mut rest) => {
-            let variables = rest.path.variables_mut().sorted();
+        Some(rest) => {
+            let variables = rest.variables().sorted();
             let variable_definitions = variable_definitions
                 .iter()
                 .sorted_by(|l, r| l.node.name.cmp(&r.node.name));
@@ -85,12 +85,9 @@ fn extract_rest_directive(
             variables
                 .zip_longest(variable_definitions)
                 .map(|either_or_both| match either_or_both {
-                    EitherOrBoth::Both(var, var_def) => {
-                        var.typ = Some(var_def.node.var_type.node.clone());
-                        Valid::succeed(())
-                    }
-                    EitherOrBoth::Left(val) => {
-                        Valid::fail(format!("${} is not bounded to any argument", val.name))
+                    EitherOrBoth::Both(_var, _var_def) => Valid::succeed(()),
+                    EitherOrBoth::Left(var) => {
+                        Valid::fail(format!("${} is not bounded to any argument", var))
                     }
                     EitherOrBoth::Right(val) => {
                         Valid::fail(format!("${} is not present in the path", val.node.name))

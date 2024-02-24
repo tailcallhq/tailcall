@@ -64,8 +64,6 @@ pub async fn run() -> Result<()> {
                         .to_cli_result()
                         .map_err(|e| e.message("Invalid Operation".into()))?;
 
-                    blueprint.validate_rest_apis().await.to_cli_result()?;
-
                     Ok(())
                 }
                 Err(e) => Err(e.into()),

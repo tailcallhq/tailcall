@@ -1,18 +1,22 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
+use async_graphql_value::{ConstValue, Variables};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use routerify::prelude::RequestExt;
+use routerify::{RequestService, RequestServiceBuilder, Router};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
-use super::{showcase, AppContext};
+use super::{showcase, AppContext, Method};
 use crate::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike, GraphQLResponse};
 
-pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
+pub fn graphiql(req: Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
     let endpoint = if let Some(query) = query {
@@ -34,12 +38,6 @@ fn not_found() -> Result<Response<Body>> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
         .body(Body::empty())?)
-}
-
-fn error_response(status_code: StatusCode, msg: impl Into<String>) -> Result<Response<Body>> {
-    Ok(Response::builder()
-        .status(status_code)
-        .body(Body::from(msg.into()))?)
 }
 
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
@@ -71,17 +69,17 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, app_ctx:
 
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    app_ctx: &AppContext,
+    app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    let req_ctx = Arc::new(create_request_context(&req, app_ctx));
+    let req_ctx = Arc::new(create_request_context(&req, app_ctx.as_ref()));
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let request = serde_json::from_slice::<T>(&bytes);
     match request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-            response = update_cache_control_header(response, app_ctx, req_ctx);
+            response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
             let mut resp = response.to_response()?;
-            update_response_headers(&mut resp, app_ctx);
+            update_response_headers(&mut resp, app_ctx.as_ref());
             Ok(resp)
         }
         Err(err) => {
@@ -101,19 +99,35 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 pub async fn graphql_query(
-    req: &Request<Body>,
-    request: GraphQLRequest,
-    app_ctx: &AppContext,
+    req: Request<Body>,
+    query: String,
+    var_keys: Vec<String>,
+    app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    let req_ctx = Arc::new(create_request_context(req, app_ctx));
+    let var_json = ConstValue::Object(
+        var_keys
+            .into_iter()
+            .map(|key| {
+                let val = req
+                    .param(&key)
+                    .ok_or(anyhow::anyhow!("`key` not provided"))?;
+                Ok((
+                    async_graphql::Name::new(key),
+                    ConstValue::String(val.clone()),
+                ))
+            })
+            .collect::<anyhow::Result<_>>()?,
+    );
+
+    println!("{var_json:?}");
+
+    let request = async_graphql::Request::new(query).variables(Variables::from_value(var_json));
+    let request = GraphQLRequest(request);
+    let req_ctx = Arc::new(create_request_context(&req, app_ctx.as_ref()));
     let read_from_cache = Arc::new(Mutex::new(false));
-    let response = request
-        .data(req_ctx)
-        .data(read_from_cache.clone())
-        .execute(&app_ctx.schema)
-        .await;
+    let response = request.data(req_ctx).execute(&app_ctx.schema).await;
     let mut resp = response.to_response()?;
-    update_response_headers(&mut resp, app_ctx);
+    update_response_headers(&mut resp, app_ctx.as_ref());
 
     if *read_from_cache.lock().unwrap() {
         *resp.status_mut() = StatusCode::NOT_MODIFIED;
@@ -133,45 +147,74 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+// pub async fn handle_request<B, E, T: DeserializeOwned + GraphQLRequestLike>(
+//     req: Request<Body>,
+//     router: Router<B, E>,
+// ) -> Result<Response<Body>> {
+//     router.
+// }
+
+pub fn create_request_service<T: DeserializeOwned + GraphQLRequestLike + Send + 'static>(
     app_ctx: Arc<AppContext>,
-) -> Result<Response<Body>> {
-    match *req.method() {
-        // NOTE:
-        // The first check for the route should be for `/graphql`
-        // This is always going to be the most used route.
-        hyper::Method::POST if req.uri().path() == "/graphql" => {
-            graphql_request::<T>(req, app_ctx.as_ref()).await
-        }
-        hyper::Method::POST
-            if app_ctx.blueprint.server.enable_showcase
-                && req.uri().path() == "/showcase/graphql" =>
-        {
+    remote_addr: SocketAddr,
+) -> core::result::Result<RequestService<Body, anyhow::Error>, anyhow::Error> {
+    let app_ctx_clone = app_ctx.clone();
+    let mut builder = Router::builder().post("/graphql", move |req| {
+        graphql_request::<T>(req, app_ctx_clone.clone())
+    });
+
+    let app_ctx_clone = app_ctx.clone();
+    builder = builder.post("/showcase/graphql", move |req| {
+        let app_ctx = app_ctx_clone.clone();
+        async move {
             let app_ctx =
-                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
+                match showcase::create_app_ctx::<T>(&req, app_ctx.clone().runtime.clone(), false)
+                    .await?
+                {
                     Ok(app_ctx) => app_ctx,
                     Err(res) => return Ok(res),
                 };
 
-            graphql_request::<T>(req, &app_ctx).await
+            graphql_request::<T>(req, Arc::new(app_ctx)).await
         }
-        hyper::Method::GET
-            if req.uri().path() == "/" && app_ctx.blueprint.server.enable_graphiql =>
-        {
-            graphiql(&req)
-        }
-        ref method if req.uri().path().starts_with("/api") => {
-            let path = req.uri().path().strip_prefix("/api").unwrap();
-            let request = app_ctx
-                .blueprint
-                .rest_apis
-                .dispatch_path(method.clone(), path);
-            match request {
-                Ok(request) => graphql_query(&req, request, &app_ctx).await,
-                Err(err) => error_response(StatusCode::NOT_FOUND, format!("{err:?}")),
+    });
+
+    let app_ctx_clone = app_ctx.clone();
+    builder = builder.get("/", move |req| {
+        let app_ctx = app_ctx_clone.clone();
+        async move {
+            if app_ctx.blueprint.server.enable_graphiql {
+                graphiql(req)
+            } else {
+                not_found()
             }
         }
-        _ => not_found(),
+    });
+
+    for (rest, query) in app_ctx.blueprint.rest_apis.iter() {
+        let app_ctx_clone = app_ctx.clone();
+        let path = format!(
+            "/api/{}",
+            rest.path
+                .strip_prefix('/')
+                .unwrap_or(&rest.path)
+                .replace('$', ":")
+        );
+        let var_keys: Vec<String> = rest.variables().map(|var| var.to_string()).collect();
+        let query = query.clone();
+        let handler =
+            move |req| graphql_query(req, query.clone(), var_keys.clone(), app_ctx_clone.clone());
+
+        builder = match rest.method {
+            Method::GET => builder.get(path, handler),
+            Method::POST => builder.post(path, handler),
+            _ => builder,
+        }
     }
+
+    let router = builder.build().map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    let rs_builder = RequestServiceBuilder::new(router).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let request_service = rs_builder.build(remote_addr);
+    Ok(request_service)
 }
