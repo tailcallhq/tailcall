@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -34,8 +36,10 @@ struct SchemaHolder {
     parent_dir: Option<PathBuf>,
 }
 
+/// High-level abstraction of tailcall as application.
 #[derive(Clone)]
 pub struct TailcallExecutor {
+    /// `AppContext` contains all the information required for tailcall to work.
     pub app_ctx: Arc<AppContext>,
 }
 
@@ -66,6 +70,7 @@ impl TailcallBuilder {
         self
     }
 
+    /// Returns N+1 errors in the schema.
     pub async fn n_plus_one(&self, runtime: &TargetRuntime) -> Result<Vec<Vec<(String, String)>>> {
         Ok(self.get_config_module(runtime).await?.n_plus_one())
     }
@@ -77,6 +82,7 @@ impl TailcallBuilder {
         Ok(blueprint)
     }
 
+    /// TailcallExecutor can be directly built with instance of `AppContext`
     pub fn build_with_app_context(self, app_context: Arc<AppContext>) -> TailcallExecutor {
         TailcallExecutor { app_ctx: app_context }
     }
@@ -172,7 +178,7 @@ fn display_config(config: &Config, n_plus_one_queries: bool) -> String {
     Fmt::table(seq)
 }
 
-pub fn display_schema(blueprint: &Blueprint) -> String {
+fn display_schema(blueprint: &Blueprint) -> String {
     let p1 = Fmt::heading(&"GraphQL Schema:\n".to_string());
     let sdl = blueprint.to_schema();
     format!("{p1}\n{}\n", print_schema::print_schema(sdl))
