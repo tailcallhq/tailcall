@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
+// secrets
 const API_SECRET: &str = "api-secret";
 const MEASUREMENT_ID: &str = "measurement-id";
 const BASE_URL: &str = "https://www.google-analytics.com";
