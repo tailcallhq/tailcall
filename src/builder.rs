@@ -183,3 +183,64 @@ fn display_schema(blueprint: &Blueprint) -> String {
     let sdl = blueprint.to_schema();
     format!("{p1}\n{}\n", print_schema::print_schema(sdl))
 }
+
+#[cfg(test)]
+mod test {
+    use std::path::PathBuf;
+
+    use anyhow::Result;
+
+    use crate::config::Source;
+    use crate::TailcallBuilder;
+
+    #[tokio::test]
+    async fn test_n_plus_one() -> Result<()> {
+        let config = "examples/grpc.graphql";
+        let runtime = crate::runtime::test::init(None);
+        let mut builder = TailcallBuilder::default();
+        builder = builder.with_config_files(&[config]);
+        assert_eq!(0usize, builder.n_plus_one(&runtime).await?.len());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_format_config() -> Result<()> {
+        let hello_schema = r#"
+        schema @server(port: 8000) {
+          query: Query
+        }
+
+        type Query {
+          hello: String! @const(data: "world")
+        }
+        "#;
+        let runtime = crate::runtime::test::init(None);
+        let mut builder = TailcallBuilder::default();
+        builder = builder.with_config_source(Source::GraphQL, hello_schema, None::<PathBuf>);
+        let encoded = builder.format_config(runtime, Source::GraphQL).await;
+        assert!(encoded.is_ok());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_validate() -> Result<()> {
+        let hello_schema = r#"
+        schema @server(port: 8000) {
+          query: Query
+        }
+
+        type Query {
+          hello: String! @const(data: "world")
+        }
+        "#;
+        let runtime = crate::runtime::test::init(None);
+        let mut builder = TailcallBuilder::default();
+        builder = builder.with_config_source(Source::GraphQL, hello_schema, None::<PathBuf>);
+
+        let validate = builder.validate(true, false, vec![], &runtime).await;
+
+        assert_eq!("N + 1: 0", validate?.trim());
+        Ok(())
+    }
+}
