@@ -13,7 +13,6 @@ use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::runtime::TargetRuntime;
 
-#[derive(Clone)]
 pub struct AppContext {
     pub schema: dynamic::Schema,
     pub runtime: TargetRuntime,
