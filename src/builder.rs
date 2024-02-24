@@ -36,7 +36,6 @@ struct SchemaHolder {
 
 #[derive(Clone)]
 pub struct TailcallExecutor {
-    pub config_module: ConfigModule,
     pub app_ctx: Arc<AppContext>,
 }
 
@@ -67,8 +66,68 @@ impl TailcallBuilder {
         self
     }
 
+    pub async fn n_plus_one(&self, runtime: &TargetRuntime) -> Result<Vec<Vec<(String, String)>>> {
+        Ok(self.get_config_module(runtime).await?.n_plus_one())
+    }
+
+    /// Builds blueprint
+    pub async fn get_blueprint(&self, runtime: &TargetRuntime) -> Result<Blueprint> {
+        let config_module = self.get_config_module(runtime).await?;
+        let blueprint = Blueprint::try_from(&config_module)?;
+        Ok(blueprint)
+    }
+
+    pub fn build_with_app_context(self, app_context: Arc<AppContext>) -> TailcallExecutor {
+        TailcallExecutor { app_ctx: app_context }
+    }
+
     /// Builds TailcallExecutor with the provided runtime
     pub async fn build(self, runtime: TargetRuntime) -> Result<TailcallExecutor> {
+        // init app ctx
+        let blueprint = self.get_blueprint(&runtime).await?;
+        let app_ctx = AppContext::new(blueprint, runtime);
+        let app_ctx = Arc::new(app_ctx);
+        Ok(TailcallExecutor { app_ctx })
+    }
+
+    /// Returns a string of config for the target source
+    pub async fn format_config(
+        self,
+        target_runtime: TargetRuntime,
+        source: Source,
+    ) -> Result<String> {
+        let config_module = self.get_config_module(&target_runtime).await?;
+        source.encode(&config_module)
+    }
+
+    /// Validates configuration and performs optional schema validation
+    #[allow(clippy::too_many_arguments)]
+    pub async fn validate(
+        &self,
+        n_plus_one_queries: bool,
+        schema: bool,
+        ops: Vec<OperationQuery>, // TODO: check if we can carryout IO for OperationQuery in this function
+        target_runtime: &TargetRuntime,
+    ) -> Result<String> {
+        log::info!("{}", "Config successfully validated".to_string());
+
+        let config_module = self.get_config_module(target_runtime).await?;
+
+        let blueprint = Blueprint::try_from(&config_module)?;
+
+        let mut result_str = display_config(&config_module, n_plus_one_queries);
+        if schema {
+            let tbp = display_schema(&blueprint);
+            result_str = format!("{result_str}\n{tbp}");
+        }
+
+        validate_operations(&blueprint, ops).await.to_result()?;
+
+        Ok(result_str)
+    }
+
+    /// Internal function to build ConfigModule
+    async fn get_config_module(&self, runtime: &TargetRuntime) -> Result<ConfigModule> {
         // Configuration reader initialization
         let reader = ConfigReader::init(runtime.clone());
 
@@ -76,43 +135,17 @@ impl TailcallBuilder {
         let mut config_module = reader.read_all(&self.files).await?;
 
         // Iterate over schema holders and merge configs
-        for holder in self.schemas {
-            let config = Config::from_source(holder.source, &holder.schema)?;
+        for holder in &self.schemas {
+            let config = Config::from_source(holder.source.clone(), &holder.schema)?;
             let new_config_module = reader.resolve(config, holder.parent_dir.as_deref()).await?;
             config_module = config_module.merge_right(&new_config_module);
         }
 
-        // Init AppContext
-        let blueprint = Blueprint::try_from(&config_module)?;
-        let app_ctx = AppContext::new(blueprint, runtime);
-        let app_ctx = Arc::new(app_ctx);
-        Ok(TailcallExecutor { config_module, app_ctx })
+        Ok(config_module)
     }
 }
 
 impl TailcallExecutor {
-    /// Validates configuration and performs optional schema validation
-    pub async fn validate(
-        &self,
-        n_plus_one_queries: bool,
-        schema: bool,
-        ops: Vec<OperationQuery>, // TODO: check if we can carryout IO for OperationQuery in this function
-    ) -> Result<String> {
-        log::info!("{}", "Config successfully validated".to_string());
-
-        let mut result_str = display_config(&self.config_module, n_plus_one_queries);
-        if schema {
-            let tbp = display_schema(&self.app_ctx.blueprint);
-            result_str = format!("{result_str}\n{tbp}");
-        }
-
-        validate_operations(&self.app_ctx.blueprint, ops)
-            .await
-            .to_result()?;
-
-        Ok(result_str)
-    }
-
     /// Executes GraphQL request
     pub async fn execute(self, req: Request<Body>) -> Result<Response<Body>> {
         if self.app_ctx.blueprint.server.enable_batch_requests {
@@ -120,6 +153,9 @@ impl TailcallExecutor {
         } else {
             handle_request::<GraphQLRequest>(req, self.app_ctx.clone()).await
         }
+    }
+    pub fn pipeline_flush(&self) -> bool {
+        self.app_ctx.blueprint.server.pipeline_flush
     }
 }
 

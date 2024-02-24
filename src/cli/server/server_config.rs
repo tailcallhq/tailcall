@@ -1,25 +1,27 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::ops::Deref;
 use std::sync::Arc;
 
+use crate::app_context::AppContext;
 use crate::blueprint::Http;
 use crate::builder::TailcallExecutor;
+use crate::runtime::TargetRuntime;
+use crate::TailcallBuilder;
 
 pub struct ServerConfig {
     pub tailcall_executor: TailcallExecutor,
 }
 
 impl ServerConfig {
-    pub fn new(mut tailcall_executor: TailcallExecutor) -> Self {
-        let blueprint = tailcall_executor.app_ctx.blueprint.clone();
-        let rt = crate::cli::runtime::init(
-            &blueprint.upstream,
-            tailcall_executor.app_ctx.blueprint.server.script.clone(),
-        );
-        let mut app_ctx = (*tailcall_executor.app_ctx.deref()).clone();
-        app_ctx.runtime = rt;
-        tailcall_executor.app_ctx = Arc::new(app_ctx);
-        Self { tailcall_executor }
+    pub async fn new(
+        tailcall_builder: TailcallBuilder,
+        target_runtime: TargetRuntime,
+    ) -> anyhow::Result<Self> {
+        let blueprint = tailcall_builder.get_blueprint(&target_runtime).await?;
+        let rt = crate::cli::runtime::init(&blueprint.upstream, blueprint.server.script.clone());
+        let app_ctx = Arc::new(AppContext::new(blueprint, rt));
+        let tailcall_executor = tailcall_builder.build_with_app_context(app_ctx);
+
+        Ok(Self { tailcall_executor })
     }
 
     pub fn addr(&self) -> SocketAddr {

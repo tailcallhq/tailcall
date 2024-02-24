@@ -23,24 +23,20 @@ pub async fn run() -> Result<()> {
     logger_init();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Upstream::default(), None);
-    let tailcall_builder = TailcallBuilder::new();
+    let mut tailcall_builder = TailcallBuilder::new();
     match cli.command {
         Command::Start { file_paths } => {
-            let tailcall_executor = tailcall_builder
-                .with_config_files(&file_paths)
-                .build(runtime.clone())
-                .await?;
-
+            tailcall_builder = tailcall_builder.with_config_files(&file_paths);
             log::info!(
                 "N + 1: {}",
-                tailcall_executor
-                    .config_module
-                    .n_plus_one()
+                tailcall_builder
+                    .n_plus_one(&runtime)
+                    .await?
                     .len()
                     .to_string()
             );
-            let server = Server::new(tailcall_executor);
-            server.fork_start().await?;
+            let server = Server::new(tailcall_builder);
+            server.fork_start(runtime).await?;
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
@@ -56,12 +52,10 @@ pub async fn run() -> Result<()> {
                 .into_iter()
                 .collect::<Result<Vec<_>>>()?;
 
-            let tailcall_executor = tailcall_builder
-                .with_config_files(&file_paths)
-                .build(runtime.clone())
-                .await?;
-            let result = tailcall_executor
-                .validate(n_plus_one_queries, schema, ops)
+            tailcall_builder = tailcall_builder.with_config_files(&file_paths);
+
+            let result = tailcall_builder
+                .validate(n_plus_one_queries, schema, ops, &runtime)
                 .await
                 .map_err(|e| {
                     let e = e.downcast::<ValidationError<String>>().unwrap();
@@ -72,11 +66,10 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Compose { file_paths, format } => {
-            let executor = tailcall_builder
+            let encoded = tailcall_builder
                 .with_config_files(&file_paths)
-                .build(runtime.clone())
+                .format_config(runtime, format)
                 .await?;
-            let encoded = format.encode(&executor.config_module)?;
             display(encoded);
             Ok(())
         }

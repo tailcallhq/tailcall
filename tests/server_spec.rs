@@ -138,16 +138,13 @@ mod server_spec {
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = tailcall::cli::runtime::init(&Default::default(), None);
-        let tailcall_executor = TailcallBuilder::new()
-            .with_config_files(configs)
-            .build(runtime)
-            .await
-            .unwrap();
-        let mut server = Server::new(tailcall_executor);
+        let tailcall_builder = TailcallBuilder::new().with_config_files(configs);
+
+        let mut server = Server::new(tailcall_builder);
         let server_up_receiver = server.server_up_receiver();
 
         tokio::spawn(async move {
-            server.fork_start().await.unwrap();
+            server.fork_start(runtime.clone()).await.unwrap();
         });
 
         server_up_receiver
