@@ -6,7 +6,7 @@ use hyper::{Body, Request, Response};
 
 use crate::app_context::AppContext;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use crate::blueprint::{validate_operations, Blueprint, OperationQuery};
+use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Server};
 use crate::config::{Config, ConfigModule, ConfigReader, Source};
 use crate::fmt::Fmt;
 use crate::http::handle_request;
@@ -154,8 +154,10 @@ impl TailcallExecutor {
             handle_request::<GraphQLRequest>(req, self.app_ctx.clone()).await
         }
     }
-    pub fn pipeline_flush(&self) -> bool {
-        self.app_ctx.blueprint.server.pipeline_flush
+
+    /// Returns blueprint server
+    pub fn get_blueprint_server(&self) -> &Server {
+        &self.app_ctx.blueprint.server
     }
 }
 

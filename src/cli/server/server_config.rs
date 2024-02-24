@@ -25,15 +25,13 @@ impl ServerConfig {
     }
 
     pub fn addr(&self) -> SocketAddr {
-        (
-            self.tailcall_executor.app_ctx.blueprint.server.hostname,
-            self.tailcall_executor.app_ctx.blueprint.server.port,
-        )
-            .into()
+        let server = self.tailcall_executor.get_blueprint_server();
+        (server.hostname, server.port).into()
     }
 
     pub fn http_version(&self) -> String {
-        match self.tailcall_executor.app_ctx.blueprint.server.http {
+        let server = self.tailcall_executor.get_blueprint_server();
+        match server.http {
             Http::HTTP2 { cert: _, key: _ } => "HTTP/2".to_string(),
             _ => "HTTP/1.1".to_string(),
         }
@@ -55,9 +53,7 @@ impl ServerConfig {
 
     pub fn graphiql(&self) -> bool {
         self.tailcall_executor
-            .app_ctx
-            .blueprint
-            .server
+            .get_blueprint_server()
             .enable_graphiql
     }
 }

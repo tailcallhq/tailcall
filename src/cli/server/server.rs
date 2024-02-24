@@ -31,15 +31,8 @@ impl Server {
     /// Starts the server in the current Runtime
     pub async fn start(self, runtime: TargetRuntime) -> Result<()> {
         let server_config = Arc::new(ServerConfig::new(self.tailcall_builder, runtime).await?);
-
-        match server_config
-            .tailcall_executor
-            .app_ctx
-            .blueprint
-            .server
-            .http
-            .clone()
-        {
+        let server = server_config.tailcall_executor.get_blueprint_server();
+        match server.http.clone() {
             Http::HTTP2 { cert, key } => {
                 start_http_2(server_config, cert, key, self.server_up_sender).await
             }

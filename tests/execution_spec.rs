@@ -536,7 +536,7 @@ impl ExecutionSpec {
     ) -> TailcallExecutor {
         let tailcall_executor = tailcall_executor.unwrap();
         let http = MockHttpClient::new(self.clone());
-        let http = if let Some(script) = tailcall_executor.app_ctx.blueprint.server.script.clone() {
+        let http = if let Some(script) = tailcall_executor.get_blueprint_server().script.clone() {
             javascript::init_http(http, script)
         } else {
             Arc::new(http)

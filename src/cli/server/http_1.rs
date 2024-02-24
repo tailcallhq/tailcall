@@ -17,7 +17,7 @@ pub async fn start_http_1(
     });
     let builder = hyper::Server::try_bind(&addr)
         .map_err(CLIError::from)?
-        .http1_pipeline_flush(sc.tailcall_executor.pipeline_flush());
+        .http1_pipeline_flush(sc.tailcall_executor.get_blueprint_server().pipeline_flush);
     super::log_launch_and_open_browser(sc.as_ref());
 
     if let Some(sender) = server_up_sender {

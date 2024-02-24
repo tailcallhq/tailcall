@@ -124,7 +124,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
                 match showcase::create_tailcall_executor(&req, app_ctx.runtime.clone(), false)
                     .await?
                 {
-                    Ok(app_ctx) => app_ctx,
+                    Ok(tailcall_executor) => tailcall_executor,
                     Err(res) => return Ok(res),
                 };
             let app_ctx = tailcall_executor.app_ctx;
