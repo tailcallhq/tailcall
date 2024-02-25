@@ -2,12 +2,12 @@ use std::collections::hash_map::Iter;
 
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Field, GraphQLOperationType};
+use crate::config::{Field, GraphQLOperationType, KeyValues};
 use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
-use crate::{config, graphql, grpc, http};
+use crate::{config, graphql, grpc};
 
 fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option<&'a String> {
     args.clone()
@@ -29,12 +29,6 @@ pub fn update_call(
     )
 }
 
-struct Http {
-    pub req_template: http::RequestTemplate,
-    pub group_by: Option<GroupBy>,
-    pub dl_id: Option<DataLoaderId>,
-}
-
 struct GraphQL {
     pub req_template: graphql::RequestTemplate,
     pub field_name: String,
@@ -46,19 +40,6 @@ struct Grpc {
     pub req_template: grpc::RequestTemplate,
     pub group_by: Option<GroupBy>,
     pub dl_id: Option<DataLoaderId>,
-}
-
-impl TryFrom<Expression> for Http {
-    type Error = String;
-
-    fn try_from(expr: Expression) -> Result<Self, Self::Error> {
-        match expr {
-            Expression::IO(IO::Http { req_template, group_by, dl_id }) => {
-                Ok(Http { req_template, group_by, dl_id })
-            }
-            _ => Err("not an http expression".to_string()),
-        }
-    }
 }
 
 impl TryFrom<Expression> for GraphQL {
@@ -87,6 +68,12 @@ impl TryFrom<Expression> for Grpc {
     }
 }
 
+impl FromIterator<(String, String)> for KeyValues {
+    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
+        KeyValues(iter.into_iter().collect())
+    }
+}
+
 pub fn compile_call(
     field: &Field,
     config_module: &ConfigModule,
@@ -112,8 +99,22 @@ pub fn compile_call(
             .trace(field_name.as_str());
         }
 
-        if let Some(http) = _field.http.clone() {
-            transform_http(config_module, field, http, &args)
+        if let Some(mut http) = _field.http.clone() {
+            http.base_url = http.base_url.clone().map(replace_string(&args));
+            http.path = replace_string(&args)(http.path.clone());
+            http.body = http.body.clone().map(replace_string(&args));
+            http.query = http
+                .query
+                .iter()
+                .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
+                .collect();
+            http.headers = http
+                .headers
+                .iter()
+                .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
+                .collect();
+
+            compile_http(config_module, field, &http)
         } else if let Some(graphql) = _field.graphql.clone() {
             transform_graphql(config_module, operation_type, graphql, &args)
         } else if let Some(grpc) = _field.grpc.clone() {
@@ -131,6 +132,16 @@ pub fn compile_call(
             return Valid::fail(format!("{} field has no resolver", field_name));
         }
     })
+}
+
+fn replace_string<'a>(args: &'a Iter<'a, String, String>) -> impl Fn(String) -> String + 'a {
+    |str| {
+        let mustache = Mustache::parse(&str).unwrap();
+
+        let mustache = replace_mustache_value(&mustache, args);
+
+        mustache.to_string()
+    }
 }
 
 fn transform_grpc(
@@ -212,52 +223,6 @@ fn transform_graphql(
     })
 }
 
-fn transform_http(
-    config_module: &ConfigModule,
-    field: &Field,
-    http: config::Http,
-    args: &Iter<'_, String, String>,
-) -> Valid<Expression, String> {
-    compile_http(config_module, field, &http).and_then(|expr| {
-        let http = Http::try_from(expr).unwrap();
-
-        Valid::succeed(
-            http.req_template
-                .clone()
-                .root_url(replace_mustache_value(&http.req_template.root_url, args)),
-        )
-        .map(|req_template| {
-            req_template.clone().query(
-                req_template
-                    .clone()
-                    .query
-                    .iter()
-                    .map(replace_mustache(args))
-                    .collect(),
-            )
-        })
-        .map(|req_template| {
-            req_template.clone().headers(
-                req_template
-                    .headers
-                    .iter()
-                    .map(replace_mustache(args))
-                    .collect(),
-            )
-        })
-        .map(|req_template| {
-            req_template.clone().body_path(
-                req_template
-                    .body_path
-                    .map(|body_path| replace_mustache_value(&body_path, args)),
-            )
-        })
-        .map(|req_template| {
-            Expression::IO(IO::Http { req_template, dl_id: http.dl_id, group_by: http.group_by })
-        })
-    })
-}
-
 fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
@@ -329,15 +294,6 @@ fn replace_mustache<'a, T: Clone>(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn try_from_http_fail() {
-        let expr = Expression::Literal(DynamicValue::Value("test".into()));
-
-        let http = Http::try_from(expr);
-
-        assert!(http.is_err());
-    }
 
     #[test]
     fn try_from_graphql_fail() {
