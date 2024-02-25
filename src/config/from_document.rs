@@ -33,7 +33,6 @@ struct LocalPos {
 }
 
 fn get_pos_index(sdl: &str, pos: &LocalPos) -> usize {
-    // print!("Index for pos {pos:?} ");
     let index = sdl
         .lines()
         .enumerate()

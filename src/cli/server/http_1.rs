@@ -16,7 +16,7 @@ pub async fn start_http_1(
     let addr = sc.addr();
 
     let make_svc_single_req = make_service_fn(|_conn| {
-        let state = sc.clone();
+        let state = Arc::clone(&sc);
         async move {
             let mut service =
                 create_request_service::<GraphQLRequest>(state.app_ctx.clone(), addr)?;
@@ -25,7 +25,7 @@ pub async fn start_http_1(
     });
 
     let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = sc.clone();
+        let state = Arc::clone(&sc);
         async move {
             let mut service =
                 create_request_service::<GraphQLBatchRequest>(state.app_ctx.clone(), addr)?;
