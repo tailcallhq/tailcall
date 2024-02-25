@@ -59,22 +59,25 @@ pub fn compile_call(
             .trace(field_name.as_str());
         }
 
+        let string_replacer = replace_string(&args);
+        let key_value_replacer = replace_key_values(&args);
+
         if let Some(mut http) = _field.http.clone() {
-            http.path = replace_string(&args)(http.path.clone());
-            http.body = http.body.clone().map(replace_string(&args));
-            http.query = replace_key_values(&args)(http.query);
-            http.headers = replace_key_values(&args)(http.headers);
+            http.path = string_replacer(http.path.clone());
+            http.body = http.body.clone().map(string_replacer);
+            http.query = key_value_replacer(http.query);
+            http.headers = key_value_replacer(http.headers);
 
             compile_http(config_module, field, &http)
         } else if let Some(mut graphql) = _field.graphql.clone() {
-            graphql.headers = replace_key_values(&args)(graphql.headers);
-            graphql.args = graphql.args.clone().map(replace_key_values(&args));
+            graphql.headers = key_value_replacer(graphql.headers);
+            graphql.args = graphql.args.clone().map(key_value_replacer);
 
             compile_graphql(config_module, operation_type, &graphql)
         } else if let Some(mut grpc) = _field.grpc.clone() {
-            grpc.base_url = grpc.base_url.clone().map(replace_string(&args));
-            grpc.headers = replace_key_values(&args)(grpc.headers);
-            grpc.body = grpc.body.clone().map(replace_string(&args));
+            grpc.base_url = grpc.base_url.clone().map(&string_replacer);
+            grpc.headers = key_value_replacer(grpc.headers);
+            grpc.body = grpc.body.clone().map(string_replacer);
 
             compile_grpc(CompileGrpc {
                 config_module,
