@@ -11,7 +11,8 @@ type Address {
 }
 
 type Query {
-  user(id: Int!): User @http(baseURL: "http://api.com", path: "/users/{{args.id}}")
+  user(displayName: Boolean!, id: Int!): User @http(baseURL: "http://api.com", path: "/user/{{args.id}}/{{args.displayName}}")
+  userByName(name: String!): User @http(baseURL: "http://api.com", path: "/userByName/{{args.name}}")
 }
 
 type User {

@@ -9,9 +9,9 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
+      "userByName": {
         "id": 1,
-        "name": null,
+        "name": "foo",
         "address": {
           "street": "Kulas Light"
         }

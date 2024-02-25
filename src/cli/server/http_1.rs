@@ -45,9 +45,9 @@ pub async fn start_http_1(
     }
 
     let server: Result<(), hyper::Error> = if sc.blueprint.server.enable_batch_requests {
-        builder.serve(make_svc_single_req).await
-    } else {
         builder.serve(make_svc_batch_req).await
+    } else {
+        builder.serve(make_svc_single_req).await
     };
 
     let result = server.map_err(CLIError::from);

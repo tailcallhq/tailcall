@@ -7,7 +7,8 @@ type Address {
 }
 
 type Query {
-  user(id: Int!): User
+  user(displayName: Boolean!, id: Int!): User
+  userByName(name: String!): User
 }
 
 type User {
