@@ -7,7 +7,7 @@ use crate::lambda::{DataLoaderId, Expression, IO};
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
-use crate::{config, graphql, grpc};
+use crate::{config, grpc};
 
 fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option<&'a String> {
     args.clone()
@@ -29,30 +29,10 @@ pub fn update_call(
     )
 }
 
-struct GraphQL {
-    pub req_template: graphql::RequestTemplate,
-    pub field_name: String,
-    pub batch: bool,
-    pub dl_id: Option<DataLoaderId>,
-}
-
 struct Grpc {
     pub req_template: grpc::RequestTemplate,
     pub group_by: Option<GroupBy>,
     pub dl_id: Option<DataLoaderId>,
-}
-
-impl TryFrom<Expression> for GraphQL {
-    type Error = String;
-
-    fn try_from(expr: Expression) -> Result<Self, Self::Error> {
-        match expr {
-            Expression::IO(IO::GraphQL { req_template, field_name, batch, dl_id }) => {
-                Ok(GraphQL { req_template, field_name, batch, dl_id })
-            }
-            _ => Err("not a graphql expression".to_string()),
-        }
-    }
 }
 
 impl TryFrom<Expression> for Grpc {
@@ -100,7 +80,6 @@ pub fn compile_call(
         }
 
         if let Some(mut http) = _field.http.clone() {
-            http.base_url = http.base_url.clone().map(replace_string(&args));
             http.path = replace_string(&args)(http.path.clone());
             http.body = http.body.clone().map(replace_string(&args));
             http.query = http
@@ -115,8 +94,20 @@ pub fn compile_call(
                 .collect();
 
             compile_http(config_module, field, &http)
-        } else if let Some(graphql) = _field.graphql.clone() {
-            transform_graphql(config_module, operation_type, graphql, &args)
+        } else if let Some(mut graphql) = _field.graphql.clone() {
+            graphql.headers = graphql
+                .headers
+                .iter()
+                .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
+                .collect();
+            graphql.args = graphql.args.clone().map(|graphql_args| {
+                graphql_args
+                    .iter()
+                    .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
+                    .collect()
+            });
+
+            compile_graphql(config_module, operation_type, &graphql)
         } else if let Some(grpc) = _field.grpc.clone() {
             transform_grpc(
                 CompileGrpc {
@@ -174,51 +165,6 @@ fn transform_grpc(
         })
         .map(|req_template| {
             Expression::IO(IO::Grpc { req_template, group_by: grpc.group_by, dl_id: grpc.dl_id })
-        })
-    })
-}
-
-fn transform_graphql(
-    config_module: &ConfigModule,
-    operation_type: &GraphQLOperationType,
-    graphql: config::GraphQL,
-    args: &Iter<'_, String, String>,
-) -> Valid<Expression, String> {
-    compile_graphql(config_module, operation_type, &graphql).and_then(|expr| {
-        let graphql = GraphQL::try_from(expr).unwrap();
-
-        Valid::succeed(
-            graphql.req_template.clone().headers(
-                graphql
-                    .req_template
-                    .headers
-                    .iter()
-                    .map(replace_mustache(args))
-                    .collect(),
-            ),
-        )
-        .map(|req_template| {
-            if req_template.operation_arguments.is_some() {
-                let operation_arguments = req_template
-                    .clone()
-                    .operation_arguments
-                    .unwrap()
-                    .iter()
-                    .map(replace_mustache(args))
-                    .collect();
-
-                req_template.operation_arguments(Some(operation_arguments))
-            } else {
-                req_template
-            }
-        })
-        .map(|req_template| {
-            Expression::IO(IO::GraphQL {
-                req_template,
-                field_name: graphql.field_name,
-                batch: graphql.batch,
-                dl_id: graphql.dl_id,
-            })
         })
     })
 }
@@ -294,15 +240,6 @@ fn replace_mustache<'a, T: Clone>(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn try_from_graphql_fail() {
-        let expr = Expression::Literal(DynamicValue::Value("test".into()));
-
-        let graphql = GraphQL::try_from(expr);
-
-        assert!(graphql.is_err());
-    }
 
     #[test]
     fn try_from_grpc_fail() {
