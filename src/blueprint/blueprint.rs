@@ -7,7 +7,6 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::GlobalTimeout;
-use crate::blueprint::into_schema::to_schema_builder_without_resolver;
 use crate::blueprint::{Server, Upstream};
 use crate::config::RestApis;
 use crate::lambda::Expression;
@@ -225,11 +224,7 @@ impl Blueprint {
         };
 
         let server = &blueprint.server;
-        let mut schema = if schema_modifiers.no_resolver {
-            to_schema_builder_without_resolver(&blueprint)
-        } else {
-            SchemaBuilder::from(&blueprint)
-        };
+        let mut schema = SchemaBuilder::from(&blueprint);
 
         if server.enable_apollo_tracing {
             schema = schema.extension(ApolloTracing);

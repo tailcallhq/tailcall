@@ -30,16 +30,6 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
-fn type_ref_to_const_value(type_ref: &dynamic::TypeRef) -> ConstValue {
-    match type_ref {
-        dynamic::TypeRef::Named(_) => ConstValue::Null,
-        dynamic::TypeRef::NonNull(typ_ref) => type_ref_to_const_value(typ_ref.as_ref()),
-        dynamic::TypeRef::List(type_ref) => {
-            ConstValue::List(vec![type_ref_to_const_value(type_ref.as_ref())])
-        }
-    }
-}
-
 fn to_type(def: &Definition) -> dynamic::Type {
     match def {
         Definition::Object(def) => {
@@ -137,81 +127,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
     }
 }
 
-fn to_dummy_type(def: &Definition) -> dynamic::Type {
-    match def {
-        Definition::Object(def) => {
-            let mut object = dynamic::Object::new(def.name.clone());
-            for field in def.fields.iter() {
-                let field = field.clone();
-                let type_ref = to_type_ref(&field.of_type);
-                let field_name = &field.name.clone();
-                let mut dyn_schema_field =
-                    dynamic::Field::new(field_name, type_ref.clone(), move |_| {
-                        FieldFuture::from_value(Some(type_ref_to_const_value(&type_ref)))
-                    });
-                if let Some(description) = &field.description {
-                    dyn_schema_field = dyn_schema_field.description(description);
-                }
-                for arg in field.args.iter() {
-                    dyn_schema_field = dyn_schema_field.argument(dynamic::InputValue::new(
-                        arg.name.clone(),
-                        to_type_ref(&arg.of_type),
-                    ));
-                }
-                object = object.field(dyn_schema_field);
-            }
-            for interface in def.implements.iter() {
-                object = object.implement(interface.clone());
-            }
-
-            dynamic::Type::Object(object)
-        }
-        Definition::Interface(def) => {
-            let mut interface = dynamic::Interface::new(def.name.clone());
-            for field in def.fields.iter() {
-                interface = interface.field(dynamic::InterfaceField::new(
-                    field.name.clone(),
-                    to_type_ref(&field.of_type),
-                ));
-            }
-
-            dynamic::Type::Interface(interface)
-        }
-        Definition::InputObject(def) => {
-            let mut input_object = dynamic::InputObject::new(def.name.clone());
-            for field in def.fields.iter() {
-                input_object = input_object.field(dynamic::InputValue::new(
-                    field.name.clone(),
-                    to_type_ref(&field.of_type),
-                ));
-            }
-
-            dynamic::Type::InputObject(input_object)
-        }
-        Definition::Scalar(def) => {
-            let mut scalar = dynamic::Scalar::new(def.name.clone());
-            if let Some(description) = &def.description {
-                scalar = scalar.description(description);
-            }
-            dynamic::Type::Scalar(scalar)
-        }
-        Definition::Enum(def) => {
-            let mut enum_type = dynamic::Enum::new(def.name.clone());
-            for value in def.enum_values.iter() {
-                enum_type = enum_type.item(dynamic::EnumItem::new(value.name.clone()));
-            }
-            dynamic::Type::Enum(enum_type)
-        }
-        Definition::Union(def) => {
-            let mut union = dynamic::Union::new(def.name.clone());
-            for type_ in def.types.iter() {
-                union = union.possible_type(type_.clone());
-            }
-            dynamic::Type::Union(union)
-        }
-    }
-}
-
 impl From<&Blueprint> for SchemaBuilder {
     fn from(blueprint: &Blueprint) -> Self {
         let query = blueprint.query();
@@ -224,16 +139,4 @@ impl From<&Blueprint> for SchemaBuilder {
 
         schema
     }
-}
-
-pub fn to_schema_builder_without_resolver(blueprint: &Blueprint) -> SchemaBuilder {
-    let query = blueprint.query();
-    let mutation = blueprint.mutation();
-    let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
-
-    for def in blueprint.definitions.iter() {
-        schema = schema.register(to_dummy_type(def));
-    }
-
-    schema
 }
