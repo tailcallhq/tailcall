@@ -1,10 +1,11 @@
 use std::borrow::Cow;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
+use async_graphql::parser::types::{BaseType, Type};
 use async_graphql::ServerError;
 use async_graphql_value::{ConstValue, Variables};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -98,25 +99,37 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+fn convert_string_to_typ(typ: &Type, val: &String) -> Result<ConstValue> {
+    Ok(match &typ.base {
+        BaseType::Named(name) => match name.as_str() {
+            "Int" | "Float" => ConstValue::Number(val.parse()?),
+            "Boolean" => ConstValue::Boolean(val.parse()?),
+            "String" => ConstValue::String(val.to_string()),
+            other => Err(anyhow::anyhow!("Unsupported type: {other}"))?,
+        },
+        BaseType::List(typ) => Err(anyhow::anyhow!("Unsupported type: [{typ:?}]"))?,
+    })
+}
+
 pub async fn graphql_query(
     req: Request<Body>,
     query: String,
-    var_keys: Vec<String>,
+    var_types: HashMap<String, Type>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     let var_json = ConstValue::Object(
-        var_keys
+        var_types
             .into_iter()
-            .map(|key| {
+            .map(|(key, typ)| {
                 let val = req
                     .param(&key)
                     .ok_or(anyhow::anyhow!("`key` not provided"))?;
                 Ok((
                     async_graphql::Name::new(key),
-                    ConstValue::String(val.clone()),
+                    convert_string_to_typ(&typ, val)?,
                 ))
             })
-            .collect::<anyhow::Result<_>>()?,
+            .collect::<Result<_>>()?,
     );
 
     println!("{var_json:?}");
@@ -146,13 +159,6 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
     new_headers
 }
-
-// pub async fn handle_request<B, E, T: DeserializeOwned + GraphQLRequestLike>(
-//     req: Request<Body>,
-//     router: Router<B, E>,
-// ) -> Result<Response<Body>> {
-//     router.
-// }
 
 pub fn create_request_service<T: DeserializeOwned + GraphQLRequestLike + Send + 'static>(
     app_ctx: Arc<AppContext>,
@@ -200,10 +206,10 @@ pub fn create_request_service<T: DeserializeOwned + GraphQLRequestLike + Send + 
                 .unwrap_or(&rest.path)
                 .replace('$', ":")
         );
-        let var_keys: Vec<String> = rest.variables().map(|var| var.to_string()).collect();
+        let var_types = rest.types.clone();
         let query = query.clone();
         let handler =
-            move |req| graphql_query(req, query.clone(), var_keys.clone(), app_ctx_clone.clone());
+            move |req| graphql_query(req, query.clone(), var_types.clone(), app_ctx_clone.clone());
 
         builder = match rest.method {
             Method::GET => builder.get(path, handler),

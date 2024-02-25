@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, ExecutableDocument, FieldDefinition, InputObjectType,
@@ -76,16 +76,21 @@ fn extract_rest_directive(
         .collect();
 
     Rest::from_directives(directives.iter()).and_then(|rest| match rest {
-        Some(rest) => {
+        Some(mut rest) => {
             let variables = rest.variables().sorted();
             let variable_definitions = variable_definitions
                 .iter()
                 .sorted_by(|l, r| l.node.name.cmp(&r.node.name));
 
+            let mut types = HashMap::new();
+
             variables
                 .zip_longest(variable_definitions)
                 .map(|either_or_both| match either_or_both {
-                    EitherOrBoth::Both(_var, _var_def) => Valid::succeed(()),
+                    EitherOrBoth::Both(var, var_def) => {
+                        types.insert(var.to_string(), var_def.node.var_type.node.clone());
+                        Valid::succeed(())
+                    }
                     EitherOrBoth::Left(var) => {
                         Valid::fail(format!("${} is not bounded to any argument", var))
                     }
@@ -94,7 +99,10 @@ fn extract_rest_directive(
                     }
                 })
                 .collect::<Valid<Vec<_>, _>>()
-                .map(|_| Some(rest))
+                .map(|_| {
+                    rest.types = types;
+                    Some(rest)
+                })
         }
         None => Valid::succeed(None),
     })

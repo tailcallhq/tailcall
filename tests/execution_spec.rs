@@ -1031,16 +1031,18 @@ async fn run_assert(
         )
         .body(Body::from(query_string))?;
 
-    let addr = "127.0.0.1".parse()?;
+    let addr = "127.0.0.1:8080".parse()?;
 
     // TODO: reuse logic from server.rs to select the correct handler
     Ok(if server_context.blueprint.server.enable_batch_requests {
         create_request_service::<GraphQLBatchRequest>(server_context.clone(), addr)?
             .call(req)
-            .await?
+            .await
+            .map_err(|e| anyhow::anyhow!("{e}"))?
     } else {
         create_request_service::<GraphQLRequest>(server_context.clone(), addr)?
             .call(req)
-            .await?
+            .await
+            .map_err(|e| anyhow::anyhow!("{e}"))?
     })
 }

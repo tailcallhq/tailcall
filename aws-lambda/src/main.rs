@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use http::{to_request, to_response};
 use hyper::service::Service;
-use lambda_http::{run, service_fn, Body, Error, Response};
+use lambda_http::{run, service_fn, Error};
 use runtime::init_runtime;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Error> {
 
     let app_ctx = Arc::new(AppContext::new(blueprint, runtime));
 
-    run(service_fn(|req| async move {
+    run(service_fn(|req| async {
         let resp = create_request_service::<GraphQLRequest>(app_ctx.clone(), "127.0.0.1".parse()?)
             .unwrap()
             .call(to_request(req)?)
@@ -38,4 +38,5 @@ async fn main() -> Result<(), Error> {
 
         Ok::<_, Error>(to_response(resp).await?)
     }))
+    .await
 }

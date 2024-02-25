@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
 
@@ -43,9 +45,7 @@ impl RestApis {
     }
 }
 
-#[derive(
-    Clone, Debug, PartialEq, Deserialize, PartialOrd, Ord, Serialize, Eq, schemars::JsonSchema,
-)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, schemars::JsonSchema)]
 /// The @rest operator creates a rest api for the operation it is applied to
 #[serde(rename_all = "camelCase")]
 pub struct Rest {
@@ -54,6 +54,9 @@ pub struct Rest {
     /// Specifies the HTTP Method for the rest api
     #[serde(default)]
     pub method: Method,
+    /// Variable name to type mapping
+    #[serde(skip, default)]
+    pub types: HashMap<String, async_graphql::parser::types::Type>,
 }
 
 impl Rest {

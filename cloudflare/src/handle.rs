@@ -43,7 +43,7 @@ pub async fn fetch(
         Ok(app_ctx) => app_ctx,
         Err(e) => return to_response(e).await,
     };
-    let resp = create_request_service::<GraphQLRequest>(app_ctx, "127.0.0.1".parse()?)?
+    let resp = create_request_service::<GraphQLRequest>(app_ctx, "127.0.0.1:8080".parse()?)?
         .call(req)
         .await
         .unwrap();
