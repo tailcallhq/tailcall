@@ -1,7 +1,6 @@
 use std::fmt::Write;
 
 use async_graphql::dynamic::Schema;
-use async_graphql_value::ConstValue;
 
 use super::{Blueprint, SchemaModifiers};
 use crate::valid::{Cause, Valid, Validator};
@@ -10,24 +9,11 @@ use crate::valid::{Cause, Valid, Validator};
 pub struct OperationQuery {
     query: String,
     file: String,
-    variables: async_graphql::Variables,
 }
 
 impl OperationQuery {
     pub fn new(query: String, trace: String) -> Self {
-        Self {
-            query,
-            file: trace,
-            variables: async_graphql::Variables::from_value(ConstValue::Null),
-        }
-    }
-
-    pub fn new_with_variables(
-        query: String,
-        trace: String,
-        variables: async_graphql::Variables,
-    ) -> Self {
-        Self { query, file: trace, variables }
+        Self { query, file: trace }
     }
 
     fn to_cause(&self, err: &async_graphql::ServerError) -> Cause<String> {
@@ -48,10 +34,8 @@ impl OperationQuery {
     }
 
     async fn validate(&self, schema: &Schema) -> Vec<Cause<String>> {
-        let request: async_graphql::Request = self.query.as_str().into();
-        let request = request.variables(self.variables.clone());
         schema
-            .execute(request)
+            .execute(&self.query)
             .await
             .errors
             .iter()

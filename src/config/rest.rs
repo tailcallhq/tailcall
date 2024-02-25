@@ -1,30 +1,11 @@
 use std::collections::HashMap;
 
-use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
 
-use crate::blueprint::OperationQuery;
 use crate::http::Method;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct RestApis(Vec<(Rest, String)>);
-
-impl RestApis {
-    pub fn create_operations(&self) -> Vec<OperationQuery> {
-        self.0
-            .iter()
-            .map(|(k, v)| {
-                let variables = ConstValue::Object(
-                    k.variables()
-                        .map(|var| (async_graphql::Name::new(var), ConstValue::Null))
-                        .collect(),
-                );
-                let variables = async_graphql::Variables::from_value(variables);
-                OperationQuery::new_with_variables(v.into(), "".into(), variables)
-            })
-            .collect()
-    }
-}
 
 impl RestApis {
     pub fn merge_right(mut self, other: Self) -> Self {

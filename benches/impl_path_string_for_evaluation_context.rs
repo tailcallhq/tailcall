@@ -1,4 +1,4 @@
-use std::any::Any;
+
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
@@ -187,10 +187,6 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
     }
 
     fn add_error(&'a self, _: async_graphql::ServerError) {}
-
-    fn data<D: Any + Send + Sync>(&'a self) -> Option<&'a D> {
-        None
-    }
 }
 
 // assert that everything was set up correctly for the benchmark
