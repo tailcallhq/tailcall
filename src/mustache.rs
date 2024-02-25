@@ -92,6 +92,21 @@ impl Mustache {
     }
 }
 
+impl ToString for Mustache {
+    fn to_string(&self) -> String {
+        match self {
+            Mustache(segments) => segments
+                .iter()
+                .map(|segment| match segment {
+                    Segment::Literal(text) => text.clone(),
+                    Segment::Expression(parts) => format!("{{{{{}}}}}", parts.join(".")),
+                })
+                .collect::<Vec<String>>()
+                .join(""),
+        }
+    }
+}
+
 fn parse_name(input: &str) -> IResult<&str, String> {
     let spaces = nom::character::complete::multispace0;
     let alpha = nom::character::complete::alpha1;
@@ -160,6 +175,27 @@ mod tests {
         use pretty_assertions::assert_eq;
 
         use crate::mustache::{Mustache, Segment};
+
+        #[test]
+        fn test_to_string() {
+            let expectations = vec![
+                r"/users/{{value.id}}/todos",
+                r"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end",
+                r"http://localhost:{{args.port}}",
+                r"/users/{{value.userId}}",
+                r"/bar?id={{args.id}}&flag={{args.flag}}",
+                r"/foo?id={{value.id}}",
+                r"{{value.d}}",
+                r"/posts/{{args.id}}",
+                r"http://localhost:8000",
+            ];
+
+            for expected in expectations {
+                let mustache = Mustache::parse(expected).unwrap();
+
+                assert_eq!(expected, mustache.to_string());
+            }
+        }
 
         #[test]
         fn test_single_literal() {
