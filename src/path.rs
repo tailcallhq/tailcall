@@ -99,7 +99,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
 mod tests {
 
     mod evaluation_context {
-        
+
         use std::borrow::Cow;
         use std::collections::BTreeMap;
         use std::sync::Arc;

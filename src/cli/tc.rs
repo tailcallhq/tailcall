@@ -10,13 +10,13 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
-use crate::cli::error::ToCLIResult;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::Config;
 use crate::print_schema;
+use crate::valid::Validator;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -61,10 +61,12 @@ pub async fn run() -> Result<()> {
 
                     validate_operations(&blueprint, ops)
                         .await
-                        .to_cli_result()
-                        .map_err(|e| e.message("Invalid Operation".into()))?;
-
-                    Ok(())
+                        .to_result()
+                        .map_err(|e| {
+                            CLIError::from(e)
+                                .message("Invalid Operation".to_string())
+                                .into()
+                        })
                 }
                 Err(e) => Err(e.into()),
             }
