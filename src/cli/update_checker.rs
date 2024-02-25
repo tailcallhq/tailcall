@@ -42,8 +42,8 @@ pub async fn check_for_update() {
             return;
         };
 
-        let informer = update_informer::new(registry::GitHub, name, current_version)
-            .interval(Duration::from_secs(60 * 60 * 24));
+        let informer =
+            update_informer::new(registry::GitHub, name, current_version).interval(Duration::ZERO);
 
         if let Some(latest_version) = informer.check_version().ok().flatten() {
             let github_release_url =
