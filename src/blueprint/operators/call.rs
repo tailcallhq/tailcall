@@ -1,13 +1,12 @@
 use std::collections::hash_map::Iter;
 
 use crate::blueprint::*;
-use crate::config::group_by::GroupBy;
+use crate::config;
 use crate::config::{Field, GraphQLOperationType, KeyValues};
-use crate::lambda::{DataLoaderId, Expression, IO};
+use crate::lambda::Expression;
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
-use crate::{config, grpc};
 
 fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option<&'a String> {
     args.clone()
@@ -27,25 +26,6 @@ pub fn update_call(
                 .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
-}
-
-struct Grpc {
-    pub req_template: grpc::RequestTemplate,
-    pub group_by: Option<GroupBy>,
-    pub dl_id: Option<DataLoaderId>,
-}
-
-impl TryFrom<Expression> for Grpc {
-    type Error = String;
-
-    fn try_from(expr: Expression) -> Result<Self, Self::Error> {
-        match expr {
-            Expression::IO(IO::Grpc { req_template, group_by, dl_id }) => {
-                Ok(Grpc { req_template, group_by, dl_id })
-            }
-            _ => Err("not a grpc expression".to_string()),
-        }
-    }
 }
 
 impl FromIterator<(String, String)> for KeyValues {
@@ -82,47 +62,42 @@ pub fn compile_call(
         if let Some(mut http) = _field.http.clone() {
             http.path = replace_string(&args)(http.path.clone());
             http.body = http.body.clone().map(replace_string(&args));
-            http.query = http
-                .query
-                .iter()
-                .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
-                .collect();
-            http.headers = http
-                .headers
-                .iter()
-                .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
-                .collect();
+            http.query = replace_key_values(&args)(http.query);
+            http.headers = replace_key_values(&args)(http.headers);
 
             compile_http(config_module, field, &http)
         } else if let Some(mut graphql) = _field.graphql.clone() {
-            graphql.headers = graphql
-                .headers
-                .iter()
-                .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
-                .collect();
-            graphql.args = graphql.args.clone().map(|graphql_args| {
-                graphql_args
-                    .iter()
-                    .map(|(k, v)| (k.clone(), replace_string(&args)(v.clone())))
-                    .collect()
-            });
+            graphql.headers = replace_key_values(&args)(graphql.headers);
+            graphql.args = graphql.args.clone().map(replace_key_values(&args));
 
             compile_graphql(config_module, operation_type, &graphql)
-        } else if let Some(grpc) = _field.grpc.clone() {
-            transform_grpc(
-                CompileGrpc {
-                    config_module,
-                    operation_type,
-                    field,
-                    grpc: &grpc,
-                    validate_with_schema: false,
-                },
-                args,
-            )
+        } else if let Some(mut grpc) = _field.grpc.clone() {
+            grpc.base_url = grpc.base_url.clone().map(replace_string(&args));
+            grpc.headers = replace_key_values(&args)(grpc.headers);
+            grpc.body = grpc.body.clone().map(replace_string(&args));
+
+            compile_grpc(CompileGrpc {
+                config_module,
+                operation_type,
+                field,
+                grpc: &grpc,
+                validate_with_schema: true,
+            })
         } else {
             return Valid::fail(format!("{} field has no resolver", field_name));
         }
     })
+}
+
+fn replace_key_values<'a>(
+    args: &'a Iter<'a, String, String>,
+) -> impl Fn(KeyValues) -> KeyValues + 'a {
+    |key_values| {
+        key_values
+            .iter()
+            .map(|(k, v)| (k.clone(), replace_string(args)(v.clone())))
+            .collect()
+    }
 }
 
 fn replace_string<'a>(args: &'a Iter<'a, String, String>) -> impl Fn(String) -> String + 'a {
@@ -133,40 +108,6 @@ fn replace_string<'a>(args: &'a Iter<'a, String, String>) -> impl Fn(String) -> 
 
         mustache.to_string()
     }
-}
-
-fn transform_grpc(
-    inputs: CompileGrpc<'_>,
-    args: Iter<'_, String, String>,
-) -> Valid<Expression, String> {
-    compile_grpc(inputs).and_then(|expr| {
-        let grpc = Grpc::try_from(expr).unwrap();
-
-        Valid::succeed(
-            grpc.req_template
-                .clone()
-                .url(replace_mustache_value(&grpc.req_template.url, &args)),
-        )
-        .map(|req_template| {
-            req_template.clone().headers(
-                req_template
-                    .headers
-                    .iter()
-                    .map(replace_mustache(&args))
-                    .collect(),
-            )
-        })
-        .map(|req_template| {
-            req_template.clone().body(
-                req_template
-                    .body
-                    .map(|body| replace_mustache_value(&body, &args)),
-            )
-        })
-        .map(|req_template| {
-            Expression::IO(IO::Grpc { req_template, group_by: grpc.group_by, dl_id: grpc.dl_id })
-        })
-    })
 }
 
 fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
@@ -225,28 +166,4 @@ fn replace_mustache_value(value: &Mustache, args: &Iter<'_, String, String>) -> 
         })
         .collect::<Vec<Segment>>()
         .into()
-}
-
-fn replace_mustache<'a, T: Clone>(
-    args: &'a Iter<'a, String, String>,
-) -> impl Fn(&(T, Mustache)) -> (T, Mustache) + 'a {
-    move |(key, value)| {
-        let value: Mustache = replace_mustache_value(value, args);
-
-        (key.clone().to_owned(), value)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn try_from_grpc_fail() {
-        let expr = Expression::Literal(DynamicValue::Value("test".into()));
-
-        let grpc = Grpc::try_from(expr);
-
-        assert!(grpc.is_err());
-    }
 }
