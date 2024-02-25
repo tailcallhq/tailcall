@@ -28,12 +28,6 @@ pub fn update_call(
     )
 }
 
-impl FromIterator<(String, String)> for KeyValues {
-    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
-        KeyValues(iter.into_iter().collect())
-    }
-}
-
 pub fn compile_call(
     field: &Field,
     config_module: &ConfigModule,
@@ -96,10 +90,12 @@ fn replace_key_values<'a>(
     args: &'a Iter<'a, String, String>,
 ) -> impl Fn(KeyValues) -> KeyValues + 'a {
     |key_values| {
-        key_values
-            .iter()
-            .map(|(k, v)| (k.clone(), replace_string(args)(v.clone())))
-            .collect()
+        KeyValues(
+            key_values
+                .iter()
+                .map(|(k, v)| (k.clone(), replace_string(args)(v.clone())))
+                .collect(),
+        )
     }
 }
 
