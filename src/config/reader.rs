@@ -311,14 +311,15 @@ mod test_proto_config {
         let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        proto_no_pkg.push("tests/unit_tests/proto_no_pkg.graphql");
+        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
         let validation = config_module
             .err()
             .unwrap()
             .downcast::<ValidationError<String>>()?;
         proto_no_pkg.pop();
-        proto_no_pkg.push("news.proto");
+        proto_no_pkg.push("proto");
+        proto_no_pkg.push("news_no_pkg.proto");
         let err = &validation.as_vec().first().unwrap().message;
         let trace = &validation.as_vec().first().unwrap().trace;
         assert_eq!(
@@ -329,10 +330,13 @@ mod test_proto_config {
             err
         );
 
-        let expected_trace = ["@link(id: news, src: news.proto, type: Protobuf)", "1"]
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<VecDeque<String>>();
+        let expected_trace = [
+            "@link(id: news, src: proto/news_no_pkg.proto, type: Protobuf)",
+            "1",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<VecDeque<String>>();
         assert_eq!(&expected_trace, trace);
         Ok(())
     }
@@ -348,7 +352,7 @@ mod test_proto_config {
         root.pop();
 
         test_dir.push("grpc"); // grpc
-        test_dir.push("tests"); // tests
+        test_dir.push("tests/proto"); // tests
 
         let mut test_file = test_dir.clone();
 
