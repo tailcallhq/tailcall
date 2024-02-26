@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
@@ -46,4 +46,18 @@ pub struct Link {
     ///
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,
+}
+
+impl Display for Link {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let format = if let Some(id) = &self.id {
+            format!(
+                "@link(id: {}, src: {}, type: {:?})",
+                id, self.src, self.type_of
+            )
+        } else {
+            format!("@link(src: {}, type: {:?})", self.src, self.type_of)
+        };
+        f.write_str(&format)
+    }
 }

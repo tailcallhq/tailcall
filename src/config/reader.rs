@@ -92,7 +92,10 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
-        for config_link in links.iter() {
+        for i in 0..links.len() {
+            let config_link = links
+                .get(i)
+                .context(format!("Expected a link at index: {i} but found none"))?;
             let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.read_file(&path).await?;
@@ -126,6 +129,8 @@ impl ConfigReader {
                             parent_descriptor.name, config_link.id
                         ),
                     )
+                    .trace(&(i + 1).to_string())
+                    .trace(&format!("{}", config_link))
                     .to_result()?;
 
                     let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
@@ -283,11 +288,13 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod test_proto_config {
+    use std::collections::VecDeque;
     use std::path::{Path, PathBuf};
 
     use anyhow::{Context, Result};
 
     use crate::config::reader::ConfigReader;
+    use crate::valid::ValidationError;
 
     #[tokio::test]
     async fn test_resolve() {
@@ -306,7 +313,27 @@ mod test_proto_config {
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_no_pkg.push("tests/unit_tests/proto_no_pkg.graphql");
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
-        assert!(config_module.is_err());
+        let validation = config_module
+            .err()
+            .unwrap()
+            .downcast::<ValidationError<String>>()?;
+        proto_no_pkg.pop();
+        proto_no_pkg.push("news.proto");
+        let err = &validation.as_vec().first().unwrap().message;
+        let trace = &validation.as_vec().first().unwrap().trace;
+        assert_eq!(
+            &format!(
+                "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
+                proto_no_pkg.to_str()
+            ),
+            err
+        );
+
+        let expected_trace = ["@link(id: news, src: news.proto, type: Protobuf)", "1"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<VecDeque<String>>();
+        assert_eq!(&expected_trace, trace);
         Ok(())
     }
 
