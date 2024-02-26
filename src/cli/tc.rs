@@ -22,66 +22,63 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub async fn run() -> Result<()> {
-    let cli_subscriber = default_tracing();
+    let tracing_guard = tracing::subscriber::set_default(default_tracing());
+    let cli = Cli::parse();
+    update_checker::check_for_update().await;
+    let runtime = cli::runtime::init(&Upstream::default(), None);
+    let config_reader = ConfigReader::init(runtime.clone());
+    match cli.command {
+        Command::Start { file_paths } => {
+            let config_module = config_reader.read_all(&file_paths).await?;
+            tracing::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
+            let server = Server::new(config_module);
+            drop(tracing_guard);
+            server.fork_start().await?;
+            Ok(())
+        }
+        Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
+            let config_module = (config_reader.read_all(&file_paths)).await?;
+            let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
-    tracing::subscriber::with_default(cli_subscriber, || async {
-        let cli = Cli::parse();
-        update_checker::check_for_update().await;
-        let runtime = cli::runtime::init(&Upstream::default(), None);
-        let config_reader = ConfigReader::init(runtime.clone());
-        match cli.command {
-            Command::Start { file_paths } => {
-                let config_module = config_reader.read_all(&file_paths).await?;
-                tracing::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
-                let server = Server::new(config_module);
-                server.fork_start().await?;
-                Ok(())
-            }
-            Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
-                let config_module = (config_reader.read_all(&file_paths)).await?;
-                let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
-
-                match blueprint {
-                    Ok(blueprint) => {
-                        tracing::info!("{}", "Config successfully validated".to_string());
-                        display_config(&config_module, n_plus_one_queries);
-                        if schema {
-                            display_schema(&blueprint);
-                        }
-
-                        let ops: Vec<OperationQuery> =
-                            futures_util::future::join_all(operations.iter().map(|op| async {
-                                runtime
-                                    .file
-                                    .read(op)
-                                    .await
-                                    .map(|query| OperationQuery::new(query, op.clone()))
-                            }))
-                            .await
-                            .into_iter()
-                            .collect::<Result<Vec<_>>>()?;
-
-                        validate_operations(&blueprint, ops)
-                            .await
-                            .to_result()
-                            .map_err(|e| {
-                                CLIError::from(e)
-                                    .message("Invalid Operation".to_string())
-                                    .into()
-                            })
+            match blueprint {
+                Ok(blueprint) => {
+                    tracing::info!("{}", "Config successfully validated".to_string());
+                    display_config(&config_module, n_plus_one_queries);
+                    if schema {
+                        display_schema(&blueprint);
                     }
-                    Err(e) => Err(e.into()),
+
+                    let ops: Vec<OperationQuery> =
+                        futures_util::future::join_all(operations.iter().map(|op| async {
+                            runtime
+                                .file
+                                .read(op)
+                                .await
+                                .map(|query| OperationQuery::new(query, op.clone()))
+                        }))
+                        .await
+                        .into_iter()
+                        .collect::<Result<Vec<_>>>()?;
+
+                    validate_operations(&blueprint, ops)
+                        .await
+                        .to_result()
+                        .map_err(|e| {
+                            CLIError::from(e)
+                                .message("Invalid Operation".to_string())
+                                .into()
+                        })
                 }
-            }
-            Command::Init { folder_path } => init(&folder_path).await,
-            Command::Compose { file_paths, format } => {
-                let config = (config_reader.read_all(&file_paths).await)?;
-                Fmt::display(format.encode(&config)?);
-                Ok(())
+                Err(e) => Err(e.into()),
             }
         }
-    })
-    .await
+        Command::Init { folder_path } => init(&folder_path).await,
+        Command::Compose { file_paths, format } => {
+            let config = (config_reader.read_all(&file_paths).await)?;
+            Fmt::display(format.encode(&config)?);
+            Ok(())
+        }
+    }
 }
 
 pub async fn init(folder_path: &str) -> Result<()> {
