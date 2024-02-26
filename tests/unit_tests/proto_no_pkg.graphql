@@ -1,0 +1,17 @@
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://localhost:50051")
+  @link(id: "news", src: "./news.proto", type: Protobuf) {
+  query: Query
+}
+
+type Query {
+  news: News! @grpc(method: "news.NewsService.GetAllNews")
+}
+
+type News {
+  id: Int
+  title: String
+  body: String
+  postImage: String
+}

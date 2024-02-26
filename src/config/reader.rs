@@ -300,6 +300,17 @@ mod test_proto_config {
     }
 
     #[tokio::test]
+    async fn test_proto_no_pkg() -> Result<()> {
+        let runtime = crate::runtime::test::init(None);
+        let reader = ConfigReader::init(runtime);
+        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        proto_no_pkg.push("tests/unit_tests/proto_no_pkg.graphql");
+        let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
+        assert!(config_module.is_err());
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_nested_imports() -> Result<()> {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut test_dir = root_dir.join(file!());
