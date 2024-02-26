@@ -176,6 +176,11 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
 
 pub fn init_opentelemetry(config: Opentelemetry, runtime: &TargetRuntime) -> anyhow::Result<()> {
     if let Some(config) = &config.0 {
+        global::set_error_handler(|_| {
+            // TODO: do something with the error
+            // by default it's printed to stderr
+        })?;
+
         let trace_layer = set_trace_provider(&config.export)?;
         let log_layer = set_logger_provider(&config.export)?;
         set_meter_provider(&config.export)?;
