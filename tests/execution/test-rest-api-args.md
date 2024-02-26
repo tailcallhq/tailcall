@@ -5,6 +5,7 @@
 ```graphql
 schema {
   query: Query
+  mutation: Mutation
 }
 
 type Address {
@@ -15,6 +16,10 @@ type Query {
   user(id: Int!, displayName: Boolean!): User
     @http(path: "/user/{{args.id}}/{{args.displayName}}", baseURL: "http://api.com")
   userByName(name: String!): User @http(path: "/userByName/{{args.name}}", baseURL: "http://api.com")
+}
+
+type Mutation {
+  createUser(name: String!): User @http(path: "/createUser/{{args.name}}", baseURL: "http://api.com")
 }
 
 type User {
@@ -44,6 +49,13 @@ query GetUserByName($name: String!) @rest(path: "/userByName/$name") {
     address {
       street
     }
+  }
+}
+
+mutation CreateUser($name: String!) @rest(path: "/createUser/$name") {
+  createUser(name: $name) {
+    id
+    name
   }
 }
 ```
@@ -83,6 +95,17 @@ query GetUserByName($name: String!) @rest(path: "/userByName/$name") {
         street: Kulas Light
       id: 1
       name: foo
+- request:
+    method: GET
+    url: http://api.com/createUser/bar
+    body: null
+  response:
+    status: 200
+    body:
+      address:
+        street: Kulas Light
+      id: 2
+      name: bar
 ```
 
 #### assert:

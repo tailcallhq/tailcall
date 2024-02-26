@@ -6,6 +6,10 @@ type Address {
   street: String
 }
 
+type Mutation {
+  createUser(name: String!): User
+}
+
 type Query {
   user(displayName: Boolean!, id: Int!): User
   userByName(name: String!): User
@@ -19,4 +23,5 @@ type User {
 
 schema {
   query: Query
+  mutation: Mutation
 }

@@ -4,10 +4,15 @@ expression: merged
 ---
 schema @server @upstream {
   query: Query
+  mutation: Mutation
 }
 
 type Address {
   street: String
+}
+
+type Mutation {
+  createUser(name: String!): User @http(baseURL: "http://api.com", path: "/createUser/{{args.name}}")
 }
 
 type Query {

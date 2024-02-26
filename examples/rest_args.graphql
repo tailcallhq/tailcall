@@ -11,3 +11,11 @@ query GetUser($input: Int!) @rest(path: "/users/$input") {
     username
   }
 }
+
+mutation CreateUser($name: String!, $email: String!) @rest(path: "/createUser/$name/$email") {
+  createUser(name: $name, email: $email) {
+    id
+    name
+    email
+  }
+}
