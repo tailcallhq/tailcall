@@ -139,12 +139,10 @@ impl TryFrom<String> for GrpcMethod {
                 };
                 Ok(method)
             }
-            _ => {
-                Err(ValidationError::new(format!(
-                    "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
-                    value
-                )))
-            }
+            _ => Err(ValidationError::new(format!(
+                "Invalid method format: {}. Expected format is <package>.<service>.<method>",
+                value
+            ))),
         }
     }
 }
@@ -258,7 +256,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            ValidationError::new("Invalid method format: package_name.ServiceName. Expected format is <package/proto_id>.<service>.<method>".to_string())
+            ValidationError::new("Invalid method format: package_name.ServiceName. Expected format is <package>.<service>.<method>".to_string())
         );
     }
 }

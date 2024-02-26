@@ -119,7 +119,14 @@ impl ConfigReader {
                 LinkType::Protobuf => {
                     let parent_descriptor = self.read_proto(&source.path).await?;
 
-                    let id = Valid::from_option(parent_descriptor.package.clone(), format!("Expected package name for proto file: {:?} with link id: {:?}, but found none", parent_descriptor.name, config_link.id)).to_result()?;
+                    let id = Valid::from_option(
+                        parent_descriptor.package.clone(),
+                        format!(
+                            "Package name is not defined for proto file: {:?} with link id: {:?}",
+                            parent_descriptor.name, config_link.id
+                        ),
+                    )
+                    .to_result()?;
 
                     let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
