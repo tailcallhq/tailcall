@@ -227,9 +227,12 @@ mod tests {
         let reader = ConfigReader::init(runtime);
 
         let id = name.replace(".proto", "");
+
+        let name = format!("proto/{name}");
+
         let mut config = Config::default().links(vec![Link {
             id: Some(id.clone()),
-            src: get_test_file(name)
+            src: get_test_file(&name)
                 .to_str()
                 .context("Failed to parse or load proto file")?
                 .to_string(),

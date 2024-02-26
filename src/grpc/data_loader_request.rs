@@ -72,6 +72,7 @@ mod tests {
 
         test_file.pop();
         test_file.push("tests");
+        test_file.push("proto");
         test_file.push("greetings.proto");
 
         let id = "greetings".to_string();
