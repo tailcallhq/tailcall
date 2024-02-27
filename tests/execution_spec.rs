@@ -975,7 +975,10 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryOpentelemetry)
             if assertion.assert_metrics {
                 let snapshot_name = format!("{}_assert_metrics_{}", spec.safe_name, i);
                 tracing::info!("\tassert #{}... (metrics snapshot)", i + 1);
-                insta::assert_json_snapshot!(snapshot_name, opentelemetry.get_metrics().unwrap());
+                insta::assert_json_snapshot!(
+                    snapshot_name,
+                    opentelemetry.get_metrics().await.unwrap()
+                );
             }
 
             if will_insta_panic {

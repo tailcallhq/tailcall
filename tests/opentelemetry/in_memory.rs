@@ -8,9 +8,9 @@ use opentelemetry_sdk::testing::trace::InMemorySpanExporter;
 use serde::{Deserialize, Serialize};
 
 pub struct InMemoryOpentelemetry {
-    pub trace_exporter: InMemorySpanExporter,
-    pub metrics_reader: PeriodicReader,
-    pub metrics_exporter: InMemoryMetricsExporter,
+    pub(super) trace_exporter: InMemorySpanExporter,
+    pub(super) metrics_reader: PeriodicReader,
+    pub(super) metrics_exporter: InMemoryMetricsExporter,
 }
 
 impl InMemoryOpentelemetry {
@@ -25,11 +25,25 @@ impl InMemoryOpentelemetry {
         Ok(spans.into_iter().map(TestSpan::from).collect())
     }
 
-    pub fn get_metrics(&self) -> Result<Vec<TestMetrics>> {
-        self.metrics_reader.force_flush()?;
+    pub async fn get_metrics(&self) -> Result<Vec<TestMetrics>> {
+        let metrics_reader = self.metrics_reader.clone();
+        // call force_flush from blocking task to prevent deadlocking
+        // see https://github.com/open-telemetry/opentelemetry-rust/issues/1395
+        tokio::task::spawn_blocking(move || metrics_reader.force_flush()).await??;
+
         let metrics = self.metrics_exporter.get_finished_metrics()?;
 
-        Ok(metrics.into_iter().map(TestMetrics::from).collect())
+        let mut metrics: Vec<_> = metrics
+            .into_iter()
+            .map(TestMetrics::from)
+            .filter(|v| !v.0.is_empty())
+            .collect();
+
+        // dedup the same data from metrics vec since some of them just generated on start
+        // or during execution and they do not relate to actual test running
+        metrics.dedup();
+
+        Ok(metrics)
     }
 }
 
@@ -44,7 +58,7 @@ impl From<SpanData> for TestSpan {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TestMetricsEntry {
     name: String,
 }
@@ -55,7 +69,7 @@ impl From<Metric> for TestMetricsEntry {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TestScopedMetrics {
     name: String,
     entries: Vec<TestMetricsEntry>,
@@ -74,7 +88,7 @@ impl From<ScopeMetrics> for TestScopedMetrics {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TestMetrics(Vec<TestScopedMetrics>);
 
 impl From<ResourceMetrics> for TestMetrics {

@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: opentelemetry.get_metrics().unwrap()
+expression: opentelemetry.get_metrics().await.unwrap()
 ---
 [
   [
