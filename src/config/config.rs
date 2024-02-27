@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::opentelemetry::Opentelemetry;
+use super::trace::Trace;
 use super::{Expr, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
@@ -63,7 +63,7 @@ pub struct Config {
     pub links: Vec<Link>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// Enable [opentelemetry](https://opentelemetry.io) support
-    pub opentelemetry: Opentelemetry,
+    pub opentelemetry: Trace,
 }
 impl Config {
     pub fn port(&self) -> u16 {

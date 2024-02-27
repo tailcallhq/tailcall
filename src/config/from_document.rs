@@ -8,7 +8,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::opentelemetry::Opentelemetry;
+use super::trace::Trace;
 use super::JS;
 use crate::config::{
     self, Cache, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
@@ -117,10 +117,10 @@ fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
     process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
 }
 
-fn opentelemetry(schema_definition: &SchemaDefinition) -> Valid<Opentelemetry, String> {
+fn opentelemetry(schema_definition: &SchemaDefinition) -> Valid<Trace, String> {
     process_schema_directives(
         schema_definition,
-        config::opentelemetry::Opentelemetry::directive_name().as_str(),
+        config::trace::Trace::directive_name().as_str(),
     )
 }
 

@@ -28,24 +28,24 @@ pub struct OtlpExporter {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum OpentelemetryExporter {
+pub enum TraceExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct Opentelemetry {
-    pub export: Option<OpentelemetryExporter>,
+pub struct Trace {
+    pub export: Option<TraceExporter>,
 }
 
-impl Opentelemetry {
+impl Trace {
     pub fn merge_right(&self, other: Self) -> Self {
         Self { export: other.export.or(self.export.clone()) }
     }
 
     pub fn render_mustache(&mut self, runtime_ctx: &TargetRuntimeContext) -> Result<()> {
-        if let Some(OpentelemetryExporter::Otlp(otlp)) = &mut self.export {
+        if let Some(TraceExporter::Otlp(otlp)) = &mut self.export {
             let url_tmpl = Mustache::parse(&otlp.url)?;
             otlp.url = url_tmpl.render(runtime_ctx);
 

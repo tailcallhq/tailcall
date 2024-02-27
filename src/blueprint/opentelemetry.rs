@@ -49,10 +49,10 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Opentelemetry, String
     TryFoldConfig::<Opentelemetry>::new(|config, up| {
         if let Some(export) = config.opentelemetry.export.as_ref() {
             let export = match export {
-                config::OpentelemetryExporter::Stdout(config) => {
+                config::TraceExporter::Stdout(config) => {
                     Valid::succeed(OpentelemetryExporter::Stdout(config.clone()))
                 }
-                config::OpentelemetryExporter::Otlp(config) => to_url(&config.url)
+                config::TraceExporter::Otlp(config) => to_url(&config.url)
                     .zip(to_headers(&config.headers))
                     .map(|(url, headers)| {
                         OpentelemetryExporter::Otlp(OtlpExporter { url, headers })
@@ -62,7 +62,7 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Opentelemetry, String
 
             export
                 .map(|export| Opentelemetry(Some(OpentelemetryInner { export })))
-                .trace(config::Opentelemetry::trace_name().as_str())
+                .trace(config::Trace::trace_name().as_str())
         } else {
             Valid::succeed(up)
         }

@@ -23,7 +23,7 @@ static DIRECTIVE_ALLOW_LIST: &[(&str, Entity, bool)] = &[
     ("cache", Entity::FieldDefinition, false),
     ("expr", Entity::FieldDefinition, false),
     ("js", Entity::FieldDefinition, false),
-    ("opentelemetry", Entity::Schema, false),
+    ("trace", Entity::Schema, false),
 ];
 static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
@@ -44,9 +44,9 @@ static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "JS",
     "Modify",
-    "OpenTelemetry",
-    "OpenTelemetryInner",
-    "OpenTelemetryExporter",
+    "Trace",
+    "TraceInner",
+    "TraceExporter",
     "StdoutExporter",
     "OtlpExporter",
 ];

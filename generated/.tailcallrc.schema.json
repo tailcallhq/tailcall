@@ -17,7 +17,7 @@
       "description": "Enable [opentelemetry](https://opentelemetry.io) support",
       "allOf": [
         {
-          "$ref": "#/definitions/Opentelemetry"
+          "$ref": "#/definitions/Trace"
         }
       ]
     },
@@ -1311,49 +1311,6 @@
     "Omit": {
       "type": "object"
     },
-    "Opentelemetry": {
-      "type": "object",
-      "properties": {
-        "export": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/OpentelemetryExporter"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      }
-    },
-    "OpentelemetryExporter": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "stdout"
-          ],
-          "properties": {
-            "stdout": {
-              "$ref": "#/definitions/StdoutExporter"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "otlp"
-          ],
-          "properties": {
-            "otlp": {
-              "$ref": "#/definitions/OtlpExporter"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "OtlpExporter": {
       "description": "Output the opentelemetry data to otlp collector",
       "type": "object",
@@ -1565,6 +1522,49 @@
           "type": "boolean"
         }
       }
+    },
+    "Trace": {
+      "type": "object",
+      "properties": {
+        "export": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TraceExporter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TraceExporter": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "stdout"
+          ],
+          "properties": {
+            "stdout": {
+              "$ref": "#/definitions/StdoutExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "otlp"
+          ],
+          "properties": {
+            "otlp": {
+              "$ref": "#/definitions/OtlpExporter"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",

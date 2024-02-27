@@ -206,10 +206,6 @@ directive @modify(
   omit: Boolean!
 ) on FIELD_DEFINITION
 
-directive @opentelemetry(
-  export: OpentelemetryExporter
-) on SCHEMA
-
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
 set of server configurations. It dictates how the server behaves and helps tune tailcall 
@@ -298,6 +294,10 @@ directive @server(
   `workers` sets the number of worker threads. @default the number of system cores.
   """
   workers: Int
+) on SCHEMA
+
+directive @trace(
+  export: TraceExporter
 ) on SCHEMA
 
 """
@@ -631,13 +631,6 @@ input Modify {
   name: String
   omit: Boolean!
 }
-input OpenTelemetry {
-  export: OpentelemetryExporter
-}
-input OpenTelemetryExporter {
-  stdout: StdoutExporter
-  otlp: OtlpExporter
-}
 """
 Output the opentelemetry data to otlp collector
 """
@@ -659,6 +652,13 @@ input StdoutExporter {
   Output to stdout in pretty human-readable format
   """
   pretty: Boolean!
+}
+input Trace {
+  export: TraceExporter
+}
+input TraceExporter {
+  stdout: StdoutExporter
+  otlp: OtlpExporter
 }
 input Schema {
   Obj: JSON
