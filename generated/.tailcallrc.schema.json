@@ -257,7 +257,7 @@
           "additionalProperties": false
         },
         {
-          "description": "Reuses a resolver pre-defined on type `Query`",
+          "description": "Reuses a resolver pre-defined on `Query` or `Mutation`",
           "type": "object",
           "required": [
             "call"
