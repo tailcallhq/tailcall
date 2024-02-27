@@ -39,7 +39,7 @@ pub enum ExprBody {
     #[serde(rename = "graphQL")]
     GraphQL(GraphQL),
 
-    /// Reuses a resolver pre-defined on type `Query`
+    /// Reuses a resolver pre-defined on `Query` or `Mutation`
     #[serde(rename = "call")]
     Call(Call),
 
