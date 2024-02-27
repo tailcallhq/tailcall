@@ -39,19 +39,22 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-                let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
-                    let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-                    let field_name = &field.name;
-                    match &field.resolver {
-                        None => {
-                            let ctx = EvaluationContext::new(req_ctx, &ctx);
-                            FieldFuture::from_value(
-                                ctx.path_value(&[field_name]).map(|a| a.to_owned()),
-                            )
-                        }
-                        Some(expr) => {
-                            let expr = expr.to_owned();
-                            FieldFuture::new(
+                let mut dyn_schema_field = dynamic::Field::new(
+                    field_name,
+                    type_ref.clone(),
+                    move |ctx| {
+                        let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+                        let field_name = &field.name;
+                        match &field.resolver {
+                            None => {
+                                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                FieldFuture::from_value(
+                                    ctx.path_value(&[field_name]).map(|a| a.to_owned()),
+                                )
+                            }
+                            Some(expr) => {
+                                let expr = expr.to_owned();
+                                FieldFuture::new(
                                 async move {
                                     let ctx = EvaluationContext::new(req_ctx, &ctx);
 
@@ -64,11 +67,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                     };
                                     Ok(Some(p))
                                 }
-                                .instrument(tracing::info_span!("field::resolver")),
+                                .instrument(tracing::info_span!("field::resolver", name = field_name, graphql.returnType = %type_ref)),
                             )
+                            }
                         }
-                    }
-                });
+                    },
+                );
                 if let Some(description) = &field.description {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }

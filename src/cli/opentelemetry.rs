@@ -17,7 +17,7 @@ use opentelemetry_sdk::trace::{Tracer, TracerProvider};
 use opentelemetry_sdk::{runtime, Resource};
 use serde::Serialize;
 use tonic::metadata::MetadataMap;
-use tracing::Subscriber;
+use tracing::{level_filters::LevelFilter, Subscriber};
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::filter::dynamic_filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
@@ -186,7 +186,7 @@ pub fn init_opentelemetry(config: Opentelemetry, runtime: &TargetRuntime) -> any
         set_meter_provider(&config.export)?;
 
         let subscriber = tracing_subscriber::registry()
-            .with(trace_layer)
+            .with(trace_layer.with_filter(LevelFilter::INFO))
             .with(
                 log_layer.with_filter(dynamic_filter_fn(|_metatada, context| {
                     // ignore logs that are generated inside tracing::Span since they will be logged

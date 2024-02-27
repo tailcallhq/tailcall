@@ -14,7 +14,7 @@ use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum Expression {
     Context(Context),
     Literal(DynamicValue),
@@ -82,7 +82,7 @@ impl Expression {
 }
 
 impl Eval for Expression {
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, fields(name = %self))]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: &'a EvaluationContext<'a, Ctx>,

@@ -97,6 +97,7 @@ deno_core = { version = "0.265.0", optional = true, features = [
    "v8_use_custom_libcxx",
    "snapshot_data_json",
 ], default-features = false }
+strum_macros = "0.26.1"
 # TODO: disable some levels with features?
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
