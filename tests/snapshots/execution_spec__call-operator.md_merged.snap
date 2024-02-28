@@ -21,7 +21,7 @@ type Post {
   body: String
   id: Int
   news: NewsData! @call(query: "news", args: {})
-  newsWithPortArg: NewsData! @call(query: "news", args: {port: "50051"})
+  newsWithPortArg: NewsData! @call(query: "news", args: {port: 50051})
   title: String
   user: User @call(query: "user", args: {id: "{{value.userId}}"})
   user1: User @call(query: "user1", args: {})

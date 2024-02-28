@@ -608,7 +608,7 @@ pub struct Call {
     pub mutation: Option<String>,
 
     /// The arguments of the field on the `Query` type that you want to call. For instance `{id: "{{value.userId}}"}`.
-    pub args: HashMap<String, String>,
+    pub args: HashMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

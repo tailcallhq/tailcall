@@ -5,6 +5,7 @@ expression: client
 type Mutation {
   attachPostToFirstUser(postId: Int!): User
   attachPostToUser(postId: Int!, userId: Int!): User
+  insertMockedPost: Post
   insertPost(input: PostInput): Post
   insertPostToFirstUser(input: PostInputWithoutUserId): Post
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post

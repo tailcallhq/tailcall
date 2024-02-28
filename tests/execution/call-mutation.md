@@ -24,10 +24,12 @@ type Mutation {
   attachPostToUser(userId: Int!, postId: Int!): User
     @http(body: "{\"postId\":{{args.postId}}}", method: "PATCH", path: "/users/{{args.userId}}")
   attachPostToFirstUser(postId: Int!): User
-    @call(mutation: "attachPostToUser", args: {postId: "{{args.postId}}", userId: "1"})
+    @call(mutation: "attachPostToUser", args: {postId: "{{args.postId}}", userId: 1})
   insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+  insertMockedPost: Post
+    @call(mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}})
   insertPostToFirstUser(input: PostInputWithoutUserId): Post
-    @call(mutation: "insertPostToUser", args: {input: "{{args.input}}", userId: "1"})
+    @call(mutation: "insertPostToUser", args: {input: "{{args.input}}", userId: 1})
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
     @http(body: "{{args.input}}", method: "POST", path: "/users/{{args.userId}}/posts")
 }
@@ -132,4 +134,8 @@ type User {
   url: http://localhost:8080/graphql
   body:
     query: 'mutation { insertPostToFirstUser(input: { body: "post-body", title: "post-title" }) { body } }'
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: "mutation { insertMockedPost { body } }"
 ```

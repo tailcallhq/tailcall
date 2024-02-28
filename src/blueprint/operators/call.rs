@@ -1,5 +1,7 @@
 use std::collections::hash_map::Iter;
 
+use serde_json::Value;
+
 use crate::blueprint::*;
 use crate::config;
 use crate::config::{Field, GraphQLOperationType, KeyValues};
@@ -8,7 +10,7 @@ use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
 
-fn find_value<'a>(args: &'a Iter<'a, String, String>, key: &'a String) -> Option<&'a String> {
+fn find_value<'a>(args: &'a Iter<'a, String, Value>, key: &'a String) -> Option<&'a Value> {
     args.clone()
         .find_map(|(k, value)| if k == key { Some(value) } else { None })
 }
@@ -94,7 +96,7 @@ pub fn compile_call(
 }
 
 fn replace_key_values<'a>(
-    args: &'a Iter<'a, String, String>,
+    args: &'a Iter<'a, String, Value>,
 ) -> impl Fn(KeyValues) -> KeyValues + 'a {
     |key_values| {
         KeyValues(
@@ -106,7 +108,7 @@ fn replace_key_values<'a>(
     }
 }
 
-fn replace_string<'a>(args: &'a Iter<'a, String, String>) -> impl Fn(String) -> String + 'a {
+fn replace_string<'a>(args: &'a Iter<'a, String, Value>) -> impl Fn(String) -> String + 'a {
     |str| {
         let mustache = Mustache::parse(&str).unwrap();
 
@@ -129,7 +131,7 @@ fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
 fn get_field_and_field_name<'a>(
     call: &'a config::Call,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, Iter<'a, String, String>), String> {
+) -> Valid<(&'a Field, String, Iter<'a, String, Value>), String> {
     Valid::from_option(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),
@@ -151,7 +153,7 @@ fn get_field_and_field_name<'a>(
     })
 }
 
-fn replace_mustache_value(value: &Mustache, args: &Iter<'_, String, String>) -> Mustache {
+fn replace_mustache_value(value: &Mustache, args: &Iter<'_, String, Value>) -> Mustache {
     value
         .get_segments()
         .iter()
@@ -160,7 +162,7 @@ fn replace_mustache_value(value: &Mustache, args: &Iter<'_, String, String>) -> 
             Segment::Expression(expression) => {
                 if expression[0] == "args" {
                     let value = find_value(args, &expression[1]).unwrap();
-                    let item = Mustache::parse(value).unwrap();
+                    let item = Mustache::parse(value.to_string().as_str()).unwrap();
 
                     let expression = item.get_segments().first().unwrap().to_owned().to_owned();
 

@@ -106,7 +106,7 @@ type Post {
   userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
   userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
   news: NewsData! @call(query: "news", args: {})
-  newsWithPortArg: NewsData! @call(query: "news", args: {port: "50051"})
+  newsWithPortArg: NewsData! @call(query: "news", args: {port: 50051})
 }
 ```
 
