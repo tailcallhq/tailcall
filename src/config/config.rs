@@ -430,6 +430,7 @@ impl Field {
             || self.graphql.is_some()
             || self.grpc.is_some()
             || self.expr.is_some()
+            || self.call.is_some()
     }
     pub fn resolvable_directives(&self) -> Vec<String> {
         let mut directives = Vec::new();
