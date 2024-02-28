@@ -52,11 +52,6 @@ impl TryFrom<&reqwest::Request> for JsRequest {
             .collect::<BTreeMap<String, String>>();
 
         // NOTE: We don't pass body to worker for performance reasons
-        // let body = req.body().map(|body| {
-        //     let bytes = body.as_bytes().unwrap_or_default();
-        //     Bytes::from_iter(bytes.to_vec())
-        // });
-
         Ok(JsRequest { url, method, headers, body: None })
     }
 }

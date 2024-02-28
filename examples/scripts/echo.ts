@@ -1,13 +1,29 @@
-import {Event, Command} from "./tailcall"
+interface HttpRequest {
+  url: string
+  method: string
+  headers: {[key: string]: string}
+}
 
-function onRequest(event: Event): Command {
+interface CommandRequest extends HttpRequest {
+  body?: string
+}
+
+interface HttpResponse {
+  status: number
+  headers: {[key: string]: string}
+  body?: string
+}
+
+type Command = {request: CommandRequest} | {response: HttpResponse}
+
+function onRequest(request: HttpRequest): Command {
   return {
     response: {
       status: 200,
       headers: {
         "Content-Type": "text/plain",
       },
-      body: new TextEncoder().encode(JSON.stringify([{title: "Hello, World!"}])),
+      body: JSON.stringify([{title: "Hello, World!"}]),
     },
   }
 }

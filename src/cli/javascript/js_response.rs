@@ -14,7 +14,7 @@ pub struct JsResponse {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub body: Option<Bytes>,
+    pub body: Option<String>,
 }
 
 impl TryFrom<JsResponse> for Response<Bytes> {
@@ -24,7 +24,7 @@ impl TryFrom<JsResponse> for Response<Bytes> {
         let status = reqwest::StatusCode::from_u16(res.status)?;
         let headers = create_header_map(res.headers)?;
         let body = res.body.unwrap_or_default();
-        Ok(Response { status, headers, body })
+        Ok(Response { status, headers, body: Bytes::from(body) })
     }
 }
 
@@ -40,7 +40,8 @@ impl TryFrom<Response<Bytes>> for JsResponse {
             headers.insert(key, value);
         }
 
-        let body = Some(res.body);
+        // NOTE: Response bodies aren't passed into JS
+        let body = None;
         Ok(JsResponse { status, headers, body })
     }
 }
@@ -77,7 +78,7 @@ mod test {
             js_response.headers.get("content-type").unwrap(),
             "application/json"
         );
-        assert_eq!(js_response.body, Some("Hello, World!".as_bytes().into()));
+        assert_eq!(js_response.body, Some("Hello, World!".into()));
     }
 
     #[test]
@@ -114,7 +115,7 @@ mod test {
         let mut headers = BTreeMap::new();
         headers.insert("x-unusual-header".to_string(), "🚀".to_string());
 
-        let js_response = JsResponse { status: 200, headers, body: Some(Bytes::from(body)) };
+        let js_response = JsResponse { status: 200, headers, body: Some(body.into()) };
 
         let response: Result<crate::http::Response<Bytes>, _> = js_response.try_into();
         assert!(response.is_ok());
