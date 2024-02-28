@@ -1,5 +1,3 @@
-
-
 use colored::Colorize;
 use update_informer::{registry, Check};
 use which::which;
@@ -39,6 +37,11 @@ fn get_installation_method() -> InstallationMethod {
 
 pub async fn check_for_update() {
     tokio::task::spawn_blocking(|| {
+        if VERSION.eq("0.1.0-dev") {
+            // skip validation if it's not a release
+            return;
+        }
+
         let name: &str = "tailcallhq/tailcall";
 
         let informer = update_informer::new(registry::GitHub, name, VERSION);
