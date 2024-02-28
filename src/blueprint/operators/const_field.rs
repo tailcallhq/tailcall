@@ -25,7 +25,7 @@ fn validate_data_with_schema(
 pub struct CompileConst<'a> {
     pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
-    pub value: &'a DynamicValue,
+    pub value: &'a serde_json::Value,
     pub validate: bool,
 }
 
@@ -35,23 +35,28 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
     let value = inputs.value;
     let validate = inputs.validate;
 
-    let data = value;
-    if !value.is_const() {
-        // TODO: Add validation for const with Mustache here
-        Valid::succeed(Literal(data.to_owned()))
-    } else {
-        match data.try_into() {
-            Ok(gql) => {
-                let validation = if validate {
-                    validate_data_with_schema(config_module, field, gql)
-                } else {
-                    Valid::succeed(())
-                };
-                validation.map(|_| Literal(data.to_owned()))
+    Valid::from(
+        DynamicValue::try_from(&value.clone()).map_err(|e| ValidationError::new(e.to_string())),
+    )
+    .and_then(|value| {
+        if !value.is_const() {
+            // TODO: Add validation for const with Mustache here
+            Valid::succeed(Literal(value.to_owned()))
+        } else {
+            let data = &value;
+            match data.try_into() {
+                Ok(gql) => {
+                    let validation = if validate {
+                        validate_data_with_schema(config_module, field, gql)
+                    } else {
+                        Valid::succeed(())
+                    };
+                    validation.map(|_| Literal(value.to_owned()))
+                }
+                Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
             }
-            Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
         }
-    }
+    })
 }
 
 pub fn update_const_field<'a>(
@@ -63,14 +68,13 @@ pub fn update_const_field<'a>(
                 return Valid::succeed(b_field);
             };
 
-            Valid::from(
-                DynamicValue::try_from(&const_field.data.clone())
-                    .map_err(|e| ValidationError::new(e.to_string())),
-            )
-            .and_then(|value| {
-                compile_const(CompileConst { config_module, field, value: &value, validate: true })
-                    .map(|resolver| b_field.resolver(Some(resolver)))
+            compile_const(CompileConst {
+                config_module,
+                field,
+                value: &const_field.data,
+                validate: true,
             })
+            .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
 }

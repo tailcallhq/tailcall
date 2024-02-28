@@ -3,7 +3,7 @@ use crate::config;
 use crate::config::{ExprBody, Field, If};
 use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::valid::{Valid, Validator};
 
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
@@ -71,12 +71,9 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
         ExprBody::Call(call) => compile_call(field, config_module, &call, operation_type),
 
         // Safe Expr
-        ExprBody::Const(value) => Valid::from(
-            DynamicValue::try_from(&value).map_err(|e| ValidationError::new(e.to_string())),
-        )
-        .and_then(|value| {
+        ExprBody::Const(value) => {
             compile_const(CompileConst { config_module, field, value: &value, validate: false })
-        }),
+        }
 
         // Logic
         ExprBody::If(If { ref cond, on_true: ref then, on_false: ref els }) => {
