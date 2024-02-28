@@ -161,9 +161,7 @@
         "args": {
           "description": "The arguments of the field on the `Query` type that you want to call. For instance `{id: \"{{value.userId}}\"}`.",
           "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
+          "additionalProperties": true
         },
         "mutation": {
           "description": "The name of the field on the `Mutation` type that you want to call. For instance `createUser`.",
