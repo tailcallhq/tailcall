@@ -50,11 +50,12 @@ impl TryFrom<Response<Bytes>> for JsResponse {
 mod test {
     use std::collections::BTreeMap;
 
-    use super::JsResponse;
     use anyhow::Result;
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
     use reqwest::header::HeaderMap;
+
+    use super::JsResponse;
 
     fn create_test_response() -> Result<JsResponse> {
         let mut headers = HeaderMap::new();
