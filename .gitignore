@@ -21,4 +21,3 @@ cloudflare/pkg
 .wrangler/
 
 /tests/snapshots/*.new
-/examples/scripts/*.js
