@@ -38,8 +38,8 @@ impl Expression {
                         Expression::EqualTo(expr1.modify_box(modifier), expr2.modify_box(modifier))
                     }
                     Expression::IO(_) => expr,
-                    Expression::Cache(Cache { expr, .. }) => {
-                        Expression::IO(expr).modify_inner(modifier)
+                    Expression::Cache(Cache { expr, max_age }) => {
+                        Expression::Cache(Cache { expr: expr.modify_box(modifier), max_age })
                     }
                     Expression::Input(expr, path) => {
                         Expression::Input(expr.modify_box(modifier), path)
