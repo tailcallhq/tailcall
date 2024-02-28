@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use hyper::body::Bytes;
+use nom::AsBytes;
 use serde::{Deserialize, Serialize};
 
 use super::create_header_map;
@@ -40,8 +41,7 @@ impl TryFrom<Response<Bytes>> for JsResponse {
             headers.insert(key, value);
         }
 
-        // NOTE: Response bodies aren't passed into JS
-        let body = None;
+        let body = Some(std::str::from_utf8(res.body.as_bytes())?.to_owned());
         Ok(JsResponse { status, headers, body })
     }
 }
@@ -50,11 +50,11 @@ impl TryFrom<Response<Bytes>> for JsResponse {
 mod test {
     use std::collections::BTreeMap;
 
+    use super::JsResponse;
     use anyhow::Result;
     use hyper::body::Bytes;
+    use pretty_assertions::assert_eq;
     use reqwest::header::HeaderMap;
-
-    use super::JsResponse;
 
     fn create_test_response() -> Result<JsResponse> {
         let mut headers = HeaderMap::new();
