@@ -83,7 +83,7 @@ lazy_static = "1.4.0"
 which = { version = "6.0.0", optional = true }
 async-recursion = "1.0.5"
 tempfile = "3.10.1"
-deno_core = { version = "0.265.0", optional = true, features = ["v8_use_custom_libcxx", "snapshot_data_json"], default-features = false }
+deno_core = { version = "0.266.0", optional = true, features = ["v8_use_custom_libcxx", "snapshot_data_json"], default-features = false }
 
 [dev-dependencies]
 criterion = "0.5.1"
