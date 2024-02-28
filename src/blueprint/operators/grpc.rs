@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
@@ -118,32 +120,37 @@ pub struct CompileGrpc<'a> {
     pub grpc: &'a Grpc,
     pub validate_with_schema: bool,
 }
-struct GrpcMethod {
-    pub id: String,
+pub struct GrpcMethod {
+    pub package: String,
     pub service: String,
     pub name: String,
+}
+
+impl Display for GrpcMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.package, self.service, self.name)
+    }
 }
 
 impl TryFrom<String> for GrpcMethod {
     type Error = ValidationError<String>;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let method: Vec<&str> = value.rsplitn(3, '.').collect();
-
-        match &method[..] {
-            &[name, service, id] => {
-                let method = GrpcMethod {
-                    id: id.to_owned(),
-                    service: format!("{id}.{service}"),
-                    name: name.to_owned(),
-                };
-                Ok(method)
-            }
-            _ => Err(ValidationError::new(format!(
+        let parts: Vec<&str> = value.split('.').collect();
+        if parts.len() < 3 {
+            return Err(ValidationError::new(format!(
                 "Invalid method format: {}. Expected format is <package>.<service>.<method>",
                 value
-            ))),
+            )));
         }
+
+        let package = parts[..parts.len() - 2]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let service = parts[parts.len() - 2].to_string();
+        let name = parts[parts.len() - 1].to_string();
+        Ok(GrpcMethod { package, service, name })
     }
 }
 
@@ -157,8 +164,8 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     Valid::from(GrpcMethod::try_from(grpc.method.clone()))
         .and_then(|method| {
             Valid::from_option(
-                config_module.extensions.get_file_descriptor(&method.id),
-                format!("File descriptor not found for proto id: {}", method.id),
+                config_module.extensions.get_file_descriptor(&method),
+                format!("File descriptor not found for method: {}", grpc.method),
             )
             .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
             .fuse(to_url(grpc, &method, config_module))
@@ -240,11 +247,11 @@ mod tests {
         let method1 =
             GrpcMethod::try_from("package.name.ServiceName.MethodName".to_string()).unwrap();
 
-        assert_eq!(method.id, "package_name");
+        assert_eq!(method.package, "package_name");
         assert_eq!(method.service, "package_name.ServiceName");
         assert_eq!(method.name, "MethodName");
 
-        assert_eq!(method1.id, "package.name");
+        assert_eq!(method1.package, "package.name");
         assert_eq!(method1.service, "package.name.ServiceName");
         assert_eq!(method1.name, "MethodName");
     }

@@ -202,6 +202,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+    use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
 
@@ -238,10 +239,9 @@ mod tests {
                 .to_string(),
             type_of: LinkType::Protobuf,
         }]);
-        let grpc = Grpc {
-            method: format!("{}.{}.{}", id, "a", "b"),
-            ..Default::default()
-        };
+
+        let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
+        let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
@@ -250,7 +250,7 @@ mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor(id.as_str())
+            .get_file_descriptor(&method)
             .unwrap()
             .to_owned())
     }
