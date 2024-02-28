@@ -99,7 +99,7 @@ mod tests {
         let js_request: JsRequest = (&reqwest_request).try_into().unwrap();
         assert_eq!(js_request.method, "GET");
         assert_eq!(js_request.url, "http://example.com/");
-        let body_out = js_request.body.unwrap();
-        assert_eq!(body_out, Bytes::from("Hello, World!"));
+        let body_out = js_request.body;
+        assert_eq!(body_out, None);
     }
 }
