@@ -3,14 +3,14 @@ pub use std::sync::Arc;
 
 use hyper::header::{HeaderName, HeaderValue};
 
-mod request_filter;
 mod js_request;
 mod js_response;
+mod request_filter;
 mod runtime;
 
-pub use request_filter::HttpFilter;
 pub use js_request::JsRequest;
 pub use js_response::JsResponse;
+pub use request_filter::HttpFilter;
 pub use runtime::Runtime;
 
 use crate::{blueprint, HttpIO};
