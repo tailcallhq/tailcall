@@ -1,0 +1,22 @@
+schema @server(graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type Query {
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  firstUser: User @call(query: "user", args: {id: "1"})
+  postFromUser(userId: Int!): [Post] @http(path: "/posts?userId={{args.userId}}")
+}
+
+type User {
+  id: Int
+  name: String
+  posts: [Post] @call(query: "postFromUser", args: {userId: "{{value.id}}"})
+}
