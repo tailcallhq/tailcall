@@ -80,8 +80,15 @@ pub fn compile_call(
                 grpc: &grpc,
                 validate_with_schema: true,
             })
+        } else if let Some(const_field) = _field.const_field.clone() {
+            compile_const(CompileConst {
+                config_module,
+                field: _field,
+                value: &const_field.data,
+                validate: true,
+            })
         } else {
-            return Valid::fail(format!("{} field has no resolver", field_name));
+            Valid::fail(format!("{} field has no resolver", field_name))
         }
     })
 }
