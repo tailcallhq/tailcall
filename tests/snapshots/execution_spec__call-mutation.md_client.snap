@@ -3,11 +3,11 @@ source: tests/execution_spec.rs
 expression: client
 ---
 type Mutation {
-  attachPostToFirstUser(postId: Int!): User
   attachPostToUser(postId: Int!, userId: Int!): User
+  connectPostToFirstUser(postId: Int!): User
+  createPostToFirstUser(input: PostInputWithoutUserId): Post
   insertMockedPost: Post
   insertPost(input: PostInput): Post
-  insertPostToFirstUser(input: PostInputWithoutUserId): Post
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
 }
 

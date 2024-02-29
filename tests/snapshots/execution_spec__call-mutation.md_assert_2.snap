@@ -9,7 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "attachPostToFirstUser": {
+      "connectPostToFirstUser": {
         "name": "foo"
       }
     }
