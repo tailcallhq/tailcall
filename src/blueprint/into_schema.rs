@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql_value::ConstValue;
 
-use crate::blueprint::{Blueprint, Definition, Type};
+use crate::blueprint::{Blueprint, Definition, ScalarTypeDefinition, Type};
 use crate::http::RequestContext;
 use crate::lambda::{Concurrent, Eval, EvaluationContext};
 use crate::scalars;
@@ -109,6 +109,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
             if let Some(description) = &def.description {
                 scalar = scalar.description(description);
             }
+            scalar = scalar.validator(def.validator);
             dynamic::Type::Scalar(scalar)
         }
         Definition::Enum(def) => {
@@ -147,9 +148,16 @@ impl From<&Blueprint> for SchemaBuilder {
 /// This function contains logic to add all custom scalars to SchemaBuilder
 fn add_scalars(mut schema_builder: SchemaBuilder) -> SchemaBuilder {
     // add custom scalar to validate email format
-    let mut scalar_email = dynamic::Scalar::new("Email");
-    scalar_email = scalar_email.validator(scalars::Email::validate);
-    schema_builder = schema_builder.register(scalar_email);
+    let scalar_definition_email = ScalarTypeDefinition {
+        name: "Email".to_string(),
+        directive: vec![],
+        description: None,
+        validator: scalars::Email::validate,
+    };
+
+    let email_definition = Definition::Scalar(scalar_definition_email);
+
+    schema_builder = schema_builder.register(to_type(&email_definition));
 
     schema_builder
 }
