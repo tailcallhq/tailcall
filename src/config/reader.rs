@@ -435,7 +435,7 @@ mod reader_tests {
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
-            ["Email", "Post", "Query", "User"]
+            ["Post", "Query", "User"]
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),

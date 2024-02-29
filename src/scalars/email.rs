@@ -10,7 +10,6 @@ pub struct Email;
 impl Email {
     /// Function used to validate the email address
     pub fn validate(value: &ConstValue) -> bool {
-        println!("h: {}", value);
         if let Ok(email_str) = value.clone().as_str_ok() {
             let email_str = email_str.to_string();
             return email(&email_str).is_ok();
