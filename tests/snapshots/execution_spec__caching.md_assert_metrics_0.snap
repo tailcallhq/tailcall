@@ -5,10 +5,30 @@ expression: opentelemetry.get_metrics().await.unwrap()
 [
   [
     {
-      "name": "Cache",
+      "name": "cache",
       "entries": [
         {
           "name": "hit_rate"
+        }
+      ]
+    },
+    {
+      "name": "process-resources",
+      "entries": [
+        {
+          "name": "process.cpu.usage"
+        },
+        {
+          "name": "process.cpu.utilization"
+        },
+        {
+          "name": "process.memory.usage"
+        },
+        {
+          "name": "process.memory.virtual"
+        },
+        {
+          "name": "process.disk.io"
         }
       ]
     }

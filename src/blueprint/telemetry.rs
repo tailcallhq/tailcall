@@ -17,19 +17,19 @@ pub struct OtlpExporter {
 }
 
 #[derive(Debug, Clone)]
-pub enum OpentelemetryExporter {
+pub enum TelemetryExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
     Prometheus(PrometheusExporter),
 }
 
 #[derive(Debug, Clone)]
-pub struct OpentelemetryInner {
-    pub export: OpentelemetryExporter,
+pub struct TelemetryInner {
+    pub export: TelemetryExporter,
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct Opentelemetry(pub Option<OpentelemetryInner>);
+pub struct Telemetry(pub Option<TelemetryInner>);
 
 fn to_url(url: &str) -> Valid<Url, String> {
     Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).trace("url")
@@ -46,27 +46,25 @@ fn to_headers(headers: &KeyValues) -> Valid<HeaderMap, String> {
     .trace("headers")
 }
 
-pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Opentelemetry, String> {
-    TryFoldConfig::<Opentelemetry>::new(|config, up| {
+pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
+    TryFoldConfig::<Telemetry>::new(|config, up| {
         if let Some(export) = config.opentelemetry.export.as_ref() {
             let export = match export {
-                config::TraceExporter::Stdout(config) => {
-                    Valid::succeed(OpentelemetryExporter::Stdout(config.clone()))
+                config::TelemetryExporter::Stdout(config) => {
+                    Valid::succeed(TelemetryExporter::Stdout(config.clone()))
                 }
-                config::TraceExporter::Otlp(config) => to_url(&config.url)
+                config::TelemetryExporter::Otlp(config) => to_url(&config.url)
                     .zip(to_headers(&config.headers))
-                    .map(|(url, headers)| {
-                        OpentelemetryExporter::Otlp(OtlpExporter { url, headers })
-                    })
+                    .map(|(url, headers)| TelemetryExporter::Otlp(OtlpExporter { url, headers }))
                     .trace("otlp"),
-                config::TraceExporter::Prometheus(config) => {
-                    Valid::succeed(OpentelemetryExporter::Prometheus(config.clone()))
+                config::TelemetryExporter::Prometheus(config) => {
+                    Valid::succeed(TelemetryExporter::Prometheus(config.clone()))
                 }
             };
 
             export
-                .map(|export| Opentelemetry(Some(OpentelemetryInner { export })))
-                .trace(config::Trace::trace_name().as_str())
+                .map(|export| Telemetry(Some(TelemetryInner { export })))
+                .trace(config::Telemetry::trace_name().as_str())
         } else {
             Valid::succeed(up)
         }

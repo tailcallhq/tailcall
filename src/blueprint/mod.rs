@@ -6,11 +6,11 @@ mod from_config;
 mod into_schema;
 mod links;
 mod mustache;
-pub mod opentelemetry;
 mod operation;
 mod operators;
 mod schema;
 mod server;
+pub mod telemetry;
 mod timeout;
 mod upstream;
 

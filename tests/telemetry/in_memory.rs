@@ -7,13 +7,13 @@ use opentelemetry_sdk::testing::metrics::InMemoryMetricsExporter;
 use opentelemetry_sdk::testing::trace::InMemorySpanExporter;
 use serde::{Deserialize, Serialize};
 
-pub struct InMemoryOpentelemetry {
+pub struct InMemoryTelemetry {
     pub(super) trace_exporter: InMemorySpanExporter,
     pub(super) metrics_reader: PeriodicReader,
     pub(super) metrics_exporter: InMemoryMetricsExporter,
 }
 
-impl InMemoryOpentelemetry {
+impl InMemoryTelemetry {
     pub fn reset(&self) {
         self.trace_exporter.reset();
         self.metrics_exporter.reset();

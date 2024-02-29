@@ -1,7 +1,18 @@
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
-  @trace(export: {stdout: {pretty: true}}) {
+  @telemetry(
+    export: {
+      otlp: {
+        url: "https://api.honeycomb.io:443"
+        # gather api key from https://ui.honeycomb.io and set it as env when running tailcall
+        headers: [
+          {key: "x-honeycomb-team", value: "{{env.HONEYCOMB_API_KEY}}"}
+          {key: "x-honeycomb-dataset", value: "tailcall"}
+        ]
+      }
+    }
+  ) {
   query: Query
 }
 

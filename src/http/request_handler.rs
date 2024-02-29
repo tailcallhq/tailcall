@@ -14,7 +14,7 @@ use tracing::instrument;
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::blueprint::opentelemetry::OpentelemetryExporter;
+use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
@@ -159,7 +159,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
         hyper::Method::GET => {
             if let Some(otel) = app_ctx.blueprint.opentelemetry.0.as_ref() {
-                if let OpentelemetryExporter::Prometheus(prometheus) = &otel.export {
+                if let TelemetryExporter::Prometheus(prometheus) = &otel.export {
                     if req.uri().path() == prometheus.path {
                         return prometheus_metrics(prometheus);
                     }

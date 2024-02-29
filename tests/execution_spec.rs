@@ -1,6 +1,6 @@
 extern crate core;
 
-mod opentelemetry;
+mod telemetry;
 
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
@@ -15,8 +15,6 @@ use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
-use opentelemetry::in_memory::InMemoryOpentelemetry;
-use opentelemetry::init::init_opentelemetry;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -24,7 +22,7 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
-use tailcall::cli::opentelemetry::metrics::init_metrics;
+use tailcall::cli::telemetry::metrics::init_metrics;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
@@ -32,6 +30,8 @@ use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
+use telemetry::in_memory::InMemoryTelemetry;
+use telemetry::init::init_opentelemetry;
 use url::Url;
 
 #[cfg(test)]
@@ -771,7 +771,7 @@ impl FileIO for MockFileSystem {
     }
 }
 
-async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryOpentelemetry) {
+async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
 
     // Parse and validate all server configs + check for identity

@@ -23,7 +23,7 @@ static DIRECTIVE_ALLOW_LIST: &[(&str, Entity, bool)] = &[
     ("cache", Entity::FieldDefinition, false),
     ("expr", Entity::FieldDefinition, false),
     ("js", Entity::FieldDefinition, false),
-    ("trace", Entity::Schema, false),
+    ("telemetry", Entity::Schema, false),
 ];
 static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
@@ -44,9 +44,9 @@ static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "JS",
     "Modify",
-    "Trace",
-    "TraceInner",
-    "TraceExporter",
+    "Telemetry",
+    "TelemetryInner",
+    "TelemetryExporter",
     "StdoutExporter",
     "OtlpExporter",
     "PrometheusFormat",

@@ -11,5 +11,8 @@ expression: opentelemetry.get_traces().unwrap()
   },
   {
     "name": "field::resolver"
+  },
+  {
+    "name": "handle_request"
   }
 ]

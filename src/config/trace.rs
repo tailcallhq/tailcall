@@ -58,7 +58,7 @@ pub struct PrometheusExporter {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum TraceExporter {
+pub enum TelemetryExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
     Prometheus(PrometheusExporter),
@@ -66,17 +66,17 @@ pub enum TraceExporter {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct Trace {
-    pub export: Option<TraceExporter>,
+pub struct Telemetry {
+    pub export: Option<TelemetryExporter>,
 }
 
-impl Trace {
+impl Telemetry {
     pub fn merge_right(&self, other: Self) -> Self {
         Self { export: other.export.or(self.export.clone()) }
     }
 
     pub fn render_mustache(&mut self, runtime_ctx: &TargetRuntimeContext) -> Result<()> {
-        if let Some(TraceExporter::Otlp(otlp)) = &mut self.export {
+        if let Some(TelemetryExporter::Otlp(otlp)) = &mut self.export {
             let url_tmpl = Mustache::parse(&otlp.url)?;
             otlp.url = url_tmpl.render(runtime_ctx);
 

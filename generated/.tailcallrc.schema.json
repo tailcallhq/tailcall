@@ -17,7 +17,7 @@
       "description": "Enable [opentelemetry](https://opentelemetry.io) support",
       "allOf": [
         {
-          "$ref": "#/definitions/Trace"
+          "$ref": "#/definitions/Telemetry"
         }
       ]
     },
@@ -1544,13 +1544,13 @@
         }
       }
     },
-    "Trace": {
+    "Telemetry": {
       "type": "object",
       "properties": {
         "export": {
           "anyOf": [
             {
-              "$ref": "#/definitions/TraceExporter"
+              "$ref": "#/definitions/TelemetryExporter"
             },
             {
               "type": "null"
@@ -1559,7 +1559,7 @@
         }
       }
     },
-    "TraceExporter": {
+    "TelemetryExporter": {
       "oneOf": [
         {
           "type": "object",

@@ -11,7 +11,7 @@ use tracing_subscriber::filter::filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
-use super::in_memory::InMemoryOpentelemetry;
+use super::in_memory::InMemoryTelemetry;
 
 fn set_trace_provider(exporter: InMemorySpanExporter) -> OpenTelemetryLayer<Registry, Tracer> {
     let provider = TracerProvider::builder()
@@ -42,7 +42,7 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
-pub fn init_opentelemetry() -> InMemoryOpentelemetry {
+pub fn init_opentelemetry() -> InMemoryTelemetry {
     let trace_exporter = InMemorySpanExporter::default();
     let metrics_exporter = InMemoryMetricsExporter::default();
     let trace_layer = set_trace_provider(trace_exporter.clone());
@@ -58,5 +58,5 @@ pub fn init_opentelemetry() -> InMemoryOpentelemetry {
 
     set_tracing_subscriber(subscriber);
 
-    InMemoryOpentelemetry { trace_exporter, metrics_exporter, metrics_reader }
+    InMemoryTelemetry { trace_exporter, metrics_exporter, metrics_reader }
 }

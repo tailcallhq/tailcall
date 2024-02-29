@@ -6,7 +6,7 @@ use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::opentelemetry::Opentelemetry;
+use super::telemetry::Telemetry;
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
@@ -21,7 +21,7 @@ pub struct Blueprint {
     pub schema: SchemaDefinition,
     pub server: Server,
     pub upstream: Upstream,
-    pub opentelemetry: Opentelemetry,
+    pub opentelemetry: Telemetry,
 }
 
 #[derive(Clone, Debug)]
