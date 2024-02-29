@@ -4,6 +4,8 @@ pub use crate::scalars::email::Email;
 
 mod email;
 
+pub const CUSTOM_SCALARS: &[&str] = &["Email"];
+
 #[derive(schemars::JsonSchema)]
 /// A wrapper to store all custom scalar types
 pub struct Scalars {
