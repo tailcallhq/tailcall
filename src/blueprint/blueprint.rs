@@ -1,11 +1,12 @@
 use std::collections::{BTreeSet, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
-use async_graphql::extensions::ApolloTracing;
+// use async_graphql::extensions::Tracing;
+use async_graphql::extensions::ApolloTracing as Tracing;
 use async_graphql::ValidationMode;
 use derive_setters::Setters;
 use serde_json::Value;
-
+use async_graphql_extension_apollo_tracing::ApolloTracing;
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
@@ -225,7 +226,15 @@ impl Blueprint {
         let mut schema = SchemaBuilder::from(&blueprint);
 
         if server.enable_apollo_tracing {
-            schema = schema.extension(ApolloTracing);
+            // schema = schema.extension(ApolloTracing);
+            schema = schema.extension(ApolloTracing::new(
+                "user:gh.05228485-14f7-4f4c-9fb5-d7ec43b89115:zkErsGtGWvwwyFd2QnE6Vw".into(),
+                "https://current--tailcall-demo-1.apollographos.net/graphql".into(),
+                "tailcall-demo-1".into(),
+                "current".into(),
+                "v1.0.0".into(),
+            ))
+                .extension(Tracing);
         }
 
         if server.global_response_timeout > 0 {
@@ -243,6 +252,7 @@ impl Blueprint {
         if !server.get_enable_introspection() || schema_modifiers.no_resolver {
             schema = schema.disable_introspection();
         }
+
 
         // We should safely assume the blueprint is correct and,
         // generation of schema cannot fail.

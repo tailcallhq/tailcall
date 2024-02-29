@@ -46,6 +46,7 @@ async-graphql = { version = "7.0.2", features = [
     "dynamic-schema",
     "dataloader",
     "apollo_tracing",
+    "tracing"
 ] }
 async-graphql-value = "7.0.2"
 indexmap = "2.2"
@@ -84,6 +85,11 @@ which = { version = "6.0.0", optional = true }
 async-recursion = "1.0.5"
 tempfile = "3.10.1"
 deno_core = { version = "0.265.0", optional = true, features = ["v8_use_custom_libcxx", "snapshot_data_json"], default-features = false }
+async-graphql-extension-apollo-tracing = { path = "./async_graphql_apollo_studio_extension" }
+sha2 = "0.10.8"
+uuid = { version = "1.7.0", features = ["v4"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter", "json"] }
 
 [dev-dependencies]
 criterion = "0.5.1"

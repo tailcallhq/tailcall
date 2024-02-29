@@ -1,0 +1,24 @@
+[package]
+name = "simple"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-graphql = "6" 
+async-graphql-axum = "6"
+async-graphql-extension-apollo-tracing = { path = "../../" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+starwars = { path = "../models" }
+bytes = "1"
+tokio-stream = "0.1"
+tower-service = "0.3"
+futures-util = "0.3"
+axum = { version = "0.7" }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter", "json"] }
+
+
+[patch.crates-io]
+# Axum 0.7 is not available on crates.io yet.
+async-graphql-axum = { git = "https://github.com/async-graphql/async-graphql", branch = "master" }
+async-graphql = { git = "https://github.com/async-graphql/async-graphql", branch = "master" }

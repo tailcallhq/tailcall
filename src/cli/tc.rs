@@ -6,6 +6,8 @@ use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
+use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt};
+use tracing_subscriber::Registry;
 
 use super::command::{Cli, Command};
 use super::update_checker;
@@ -189,4 +191,10 @@ fn logger_init() {
     let env = Env::new().filter_or(filter_env_name, "info");
 
     env_logger::Builder::from_env(env).init();
+
+    // let subscriber = Registry::default()
+    //     .with(tracing_subscriber::EnvFilter::from_default_env())
+    //     .with(tracing_subscriber::fmt::layer());
+    //
+    // tracing::subscriber::set_global_default(subscriber).unwrap();
 }

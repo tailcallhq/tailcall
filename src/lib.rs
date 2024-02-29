@@ -26,6 +26,7 @@ pub mod runtime;
 mod serde_value_ext;
 pub mod try_fold;
 pub mod valid;
+pub mod apollo_register;
 
 use std::hash::Hash;
 use std::num::NonZeroU64;

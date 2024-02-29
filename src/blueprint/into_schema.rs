@@ -2,6 +2,8 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
+use async_graphql_extension_apollo_tracing::{ApolloTracingDataExt, ApolloTracing};
+use tracing::Instrument;
 use async_graphql_value::ConstValue;
 
 use crate::blueprint::{Blueprint, Definition, Type};
@@ -38,7 +40,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-                let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
+                let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref.clone(), move |ctx| {
                     let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                     let field_name = &field.name;
                     match &field.resolver {
@@ -60,7 +62,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                     a => FieldValue::from(a),
                                 };
                                 Ok(Some(p))
-                            })
+                            })//.instrument(tracing::info_span!("field::resolver", name = field_name, graphql.returnType = %type_ref)))
                         }
                     }
                 });

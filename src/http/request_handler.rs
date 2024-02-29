@@ -3,8 +3,10 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig,
+                          create_multipart_mixed_stream, is_accept_multipart_mixed};
 use async_graphql::ServerError;
+use async_graphql_extension_apollo_tracing::{ApolloTracingDataExtBuilder, Method};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
 
@@ -72,7 +74,16 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let request = serde_json::from_slice::<T>(&bytes);
     match request {
         Ok(request) => {
-            let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+            let mut response = request
+                .data(req_ctx.clone())
+                .data(ApolloTracingDataExtBuilder::default()
+                          .client_name("Sample_Client")
+                          .client_version("v2")
+                          .method(Method::Post)
+                          .status_code(200u32)
+                          .build()
+                          .unwrap(),)
+                .execute(&app_ctx.schema).await;
             response = update_cache_control_header(response, app_ctx, req_ctx);
             let mut resp = response.to_response()?;
             update_response_headers(&mut resp, app_ctx);
@@ -105,11 +116,23 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+pub async fn preflight(req: Request<Body>) -> Result<Response<Body>> {
+    let _whole_body = hyper::body::aggregate(req).await?;
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Headers", "*")
+        .header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        .body(Body::default())?;
+    Ok(response)
+}
+
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     match *req.method() {
+        hyper::Method::OPTIONS => preflight(req).await,
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.

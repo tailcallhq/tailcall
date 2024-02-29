@@ -2,6 +2,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use mimalloc::MiMalloc;
+use tracing_subscriber::Registry;
 use tailcall::cli::CLIError;
 
 #[global_allocator]
@@ -12,7 +13,15 @@ fn run_blocking() -> anyhow::Result<()> {
     rt.block_on(async { tailcall::cli::run().await })
 }
 
+use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
+
 fn main() -> anyhow::Result<()> {
+    let subscriber = Registry::default()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(tracing_subscriber::fmt::layer());
+
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+
     let result = run_blocking();
     match result {
         Ok(_) => {}
