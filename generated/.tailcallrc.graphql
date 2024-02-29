@@ -639,5 +639,6 @@ input Schema {
   Opt: Schema
 }
 scalar KeyValues
+scalar Email
 scalar JSON
 

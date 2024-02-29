@@ -7,6 +7,7 @@ use async_graphql_value::ConstValue;
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
 use crate::lambda::{Concurrent, Eval, EvaluationContext};
+use crate::scalars;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -133,10 +134,22 @@ impl From<&Blueprint> for SchemaBuilder {
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
 
+        schema = add_scalars(schema);
+
         for def in blueprint.definitions.iter() {
             schema = schema.register(to_type(def));
         }
 
         schema
     }
+}
+
+/// This function contains logic to add all custom scalars to SchemaBuilder
+fn add_scalars(mut schema_builder: SchemaBuilder) -> SchemaBuilder {
+    // add custom scalar to validate email format
+    let mut scalar_email = dynamic::Scalar::new("Email");
+    scalar_email = scalar_email.validator(scalars::Email::validate);
+    schema_builder = schema_builder.register(scalar_email);
+
+    schema_builder
 }

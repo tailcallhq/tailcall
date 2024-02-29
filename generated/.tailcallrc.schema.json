@@ -161,6 +161,10 @@
         "data": true
       }
     },
+    "Email": {
+      "description": "A custom scalar to validate the format of email address",
+      "type": "null"
+    },
     "Encoding": {
       "type": "string",
       "enum": [
