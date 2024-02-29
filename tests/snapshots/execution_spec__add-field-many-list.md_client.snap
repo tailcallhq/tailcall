@@ -1,12 +1,14 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type A {
   b: [String]
   c: String
   d: String
 }
+
+scalar Email
 
 type Query {
   u: U

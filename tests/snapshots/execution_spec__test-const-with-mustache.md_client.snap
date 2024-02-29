@@ -19,6 +19,8 @@ type D {
   e: Int
 }
 
+scalar Email
+
 type Query {
   a: A
 }

@@ -12,6 +12,8 @@ type BarId {
   bid: Int
 }
 
+scalar Email
+
 type Foo {
   id: Int
 }

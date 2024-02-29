@@ -2,6 +2,8 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Email
+
 type Query {
   username: String
   users: [User]

@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type Bar {
   """
@@ -8,6 +8,8 @@ type Bar {
   """
   baz: String
 }
+
+scalar Email
 
 type Query {
   """

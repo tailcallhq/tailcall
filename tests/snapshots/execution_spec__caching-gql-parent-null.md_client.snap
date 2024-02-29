@@ -6,6 +6,8 @@ type Bar {
   id: Int!
 }
 
+scalar Email
+
 type Query {
   bars: [Bar]
 }

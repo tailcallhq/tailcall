@@ -7,6 +7,8 @@ type Bar {
   id: Int!
 }
 
+scalar Email
+
 type Foo {
   id: Int
 }

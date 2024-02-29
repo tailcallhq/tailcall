@@ -1,7 +1,9 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Email
+
 type Query {
   foo: [User]
 }

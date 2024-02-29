@@ -1,10 +1,12 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type Bar {
   bar: String
 }
+
+scalar Email
 
 type Foo {
   foo: String

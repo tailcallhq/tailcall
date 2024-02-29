@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type A {
   b: B
@@ -9,6 +9,8 @@ type A {
 type B {
   c: String
 }
+
+scalar Email
 
 type Foo {
   a: A

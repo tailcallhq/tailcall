@@ -1,11 +1,13 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type B implements IA {
   a: String
   b: String
 }
+
+scalar Email
 
 interface IA {
   a: String

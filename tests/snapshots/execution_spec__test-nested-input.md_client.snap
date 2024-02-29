@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 input A {
   b: B
@@ -17,6 +17,8 @@ input C {
 input D {
   e: Int
 }
+
+scalar Email
 
 type Query {
   a(a: A!): X

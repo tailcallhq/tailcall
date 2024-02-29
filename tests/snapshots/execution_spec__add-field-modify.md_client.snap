@@ -8,6 +8,8 @@ type Address {
   zipcode: String
 }
 
+scalar Email
+
 type Query {
   user: User
 }
