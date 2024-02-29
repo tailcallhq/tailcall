@@ -119,6 +119,7 @@ opentelemetry-stdout = { version = "0.2.0", features = [
 ] }
 opentelemetry-appender-tracing = { version = "0.2.0", default-features = false }
 opentelemetry-prometheus = "0.14.0"
+opentelemetry-system-metrics = "0.1.6"
 
 
 [dev-dependencies]
