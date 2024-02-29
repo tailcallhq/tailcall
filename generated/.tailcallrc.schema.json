@@ -1326,6 +1326,27 @@
         }
       }
     },
+    "PrometheusExporter": {
+      "description": "Output the telemetry metrics data to prometheus server",
+      "type": "object",
+      "properties": {
+        "format": {
+          "$ref": "#/definitions/PrometheusFormat"
+        },
+        "path": {
+          "default": "/metrics",
+          "type": "string"
+        }
+      }
+    },
+    "PrometheusFormat": {
+      "description": "Output format for prometheus data",
+      "type": "string",
+      "enum": [
+        "text",
+        "protobuf"
+      ]
+    },
     "Proxy": {
       "type": "object",
       "required": [
@@ -1560,6 +1581,18 @@
           "properties": {
             "otlp": {
               "$ref": "#/definitions/OtlpExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "prometheus"
+          ],
+          "properties": {
+            "prometheus": {
+              "$ref": "#/definitions/PrometheusExporter"
             }
           },
           "additionalProperties": false

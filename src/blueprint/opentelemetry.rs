@@ -5,7 +5,7 @@ use hyper::HeaderMap;
 use url::Url;
 
 use super::TryFoldConfig;
-use crate::config::{self, ConfigModule, KeyValues, StdoutExporter};
+use crate::config::{self, ConfigModule, KeyValues, PrometheusExporter, StdoutExporter};
 use crate::directive::DirectiveCodec;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
@@ -20,6 +20,7 @@ pub struct OtlpExporter {
 pub enum OpentelemetryExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
+    Prometheus(PrometheusExporter),
 }
 
 #[derive(Debug, Clone)]
@@ -58,6 +59,9 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Opentelemetry, String
                         OpentelemetryExporter::Otlp(OtlpExporter { url, headers })
                     })
                     .trace("otlp"),
+                config::TraceExporter::Prometheus(config) => {
+                    Valid::succeed(OpentelemetryExporter::Prometheus(config.clone()))
+                }
             };
 
             export

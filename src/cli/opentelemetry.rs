@@ -89,6 +89,8 @@ fn set_trace_provider(
             .ok_or(TraceError::Other(
                 anyhow!("Failed to instantiate OTLP provider").into(),
             ))?,
+        // Prometheus works only with metrics
+        OpentelemetryExporter::Prometheus(_) => return Ok(None),
     };
     let tracer = provider.tracer("tracing");
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
@@ -128,6 +130,8 @@ fn set_logger_provider(
             .ok_or(LogError::Other(
                 anyhow!("Failed to instantiate OTLP provider").into(),
             ))?,
+        // Prometheus works only with metrics
+        OpentelemetryExporter::Prometheus(_) => return Ok(None),
     };
 
     let otel_tracing_appender = OpenTelemetryTracingBridge::new(&provider);
@@ -161,6 +165,16 @@ fn set_meter_provider(exporter: &OpentelemetryExporter) -> MetricsResult<()> {
             .with_resource(RESOURCE.clone())
             .with_exporter(otlp_exporter(config))
             .build()?,
+        OpentelemetryExporter::Prometheus(_) => {
+            let exporter = opentelemetry_prometheus::exporter()
+                .with_registry(prometheus::default_registry().clone())
+                .build()?;
+
+            MeterProvider::builder()
+                .with_resource(RESOURCE.clone())
+                .with_reader(exporter)
+                .build()
+        }
     };
 
     global::set_meter_provider(provider);

@@ -49,6 +49,8 @@ static OBJECT_WHITELIST: &[&str] = &[
     "TraceExporter",
     "StdoutExporter",
     "OtlpExporter",
+    "PrometheusFormat",
+    "PrometheusExporter",
 ];
 
 #[derive(Clone, Copy)]

@@ -8,6 +8,14 @@ use crate::mustache::Mustache;
 use crate::runtime::TargetRuntimeContext;
 use crate::valid::Validator;
 
+mod defaults {
+    pub mod prometheus {
+        pub fn path() -> String {
+            "/metrics".to_owned()
+        }
+    }
+}
+
 /// Output the opentelemetry data to the stdout. Mostly used for debug purposes
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -26,11 +34,34 @@ pub struct OtlpExporter {
     pub headers: KeyValues,
 }
 
+/// Output format for prometheus data
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum PrometheusFormat {
+    #[default]
+    Text,
+    Protobuf,
+}
+
+/// Output the telemetry metrics data to prometheus server
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PrometheusExporter {
+    #[serde(
+        default = "defaults::prometheus::path",
+        skip_serializing_if = "is_default"
+    )]
+    pub path: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub format: PrometheusFormat,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum TraceExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
+    Prometheus(PrometheusExporter),
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]

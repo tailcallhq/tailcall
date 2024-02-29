@@ -1,0 +1,28 @@
+schema
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
+  @trace(export: {prometheus: {path: "/metrics"}}) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts") @cache(maxAge: 5000)
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @http(path: "/users/{{value.userId}}")
+}

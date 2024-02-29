@@ -638,6 +638,20 @@ input OtlpExporter {
   headers: KeyValues
   url: String!
 }
+"""
+Output the telemetry metrics data to prometheus server
+"""
+input PrometheusExporter {
+  format: PrometheusFormat
+  path: String!
+}
+"""
+Output format for prometheus data
+"""
+enum PrometheusFormat {
+  text
+  protobuf
+}
 input Proxy {
   url: String!
 }
@@ -659,6 +673,7 @@ input Trace {
 input TraceExporter {
   stdout: StdoutExporter
   otlp: OtlpExporter
+  prometheus: PrometheusExporter
 }
 input Schema {
   Obj: JSON

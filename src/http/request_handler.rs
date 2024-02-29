@@ -5,12 +5,16 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
+use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::blueprint::opentelemetry::OpentelemetryExporter;
+use crate::config::{PrometheusExporter, PrometheusFormat};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
@@ -28,6 +32,28 @@ pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     Ok(Response::new(Body::from(playground_source(
         GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
     ))))
+}
+
+pub fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
+    let metric_families = prometheus::default_registry().gather();
+    let mut buffer = vec![];
+
+    match prometheus_exporter.format {
+        PrometheusFormat::Text => TextEncoder::new().encode(&metric_families, &mut buffer)?,
+        PrometheusFormat::Protobuf => {
+            ProtobufEncoder::new().encode(&metric_families, &mut buffer)?
+        }
+    };
+
+    let content_type = match prometheus_exporter.format {
+        PrometheusFormat::Text => TEXT_FORMAT,
+        PrometheusFormat::Protobuf => PROTOBUF_FORMAT,
+    };
+
+    Ok(Response::builder()
+        .status(200)
+        .header(CONTENT_TYPE, content_type)
+        .body(Body::from(buffer))?)
 }
 
 fn not_found() -> Result<Response<Body>> {
@@ -129,7 +155,21 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             graphql_request::<T>(req, &app_ctx).await
         }
 
-        hyper::Method::GET if app_ctx.blueprint.server.enable_graphiql => graphiql(&req),
+        hyper::Method::GET => {
+            if let Some(otel) = app_ctx.blueprint.opentelemetry.0.as_ref() {
+                if let OpentelemetryExporter::Prometheus(prometheus) = &otel.export {
+                    if req.uri().path() == prometheus.path {
+                        return prometheus_metrics(prometheus);
+                    }
+                }
+            };
+
+            if app_ctx.blueprint.server.enable_graphiql {
+                return graphiql(&req);
+            }
+
+            not_found()
+        }
         _ => not_found(),
     }
 }
