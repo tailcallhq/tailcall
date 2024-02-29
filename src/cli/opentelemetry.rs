@@ -4,10 +4,10 @@ use std::io::Write;
 
 use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
+use opentelemetry::global;
 use opentelemetry::logs::{LogError, LogResult};
 use opentelemetry::metrics::{MetricsError, Result as MetricsResult};
 use opentelemetry::trace::{TraceError, TraceResult, TracerProvider as _};
-use opentelemetry::{global, KeyValue};
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::{TonicExporterBuilder, WithExportConfig};
 use opentelemetry_sdk::logs::{Logger, LoggerProvider};
@@ -31,14 +31,9 @@ use crate::tracing::{default_filter_target, default_tracing};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
-        KeyValue::new(
-            opentelemetry_semantic_conventions::resource::SERVICE_NAME,
-            "tailcall",
-        ),
-        KeyValue::new(
-            opentelemetry_semantic_conventions::resource::SERVICE_VERSION,
-            option_env!("APP_VERSION").unwrap_or("dev"),
-        ),
+        opentelemetry_semantic_conventions::resource::SERVICE_NAME.string("tailcall"),
+        opentelemetry_semantic_conventions::resource::SERVICE_VERSION
+            .string(option_env!("APP_VERSION").unwrap_or("dev")),
     ]))
 });
 

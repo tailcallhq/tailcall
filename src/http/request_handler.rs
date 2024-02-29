@@ -9,6 +9,7 @@ use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
+use tracing::instrument;
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
@@ -131,6 +132,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+#[instrument(skip_all, err, fields(method = %req.method(), url = %req.uri()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,

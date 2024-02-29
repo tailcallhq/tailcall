@@ -82,7 +82,7 @@ impl Expression {
 }
 
 impl Eval for Expression {
-    #[tracing::instrument(skip_all, fields(name = %self))]
+    #[tracing::instrument(skip_all, fields(name = %self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: &'a EvaluationContext<'a, Ctx>,
