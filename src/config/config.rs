@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -608,7 +608,7 @@ pub struct Call {
     pub mutation: Option<String>,
 
     /// The arguments of the field on the `Query` type that you want to call. For instance `{id: "{{value.userId}}"}`.
-    pub args: HashMap<String, Value>,
+    pub args: BTreeMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

@@ -9,7 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "createPostToFirstUser": {
+      "insertPostToFirstUser": {
         "body": "post-body"
       }
     }
