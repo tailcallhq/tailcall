@@ -80,11 +80,13 @@ pub fn update_http<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, field, http).and_then(|resolver| {
-                b_field
-                    .resolver(Some(resolver))
-                    .validate_field(type_of, &config_module.config)
-            })
+            compile_http(config_module, field, http)
+                .map(|resolver| b_field.resolver(Some(resolver)))
+                .and_then(|b_field| {
+                    b_field
+                        .validate_field(type_of, config_module)
+                        .map_to(b_field)
+                })
         },
     )
 }

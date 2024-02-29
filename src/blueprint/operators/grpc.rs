@@ -215,10 +215,11 @@ pub fn update_grpc<'a>(
                 grpc,
                 validate_with_schema: true,
             })
-            .and_then(|resolver| {
+            .map(|resolver| b_field.resolver(Some(resolver)))
+            .and_then(|b_field| {
                 b_field
-                    .resolver(Some(resolver))
-                    .validate_field(type_of, &config_module.config)
+                    .validate_field(type_of, config_module)
+                    .map_to(b_field)
             })
         },
     )
