@@ -4,10 +4,9 @@ use std::sync::Arc;
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql_value::ConstValue;
 
-use crate::blueprint::{Blueprint, Definition, ScalarTypeDefinition, Type};
+use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
 use crate::lambda::{Concurrent, Eval, EvaluationContext};
-use crate::scalars;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
