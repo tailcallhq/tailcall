@@ -147,17 +147,20 @@ impl From<&Blueprint> for SchemaBuilder {
 
 /// This function contains logic to add all custom scalars to SchemaBuilder
 fn add_scalars(mut schema_builder: SchemaBuilder) -> SchemaBuilder {
-    // add custom scalar to validate email format
-    let scalar_definition_email = ScalarTypeDefinition {
-        name: "Email".to_string(),
-        directive: vec![],
-        description: None,
-        validator: scalars::Email::validate,
-    };
+    // add custom scalars to the builder
 
-    let email_definition = Definition::Scalar(scalar_definition_email);
+    for scalar in scalars::CUSTOM_SCALARS {
+        let scalar_definition = ScalarTypeDefinition {
+            name: scalar.to_string(),
+            directive: vec![],
+            description: None,
+            validator: scalars::get_scalar(scalar),
+        };
 
-    schema_builder = schema_builder.register(to_type(&email_definition));
+        let definition = Definition::Scalar(scalar_definition);
+
+        schema_builder = schema_builder.register(to_type(&definition));
+    }
 
     schema_builder
 }
