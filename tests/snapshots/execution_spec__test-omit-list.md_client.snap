@@ -6,8 +6,6 @@ type B {
   c: String
 }
 
-scalar Email
-
 type Query {
   foo: B
 }

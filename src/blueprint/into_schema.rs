@@ -135,32 +135,10 @@ impl From<&Blueprint> for SchemaBuilder {
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
 
-        schema = add_scalars(schema);
-
         for def in blueprint.definitions.iter() {
             schema = schema.register(to_type(def));
         }
 
         schema
     }
-}
-
-/// This function contains logic to add all custom scalars to SchemaBuilder
-fn add_scalars(mut schema_builder: SchemaBuilder) -> SchemaBuilder {
-    // add custom scalars to the builder
-
-    for scalar in scalars::CUSTOM_SCALARS {
-        let scalar_definition = ScalarTypeDefinition {
-            name: scalar.to_string(),
-            directive: vec![],
-            description: None,
-            validator: scalars::get_scalar(scalar),
-        };
-
-        let definition = Definition::Scalar(scalar_definition);
-
-        schema_builder = schema_builder.register(to_type(&definition));
-    }
-
-    schema_builder
 }

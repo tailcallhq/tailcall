@@ -20,8 +20,6 @@ type C {
   x: String!
 }
 
-scalar Email
-
 type Query {
   a: [A]
 }

@@ -2,8 +2,6 @@
 source: tests/execution_spec.rs
 expression: client
 ---
-scalar Email
-
 type Query {
   not_user: User
 }

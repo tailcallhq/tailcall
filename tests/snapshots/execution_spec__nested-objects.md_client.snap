@@ -7,8 +7,6 @@ type Address {
   street: String
 }
 
-scalar Email
-
 type Geo {
   lat: String
   lng: String

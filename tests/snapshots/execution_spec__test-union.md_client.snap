@@ -6,8 +6,6 @@ type Bar {
   bar: String
 }
 
-scalar Email
-
 type Foo {
   foo: String
 }

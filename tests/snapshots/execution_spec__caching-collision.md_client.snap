@@ -7,8 +7,6 @@ type Bar {
   id: String!
 }
 
-scalar Email
-
 type Foo {
   id: Int!
 }

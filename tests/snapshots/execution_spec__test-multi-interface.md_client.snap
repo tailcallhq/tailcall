@@ -7,8 +7,6 @@ type B implements IA & IB {
   b: String
 }
 
-scalar Email
-
 interface IA {
   a: String
 }

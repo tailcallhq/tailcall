@@ -10,8 +10,6 @@ input Dummy {
   list: [Int]
 }
 
-scalar Email
-
 type Query {
   bar(dummy: Dummy, flag: Boolean!, id: Int!): Bar
 }

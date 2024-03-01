@@ -8,8 +8,6 @@ type Bar {
   id: Int!
 }
 
-scalar Email
-
 type Foo {
   bar: Bar
   id: Int!

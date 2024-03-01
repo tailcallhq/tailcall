@@ -9,8 +9,6 @@ type Bar {
   baz: String
 }
 
-scalar Email
-
 type Query {
   """
   This is test

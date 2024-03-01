@@ -10,8 +10,6 @@ type B {
   c: String
 }
 
-scalar Email
-
 type Foo {
   a: A
 }

@@ -8,8 +8,6 @@ type A {
   d: String
 }
 
-scalar Email
-
 type Query {
   u: U
 }
