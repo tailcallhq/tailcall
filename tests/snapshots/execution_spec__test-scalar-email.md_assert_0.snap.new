@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+assertion_line: 953
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "value": "alo@valid.com"
+    }
+  }
+}

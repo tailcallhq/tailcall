@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+assertion_line: 911
+expression: client
+---
+scalar Email
+
+type Query {
+  value(email: Email!): Email!
+}
+
+schema {
+  query: Query
+}
