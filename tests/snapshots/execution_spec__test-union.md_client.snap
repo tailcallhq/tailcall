@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: client
+expression: merged
 ---
 type Bar {
   bar: String
