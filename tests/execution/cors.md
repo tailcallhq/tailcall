@@ -15,21 +15,8 @@ schema
 }
 
 type Query {
-  value: Int! @http(path: "/", baseURL: "http://api.com")
+  value: Int @const(data: 1)
 }
-```
-
-#### mock:
-
-```yml
-- request:
-    method: POST
-    url: http://api.com
-    body: null
-  response:
-    status: 200
-    body:
-      value: 1
 ```
 
 #### assert:

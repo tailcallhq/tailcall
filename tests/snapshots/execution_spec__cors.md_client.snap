@@ -3,7 +3,7 @@ source: tests/execution_spec.rs
 expression: client
 ---
 type Query {
-  value: Int!
+  value: Int
 }
 
 schema {

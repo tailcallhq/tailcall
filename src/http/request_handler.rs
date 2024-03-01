@@ -107,14 +107,11 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
 pub async fn preflight(app_ctx: Arc<AppContext>, req: Request<Body>) -> Result<Response<Body>> {
     let _whole_body = hyper::body::aggregate(req).await?;
-    let mut response = Response::builder().status(StatusCode::OK);
+    let mut response = Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::default())?;
 
-    for (key, val) in app_ctx.blueprint.server.response_headers.iter() {
-        response = response.header(key, val)
-    }
-
-    let response = response.body(Body::default())?;
-
+    update_response_headers(&mut response, app_ctx.as_ref());
     Ok(response)
 }
 

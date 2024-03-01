@@ -7,5 +7,5 @@ schema @server(responseHeaders: [{key: "Access-Control-Allow-Headers", value: "*
 }
 
 type Query {
-  value: Int! @http(baseURL: "http://api.com", path: "/")
+  value: Int @const(data: 1)
 }
