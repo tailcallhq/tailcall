@@ -9,11 +9,11 @@ use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::config::{self, ConfigModule, HttpVersion};
+use crate::config::apollo::Apollo;
 use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
-    pub enable_apollo_tracing: bool,
     pub enable_cache_control_header: bool,
     pub enable_graphiql: bool,
     pub enable_introspection: bool,
@@ -30,6 +30,7 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
+    pub apollo: Option<Apollo>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -108,7 +109,6 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             ))
             .fuse(to_script(&config_module))
             .map(|(hostname, http, response_headers, script)| Server {
-                enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                 enable_cache_control_header: (config_server).enable_cache_control(),
                 enable_graphiql: (config_server).enable_graphiql(),
                 enable_introspection: (config_server).enable_introspection(),
@@ -125,6 +125,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 pipeline_flush: (config_server).get_pipeline_flush(),
                 response_headers,
                 script,
+                apollo: (config_server).get_apollo()
             })
             .to_result()
     }

@@ -1,8 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
-// use async_graphql::extensions::Tracing;
-use async_graphql::extensions::ApolloTracing as Tracing;
 use async_graphql::ValidationMode;
 use async_graphql_extension_apollo_tracing::ApolloTracing;
 use derive_setters::Setters;
@@ -226,17 +224,15 @@ impl Blueprint {
         let server = &blueprint.server;
         let mut schema = SchemaBuilder::from(&blueprint);
 
-        if server.enable_apollo_tracing {
-            // schema = schema.extension(ApolloTracing);
+        if let Some(ref apollo) = server.apollo {
             schema = schema
                 .extension(ApolloTracing::new(
-                    "user:gh.05228485-14f7-4f4c-9fb5-d7ec43b89115:zkErsGtGWvwwyFd2QnE6Vw".into(),
-                    "https://current--tailcall-demo-1.apollographos.net/graphql".into(),
-                    "tailcall-demo-1".into(),
-                    "current".into(),
-                    "v1.0.0".into(),
-                ))
-                .extension(Tracing);
+                    apollo.api_key.clone(),
+                    apollo.platform.clone(),
+                    apollo.graph_id.clone(),
+                    apollo.variant.clone(),
+                    apollo.version.clone(),
+                ));
         }
 
         if server.global_response_timeout > 0 {

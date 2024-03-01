@@ -19,3 +19,4 @@ pub mod reader;
 mod server;
 mod source;
 mod upstream;
+pub mod apollo;

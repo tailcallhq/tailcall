@@ -64,7 +64,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         a => FieldValue::from(a),
                                     };
                                     Ok(Some(p))
-                                }) //.instrument(tracing::info_span!("field::resolver", name = field_name, graphql.returnType = %type_ref)))
+                                })
                             }
                         }
                     });

@@ -137,13 +137,13 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     match *req.method() {
-        hyper::Method::OPTIONS => preflight(req).await,
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
             graphql_request::<T>(req, app_ctx.as_ref()).await
         }
+        hyper::Method::OPTIONS => preflight(req).await,
         hyper::Method::POST
             if app_ctx.blueprint.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>

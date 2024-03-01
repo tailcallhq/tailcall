@@ -104,17 +104,19 @@ impl AppContext {
 
         let schema = blueprint.to_schema();
 
-        async_graphql_extension_apollo_tracing::register::register(
-            // crate::apollo_register::register(
-            "user:gh.05228485-14f7-4f4c-9fb5-d7ec43b89115:zkErsGtGWvwwyFd2QnE6Vw",
-            &schema,
-            "tailcall-demo-1",
-            "current",
-            "user-version",
-            "platform",
-        )
-        .await
-        .unwrap();
+        if let Some(ref apollo) = blueprint.server.apollo {
+            async_graphql_extension_apollo_tracing::register::register(
+                &apollo.api_key,
+                &schema,
+                &apollo.graph_id,
+                &apollo.variant,
+                &apollo.user_version,
+                &apollo.platform,
+            )
+                .await
+                .unwrap();
+        }
+
 
         AppContext {
             schema,
