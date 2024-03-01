@@ -105,11 +105,25 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+pub async fn preflight(app_ctx: Arc<AppContext>, req: Request<Body>) -> Result<Response<Body>> {
+    let _whole_body = hyper::body::aggregate(req).await?;
+    let mut response = Response::builder().status(StatusCode::OK);
+
+    for (key, val) in app_ctx.blueprint.server.response_headers.iter() {
+        response = response.header(key, val)
+    }
+
+    let response = response.body(Body::default())?;
+
+    Ok(response)
+}
+
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     match *req.method() {
+        hyper::Method::OPTIONS => preflight(app_ctx.clone(), req).await,
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
