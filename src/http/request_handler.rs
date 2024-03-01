@@ -107,11 +107,20 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
 pub async fn preflight(app_ctx: Arc<AppContext>, req: Request<Body>) -> Result<Response<Body>> {
     let _whole_body = hyper::body::aggregate(req).await?;
-    let mut response = Response::builder()
-        .status(StatusCode::OK)
-        .body(Body::default())?;
+    let mut response = Response::builder().status(StatusCode::OK);
 
-    update_response_headers(&mut response, app_ctx.as_ref());
+    for (key, val) in &app_ctx.blueprint.server.response_headers {
+        if key
+            .as_str()
+            .to_lowercase()
+            .starts_with("access-control-allow-")
+        {
+            response = response.header(key, val);
+        }
+    }
+
+    let response = response.body(Body::default())?;
+
     Ok(response)
 }
 

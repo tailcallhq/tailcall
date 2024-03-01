@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(responseHeaders: [{key: "Access-Control-Allow-Headers", value: "*"}, {key: "Access-Control-Allow-Methods", value: "POST, GET, OPTIONS"}, {key: "Access-Control-Allow-Origin", value: "*"}]) @upstream {
+  query: Query
+}
+
+type Query {
+  value: Int @const(data: 1)
+}

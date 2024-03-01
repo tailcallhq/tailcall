@@ -1,0 +1,13 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "access-control-allow-headers": "*",
+    "access-control-allow-methods": "POST, GET, OPTIONS",
+    "access-control-allow-origin": "*"
+  },
+  "body": null
+}
