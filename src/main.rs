@@ -2,8 +2,8 @@
 #![allow(clippy::too_many_arguments)]
 
 use mimalloc::MiMalloc;
-use tracing_subscriber::Registry;
 use tailcall::cli::CLIError;
+use tracing_subscriber::Registry;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;

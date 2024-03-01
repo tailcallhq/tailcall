@@ -40,28 +40,22 @@ use runtime::spawn;
 #[macro_use]
 extern crate tracing;
 
-use futures_locks::RwLock;
 use std::collections::HashMap;
+use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
-
-use async_graphql::QueryPathSegment;
-use chrono::{DateTime, Utc};
-use futures::lock::Mutex;
-use std::convert::TryFrom;
 
 use async_graphql::extensions::{
     Extension, ExtensionContext, ExtensionFactory, NextExecute, NextParseQuery, NextResolve,
     ResolveInfo,
 };
 use async_graphql::parser::types::{ExecutableDocument, OperationType, Selection};
-use async_graphql::{Response, ServerResult, Value, Variables};
-use proto::report::{
-    trace::{self, node, Node},
-    Trace,
-};
-use std::convert::TryInto;
-
+use async_graphql::{QueryPathSegment, Response, ServerResult, Value, Variables};
+use chrono::{DateTime, Utc};
+use futures::lock::Mutex;
+use futures_locks::RwLock;
 pub use proto::report::trace::http::Method;
+use proto::report::trace::{self, node, Node};
+use proto::report::Trace;
 
 /// Apollo Tracing Extension to send traces to Apollo Studio
 /// The extension to include to your `async_graphql` instance to connect with Apollo Studio.
@@ -118,6 +112,7 @@ impl ApolloTracing {
     /// * hostname - Hostname like yourdomain-graphql-1.io
     /// * graph_ref - `ref@variant`  Graph reference with variant
     /// * release_name - Your release version or release name from Git for example
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         authorization_token: String,
         hostname: String,
@@ -133,19 +128,14 @@ impl ApolloTracing {
             service_version,
         );
 
-        ApolloTracing {
-            report: Arc::new(report),
-        }
+        ApolloTracing { report: Arc::new(report) }
     }
 }
 
 impl ExtensionFactory for ApolloTracing {
     fn create(&self) -> Arc<dyn Extension> {
         Arc::new(ApolloTracingExtension {
-            inner: Mutex::new(Inner {
-                start_time: Utc::now(),
-                end_time: Utc::now(),
-            }),
+            inner: Mutex::new(Inner { start_time: Utc::now(), end_time: Utc::now() }),
             report: self.report.clone(),
             nodes: RwLock::new(HashMap::new()),
             root_node: Arc::new(RwLock::new(Node::default())),
@@ -252,11 +242,7 @@ impl Extension for ApolloTracingExtension {
             ..Default::default()
         });
 
-        trace.http = Some(trace::Http {
-            method: method.into(),
-            status_code,
-            ..Default::default()
-        });
+        trace.http = Some(trace::Http { method: method.into(), status_code, ..Default::default() });
 
         trace.end_time = Some(Timestamp {
             nanos: inner.end_time.timestamp_subsec_nanos().try_into().unwrap(),
@@ -347,10 +333,7 @@ impl Extension for ApolloTracingExtension {
                         .locations
                         .clone()
                         .into_iter()
-                        .map(|x| trace::Location {
-                            line: x.line as u32,
-                            column: x.column as u32,
-                        })
+                        .map(|x| trace::Location { line: x.line as u32, column: x.column as u32 })
                         .collect(),
                     json,
                     ..Default::default()

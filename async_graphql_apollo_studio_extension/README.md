@@ -1,5 +1,4 @@
-async-graphql-extension-apollo-tracing
-====
+# async-graphql-extension-apollo-tracing
 
 <div align="center">
   <!-- CI -->
@@ -23,7 +22,6 @@ async-graphql-extension-apollo-tracing
 <br />
 <br />
 
-
 async-graphql-extension-apollo-tracing is an open-source extension for the crates [async_graphql](https://github.com/async-graphql/async-graphql). The purpose of this extension is to provide a simple way to create & send your graphql metrics to [Apollo Studio](https://studio.apollographql.com/).
 
 - [Documentation](https://docs.rs/async-graphql-extension-apollo-tracing/)
@@ -34,22 +32,22 @@ _Tested at Rust version: `rustc 1.75.0`_
 
 ## Features
 
-* Runtime agnostic (tokio / async-std)
-* Fully support traces & errors
-* Batched Protobuf transfer
-* Client segmentation
-* Additional data to segment your queries by visitors
-* Tracing
-* Schema export to studio
-* Error traces
-* Gzip compression
+- Runtime agnostic (tokio / async-std)
+- Fully support traces & errors
+- Batched Protobuf transfer
+- Client segmentation
+- Additional data to segment your queries by visitors
+- Tracing
+- Schema export to studio
+- Error traces
+- Gzip compression
 
 ## Crate features
 
 This crate offers the following features, all of which are not activated by default:
 
 - `compression`: Enable the GZIP Compression when sending traces.
-- `tokio-comp`: Enable the Tokio compatibility  when you have a tokio-runtime
+- `tokio-comp`: Enable the Tokio compatibility when you have a tokio-runtime
 
 ## Example
 
@@ -57,7 +55,7 @@ Check the example from `example` directory.
 
 ## References
 
-* [GraphQL](https://graphql.org)
-* [Async Graphql Crates](https://github.com/async-graphql/async-graphql)
-* [Apollo Tracing](https://github.com/apollographql/apollo-tracing)
-* [Apollo Server](https://github.com/apollographql/apollo-server)
+- [GraphQL](https://graphql.org)
+- [Async Graphql Crates](https://github.com/async-graphql/async-graphql)
+- [Apollo Tracing](https://github.com/apollographql/apollo-tracing)
+- [Apollo Server](https://github.com/apollographql/apollo-server)

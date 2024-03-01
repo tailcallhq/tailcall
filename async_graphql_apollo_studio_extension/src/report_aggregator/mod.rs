@@ -1,16 +1,13 @@
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
+use std::time::Duration;
 
-use futures::{
-    channel::mpsc::{self, Sender},
-    StreamExt,
-};
+use futures::channel::mpsc::{self, Sender};
+use futures::StreamExt;
 use tokio::time::Instant;
 
-use crate::{
-    packages::uname::Uname,
-    proto::report::{Report, ReportHeader, Trace, TracesAndStats},
-    runtime::{spawn, JoinHandle},
-};
+use crate::packages::uname::Uname;
+use crate::proto::report::{Report, ReportHeader, Trace, TracesAndStats};
+use crate::runtime::{spawn, JoinHandle};
 
 /// The [ReportAggregator] is the structure which control the background task spawned to aggregate
 /// and send data through Apollo Studio by constructing [Report] ready to be send
@@ -26,6 +23,7 @@ const BUFFER_SLOTS: usize = 32;
 const MAX_TRACES: usize = 64;
 
 impl ReportAggregator {
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         authorization_token: String,
         hostname: String,
@@ -73,7 +71,8 @@ impl ReportAggregator {
 
                 if count > MAX_TRACES || now.elapsed() > Duration::from_secs(5) {
                     now = Instant::now();
-                    use tracing::{field, field::debug, span, Level};
+                    use tracing::field::debug;
+                    use tracing::{field, span, Level};
 
                     let span_batch = span!(
                         Level::DEBUG,

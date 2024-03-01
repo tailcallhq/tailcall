@@ -1,9 +1,7 @@
 // Derived from https://github.com/pellizzetti/router/blob/cc0ebcaf1d68184e1fe06f16534fddff76286b40/apollo-spaceport/build.rs
-use std::{
-    error::Error,
-    fs::File,
-    io::{copy, Read},
-};
+use std::error::Error;
+use std::fs::File;
+use std::io::{copy, Read};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Skip building from docs.rs.

@@ -2,7 +2,8 @@
 //!
 //! Implementation of the apollo Schema Reporting Protocol
 //! <https://www.apollographql.com/docs/studio/schema/schema-reporting/>
-use async_graphql::{ObjectType, dynamic::Schema, SubscriptionType};
+use async_graphql::dynamic::Schema;
+
 use reqwest::Client;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
@@ -16,9 +17,7 @@ const RUNTIME_VERSION: &str = "Rust - No runtime version provided yet";
  * Compute the SHA256 of a Schema
  * Usefull for Apollo Studio
  */
-pub fn sha(
-    schema: &Schema,
-) -> String {
+pub fn sha(schema: &Schema) -> String {
     let mut hasher = Sha256::new();
     let schema_sdl = schema.sdl();
     let schema_bytes = schema_sdl.as_bytes();
@@ -39,10 +38,10 @@ pub fn sha(
 pub async fn register(
     authorization_token: &str,
     schema: &Schema,
-    server_id: &str,
-    variant: &str,
-    user_version: &str,
-    platform: &str,
+    _server_id: &str,
+    _variant: &str,
+    _user_version: &str,
+    _platform: &str,
 ) -> anyhow::Result<()> {
     // info!(
     //     target: TARGET_LOG,
@@ -51,22 +50,20 @@ pub async fn register(
     let client = Client::new();
     let schema_sdl = schema.sdl();
     println!("Schema SDL {schema_sdl:?}");
-    let sha_from_schema = sha(schema);
-    let boot_id = Uuid::new_v4();
+    let _sha_from_schema = sha(schema);
+    let _boot_id = Uuid::new_v4();
 
-    let query = format!(
-        r#"
-        mutation PublishSubgraphSchema($graphId: ID!, $variantName: String!, $subgraphName: String!, $schemaDocument: PartialSchemaInput!, $url: String, $revision: String!) {{
-          graph(id: $graphId) {{
-            publishSubgraph(graphVariant: $variantName, activePartialSchema: $schemaDocument, name: $subgraphName, url: $url, revision: $revision) {{
+    let query = r#"
+        mutation PublishSubgraphSchema($graphId: ID!, $variantName: String!, $subgraphName: String!, $schemaDocument: PartialSchemaInput!, $url: String, $revision: String!) {
+          graph(id: $graphId) {
+            publishSubgraph(graphVariant: $variantName, activePartialSchema: $schemaDocument, name: $subgraphName, url: $url, revision: $revision) {
               launchUrl
               updatedGateway
               wasCreated
-            }}
-          }}
-        }}
-        "#
-    );
+            }
+          }
+        }
+        "#.to_string();
 
     let body = serde_json::json!({
         "query": query,
@@ -102,7 +99,7 @@ pub async fn register(
             Ok(())
         }
         Err(err) => {
-            let status_code = err.status();
+            let _status_code = err.status();
             // error!(target: TARGET_LOG, status = ?status_code, error = ?err);
             Err(anyhow::anyhow!(err))
         }

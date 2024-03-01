@@ -105,7 +105,7 @@ impl AppContext {
         let schema = blueprint.to_schema();
 
         async_graphql_extension_apollo_tracing::register::register(
-        // crate::apollo_register::register(
+            // crate::apollo_register::register(
             "user:gh.05228485-14f7-4f4c-9fb5-d7ec43b89115:zkErsGtGWvwwyFd2QnE6Vw",
             &schema,
             "tailcall-demo-1",
@@ -113,8 +113,8 @@ impl AppContext {
             "user-version",
             "platform",
         )
-            .await
-            .unwrap();
+        .await
+        .unwrap();
 
         AppContext {
             schema,

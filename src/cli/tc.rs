@@ -6,8 +6,8 @@ use clap::Parser;
 use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
-use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt};
-use tracing_subscriber::Registry;
+
+
 
 use super::command::{Cli, Command};
 use super::update_checker;

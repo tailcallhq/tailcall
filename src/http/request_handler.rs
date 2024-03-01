@@ -3,8 +3,10 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig,
-                          create_multipart_mixed_stream, is_accept_multipart_mixed};
+use async_graphql::http::{
+    playground_source,
+    GraphQLPlaygroundConfig,
+};
 use async_graphql::ServerError;
 use async_graphql_extension_apollo_tracing::{ApolloTracingDataExtBuilder, Method};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -76,14 +78,17 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(request) => {
             let mut response = request
                 .data(req_ctx.clone())
-                .data(ApolloTracingDataExtBuilder::default()
-                          .client_name("Sample_Client")
-                          .client_version("v2")
-                          .method(Method::Post)
-                          .status_code(200u32)
-                          .build()
-                          .unwrap(),)
-                .execute(&app_ctx.schema).await;
+                .data(
+                    ApolloTracingDataExtBuilder::default()
+                        .client_name("Sample_Client")
+                        .client_version("v2")
+                        .method(Method::Post)
+                        .status_code(200u32)
+                        .build()
+                        .unwrap(),
+                )
+                .execute(&app_ctx.schema)
+                .await;
             response = update_cache_control_header(response, app_ctx, req_ctx);
             let mut resp = response.to_response()?;
             update_response_headers(&mut resp, app_ctx);

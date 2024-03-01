@@ -1,5 +1,4 @@
 use futures::Future;
-
 #[cfg(feature = "tokio-comp")]
 pub use tokio::task::JoinHandle;
 

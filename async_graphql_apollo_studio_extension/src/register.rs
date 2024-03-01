@@ -2,7 +2,8 @@
 //!
 //! Implementation of the apollo Schema Reporting Protocol
 //! <https://www.apollographql.com/docs/studio/schema/schema-reporting/>
-use async_graphql::{ObjectType, dynamic::Schema, SubscriptionType};
+use async_graphql::dynamic::Schema;
+
 use reqwest::Client;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
@@ -16,9 +17,7 @@ const RUNTIME_VERSION: &str = "Rust - No runtime version provided yet";
  * Compute the SHA256 of a Schema
  * Usefull for Apollo Studio
  */
-pub fn sha(
-    schema: &Schema,
-) -> String {
+pub fn sha(schema: &Schema) -> String {
     let mut hasher = Sha256::new();
     let schema_sdl = schema.sdl();
     let schema_bytes = schema_sdl.as_bytes();
@@ -36,6 +35,7 @@ pub fn sha(
 /// * `user_version` - An arbitrary string you can set to distinguish data sent by different versions of your edge server. For example, this can be the SHA of the Git commit for your deployed server code. We plan to make this value visible in Apollo Studio.
 /// * `platform` - The infrastructure environment that your edge server is running in (localhost, kubernetes/deployment, aws lambda, google cloud run, google cloud function, AWS ECS, etc.)
 #[instrument(err, skip(authorization_token, schema))]
+#[allow(clippy::too_many_arguments)]
 pub async fn register(
     authorization_token: &str,
     schema: &Schema,
@@ -94,11 +94,11 @@ pub async fn register(
     );
 
     let body = serde_json::json!({
-            "query": mutation,
-            "variables": {
-                "schema": schema_sdl,
-            },
-        });
+        "query": mutation,
+        "variables": {
+            "schema": schema_sdl,
+        },
+    });
 
     println!("Request body: {body:?}");
 
