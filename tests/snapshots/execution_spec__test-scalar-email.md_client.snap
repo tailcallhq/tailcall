@@ -1,6 +1,5 @@
 ---
 source: tests/execution_spec.rs
-assertion_line: 911
 expression: client
 ---
 scalar Email
