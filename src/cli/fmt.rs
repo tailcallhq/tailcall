@@ -23,13 +23,15 @@ impl Fmt {
         let mut table = labels
             .iter()
             .map(|(key, value)| {
-                Fmt::heading(
+                let p = Fmt::heading(
                     &(key.clone() + ":" + padding.as_str())
                         .chars()
                         .take(max_length)
                         .collect::<String>(),
-                ) + " "
-                    + value
+                );
+
+                let v = Fmt::meta(value);
+                format!("{} {}", p, v)
             })
             .collect::<Vec<String>>()
             .join("\n");

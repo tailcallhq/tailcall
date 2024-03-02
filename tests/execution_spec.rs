@@ -841,8 +841,8 @@ async fn assert_spec(spec: ExecutionSpec) {
                 let identity = config.to_sdl();
 
                 pretty_assertions::assert_eq!(
-                    content.as_ref(),
-                    identity,
+                    content,
+                    &identity,
                     "Identity check failed for {:#?}",
                     spec.path,
                 );

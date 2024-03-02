@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use crate::blueprint::Upstream;
 use crate::cache::InMemoryCache;
+use crate::cli::rhai_script;
 use crate::runtime::TargetRuntime;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
@@ -21,12 +22,12 @@ fn init_file() -> Arc<dyn FileIO> {
 }
 
 fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
-    #[cfg(feature = "js")]
+    #[cfg(feature = "script")]
     if let Some(script) = script {
-        return crate::cli::javascript::init_http(http, script);
+        return rhai_script::init_http(http, script);
     }
 
-    #[cfg(not(feature = "js"))]
+    #[cfg(not(feature = "script"))]
     log::warn!("JS capabilities are disabled in this build");
     let _ = script;
 

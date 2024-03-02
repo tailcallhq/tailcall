@@ -1,4 +1,5 @@
 use anyhow::Result;
+use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use hyper::body::Bytes;
 
@@ -53,5 +54,16 @@ impl Response<Bytes> {
             status: self.status,
             headers: self.headers,
         })
+    }
+}
+
+impl Response<ConstValue> {
+    pub fn to_bytes(self) -> Result<Response<Bytes>> {
+        let mut resp = Response::default();
+        let body = serde_json::to_vec(&self.body)?;
+        resp.body = Bytes::from(body);
+        resp.status = self.status;
+        resp.headers = self.headers;
+        Ok(resp)
     }
 }

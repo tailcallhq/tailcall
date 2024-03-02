@@ -31,7 +31,7 @@ pub mod test {
 
     use crate::blueprint::Upstream;
     use crate::cache::InMemoryCache;
-    use crate::cli::javascript;
+    use crate::cli::rhai_script;
     use crate::http::Response;
     use crate::runtime::TargetRuntime;
     use crate::{blueprint, EnvIO, FileIO, HttpIO};
@@ -142,13 +142,13 @@ pub mod test {
 
     pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
         let http: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script.clone() {
-            javascript::init_http(TestHttp::init(&Default::default()), script)
+            rhai_script::init_http(TestHttp::init(&Default::default()), script)
         } else {
             Arc::new(TestHttp::init(&Default::default()))
         };
 
         let http2: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script {
-            javascript::init_http(
+            rhai_script::init_http(
                 TestHttp::init(&Upstream::default().http2_only(true)),
                 script,
             )

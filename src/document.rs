@@ -5,6 +5,7 @@ use async_graphql_value::{ConstValue, Name};
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
+
 fn print_schema(schema: &SchemaDefinition) -> String {
     let directives = schema
         .directives
@@ -34,6 +35,7 @@ fn print_schema(schema: &SchemaDefinition) -> String {
         )
     }
 }
+
 fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
         description: None,
@@ -66,6 +68,7 @@ fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
         locations: vec![],
     }
 }
+
 fn print_type_def(type_def: &TypeDefinition) -> String {
     match &type_def.kind {
         TypeKind::Scalar => {
@@ -174,6 +177,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         // Handle other type kinds...
     }
 }
+
 fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String {
     let directives: Vec<String> = field
         .directives
@@ -207,8 +211,9 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
         "  {}{}: {}{}",
         field.name.node, args_str, field.ty.node, directives_str
     );
-    doc + node
+    format!("{}{}", doc, node)
 }
+
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
     let directives: Vec<String> = field
         .directives
@@ -224,6 +229,7 @@ fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition)
 
     format!("  {}: {}{}", field.name.node, field.ty.node, directives_str)
 }
+
 fn print_directive(directive: &DirectiveDefinition) -> String {
     let args = directive
         .arguments
@@ -238,6 +244,7 @@ fn print_directive(directive: &DirectiveDefinition) -> String {
         format!("@{}({})", directive.name.node, args)
     }
 }
+
 pub fn print(sd: ServiceDocument) -> String {
     // Separate the definitions by type
     let definitions_len = sd.definitions.len();
