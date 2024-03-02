@@ -196,7 +196,7 @@ fn logger_init() {
 
             writeln!(
                 buf,
-                "[{color_styles}{}{color_styles:#}] {}",
+                "{color_styles}[{}]{color_styles:#} {}",
                 record.level(),
                 record.args(),
             )?;
