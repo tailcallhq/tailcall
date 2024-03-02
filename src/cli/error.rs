@@ -86,8 +86,9 @@ impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error_prefix = "[ERROR] ";
         let default_padding = 2;
+        let prefix_colored = self.colored(error_prefix, colored::Color::Red);
         if self.is_root {
-            f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
+            f.write_str(&prefix_colored)?;
         }
         f.write_str(self.message.to_string().to_string().as_str())?;
 
@@ -116,11 +117,11 @@ impl Display for CLIError {
 
         if !self.caused_by.is_empty() {
             f.write_str("\n")?;
-            f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
+            f.write_str(&prefix_colored)?;
             f.write_str(&margin(self.dimmed("Caused by:").as_str(), default_padding))?;
             f.write_str("\n")?;
             for (i, error) in self.caused_by.iter().enumerate() {
-                f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
+                f.write_str(&prefix_colored)?;
                 let message = &error.to_string();
                 f.write_str(&margin(bullet(message.as_str()).as_str(), default_padding))?;
 
