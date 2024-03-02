@@ -188,5 +188,5 @@ fn logger_init() {
     // use the log level from the env if there is one, otherwise use the default.
     let env = Env::new().filter_or(filter_env_name, "info");
 
-    env_logger::Builder::from_env(env).init();
+    env_logger::Builder::from_env(env).format_timestamp(None).format_target(false).init();
 }
