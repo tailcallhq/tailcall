@@ -4,7 +4,8 @@ use async_graphql_value::ConstValue;
 use crate::json::JsonLike;
 
 #[derive(schemars::JsonSchema)]
-/// A custom scalar to validate the format of email address
+ /// field whose value conforms to the standard internet email address format as specified in HTML Spec:
+/// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 pub struct Email;
 
 impl Email {
