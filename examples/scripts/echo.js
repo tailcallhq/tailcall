@@ -1,3 +1,3 @@
-function onRequest(request) {
+function onRequest({request}) {
   return {request}
 }
