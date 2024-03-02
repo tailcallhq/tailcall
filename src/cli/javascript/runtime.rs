@@ -76,7 +76,11 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
         let scope = &mut js_runtime.handle_scope();
         let global = v8::Local::<v8::Object>::try_from(v8::Local::new(scope, &runtime.global))?;
         let args = serde_v8::to_v8(scope, event)?;
-        let fn_server_emit = v8::String::new(scope, name.as_str())?;
+
+        // NOTE: unwrap is safe here
+        // We receive a `None` only if the name of the function is more than the set kMaxLength.
+        // kMaxLength is set to a very high value ~ 1 Billion, so we don't expect to hit this limit.
+        let fn_server_emit = v8::String::new(scope, name.as_str()).unwrap();
         let fn_server_emit = global
             .get(scope, fn_server_emit.into())
             .ok_or(anyhow::anyhow!("globalThis not initialized"))?;
