@@ -67,10 +67,18 @@ impl CLIError {
     }
 }
 
+const ERROR_PREFIX: &str = "[ERROR] ";
+
 fn margin(str: &str, margin: usize) -> String {
     let mut result = String::new();
     for line in str.split_inclusive('\n') {
-        result.push_str(&format!("{}{}", " ".repeat(margin), line));
+        let index = line
+            .find(ERROR_PREFIX)
+            .map(|i| i + ERROR_PREFIX.len())
+            .unwrap_or(0);
+        let (before, after) = line.split_at(index);
+
+        result.push_str(&format!("{}{}{}", before, " ".repeat(margin), after));
     }
     result
 }
@@ -84,24 +92,24 @@ fn bullet(str: &str) -> String {
 
 impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let error_prefix = "[ERROR] ";
         let default_padding = 2;
         let root_padding_size = if self.is_root {
-            error_prefix.len()
+            ERROR_PREFIX.len()
         } else {
             default_padding
         };
 
-        let error_prefix = self.colored(error_prefix, colored::Color::Red);
+        let prefix_colored = self.colored(ERROR_PREFIX, colored::Color::Red);
 
         if self.is_root {
-            f.write_str(&error_prefix)?;
+            f.write_str(&prefix_colored)?;
         }
 
         f.write_str(&self.message.to_string())?;
 
         if let Some(description) = &self.description {
             f.write_str("\n")?;
+            f.write_str(&prefix_colored)?;
             let color = if self.is_root {
                 colored::Color::Yellow
             } else {
@@ -132,10 +140,10 @@ impl Display for CLIError {
 
         if !self.caused_by.is_empty() {
             f.write_str("\n")?;
-            f.write_str(&error_prefix)?;
+            f.write_str(&prefix_colored)?;
             f.write_str(self.dimmed("Caused by:\n").as_str())?;
             for (i, error) in self.caused_by.iter().enumerate() {
-                f.write_str(&error_prefix)?;
+                f.write_str(&prefix_colored)?;
                 let message = &error.to_string();
                 f.write_str(&margin(bullet(message.as_str()).as_str(), default_padding))?;
 
