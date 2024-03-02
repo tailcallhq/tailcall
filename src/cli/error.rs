@@ -348,10 +348,9 @@ mod tests {
             .trace(vec!["Query", "users", "@http", "baseURL"]);
         let valid = ValidationError::from(cause);
         let error = CLIError::from(valid);
-        let expected = r"|Error: Invalid Configuration
-                     |Caused by:
-                     |  • Base URL needs to be specified
-                     |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
+        let expected = r"|[ERROR] Invalid Configuration
+                     |[ERROR]   Caused by:
+                     |[ERROR]   • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
