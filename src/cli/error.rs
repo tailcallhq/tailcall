@@ -89,7 +89,7 @@ impl Display for CLIError {
         if self.is_root {
             f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
         }
-        f.write_str(format!("{}", &self.message.to_string()).as_str())?;
+        f.write_str(self.message.to_string().to_string().as_str())?;
 
         if let Some(description) = &self.description {
             let color = if self.is_root {
@@ -261,8 +261,8 @@ mod tests {
     fn test_title_description() {
         let error = CLIError::new("Server could not be started")
             .description("The port is already in use".to_string());
-        let expected = r"|[ERROR] Server could not be started: The port is already in use"
-            .strip_margin();
+        let expected =
+            r"|[ERROR] Server could not be started: The port is already in use".strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
@@ -273,8 +273,9 @@ mod tests {
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
-        let expected = r"|[ERROR] Server could not be started: The port is already in use [at @server.port]"
-            .strip_margin();
+        let expected =
+            r"|[ERROR] Server could not be started: The port is already in use [at @server.port]"
+                .strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
