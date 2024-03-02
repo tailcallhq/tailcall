@@ -76,9 +76,9 @@ fn margin(str: &str, margin: usize) -> String {
             .find(ERROR_PREFIX)
             .map(|i| i + ERROR_PREFIX.len())
             .unwrap_or(0);
-        let (before, after) = line.split_at(index);
+        let (prefix, line) = line.split_at(index);
 
-        result.push_str(&format!("{}{}{}", before, " ".repeat(margin), after));
+        result.push_str(&format!("{}{}{}", prefix, " ".repeat(margin), line));
     }
     result
 }
