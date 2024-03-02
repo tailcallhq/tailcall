@@ -569,7 +569,7 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
-    let scalars = schemars::schema_for!(scalars::Scalars);
+    let scalars = schemars::schema_for!(scalars::CustomScalar);
 
     let defs = schema.definitions;
 

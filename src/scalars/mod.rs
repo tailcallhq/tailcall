@@ -1,20 +1,33 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use async_graphql_value::ConstValue;
+use lazy_static::lazy_static;
 
 pub use crate::scalars::email::Email;
 
 mod email;
 
-pub const CUSTOM_SCALARS: &[&str] = &["Email"];
+lazy_static! {
+    pub static ref CUSTOM_SCALARS: HashMap<String, Arc<dyn Scalar + Send + Sync>> = {
+        let mut hm: HashMap<String, Arc<dyn Scalar + Send + Sync>> = HashMap::new();
+        hm.insert("Email".to_string(), Arc::new(Email));
+        hm
+    };
+}
 
 #[derive(schemars::JsonSchema)]
-/// A wrapper to store all custom scalar types
-pub struct Scalars {
-    pub email: Email,
+pub enum CustomScalar {
+    Email(Email),
+}
+
+pub trait Scalar {
+    fn validate(&self) -> fn(&ConstValue) -> bool;
 }
 
 pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
-    match name {
-        "Email" | "email" => Email::validate,
-        &_ => |_| true,
-    }
+    CUSTOM_SCALARS
+        .get(name)
+        .map(|v| v.validate())
+        .unwrap_or(|_| true)
 }

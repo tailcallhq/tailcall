@@ -91,7 +91,7 @@ fn get_file_path() -> PathBuf {
 async fn get_updated_json() -> Result<Value> {
     let mut schema: RootSchema = schemars::schema_for!(config::Config);
 
-    let scalar: RootSchema = schemars::schema_for!(tailcall::scalars::Scalars);
+    let scalar: RootSchema = schemars::schema_for!(tailcall::scalars::CustomScalar);
     schema.definitions.extend(scalar.definitions);
 
     let schema = json!(schema);

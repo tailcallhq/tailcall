@@ -4,18 +4,20 @@ use async_graphql_value::ConstValue;
 use crate::json::JsonLike;
 
 #[derive(schemars::JsonSchema)]
- /// field whose value conforms to the standard internet email address format as specified in HTML Spec:
+/// field whose value conforms to the standard internet email address format as specified in HTML Spec:
 /// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 pub struct Email;
 
-impl Email {
+impl super::Scalar for Email {
     /// Function used to validate the email address
-    pub fn validate(value: &ConstValue) -> bool {
-        if let Ok(email_str) = value.clone().as_str_ok() {
-            let email_str = email_str.to_string();
-            return email(&email_str).is_ok();
+    fn validate(&self) -> fn(&ConstValue) -> bool {
+        |value| {
+            if let Ok(email_str) = value.clone().as_str_ok() {
+                let email_str = email_str.to_string();
+                return email(&email_str).is_ok();
+            }
+            false
         }
-        false
     }
 }
 
@@ -27,7 +29,7 @@ mod test {
     use async_graphql::dynamic::{Field, FieldFuture, InputValue, TypeRef};
     use async_graphql_value::value;
 
-    use crate::scalars::Email;
+    use crate::scalars::{Email, Scalar};
 
     fn get_schema(scalar: dynamic::Scalar, resp: String) -> Result<dynamic::Schema> {
         // define scalar
@@ -60,7 +62,7 @@ mod test {
     async fn test_email_valid_req_resp() -> Result<()> {
         // define and add validator for email
         let mut scalar = dynamic::Scalar::new("Email");
-        scalar = scalar.validator(Email::validate);
+        scalar = scalar.validator(Email.validate());
 
         let response_body = "alo@validresp.com".to_string();
         let schema = get_schema(scalar, response_body.clone())?;
@@ -87,7 +89,7 @@ mod test {
     async fn test_email_invalid() -> Result<()> {
         // define and add validator for email
         let mut scalar = dynamic::Scalar::new("Email");
-        scalar = scalar.validator(Email::validate);
+        scalar = scalar.validator(Email.validate());
 
         let schema = get_schema(scalar, "alo@validresp.com".to_string())?;
 

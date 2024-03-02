@@ -102,5 +102,5 @@ where
 
 pub fn is_scalar(type_name: &str) -> bool {
     ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
-        || CUSTOM_SCALARS.contains(&type_name)
+        || CUSTOM_SCALARS.keys().any(|v| (*v).eq(type_name))
 }
