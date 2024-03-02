@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::{env, fs};
+use std::io::Write;
 
 use anyhow::Result;
 use clap::Parser;
@@ -188,5 +189,12 @@ fn logger_init() {
     // use the log level from the env if there is one, otherwise use the default.
     let env = Env::new().filter_or(filter_env_name, "info");
 
-    env_logger::Builder::from_env(env).init();
+    env_logger::Builder::from_env(env)
+        .format(|buf, record| {
+            // Custom formatting for log messages
+            let level = record.level();
+            let args = record.args();
+            writeln!(buf, "[{}] {}", level, args)
+        })
+        .init();
 }
