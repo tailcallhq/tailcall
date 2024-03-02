@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 use crate::config::Source;
 
-const VERSION: &str = match option_env!("APP_VERSION") {
+pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
     _ => "0.1.0-dev",
 };
