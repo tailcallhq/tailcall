@@ -72,13 +72,7 @@ const ERROR_PREFIX: &str = "[ERROR] ";
 fn margin(str: &str, margin: usize) -> String {
     let mut result = String::new();
     for line in str.split_inclusive('\n') {
-        let index = line
-            .find(ERROR_PREFIX)
-            .map(|i| i + ERROR_PREFIX.len())
-            .unwrap_or(0);
-        let (prefix, line) = line.split_at(index);
-
-        result.push_str(&format!("{}{}{}", prefix, " ".repeat(margin), line));
+        result.push_str(&format!("{}{}", " ".repeat(margin), line));
     }
     result
 }
@@ -93,11 +87,6 @@ fn bullet(str: &str) -> String {
 impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let default_padding = 2;
-        let root_padding_size = if self.is_root {
-            ERROR_PREFIX.len()
-        } else {
-            default_padding
-        };
 
         let prefix_colored = self.colored(ERROR_PREFIX, colored::Color::Red);
 
@@ -108,20 +97,7 @@ impl Display for CLIError {
         f.write_str(&self.message.to_string())?;
 
         if let Some(description) = &self.description {
-            f.write_str("\n")?;
-            f.write_str(&prefix_colored)?;
-            let color = if self.is_root {
-                colored::Color::Yellow
-            } else {
-                colored::Color::White
-            };
-            f.write_str(
-                margin(
-                    &self.colored(format!("❯ {}", description).as_str(), color),
-                    root_padding_size,
-                )
-                .as_str(),
-            )?;
+            f.write_str(format!(": {}", description).as_str())?;
         }
 
         if !self.trace.is_empty() {
@@ -284,9 +260,8 @@ mod tests {
     fn test_title_description() {
         let error = CLIError::new("Server could not be started")
             .description("The port is already in use".to_string());
-        let expected = r"|[ERROR] Server could not be started
-                     |[ERROR]         ❯ The port is already in use"
-            .strip_margin();
+        let expected =
+            r"|[ERROR] Server could not be started: The port is already in use".strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
@@ -297,9 +272,9 @@ mod tests {
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
-        let expected = r"|[ERROR] Server could not be started
-                     |[ERROR]         ❯ The port is already in use [at @server.port]"
-            .strip_margin();
+        let expected =
+            r"|[ERROR] Server could not be started: The port is already in use [at @server.port]"
+                .strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
@@ -359,8 +334,7 @@ mod tests {
                      |[ERROR] Caused by:
                      |[ERROR]   • Base URL needs to be specified [at User.posts.@http.baseURL]
                      |[ERROR]   • Base URL needs to be specified [at Post.users.@http.baseURL]
-                     |[ERROR]   • Base URL needs to be specified
-                     |[ERROR]       ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
+                     |[ERROR]   • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
                      |[ERROR]   • Base URL needs to be specified [at Query.posts.@http.baseURL]"
             .strip_margin();
 
@@ -376,8 +350,7 @@ mod tests {
         let error = CLIError::from(valid);
         let expected = r"|[ERROR] Invalid Configuration
                      |[ERROR] Caused by:
-                     |[ERROR]   • Base URL needs to be specified
-                     |[ERROR]       ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
+                     |[ERROR]   • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
