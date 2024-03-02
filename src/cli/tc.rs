@@ -1,7 +1,6 @@
+use std::io::Write;
 use std::path::Path;
 use std::{env, fs};
-use std::io::Write;
-use log::{Level};
 
 use anyhow::Result;
 use clap::Parser;
@@ -176,16 +175,6 @@ fn display_config(config: &Config, n_plus_one_queries: bool) {
     Fmt::display(Fmt::table(seq));
 }
 
-fn color_for_level(level: Level) -> &'static str {
-    match level {
-        Level::Error => "\x1b[31m", // Red color for Error
-        Level::Warn => "\x1b[33m",  // Yellow color for Warn
-        Level::Info => "\x1b[32m",  // Green color for Info
-        Level::Debug => "\x1b[34m", // Blue color for Debug
-        Level::Trace => "\x1b[35m", // Magenta color for Trace
-    }
-}
-
 // initialize logger
 fn logger_init() {
     // set the log level
@@ -200,11 +189,18 @@ fn logger_init() {
     // use the log level from the env if there is one, otherwise use the default.
     let env = Env::new().filter_or(filter_env_name, "info");
 
-    
-    env_logger::Builder::from_env(env).format(|buf, record| {
-        let level = record.level();
-        let color = color_for_level(level);
-        writeln!(buf, "{}[{}]\x1b[0m {}", color, record.level(), record.args())?;
-        Ok(())
-    }).init();
+    env_logger::Builder::from_env(env)
+        .format(|buf, record| {
+            let level = record.level();
+            let color_styles = buf.default_level_style(level);
+
+            writeln!(
+                buf,
+                "[{color_styles}{}{color_styles:#}] {}",
+                record.level(),
+                record.args(),
+            )?;
+            Ok(())
+        })
+        .init();
 }
