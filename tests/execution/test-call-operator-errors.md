@@ -25,8 +25,8 @@ type Post {
   userId: Int!
   withoutResolver: User @call(query: "userWithoutResolver", args: {id: "{{value.userId}}"})
   withoutOperator: User @call(args: {id: "{{value.userId}}"})
-  urlMismatchHttp: User @call(query: "user", args: {})
-  argumentMismatchGraphQL: User @call(query: "userWithGraphQLResolver", args: {})
-  headersMismatchGraphQL: User @call(query: "userWithGraphQLResolver", args: {})
+  urlMismatchHttp: User @call(query: "user")
+  argumentMismatchGraphQL: User @call(query: "userWithGraphQLResolver")
+  headersMismatchGraphQL: User @call(query: "userWithGraphQLResolver")
 }
 ```

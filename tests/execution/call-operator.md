@@ -98,14 +98,14 @@ type Post {
   userId: Int!
   title: String
   body: String
-  user1: User @call(query: "user1", args: {})
-  userFromValue: User @call(query: "userFromValue", args: {})
+  user1: User @call(query: "user1")
+  userFromValue: User @call(query: "userFromValue")
   user: User @call(query: "user", args: {id: "{{value.userId}}"})
   userHttpHeaders: User @call(query: "userHttpHeaders", args: {id: "{{value.userId}}"})
   userHttpQuery: User @call(query: "userHttpQuery", args: {id: "{{value.userId}}"})
   userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
   userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
-  news: NewsData! @call(query: "news", args: {})
+  news: NewsData! @call(query: "news")
   newsWithPortArg: NewsData! @call(query: "news", args: {port: 50051})
 }
 ```

@@ -607,7 +607,8 @@ pub struct Call {
     /// The name of the field on the `Mutation` type that you want to call. For instance `createUser`.
     pub mutation: Option<String>,
 
-    /// The arguments of the field on the `Query` type that you want to call. For instance `{id: "{{value.userId}}"}`.
+    /// The arguments of the field on the `Query` or `Mutation` type that you want to call. For instance `{id: "{{value.userId}}"}`.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub args: BTreeMap<String, Value>,
 }
 
