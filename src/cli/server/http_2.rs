@@ -2,12 +2,12 @@
 use std::sync::Arc;
 
 use hyper::server::conn::AddrIncoming;
-use hyper::service::{make_service_fn, service_fn};
+use hyper::service::make_service_fn;
 use hyper::Server;
 use hyper_rustls::TlsAcceptor;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio::sync::oneshot;
-use tower::{ServiceBuilder, ServiceExt, Service};
+use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 
 use super::server_config::ServerConfig;
@@ -32,18 +32,18 @@ pub async fn start_http_2(
         let cors = CorsLayer::permissive();
 
         async move {
-            Ok::<_, anyhow::Error>(ServiceBuilder::new()
-                .layer(cors)
-                .service_fn(move |req| {
-                    handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-                }))
+            Ok::<_, anyhow::Error>(ServiceBuilder::new().layer(cors).service_fn(move |req| {
+                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
+            }))
         }
     });
 
     let make_svc_batch_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
+        let cors = CorsLayer::permissive();
+
         async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
+            Ok::<_, anyhow::Error>(ServiceBuilder::new().layer(cors).service_fn(move |req| {
                 handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
             }))
         }
