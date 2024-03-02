@@ -46,8 +46,12 @@ impl RequestFilter {
                 }
                 Command::Response(js_response) => {
                     // Check if the response is a redirect
-                    if let Some(location) = js_response.headers.get("location") {
-                        request.url_mut().set_path(location);
+                    if (js_response.status == 301 || js_response.status == 302)
+                        && js_response.headers.contains_key("location")
+                    {
+                        request
+                            .url_mut()
+                            .set_path(js_response.headers["location"].as_str());
                         self.on_request(request).await
                     } else {
                         Ok(js_response.try_into()?)
