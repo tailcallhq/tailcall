@@ -1,9 +1,10 @@
+use std::io::Write;
 use std::path::Path;
 use std::{env, fs};
-use std::io::Write;
 
 use anyhow::Result;
 use clap::Parser;
+use colored::*;
 use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
@@ -193,8 +194,16 @@ fn logger_init() {
         .format(|buf, record| {
             // Custom formatting for log messages
             let level = record.level();
+            let formatted_level = format!("[{}]", level);
+            let colored_level = match level {
+                log::Level::Error => formatted_level.red(),
+                log::Level::Warn => formatted_level.yellow(),
+                log::Level::Info => formatted_level.green(),
+                log::Level::Debug => formatted_level.blue(),
+                log::Level::Trace => formatted_level.magenta(),
+            };
             let args = record.args();
-            writeln!(buf, "[{}] {}", level, args)
+            writeln!(buf, "{} {}", colored_level, args)
         })
         .init();
 }
