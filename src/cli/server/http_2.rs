@@ -7,6 +7,8 @@ use hyper::Server;
 use hyper_rustls::TlsAcceptor;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio::sync::oneshot;
+use tower::{ServiceBuilder, ServiceExt, Service};
+use tower_http::cors::CorsLayer;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
@@ -27,10 +29,14 @@ pub async fn start_http_2(
         .with_incoming(incoming);
     let make_svc_single_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
+        let cors = CorsLayer::permissive();
+
         async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
+            Ok::<_, anyhow::Error>(ServiceBuilder::new()
+                .layer(cors)
+                .service_fn(move |req| {
+                    handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
+                }))
         }
     });
 
