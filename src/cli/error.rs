@@ -260,8 +260,8 @@ mod tests {
     fn test_title_description() {
         let error = CLIError::new("Server could not be started")
             .description("The port is already in use".to_string());
-        let expected = r"|[ERROR] Server could not be started: The port is already in use"
-            .strip_margin();
+        let expected =
+            r"|[ERROR] Server could not be started: The port is already in use".strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
@@ -272,8 +272,9 @@ mod tests {
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
-        let expected = r"|[ERROR] Server could not be started: The port is already in use [at @server.port]"
-            .strip_margin();
+        let expected =
+            r"|[ERROR] Server could not be started: The port is already in use [at @server.port]"
+                .strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
