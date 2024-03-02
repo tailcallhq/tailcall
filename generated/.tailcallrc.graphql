@@ -38,8 +38,8 @@ value of `userInput` from the `Post` type.
 """
 directive @call(
   """
-  The arguments of the field on the `Query` type that you want to call. For instance 
-  `{id: "{{value.userId}}"}`.
+  The arguments of the field on the `Query` or `Mutation` type that you want to call. 
+  For instance `{id: "{{value.userId}}"}`.
   """
   args: JSON
   """
