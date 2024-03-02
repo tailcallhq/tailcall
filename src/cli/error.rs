@@ -84,13 +84,8 @@ fn bullet(str: &str) -> String {
 
 impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let error_prefix = "Error: ";
+        let error_prefix = "[ERROR] ";
         let default_padding = 2;
-        let root_padding_size = if self.is_root {
-            error_prefix.len()
-        } else {
-            default_padding
-        };
 
         if self.is_root {
             f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
@@ -99,18 +94,8 @@ impl Display for CLIError {
         f.write_str(&self.message.to_string())?;
 
         if let Some(description) = &self.description {
-            f.write_str("\n")?;
-            let color = if self.is_root {
-                colored::Color::Yellow
-            } else {
-                colored::Color::White
-            };
             f.write_str(
-                margin(
-                    &self.colored(format!("❯ {}", description).as_str(), color),
-                    root_padding_size,
-                )
-                .as_str(),
+                &self.colored(format!(": {}", description).as_str(), colored::Color::White),
             )?;
         }
 
@@ -129,9 +114,13 @@ impl Display for CLIError {
         }
 
         if !self.caused_by.is_empty() {
-            f.write_str(self.dimmed("\nCaused by:\n").as_str())?;
+            f.write_str("\n")?;
+            f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
+            f.write_str(self.dimmed("Caused by:\n").as_str())?;
             for (i, error) in self.caused_by.iter().enumerate() {
                 let message = &error.to_string();
+                f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
+
                 f.write_str(&margin(bullet(message.as_str()).as_str(), default_padding))?;
 
                 if i < self.caused_by.len() - 1 {
