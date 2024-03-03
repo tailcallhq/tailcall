@@ -84,13 +84,7 @@ fn bullet(str: &str) -> String {
 
 impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let error_prefix = "[ERROR] ";
-        let colored_error_prefix = self.colored(error_prefix, colored::Color::Red);
         let default_padding = 2;
-
-        if self.is_root {
-            f.write_str(&colored_error_prefix)?;
-        }
 
         let message_color = if self.is_root {
             colored::Color::Yellow
@@ -98,11 +92,16 @@ impl Display for CLIError {
             colored::Color::White
         };
 
-        f.write_str(self.colored(&self.message, message_color).as_str())?;
-
         if let Some(description) = &self.description {
-            f.write_str(&self.colored(": ", message_color))?;
-            f.write_str(&self.colored(description.to_string().as_str(), colored::Color::White))?;
+            log::error!("{}: {}", self.colored(&self.message, message_color).as_str(), self.colored(description.to_string().as_str(), colored::Color::White));
+        }
+        else {
+            if self.is_root {
+                log::error!("{}", self.colored(&self.message, message_color).as_str());
+            }
+            else {
+                log::error!("{}", margin(bullet(self.message.as_str()).as_str(), default_padding));       
+            }
         }
 
         if !self.trace.is_empty() {
@@ -120,16 +119,14 @@ impl Display for CLIError {
         }
 
         if !self.caused_by.is_empty() {
-            f.write_str("\n")?;
             log::error!("{}", self.dimmed("Caused by:"));   
 
             for (i, error) in self.caused_by.iter().enumerate() {
                 let message = &error.to_string();
-                log::error!("{}", margin(bullet(message.as_str()).as_str(), default_padding));       
 
-                if i < self.caused_by.len() - 1 {
-                    f.write_str("\n")?;
-                }
+                if message.len() > 0 {
+                   log::error!("{}", margin(bullet(message.as_str()).as_str(), default_padding));   
+                }  
             }
         }
 
