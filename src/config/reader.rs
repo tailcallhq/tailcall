@@ -470,16 +470,31 @@ mod reader_tests {
 
     #[test]
     fn test_relative_path() {
-        let path_dir = Path::new("abc/xyz");
-        let file_relative = "foo/bar/my.proto";
-        let file_absolute = "/foo/bar/my.proto";
-        assert_eq!(
-            "abc/xyz/foo/bar/my.proto",
-            ConfigReader::resolve_path(file_relative, Some(path_dir))
-        );
-        assert_eq!(
-            "/foo/bar/my.proto",
-            ConfigReader::resolve_path(file_absolute, Some(path_dir))
-        );
+        if cfg!(windows) {
+            let path_dir = Path::new("abc\\xyz");
+            let file_relative = "foo\\bar\\my.proto";
+            let file_absolute = "\\foo\\bar\\my.proto";
+            assert_eq!(
+                "abc\\xyz\\foo\\bar\\my.proto",
+                ConfigReader::resolve_path(file_relative, Some(path_dir))
+            );
+            assert_eq!(
+                "\\foo\\bar\\my.proto",
+                ConfigReader::resolve_path(file_absolute, Some(path_dir))
+            );
+        }
+        else {
+            let path_dir = Path::new("abc/xyz");
+            let file_relative = "foo/bar/my.proto";
+            let file_absolute = "/foo/bar/my.proto";
+            assert_eq!(
+                "abc/xyz/foo/bar/my.proto",
+                ConfigReader::resolve_path(file_relative, Some(path_dir))
+            );
+            assert_eq!(
+                "/foo/bar/my.proto",
+                ConfigReader::resolve_path(file_absolute, Some(path_dir))
+            );
+        }
     }
 }
