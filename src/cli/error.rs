@@ -93,15 +93,18 @@ impl Display for CLIError {
         };
 
         if let Some(description) = &self.description {
-            log::error!("{}: {}", self.colored(&self.message, message_color).as_str(), self.colored(description.to_string().as_str(), colored::Color::White));
-        }
-        else {
-            if self.is_root {
-                log::error!("{}", self.colored(&self.message, message_color).as_str());
-            }
-            else {
-                log::error!("{}", margin(bullet(self.message.as_str()).as_str(), default_padding));       
-            }
+            log::error!(
+                "{}: {}",
+                self.colored(&self.message, message_color).as_str(),
+                self.colored(description.to_string().as_str(), colored::Color::White)
+            );
+        } else if self.is_root {
+            log::error!("{}", self.colored(&self.message, message_color).as_str());
+        } else {
+            log::error!(
+                "{}",
+                margin(bullet(self.message.as_str()).as_str(), default_padding)
+            );
         }
 
         if !self.trace.is_empty() {
@@ -119,14 +122,17 @@ impl Display for CLIError {
         }
 
         if !self.caused_by.is_empty() {
-            log::error!("{}", self.dimmed("Caused by:"));   
+            log::error!("{}", self.dimmed("Caused by:"));
 
-            for (i, error) in self.caused_by.iter().enumerate() {
+            for error in self.caused_by.iter() {
                 let message = &error.to_string();
 
-                if message.len() > 0 {
-                   log::error!("{}", margin(bullet(message.as_str()).as_str(), default_padding));   
-                }  
+                if !message.is_empty() {
+                    log::error!(
+                        "{}",
+                        margin(bullet(message.as_str()).as_str(), default_padding)
+                    );
+                }
             }
         }
 
