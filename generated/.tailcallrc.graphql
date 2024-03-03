@@ -22,7 +22,7 @@ directive @cache(
   the cache.
   """
   maxAge: Int!
-) on FIELD_DEFINITION
+) on OBJECT | FIELD_DEFINITION
 
 """
 The `@const` operators allows us to embed a constant response for the schema.

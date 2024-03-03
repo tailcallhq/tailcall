@@ -20,7 +20,7 @@ static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
     ("groupBy", Entity::FieldDefinition, false),
     ("const", Entity::FieldDefinition, false),
     ("graphQL", Entity::FieldDefinition, false),
-    ("cache", Entity::FieldDefinition, false),
+    ("cache", Entity::ObjectOrFieldDefinition, false),
     ("expr", Entity::FieldDefinition, false),
     ("js", Entity::FieldDefinition, false),
 ];
@@ -50,6 +50,7 @@ enum Entity {
     Schema,
     Object,
     FieldDefinition,
+    ObjectOrFieldDefinition,
 }
 
 impl std::fmt::Debug for Entity {
@@ -63,6 +64,9 @@ impl std::fmt::Debug for Entity {
             }
             Entity::FieldDefinition => {
                 write!(f, "FIELD_DEFINITION")
+            }
+            Entity::ObjectOrFieldDefinition => {
+                write!(f, "OBJECT | FIELD_DEFINITION")
             }
         }
     }
