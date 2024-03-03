@@ -193,15 +193,18 @@ fn logger_init() {
         .format(|buf, record| {
             let level = record.level();
             let color_styles = buf.default_level_style(level);
+            let mut lines_buffer = Vec::new();
 
             for line in record.args().to_string().lines() {
                 writeln!(
-                    buf,
+                    &mut lines_buffer,
                     "{color_styles}[{}]{color_styles:#} {}",
                     record.level(),
                     line,
                 )?;
             }
+
+            buf.write_all(&lines_buffer)?;
 
             Ok(())
         })
