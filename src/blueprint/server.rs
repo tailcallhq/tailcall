@@ -7,6 +7,7 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use crate::blueprint::CorsParams;
 
 use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
@@ -30,6 +31,7 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
+    pub cors_params: Option<CorsParams>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -107,24 +109,39 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 (config_server).get_response_headers().0,
             ))
             .fuse(to_script(&config_module))
-            .map(|(hostname, http, response_headers, script)| Server {
-                enable_apollo_tracing: (config_server).enable_apollo_tracing(),
-                enable_cache_control_header: (config_server).enable_cache_control(),
-                enable_graphiql: (config_server).enable_graphiql(),
-                enable_introspection: (config_server).enable_introspection(),
-                enable_query_validation: (config_server).enable_query_validation(),
-                enable_response_validation: (config_server).enable_http_validation(),
-                enable_batch_requests: (config_server).enable_batch_requests(),
-                enable_showcase: (config_server).enable_showcase(),
-                global_response_timeout: (config_server).get_global_response_timeout(),
-                http,
-                worker: (config_server).get_workers(),
-                port: (config_server).get_port(),
-                hostname,
-                vars: (config_server).get_vars(),
-                pipeline_flush: (config_server).get_pipeline_flush(),
-                response_headers,
-                script,
+            .and_then(|(hostname, http, response_headers, script)| {
+                let cors_params = config_server
+                    .get_cors_params()
+                    .map(|val| val.try_into())
+                    .transpose();
+
+                let cors_params: Option<CorsParams> = match cors_params {
+                    Ok(val) => val,
+                    Err(e) => return Valid::fail(e.to_string()),
+                };
+
+                let server = Server {
+                    enable_apollo_tracing: (config_server).enable_apollo_tracing(),
+                    enable_cache_control_header: (config_server).enable_cache_control(),
+                    enable_graphiql: (config_server).enable_graphiql(),
+                    enable_introspection: (config_server).enable_introspection(),
+                    enable_query_validation: (config_server).enable_query_validation(),
+                    enable_response_validation: (config_server).enable_http_validation(),
+                    enable_batch_requests: (config_server).enable_batch_requests(),
+                    enable_showcase: (config_server).enable_showcase(),
+                    global_response_timeout: (config_server).get_global_response_timeout(),
+                    http,
+                    worker: (config_server).get_workers(),
+                    port: (config_server).get_port(),
+                    hostname,
+                    vars: (config_server).get_vars(),
+                    pipeline_flush: (config_server).get_pipeline_flush(),
+                    response_headers,
+                    script,
+                    cors_params
+                };
+
+                Valid::succeed(server)
             })
             .to_result()
     }

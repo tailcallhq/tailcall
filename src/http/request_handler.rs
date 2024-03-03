@@ -5,12 +5,17 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use hyper::{Body, header, HeaderMap, Request, Response, StatusCode};
+use hyper::header::HeaderValue;
+use hyper::http::{HeaderName, Method};
+use hyper::http::request::Parts;
 use serde::de::DeserializeOwned;
+use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, AllowPrivateNetwork, CorsLayer, ExposeHeaders, MaxAge, Vary};
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::blueprint::CorsParams;
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
@@ -105,23 +110,68 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-pub async fn preflight(app_ctx: Arc<AppContext>, req: Request<Body>) -> Result<Response<Body>> {
-    let _whole_body = hyper::body::aggregate(req).await?;
-    let mut response = Response::builder().status(StatusCode::OK);
 
-    for (key, val) in &app_ctx.blueprint.server.response_headers {
-        if key
-            .as_str()
-            .to_lowercase()
-            .starts_with("access-control-allow-")
-        {
-            response = response.header(key, val);
+pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Body>,
+    layer: &CorsParams,
+    app_ctx: Arc<AppContext>
+) -> Result<Response<Body>> {
+    let (parts, body) = req.into_parts();
+    let origin = parts.headers.get(&header::ORIGIN);
+
+    let mut headers = HeaderMap::new();
+
+    // These headers are applied to both preflight and subsequent regular CORS requests:
+    // https://fetch.spec.whatwg.org/#http-responses
+
+    headers.extend(layer.allow_origin_to_header(origin));
+    headers.extend(layer.allow_credentials_to_header());
+    headers.extend(layer.allow_private_network_to_header(&parts));
+
+    let mut vary_headers = layer.vary.iter().cloned();
+    if let Some(first) = vary_headers.next() {
+        let mut header = match headers.entry(header::VARY) {
+            header::Entry::Occupied(_) => {
+                unreachable!("no vary header inserted up to this point")
+            }
+            header::Entry::Vacant(v) => v.insert_entry(first),
+        };
+
+        for val in vary_headers {
+            header.append(val);
         }
     }
 
-    let response = response.body(Body::default())?;
+    // Return results immediately upon preflight request
+    if parts.method == Method::OPTIONS {
+        // These headers are applied only to preflight requests
+        headers.extend(layer.allow_methods_to_header(&parts));
+        headers.extend(layer.allow_headers_to_header(&parts));
+        headers.extend(layer.max_age_to_header());
 
-    Ok(response)
+        let mut response = Response::new(Body::default());
+        std::mem::swap(response.headers_mut(), &mut headers);
+
+        return Ok(response)
+    } else {
+        // This header is applied only to non-preflight requests
+        headers.extend(layer.expose_headers_to_header());
+
+        let req = Request::from_parts(parts, body);
+        let mut response = handle_request::<T>(req, app_ctx).await?;
+
+        let response_headers = response.headers_mut();
+
+        // vary header can have multiple values, don't overwrite
+        // previously-set value(s).
+        if let Some(vary) = headers.remove(header::VARY) {
+            response_headers.append(header::VARY, vary);
+        }
+        // extend will overwrite previous headers of remaining names
+        response_headers.extend(headers.drain());
+
+        Ok(response)
+    }
 }
 
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
@@ -129,7 +179,6 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     match *req.method() {
-        hyper::Method::OPTIONS => preflight(app_ctx.clone(), req).await,
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.

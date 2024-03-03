@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use hyper::service::make_service_fn;
+use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -8,7 +8,7 @@ use tower_http::cors::CorsLayer;
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
-use crate::http::handle_request;
+use crate::http::{handle_request, handle_request_with_cors};
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
@@ -17,11 +17,21 @@ pub async fn start_http_1(
     let addr = sc.addr();
     let make_svc_single_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
-        let cors = CorsLayer::permissive();
 
         async move {
-            Ok::<_, anyhow::Error>(ServiceBuilder::new().layer(cors).service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
+            let state = state.clone();
+            Ok::<_, anyhow::Error>(service_fn(move |req| {
+                let state = state.clone();
+                async move {
+                    let state = state.clone();
+                    match state.app_ctx.blueprint.server.cors_params {
+                        Some(ref cors_params) => {
+                            handle_request_with_cors::<GraphQLRequest>(req, cors_params, state.app_ctx.clone()).await
+                        }
+                        None => handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
+                    }
+
+                }
             }))
         }
     });
@@ -31,8 +41,19 @@ pub async fn start_http_1(
         let cors = CorsLayer::permissive();
 
         async move {
-            Ok::<_, anyhow::Error>(ServiceBuilder::new().layer(cors).service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
+            let state = state.clone();
+            Ok::<_, anyhow::Error>(service_fn(move |req| {
+                let state = state.clone();
+                async move {
+                    let state = state.clone();
+                    match state.app_ctx.blueprint.server.cors_params {
+                        Some(ref cors_params) => {
+                            handle_request_with_cors::<GraphQLRequest>(req, cors_params, state.app_ctx.clone()).await
+                        }
+                        None => handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
+                    }
+
+                }
             }))
         }
     });

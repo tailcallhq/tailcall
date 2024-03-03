@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
+use crate::config::cors_params::CorsParams;
 
 use crate::config::KeyValues;
 use crate::is_default;
@@ -76,6 +77,10 @@ pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
     /// `workers` sets the number of worker threads. @default the number of system cores.
     pub workers: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `corsParams` sets the number of worker threads. @default the number of system cores.
+    pub cors_params: Option<CorsParams>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -146,6 +151,10 @@ impl Server {
 
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
+    }
+
+    pub fn get_cors_params(&self) -> Option<CorsParams> {
+        self.cors_params.clone()
     }
 
     pub fn merge_right(mut self, other: Self) -> Self {

@@ -12,6 +12,7 @@ mod schema;
 mod server;
 mod timeout;
 mod upstream;
+mod cors_params;
 
 pub use blueprint::*;
 pub use definitions::*;
@@ -24,6 +25,7 @@ pub use schema::*;
 pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
+pub use cors_params::*;
 
 use crate::config::{Arg, ConfigModule, Field};
 use crate::try_fold::TryFold;
