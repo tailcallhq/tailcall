@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
-use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 
 use super::server_config::ServerConfig;
-use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use crate::async_graphql_hyper::GraphQLRequest;
 use crate::cli::CLIError;
 use crate::http::{handle_request, handle_request_with_cors};
 
@@ -26,11 +25,15 @@ pub async fn start_http_1(
                     let state = state.clone();
                     match state.app_ctx.blueprint.server.cors_params {
                         Some(ref cors_params) => {
-                            handle_request_with_cors::<GraphQLRequest>(req, cors_params, state.app_ctx.clone()).await
+                            handle_request_with_cors::<GraphQLRequest>(
+                                req,
+                                cors_params,
+                                state.app_ctx.clone(),
+                            )
+                            .await
                         }
-                        None => handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
+                        None => handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await,
                     }
-
                 }
             }))
         }
@@ -38,7 +41,7 @@ pub async fn start_http_1(
 
     let make_svc_batch_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
-        let cors = CorsLayer::permissive();
+        let _cors = CorsLayer::permissive();
 
         async move {
             let state = state.clone();
@@ -48,11 +51,15 @@ pub async fn start_http_1(
                     let state = state.clone();
                     match state.app_ctx.blueprint.server.cors_params {
                         Some(ref cors_params) => {
-                            handle_request_with_cors::<GraphQLRequest>(req, cors_params, state.app_ctx.clone()).await
+                            handle_request_with_cors::<GraphQLRequest>(
+                                req,
+                                cors_params,
+                                state.app_ctx.clone(),
+                            )
+                            .await
                         }
-                        None => handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
+                        None => handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await,
                     }
-
                 }
             }))
         }

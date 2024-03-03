@@ -161,6 +161,72 @@
         "data": true
       }
     },
+    "ConstOrMirror": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "CorsParams": {
+      "type": "object",
+      "required": [
+        "allowHeaders",
+        "allowMethods",
+        "allowOrigin",
+        "allowPrivateNetwork",
+        "vary"
+      ],
+      "properties": {
+        "allowCredentials": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "allowHeaders": {
+          "$ref": "#/definitions/ConstOrMirror"
+        },
+        "allowMethods": {
+          "$ref": "#/definitions/ConstOrMirror"
+        },
+        "allowOrigin": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowPrivateNetwork": {
+          "type": "boolean"
+        },
+        "exposeHeaders": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "maxAge": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "vary": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "Encoding": {
       "type": "string",
       "enum": [
@@ -1373,6 +1439,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "corsParams": {
+          "description": "`corsParams` sets the number of worker threads. @default the number of system cores.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsParams"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "globalResponseTimeout": {

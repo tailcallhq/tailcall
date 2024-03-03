@@ -229,6 +229,10 @@ directive @server(
   """
   cacheControlHeader: Boolean
   """
+  `corsParams` sets the number of worker threads. @default the number of system cores.
+  """
+  corsParams: CorsParams
+  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
@@ -400,6 +404,16 @@ The `@const` operators allows us to embed a constant response for the schema.
 """
 input Const {
   data: JSON
+}
+input CorsParams {
+  allowCredentials: Boolean
+  allowHeaders: ConstOrMirror
+  allowMethods: ConstOrMirror
+  allowOrigin: [String!]
+  allowPrivateNetwork: Boolean!
+  exposeHeaders: String
+  maxAge: Int
+  vary: [String!]
 }
 enum Encoding {
   ApplicationJson

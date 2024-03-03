@@ -7,8 +7,8 @@ use derive_setters::Setters;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
-use crate::blueprint::CorsParams;
 
+use crate::blueprint::CorsParams;
 use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -138,7 +138,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                     pipeline_flush: (config_server).get_pipeline_flush(),
                     response_headers,
                     script,
-                    cors_params
+                    cors_params,
                 };
 
                 Valid::succeed(server)

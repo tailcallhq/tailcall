@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use crate::config::cors_params::CorsParams;
 
+use crate::config::cors_params::CorsParams;
 use crate::config::KeyValues;
 use crate::is_default;
 

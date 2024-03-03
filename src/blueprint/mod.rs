@@ -1,5 +1,6 @@
 mod blueprint;
 mod compress;
+mod cors_params;
 mod definitions;
 mod dynamic_value;
 mod from_config;
@@ -12,9 +13,9 @@ mod schema;
 mod server;
 mod timeout;
 mod upstream;
-mod cors_params;
 
 pub use blueprint::*;
+pub use cors_params::*;
 pub use definitions::*;
 pub use dynamic_value::*;
 pub use from_config::*;
@@ -25,7 +26,6 @@ pub use schema::*;
 pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
-pub use cors_params::*;
 
 use crate::config::{Arg, ConfigModule, Field};
 use crate::try_fold::TryFold;

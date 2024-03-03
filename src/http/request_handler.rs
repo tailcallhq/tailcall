@@ -5,12 +5,9 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
-use hyper::{Body, header, HeaderMap, Request, Response, StatusCode};
-use hyper::header::HeaderValue;
-use hyper::http::{HeaderName, Method};
-use hyper::http::request::Parts;
+use hyper::http::Method;
+use hyper::{header, Body, HeaderMap, Request, Response, StatusCode};
 use serde::de::DeserializeOwned;
-use tower_http::cors::{AllowCredentials, AllowHeaders, AllowMethods, AllowOrigin, AllowPrivateNetwork, CorsLayer, ExposeHeaders, MaxAge, Vary};
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
@@ -110,11 +107,10 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-
 pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     layer: &CorsParams,
-    app_ctx: Arc<AppContext>
+    app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
@@ -152,7 +148,7 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
         let mut response = Response::new(Body::default());
         std::mem::swap(response.headers_mut(), &mut headers);
 
-        return Ok(response)
+        Ok(response)
     } else {
         // This header is applied only to non-preflight requests
         headers.extend(layer.expose_headers_to_header());
