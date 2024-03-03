@@ -121,13 +121,11 @@ impl Display for CLIError {
 
         if !self.caused_by.is_empty() {
             f.write_str("\n")?;
-            f.write_str(&colored_error_prefix)?;
-            f.write_str(self.dimmed("Caused by:\n").as_str())?;
+            log::error!("{}", self.dimmed("Caused by:"));   
+
             for (i, error) in self.caused_by.iter().enumerate() {
                 let message = &error.to_string();
-                f.write_str(&colored_error_prefix)?;
-
-                f.write_str(&margin(bullet(message.as_str()).as_str(), default_padding))?;
+                log::error!("{}", margin(bullet(message.as_str()).as_str(), default_padding));       
 
                 if i < self.caused_by.len() - 1 {
                     f.write_str("\n")?;
