@@ -1,7 +1,7 @@
 use derive_setters::Setters;
-use http_cache_reqwest::Parts;
 use hyper::header;
 use hyper::header::{HeaderName, HeaderValue};
+use hyper::http::request::Parts;
 
 use crate::config;
 
