@@ -91,7 +91,7 @@ httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 markdown = "1.0.0-alpha.16"
-insta = { version = "1.36.0", features = ["json"] }
+insta = { version = "1.36.1", features = ["json"] }
 tempfile = "3.10.1"
 temp-env = "0.3.6"
 
