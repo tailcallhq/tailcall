@@ -254,7 +254,7 @@ dependencies = [
  "futures-timer",
  "futures-util",
  "handlebars",
- "http 1.0.0",
+ "http 1.1.0",
  "indexmap 2.2.5",
  "lru 0.7.8",
  "mime",
@@ -290,8 +290,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-extension-apollo-tracing"
-version = "3.2.11"
-source = "git+https://github.com/async-graphql/async_graphql_apollo_studio_extension#582dce567b72f8d034306b68f8ff453bd0624cd9"
+version = "3.2.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa212d409ab6918c07aad90299ac7c1394f36fc075eb679cdf03b653dafc1af"
 dependencies = [
  "anyhow",
  "async-graphql",
@@ -571,7 +572,7 @@ checksum = "598e2ade8447dce8d3a15b6159b73354db34257851344b232fb1920c272acc61"
 dependencies = [
  "base64",
  "bytes 1.5.0",
- "http 1.0.0",
+ "http 1.1.0",
  "http-body 1.0.0",
  "http-serde 2.0.0",
  "query_map",
@@ -590,7 +591,7 @@ dependencies = [
  "bitflags 1.3.2",
  "bytes 1.5.0",
  "futures-util",
- "http 0.2.11",
+ "http 0.2.12",
  "http-body 0.4.6",
  "hyper 0.14.28",
  "itoa",
@@ -616,7 +617,7 @@ dependencies = [
  "async-trait",
  "bytes 1.5.0",
  "futures-util",
- "http 0.2.11",
+ "http 0.2.12",
  "http-body 0.4.6",
  "mime",
  "rustversion",
@@ -1953,7 +1954,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http 0.2.11",
+ "http 0.2.12",
  "indexmap 2.2.5",
  "slab",
  "tokio 1.36.0",
@@ -2036,9 +2037,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.11"
+version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8947b1a6fad4393052c7ba1f4cd97bed3e953a95c79c92ad9b051a04611d9fbb"
+checksum = "601cbb57e577e2f5ef5be8e7b83f0f63994f25aa94d673e54a92d5c516d101f1"
 dependencies = [
  "bytes 1.5.0",
  "fnv",
@@ -2047,9 +2048,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b32afd38673a8016f7c9ae69e5af41a58f81b1d31689040f2f1959594ce194ea"
+checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
 dependencies = [
  "bytes 1.5.0",
  "fnv",
@@ -2063,7 +2064,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
 dependencies = [
  "bytes 1.5.0",
- "http 0.2.11",
+ "http 0.2.12",
  "pin-project-lite",
 ]
 
@@ -2074,7 +2075,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1cac85db508abc24a2e48553ba12a996e87244a0395ce011e62b37158745d643"
 dependencies = [
  "bytes 1.5.0",
- "http 1.0.0",
+ "http 1.1.0",
 ]
 
 [[package]]
@@ -2085,7 +2086,7 @@ checksum = "41cb79eb393015dadd30fc252023adb0b2400a0caee0fa2a077e6e21a551e840"
 dependencies = [
  "bytes 1.5.0",
  "futures-util",
- "http 1.0.0",
+ "http 1.1.0",
  "http-body 1.0.0",
  "pin-project-lite",
 ]
@@ -2098,7 +2099,7 @@ checksum = "5b5ab65432bbdfe8490dfde21d0366353a8d39f2bc24aca0146889f931b0b4b5"
 dependencies = [
  "async-trait",
  "bincode",
- "http 0.2.11",
+ "http 0.2.12",
  "http-cache-semantics",
  "httpdate",
  "moka",
@@ -2114,7 +2115,7 @@ checksum = "9c8285341ce7e709c56a0f259ff1c789c70edfbaa88acd69d27e4d63980b92dc"
 dependencies = [
  "anyhow",
  "async-trait",
- "http 0.2.11",
+ "http 0.2.12",
  "http-cache",
  "http-cache-semantics",
  "reqwest",
@@ -2130,7 +2131,7 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7aec9f678bca3f4a15194b980f20ed9bfe0dd38e8d298c65c559a93dfbd6380a"
 dependencies = [
- "http 0.2.11",
+ "http 0.2.12",
  "http-serde 1.1.3",
  "serde",
  "time",
@@ -2142,7 +2143,7 @@ version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f560b665ad9f1572cfcaf034f7fb84338a7ce945216d64a90fd81f046a3caee"
 dependencies = [
- "http 0.2.11",
+ "http 0.2.12",
  "serde",
 ]
 
@@ -2152,7 +2153,7 @@ version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fb7239a6d49eda628c2dfdd7e982c59b0c3f0fb99ce45c4237f02a520030688"
 dependencies = [
- "http 1.0.0",
+ "http 1.1.0",
  "serde",
 ]
 
@@ -2213,7 +2214,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http 0.2.11",
+ "http 0.2.12",
  "http-body 0.4.6",
  "httparse",
  "httpdate",
@@ -2235,7 +2236,7 @@ dependencies = [
  "bytes 1.5.0",
  "futures-channel",
  "futures-util",
- "http 1.0.0",
+ "http 1.1.0",
  "http-body 1.0.0",
  "httparse",
  "itoa",
@@ -2252,7 +2253,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
- "http 0.2.11",
+ "http 0.2.12",
  "hyper 0.14.28",
  "rustls 0.21.10",
  "tokio 1.36.0",
@@ -2266,7 +2267,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "399c78f9338483cb7e630c8474b07268983c6bd5acee012e4211f9f7bb21b070"
 dependencies = [
  "futures-util",
- "http 0.2.11",
+ "http 0.2.12",
  "hyper 0.14.28",
  "log",
  "rustls 0.22.2",
@@ -2310,7 +2311,7 @@ dependencies = [
  "bytes 1.5.0",
  "futures-channel",
  "futures-util",
- "http 1.0.0",
+ "http 1.1.0",
  "http-body 1.0.0",
  "hyper 1.2.0",
  "pin-project-lite",
@@ -2581,7 +2582,7 @@ dependencies = [
  "encoding_rs",
  "futures 0.3.30",
  "futures-util",
- "http 1.0.0",
+ "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
  "hyper 1.2.0",
@@ -2606,7 +2607,7 @@ dependencies = [
  "base64",
  "bytes 1.5.0",
  "futures 0.3.30",
- "http 1.0.0",
+ "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
  "http-serde 2.0.0",
@@ -2631,7 +2632,7 @@ dependencies = [
  "bytes 1.5.0",
  "futures-channel",
  "futures-util",
- "http 1.0.0",
+ "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
  "hyper 1.2.0",
@@ -3020,7 +3021,7 @@ dependencies = [
  "bytes 1.5.0",
  "encoding_rs",
  "futures-util",
- "http 1.0.0",
+ "http 1.1.0",
  "httparse",
  "log",
  "memchr",
@@ -3885,7 +3886,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http 0.2.11",
+ "http 0.2.12",
  "http-body 0.4.6",
  "hyper 0.14.28",
  "hyper-rustls 0.24.2",
@@ -3926,7 +3927,7 @@ checksum = "88a3e86aa6053e59030e7ce2d2a3b258dd08fc2d337d52f73f6cb480f5858690"
 dependencies = [
  "anyhow",
  "async-trait",
- "http 0.2.11",
+ "http 0.2.12",
  "reqwest",
  "serde",
  "task-local-extensions",
@@ -5129,7 +5130,7 @@ dependencies = [
  "base64",
  "bytes 1.5.0",
  "h2",
- "http 0.2.11",
+ "http 0.2.12",
  "http-body 0.4.6",
  "hyper 0.14.28",
  "hyper-timeout",
@@ -5910,7 +5911,7 @@ dependencies = [
  "chrono-tz",
  "futures-channel",
  "futures-util",
- "http 0.2.11",
+ "http 0.2.12",
  "js-sys",
  "matchit 0.4.6",
  "pin-project",

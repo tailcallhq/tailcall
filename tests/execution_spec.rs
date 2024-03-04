@@ -607,7 +607,7 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
         };
-        Arc::new(AppContext::new(blueprint, runtime).await)
+        Arc::new(AppContext::new(blueprint, runtime))
     }
 }
 

@@ -32,7 +32,7 @@ impl Server {
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
-        let server_config = ServerConfig::new(blueprint.clone()).await;
+        let server_config = ServerConfig::new(blueprint.clone());
         let server_config = Arc::new(server_config);
 
         match blueprint.server.http.clone() {

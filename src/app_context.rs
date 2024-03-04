@@ -24,7 +24,7 @@ pub struct AppContext {
 
 impl AppContext {
     #[allow(clippy::too_many_arguments)]
-    pub async fn new(mut blueprint: Blueprint, runtime: TargetRuntime) -> Self {
+    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -103,19 +103,6 @@ impl AppContext {
         }
 
         let schema = blueprint.to_schema();
-
-        if let Some(ref apollo) = blueprint.server.apollo {
-            async_graphql_extension_apollo_tracing::register::register_dynamic(
-                &apollo.api_key,
-                &schema,
-                &apollo.graph_id,
-                &apollo.variant,
-                &apollo.user_version,
-                &apollo.platform,
-            )
-            .await
-            .unwrap();
-        }
 
         AppContext {
             schema,
