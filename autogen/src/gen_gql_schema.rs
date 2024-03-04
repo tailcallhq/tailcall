@@ -438,7 +438,7 @@ fn write_input_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Resu
     Ok(())
 }
 
-fn write_property<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+fn write_property<W: Write>(write_fields: &mut WriteFields<'_, W>) -> std::io::Result<()> {
     let WriteFields { writer, name, schema: property, defs, extra_it, .. } = write_fields;
     let description = property
         .metadata
@@ -447,11 +447,15 @@ fn write_property<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result
     write_description(writer, description)?;
     write_field(WriteFields {
         writer,
-        name,
-        schema: property,
+        name: name.to_string(),
+        schema: property.clone(),
         defs,
         extra_it,
-        ..write_fields
+        scalars: &mut HashSet::new(),
+        types_added: &mut HashSet::new(),
+        written_directives: &mut HashSet::new(),
+        arr_valid: &mut ArrayValidation::default(),
+        obj_valid: &mut ObjectValidation::default(),
     })?;
     Ok(())
 }
@@ -504,36 +508,36 @@ fn write_directive<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Resul
         let mut properties_iter = properties.into_iter();
 
         let mut close_param = false;
+
+        let mut write_fields = WriteFields {
+            writer,
+            name: String::new(),
+            schema: SchemaObject::default(),
+            defs,
+            extra_it,
+            scalars: &mut HashSet::new(),
+            types_added: &mut HashSet::new(),
+            written_directives: &mut HashSet::new(),
+            arr_valid: &mut ArrayValidation::default(),
+            obj_valid: &mut ObjectValidation::default(),
+        };
+
         if let Some((name, property)) = properties_iter.next() {
-            writeln!(writer, "(")?;
-            writer.indent();
-            write_property(WriteFields {
-                writer,
-                name,
-                schema: property.into_object(),
-                defs,
-                extra_it,
-                scalars: &mut HashSet::new(),
-                types_added: &mut HashSet::new(),
-                written_directives: &mut HashSet::new(),
-                arr_valid: &mut ArrayValidation::default(),
-                obj_valid: &mut ObjectValidation::default(),
-            })?;
+            {
+                let writer = &mut write_fields.writer;
+                writeln!(writer, "(")?;
+                writer.indent();
+            }
+
+            write_fields.name = name.clone();
+            write_fields.schema = property.into_object();
+            write_property(&mut write_fields)?;
             close_param = true;
         }
         for (name, property) in properties_iter {
-            write_property(WriteFields {
-                writer,
-                name,
-                schema: property.into_object(),
-                defs,
-                extra_it,
-                scalars: &mut HashSet::new(),
-                types_added: &mut HashSet::new(),
-                written_directives: &mut HashSet::new(),
-                arr_valid: &mut ArrayValidation::default(),
-                obj_valid: &mut ObjectValidation::default(),
-            })?;
+            write_fields.name = name.clone();
+            write_fields.schema = property.into_object();
+            write_property(&mut write_fields)?;
         }
         if close_param {
             writer.unindent();
@@ -615,7 +619,7 @@ fn write_object_validation<W: Write>(write_fields: WriteFields<'_, W>) -> std::i
         writeln!(writer, "input {name} {{")?;
         writer.indent();
         for (name, property) in obj_valid.properties.clone() {
-            write_property(WriteFields {
+            write_property(&mut WriteFields {
                 writer,
                 name,
                 schema: property.into_object(),
