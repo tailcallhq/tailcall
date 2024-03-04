@@ -13,6 +13,8 @@ struct LocalRuntime {
 
 thread_local! {
     // Practically only one JS runtime is created because CHANNEL_RUNTIME is single threaded.
+    // TODO: that is causing issues in `execution_spec` tests because the runtime
+    // is initialized only once and that implementation will be reused by all the tests
   static LOCAL_RUNTIME: RefCell<OnceCell<LocalRuntime>> = const { RefCell::new(OnceCell::new()) };
 }
 
