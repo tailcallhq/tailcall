@@ -80,8 +80,9 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
         let args = serde_v8::to_v8(scope, event)?;
 
         // NOTE: unwrap is safe here
-        // We receive a `None` only if the name of the function is more than the set kMaxLength.
-        // kMaxLength is set to a very high value ~ 1 Billion, so we don't expect to hit this limit.
+        // We receive a `None` only if the name of the function is more than the set
+        // kMaxLength. kMaxLength is set to a very high value ~ 1 Billion, so we
+        // don't expect to hit this limit.
         let fn_server_emit = v8::String::new(scope, name.as_str()).unwrap();
         let fn_server_emit = global
             .get(scope, fn_server_emit.into())

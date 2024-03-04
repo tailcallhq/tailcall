@@ -42,7 +42,8 @@ impl GrpcDataLoader {
                 Err(error) => Err(error),
             };
 
-            // TODO: do we have to clone keys here? join_all seems like returns the results in passed order
+            // TODO: do we have to clone keys here? join_all seems like returns the results
+            // in passed order
             (key.clone(), result)
         });
 
