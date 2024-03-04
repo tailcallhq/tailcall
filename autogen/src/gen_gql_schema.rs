@@ -302,7 +302,7 @@ fn write_field<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()
     writeln!(writer)
 }
 
-fn write_input_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
+fn write_input_type<W: Write>(write_fields: &mut WriteFields<'_, W>) -> std::io::Result<()> {
     let WriteFields {
         writer,
         name,
@@ -313,7 +313,7 @@ fn write_input_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Resu
         types_added,
         ..
     } = write_fields;
-    let name = match input_allow_list_lookup(&name, extra_it) {
+    let name = match input_allow_list_lookup(name, extra_it) {
         Some(name) => name,
         None => return Ok(()),
     };
@@ -329,14 +329,14 @@ fn write_input_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Resu
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
     write_description(writer, description)?;
-    if let Some(obj) = typ.object {
+    if let Some(obj) = &typ.object {
         if obj.properties.is_empty() {
             scalars.insert(name.to_string());
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
         writer.indent();
-        for (name, property) in obj.properties.into_iter() {
+        for (name, property) in obj.properties.clone().into_iter() {
             let property = property.into_object();
             let description = property
                 .metadata
@@ -358,7 +358,7 @@ fn write_input_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Resu
         }
         writer.unindent();
         writeln!(writer, "}}")?;
-    } else if let Some(enm) = typ.enum_values {
+    } else if let Some(enm) = &typ.enum_values {
         writeln!(writer, "enum {name} {{")?;
         writer.indent();
         for val in enm {
@@ -427,7 +427,7 @@ fn write_input_type<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Resu
         }
         writer.unindent();
         writeln!(writer, "}}")?;
-    } else if let Some(SingleOrVec::Single(item)) = typ.array.and_then(|arr| arr.items) {
+    } else if let Some(SingleOrVec::Single(item)) = typ.array.clone().and_then(|arr| arr.items) {
         if let Some(name) = item.into_object().reference {
             writeln!(writer, "{name}")?;
         } else {
@@ -648,55 +648,56 @@ fn write_all_input_types(
     let defs = schema.definitions;
     let mut scalars = HashSet::new();
     let mut types_added = HashSet::new();
+
+    let mut write_fields = WriteFields {
+        writer,
+        name: String::new(),
+        schema: SchemaObject::default(),
+        defs: &defs,
+        extra_it: &mut extra_it,
+        scalars: &mut scalars,
+        types_added: &mut types_added,
+        written_directives: &mut HashSet::new(),
+        arr_valid: &mut ArrayValidation::default(),
+        obj_valid: &mut ObjectValidation::default(),
+    };
+
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
-        write_input_type(WriteFields {
-            writer,
-            name,
-            schema: input_type.clone().into_object(),
-            defs: &defs,
-            scalars: &mut scalars,
-            extra_it: &mut extra_it,
-            types_added: &mut types_added,
-            written_directives: &mut HashSet::new(),
-            arr_valid: &mut ArrayValidation::default(),
-            obj_valid: &mut ObjectValidation::default(),
-        })?;
+        write_fields.name = name.clone();
+        write_fields.schema = input_type.clone().into_object();
+        write_input_type(&mut write_fields)?;
     }
 
     let mut new_extra_it = BTreeMap::new();
 
     for (name, extra_type) in extra_it.into_iter() {
+        let mut write_fields = WriteFields {
+            writer,
+            name: name.clone(),
+            schema: SchemaObject::default(),
+            defs: &defs,
+            extra_it: &mut new_extra_it,
+            scalars: &mut scalars,
+            types_added: &mut types_added,
+            written_directives: &mut HashSet::new(),
+            arr_valid: &mut ArrayValidation::default(),
+            obj_valid: &mut ObjectValidation::default(),
+        };
         match extra_type {
             ExtraTypes::Schema => {
                 if let Some(schema) = defs.get(&name).cloned() {
-                    write_input_type(WriteFields {
-                        writer,
-                        name: name.clone(),
-                        schema: schema.into_object(),
-                        defs: &defs,
-                        scalars: &mut scalars,
-                        extra_it: &mut new_extra_it,
-                        types_added: &mut types_added,
-                        written_directives: &mut HashSet::new(),
-                        arr_valid: &mut ArrayValidation::default(),
-                        obj_valid: &mut ObjectValidation::default(),
-                    })?
+                    write_fields.schema = schema.clone().into_object();
+                    write_fields.defs = &defs;
+                    write_input_type(&mut write_fields)?;
                 }
             }
-            ExtraTypes::ObjectValidation(obj_valid) => write_object_validation(WriteFields {
-                writer,
-                name: name.clone(),
-                schema: SchemaObject::default(),
-                defs: &defs,
-                scalars: &mut scalars,
-                extra_it: &mut new_extra_it,
-                types_added: &mut types_added,
-                written_directives: &mut HashSet::new(),
-                arr_valid: &mut ArrayValidation::default(),
-                obj_valid: &mut obj_valid.clone(),
-            })?,
+            ExtraTypes::ObjectValidation(obj_valid) => {
+                let mut new_obj_valid = obj_valid.clone();
+                write_fields.obj_valid = &mut new_obj_valid;
+                write_object_validation(write_fields)?;
+            }
         }
     }
 
