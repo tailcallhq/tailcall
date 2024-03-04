@@ -350,7 +350,8 @@ impl ExecutionSpec {
             }
         }
 
-        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+        // If any spec has the Only annotation, use those; otherwise, use the filtered
+        // list.
         if !only_specs.is_empty() {
             only_specs
         } else {
@@ -848,10 +849,11 @@ async fn assert_spec(spec: ExecutionSpec) {
         log::info!("\tserver #{} parse ok", i + 1);
 
         // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code style
-        // the re-serializing check gives us some of the advantages of the identity check too,
-        // but we are missing out on some by having it only enabled for either new tests that request it
-        // or old graphql_spec tests that were explicitly written with it in mind
+        // but GraphQL identity checking is very hard, since a lot depends on the code
+        // style the re-serializing check gives us some of the advantages of the
+        // identity check too, but we are missing out on some by having it only
+        // enabled for either new tests that request it or old graphql_spec
+        // tests that were explicitly written with it in mind
         if spec.check_identity {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
@@ -982,7 +984,8 @@ async fn test() -> anyhow::Result<()> {
         .init();
 
     // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
+    // This is used by testconv to auto-apply the snapshots of unconvertable
+    // fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();
     let expected_arg = ["insta", "i"];
