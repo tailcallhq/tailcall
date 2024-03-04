@@ -28,6 +28,7 @@ type Bar {
     method: GET
     url: http://example.com/bars
     body: null
+  assert_n: 1
   response:
     status: 200
     body:
@@ -48,6 +49,12 @@ type Bar {
 #### assert:
 
 ```yml
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: query { bars { id foo { id } } }
+
+# the same request to validate caching
 - method: POST
   url: http://localhost:8080/graphql
   body:

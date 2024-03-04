@@ -1,10 +1,13 @@
 extern crate core;
 
 use std::collections::{BTreeMap, HashMap};
-use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::{Arc, Once};
 use std::{fs, panic};
+use std::{
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use anyhow::{anyhow, Context};
 use derive_setters::Setters;
@@ -61,7 +64,7 @@ pub mod test {
     }
 
     impl TestHttp {
-        fn init(upstream: &Upstream) -> Self {
+        fn init(upstream: &Upstream) -> Arc<Self> {
             let mut builder = Client::builder()
                 .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
                 .timeout(Duration::from_secs(upstream.timeout))
@@ -95,7 +98,7 @@ pub mod test {
                     options: HttpCacheOptions::default(),
                 }))
             }
-            Self { client: client.build() }
+            Arc::new(Self { client: client.build() })
         }
     }
 
@@ -154,19 +157,19 @@ pub mod test {
     }
 
     pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
-        let http: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script.clone() {
+        let http = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
         } else {
-            Arc::new(TestHttp::init(&Default::default()))
+            TestHttp::init(&Default::default())
         };
 
-        let http2: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script {
+        let http2 = if let Some(script) = script {
             javascript::init_http(
                 TestHttp::init(&Upstream::default().http2_only(true)),
                 script,
             )
         } else {
-            Arc::new(TestHttp::init(&Upstream::default().http2_only(true)))
+            TestHttp::init(&Upstream::default().http2_only(true))
         };
 
         let file = TestFileIO::init();
@@ -254,6 +257,7 @@ enum ConfigSource {
 struct Mock {
     request: UpstreamRequest,
     response: UpstreamResponse,
+    assert_n: Option<usize>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -581,24 +585,20 @@ impl ExecutionSpec {
         anyhow::Ok(spec)
     }
 
-    async fn server_context(
+    async fn app_context(
         &self,
         config: &ConfigModule,
         env: HashMap<String, String>,
+        http_client: Arc<MockHttpClient>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
-        let http = MockHttpClient::new(self.clone());
         let http = if let Some(script) = blueprint.server.script.clone() {
-            javascript::init_http(http, script)
+            javascript::init_http(http_client, script)
         } else {
-            Arc::new(http)
+            http_client
         };
 
-        let http2_only = if self.mock.is_some() {
-            Arc::new(MockHttpClient::new(self.clone()))
-        } else {
-            http.clone()
-        };
+        let http2_only = http.clone();
 
         let runtime = TargetRuntime {
             http,
@@ -612,13 +612,59 @@ impl ExecutionSpec {
 }
 
 #[derive(Clone)]
+struct ExecutionMock {
+    mock: Mock,
+    asserted_n: Arc<AtomicUsize>,
+}
+
+impl ExecutionMock {
+    fn assert_n(&self) {
+        if let Some(assert_n) = self.mock.assert_n {
+            assert_eq!(
+                assert_n,
+                self.asserted_n.load(Ordering::Relaxed),
+                "expected mock to be called {assert_n} times"
+            );
+        }
+    }
+}
+
+#[derive(Clone)]
 struct MockHttpClient {
-    spec: ExecutionSpec,
+    mocks: Vec<ExecutionMock>,
+    spec_path: String,
 }
 
 impl MockHttpClient {
-    fn new(spec: ExecutionSpec) -> Self {
-        MockHttpClient { spec }
+    fn new(spec: &ExecutionSpec) -> Self {
+        let mocks = spec
+            .mock
+            .as_ref()
+            .map(|mocks| {
+                mocks
+                    .iter()
+                    .map(|mock| ExecutionMock {
+                        mock: mock.clone(),
+                        asserted_n: Arc::new(AtomicUsize::default()),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let spec_path = spec
+            .path
+            .strip_prefix(std::env::current_dir().unwrap())
+            .unwrap_or(&spec.path)
+            .to_string_lossy()
+            .into_owned();
+
+        MockHttpClient { mocks, spec_path }
+    }
+
+    fn assert_n(&self) {
+        for mock in &self.mocks {
+            mock.assert_n();
+        }
     }
 }
 
@@ -653,15 +699,15 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        let mocks = self.spec.mock.as_ref().unwrap();
-
         // Determine if the request is a GRPC request based on PORT
         let is_grpc = req.url().as_str().contains("50051");
 
         // Try to find a matching mock for the incoming request.
-        let mock = mocks
+        let execution_mock = self
+            .mocks
             .iter()
-            .find(|Mock { request: mock_req, response: _ }| {
+            .find(|mock| {
+                let mock_req = &mock.mock.request;
                 let method_match = req.method() == mock_req.0.method.clone().to_hyper();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let req_body = match req.body() {
@@ -701,16 +747,13 @@ impl HttpIO for MockHttpClient {
                 "No mock found for request: {:?} {} in {}",
                 req.method(),
                 req.url(),
-                self.spec
-                    .path
-                    .strip_prefix(std::env::current_dir()?)
-                    .unwrap_or(&self.spec.path)
-                    .to_str()
-                    .unwrap()
+                self.spec_path
             ))?;
 
+        execution_mock.asserted_n.fetch_add(1, Ordering::Relaxed);
+
         // Clone the response from the mock to avoid borrowing issues.
-        let mock_response = mock.response.clone();
+        let mock_response = execution_mock.mock.response.clone();
 
         // Build the response with the status code from the mock.
         let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
@@ -932,20 +975,21 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     if let Some(assert_spec) = spec.assert.as_ref() {
+        let mock_http_client = Arc::new(MockHttpClient::new(&spec));
+        let app_ctx = spec
+            .app_context(
+                server.first().unwrap(),
+                spec.env.clone().unwrap_or_default(),
+                mock_http_client.clone(),
+            )
+            .await;
+
         // assert: Run assert specs
         for (i, assertion) in assert_spec.iter().enumerate() {
-            let response = run_assert(
-                &spec,
-                &spec
-                    .env
-                    .clone()
-                    .unwrap_or_else(|| HashMap::with_capacity(0)),
-                assertion,
-                server.first().unwrap(),
-            )
-            .await
-            .context(spec.path.to_str().unwrap().to_string())
-            .unwrap();
+            let response = run_assert(app_ctx.clone(), assertion)
+                .await
+                .context(spec.path.to_str().unwrap().to_string())
+                .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
@@ -972,6 +1016,8 @@ async fn assert_spec(spec: ExecutionSpec) {
                 log::info!("\tassert #{} ok", i + 1);
             }
         }
+
+        mock_http_client.assert_n();
     }
 }
 
@@ -1020,16 +1066,13 @@ async fn test() -> anyhow::Result<()> {
 }
 
 async fn run_assert(
-    spec: &ExecutionSpec,
-    env: &HashMap<String, String>,
+    app_ctx: Arc<AppContext>,
     request: &APIRequest,
-    config: &ConfigModule,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();
     let headers = request.headers.clone();
     let url = request.url.clone();
-    let server_context = spec.server_context(config, env.clone()).await;
     let req = headers
         .into_iter()
         .fold(
@@ -1041,9 +1084,9 @@ async fn run_assert(
         .body(Body::from(query_string))?;
 
     // TODO: reuse logic from server.rs to select the correct handler
-    if server_context.blueprint.server.enable_batch_requests {
-        handle_request::<GraphQLBatchRequest>(req, server_context).await
+    if app_ctx.blueprint.server.enable_batch_requests {
+        handle_request::<GraphQLBatchRequest>(req, app_ctx).await
     } else {
-        handle_request::<GraphQLRequest>(req, server_context).await
+        handle_request::<GraphQLRequest>(req, app_ctx).await
     }
 }
