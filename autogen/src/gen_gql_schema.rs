@@ -9,11 +9,12 @@ use schemars::schema::{
 use tailcall::config;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
+static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 14] = [
     ("server", Entity::Schema, false),
     ("link", Entity::Schema, true),
     ("upstream", Entity::Schema, false),
     ("http", Entity::FieldDefinition, false),
+    ("call", Entity::FieldDefinition, false),
     ("grpc", Entity::FieldDefinition, false),
     ("addField", Entity::Object, true),
     ("modify", Entity::FieldDefinition, false),
