@@ -193,13 +193,13 @@ fn logger_init() {
         .format(|buf, record| {
             let level = record.level();
             let color_styles = buf.default_level_style(level);
-
             writeln!(
                 buf,
                 "{color_styles}[{}]{color_styles:#} {}",
                 record.level(),
                 record.args(),
             )?;
+
             Ok(())
         })
         .init();
