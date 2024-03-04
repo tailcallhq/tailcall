@@ -581,32 +581,26 @@ fn write_all_directives(
 fn write_array_validation<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
     let WriteFields { writer, name, arr_valid, defs, extra_it, .. } = write_fields;
     write!(writer, "[")?;
+
+    let mut write_fields = WriteFields {
+        writer,
+        name: name.to_string(),
+        schema: SchemaObject::default(),
+        defs,
+        extra_it,
+        scalars: &mut HashSet::new(),
+        types_added: &mut HashSet::new(),
+        written_directives: &mut HashSet::new(),
+        arr_valid: &mut ArrayValidation::default(),
+        obj_valid: &mut ObjectValidation::default(),
+    };
+
     if let Some(SingleOrVec::Single(schema)) = &arr_valid.items {
-        write_type(WriteFields {
-            writer,
-            name,
-            schema: schema.clone().into_object(),
-            defs,
-            extra_it,
-            scalars: &mut HashSet::new(),
-            types_added: &mut HashSet::new(),
-            written_directives: &mut HashSet::new(),
-            arr_valid: &mut ArrayValidation::default(),
-            obj_valid: &mut ObjectValidation::default(),
-        })?;
+        write_fields.schema = schema.clone().into_object();
+        write_type(write_fields)?;
     } else if let Some(SingleOrVec::Vec(schemas)) = &arr_valid.items {
-        write_type(WriteFields {
-            writer,
-            name,
-            schema: schemas[0].clone().into_object(),
-            defs,
-            extra_it,
-            scalars: &mut HashSet::new(),
-            types_added: &mut HashSet::new(),
-            written_directives: &mut HashSet::new(),
-            arr_valid: &mut ArrayValidation::default(),
-            obj_valid: &mut ObjectValidation::default(),
-        })?;
+        write_fields.schema = schemas[0].clone().into_object();
+        write_type(write_fields)?;
     } else {
         println!("{name}: {arr_valid:?}");
 
