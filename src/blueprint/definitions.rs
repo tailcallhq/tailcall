@@ -396,6 +396,7 @@ fn to_fields(
             .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
+            .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
             .and(update_nested_resolvers())
             .and(update_cache_resolvers())
             .try_fold(
