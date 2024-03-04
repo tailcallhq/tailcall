@@ -1,24 +1,24 @@
-use std::pin::Pin;
+
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
-use futures_util::Future;
+
 use url::Url;
 
 use crate::http::Response;
 use crate::{HttpIO, WorkerIO};
 
 #[derive(Debug, Clone)]
-pub struct Request<Body: Default + Clone> {
+pub struct HttpRequest<Body: Default + Clone> {
     pub method: reqwest::Method,
     pub url: Url,
     pub headers: reqwest::header::HeaderMap,
     pub body: Option<Body>,
 }
 
-impl From<reqwest::Request> for Request<ConstValue> {
-    fn from(req: reqwest::Request) -> Self {
-        Request {
+impl From<&reqwest::Request> for HttpRequest<ConstValue> {
+    fn from(req: &reqwest::Request) -> Self {
+        HttpRequest {
             method: req.method().clone(),
             url: req.url().clone(),
             headers: req.headers().clone(),
@@ -32,7 +32,7 @@ impl From<reqwest::Request> for Request<ConstValue> {
     }
 }
 
-impl Request<ConstValue> {
+impl HttpRequest<ConstValue> {
     pub fn try_into(self) -> anyhow::Result<reqwest::Request> {
         let mut req = reqwest::Request::new(self.method, self.url);
         *req.headers_mut() = self.headers;
@@ -45,71 +45,86 @@ impl Request<ConstValue> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Message {
-    pub message: MessageContent,
-    pub id: Option<u64>,
+pub enum Event {
+    Request(HttpRequest<ConstValue>),
+}
+
+impl Event {
+    pub fn get_request(self) -> HttpRequest<ConstValue> {
+        match self {
+            Event::Request(request) => request,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
-pub enum MessageContent {
-    Request(Request<ConstValue>),
+pub enum Command {
+    Request(HttpRequest<ConstValue>),
     Response(Response<ConstValue>),
-    Empty,
+}
+
+impl Command {
+    pub fn new_request(request: HttpRequest<ConstValue>) -> Self {
+        Command::Request(request)
+    }
+    pub fn new_response(response: Response<ConstValue>) -> Self {
+        Command::Response(response)
+    }
 }
 
 #[derive(Clone)]
-pub struct HttpFilter {
-    client: Arc<dyn HttpIO + Send + Sync>,
-    worker: Arc<dyn WorkerIO<Message, Message> + Send + Sync>,
+pub struct RequestFilter {
+    worker: Arc<dyn WorkerIO<Event, Command>>,
+    client: Arc<dyn HttpIO>,
 }
 
-impl HttpFilter {
+impl RequestFilter {
     pub fn new(
-        http: impl HttpIO + Send + Sync,
-        script: impl WorkerIO<Message, Message> + Send + Sync + 'static,
+        client: impl HttpIO + Send + Sync + 'static,
+        worker: impl WorkerIO<Event, Command>,
     ) -> Self {
-        HttpFilter { client: Arc::new(http), worker: Arc::new(script) }
+        RequestFilter { client: Arc::new(client), worker: Arc::new(worker) }
     }
 
-    fn on_command<'a>(
-        &'a self,
-        command: Message,
-    ) -> Pin<Box<dyn Future<Output = anyhow::Result<Response<hyper::body::Bytes>>> + Send + 'a>>
-    {
-        Box::pin(async move {
-            match command {
-                Message { message: MessageContent::Request(request), id } => {
-                    let request = request;
-                    let response = self.client.execute(request.try_into()?).await?;
-                    if id.is_none() {
-                        return Ok(response);
+    #[async_recursion::async_recursion]
+    async fn on_request(
+        &self,
+        mut request: reqwest::Request,
+    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
+        let js_request = HttpRequest::from(&request);
+        let event = Event::Request(js_request);
+        let command = self.worker.call("onRequest".to_string(), event).await?;
+        match command {
+            Some(command) => match command {
+                Command::Request(js_request) => {
+                    let response = self.client.execute(js_request.try_into()?).await?;
+                    Ok(response)
+                }
+                Command::Response(js_response) => {
+                    // Check if the response is a redirect
+                    if (js_response.status == 301 || js_response.status == 302)
+                        && js_response.headers.contains_key("location")
+                    {
+                        request
+                            .url_mut()
+                            .set_path(js_response.headers.get("location").unwrap().to_str()?);
+                        self.on_request(request).await
+                    } else {
+                        Ok(js_response.to_bytes()?)
                     }
-                    let command = self.worker.dispatch(Message {
-                        message: MessageContent::Response(response.to_json()?),
-                        id,
-                    })?;
-                    Ok(self.on_command(command).await?)
                 }
-                Message { message: MessageContent::Response(response), id: _ } => {
-                    Ok(response.to_bytes()?)
-                }
-                Message { message: MessageContent::Empty, id: _ } => {
-                    anyhow::bail!("No response received from worker")
-                }
-            }
-        })
+            },
+            None => self.client.execute(request).await,
+        }
     }
 }
 
 #[async_trait::async_trait]
-impl HttpIO for HttpFilter {
+impl HttpIO for RequestFilter {
     async fn execute(
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        let command = self
-            .worker
-            .dispatch(Message { message: MessageContent::Request(request.into()), id: None })?;
-        self.on_command(command).await
+        self.on_request(request).await
     }
 }
