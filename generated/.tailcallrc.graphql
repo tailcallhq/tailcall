@@ -25,6 +25,26 @@ directive @cache(
 ) on FIELD_DEFINITION
 
 """
+Provides the ability to refer to a field defined in the root Query or Mutation.
+"""
+directive @call(
+  """
+  The arguments of the field on the `Query` or `Mutation` type that you want to call. 
+  For instance `{id: "{{value.userId}}"}`.
+  """
+  args: JSON
+  """
+  The name of the field on the `Mutation` type that you want to call. For instance 
+  `createUser`.
+  """
+  mutation: String
+  """
+  The name of the field on the `Query` type that you want to call. For instance `user`.
+  """
+  query: String
+) on FIELD_DEFINITION
+
+"""
 The `@const` operators allows us to embed a constant response for the schema.
 """
 directive @const(
@@ -444,6 +464,7 @@ input ExprBody {
   http: Http
   grpc: Grpc
   graphQL: GraphQL
+  call: Call
   const: JSON
   if: ExprIf
   and: [ExprBody]

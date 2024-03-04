@@ -382,6 +382,12 @@ pub struct Field {
     pub http: Option<Http>,
 
     ///
+    /// Inserts a call resolver for the field.
+    ///
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub call: Option<Call>,
+
+    ///
     /// Inserts a GRPC resolver for the field.
     ///
     #[serde(default, skip_serializing_if = "is_default")]
@@ -424,6 +430,7 @@ impl Field {
             || self.graphql.is_some()
             || self.grpc.is_some()
             || self.expr.is_some()
+            || self.call.is_some()
     }
     pub fn resolvable_directives(&self) -> Vec<String> {
         let mut directives = Vec::new();
@@ -441,6 +448,9 @@ impl Field {
         }
         if self.grpc.is_some() {
             directives.push(Grpc::trace_name());
+        }
+        if self.call.is_some() {
+            directives.push(Call::trace_name());
         }
         directives
     }
@@ -578,6 +588,24 @@ pub struct Http {
     #[serde(default, skip_serializing_if = "is_default")]
     /// This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.
     pub query: KeyValues,
+}
+
+///
+/// Provides the ability to refer to a field defined in the root Query or Mutation.
+///
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+pub struct Call {
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The name of the field on the `Query` type that you want to call. For instance `user`.
+    pub query: Option<String>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The name of the field on the `Mutation` type that you want to call. For instance `createUser`.
+    pub mutation: Option<String>,
+
+    /// The arguments of the field on the `Query` or `Mutation` type that you want to call. For instance `{id: "{{value.userId}}"}`.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub args: BTreeMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
