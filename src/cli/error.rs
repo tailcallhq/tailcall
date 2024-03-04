@@ -84,34 +84,19 @@ fn bullet(str: &str) -> String {
 
 impl Display for CLIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let error_prefix = "Error: ";
         let default_padding = 2;
-        let root_padding_size = if self.is_root {
-            error_prefix.len()
+
+        let message_color = if self.is_root {
+            colored::Color::Yellow
         } else {
-            default_padding
+            colored::Color::White
         };
 
-        if self.is_root {
-            f.write_str(self.colored(error_prefix, colored::Color::Red).as_str())?;
-        }
-
-        f.write_str(&self.message.to_string())?;
+        f.write_str(self.colored(&self.message, message_color).as_str())?;
 
         if let Some(description) = &self.description {
-            f.write_str("\n")?;
-            let color = if self.is_root {
-                colored::Color::Yellow
-            } else {
-                colored::Color::White
-            };
-            f.write_str(
-                margin(
-                    &self.colored(format!("❯ {}", description).as_str(), color),
-                    root_padding_size,
-                )
-                .as_str(),
-            )?;
+            f.write_str(&self.colored(": ", message_color))?;
+            f.write_str(&self.colored(description.to_string().as_str(), colored::Color::White))?;
         }
 
         if !self.trace.is_empty() {
@@ -129,9 +114,12 @@ impl Display for CLIError {
         }
 
         if !self.caused_by.is_empty() {
-            f.write_str(self.dimmed("\nCaused by:\n").as_str())?;
+            f.write_str("\n")?;
+            f.write_str(self.dimmed("Caused by:").as_str())?;
+            f.write_str("\n")?;
             for (i, error) in self.caused_by.iter().enumerate() {
                 let message = &error.to_string();
+
                 f.write_str(&margin(bullet(message.as_str()).as_str(), default_padding))?;
 
                 if i < self.caused_by.len() - 1 {
@@ -263,7 +251,7 @@ mod tests {
     #[test]
     fn test_title() {
         let error = CLIError::new("Server could not be started");
-        let expected = r"Error: Server could not be started".strip_margin();
+        let expected = r"Server could not be started".strip_margin();
         assert_eq!(error.to_string(), expected);
     }
 
@@ -271,9 +259,7 @@ mod tests {
     fn test_title_description() {
         let error = CLIError::new("Server could not be started")
             .description("The port is already in use".to_string());
-        let expected = r"|Error: Server could not be started
-                     |       ❯ The port is already in use"
-            .strip_margin();
+        let expected = r"|Server could not be started: The port is already in use".strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
@@ -284,9 +270,9 @@ mod tests {
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
-        let expected = r"|Error: Server could not be started
-                     |       ❯ The port is already in use [at @server.port]"
-            .strip_margin();
+        let expected =
+            r"|Server could not be started: The port is already in use [at @server.port]"
+                .strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
@@ -303,7 +289,7 @@ mod tests {
             "baseURL".into(),
         ])]);
 
-        let expected = r"|Error: Configuration Error
+        let expected = r"|Configuration Error
                      |Caused by:
                      |  • Base URL needs to be specified [at User.posts.@http.baseURL]"
             .strip_margin();
@@ -342,12 +328,11 @@ mod tests {
             ]),
         ]);
 
-        let expected = r"|Error: Configuration Error
+        let expected = r"|Configuration Error
                      |Caused by:
                      |  • Base URL needs to be specified [at User.posts.@http.baseURL]
                      |  • Base URL needs to be specified [at Post.users.@http.baseURL]
-                     |  • Base URL needs to be specified
-                     |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
+                     |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
                      |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
             .strip_margin();
 
@@ -361,10 +346,9 @@ mod tests {
             .trace(vec!["Query", "users", "@http", "baseURL"]);
         let valid = ValidationError::from(cause);
         let error = CLIError::from(valid);
-        let expected = r"|Error: Invalid Configuration
+        let expected = r"|Invalid Configuration
                      |Caused by:
-                     |  • Base URL needs to be specified
-                     |      ❯ Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
+                     |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
