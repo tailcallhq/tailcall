@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::Path;
 use std::{env, fs};
 
@@ -190,11 +191,18 @@ fn logger_init() {
     // use the log level from the env if there is one, otherwise use the default.
     let env = Env::new().filter_or(filter_env_name, "info");
 
-    env_logger::Builder::from_env(env).init();
+    env_logger::Builder::from_env(env)
+        .format(|buf, record| {
+            let level = record.level();
+            let color_styles = buf.default_level_style(level);
+            writeln!(
+                buf,
+                "{color_styles}[{}]{color_styles:#} {}",
+                record.level(),
+                record.args(),
+            )?;
 
-    // let subscriber = Registry::default()
-    //     .with(tracing_subscriber::EnvFilter::from_default_env())
-    //     .with(tracing_subscriber::fmt::layer());
-    //
-    // tracing::subscriber::set_global_default(subscriber).unwrap();
+            Ok(())
+        })
+        .init();
 }
