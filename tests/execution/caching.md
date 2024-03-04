@@ -1,5 +1,7 @@
 # Caching
 
+##### only
+
 #### server:
 
 ```graphql
@@ -7,17 +9,20 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
   query: Query
 }
 
-type Query @cache(maxAge: 100) {
-  bars: [Bar] @http(path: "/bars")
+type Query {
+  fieldCache: Type @http(path: "/field-cache") @cache(maxAge: 300)
+  fieldCacheList: [Type] @http(path: "/field-cache-list") @cache(maxAge: 300)
+  typeCache: TypeCache
 }
 
-type Foo {
-  id: Int!
-}
-
-type Bar {
+type Type {
   id: Int
-  foo: Foo
+}
+
+type TypeCache @cache(maxAge: 100) {
+  a: Type @http(path: "/type-cache-a")
+  b: Type @http(path: "/type-cache-b")
+  list: [Type] @http(path: "/type-cache-list")
 }
 ```
 
@@ -26,24 +31,52 @@ type Bar {
 ```yml
 - request:
     method: GET
-    url: http://example.com/bars
-    body: null
+    url: http://example.com/field-cache
   assert_n: 1
   response:
     status: 200
     body:
-      - foo:
-          id: 2
-        id: 1
-      - foo:
-          id: 4
-        id: 3
-      - foo:
-          id: 6
-        id: 5
-      - foo:
-          id: 8
-        id: 7
+      id: 1
+
+- request:
+    method: GET
+    url: http://example.com/field-cache-list
+  assert_n: 1
+  response:
+    status: 200
+    body:
+      - id: 1
+      - id: 2
+      - id: 3
+
+- request:
+    method: GET
+    url: http://example.com/type-cache-a
+  assert_n: 1
+  response:
+    status: 200
+    body:
+      id: 11
+
+- request:
+    method: GET
+    url: http://example.com/type-cache-b
+  assert_n: 1
+  response:
+    status: 200
+    body:
+      id: 21
+
+- request:
+    method: GET
+    url: http://example.com/type-cache-list
+  assert_n: 1
+  response:
+    status: 200
+    body:
+      - id: 31
+      - id: 32
+      - id: 33
 ```
 
 #### assert:
@@ -52,11 +85,21 @@ type Bar {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { bars { id foo { id } } }
+    query: >
+      query {
+        fieldCache { id }
+        fieldCacheList { id }
+        typeCache { a { id } , b { id }, list { id } }
+      }
 
 # the same request to validate caching
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { bars { id foo { id } } }
+    query: >
+      query {
+        fieldCache { id }
+        fieldCacheList { id }
+        typeCache { a { id } , b { id }, list { id } }
+      }
 ```
