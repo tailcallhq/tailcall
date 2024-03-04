@@ -1,10 +1,13 @@
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
+use async_graphql_value::ConstValue;
+use reqwest::header::HeaderMap;
 
 use rhai::{Scope, AST};
 
-use crate::cli::rhai_script::http_filter::{Command, Event};
+use crate::cli::rhai_script::http_filter::{Command, Event, HttpResponse};
 use crate::{blueprint, WorkerIO};
+use crate::http::Response;
 
 pub struct ScriptMiddleware {
     engine: Rc<rhai::Engine>,
@@ -17,12 +20,19 @@ impl ScriptMiddleware {
         let mut engine = rhai::Engine::new();
 
         engine
+            .register_iterator::<HeaderMap>()
+            .on_print(|s| log::info!("{}", s))
             .register_type_with_name::<Event>("Event")
-            .register_fn("request", Event::get_request);
+            .register_fn("request", Event::get_request)
+            .register_fn("response", Event::get_response)
+            .register_type_with_name::<HttpResponse>("Response")
+            .register_fn("body_json", HttpResponse::body_json)
+            .register_fn("set_body", HttpResponse::set_body_json);
 
         engine
             .register_type_with_name::<Command>("Command")
-            .register_fn("request", Command::new_request);
+            .register_fn("request", Command::new_request)
+            .register_fn("response", Command::new_response);
         let ast = engine.compile(script)?;
         Ok(Self { engine: Rc::new(engine), ast, scope: Scope::new() })
     }
@@ -76,7 +86,7 @@ fn call(name: String, message: Event) -> anyhow::Result<Option<Command>> {
                 &mut local_runtime.scope,
                 &local_runtime.ast,
                 name,
-                (message,),
+                (message, ),
             )
             .map(Some)
             .map_err(|e| anyhow::anyhow!(e.to_string()))

@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
@@ -9,14 +8,17 @@ use crate::http::Response;
 use crate::{HttpIO, WorkerIO};
 
 #[derive(Debug, Clone)]
-pub struct HttpRequest<Body: Default + Clone> {
+pub struct HttpRequest {
     pub method: reqwest::Method,
     pub url: Url,
     pub headers: reqwest::header::HeaderMap,
-    pub body: Option<Body>,
+    pub body: Option<ConstValue>,
 }
 
-impl From<&reqwest::Request> for HttpRequest<ConstValue> {
+pub type HttpResponse = Response<ConstValue>;
+
+
+impl From<&reqwest::Request> for HttpRequest {
     fn from(req: &reqwest::Request) -> Self {
         HttpRequest {
             method: req.method().clone(),
@@ -32,7 +34,7 @@ impl From<&reqwest::Request> for HttpRequest<ConstValue> {
     }
 }
 
-impl HttpRequest<ConstValue> {
+impl HttpRequest {
     pub fn try_into(self) -> anyhow::Result<reqwest::Request> {
         let mut req = reqwest::Request::new(self.method, self.url);
         *req.headers_mut() = self.headers;
@@ -46,25 +48,33 @@ impl HttpRequest<ConstValue> {
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    Request(HttpRequest<ConstValue>),
+    Request(HttpRequest),
+    Response(HttpResponse),
 }
 
 impl Event {
-    pub fn get_request(self) -> HttpRequest<ConstValue> {
+    pub fn get_request(self) -> HttpRequest {
         match self {
             Event::Request(request) => request,
+            _ => { todo!("Implement this") }
+        }
+    }
+    pub fn get_response(self) -> Response<ConstValue> {
+        match self {
+            Event::Response(response) => response,
+            _ => { todo!("Implement this") }
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum Command {
-    Request(HttpRequest<ConstValue>),
+    Request(HttpRequest),
     Response(Response<ConstValue>),
 }
 
 impl Command {
-    pub fn new_request(request: HttpRequest<ConstValue>) -> Self {
+    pub fn new_request(request: HttpRequest) -> Self {
         Command::Request(request)
     }
     pub fn new_response(response: Response<ConstValue>) -> Self {
@@ -90,7 +100,7 @@ impl RequestFilter {
     async fn on_request(
         &self,
         mut request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
+    ) -> anyhow::Result<Response<ConstValue>> {
         let js_request = HttpRequest::from(&request);
         let event = Event::Request(js_request);
         let command = self.worker.call("onRequest".to_string(), event).await?;
@@ -98,7 +108,7 @@ impl RequestFilter {
             Some(command) => match command {
                 Command::Request(js_request) => {
                     let response = self.client.execute(js_request.try_into()?).await?;
-                    Ok(response)
+                    Ok(response.to_json()?)
                 }
                 Command::Response(js_response) => {
                     // Check if the response is a redirect
@@ -110,11 +120,33 @@ impl RequestFilter {
                             .set_path(js_response.headers.get("location").unwrap().to_str()?);
                         self.on_request(request).await
                     } else {
-                        Ok(js_response.to_bytes()?)
+                        Ok(js_response)
                     }
                 }
             },
-            None => self.client.execute(request).await,
+            None => self.client.execute(request).await.and_then(|res| res.to_json()),
+        }
+    }
+    #[async_recursion::async_recursion]
+    async fn on_response(
+        &self,
+        response: Response<ConstValue>,
+    ) -> anyhow::Result<Response<ConstValue>> {
+        let event = Event::Response(response);
+        let command = self.worker.call("onResponse".to_string(), event).await?;
+        match command {
+            Some(command) => match command {
+                Command::Request(js_request) => {
+                    let response = self.client.execute(js_request.try_into()?).await?;
+                    Ok(response.to_json()?)
+                }
+                Command::Response(js_response) => {
+                    Ok(js_response)
+                }
+            },
+            None => {
+                todo!("Implement this")
+            }
         }
     }
 }
@@ -125,6 +157,8 @@ impl HttpIO for RequestFilter {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.on_request(request).await
+        let res = self.on_request(request).await?;
+        let res = self.on_response(res).await?;
+        Ok(res.to_bytes()?)
     }
 }

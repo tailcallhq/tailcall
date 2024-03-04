@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
@@ -65,5 +66,22 @@ impl Response<ConstValue> {
         resp.status = self.status;
         resp.headers = self.headers;
         Ok(resp)
+    }
+
+    pub fn as_json(self) -> Response<serde_json::Value> {
+        let mut resp = Response::default();
+        let body = self.body.into_json().unwrap_or_default();
+        resp.body = body;
+        resp.status = self.status;
+        resp.headers = self.headers;
+        resp
+    }
+
+    pub fn body_json(self) -> rhai::Dynamic {
+        rhai::serde::to_dynamic(self.body).unwrap_or_default()
+    }
+
+    pub fn set_body_json(&mut self, body: rhai::Dynamic) {
+        self.body = rhai::serde::from_dynamic(&body).unwrap_or_default();
     }
 }
