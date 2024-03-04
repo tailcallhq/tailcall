@@ -8,8 +8,8 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::config::{self, ConfigModule, HttpVersion};
 use crate::config::apollo::Apollo;
+use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
@@ -125,7 +125,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 pipeline_flush: (config_server).get_pipeline_flush(),
                 response_headers,
                 script,
-                apollo: (config_server).get_apollo()
+                apollo: (config_server).get_apollo(),
             })
             .to_result()
     }

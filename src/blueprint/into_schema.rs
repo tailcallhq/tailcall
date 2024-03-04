@@ -2,9 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
-
 use async_graphql_value::ConstValue;
-
 
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;

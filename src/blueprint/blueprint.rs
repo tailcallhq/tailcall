@@ -225,14 +225,13 @@ impl Blueprint {
         let mut schema = SchemaBuilder::from(&blueprint);
 
         if let Some(ref apollo) = server.apollo {
-            schema = schema
-                .extension(ApolloTracing::new(
-                    apollo.api_key.clone(),
-                    apollo.platform.clone(),
-                    apollo.graph_id.clone(),
-                    apollo.variant.clone(),
-                    apollo.version.clone(),
-                ));
+            schema = schema.extension(ApolloTracing::new(
+                apollo.api_key.clone(),
+                apollo.platform.clone(),
+                apollo.graph_id.clone(),
+                apollo.variant.clone(),
+                apollo.version.clone(),
+            ));
         }
 
         if server.global_response_timeout > 0 {

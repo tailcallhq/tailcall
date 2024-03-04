@@ -17,17 +17,17 @@ pub struct Apollo {
     ///
     /// Setting `userVersion` for Apollo.
     ///
-    #[serde(default="default_user_version")]
+    #[serde(default = "default_user_version")]
     pub user_version: String,
     ///
     /// Setting `platform` for Apollo.
     ///
-    #[serde(default="default_platform")]
+    #[serde(default = "default_platform")]
     pub platform: String,
     ///
     /// Setting `version` for Apollo.
     ///
-    #[serde(default="default_version")]
+    #[serde(default = "default_version")]
     pub version: String,
 }
 

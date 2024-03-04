@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use crate::config::apollo::Apollo;
 
+use crate::config::apollo::Apollo;
 use crate::config::KeyValues;
 use crate::is_default;
 

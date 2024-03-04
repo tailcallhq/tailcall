@@ -3,10 +3,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::http::{
-    playground_source,
-    GraphQLPlaygroundConfig,
-};
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use async_graphql_extension_apollo_tracing::{ApolloTracingDataExtBuilder, Method};
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};

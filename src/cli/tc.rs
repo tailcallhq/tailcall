@@ -8,8 +8,6 @@ use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
 
-
-
 use super::command::{Cli, Command};
 use super::update_checker;
 use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};

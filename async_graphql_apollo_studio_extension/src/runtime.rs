@@ -8,6 +8,6 @@ cfg_if::cfg_if! {
             tokio::spawn(f)
         }
     } else {
-        compile_error!("tokio-comp or async-std-comp features required")
+        compile_error!("tokio-comp or async-std-comp features required");
     }
 }

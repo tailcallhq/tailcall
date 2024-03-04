@@ -3,7 +3,6 @@
 //! Implementation of the apollo Schema Reporting Protocol
 //! <https://www.apollographql.com/docs/studio/schema/schema-reporting/>
 use async_graphql::dynamic::Schema;
-
 use reqwest::Client;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;

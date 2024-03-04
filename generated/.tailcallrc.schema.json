@@ -77,6 +77,43 @@
         }
       }
     },
+    "Apollo": {
+      "type": "object",
+      "required": [
+        "api_key",
+        "graph_id",
+        "variant"
+      ],
+      "properties": {
+        "api_key": {
+          "description": "Setting `api_key` for Apollo.",
+          "type": "string"
+        },
+        "graph_id": {
+          "description": "Setting `graph_id` for Apollo.",
+          "type": "string"
+        },
+        "platform": {
+          "description": "Setting `platform` for Apollo.",
+          "default": "platform",
+          "type": "string"
+        },
+        "user_version": {
+          "description": "Setting `userVersion` for Apollo.",
+          "default": "platform",
+          "type": "string"
+        },
+        "variant": {
+          "description": "Setting `variant` for Apollo.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Setting `version` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        }
+      }
+    },
     "Arg": {
       "type": "object",
       "required": [
@@ -1354,11 +1391,15 @@
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
       "type": "object",
       "properties": {
-        "apolloTracing": {
-          "description": "`apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
-          "type": [
-            "boolean",
-            "null"
+        "apollo": {
+          "description": "`apollo` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Apollo"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "batchRequests": {

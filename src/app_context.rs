@@ -113,10 +113,9 @@ impl AppContext {
                 &apollo.user_version,
                 &apollo.platform,
             )
-                .await
-                .unwrap();
+            .await
+            .unwrap();
         }
-
 
         AppContext {
             schema,

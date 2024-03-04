@@ -213,10 +213,10 @@ for various use-cases.
 """
 directive @server(
   """
-  `apolloTracing` exposes GraphQL query performance data, including execution time 
-  of queries and individual resolvers.
+  `apollo` exposes GraphQL query performance data, including execution time of queries 
+  and individual resolvers.
   """
-  apolloTracing: Boolean
+  apollo: Apollo
   """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
   introducing latency and complicating debugging. Use judiciously. @default `false`.
@@ -380,6 +380,32 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
+input Apollo {
+  """
+  Setting `api_key` for Apollo.
+  """
+  api_key: String!
+  """
+  Setting `graph_id` for Apollo.
+  """
+  graph_id: String!
+  """
+  Setting `platform` for Apollo.
+  """
+  platform: String!
+  """
+  Setting `userVersion` for Apollo.
+  """
+  user_version: String!
+  """
+  Setting `variant` for Apollo.
+  """
+  variant: String!
+  """
+  Setting `version` for Apollo.
+  """
+  version: String!
+}
 input Batch {
   delay: Int!
   headers: [String!]
