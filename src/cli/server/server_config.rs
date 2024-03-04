@@ -12,13 +12,12 @@ pub struct ServerConfig {
 
 impl ServerConfig {
     pub async fn new(blueprint: Blueprint) -> Self {
-        let server_context = Arc::new(
-            AppContext::new(
-                blueprint.clone(),
-                init(&blueprint.upstream, blueprint.server.script.clone()),
-            )
-            .await,
-        );
+        let server_context = AppContext::new(
+            blueprint.clone(),
+            init(&blueprint.upstream, blueprint.server.script.clone()),
+        )
+        .await;
+        let server_context = Arc::new(server_context);
         Self { app_ctx: server_context, blueprint }
     }
 

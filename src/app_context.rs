@@ -105,7 +105,7 @@ impl AppContext {
         let schema = blueprint.to_schema();
 
         if let Some(ref apollo) = blueprint.server.apollo {
-            async_graphql_extension_apollo_tracing::register::register(
+            async_graphql_extension_apollo_tracing::register::register_dynamic(
                 &apollo.api_key,
                 &schema,
                 &apollo.graph_id,

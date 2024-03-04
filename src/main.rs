@@ -3,7 +3,6 @@
 
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
-use tracing_subscriber::Registry;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -13,15 +12,7 @@ fn run_blocking() -> anyhow::Result<()> {
     rt.block_on(async { tailcall::cli::run().await })
 }
 
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
-
 fn main() -> anyhow::Result<()> {
-    let subscriber = Registry::default()
-        .with(tracing_subscriber::EnvFilter::from_default_env())
-        .with(tracing_subscriber::fmt::layer());
-
-    tracing::subscriber::set_global_default(subscriber).unwrap();
-
     let result = run_blocking();
     match result {
         Ok(_) => {}

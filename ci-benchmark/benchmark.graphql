@@ -1,5 +1,10 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0",
+  apollo: {
+    api_key: "service:tailcall-demo-3:dSBBMsdjJexBjuhHnHXAWw",
+    graph_id: "tailcall-demo-3",
+    variant: "current"
+  })
   @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
