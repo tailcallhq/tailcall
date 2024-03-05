@@ -71,7 +71,6 @@ mod test {
     #[test]
     fn test_to_js_response() {
         let js_response = create_test_response();
-        println!("{:?}", js_response);
         assert!(js_response.is_ok());
         let js_response = js_response.unwrap();
         assert_eq!(js_response.status, 200);
