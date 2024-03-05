@@ -75,6 +75,18 @@ pub struct TestScopedMetrics {
     entries: Vec<TestMetricsEntry>,
 }
 
+impl PartialOrd for TestScopedMetrics {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for TestScopedMetrics {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+
 impl From<ScopeMetrics> for TestScopedMetrics {
     fn from(value: ScopeMetrics) -> Self {
         Self {
@@ -93,12 +105,14 @@ pub struct TestMetrics(Vec<TestScopedMetrics>);
 
 impl From<ResourceMetrics> for TestMetrics {
     fn from(value: ResourceMetrics) -> Self {
-        Self(
-            value
-                .scope_metrics
-                .into_iter()
-                .map(TestScopedMetrics::from)
-                .collect(),
-        )
+        let mut v: Vec<_> = value
+            .scope_metrics
+            .into_iter()
+            .map(TestScopedMetrics::from)
+            .collect();
+
+        v.sort();
+
+        Self(v)
     }
 }
