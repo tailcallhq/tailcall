@@ -35,9 +35,7 @@ impl HttpIO for LambdaHttp {
     }
 }
 
-pub fn to_request(
-    req: lambda_http::Request,
-) -> Result<hyper::Request<hyper::Body>, hyper::http::Error> {
+pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let method: hyper::Method = match req.method().to_owned() {
         lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
@@ -56,17 +54,19 @@ pub fn to_request(
     let url = format!(
         "{}://{}/{}",
         req.uri().scheme_str().unwrap_or("http"),
-        req.uri().host().unwrap_or("fakedomain"),
+        req.uri()
+            .host()
+            .ok_or(anyhow::anyhow!("Invalid request host"))?,
         req.path_parameters()
             .all("proxy")
             .unwrap_or(Vec::with_capacity(0))
             .join("/")
     );
 
-    hyper::Request::builder()
+    Ok(hyper::Request::builder()
         .method(method)
         .uri(url)
-        .body(hyper::Body::from(req.body().to_vec()))
+        .body(hyper::Body::from(req.body().to_vec()))?)
 }
 
 pub async fn to_response(
