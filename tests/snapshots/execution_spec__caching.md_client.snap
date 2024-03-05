@@ -2,17 +2,20 @@
 source: tests/execution_spec.rs
 expression: client
 ---
-type Bar {
-  foo: Foo
+type Query {
+  fieldCache: Type
+  fieldCacheList: [Type]
+  typeCache: TypeCache
+}
+
+type Type {
   id: Int
 }
 
-type Foo {
-  id: Int!
-}
-
-type Query {
-  bars: [Bar]
+type TypeCache {
+  a: Type
+  b: Type
+  list: [Type]
 }
 
 schema {
