@@ -151,6 +151,31 @@
         }
       }
     },
+    "Call": {
+      "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
+      "type": "object",
+      "properties": {
+        "args": {
+          "description": "The arguments of the field on the `Query` or `Mutation` type that you want to call. For instance `{id: \"{{value.userId}}\"}`.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "mutation": {
+          "description": "The name of the field on the `Mutation` type that you want to call. For instance `createUser`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "query": {
+          "description": "The name of the field on the `Query` type that you want to call. For instance `user`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
       "type": "object",
@@ -226,6 +251,19 @@
           "properties": {
             "graphQL": {
               "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Reuses a resolver pre-defined on `Query` or `Mutation`",
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
             }
           },
           "additionalProperties": false
@@ -925,6 +963,17 @@
           "anyOf": [
             {
               "$ref": "#/definitions/Cache"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "call": {
+          "description": "Inserts a call resolver for the field.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Call"
             },
             {
               "type": "null"

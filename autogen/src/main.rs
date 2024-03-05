@@ -103,7 +103,8 @@ fn logger_init() {
     const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_SCHEMA_LOG_LEVEL";
     const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_SCHEMA_LOG_LEVEL";
 
-    // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
+    // Select which env variable to use for the log level filter. This is because
+    // filter_or doesn't allow picking between multiple env_var for the filter value
     let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
         .map(|_| LONG_ENV_FILTER_VAR_NAME)
         .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);

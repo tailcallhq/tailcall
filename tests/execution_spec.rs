@@ -350,7 +350,8 @@ impl ExecutionSpec {
             }
         }
 
-        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+        // If any spec has the Only annotation, use those; otherwise, use the filtered
+        // list.
         if !only_specs.is_empty() {
             only_specs
         } else {
@@ -679,7 +680,23 @@ impl HttpIO for MockHttpClient {
                     None => Value::Null,
                 };
                 let body_match = req_body == mock_req.0.body;
-                method_match && url_match && (body_match || is_grpc)
+                let headers_match = req
+                    .headers()
+                    .iter()
+                    .filter(|(key, _)| *key != "content-type")
+                    .all(|(key, value)| {
+                        let header_name = key.to_string();
+
+                        let header_value = value.to_str().unwrap();
+                        let mock_header_value = "".to_string();
+                        let mock_header_value = mock_req
+                            .0
+                            .headers
+                            .get(&header_name)
+                            .unwrap_or(&mock_header_value);
+                        header_value == mock_header_value
+                    });
+                method_match && url_match && headers_match && (body_match || is_grpc)
             })
             .ok_or(anyhow!(
                 "No mock found for request: {:?} {} in {}",
@@ -832,10 +849,11 @@ async fn assert_spec(spec: ExecutionSpec) {
         log::info!("\tserver #{} parse ok", i + 1);
 
         // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code style
-        // the re-serializing check gives us some of the advantages of the identity check too,
-        // but we are missing out on some by having it only enabled for either new tests that request it
-        // or old graphql_spec tests that were explicitly written with it in mind
+        // but GraphQL identity checking is very hard, since a lot depends on the code
+        // style the re-serializing check gives us some of the advantages of the
+        // identity check too, but we are missing out on some by having it only
+        // enabled for either new tests that request it or old graphql_spec
+        // tests that were explicitly written with it in mind
         if spec.check_identity {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
@@ -966,7 +984,8 @@ async fn test() -> anyhow::Result<()> {
         .init();
 
     // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
+    // This is used by testconv to auto-apply the snapshots of unconvertable
+    // fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();
     let expected_arg = ["insta", "i"];

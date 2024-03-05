@@ -11,10 +11,10 @@ use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
 
-/// Blueprint is an intermediary representation that allows us to generate graphQL APIs.
-/// It can only be generated from a valid Config.
-/// It allows us to choose a different GraphQL Backend, without re-writing all orchestration logic.
-/// It's not optimized for REST APIs (yet).
+/// Blueprint is an intermediary representation that allows us to generate
+/// graphQL APIs. It can only be generated from a valid Config.
+/// It allows us to choose a different GraphQL Backend, without re-writing all
+/// orchestration logic. It's not optimized for REST APIs (yet).
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Blueprint {
     pub definitions: Vec<Definition>,
@@ -138,7 +138,6 @@ pub struct FieldDefinition {
 impl FieldDefinition {
     ///
     /// Transforms the current expression if it exists on the provided field.
-    ///
     pub fn map_expr<F: FnMut(Expression) -> Expression>(&mut self, mut wrapper: F) {
         if let Some(resolver) = self.resolver.take() {
             self.resolver = Some(wrapper(resolver))
@@ -171,7 +170,6 @@ pub struct UnionTypeDefinition {
 
 ///
 /// Controls the kind of blueprint that is generated.
-///
 #[derive(Copy, Clone, Debug, Default)]
 pub struct SchemaModifiers {
     /// If true, the generated schema will not have any resolvers.
@@ -207,7 +205,6 @@ impl Blueprint {
 
     ///
     /// This function is used to generate a schema from a blueprint.
-    ///
     pub fn to_schema(&self) -> Schema {
         self.to_schema_with(SchemaModifiers::default())
     }
@@ -215,7 +212,6 @@ impl Blueprint {
     ///
     /// This function is used to generate a schema from a blueprint.
     /// The generated schema can be modified using the SchemaModifiers.
-    ///
     pub fn to_schema_with(&self, schema_modifiers: SchemaModifiers) -> Schema {
         let blueprint = if schema_modifiers.no_resolver {
             self.clone().drop_resolvers()

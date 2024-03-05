@@ -2,14 +2,16 @@ use std::collections::{HashMap, HashSet};
 
 use super::{Blueprint, Definition};
 
-// compress() takes a Blueprint and returns a compressed Blueprint. So that unused types are removed.
+// compress() takes a Blueprint and returns a compressed Blueprint. So that
+// unused types are removed.
 pub fn compress(mut blueprint: Blueprint) -> Blueprint {
     let graph = build_dependency_graph(&blueprint);
 
     // Pre-defined root-types for graphql
     let mut root_type = vec!["Query", "Mutation", "Subscription"];
 
-    // User-might create custom root-types other than default i.e non-default types for root-definitions.
+    // User-might create custom root-types other than default i.e non-default types
+    // for root-definitions.
     let defined_query_type = blueprint.query().clone();
     let mutation = blueprint.mutation().unwrap_or("Mutation".to_string());
 
