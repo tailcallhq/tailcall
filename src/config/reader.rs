@@ -14,8 +14,8 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
-use crate::config::{Config, Source};
-use crate::runtime::{TargetRuntime, TargetRuntimeContext};
+use crate::config::{Config, ConfigReaderContext, Source};
+use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
@@ -294,9 +294,9 @@ impl ConfigReader {
         let server = &mut config_module.config.server;
         let opentelemetry = &mut config_module.config.opentelemetry;
 
-        let runtime_ctx = TargetRuntimeContext { runtime: &self.runtime, vars: &server.vars };
+        let reader_ctx = ConfigReaderContext { env: self.runtime.env.clone(), vars: &server.vars };
 
-        opentelemetry.render_mustache(&runtime_ctx)?;
+        opentelemetry.render_mustache(&reader_ctx)?;
 
         Ok(())
     }
