@@ -18,7 +18,8 @@ use crate::config::{Config, Source};
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
+/// Reads the configuration from a file or from an HTTP URL and resolves all
+/// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
 }
@@ -262,7 +263,8 @@ impl ConfigReader {
         Ok(descriptors)
     }
 
-    /// Tries to load well-known google proto files and if not found uses normal file and http IO to resolve them
+    /// Tries to load well-known google proto files and if not found uses normal
+    /// file and http IO to resolve them
     async fn read_proto(&self, path: &str) -> anyhow::Result<FileDescriptorProto> {
         let content = if let Ok(file) = GoogleFileResolver::new().open_file(path) {
             file.source()
@@ -275,7 +277,8 @@ impl ConfigReader {
         Ok(protox_parse::parse(path, &content)?)
     }
 
-    /// Checks if path is absolute else it joins file path with relative dir path
+    /// Checks if path is absolute else it joins file path with relative dir
+    /// path
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if Path::new(&src).is_absolute() {
             src.to_string()

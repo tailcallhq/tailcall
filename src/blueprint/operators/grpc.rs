@@ -74,7 +74,8 @@ fn validate_schema(
     Valid::from(JsonSchema::try_from(input_type))
         .zip(Valid::from(JsonSchema::try_from(output_type)))
         .and_then(|(_input_schema, output_schema)| {
-            // TODO: add validation for input schema - should compare result grpc.body to schema
+            // TODO: add validation for input schema - should compare result grpc.body to
+            // schema
             let fields = field_schema.field;
             let _args = field_schema.args;
             // TODO: all of the fields in protobuf are optional actually
@@ -104,7 +105,8 @@ fn validate_group_by(
     Valid::from(JsonSchema::try_from(input_type))
         .zip(Valid::from(output_type))
         .and_then(|(_input_schema, output_schema)| {
-            // TODO: add validation for input schema - should compare result grpc.body to schema considering repeated message type
+            // TODO: add validation for input schema - should compare result grpc.body to
+            // schema considering repeated message type
             let fields = &field_schema.field;
             let args = &field_schema.args;
             let fields = JsonSchema::Arr(Box::new(fields.to_owned()));

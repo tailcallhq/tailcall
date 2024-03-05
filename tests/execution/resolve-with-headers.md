@@ -25,7 +25,8 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/1
-    body: null
+    headers:
+      authorization: 1
   response:
     status: 200
     headers:

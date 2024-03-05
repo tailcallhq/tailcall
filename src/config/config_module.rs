@@ -28,9 +28,9 @@ impl<A> Deref for Content<A> {
     }
 }
 
-/// Extensions are meta-information required before we can generate the blueprint.
-/// Typically, this information cannot be inferred without performing an IO operation, i.e.,
-/// reading a file, making an HTTP call, etc.
+/// Extensions are meta-information required before we can generate the
+/// blueprint. Typically, this information cannot be inferred without performing
+/// an IO operation, i.e., reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default)]
 pub struct Extensions {
     /// Contains the file descriptor sets resolved from the links
