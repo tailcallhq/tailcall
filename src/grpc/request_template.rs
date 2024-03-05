@@ -169,7 +169,7 @@ mod tests {
                 .await
                 .unwrap()
                 .extensions
-                .get_file_descriptor_by_package(&method)
+                .get_file_descriptor_set(&method)
                 .unwrap(),
         )
         .unwrap();
