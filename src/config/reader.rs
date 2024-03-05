@@ -291,10 +291,11 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod test_proto_config {
-    use anyhow::{Context, Result};
-    use pretty_assertions::assert_eq;
     use std::collections::VecDeque;
     use std::path::{Path, PathBuf};
+
+    use anyhow::{Context, Result};
+    use pretty_assertions::assert_eq;
 
     use crate::config::reader::ConfigReader;
     use crate::valid::ValidationError;
