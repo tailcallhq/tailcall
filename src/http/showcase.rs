@@ -105,7 +105,6 @@ mod tests {
             .await
             .unwrap();
 
-        println!("{:#?}", res);
         assert!(res.status().is_success())
     }
 }
