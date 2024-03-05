@@ -107,7 +107,9 @@ mod test {
         assert!(response.is_ok());
         let response = response.unwrap();
         assert!(response.headers.is_empty());
-        assert_eq!(response.body, Bytes::new()); // Assuming `Bytes::new()` is the expected result for no body
+        assert_eq!(response.body, Bytes::new()); // Assuming `Bytes::new()` is
+                                                 // the expected result for no
+                                                 // body
     }
 
     #[test]

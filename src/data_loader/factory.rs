@@ -11,6 +11,5 @@ where
     type Storage: CacheStorage<Key = K, Value = V>;
 
     /// Create a cache storage.
-    ///
     fn create(&self) -> Self::Storage;
 }

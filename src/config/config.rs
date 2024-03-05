@@ -24,40 +24,36 @@ use crate::valid::{Valid, Validator};
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     ///
-    /// Dictates how the server behaves and helps tune tailcall for all ingress requests.
-    /// Features such as request batching, SSL, HTTP2 etc. can be configured here.
-    ///
+    /// Dictates how the server behaves and helps tune tailcall for all ingress
+    /// requests. Features such as request batching, SSL, HTTP2 etc. can be
+    /// configured here.
     #[serde(default)]
     pub server: Server,
 
     ///
     /// Dictates how tailcall should handle upstream requests/responses.
     /// Tuning upstream can improve performance and reliability for connections.
-    ///
     #[serde(default)]
     pub upstream: Upstream,
 
     ///
-    /// Specifies the entry points for query and mutation in the generated GraphQL schema.
-    ///
+    /// Specifies the entry points for query and mutation in the generated
+    /// GraphQL schema.
     pub schema: RootSchema,
 
     ///
     /// A map of all the types in the schema.
-    ///
     #[serde(default)]
     #[setters(skip)]
     pub types: BTreeMap<String, Type>,
 
     ///
     /// A map of all the union types in the schema.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub unions: BTreeMap<String, Union>,
 
     ///
     /// A list of all links in the schema.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
 }
@@ -190,47 +186,38 @@ fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
 ///
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
-///
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Type {
     ///
     /// A map of field name and its definition.
-    ///
     pub fields: BTreeMap<String, Field>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Additional fields to be added to the type
-    ///
     pub added_fields: Vec<AddField>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Documentation for the type that is publicly visible.
-    ///
     pub doc: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Flag to indicate if the type is an interface.
-    ///
     pub interface: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Interfaces that the type implements.
-    ///
     pub implements: BTreeSet<String>,
     #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
     ///
     /// Variants for the type if it's an enum
-    ///
     pub variants: Option<BTreeSet<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Flag to indicate if the type is a scalar.
-    ///
     pub scalar: bool,
     #[serde(default)]
     ///
     /// Setting to indicate if the type can be cached.
-    ///
     pub cache: Option<Cache>,
 }
 
@@ -259,10 +246,12 @@ impl Type {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
-/// The @cache operator enables caching for the query, field or type it is applied to.
+/// The @cache operator enables caching for the query, field or type it is
+/// applied to.
 #[serde(rename_all = "camelCase")]
 pub struct Cache {
-    /// Specifies the duration, in milliseconds, of how long the value has to be stored in the cache.
+    /// Specifies the duration, in milliseconds, of how long the value has to be
+    /// stored in the cache.
     pub max_age: NonZeroU64,
 }
 
@@ -320,8 +309,8 @@ impl RootSchema {
 pub struct Omit {}
 
 ///
-/// A field definition containing all the metadata information about resolving a field.
-///
+/// A field definition containing all the metadata information about resolving a
+/// field.
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
@@ -329,96 +318,80 @@ pub struct Omit {}
 pub struct Field {
     ///
     /// Refers to the type of the value the field can be resolved to.
-    ///
     #[serde(rename = "type", default, skip_serializing_if = "is_default")]
     pub type_of: String,
 
     ///
     /// Flag to indicate the type is a list.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub list: bool,
 
     ///
     /// Flag to indicate the type is required.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub required: bool,
 
     ///
     /// Flag to indicate if the type inside the list is required.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub list_type_required: bool,
 
     ///
     /// Map of argument name and its definition.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub args: BTreeMap<String, Arg>,
 
     ///
     /// Publicly visible documentation for the field.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
 
     ///
     /// Allows modifying existing fields.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
 
     ///
     /// Omits a field from public consumption.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub omit: Option<Omit>,
 
     ///
     /// Inserts an HTTP resolver for the field.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub http: Option<Http>,
 
     ///
     /// Inserts a call resolver for the field.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub call: Option<Call>,
 
     ///
     /// Inserts a GRPC resolver for the field.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub grpc: Option<Grpc>,
 
     ///
     /// Inserts a Javascript resolver for the field.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub script: Option<JS>,
 
     ///
     /// Inserts a constant resolver for the field.
-    ///
     #[serde(rename = "const", default, skip_serializing_if = "is_default")]
     pub const_field: Option<Const>,
 
     ///
     /// Inserts a GraphQL resolver for the field.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub graphql: Option<GraphQL>,
 
     ///
     /// Inserts an Expression resolver for the field.
-    ///
     #[serde(default, skip_serializing_if = "is_default")]
     pub expr: Option<Expr>,
     ///
     /// Sets the cache configuration for a field
-    ///
     pub cache: Option<Cache>,
 }
 
@@ -544,20 +517,27 @@ impl Union {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
-/// For instance, if you add the @http operator to the `users` field of the Query type with a path argument of `"/users"`, it signifies that the `users` field is backed by a REST API.
-/// The path argument specifies the path of the REST API.
-/// In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.
+/// For instance, if you add the @http operator to the `users` field of the
+/// Query type with a path argument of `"/users"`, it signifies that the `users`
+/// field is backed by a REST API. The path argument specifies the path of the
+/// REST API. In this scenario, the GraphQL server will make a GET request to
+/// the API endpoint specified when the `users` field is queried.
 pub struct Http {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
+    /// This refers to the base URL of the API. If not specified, the default
+    /// base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.
+    /// The body of the API call. It's used for methods like POST or PUT that
+    /// send data to the server. You can pass it as a static object or use a
+    /// Mustache template to substitute variables from the GraphQL variables.
     pub body: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
+    /// The `encoding` parameter specifies the encoding of the request body. It
+    /// can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default
+    /// `ApplicationJson`.
     pub encoding: Encoding,
 
     #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
@@ -565,45 +545,57 @@ pub struct Http {
     pub group_by: Vec<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.
+    /// The `headers` parameter allows you to customize the headers of the HTTP
+    /// request made by the `@http` operator. It is used by specifying a
+    /// key-value map of header names and their values.
     pub headers: KeyValues,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Schema of the input of the API call. It is automatically inferred in most cases.
+    /// Schema of the input of the API call. It is automatically inferred in
+    /// most cases.
     pub input: Option<JsonSchema>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// This refers to the HTTP method of the API call. Commonly used methods include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
+    /// This refers to the HTTP method of the API call. Commonly used methods
+    /// include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
     pub method: Method,
 
     /// This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.
     ///
-    /// For dynamic segments in your API endpoint, use Mustache templates for variable substitution. For instance, to fetch a specific user, use `/users/{{args.id}}`.
+    /// For dynamic segments in your API endpoint, use Mustache templates for
+    /// variable substitution. For instance, to fetch a specific user, use
+    /// `/users/{{args.id}}`.
     pub path: String,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Schema of the output of the API call. It is automatically inferred in most cases.
+    /// Schema of the output of the API call. It is automatically inferred in
+    /// most cases.
     pub output: Option<JsonSchema>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.
+    /// This represents the query parameters of your API call. You can pass it
+    /// as a static object or use Mustache template for dynamic parameters.
+    /// These parameters will be added to the URL.
     pub query: KeyValues,
 }
 
 ///
-/// Provides the ability to refer to a field defined in the root Query or Mutation.
-///
+/// Provides the ability to refer to a field defined in the root Query or
+/// Mutation.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Call {
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Query` type that you want to call. For instance `user`.
+    /// The name of the field on the `Query` type that you want to call. For
+    /// instance `user`.
     pub query: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Mutation` type that you want to call. For instance `createUser`.
+    /// The name of the field on the `Mutation` type that you want to call. For
+    /// instance `createUser`.
     pub mutation: Option<String>,
 
-    /// The arguments of the field on the `Query` or `Mutation` type that you want to call. For instance `{id: "{{value.userId}}"}`.
+    /// The arguments of the field on the `Query` or `Mutation` type that you
+    /// want to call. For instance `{id: "{{value.userId}}"}`.
     #[serde(default, skip_serializing_if = "is_default")]
     pub args: BTreeMap<String, Value>,
 }
@@ -612,49 +604,69 @@ pub struct Call {
 #[serde(rename_all = "camelCase")]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
 ///
-/// For instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API.
+/// For instance, if you add the @grpc operator to the `users` field of the
+/// Query type with a service argument of `NewsService` and method argument of
+/// `GetAllNews`, it signifies that the `users` field is backed by a gRPC API.
 /// The `service` argument specifies the name of the gRPC service.
 /// The `method` argument specifies the name of the gRPC method.
-/// In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.
+/// In this scenario, the GraphQL server will make a gRPC request to the gRPC
+/// endpoint specified when the `users` field is queried.
 pub struct Grpc {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
+    /// This refers to the base URL of the API. If not specified, the default
+    /// base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    /// This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.
+    /// This refers to the arguments of your gRPC call. You can pass it as a
+    /// static object or use Mustache template for dynamic parameters. These
+    /// parameters will be added in the body in `protobuf` format.
     pub body: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc
+    /// The `headers` parameter allows you to customize the headers of the HTTP
+    /// request made by the `@grpc` operator. It is used by specifying a
+    /// key-value map of header names and their values. Note: content-type is
+    /// automatically set to application/grpc
     pub headers: KeyValues,
-    /// This refers to the gRPC method you're going to call. For instance `GetAllNews`.
+    /// This refers to the gRPC method you're going to call. For instance
+    /// `GetAllNews`.
     pub method: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-/// The @graphQL operator allows to specify GraphQL API server request to fetch data from.
+/// The @graphQL operator allows to specify GraphQL API server request to fetch
+/// data from.
 pub struct GraphQL {
     #[serde(default, skip_serializing_if = "is_default")]
     /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
     pub args: Option<KeyValues>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.
+    /// This refers to the base URL of the API. If not specified, the default
+    /// base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// If the upstream GraphQL server supports request batching, you can specify the 'batch' argument to batch several requests into a single batch request.
+    /// If the upstream GraphQL server supports request batching, you can
+    /// specify the 'batch' argument to batch several requests into a single
+    /// batch request.
     ///
-    /// Make sure you have also specified batch settings to the `@upstream` and to the `@graphQL` operator.
+    /// Make sure you have also specified batch settings to the `@upstream` and
+    /// to the `@graphQL` operator.
     pub batch: bool,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.
+    /// The headers parameter allows you to customize the headers of the GraphQL
+    /// request made by the `@graphQL` operator. It is used by specifying a
+    /// key-value map of header names and their values.
     pub headers: KeyValues,
 
-    /// Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.
+    /// Specifies the root field on the upstream to request data from. This maps
+    /// a field in your schema to a field in the upstream schema. When a query
+    /// is received for this field, Tailcall requests data from the
+    /// corresponding upstream field.
     pub name: String,
 }
 
@@ -676,7 +688,8 @@ impl Display for GraphQLOperationType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-/// The `@const` operators allows us to embed a constant response for the schema.
+/// The `@const` operators allows us to embed a constant response for the
+/// schema.
 pub struct Const {
     pub data: Value,
 }
