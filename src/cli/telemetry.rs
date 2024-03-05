@@ -1,5 +1,3 @@
-pub mod metrics;
-
 use std::io::Write;
 
 use anyhow::{anyhow, Result};
@@ -24,7 +22,7 @@ use tracing_subscriber::filter::dynamic_filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
-use self::metrics::init_metrics;
+use super::metrics::init_metrics;
 use crate::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::runtime::TargetRuntime;
 use crate::tracing::{default_filter_target, default_tracing};

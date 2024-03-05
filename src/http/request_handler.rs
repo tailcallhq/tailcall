@@ -17,7 +17,7 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
-pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
+fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
     let endpoint = if let Some(query) = query {
@@ -35,7 +35,7 @@ pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     ))))
 }
 
-pub fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
+fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
     let metric_families = prometheus::default_registry().gather();
     let mut buffer = vec![];
 

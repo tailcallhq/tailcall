@@ -15,6 +15,6 @@ type Foo {
   id: Int!
 }
 
-type Query {
-  bars: [Bar] @http(path: "/bars") @cache(maxAge: 100)
+type Query @cache(maxAge: 100) {
+  bars: [Bar] @http(path: "/bars")
 }

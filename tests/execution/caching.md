@@ -7,8 +7,8 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
   query: Query
 }
 
-type Query {
-  bars: [Bar] @http(path: "/bars") @cache(maxAge: 100)
+type Query @cache(maxAge: 100) {
+  bars: [Bar] @http(path: "/bars")
 }
 
 type Foo {
