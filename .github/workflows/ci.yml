@@ -55,13 +55,12 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
-      - name: Install openssl and set the env
-        run: |
-          sudo apt install -y pkg-config libssl-dev libudev-dev librust-openssl-sys-dev
-          export OPENSSL_DIR=$(which openssl)
-          export OPENSSL_LIB_DIR=$OPENSSL_DIR/lib
-          export OPENSSL_INCLUDE_DIR=$OPENSSL_DIR/include
-          export PKG_CONFIG_PATH=$OPENSSL_DIR/pkgconfig:$PKG_CONFIG_PATH
+      - name: Install openssl
+        run: sudo apt install -y pkg-config libssl-dev libudev-dev librust-openssl-sys-dev
+        env:
+          OPENSSL_DIR: $(which openssl)
+          OPENSSL_LIB_DIR: $OPENSSL_DIR/lib
+          OPENSSL_INCLUDE_DIR: $OPENSSL_DIR/include
 
       - name: Build
         run: cargo lambda build
