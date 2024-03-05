@@ -29,7 +29,6 @@ pub fn update_expr(
 
 ///
 /// Compiles a list of Exprs into a list of Expressions
-///
 fn compile_list(
     context: &CompilationContext,
     expr_vec: Vec<ExprBody>,
@@ -39,7 +38,6 @@ fn compile_list(
 
 ///
 /// Compiles a tuple of Exprs into a tuple of Expressions
-///
 fn compile_ab(
     context: &CompilationContext,
     ab: (ExprBody, ExprBody),
@@ -49,7 +47,6 @@ fn compile_ab(
 
 ///
 /// Compiles expr into Expression
-///
 fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
     let config_module = ctx.config_module;
     let field = ctx.config_field;

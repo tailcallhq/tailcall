@@ -2,8 +2,8 @@ use crate::valid::{Valid, Validator};
 
 /// Trait for types that support a "try fold" operation.
 ///
-/// `TryFolding` describes a composable folding operation that can potentially fail.
-/// It can optionally consume an input to transform the provided value.
+/// `TryFolding` describes a composable folding operation that can potentially
+/// fail. It can optionally consume an input to transform the provided value.
 type TryFoldFn<'a, I, O, E> = Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>;
 
 pub struct TryFold<'a, I: 'a, O: 'a, E: 'a>(TryFoldFn<'a, I, O, E>);
@@ -16,22 +16,24 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     /// - `value`: The value to be folded.
     ///
     /// # Returns
-    /// Returns a `Valid` value, which can be either a success with the folded value
-    /// or an error.
+    /// Returns a `Valid` value, which can be either a success with the folded
+    /// value or an error.
     pub fn try_fold(&self, input: &I, state: O) -> Valid<O, E> {
         (self.0)(input, state)
     }
 
     /// Combine two `TryFolding` implementors into a sequential operation.
     ///
-    /// This method allows for chaining two `TryFolding` operations, where the result of the first operation
-    /// (if successful) will be used as the input for the second operation.
+    /// This method allows for chaining two `TryFolding` operations, where the
+    /// result of the first operation (if successful) will be used as the
+    /// input for the second operation.
     ///
     /// # Parameters
     /// - `other`: Another `TryFolding` implementor.
     ///
     /// # Returns
-    /// Returns a combined `And` structure that represents the sequential folding operation.
+    /// Returns a combined `And` structure that represents the sequential
+    /// folding operation.
     pub fn and(self, other: TryFold<'a, I, O, E>) -> Self {
         TryFold(Box::new(move |input, state| {
             self.try_fold(input, state.clone()).fold(
@@ -52,8 +54,9 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
         TryFold(Box::new(f))
     }
 
-    /// Transforms a TryFold<I, O, E> to TryFold<I, O1, E> by applying transformations.
-    /// Check `transform_valid` if you want to return a `Valid` instead of an `O1`.
+    /// Transforms a TryFold<I, O, E> to TryFold<I, O1, E> by applying
+    /// transformations. Check `transform_valid` if you want to return a
+    /// `Valid` instead of an `O1`.
     ///
     /// # Parameters
     /// - `up`: A function that uses O and O1 to create a new O1.
@@ -61,7 +64,6 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     ///
     /// # Returns
     /// Returns a new TryFold<I, O1, E> that applies the transformations.
-    ///
     pub fn transform<O1: Clone>(
         self,
         up: impl Fn(O, O1) -> O1 + 'a,
@@ -73,8 +75,9 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
         )
     }
 
-    /// Transforms a TryFold<I, O, E> to TryFold<I, O1, E> by applying transformations.
-    /// Check `transform` if you want to return an `O1` instead of a `Valid`.
+    /// Transforms a TryFold<I, O, E> to TryFold<I, O1, E> by applying
+    /// transformations. Check `transform` if you want to return an `O1`
+    /// instead of a `Valid`.
     ///
     /// # Parameters
     /// - `up`: A function that uses O and O1 to create a new Valid<O1, E>.
@@ -82,7 +85,6 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     ///
     /// # Returns
     /// Returns a new TryFold<I, O1, E> that applies the transformations.
-    ///
     pub fn transform_valid<O1: Clone>(
         self,
         up: impl Fn(O, O1) -> Valid<O1, E> + 'a,

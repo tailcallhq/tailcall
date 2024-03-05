@@ -4,7 +4,6 @@
 
 ```js
 function onRequest({request}) {
-  console.log(request)
   if (request.url.endsWith("/hello")) {
     return {
       response: {

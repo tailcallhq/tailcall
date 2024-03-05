@@ -570,8 +570,6 @@ fn write_array_validation(
             extra_it,
         )?;
     } else {
-        println!("{name}: {arr_valid:?}");
-
         write!(writer, "JSON")?;
     }
     write!(writer, "]")

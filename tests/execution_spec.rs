@@ -1,6 +1,7 @@
 extern crate core;
 
 use std::collections::{BTreeMap, HashMap};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -357,7 +358,8 @@ impl ExecutionSpec {
             }
         }
 
-        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+        // If any spec has the Only annotation, use those; otherwise, use the filtered
+        // list.
         if !only_specs.is_empty() {
             only_specs
         } else {
@@ -844,10 +846,7 @@ impl FileIO for MockFileSystem {
 }
 
 async fn assert_spec(spec: ExecutionSpec) {
-    let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
-
     // Parse and validate all server configs + check for identity
-    log::info!("{} {} ...", spec.name, spec.path.display());
 
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
@@ -884,15 +883,9 @@ async fn assert_spec(spec: ExecutionSpec) {
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                log::info!("\terrors... (snapshot)");
-
                 let snapshot_name = format!("{}_errors", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
-
-                if will_insta_panic {
-                    log::info!("\terrors ok");
-                }
             }
         };
 
@@ -913,13 +906,12 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = Config::default().merge_right(&config);
 
-        log::info!("\tserver #{} parse ok", i + 1);
-
         // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code style
-        // the re-serializing check gives us some of the advantages of the identity check too,
-        // but we are missing out on some by having it only enabled for either new tests that request it
-        // or old graphql_spec tests that were explicitly written with it in mind
+        // but GraphQL identity checking is very hard, since a lot depends on the code
+        // style the re-serializing check gives us some of the advantages of the
+        // identity check too, but we are missing out on some by having it only
+        // enabled for either new tests that request it or old graphql_spec
+        // tests that were explicitly written with it in mind
         if spec.check_identity {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
@@ -930,8 +922,6 @@ async fn assert_spec(spec: ExecutionSpec) {
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
-
-                log::info!("\tserver #{} identity ok", i + 1);
             } else {
                 panic!(
                     "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
@@ -944,7 +934,6 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // merged: Run merged specs
-    log::info!("\tmerged... (snapshot)");
 
     let merged = server
         .iter()
@@ -954,10 +943,6 @@ async fn assert_spec(spec: ExecutionSpec) {
     let snapshot_name = format!("{}_merged", spec.safe_name);
 
     insta::assert_snapshot!(snapshot_name, merged);
-
-    if will_insta_panic {
-        log::info!("\tmerged ok");
-    }
 
     // Resolve all configs
     let mut runtime = test::init(None);
@@ -991,12 +976,7 @@ async fn assert_spec(spec: ExecutionSpec) {
         let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
 
-        log::info!("\tclient... (snapshot)");
         insta::assert_snapshot!(snapshot_name, client);
-
-        if will_insta_panic {
-            log::info!("\tclient ok");
-        }
     }
 
     if let Some(assert_spec) = spec.assert.as_ref() {
@@ -1034,26 +1014,36 @@ async fn assert_spec(spec: ExecutionSpec) {
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
-            log::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
-
-            if will_insta_panic {
-                log::info!("\tassert #{} ok", i + 1);
-            }
         }
 
         mock_http_client.assert_hits();
     }
+
+    log::info!("[{}] {} ... ok", spec.name, spec.path.display());
 }
 
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
     env_logger::builder()
+        .format(|buf, record| {
+            let level = record.level();
+            let color_styles = buf.default_level_style(level);
+            writeln!(
+                buf,
+                "{color_styles}[{}]{color_styles:#} {}",
+                record.level(),
+                record.args(),
+            )?;
+
+            Ok(())
+        })
         .filter(Some("execution_spec"), log::LevelFilter::Info)
         .init();
 
     // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
+    // This is used by testconv to auto-apply the snapshots of unconvertable
+    // fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();
     let expected_arg = ["insta", "i"];

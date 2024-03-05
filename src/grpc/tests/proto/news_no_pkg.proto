@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+message News {
+  int32 id = 1;
+  string title = 2;
+  string body = 3;
+  string postImage = 4;
+}
+
+service NewsService {
+  rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
+}
+
+message NewsList {
+  repeated News news = 1;
+}
