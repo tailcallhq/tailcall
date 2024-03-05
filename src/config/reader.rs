@@ -130,8 +130,8 @@ impl ConfigReader {
                             parent_descriptor.name, config_link.id
                         ),
                     )
-                    .trace(&(i + 1).to_string())
-                    .trace(&format!("{}", config_link))
+                    .trace(&format!("link[{}]", i))
+                    .trace("schema")
                     .to_result()?;
 
                     let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
@@ -295,6 +295,7 @@ mod test_proto_config {
     use std::path::{Path, PathBuf};
 
     use anyhow::{Context, Result};
+    use pretty_assertions::assert_eq;
 
     use crate::config::reader::ConfigReader;
     use crate::valid::ValidationError;
@@ -333,13 +334,10 @@ mod test_proto_config {
             err
         );
 
-        let expected_trace = [
-            "@link(id: news, src: proto/news_no_pkg.proto, type: Protobuf)",
-            "1",
-        ]
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<VecDeque<String>>();
+        let expected_trace = ["schema", "link[0]"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<VecDeque<String>>();
         assert_eq!(&expected_trace, trace);
         Ok(())
     }
