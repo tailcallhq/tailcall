@@ -5,6 +5,7 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
+use crate::blueprint::GrpcMethod;
 use crate::config::Config;
 
 /// A wrapper on top of Config that contains all the resolved extensions.
@@ -57,11 +58,16 @@ impl Extensions {
         self
     }
 
-    pub fn get_file_descriptor(&self, id: &str) -> Option<&FileDescriptorSet> {
+    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
         self.grpc_file_descriptors
             .iter()
-            .find(|content| content.id.as_deref() == Some(id))
-            .map(|content| content.deref())
+            .find(|content| {
+                content
+                    .file
+                    .iter()
+                    .any(|file| file.package == Some(grpc.package.to_owned()))
+            })
+            .map(|a| &a.content)
     }
 }
 
