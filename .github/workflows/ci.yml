@@ -38,8 +38,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     defaults:
-      run:
-        working-directory: ./aws-lambda
+      run: sudo apt-get install libssl-dev
+      working-directory: ./aws-lambda
 
     steps:
       - uses: actions/checkout@v4
