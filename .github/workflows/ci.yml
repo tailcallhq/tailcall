@@ -55,8 +55,8 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
-      - name: Install libssl
-        run: sudo apt-get install libssl-dev
+      - name: Install pkg-config and libssl
+        run: sudo apt-get install pkg-config libssl-dev
 
       - name: Build
         run: cargo lambda build
