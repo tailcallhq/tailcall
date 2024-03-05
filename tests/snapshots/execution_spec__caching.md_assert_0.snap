@@ -9,32 +9,9 @@ expression: response
   },
   "body": {
     "data": {
-      "bars": [
-        {
-          "id": 1,
-          "foo": {
-            "id": 2
-          }
-        },
-        {
-          "id": 3,
-          "foo": {
-            "id": 4
-          }
-        },
-        {
-          "id": 5,
-          "foo": {
-            "id": 6
-          }
-        },
-        {
-          "id": 7,
-          "foo": {
-            "id": 8
-          }
-        }
-      ]
+      "fieldCache": {
+        "id": 1
+      }
     }
   }
 }

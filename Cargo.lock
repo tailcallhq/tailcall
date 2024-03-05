@@ -512,6 +512,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
+ "lazy_static",
  "log",
  "schemars",
  "serde",
@@ -594,7 +595,7 @@ dependencies = [
  "http-body 0.4.6",
  "hyper 0.14.28",
  "itoa",
- "matchit 0.7.3",
+ "matchit",
  "memchr",
  "mime",
  "percent-encoding",
@@ -1461,9 +1462,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c012a26a7f605efc424dd53697843a72be7dc86ad2d01f7814337794a12231d"
+checksum = "38b35839ba51819680ba087cd351788c9a3c476841207e0b8cee0b04722343b9"
 dependencies = [
  "anstream",
  "anstyle",
@@ -2799,12 +2800,6 @@ checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
  "regex-automata 0.1.10",
 ]
-
-[[package]]
-name = "matchit"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9376a4f0340565ad675d11fc1419227faf5f60cd7ac9cb2e7185a471f30af833"
 
 [[package]]
 name = "matchit"
@@ -5422,9 +5417,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.36"
+version = "0.4.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d1985d03709c53167ce907ff394f5316aa22cb4e12761295c5dc57dacb6297e"
+checksum = "c02dbc21516f9f1f04f187958890d7e6026df8d16540b7ad9492bc34a67cea03"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -5463,9 +5458,9 @@ checksum = "ca6ad05a4870b2bf5fe995117d3728437bd27d7cd5f06f13c17443ef369775a1"
 
 [[package]]
 name = "wasm-streams"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4609d447824375f43e1ffbc051b50ad8f4b3ae8219680c94452ea05eb240ac7"
+checksum = "b65dc4c90b63b118468cf747d8bf3566c1913ef60be765b5730ead9e0a3ba129"
 dependencies = [
  "futures-util",
  "js-sys",
@@ -5476,9 +5471,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.63"
+version = "0.3.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bdd9ef4e984da1187bf8110c5cf5b845fbc87a23602cdf912386a76fcd3a7c2"
+checksum = "9b85cbef8c220a6abc02aefd892dfc0fc23afb1c6a426316ec33253a3877249b"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -5814,17 +5809,18 @@ dependencies = [
 
 [[package]]
 name = "worker"
-version = "0.0.18"
-source = "git+https://github.com/cloudflare/workers-rs?rev=c57f7a6d31da601397e46daec5a9448d6efbe1cc#c57f7a6d31da601397e46daec5a9448d6efbe1cc"
+version = "0.0.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3c4603afa2af7cdab02c982ecf31b06d03da641de448189bb2203a75c994bff"
 dependencies = [
  "async-trait",
  "chrono",
  "chrono-tz",
  "futures-channel",
  "futures-util",
- "http 0.2.11",
+ "http 1.0.0",
  "js-sys",
- "matchit 0.4.6",
+ "matchit",
  "pin-project",
  "serde",
  "serde-wasm-bindgen 0.6.3",
@@ -5858,8 +5854,9 @@ dependencies = [
 
 [[package]]
 name = "worker-macros"
-version = "0.0.10"
-source = "git+https://github.com/cloudflare/workers-rs?rev=c57f7a6d31da601397e46daec5a9448d6efbe1cc#c57f7a6d31da601397e46daec5a9448d6efbe1cc"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "561167c26ca0a0540021cb3f268305cc447c1cdf5b3cc39427270e9656c0a35e"
 dependencies = [
  "async-trait",
  "proc-macro2",
@@ -5873,8 +5870,9 @@ dependencies = [
 
 [[package]]
 name = "worker-sys"
-version = "0.0.10"
-source = "git+https://github.com/cloudflare/workers-rs?rev=c57f7a6d31da601397e46daec5a9448d6efbe1cc#c57f7a6d31da601397e46daec5a9448d6efbe1cc"
+version = "0.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c3feab530cf367256a4dc3bbd8b9f52c50a944aacab826dcb3c6d7f64271abc"
 dependencies = [
  "cfg-if",
  "js-sys",

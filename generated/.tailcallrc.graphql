@@ -22,7 +22,7 @@ directive @cache(
   the cache.
   """
   maxAge: Int!
-) on FIELD_DEFINITION
+) on OBJECT | FIELD_DEFINITION
 
 """
 Provides the ability to refer to a field defined in the root Query or Mutation.

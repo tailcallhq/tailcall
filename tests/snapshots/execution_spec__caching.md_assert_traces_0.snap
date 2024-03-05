@@ -7,6 +7,9 @@ expression: opentelemetry.get_traces().unwrap()
     "name": "eval"
   },
   {
+    "name": "eval"
+  },
+  {
     "name": "field::resolver"
   },
   {
