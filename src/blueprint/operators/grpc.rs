@@ -23,7 +23,7 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
     .and_then(|base_url| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
-        base_url.push_str(&method.service);
+        base_url.push_str(format!("{}.{}", method.package, method.service).as_str());
         base_url.push('/');
         base_url.push_str(&method.name);
 
