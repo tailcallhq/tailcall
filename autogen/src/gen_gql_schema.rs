@@ -14,6 +14,7 @@ static DIRECTIVE_ALLOW_LIST: &[(&str, Entity, bool)] = &[
     ("link", Entity::Schema, true),
     ("upstream", Entity::Schema, false),
     ("http", Entity::FieldDefinition, false),
+    ("call", Entity::FieldDefinition, false),
     ("grpc", Entity::FieldDefinition, false),
     ("addField", Entity::Object, true),
     ("modify", Entity::FieldDefinition, false),
@@ -544,8 +545,6 @@ fn write_array_validation(
             extra_it,
         )?;
     } else {
-        println!("{name}: {arr_valid:?}");
-
         write!(writer, "JSON")?;
     }
     write!(writer, "]")

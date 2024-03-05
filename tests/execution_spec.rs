@@ -358,7 +358,8 @@ impl ExecutionSpec {
             }
         }
 
-        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+        // If any spec has the Only annotation, use those; otherwise, use the filtered
+        // list.
         if !only_specs.is_empty() {
             only_specs
         } else {
@@ -691,7 +692,23 @@ impl HttpIO for MockHttpClient {
                     None => Value::Null,
                 };
                 let body_match = req_body == mock_req.0.body;
-                method_match && url_match && (body_match || is_grpc)
+                let headers_match = req
+                    .headers()
+                    .iter()
+                    .filter(|(key, _)| *key != "content-type")
+                    .all(|(key, value)| {
+                        let header_name = key.to_string();
+
+                        let header_value = value.to_str().unwrap();
+                        let mock_header_value = "".to_string();
+                        let mock_header_value = mock_req
+                            .0
+                            .headers
+                            .get(&header_name)
+                            .unwrap_or(&mock_header_value);
+                        header_value == mock_header_value
+                    });
+                method_match && url_match && headers_match && (body_match || is_grpc)
             })
             .ok_or(anyhow!(
                 "No mock found for request: {:?} {} in {}",
@@ -772,10 +789,7 @@ impl FileIO for MockFileSystem {
 }
 
 async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
-    let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
-
     // Parse and validate all server configs + check for identity
-    tracing::info!("{} {} ...", spec.name, spec.path.display());
 
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
@@ -812,15 +826,9 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                tracing::info!("\terrors... (snapshot)");
-
                 let snapshot_name = format!("{}_errors", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
-
-                if will_insta_panic {
-                    tracing::info!("\terrors ok");
-                }
             }
         };
 
@@ -841,13 +849,12 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
         let config = Config::default().merge_right(&config);
 
-        tracing::info!("\tserver #{} parse ok", i + 1);
-
         // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code style
-        // the re-serializing check gives us some of the advantages of the identity check too,
-        // but we are missing out on some by having it only enabled for either new tests that request it
-        // or old graphql_spec tests that were explicitly written with it in mind
+        // but GraphQL identity checking is very hard, since a lot depends on the code
+        // style the re-serializing check gives us some of the advantages of the
+        // identity check too, but we are missing out on some by having it only
+        // enabled for either new tests that request it or old graphql_spec
+        // tests that were explicitly written with it in mind
         if spec.check_identity {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
@@ -858,8 +865,6 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
-
-                tracing::info!("\tserver #{} identity ok", i + 1);
             } else {
                 panic!(
                     "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
@@ -872,7 +877,6 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     }
 
     // merged: Run merged specs
-    tracing::info!("\tmerged... (snapshot)");
 
     let merged = server
         .iter()
@@ -882,10 +886,6 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     let snapshot_name = format!("{}_merged", spec.safe_name);
 
     insta::assert_snapshot!(snapshot_name, merged);
-
-    if will_insta_panic {
-        tracing::info!("\tmerged ok");
-    }
 
     // Resolve all configs
     let mut runtime = test::init(None);
@@ -919,12 +919,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
 
-        tracing::info!("\tclient... (snapshot)");
         insta::assert_snapshot!(snapshot_name, client);
-
-        if will_insta_panic {
-            tracing::info!("\tclient ok");
-        }
     }
 
     if let Some(assert_spec) = spec.assert.as_ref() {
@@ -963,36 +958,32 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
-            tracing::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
 
             if assertion.assert_traces {
                 let snapshot_name = format!("{}_assert_traces_{}", spec.safe_name, i);
-                tracing::info!("\tassert #{}... (traces snapshot)", i + 1);
                 insta::assert_json_snapshot!(snapshot_name, opentelemetry.get_traces().unwrap());
             }
 
             if assertion.assert_metrics {
                 let snapshot_name = format!("{}_assert_metrics_{}", spec.safe_name, i);
-                tracing::info!("\tassert #{}... (metrics snapshot)", i + 1);
                 insta::assert_json_snapshot!(
                     snapshot_name,
                     opentelemetry.get_metrics().await.unwrap()
                 );
             }
-
-            if will_insta_panic {
-                tracing::info!("\tassert #{} ok", i + 1);
-            }
         }
     };
+
+    tracing::info!("[{}] {} ... ok", spec.name, spec.path.display());
 }
 
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
     let opentelemetry = init_opentelemetry();
     // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
+    // This is used by testconv to auto-apply the snapshots of unconvertable
+    // fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();
     let expected_arg = ["insta", "i"];

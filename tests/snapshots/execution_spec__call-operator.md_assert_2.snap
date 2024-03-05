@@ -9,7 +9,13 @@ expression: response
   },
   "body": {
     "data": {
-      "hello": "hello world"
+      "posts": [
+        {
+          "userFromValue": {
+            "name": "foo"
+          }
+        }
+      ]
     }
   }
 }

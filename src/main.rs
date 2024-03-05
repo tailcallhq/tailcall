@@ -52,7 +52,7 @@ fn main() -> anyhow::Result<()> {
                     CLIError::new(&error.to_string()).caused_by(sources)
                 }
             };
-            eprintln!("{}", cli_error.color(true));
+            tracing::error!("{}", cli_error.color(true));
             std::process::exit(exitcode::CONFIG);
         }
     }

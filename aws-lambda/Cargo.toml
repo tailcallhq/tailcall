@@ -20,6 +20,7 @@ lambda_runtime = "0.10.0"
 tokio = { version = "1", features = ["macros", "fs"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
+dotenvy = "0.15"
 
 anyhow = "1.0.80"
 async-trait = "0.1.77"

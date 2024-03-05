@@ -21,9 +21,8 @@ pub struct Cache {
 impl Cache {
     ///
     /// Wraps an expression with the cache primitive.
-    /// Performance DFS on the cache on the expression and identifies all the IO nodes.
-    /// Then wraps each IO node with the cache primitive.
-    ///
+    /// Performance DFS on the cache on the expression and identifies all the IO
+    /// nodes. Then wraps each IO node with the cache primitive.
     pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
         expr.modify(move |expr| match expr {
             Expression::IO(_) => Some(Expression::Cache(Cache {

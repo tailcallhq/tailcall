@@ -16,7 +16,6 @@ lazy_static! {
 }
 ///
 /// The handler which handles requests on cloudflare
-///
 pub async fn fetch(
     req: worker::Request,
     env: worker::Env,
@@ -31,8 +30,8 @@ pub async fn fetch(
 
     // Quick exit to GraphiQL
     //
-    // Has to be done here, since when using GraphiQL, a config query parameter is not specified,
-    // and get_app_ctx will fail without it.
+    // Has to be done here, since when using GraphiQL, a config query parameter is
+    // not specified, and get_app_ctx will fail without it.
     if req.method() == Method::GET {
         return to_response(graphiql(&req)?).await;
     }
@@ -49,7 +48,6 @@ pub async fn fetch(
 ///
 /// Initializes the worker once and caches the app context
 /// for future requests.
-///
 async fn get_app_ctx(
     env: Rc<worker::Env>,
     req: &Request<Body>,

@@ -1,0 +1,27 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "firstUser": {
+        "posts": [
+          {
+            "title": "post1-title"
+          },
+          {
+            "title": "post2-title"
+          },
+          {
+            "title": "post3-title"
+          }
+        ]
+      }
+    }
+  }
+}
