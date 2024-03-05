@@ -238,6 +238,10 @@ fn default_status() -> u16 {
     200
 }
 
+fn default_expected_hits() -> usize {
+    1
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct UpstreamRequest(APIRequest);
 
@@ -255,7 +259,8 @@ enum ConfigSource {
 struct Mock {
     request: UpstreamRequest,
     response: UpstreamResponse,
-    assert_n: Option<usize>,
+    #[serde(default = "default_expected_hits")]
+    expected_hits: usize,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -612,19 +617,40 @@ impl ExecutionSpec {
 #[derive(Clone)]
 struct ExecutionMock {
     mock: Mock,
-    asserted_n: Arc<AtomicUsize>,
+    actual_hits: Arc<AtomicUsize>,
 }
 
 impl ExecutionMock {
-    fn assert_n(&self) {
-        if let Some(assert_n) = self.mock.assert_n {
-            assert_eq!(
-                assert_n,
-                self.asserted_n.load(Ordering::Relaxed),
-                "expected mock for {} to be called {assert_n} times",
-                &self.mock.request.0.url
-            );
+    fn assert_hits(&self) {
+        let url = &self.mock.request.0.url;
+        let is_batch_graphql = url.path().starts_with("/graphql")
+            && self
+                .mock
+                .request
+                .0
+                .body
+                .as_str()
+                .map(|s| s.contains(","))
+                .unwrap_or_default();
+
+        // do not assert hits for mocks for batch graphql requests
+        // since that requires having 2 mocks with different order of queries in
+        // single request and only one of that mocks is actually called during run.
+        // for other protocols there is no issues right now, because:
+        // - for http the keys are always sorted https://github.com/tailcallhq/tailcall/blob/51d8b7aff838f0f4c362d4ee9e39492ae1f51fdb/src/http/data_loader.rs#L71
+        // - for grpc body is not used for matching the mock and grpc will use grouping based on id https://github.com/tailcallhq/tailcall/blob/733b641c41f17c60b15b36b025b4db99d0f9cdcd/tests/execution_spec.rs#L769
+        if is_batch_graphql {
+            return;
         }
+
+        let expected_hits = self.mock.expected_hits;
+        let actual_hits = self.actual_hits.load(Ordering::Relaxed);
+
+        assert_eq!(
+            expected_hits,
+            actual_hits,
+            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times",
+        );
     }
 }
 
@@ -644,7 +670,7 @@ impl MockHttpClient {
                     .iter()
                     .map(|mock| ExecutionMock {
                         mock: mock.clone(),
-                        asserted_n: Arc::new(AtomicUsize::default()),
+                        actual_hits: Arc::new(AtomicUsize::default()),
                     })
                     .collect()
             })
@@ -660,9 +686,9 @@ impl MockHttpClient {
         MockHttpClient { mocks, spec_path }
     }
 
-    fn assert_n(&self) {
+    fn assert_hits(&self) {
         for mock in &self.mocks {
-            mock.assert_n();
+            mock.assert_hits();
         }
     }
 }
@@ -749,7 +775,7 @@ impl HttpIO for MockHttpClient {
                 self.spec_path
             ))?;
 
-        execution_mock.asserted_n.fetch_add(1, Ordering::Relaxed);
+        execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
 
         // Clone the response from the mock to avoid borrowing issues.
         let mock_response = execution_mock.mock.response.clone();
@@ -1016,7 +1042,7 @@ async fn assert_spec(spec: ExecutionSpec) {
             }
         }
 
-        mock_http_client.assert_n();
+        mock_http_client.assert_hits();
     }
 }
 

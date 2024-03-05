@@ -1,7 +1,5 @@
 # Caching
 
-##### only
-
 #### server:
 
 ```graphql
@@ -32,7 +30,6 @@ type TypeCache @cache(maxAge: 100) {
 - request:
     method: GET
     url: http://example.com/field-cache
-  assert_n: 1
   response:
     status: 200
     body:
@@ -41,7 +38,6 @@ type TypeCache @cache(maxAge: 100) {
 - request:
     method: GET
     url: http://example.com/field-cache-list
-  assert_n: 1
   response:
     status: 200
     body:
@@ -52,7 +48,6 @@ type TypeCache @cache(maxAge: 100) {
 - request:
     method: GET
     url: http://example.com/type-cache-a
-  assert_n: 1
   response:
     status: 200
     body:
@@ -61,7 +56,6 @@ type TypeCache @cache(maxAge: 100) {
 - request:
     method: GET
     url: http://example.com/type-cache-b
-  assert_n: 1
   response:
     status: 200
     body:
@@ -70,7 +64,6 @@ type TypeCache @cache(maxAge: 100) {
 - request:
     method: GET
     url: http://example.com/type-cache-list
-  assert_n: 1
   response:
     status: 200
     body:
