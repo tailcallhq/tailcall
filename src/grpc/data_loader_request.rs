@@ -82,7 +82,7 @@ mod tests {
         }]);
         let method = GrpcMethod {
             package: "greetings".to_string(),
-            service: "greetings.Greeter".to_string(),
+            service: "Greeter".to_string(),
             name: "SayHello".to_string(),
         };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
@@ -98,14 +98,14 @@ mod tests {
         let protobuf_set = ProtobufSet::from_proto_file(
             config_module
                 .extensions
-                .get_file_descriptor(&method)
+                .get_file_descriptor_by_package(&method)
                 .unwrap(),
         )
         .unwrap();
 
-        let service = protobuf_set.find_service(method.service.as_str()).unwrap();
+        let service = protobuf_set.find_service(&method).unwrap();
 
-        service.find_operation(&method.name).unwrap()
+        service.find_operation(&method).unwrap()
     }
 
     #[tokio::test]

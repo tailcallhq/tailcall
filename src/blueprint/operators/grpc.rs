@@ -41,14 +41,14 @@ fn to_operation(
     )
     .and_then(|set| {
         Valid::from(
-            set.find_service(&method.service)
+            set.find_service(method)
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
     .and_then(|service| {
         Valid::from(
             service
-                .find_operation(&method.name)
+                .find_operation(method)
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
@@ -136,21 +136,43 @@ impl TryFrom<String> for GrpcMethod {
     type Error = ValidationError<String>;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = value.split('.').collect();
-        if parts.len() < 3 {
-            return Err(ValidationError::new(format!(
+        let parts: Vec<&str> = value.rsplitn(3, '.').collect();
+        match &parts[..] {
+            &[name, service, id] => {
+                let method = GrpcMethod {
+                    package: id.to_owned(),
+                    service: service.to_owned(),
+                    name: name.to_owned(),
+                };
+                Ok(method)
+            }
+            _ => Err(ValidationError::new(format!(
                 "Invalid method format: {}. Expected format is <package>.<service>.<method>",
                 value
-            )));
+            ))),
         }
+    }
+}
 
-        let package = parts[..parts.len() - 2]
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
-        let service = parts[parts.len() - 2].to_string();
-        let name = parts[parts.len() - 1].to_string();
-        Ok(GrpcMethod { package, service, name })
+impl TryFrom<&str> for GrpcMethod {
+    type Error = ValidationError<String>;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let parts: Vec<&str> = value.rsplitn(3, '.').collect();
+        match &parts[..] {
+            &[name, service, id] => {
+                let method = GrpcMethod {
+                    package: id.to_owned(),
+                    service: service.to_owned(),
+                    name: name.to_owned(),
+                };
+                Ok(method)
+            }
+            _ => Err(ValidationError::new(format!(
+                "Invalid method format: {}. Expected format is <package>.<service>.<method>",
+                value
+            ))),
+        }
     }
 }
 
@@ -164,7 +186,9 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     Valid::from(GrpcMethod::try_from(grpc.method.clone()))
         .and_then(|method| {
             Valid::from_option(
-                config_module.extensions.get_file_descriptor(&method),
+                config_module
+                    .extensions
+                    .get_file_descriptor_by_package(&method),
                 format!("File descriptor not found for method: {}", grpc.method),
             )
             .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
@@ -248,11 +272,11 @@ mod tests {
             GrpcMethod::try_from("package.name.ServiceName.MethodName".to_string()).unwrap();
 
         assert_eq!(method.package, "package_name");
-        assert_eq!(method.service, "package_name.ServiceName");
+        assert_eq!(method.service, "ServiceName");
         assert_eq!(method.name, "MethodName");
 
         assert_eq!(method1.package, "package.name");
-        assert_eq!(method1.service, "package.name.ServiceName");
+        assert_eq!(method1.service, "ServiceName");
         assert_eq!(method1.name, "MethodName");
     }
 

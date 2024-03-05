@@ -58,20 +58,14 @@ impl Extensions {
         self
     }
 
-    pub fn get_file_descriptor(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
+    pub fn get_file_descriptor_by_package(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
         self.grpc_file_descriptors
             .iter()
             .find(|content| {
-                content.file.iter().any(|file| {
-                    file.package == Some(grpc.package.clone())
-                        && file.service.iter().any(|service| {
-                            service.name == Some(grpc.service.clone())
-                                && service
-                                    .method
-                                    .iter()
-                                    .any(|m| m.name == Some(grpc.name.clone()))
-                        })
-                })
+                content
+                    .file
+                    .iter()
+                    .any(|file| file.package == Some(grpc.package.to_owned()))
             })
             .map(|a| &a.content)
     }

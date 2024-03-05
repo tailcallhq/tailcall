@@ -169,14 +169,15 @@ mod tests {
                 .await
                 .unwrap()
                 .extensions
-                .get_file_descriptor(&method)
+                .get_file_descriptor_by_package(&method)
                 .unwrap(),
         )
         .unwrap();
 
-        let service = protobuf_set.find_service("greetings.Greeter").unwrap();
+        let method = GrpcMethod::try_from("greetings.Greeter.SayHello".to_string()).unwrap();
+        let service = protobuf_set.find_service(&method).unwrap();
 
-        service.find_operation("SayHello").unwrap()
+        service.find_operation(&method).unwrap()
     }
 
     #[derive(Setters)]

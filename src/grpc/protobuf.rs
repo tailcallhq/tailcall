@@ -10,6 +10,8 @@ use prost_reflect::{
 };
 use serde_json::Deserializer;
 
+use crate::blueprint::GrpcMethod;
+
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);
     let message =
@@ -76,11 +78,18 @@ impl ProtobufSet {
         Ok(Self { descriptor_pool })
     }
 
-    pub fn find_service(&self, name: &str) -> Result<ProtobufService> {
+    pub fn find_service(&self, grpc_method: &GrpcMethod) -> Result<ProtobufService> {
         let service_descriptor = self
             .descriptor_pool
-            .get_service_by_name(name)
-            .with_context(|| format!("Couldn't find definitions for service {name}"))?;
+            .get_service_by_name(
+                format!("{}.{}", grpc_method.package, grpc_method.service).as_str(),
+            )
+            .with_context(|| {
+                format!(
+                    "Couldn't find definitions for service {}",
+                    grpc_method.service
+                )
+            })?;
 
         Ok(ProtobufService { service_descriptor })
     }
@@ -92,12 +101,12 @@ pub struct ProtobufService {
 }
 
 impl ProtobufService {
-    pub fn find_operation(&self, method_name: &str) -> Result<ProtobufOperation> {
+    pub fn find_operation(&self, grpc_method: &GrpcMethod) -> Result<ProtobufOperation> {
         let method = self
             .service_descriptor
             .methods()
-            .find(|method| method.name() == method_name)
-            .with_context(|| format!("Couldn't find method {method_name}"))?;
+            .find(|method| method.name() == grpc_method.name)
+            .with_context(|| format!("Couldn't find method {}", grpc_method.name))?;
 
         let input_type = method.input();
         let output_type = method.output();
@@ -250,7 +259,7 @@ mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor(&method)
+            .get_file_descriptor_by_package(&method)
             .unwrap()
             .to_owned())
     }
@@ -298,8 +307,9 @@ mod tests {
 
     #[tokio::test]
     async fn service_not_found() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("greetings._unknown.foo").unwrap();
         let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
-        let error = file.find_service("_unknown").unwrap_err();
+        let error = file.find_service(&grpc_method).unwrap_err();
 
         assert_eq!(
             error.to_string(),
@@ -311,9 +321,10 @@ mod tests {
 
     #[tokio::test]
     async fn method_not_found() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("greetings.Greeter._unknown").unwrap();
         let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
-        let service = file.find_service("greetings.Greeter")?;
-        let error = service.find_operation("_unknown").unwrap_err();
+        let service = file.find_service(&grpc_method)?;
+        let error = service.find_operation(&grpc_method).unwrap_err();
 
         assert_eq!(error.to_string(), "Couldn't find method _unknown");
 
@@ -322,9 +333,10 @@ mod tests {
 
     #[tokio::test]
     async fn greetings_proto_file() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
         let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
-        let service = file.find_service("greetings.Greeter")?;
-        let operation = service.find_operation("SayHello")?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
 
         let output = b"\0\0\0\0\x0e\n\x0ctest message";
 
@@ -342,9 +354,11 @@ mod tests {
 
     #[tokio::test]
     async fn news_proto_file() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
+
         let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
-        let service = file.find_service("news.NewsService")?;
-        let operation = service.find_operation("GetNews")?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
 
         let input = operation.convert_input(r#"{ "id": 1 }"#)?;
 
@@ -366,9 +380,10 @@ mod tests {
 
     #[tokio::test]
     async fn news_proto_file_multiple_messages() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("news.NewsService.GetMultipleNews").unwrap();
         let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
-        let service = file.find_service("news.NewsService")?;
-        let multiple_operation = service.find_operation("GetMultipleNews")?;
+        let service = file.find_service(&grpc_method)?;
+        let multiple_operation = service.find_operation(&grpc_method)?;
 
         let child_messages = vec![r#"{ "id": 3 }"#, r#"{ "id": 5 }"#, r#"{ "id": 1 }"#];
 
