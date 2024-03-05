@@ -174,7 +174,7 @@ mod tests {
         )
         .unwrap();
 
-        let method = GrpcMethod::try_from("greetings.Greeter.SayHello".to_string()).unwrap();
+        let method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
         let service = protobuf_set.find_service(&method).unwrap();
 
         service.find_operation(&method).unwrap()

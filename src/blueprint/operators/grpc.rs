@@ -134,28 +134,6 @@ impl Display for GrpcMethod {
     }
 }
 
-impl TryFrom<String> for GrpcMethod {
-    type Error = ValidationError<String>;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = value.rsplitn(3, '.').collect();
-        match &parts[..] {
-            &[name, service, id] => {
-                let method = GrpcMethod {
-                    package: id.to_owned(),
-                    service: service.to_owned(),
-                    name: name.to_owned(),
-                };
-                Ok(method)
-            }
-            _ => Err(ValidationError::new(format!(
-                "Invalid method format: {}. Expected format is <package>.<service>.<method>",
-                value
-            ))),
-        }
-    }
-}
-
 impl TryFrom<&str> for GrpcMethod {
     type Error = ValidationError<String>;
 
@@ -185,7 +163,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
 
-    Valid::from(GrpcMethod::try_from(grpc.method.clone()))
+    Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
             Valid::from_option(
                 config_module
@@ -268,10 +246,8 @@ mod tests {
 
     #[test]
     fn try_from_grpc_method() {
-        let method =
-            GrpcMethod::try_from("package_name.ServiceName.MethodName".to_string()).unwrap();
-        let method1 =
-            GrpcMethod::try_from("package.name.ServiceName.MethodName".to_string()).unwrap();
+        let method = GrpcMethod::try_from("package_name.ServiceName.MethodName").unwrap();
+        let method1 = GrpcMethod::try_from("package.name.ServiceName.MethodName").unwrap();
 
         assert_eq!(method.package, "package_name");
         assert_eq!(method.service, "ServiceName");
@@ -284,7 +260,7 @@ mod tests {
 
     #[test]
     fn try_from_grpc_method_invalid() {
-        let result = GrpcMethod::try_from("package_name.ServiceName".to_string());
+        let result = GrpcMethod::try_from("package_name.ServiceName");
 
         assert!(result.is_err());
         assert_eq!(
