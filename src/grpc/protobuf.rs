@@ -259,7 +259,7 @@ mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor_by_package(&method)
+            .get_file_descriptor_set(&method)
             .unwrap()
             .to_owned())
     }
