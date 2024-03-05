@@ -12,8 +12,9 @@ impl DataLoaderRequest {
         DataLoaderRequest(req, headers)
     }
     pub fn to_request(&self) -> reqwest::Request {
-        // TODO: excessive clone for the whole structure instead of cloning only part of it
-        // check if we really need to clone anything at all or just pass references?
+        // TODO: excessive clone for the whole structure instead of cloning only part of
+        // it check if we really need to clone anything at all or just pass
+        // references?
         self.clone().0
     }
     pub fn headers(&self) -> &BTreeSet<String> {
@@ -23,8 +24,9 @@ impl DataLoaderRequest {
 impl Hash for DataLoaderRequest {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.url().hash(state);
-        // use body in hash for graphql queries with query operation as they used to fetch data
-        // while http post and graphql mutation should not be loaded through dataloader at all!
+        // use body in hash for graphql queries with query operation as they used to
+        // fetch data while http post and graphql mutation should not be loaded
+        // through dataloader at all!
         if let Some(body) = self.0.body() {
             body.as_bytes().hash(state);
         }

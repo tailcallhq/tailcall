@@ -83,7 +83,8 @@ impl Eval for Logic {
 ///
 /// Special cases:
 /// 1. An empty string is considered falsy
-/// 2. A collection of bytes is truthy, even if the value in those bytes is 0. An empty collection is falsy.
+/// 2. A collection of bytes is truthy, even if the value in those bytes is 0.
+///    An empty collection is falsy.
 pub fn is_truthy(value: &async_graphql::Value) -> bool {
     use async_graphql::{Number, Value};
     use hyper::body::Bytes;

@@ -18,7 +18,8 @@ use crate::config::{Config, Source};
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
+/// Reads the configuration from a file or from an HTTP URL and resolves all
+/// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
 }
@@ -92,12 +93,19 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
-        for config_link in links {
+        for i in 0..links.len() {
+            let config_link = links
+                .get(i)
+                .context(format!("Expected a link at index: {i} but found none"))?;
+            let path = Self::resolve_path(&config_link.src, parent_dir);
+
+            let source = self.read_file(&path).await?;
+
+            let content = source.content;
+
             match config_link.type_of {
                 LinkType::Config => {
-                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
-                    let config =
-                        Config::from_source(Source::detect(&source.path)?, &source.content)?;
+                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
                     config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
 
@@ -113,134 +121,41 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
-                    let mut descriptors = self
-                        .resolve_descriptors(self.read_proto(&source.path).await?)
-                        .await?;
+                    let parent_descriptor = self.read_proto(&source.path).await?;
+
+                    let id = Valid::from_option(
+                        parent_descriptor.package.clone(),
+                        format!(
+                            "Package name is not defined for proto file: {:?} with link id: {:?}",
+                            parent_descriptor.name, config_link.id
+                        ),
+                    )
+                    .trace(&(i + 1).to_string())
+                    .trace(&format!("{}", config_link))
+                    .to_result()?;
+
+                    let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
                     file_descriptor_set.file.append(&mut descriptors);
+
                     config_module
                         .extensions
                         .grpc_file_descriptors
-                        .push(Content {
-                            id: config_link.id.to_owned(),
-                            content: file_descriptor_set,
-                        });
+                        .push(Content { id: Some(id), content: file_descriptor_set });
                 }
                 LinkType::Script => {
-                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
-                    config_module.extensions.script = Some(source.content);
+                    config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
                     config_module
                         .extensions
                         .cert
-                        .extend(self.load_cert(source.content).await?);
+                        .extend(self.load_cert(content.clone()).await?);
                 }
                 LinkType::Key => {
-                    let source = self.get_content_from_link(&config_link, parent_dir).await?;
                     config_module.extensions.keys =
-                        Arc::new(self.load_private_key(source.content).await?)
-                }
-                LinkType::ReflectionWithFileName => {
-                    let mut file_descriptor_set = FileDescriptorSet::default();
-
-                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_proto_name(
-                        config_link.src.as_str(),
-                        &self.runtime,
-                        &config_link
-                            .id
-                            .clone()
-                            .context("Expected link id with method name but found none")?,
-                    )
-                    .await?;
-
-                    let id = Valid::from_option(
-                        file_descriptor_proto.package.clone(),
-                        format!(
-                            "Expected package name for proto file: {:?} but found none",
-                            file_descriptor_proto.name
-                        ),
-                    )
-                    .to_result()?;
-
-                    let mut resolved_descriptor =
-                        self.resolve_descriptors(file_descriptor_proto).await?;
-                    file_descriptor_set.file.append(&mut resolved_descriptor);
-
-                    config_module
-                        .extensions
-                        .grpc_file_descriptors
-                        .push(Content { id: Some(id), content: file_descriptor_set });
-                }
-                LinkType::ReflectionWithService => {
-                    let mut file_descriptor_set = FileDescriptorSet::default();
-
-                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
-                        config_link.src.as_str(),
-                        &self.runtime,
-                        &config_link.id.context(
-                            "Expected link value of link id as package name but found none",
-                        )?,
-                    )
-                    .await?;
-
-                    let id = Valid::from_option(
-                        file_descriptor_proto.package.clone(),
-                        format!(
-                            "Expected package name for proto file: {:?} but found none",
-                            file_descriptor_proto.name
-                        ),
-                    )
-                    .to_result()?;
-
-                    let mut resolved_descriptor =
-                        self.resolve_descriptors(file_descriptor_proto).await?;
-                    file_descriptor_set.file.append(&mut resolved_descriptor);
-
-                    config_module
-                        .extensions
-                        .grpc_file_descriptors
-                        .push(Content { id: Some(id), content: file_descriptor_set });
-                }
-                LinkType::ReflectionAllFiles => {
-                    let link = &config_link.src;
-                    let service_list =
-                        crate::config::grpc_fetch::list_all_files(link.as_str(), &self.runtime)
-                            .await?;
-                    for service in service_list {
-                        let mut file_descriptor_set = FileDescriptorSet::default();
-
-                        if service.eq("grpc.reflection.v1alpha.ServerReflection") {
-                            continue;
-                        }
-                        let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
-                            link.as_str(),
-                            &self.runtime,
-                            &service,
-                        )
-                        .await?;
-
-                        let id = Valid::from_option(
-                            file_descriptor_proto.package.clone(),
-                            format!(
-                                "Expected package name for proto file: {:?} but found none",
-                                file_descriptor_proto.name
-                            ),
-                        )
-                        .to_result()?;
-
-                        let mut resolved_descriptor =
-                            self.resolve_descriptors(file_descriptor_proto).await?;
-                        file_descriptor_set.file.append(&mut resolved_descriptor);
-
-                        config_module
-                            .extensions
-                            .grpc_file_descriptors
-                            .push(Content { id: Some(id), content: file_descriptor_set });
-                    }
+                        Arc::new(self.load_private_key(content.clone()).await?)
                 }
             }
         }
@@ -348,7 +263,8 @@ impl ConfigReader {
         Ok(descriptors)
     }
 
-    /// Tries to load well-known google proto files and if not found uses normal file and http IO to resolve them
+    /// Tries to load well-known google proto files and if not found uses normal
+    /// file and http IO to resolve them
     async fn read_proto(&self, path: &str) -> anyhow::Result<FileDescriptorProto> {
         let content = if let Ok(file) = GoogleFileResolver::new().open_file(path) {
             file.source()
@@ -361,17 +277,8 @@ impl ConfigReader {
         Ok(protox_parse::parse(path, &content)?)
     }
 
-    /// Takes reference of link and returns FileRead
-    async fn get_content_from_link(
-        &self,
-        config_link: &Link,
-        parent_dir: Option<&Path>,
-    ) -> anyhow::Result<FileRead> {
-        let path = Self::resolve_path(&config_link.src, parent_dir);
-        self.read_file(&path).await
-    }
-
-    /// Checks if path is absolute else it joins file path with relative dir path
+    /// Checks if path is absolute else it joins file path with relative dir
+    /// path
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if Path::new(&src).is_absolute() {
             src.to_string()
@@ -384,11 +291,13 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod test_proto_config {
+    use std::collections::VecDeque;
     use std::path::{Path, PathBuf};
 
     use anyhow::{Context, Result};
 
     use crate::config::reader::ConfigReader;
+    use crate::valid::ValidationError;
 
     #[tokio::test]
     async fn test_resolve() {
@@ -398,6 +307,41 @@ mod test_proto_config {
             .read_proto("google/protobuf/empty.proto")
             .await
             .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_proto_no_pkg() -> Result<()> {
+        let runtime = crate::runtime::test::init(None);
+        let reader = ConfigReader::init(runtime);
+        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
+        let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
+        let validation = config_module
+            .err()
+            .unwrap()
+            .downcast::<ValidationError<String>>()?;
+        proto_no_pkg.pop();
+        proto_no_pkg.push("proto");
+        proto_no_pkg.push("news_no_pkg.proto");
+        let err = &validation.as_vec().first().unwrap().message;
+        let trace = &validation.as_vec().first().unwrap().trace;
+        assert_eq!(
+            &format!(
+                "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
+                proto_no_pkg.to_str()
+            ),
+            err
+        );
+
+        let expected_trace = [
+            "@link(id: news, src: proto/news_no_pkg.proto, type: Protobuf)",
+            "1",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<VecDeque<String>>();
+        assert_eq!(&expected_trace, trace);
+        Ok(())
     }
 
     #[tokio::test]
@@ -411,7 +355,7 @@ mod test_proto_config {
         root.pop();
 
         test_dir.push("grpc"); // grpc
-        test_dir.push("tests"); // tests
+        test_dir.push("tests/proto"); // tests
 
         let mut test_file = test_dir.clone();
 
@@ -464,6 +408,7 @@ mod test_proto_config {
         }
     }
 }
+
 #[cfg(test)]
 mod reader_tests {
     use std::path::Path;

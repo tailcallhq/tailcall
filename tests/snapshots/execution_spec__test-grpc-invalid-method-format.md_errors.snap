@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "Invalid method format: abc.NewsService. Expected format is <package/proto_id>.<service>.<method>",
+    "message": "Invalid method format: abc.NewsService. Expected format is <package>.<service>.<method>",
     "trace": [
       "Query",
       "news",

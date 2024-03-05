@@ -3,7 +3,7 @@ use crate::config;
 use crate::config::{ExprBody, Field, If};
 use crate::lambda::{Expression, List, Logic, Math, Relation};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::valid::{Valid, Validator};
 
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
@@ -29,7 +29,6 @@ pub fn update_expr(
 
 ///
 /// Compiles a list of Exprs into a list of Expressions
-///
 fn compile_list(
     context: &CompilationContext,
     expr_vec: Vec<ExprBody>,
@@ -39,7 +38,6 @@ fn compile_list(
 
 ///
 /// Compiles a tuple of Exprs into a tuple of Expressions
-///
 fn compile_ab(
     context: &CompilationContext,
     ab: (ExprBody, ExprBody),
@@ -49,7 +47,6 @@ fn compile_ab(
 
 ///
 /// Compiles expr into Expression
-///
 fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
     let config_module = ctx.config_module;
     let field = ctx.config_field;
@@ -68,14 +65,12 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
             compile_grpc(grpc)
         }
         ExprBody::GraphQL(gql) => compile_graphql(config_module, operation_type, &gql),
+        ExprBody::Call(call) => compile_call(field, config_module, &call, operation_type),
 
         // Safe Expr
-        ExprBody::Const(value) => Valid::from(
-            DynamicValue::try_from(&value).map_err(|e| ValidationError::new(e.to_string())),
-        )
-        .and_then(|value| {
+        ExprBody::Const(value) => {
             compile_const(CompileConst { config_module, field, value: &value, validate: false })
-        }),
+        }
 
         // Logic
         ExprBody::If(If { ref cond, on_true: ref then, on_false: ref els }) => {
