@@ -98,7 +98,9 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Run Cargo Test
-        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+        run: |
+          sudo apt-get install -y protobuf-compiler
+          cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         uses: Wandalen/wretry.action@v1
