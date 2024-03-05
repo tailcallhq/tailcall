@@ -58,7 +58,7 @@ impl Extensions {
         self
     }
 
-    pub fn get_file_descriptor_by_package(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
+    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
         self.grpc_file_descriptors
             .iter()
             .find(|content| {
