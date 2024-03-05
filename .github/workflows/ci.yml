@@ -59,6 +59,9 @@ jobs:
         run: |
           sudo apt install -y pkg-config libssl-dev libudev-dev librust-openssl-sys-dev
           export OPENSSL_DIR=$(which openssl)
+          export OPENSSL_LIB_DIR=$OPENSSL_DIR/lib
+          export OPENSSL_INCLUDE_DIR=$OPENSSL_DIR/include
+          export PKG_CONFIG_PATH=$OPENSSL_DIR/pkgconfig:$PKG_CONFIG_PATH
 
       - name: Build
         run: cargo lambda build
