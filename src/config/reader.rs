@@ -97,14 +97,13 @@ impl ConfigReader {
             let config_link = links
                 .get(i)
                 .context(format!("Expected a link at index: {i} but found none"))?;
-            let path = Self::resolve_path(&config_link.src, parent_dir);
-
-            let source = self.read_file(&path).await?;
-
-            let content = source.content;
 
             match config_link.type_of {
                 LinkType::Config => {
+                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let source = self.read_file(&path).await?;
+                    let content = source.content;
+
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
                     config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
@@ -121,6 +120,9 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
+                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let source = self.read_file(&path).await?;
+
                     let parent_descriptor = self.read_proto(&source.path).await?;
 
                     let id = Valid::from_option(
@@ -145,17 +147,131 @@ impl ConfigReader {
                         .push(Content { id: Some(id), content: file_descriptor_set });
                 }
                 LinkType::Script => {
+                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let source = self.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
+                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let source = self.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module
                         .extensions
                         .cert
                         .extend(self.load_cert(content.clone()).await?);
                 }
                 LinkType::Key => {
+                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let source = self.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
+                }
+                LinkType::ReflectionWithFileName => {
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+
+                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_proto_name(
+                        config_link.src.as_str(),
+                        &self.runtime,
+                        &config_link
+                            .id
+                            .clone()
+                            .context("Expected link id with method name but found none")?,
+                    )
+                    .await?;
+
+                    let id = Valid::from_option(
+                        file_descriptor_proto.package.clone(),
+                        format!(
+                            "Expected package name for proto file: {:?} but found none",
+                            file_descriptor_proto.name
+                        ),
+                    )
+                    .to_result()?;
+
+                    let mut resolved_descriptor =
+                        self.resolve_descriptors(file_descriptor_proto).await?;
+                    file_descriptor_set.file.append(&mut resolved_descriptor);
+
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content { id: Some(id), content: file_descriptor_set });
+                }
+                LinkType::ReflectionWithService => {
+                    let mut file_descriptor_set = FileDescriptorSet::default();
+
+                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
+                        config_link.src.as_str(),
+                        &self.runtime,
+                        config_link
+                            .id
+                            .clone()
+                            .context(
+                                "Expected link value of link id as package name but found none",
+                            )?
+                            .as_str(),
+                    )
+                    .await?;
+
+                    let id = Valid::from_option(
+                        file_descriptor_proto.package.clone(),
+                        format!(
+                            "Expected package name for proto file: {:?} but found none",
+                            file_descriptor_proto.name
+                        ),
+                    )
+                    .to_result()?;
+
+                    let mut resolved_descriptor =
+                        self.resolve_descriptors(file_descriptor_proto).await?;
+                    file_descriptor_set.file.append(&mut resolved_descriptor);
+
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content { id: Some(id), content: file_descriptor_set });
+                }
+                LinkType::ReflectionAllFiles => {
+                    let link = &config_link.src;
+                    let service_list =
+                        crate::config::grpc_fetch::list_all_files(link.as_str(), &self.runtime)
+                            .await?;
+                    for service in service_list {
+                        let mut file_descriptor_set = FileDescriptorSet::default();
+
+                        if service.eq("grpc.reflection.v1alpha.ServerReflection") {
+                            continue;
+                        }
+                        let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
+                            link.as_str(),
+                            &self.runtime,
+                            &service,
+                        )
+                        .await?;
+
+                        let id = Valid::from_option(
+                            file_descriptor_proto.package.clone(),
+                            format!(
+                                "Expected package name for proto file: {:?} but found none",
+                                file_descriptor_proto.name
+                            ),
+                        )
+                        .to_result()?;
+
+                        let mut resolved_descriptor =
+                            self.resolve_descriptors(file_descriptor_proto).await?;
+                        file_descriptor_set.file.append(&mut resolved_descriptor);
+
+                        config_module
+                            .extensions
+                            .grpc_file_descriptors
+                            .push(Content { id: Some(id), content: file_descriptor_set });
+                    }
                 }
             }
         }
@@ -314,7 +430,11 @@ mod test_proto_config {
         let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
+        proto_no_pkg.push("src");
+        proto_no_pkg.push("grpc");
+        proto_no_pkg.push("tests");
+        proto_no_pkg.push("proto_no_pkg.graphql");
+
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
         let validation = config_module
             .err()
@@ -355,7 +475,8 @@ mod test_proto_config {
         root.pop();
 
         test_dir.push("grpc"); // grpc
-        test_dir.push("tests/proto"); // tests
+        test_dir.push("tests"); // tests
+        test_dir.push("proto"); // proto
 
         let mut test_file = test_dir.clone();
 
@@ -411,7 +532,7 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use pretty_assertions::assert_eq;
 
@@ -436,20 +557,22 @@ mod reader_tests {
             then.status(200).body(cfg.to_sdl());
         });
 
-        let json = runtime
-            .file
-            .read("examples/jsonplaceholder.json")
-            .await
-            .unwrap();
+        let mut pb = PathBuf::from("examples");
+        pb.push("jsonplaceholder.json");
+
+        let json = runtime.file.read(pb.to_str().unwrap()).await.unwrap();
 
         let foo_json_server = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/foo.json");
             then.status(200).body(json);
         });
 
+        pb.pop();
+        pb.push("jsonplaceholder.yml");
+
         let port = server.port();
         let files: Vec<String> = [
-            "examples/jsonplaceholder.yml", // config from local file
+            pb.to_str().unwrap(), // config from local file
             format!("http://localhost:{port}/bar.graphql").as_str(), // with content-type header
             format!("http://localhost:{port}/foo.json").as_str(), // with url extension
         ]
@@ -476,10 +599,19 @@ mod reader_tests {
     async fn test_local_files() {
         let runtime = crate::runtime::test::init(None);
 
+        let mut pb_yml = PathBuf::from("examples");
+        pb_yml.push("jsonplaceholder.yml");
+
+        let mut pb_json = PathBuf::from("examples");
+        pb_json.push("jsonplaceholder.json");
+
+        let mut pb_gql = PathBuf::from("examples");
+        pb_gql.push("jsonplaceholder.graphql");
+
         let files: Vec<String> = [
-            "examples/jsonplaceholder.yml",
-            "examples/jsonplaceholder.graphql",
-            "examples/jsonplaceholder.json",
+            pb_json.to_str().unwrap(),
+            pb_yml.to_str().unwrap(),
+            pb_gql.to_str().unwrap(),
         ]
         .iter()
         .map(|x| x.to_string())

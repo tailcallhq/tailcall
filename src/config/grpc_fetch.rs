@@ -64,9 +64,10 @@ struct CustomResponse {
 pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
     let protobuf_set = get_protobuf_set()?;
 
-    let reflection_service =
-        protobuf_set.find_service("grpc.reflection.v1alpha.ServerReflection")?;
-    let operation = reflection_service.find_operation("ServerReflectionInfo")?;
+    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
+
+    let reflection_service = protobuf_set.find_service(&grpc_method)?;
+    let operation = reflection_service.find_operation(&grpc_method)?;
 
     // let mut methods = vec![];
     let mut url: url::Url = url.parse()?;
@@ -117,9 +118,10 @@ pub async fn get_by_service(
 ) -> Result<FileDescriptorProto> {
     let protobuf_set = get_protobuf_set()?;
 
-    let reflection_service =
-        protobuf_set.find_service("grpc.reflection.v1alpha.ServerReflection")?;
-    let operation = reflection_service.find_operation("ServerReflectionInfo")?;
+    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
+
+    let reflection_service = protobuf_set.find_service(&grpc_method)?;
+    let operation = reflection_service.find_operation(&grpc_method)?;
 
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
@@ -159,9 +161,10 @@ pub async fn get_by_proto_name(
 ) -> Result<FileDescriptorProto> {
     let protobuf_set = get_protobuf_set()?;
 
-    let reflection_service =
-        protobuf_set.find_service("grpc.reflection.v1alpha.ServerReflection")?;
-    let operation = reflection_service.find_operation("ServerReflectionInfo")?;
+    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
+
+    let reflection_service = protobuf_set.find_service(&grpc_method)?;
+    let operation = reflection_service.find_operation(&grpc_method)?;
 
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
@@ -197,7 +200,6 @@ async fn request_proto(
     let body = resp.body.as_bytes();
 
     let response = operation.convert_output(body)?.into_json()?;
-    println!("{}", response);
     let response: CustomResponse = serde_json::from_value(response)?;
     let file_descriptor_resp = response
         .file_descriptor_response
@@ -250,7 +252,12 @@ mod grpc_fetch {
         )
         .await?;
         let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        news_proto.push("src/grpc/tests/news.proto");
+        news_proto.push("src");
+        news_proto.push("grpc");
+        news_proto.push("tests");
+        news_proto.push("proto");
+        news_proto.push("news.proto");
+
         let content = runtime.file.read(news_proto.to_str().unwrap()).await?;
         let expected = protox_parse::parse("news.proto", &content)?;
 
@@ -279,7 +286,12 @@ mod grpc_fetch {
         )
         .await?;
         let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        news_proto.push("src/grpc/tests/news.proto");
+        news_proto.push("src");
+        news_proto.push("grpc");
+        news_proto.push("tests");
+        news_proto.push("proto");
+        news_proto.push("news.proto");
+
         let content = runtime.file.read(news_proto.to_str().unwrap()).await?;
         let expected = protox_parse::parse("news.proto", &content)?;
 
