@@ -61,6 +61,7 @@ jobs:
           OPENSSL_DIR: $(which openssl)
           OPENSSL_LIB_DIR: $OPENSSL_DIR/lib
           OPENSSL_INCLUDE_DIR: $OPENSSL_DIR/include
+          CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG: true
 
       - name: Build
         run: cargo lambda build
