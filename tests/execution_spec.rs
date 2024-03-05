@@ -632,7 +632,7 @@ impl ExecutionMock {
                 .0
                 .body
                 .as_str()
-                .map(|s| s.contains(","))
+                .map(|s| s.contains(','))
                 .unwrap_or_default();
 
         // do not assert hits for mocks for batch graphql requests
