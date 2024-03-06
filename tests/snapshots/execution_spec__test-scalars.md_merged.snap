@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(graphiql: true, hostname: "localhost", port: 8000) @upstream {
+  query: Query
+}
+
+input Email {
+
+}
+
+input PhoneNumber {
+
+}
+
+type Query {
+  value(email: Email!): Email! @const(data: "{{args.email}}")
+  value_phone(phone: PhoneNumber!): PhoneNumber! @const(data: "{{args.phone}}")
+}
