@@ -23,13 +23,10 @@ pub enum TelemetryExporter {
     Prometheus(PrometheusExporter),
 }
 
-#[derive(Debug, Clone)]
-pub struct TelemetryInner {
-    pub export: TelemetryExporter,
-}
-
 #[derive(Debug, Default, Clone)]
-pub struct Telemetry(pub Option<TelemetryInner>);
+pub struct Telemetry {
+    pub export: Option<TelemetryExporter>,
+}
 
 fn to_url(url: &str) -> Valid<Url, String> {
     Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).trace("url")
@@ -63,7 +60,7 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
             };
 
             export
-                .map(|export| Telemetry(Some(TelemetryInner { export })))
+                .map(|export| Telemetry { export: Some(export) })
                 .trace(config::Telemetry::trace_name().as_str())
         } else {
             Valid::succeed(up)

@@ -158,11 +158,11 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         }
 
         hyper::Method::GET => {
-            if let Some(otel) = app_ctx.blueprint.opentelemetry.0.as_ref() {
-                if let TelemetryExporter::Prometheus(prometheus) = &otel.export {
-                    if req.uri().path() == prometheus.path {
-                        return prometheus_metrics(prometheus);
-                    }
+            if let Some(TelemetryExporter::Prometheus(prometheus)) =
+                app_ctx.blueprint.opentelemetry.export.as_ref()
+            {
+                if req.uri().path() == prometheus.path {
+                    return prometheus_metrics(prometheus);
                 }
             };
 
