@@ -46,10 +46,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     move |ctx| {
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
-                        let span = tracing::info_span!(
-                            "field::resolver",
-                            name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
-                        );
 
                         match &field.resolver {
                             None => {
@@ -59,6 +55,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 )
                             }
                             Some(expr) => {
+                                let span = tracing::info_span!(
+                                    "field::resolver",
+                                    name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
+                                );
                                 let expr = expr.to_owned();
                                 FieldFuture::new(
                                     async move {
