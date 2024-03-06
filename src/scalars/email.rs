@@ -1,12 +1,25 @@
 use async_graphql::validators::email;
 use async_graphql_value::ConstValue;
+use schemars::JsonSchema;
 
 use crate::json::JsonLike;
 
-#[derive(schemars::JsonSchema)]
-/// field whose value conforms to the standard internet email address format as
-/// specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
-pub struct Email;
+#[derive(JsonSchema, Default)]
+pub struct Email {
+    #[serde(rename = "Email")]
+    #[schemars(schema_with = "email_schema")]
+    /// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+    pub email: String,
+}
+
+fn email_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+    let mut schema: schemars::schema::SchemaObject = <String>::json_schema(gen).into();
+    schema.string = Some(Box::new(schemars::schema::StringValidation {
+        pattern: Some("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$".to_owned()),
+        ..Default::default()
+    }));
+    schema.into()
+}
 
 impl super::Scalar for Email {
     /// Function used to validate the email address
@@ -30,7 +43,7 @@ mod test {
 
     #[tokio::test]
     async fn test_email_valid_req_resp() -> Result<()> {
-        assert!(Email.validate()(&ConstValue::String(
+        assert!(Email::default().validate()(&ConstValue::String(
             "valid@email.com".to_string()
         )));
         Ok(())
@@ -38,7 +51,7 @@ mod test {
 
     #[tokio::test]
     async fn test_email_invalid() -> Result<()> {
-        assert!(!Email.validate()(&ConstValue::String(
+        assert!(!Email::default().validate()(&ConstValue::String(
             "invalid_email".to_string()
         )));
         Ok(())
@@ -46,7 +59,7 @@ mod test {
 
     #[tokio::test]
     async fn test_email_invalid_const_value() -> Result<()> {
-        assert!(!Email.validate()(&ConstValue::Null));
+        assert!(!Email::default().validate()(&ConstValue::Null));
         Ok(())
     }
 }

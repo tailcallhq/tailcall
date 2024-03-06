@@ -11,7 +11,7 @@ mod email;
 lazy_static! {
     pub static ref CUSTOM_SCALARS: HashMap<String, Arc<dyn Scalar + Send + Sync>> = {
         let mut hm: HashMap<String, Arc<dyn Scalar + Send + Sync>> = HashMap::new();
-        hm.insert("Email".to_string(), Arc::new(Email));
+        hm.insert("Email".to_string(), Arc::new(Email::default()));
         hm
     };
 }
