@@ -218,6 +218,19 @@
         "data": true
       }
     },
+    "Email": {
+      "type": "object",
+      "required": [
+        "Email"
+      ],
+      "properties": {
+        "Email": {
+          "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+        }
+      }
+    },
     "Encoding": {
       "type": "string",
       "enum": [
