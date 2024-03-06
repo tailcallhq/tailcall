@@ -59,9 +59,9 @@ mod tests {
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
     use url::Url;
-    use crate::blueprint::GrpcMethod;
 
     use super::DataLoaderRequest;
+    use crate::blueprint::GrpcMethod;
     use crate::config::{Config, ConfigReader, Field, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;

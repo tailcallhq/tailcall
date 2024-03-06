@@ -1,6 +1,6 @@
 use std::str::FromStr as _;
-use dotenvy::dotenv;
 
+use dotenvy::dotenv;
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;

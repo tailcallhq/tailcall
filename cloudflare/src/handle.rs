@@ -48,7 +48,6 @@ pub async fn fetch(
 ///
 /// Initializes the worker once and caches the executor
 /// for future requests.
-///
 async fn get_executor(
     env: worker::Env,
     req: &Request<Body>,

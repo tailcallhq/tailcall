@@ -125,9 +125,9 @@ mod tests {
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::{HeaderMap, Method};
     use pretty_assertions::assert_eq;
-    use crate::blueprint::GrpcMethod;
 
     use super::RequestTemplate;
+    use crate::blueprint::GrpcMethod;
     use crate::config::{
         Config, ConfigReader, Field, GraphQLOperationType, Grpc, Link, LinkType, Type,
     };
