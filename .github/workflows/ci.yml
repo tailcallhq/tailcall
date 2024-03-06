@@ -55,6 +55,9 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
+      - name: Install protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Build
         run: cargo lambda build
 
