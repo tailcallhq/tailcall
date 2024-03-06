@@ -39,8 +39,9 @@ impl InMemoryTelemetry {
             .filter(|v| !v.0.is_empty())
             .collect();
 
-        // dedup the same data from metrics vec since some of them just generated on start
-        // or during execution and they do not relate to actual test running
+        // dedup the same data from metrics vec since some of them just generated on
+        // start or during execution and they do not relate to actual test
+        // running
         metrics.dedup();
 
         Ok(metrics)

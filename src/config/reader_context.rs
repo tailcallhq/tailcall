@@ -1,6 +1,9 @@
-use std::{borrow::Cow, collections::BTreeMap, sync::Arc};
+use std::borrow::Cow;
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
-use crate::{path::PathString, EnvIO};
+use crate::path::PathString;
+use crate::EnvIO;
 
 pub struct ConfigReaderContext<'a> {
     pub env: Arc<dyn EnvIO>,
@@ -24,21 +27,29 @@ impl<'a> PathString for ConfigReaderContext<'a> {
 
 #[cfg(test)]
 mod tests {
-  use crate::tests::TestEnvIO;
+    use super::*;
+    use crate::tests::TestEnvIO;
 
-use super::*;
+    #[test]
+    fn path_string() {
+        let reader_context = ConfigReaderContext {
+            env: Arc::new(TestEnvIO::from_iter([(
+                "ENV_1".to_owned(),
+                "ENV_VAL".to_owned(),
+            )])),
+            vars: &BTreeMap::from_iter([("VAR_1".to_owned(), "VAR_VAL".to_owned())]),
+        };
 
-  #[test]
-  fn path_string() {
-    let reader_context = ConfigReaderContext {
-      env: Arc::new(TestEnvIO::from_iter([("ENV_1".to_owned(), "ENV_VAL".to_owned())])),
-      vars: &BTreeMap::from_iter([("VAR_1".to_owned(), "VAR_VAL".to_owned())])
-    };
-
-    assert_eq!(reader_context.path_string(&["env", "ENV_1"]), Some("ENV_VAL".into()));
-    assert_eq!(reader_context.path_string(&["env", "ENV_5"]), None);
-    assert_eq!(reader_context.path_string(&["vars", "VAR_1"]), Some("VAR_VAL".into()));
-    assert_eq!(reader_context.path_string(&["vars", "VAR_6"]), None);
-    assert_eq!(reader_context.path_string(&["unknown", "unknown"]), None);
-  }
+        assert_eq!(
+            reader_context.path_string(&["env", "ENV_1"]),
+            Some("ENV_VAL".into())
+        );
+        assert_eq!(reader_context.path_string(&["env", "ENV_5"]), None);
+        assert_eq!(
+            reader_context.path_string(&["vars", "VAR_1"]),
+            Some("VAR_VAL".into())
+        );
+        assert_eq!(reader_context.path_string(&["vars", "VAR_6"]), None);
+        assert_eq!(reader_context.path_string(&["unknown", "unknown"]), None);
+    }
 }

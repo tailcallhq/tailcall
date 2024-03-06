@@ -176,9 +176,9 @@ fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
 }
 
 fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
-    // ignore errors since there is only one possible error when the global subscriber
-    // is already set. The init is called multiple times in the same process inside
-    // tests, so we want to ignore if it is already set
+    // ignore errors since there is only one possible error when the global
+    // subscriber is already set. The init is called multiple times in the same
+    // process inside tests, so we want to ignore if it is already set
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
@@ -208,7 +208,8 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
             .with(
                 log_layer.with_filter(dynamic_filter_fn(|_metatada, context| {
                     // ignore logs that are generated inside tracing::Span since they will be logged
-                    // anyway with tracer_provider and log here only the events without associated span
+                    // anyway with tracer_provider and log here only the events without associated
+                    // span
                     context.lookup_current().is_none()
                 })),
             )
