@@ -123,7 +123,6 @@ pub enum ExprBody {
 impl ExprBody {
     ///
     /// Performs a deep check on if the expression has any IO.
-    ///
     pub fn has_io(&self) -> bool {
         match self {
             ExprBody::Http(_) => true,

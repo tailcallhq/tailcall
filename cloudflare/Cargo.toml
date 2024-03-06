@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hyper = { version = "0.14", default-features = false }
-worker = "0.0.18"
+worker = "0.0.19"
 tailcall = { path = "..", default-features = false }
 lazy_static = "1.4.0"
 anyhow = "1.0.80"

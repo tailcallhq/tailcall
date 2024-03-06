@@ -27,7 +27,8 @@ fn config_document(config: &Config) -> ServiceDocument {
         directive.arguments = directive
             .arguments
             .iter()
-            // "type" needs to be filtered out, because when is the default value, it is not present in the directive
+            // "type" needs to be filtered out, because when is the default value, it is not present
+            // in the directive
             .filter(|(name, _)| name != &pos(Name::new("type")))
             .map(|argument| argument.to_owned())
             .chain(std::iter::once(type_directive))

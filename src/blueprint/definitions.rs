@@ -175,7 +175,8 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     invalid_path_handler(field_name, remaining_path, context.original_path)
 }
 
-// Helper function to recursively process the path and return the corresponding type
+// Helper function to recursively process the path and return the corresponding
+// type
 fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     let path = context.path;
     let field = context.field;
@@ -318,8 +319,8 @@ fn update_resolver_from_path(
 
 /// Sets empty resolver to fields that has
 /// nested resolvers for its fields.
-/// To solve the problem that by default such fields will be resolved to null value
-/// and nested resolvers won't be called
+/// To solve the problem that by default such fields will be resolved to null
+/// value and nested resolvers won't be called
 pub fn update_nested_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
@@ -344,8 +345,8 @@ pub fn update_cache_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(_config, field, _, _name), mut b_field| {
-            if let Some(config::Cache { max_age }) = field.cache.as_ref() {
+        move |(_config, field, typ, _name), mut b_field| {
+            if let Some(config::Cache { max_age }) = field.cache.as_ref().or(typ.cache.as_ref()) {
                 b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
             }
 

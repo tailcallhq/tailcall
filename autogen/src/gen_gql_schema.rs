@@ -3,28 +3,38 @@ use std::fs::File;
 use std::io::Write;
 
 use anyhow::Result;
+use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
 use tailcall::config;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_ALLOW_LIST: [(&str, Entity, bool); 13] = [
-    ("server", Entity::Schema, false),
-    ("link", Entity::Schema, true),
-    ("upstream", Entity::Schema, false),
-    ("http", Entity::FieldDefinition, false),
-    ("grpc", Entity::FieldDefinition, false),
-    ("addField", Entity::Object, true),
-    ("modify", Entity::FieldDefinition, false),
-    ("groupBy", Entity::FieldDefinition, false),
-    ("const", Entity::FieldDefinition, false),
-    ("graphQL", Entity::FieldDefinition, false),
-    ("cache", Entity::FieldDefinition, false),
-    ("expr", Entity::FieldDefinition, false),
-    ("js", Entity::FieldDefinition, false),
-];
-static OBJECT_WHITELIST: [&str; 18] = [
+
+lazy_static! {
+    static ref DIRECTIVE_ALLOW_LIST: Vec<(&'static str, Vec<Entity>, bool)> = vec![
+        ("server", vec![Entity::Schema], false),
+        ("link", vec![Entity::Schema], true),
+        ("upstream", vec![Entity::Schema], false),
+        ("http", vec![Entity::FieldDefinition], false),
+        ("call", vec![Entity::FieldDefinition], false),
+        ("grpc", vec![Entity::FieldDefinition], false),
+        ("addField", vec![Entity::Object], true),
+        ("modify", vec![Entity::FieldDefinition], false),
+        ("groupBy", vec![Entity::FieldDefinition], false),
+        ("const", vec![Entity::FieldDefinition], false),
+        ("graphQL", vec![Entity::FieldDefinition], false),
+        (
+            "cache",
+            vec![Entity::Object, Entity::FieldDefinition],
+            false,
+        ),
+        ("expr", vec![Entity::FieldDefinition], false),
+        ("js", vec![Entity::FieldDefinition], false),
+    ];
+}
+
+static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "If",
     "Http",
@@ -52,8 +62,12 @@ enum Entity {
     FieldDefinition,
 }
 
-impl std::fmt::Debug for Entity {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+trait ToGraphql {
+    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()>;
+}
+
+impl ToGraphql for Entity {
+    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
         match self {
             Entity::Schema => {
                 write!(f, "SCHEMA")
@@ -65,6 +79,26 @@ impl std::fmt::Debug for Entity {
                 write!(f, "FIELD_DEFINITION")
             }
         }
+    }
+}
+
+impl ToGraphql for Vec<Entity> {
+    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
+        let mut iter = self.iter();
+
+        let Some(first) = iter.next() else {
+            return Ok(());
+        };
+
+        write!(f, " on ")?;
+        first.to_graphql(f)?;
+
+        for entry in iter {
+            write!(f, " | ")?;
+            entry.to_graphql(f)?;
+        }
+
+        write!(f, "\n\n")
     }
 }
 
@@ -125,20 +159,24 @@ impl<W: Write> IndentedWriter<W> {
 }
 
 impl<W: std::io::Write> Write for IndentedWriter<W> {
+    #[allow(clippy::same_item_push)]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let mut new_buf = Vec::with_capacity(
-            buf.len() + self.indentation * buf.iter().filter(|&&c| c == b'\n').count(),
-        );
+        let mut new_buf = vec![];
         let mut extra = 0;
 
         for ch in buf {
             if self.line_broke && self.indentation > 0 {
                 extra += self.indentation;
-                new_buf.extend((0..self.indentation).map(|_| b' '));
+                for _ in 0..self.indentation {
+                    new_buf.push(b' ');
+                }
             }
-            self.line_broke = *ch == b'\n';
+            self.line_broke = false;
 
             new_buf.push(*ch);
+            if ch == &b'\n' {
+                self.line_broke = true;
+            }
         }
 
         self.writer.write(&new_buf).map(|a| a - extra)
@@ -460,10 +498,10 @@ fn write_property<W: Write>(write_fields: &mut WriteFields<'_, W>) -> std::io::R
     Ok(())
 }
 
-fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, Entity, bool)> {
+fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, &'static Vec<Entity>, bool)> {
     for (nm, entity, is_repeatable) in DIRECTIVE_ALLOW_LIST.iter() {
         if name.to_lowercase() == nm.to_lowercase() {
-            return Some((*nm, *entity, *is_repeatable));
+            return Some((nm, entity, *is_repeatable));
         }
     }
     None
@@ -485,10 +523,9 @@ fn input_allow_list_lookup<'a>(
 
     None
 }
-
 fn write_directive<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Result<()> {
     let WriteFields { writer, name, schema, defs, extra_it, written_directives, .. } = write_fields;
-    let (name, entity, is_repeatable) = match directive_allow_list_lookup(&name) {
+    let (name, entities, is_repeatable) = match directive_allow_list_lookup(&name) {
         Some(entity) => entity,
         None => return Ok(()),
     };
@@ -549,7 +586,7 @@ fn write_directive<W: Write>(write_fields: WriteFields<'_, W>) -> std::io::Resul
         write!(writer, " repeatable ")?;
     }
 
-    writeln!(writer, " on {entity:?}\n")?;
+    entities.to_graphql(writer)?;
     written_directives.insert(name.to_string());
 
     Ok(())
@@ -606,8 +643,6 @@ fn write_array_validation<W: Write>(write_fields: WriteFields<'_, W>) -> std::io
         write_fields.schema = schemas[0].clone().into_object();
         write_type(write_fields)?;
     } else {
-        println!("{name}: {arr_valid:?}");
-
         write!(writer, "JSON")?;
     }
     write!(writer, "]")
