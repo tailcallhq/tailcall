@@ -232,6 +232,7 @@ dependencies = [
  "blocking",
  "futures-lite 2.2.0",
  "once_cell",
+ "tokio",
 ]
 
 [[package]]
@@ -295,6 +296,7 @@ source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extensio
 dependencies = [
  "anyhow",
  "async-graphql",
+ "async-std",
  "async-trait",
  "cfg-if",
  "chrono",
