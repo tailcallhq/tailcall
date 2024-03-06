@@ -291,7 +291,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-extension-apollo-tracing"
 version = "3.2.13"
-source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extension?branch=reqwest-dep-fix#fe3d94c6d88a333bdd094ff31e35466e2c22fed8"
+source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extension?branch=reqwest-dep-fix#138c3f3353c97ced65a2770fadb18ba4798c6620"
 dependencies = [
  "anyhow",
  "async-graphql",
