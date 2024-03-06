@@ -46,10 +46,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     move |ctx| {
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
-                        let path_name = ctx
-                            .path_node
-                            .map(|p| p.to_string())
-                            .unwrap_or(field_name.clone());
+                        let span = tracing::info_span!(
+                            "field::resolver",
+                            name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
+                        );
+
                         match &field.resolver {
                             None => {
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
@@ -60,20 +61,21 @@ fn to_type(def: &Definition) -> dynamic::Type {
                             Some(expr) => {
                                 let expr = expr.to_owned();
                                 FieldFuture::new(
-                                async move {
-                                    let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                    async move {
+                                        let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                                    let const_value =
-                                        expr.eval(&ctx, &Concurrent::Sequential).await?;
+                                        let const_value =
+                                            expr.eval(&ctx, &Concurrent::Sequential).await?;
 
-                                    let p = match const_value {
-                                        ConstValue::List(a) => FieldValue::list(a),
-                                        a => FieldValue::from(a),
-                                    };
-                                    Ok(Some(p))
-                                }
-                                .instrument(tracing::info_span!("field::resolver", name = path_name, graphql.returnType = %type_ref)).inspect_err(|err| tracing::error!(?err)),
-                            )
+                                        let p = match const_value {
+                                            ConstValue::List(a) => FieldValue::list(a),
+                                            a => FieldValue::from(a),
+                                        };
+                                        Ok(Some(p))
+                                    }
+                                    .instrument(span)
+                                    .inspect_err(|err| tracing::error!(?err)),
+                                )
                             }
                         }
                     },
