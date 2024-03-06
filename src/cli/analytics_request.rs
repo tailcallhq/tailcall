@@ -1,11 +1,13 @@
 use anyhow::{Context, Result};
+use lazy_static::lazy_static;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-// secrets & constants
-const API_SECRET: &str = "secret";
-const MEASUREMENT_ID: &str = "G-NCQKBRNVDW";
-const BASE_URL: &str = "https://www.google-analytics.com";
+lazy_static! {
+    static ref API_SECRET: String = "secret".to_string();
+    static ref MEASUREMENT_ID: String = "G-NCQKBRNVDW".to_string();
+    static ref BASE_URL: String = "https://www.google-analytics.com".to_string();
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Params {
@@ -44,7 +46,15 @@ impl ApiClient {
         }
     }
 
-    pub async fn post_data(&self, command_name: &str) -> Result<String, anyhow::Error> {
+    pub async fn post_data(&self, command_name: &str) -> Result<(), anyhow::Error> {
+        self.validate_and_send_data(command_name).await?;
+        Ok(())
+    }
+
+    pub async fn validate_and_send_data(
+        &self,
+        command_name: &str,
+    ) -> Result<String, anyhow::Error> {
         let post_data = PostData {
             client_id: "1".to_string(),
             events: vec![Event {
@@ -103,22 +113,96 @@ impl ApiClient {
 
 #[cfg(test)]
 mod tests {
-    use tokio::test;
+    use serde_json::json;
 
     use super::*;
 
-    #[test]
-    async fn test_new_api_client() {
-        let api_client = ApiClient::new();
-
-        assert_eq!(api_client.base_url, BASE_URL.trim_end_matches('/'));
-        assert_eq!(api_client.api_secret, API_SECRET);
-        assert_eq!(api_client.measurement_id, MEASUREMENT_ID);
+    fn start_mock_server() -> httpmock::MockServer {
+        httpmock::MockServer::start()
     }
 
-    /* TODO: success case
-    #[test]
-    async fn test_post_data_success() {
+    #[tokio::test]
+    async fn test_validate_and_send_data_success() {
+        let server = start_mock_server();
+        let client = ApiClient::new();
+        let m = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/debug/mp/collect")
+                .query_param("api_secret", &client.api_secret)
+                .query_param("measurement_id", &client.measurement_id)
+                .json_body(json!({
+                    "client_id": "1",
+                    "events": [
+                        {
+                            "name": "track_cli_usage",
+                            "params": {
+                                "command_name": "start"
+                            }
+                        }
+                    ]
+                }));
+            then.status(200).json_body(json!({
+                "validationMessages": []
+            }));
+        });
 
-    }*/
+        let uri = format!("http://{}/debug/mp/collect", m.server_address());
+        let response = reqwest::Client::new()
+            .post(uri)
+            .query(&[("api_secret", &client.api_secret), ("measurement_id", &client.measurement_id)])
+            .header("Content-Type", "application/json")
+            .body(r#"{"client_id":"1","events":[{"name":"track_cli_usage","params":{"command_name":"start"}}]}"#)
+            .send()
+            .await
+            .unwrap();
+
+        m.assert();
+        assert_eq!(response.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn test_validate_and_send_data_json_payload_error() {
+        let server = start_mock_server();
+        let client = ApiClient::new();
+        let m = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/debug/mp/collect")
+                .query_param("api_secret", &client.api_secret)
+                .query_param("measurement_id", &client.measurement_id)
+                .json_body(json!({
+                    "client_id": "1",
+                    "events": [
+                        {
+                            "name": "+track_cli_usage",
+                            "params": {
+                                "command_name": "start"
+                            }
+                        }
+                    ]
+                }));
+            then.status(200)
+                .json_body(json!({
+                    "validationMessages": [
+                      {
+                        "fieldPath": "events",
+                        "description": "Event at index: [0] has invalid name [+track_cli_usage]. Names must start with an alphabetic character.",
+                        "validationCode": "NAME_INVALID"
+                      }
+                    ]
+                  }));
+        });
+
+        let uri = format!("http://{}/debug/mp/collect", m.server_address());
+        let response = reqwest::Client::new()
+            .post(uri)
+            .query(&[("api_secret", &client.api_secret), ("measurement_id", &client.measurement_id)])
+            .header("Content-Type", "application/json")
+            .body(r#"{"client_id":"1","events":[{"name":"+track_cli_usage","params":{"command_name":"start"}}]}"#)
+            .send()
+            .await
+            .unwrap();
+
+        m.assert();
+        assert_eq!(response.status(), 200);
+    }
 }

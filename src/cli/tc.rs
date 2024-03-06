@@ -32,14 +32,7 @@ pub async fn run() -> Result<()> {
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
-            match api_client.post_data("start").await {
-                Ok(response_text) => {
-                    log::info!("API Response: {}", response_text);
-                }
-                Err(err) => {
-                    log::info!("Error: {}", err);
-                }
-            }
+            api_client.post_data("start").await.unwrap();
 
             let config_module = config_reader.read_all(&file_paths).await?;
             log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
@@ -48,14 +41,7 @@ pub async fn run() -> Result<()> {
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
-            match api_client.post_data("check").await {
-                Ok(response_text) => {
-                    log::info!("API Response: {}", response_text);
-                }
-                Err(err) => {
-                    log::info!("Error: {}", err);
-                }
-            }
+            api_client.post_data("check").await.unwrap();
 
             let config_module = (config_reader.read_all(&file_paths)).await?;
             let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
@@ -93,26 +79,12 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => {
-            match api_client.post_data("init").await {
-                Ok(response_text) => {
-                    log::info!("API Response: {}", response_text);
-                }
-                Err(err) => {
-                    log::info!("Error: {}", err);
-                }
-            }
+            api_client.post_data("init").await.unwrap();
 
             init(&folder_path).await
         }
         Command::Compose { file_paths, format } => {
-            match api_client.post_data("compose").await {
-                Ok(response_text) => {
-                    log::info!("API Response: {}", response_text);
-                }
-                Err(err) => {
-                    log::info!("Error: {}", err);
-                }
-            }
+            api_client.post_data("compose").await.unwrap();
 
             let config = (config_reader.read_all(&file_paths).await)?;
             Fmt::display(format.encode(&config)?);
