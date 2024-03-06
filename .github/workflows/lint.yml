@@ -33,6 +33,8 @@ jobs:
         run: npm install --global prettier
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name Install protoc-compiler
+      - run: sudo apt-get install -y protobuf-compiler
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed

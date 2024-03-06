@@ -55,17 +55,6 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
-      - name: Install openssl
-        run: |
-          sudo apt-get install -y pkg-config libssl-dev libudev-dev librust-openssl-sys-dev build-essential
-          echo "$(which openssl)"
-          openssl version
-        env:
-          OPENSSL_DIR: $(which openssl)
-          OPENSSL_LIB_DIR: $OPENSSL_DIR/lib
-          OPENSSL_INCLUDE_DIR: $OPENSSL_DIR/include
-          CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG: true
-
       - name: Build
         run: cargo lambda build
 
@@ -108,10 +97,11 @@ jobs:
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
+      - name: Install protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Run Cargo Test
-        run: |
-          sudo apt-get install -y protobuf-compiler
-          cargo llvm-cov --all-features --lcov --output-path lcov.info
+        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         uses: Wandalen/wretry.action@v1
