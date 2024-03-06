@@ -1,6 +1,7 @@
 mod blueprint;
 mod compress;
 mod definitions;
+mod dynamic_value;
 mod from_config;
 mod into_schema;
 mod links;
@@ -11,8 +12,10 @@ mod schema;
 mod server;
 mod timeout;
 mod upstream;
+
 pub use blueprint::*;
 pub use definitions::*;
+pub use dynamic_value::*;
 pub use from_config::*;
 pub use links::*;
 pub use operation::*;
@@ -23,6 +26,7 @@ pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
 use crate::config::{Arg, ConfigModule, Field};
+use crate::scalars::CUSTOM_SCALARS;
 use crate::try_fold::TryFold;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
@@ -98,4 +102,5 @@ where
 
 pub fn is_scalar(type_name: &str) -> bool {
     ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
+        || CUSTOM_SCALARS.keys().any(|v| (*v).eq(type_name))
 }

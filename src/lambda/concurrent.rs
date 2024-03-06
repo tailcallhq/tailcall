@@ -4,8 +4,8 @@ use futures_util::{Future, StreamExt};
 ///
 /// Concurrent controls the concurrency of a fold or foreach operation on lists.
 /// It's a flag that is set based on operators that are applied on a list.
-/// The goal is to identify list operations that can be executed in parallel eg: and, or etc.
-///
+/// The goal is to identify list operations that can be executed in parallel eg:
+/// and, or etc.
 #[derive(Clone, Debug, Default)]
 pub enum Concurrent {
     Parallel,

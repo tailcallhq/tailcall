@@ -73,6 +73,12 @@ impl Mustache {
         }
     }
 
+    pub fn get_segments(&self) -> Vec<&Segment> {
+        match self {
+            Mustache(segments) => segments.iter().collect(),
+        }
+    }
+
     pub fn expression_segments(&self) -> Vec<&Vec<String>> {
         match self {
             Mustache(segments) => segments
@@ -82,6 +88,21 @@ impl Mustache {
                     _ => None,
                 })
                 .collect(),
+        }
+    }
+}
+
+impl ToString for Mustache {
+    fn to_string(&self) -> String {
+        match self {
+            Mustache(segments) => segments
+                .iter()
+                .map(|segment| match segment {
+                    Segment::Literal(text) => text.clone(),
+                    Segment::Expression(parts) => format!("{{{{{}}}}}", parts.join(".")),
+                })
+                .collect::<Vec<String>>()
+                .join(""),
         }
     }
 }
@@ -140,7 +161,7 @@ fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
             segments
                 .into_iter()
                 .filter(|seg| match seg {
-                    Segment::Literal(s) => !s.is_empty(),
+                    Segment::Literal(s) => (!s.is_empty()) && s != "\"",
                     _ => true,
                 })
                 .collect(),
@@ -154,6 +175,27 @@ mod tests {
         use pretty_assertions::assert_eq;
 
         use crate::mustache::{Mustache, Segment};
+
+        #[test]
+        fn test_to_string() {
+            let expectations = vec![
+                r"/users/{{value.id}}/todos",
+                r"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end",
+                r"http://localhost:{{args.port}}",
+                r"/users/{{value.userId}}",
+                r"/bar?id={{args.id}}&flag={{args.flag}}",
+                r"/foo?id={{value.id}}",
+                r"{{value.d}}",
+                r"/posts/{{args.id}}",
+                r"http://localhost:8000",
+            ];
+
+            for expected in expectations {
+                let mustache = Mustache::parse(expected).unwrap();
+
+                assert_eq!(expected, mustache.to_string());
+            }
+        }
 
         #[test]
         fn test_single_literal() {
@@ -173,7 +215,7 @@ mod tests {
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
                     "hello".to_string(),
-                    "world".to_string()
+                    "world".to_string(),
                 ])])
             );
         }
@@ -189,7 +231,7 @@ mod tests {
                     Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
                     Segment::Literal("/api/".to_string()),
                     Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
-                    Segment::Literal("/end".to_string())
+                    Segment::Literal("/end".to_string()),
                 ])
             );
         }
@@ -202,7 +244,7 @@ mod tests {
                 mustache,
                 Mustache::from(vec![Segment::Expression(vec![
                     "foo".to_string(),
-                    "bar".to_string()
+                    "bar".to_string(),
                 ])])
             );
         }
@@ -280,7 +322,7 @@ mod tests {
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
                     "env".to_string(),
-                    "FOO".to_string()
+                    "FOO".to_string(),
                 ])])
             );
         }
@@ -292,11 +334,12 @@ mod tests {
                 result,
                 Mustache::from(vec![Segment::Expression(vec![
                     "env".to_string(),
-                    "FOO_BAR".to_string()
+                    "FOO_BAR".to_string(),
                 ])])
             );
         }
     }
+
     mod render {
         use std::borrow::Cow;
 

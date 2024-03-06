@@ -1,21 +1,23 @@
 use std::collections::BTreeSet;
 
+use async_graphql_value::ConstValue;
 use regex::Regex;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
+use crate::{config, scalars};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
         name: name.to_string(),
         directive: Vec::new(),
         description: None,
+        validator: scalars::get_scalar(name),
     }))
 }
 
@@ -57,6 +59,7 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
 
 type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, String>;
 type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, String>;
+
 struct ProcessFieldWithinTypeContext<'a> {
     field: &'a config::Field,
     field_name: &'a str,
@@ -173,7 +176,8 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     invalid_path_handler(field_name, remaining_path, context.original_path)
 }
 
-// Helper function to recursively process the path and return the corresponding type
+// Helper function to recursively process the path and return the corresponding
+// type
 fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     let path = context.path;
     let field = context.field;
@@ -316,8 +320,8 @@ fn update_resolver_from_path(
 
 /// Sets empty resolver to fields that has
 /// nested resolvers for its fields.
-/// To solve the problem that by default such fields will be resolved to null value
-/// and nested resolvers won't be called
+/// To solve the problem that by default such fields will be resolved to null
+/// value and nested resolvers won't be called
 pub fn update_nested_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
@@ -326,8 +330,8 @@ pub fn update_nested_resolvers<'a>(
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
             {
-                b_field = b_field.resolver(Some(Expression::Literal(serde_json::Value::Object(
-                    Default::default(),
+                b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
+                    ConstValue::Object(Default::default()),
                 ))));
             }
 
@@ -342,8 +346,8 @@ pub fn update_cache_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(_config, field, _, _name), mut b_field| {
-            if let Some(config::Cache { max_age }) = field.cache.as_ref() {
+        move |(_config, field, typ, _name), mut b_field| {
+            if let Some(config::Cache { max_age }) = field.cache.as_ref().or(typ.cache.as_ref()) {
                 b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
             }
 
@@ -394,6 +398,7 @@ fn to_fields(
             .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
+            .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
             .and(update_nested_resolvers())
             .and(update_cache_resolvers())
             .try_fold(

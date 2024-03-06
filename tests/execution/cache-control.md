@@ -62,6 +62,7 @@
     headers:
       test: test
     body: null
+  expected_hits: 3
   response:
     status: 200
     headers:
@@ -88,6 +89,7 @@
     headers:
       test: test
     body: null
+  expected_hits: 2
   response:
     status: 200
     headers:
@@ -101,6 +103,7 @@
     headers:
       test: test
     body: null
+  expected_hits: 2
   response:
     status: 200
     headers:

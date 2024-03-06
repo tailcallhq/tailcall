@@ -29,7 +29,6 @@ pub fn update_expr(
 
 ///
 /// Compiles a list of Exprs into a list of Expressions
-///
 fn compile_list(
     context: &CompilationContext,
     expr_vec: Vec<ExprBody>,
@@ -39,7 +38,6 @@ fn compile_list(
 
 ///
 /// Compiles a tuple of Exprs into a tuple of Expressions
-///
 fn compile_ab(
     context: &CompilationContext,
     ab: (ExprBody, ExprBody),
@@ -49,7 +47,6 @@ fn compile_ab(
 
 ///
 /// Compiles expr into Expression
-///
 fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
     let config_module = ctx.config_module;
     let field = ctx.config_field;
@@ -68,6 +65,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
             compile_grpc(grpc)
         }
         ExprBody::GraphQL(gql) => compile_graphql(config_module, operation_type, &gql),
+        ExprBody::Call(call) => compile_call(field, config_module, &call, operation_type),
 
         // Safe Expr
         ExprBody::Const(value) => {
@@ -96,7 +94,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
         .and_then(|mut list| {
             compile(ctx, *default).map(|default| {
                 list.push((
-                    Box::new(Expression::Literal(true.into())),
+                    Box::new(Expression::Literal(DynamicValue::Value(true.into()))),
                     Box::new(default),
                 ));
                 Expression::Logic(Logic::Cond(list))
@@ -500,27 +498,27 @@ mod tests {
         let expected = json!(0);
 
         let actual = Expr::eval(
-      json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": false}, {"const": 2}]]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": false}, {"const": 2}]]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!(1);
 
         let actual = Expr::eval(
-      json!({"body": {"cond": [{"const": 0}, [[{"const": true}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"cond": [{"const": 0}, [[{"const": true}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!(2);
         let actual = Expr::eval(
-      json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 
@@ -566,8 +564,8 @@ mod tests {
         let actual = Expr::eval(
             json!({"body": {"difference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         assert_eq!(actual, expected);
     }
@@ -577,17 +575,17 @@ mod tests {
         let expected = json!([1]);
 
         let actual = Expr::eval(
-      json!({"body": {"symmetricDifference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"symmetricDifference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let actual = Expr::eval(
-      json!({"body": {"symmetricDifference": [[{"const": 2}, {"const": 3}], [{"const": 1}, {"const": 2}, {"const": 3}]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"symmetricDifference": [[{"const": 2}, {"const": 3}], [{"const": 1}, {"const": 2}, {"const": 3}]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 
@@ -596,8 +594,8 @@ mod tests {
         let expected = serde_json::from_value::<HashSet<Number>>(json!([1, 2, 3, 4])).unwrap();
 
         let actual = Expr::eval(json!({"body": {"union": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}, {"const": 4}]]}}))
-      .await
-      .unwrap();
+            .await
+            .unwrap();
         let actual = serde_json::from_value::<HashSet<Number>>(actual).unwrap();
         assert_eq!(actual, expected);
     }
@@ -818,24 +816,24 @@ mod tests {
         let actual = Expr::eval(
             json!({"body": {"max": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!("z");
         let actual = Expr::eval(
             json!({"body": {"max": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!([2, 3]);
         let actual = Expr::eval(
-      json!({"body": {"max": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"max": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 
@@ -845,24 +843,24 @@ mod tests {
         let actual = Expr::eval(
             json!({"body": {"min": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!("abc");
         let actual = Expr::eval(
             json!({"body": {"min": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!([-1, 0, 0, 0]);
         let actual = Expr::eval(
-      json!({"body": {"min": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"min": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 

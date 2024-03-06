@@ -19,10 +19,9 @@ moka = { version = "0.12.5", default-features = false, features = [
     "future",
 ], optional = true }
 hyper-rustls = { version = "0.25.0", optional = true }
-rustls = { version = "0.22.2", optional = true }
-rustls-pki-types = "1.3.0"
-inquire = { version = "0.6.2", optional = true }
-google-analyticsreporting4 = { version = "5.0.3", optional = true}
+rustls = { version = "0.23.1", optional = true, features = ["std"], default-features = false }
+rustls-pki-types = "1.3.1"
+inquire = { version = "0.7.0", optional = true }
 
 # dependencies safe for wasm:
 
@@ -60,16 +59,16 @@ serde_path_to_error = "0.1.15"
 cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
-log = "0.4.20"
-env_logger = "0.11.2"
+log = "0.4.21"
+env_logger = "0.11.3"
 stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
 futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.3", features = ["wasm-bindgen"] }
 futures-util = { version = "0.3.30" }
-lru = { version = "0.12.2" }
-webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
+lru = { version = "0.12.3" }
+webbrowser = { version = "0.8.13", features = ["hardened", "disable-wsl"] }
 async-std = { version = "1.12.0", features = [
     "wasm-bindgen-futures",
     "unstable",
@@ -83,8 +82,8 @@ update-informer = { version = "1.1.0", default-features = false, features = ["gi
 lazy_static = "1.4.0"
 which = { version = "6.0.0", optional = true }
 async-recursion = "1.0.5"
-tempfile = "3.10.0"
-deno_core = { version = "0.264.0", optional = true, features = ["v8_use_custom_libcxx", "snapshot_data_json"], default-features = false }
+tempfile = "3.10.1"
+deno_core = { version = "0.267.0", optional = true, features = ["v8_use_custom_libcxx"], default-features = false }
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -92,8 +91,8 @@ httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 markdown = "1.0.0-alpha.16"
-insta = { version = "1.35.1", features = ["json"] }
-tempfile = "3.10.0"
+insta = { version = "1.36.1", features = ["json"] }
+tempfile = "3.10.1"
 temp-env = "0.3.6"
 
 [features]
@@ -125,7 +124,7 @@ default = ["cli", "js"]
 
 
 [workspace]
-members = [".", "autogen", "aws-lambda", "cloudflare", "testconv"]
+members = [".", "autogen", "aws-lambda", "cloudflare"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
@@ -145,10 +144,6 @@ overflow-checks = false
 strip = true
 codegen-units = 1
 opt-level = 'z'
-
-[[test]]
-name = "execution_spec"
-harness = false
 
 [[bench]]
 name = "json_like_bench"

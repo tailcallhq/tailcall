@@ -16,8 +16,10 @@ use url::Url;
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, Source};
 use crate::runtime::TargetRuntime;
+use crate::valid::{Valid, Validator};
 
-/// Reads the configuration from a file or from an HTTP URL and resolves all linked extensions to create a ConfigModule.
+/// Reads the configuration from a file or from an HTTP URL and resolves all
+/// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
 }
@@ -91,7 +93,10 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
-        for config_link in links.iter() {
+        for i in 0..links.len() {
+            let config_link = links
+                .get(i)
+                .context(format!("Expected a link at index: {i} but found none"))?;
             let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.read_file(&path).await?;
@@ -116,9 +121,20 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let mut descriptors = self
-                        .resolve_descriptors(self.read_proto(&source.path).await?)
-                        .await?;
+                    let parent_descriptor = self.read_proto(&source.path).await?;
+
+                    let id = Valid::from_option(
+                        parent_descriptor.package.clone(),
+                        format!(
+                            "Package name is not defined for proto file: {:?} with link id: {:?}",
+                            parent_descriptor.name, config_link.id
+                        ),
+                    )
+                    .trace(&format!("link[{}]", i))
+                    .trace("schema")
+                    .to_result()?;
+
+                    let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
                     file_descriptor_set.file.append(&mut descriptors);
@@ -126,10 +142,7 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .grpc_file_descriptors
-                        .push(Content {
-                            id: config_link.id.to_owned(),
-                            content: file_descriptor_set,
-                        });
+                        .push(Content { id: Some(id), content: file_descriptor_set });
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);
@@ -250,7 +263,8 @@ impl ConfigReader {
         Ok(descriptors)
     }
 
-    /// Tries to load well-known google proto files and if not found uses normal file and http IO to resolve them
+    /// Tries to load well-known google proto files and if not found uses normal
+    /// file and http IO to resolve them
     async fn read_proto(&self, path: &str) -> anyhow::Result<FileDescriptorProto> {
         let content = if let Ok(file) = GoogleFileResolver::new().open_file(path) {
             file.source()
@@ -263,7 +277,8 @@ impl ConfigReader {
         Ok(protox_parse::parse(path, &content)?)
     }
 
-    /// Checks if path is absolute else it joins file path with relative dir path
+    /// Checks if path is absolute else it joins file path with relative dir
+    /// path
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if Path::new(&src).is_absolute() {
             src.to_string()
@@ -276,11 +291,14 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod test_proto_config {
+    use std::collections::VecDeque;
     use std::path::{Path, PathBuf};
 
     use anyhow::{Context, Result};
+    use pretty_assertions::assert_eq;
 
     use crate::config::reader::ConfigReader;
+    use crate::valid::ValidationError;
 
     #[tokio::test]
     async fn test_resolve() {
@@ -290,6 +308,38 @@ mod test_proto_config {
             .read_proto("google/protobuf/empty.proto")
             .await
             .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_proto_no_pkg() -> Result<()> {
+        let runtime = crate::runtime::test::init(None);
+        let reader = ConfigReader::init(runtime);
+        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
+        let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
+        let validation = config_module
+            .err()
+            .unwrap()
+            .downcast::<ValidationError<String>>()?;
+        proto_no_pkg.pop();
+        proto_no_pkg.push("proto");
+        proto_no_pkg.push("news_no_pkg.proto");
+        let err = &validation.as_vec().first().unwrap().message;
+        let trace = &validation.as_vec().first().unwrap().trace;
+        assert_eq!(
+            &format!(
+                "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
+                proto_no_pkg.to_str()
+            ),
+            err
+        );
+
+        let expected_trace = ["schema", "link[0]"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<VecDeque<String>>();
+        assert_eq!(&expected_trace, trace);
+        Ok(())
     }
 
     #[tokio::test]
@@ -303,7 +353,7 @@ mod test_proto_config {
         root.pop();
 
         test_dir.push("grpc"); // grpc
-        test_dir.push("tests"); // tests
+        test_dir.push("tests/proto"); // tests
 
         let mut test_file = test_dir.clone();
 
@@ -311,7 +361,10 @@ mod test_proto_config {
         assert!(test_file.exists());
         let test_file = test_file.to_str().unwrap().to_string();
 
-        let reader = ConfigReader::init(crate::runtime::test::init(None));
+        let runtime = crate::runtime::test::init(None);
+        let file_rt = runtime.file.clone();
+
+        let reader = ConfigReader::init(runtime);
         let helper_map = reader
             .resolve_descriptors(reader.read_proto(&test_file).await?)
             .await?;
@@ -321,7 +374,7 @@ mod test_proto_config {
             let path = file.path();
             let path_str =
                 path_to_file_name(path.as_path()).context("It must be able to extract path")?;
-            let source = tokio::fs::read_to_string(path).await?;
+            let source = file_rt.read(&path_str).await?;
             let expected = protox_parse::parse(&path_str, &source)?;
             let actual = helper_map
                 .iter()
@@ -358,9 +411,7 @@ mod test_proto_config {
 mod reader_tests {
     use std::path::Path;
 
-    use anyhow::Context;
     use pretty_assertions::assert_eq;
-    use tokio::io::AsyncReadExt;
 
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
@@ -383,11 +434,9 @@ mod reader_tests {
             then.status(200).body(cfg.to_sdl());
         });
 
-        let mut json = String::new();
-        tokio::fs::File::open("examples/jsonplaceholder.json")
-            .await
-            .unwrap()
-            .read_to_string(&mut json)
+        let json = runtime
+            .file
+            .read("examples/jsonplaceholder.json")
             .await
             .unwrap();
 
@@ -450,6 +499,7 @@ mod reader_tests {
     #[tokio::test]
     async fn test_script_loader() {
         let runtime = crate::runtime::test::init(None);
+        let file_rt = runtime.file.clone();
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let reader = ConfigReader::init(runtime);
@@ -463,12 +513,7 @@ mod reader_tests {
             .unwrap();
 
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
-        let content = String::from_utf8(
-            tokio::fs::read(&path)
-                .await
-                .context(path.to_string())
-                .unwrap(),
-        );
+        let content = file_rt.read(&path).await;
 
         assert_eq!(content.unwrap(), config.extensions.script.unwrap());
     }

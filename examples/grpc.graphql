@@ -1,23 +1,16 @@
-# for test upstream server see [repo](https://github.com/tailcallhq/node-grpc)
+# for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
 schema
   @server(port: 8000, graphiql: true)
   @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
-  @link(id: "news", src: "../src/grpc/tests/news.proto", type: Protobuf) {
+  @link(id: "news", src: "../src/grpc/tests/proto/news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  news: NewsData! @grpc(service: "news.NewsService", method: "GetAllNews", protoId: "news")
-  newsById(news: NewsInput!): News!
-    @grpc(service: "news.NewsService", method: "GetNews", body: "{{args.news}}", protoId: "news")
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
   newsByIdBatch(news: NewsInput!): News!
-    @grpc(
-      service: "news.NewsService"
-      method: "GetMultipleNews"
-      body: "{{args.news}}"
-      protoId: "news"
-      groupBy: ["news", "id"]
-    )
+    @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.news}}", groupBy: ["news", "id"])
 }
 
 type News {
