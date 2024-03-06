@@ -111,9 +111,9 @@ pub mod test {
     }
 
     pub fn init() -> TargetRuntime {
-        let http: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init(false));
+        let http: Arc<dyn HttpIO + Sync + Send> = TestHttp::init(false);
 
-        let http2: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init(true));
+        let http2: Arc<dyn HttpIO + Sync + Send> = TestHttp::init(true);
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();
