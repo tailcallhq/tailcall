@@ -292,7 +292,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-extension-apollo-tracing"
 version = "3.2.13"
-source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extension?branch=reqwest-dep-fix#138c3f3353c97ced65a2770fadb18ba4798c6620"
+source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extension?branch=reqwest-dep-fix#840c8190da5cea606311ea3f1ba827e51aae0eb6"
 dependencies = [
  "anyhow",
  "async-graphql",
@@ -304,7 +304,9 @@ dependencies = [
  "futures",
  "libflate",
  "prost",
+ "prost-build",
  "prost-types",
+ "protox",
  "reqwest",
  "serde",
  "serde_json",
@@ -315,6 +317,7 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "uuid",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -879,9 +882,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.1"
+version = "4.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c918d541ef2913577a0f9566e9ce27cb35b6df072075769e0b26cb5a554520da"
+checksum = "b230ab84b0ffdf890d5a10abdbc8b83ae1c4918275daea1ab8801f71536b2651"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -889,9 +892,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.1"
+version = "4.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f3e7391dad68afb0c2ede1bf619f579a3dc9c2ec67f089baa397123a2f3d1eb"
+checksum = "ae129e2e766ae0ec03484e609954119f123cc1fe650337e155d03b022f24f7b4"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1803,8 +1806,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "190092ea657667030ac6a35e305e62fc4dd69fd98ac98631e5d3a2b1575a12b5"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -4899,6 +4904,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f00cc9702ca12d3c81455259621e676d0f7251cec66a21e98fe2e9a37db93b2a"
 dependencies = [
  "getrandom",
+ "wasm-bindgen",
 ]
 
 [[package]]
