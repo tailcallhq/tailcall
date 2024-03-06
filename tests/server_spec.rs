@@ -27,7 +27,7 @@ pub mod test {
     }
 
     impl TestHttp {
-        fn init(h2only: bool) -> Self {
+        fn init(h2only: bool) -> Arc<Self> {
             let mut builder = Client::builder()
                 .tcp_keepalive(Some(Duration::from_secs(5)))
                 .timeout(Duration::from_secs(60))
@@ -52,7 +52,7 @@ pub mod test {
                 options: HttpCacheOptions::default(),
             }));
 
-            Self { client: client.build() }
+            Arc::new(Self { client: client.build() })
         }
     }
 

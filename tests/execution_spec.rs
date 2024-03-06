@@ -1,8 +1,10 @@
 extern crate core;
 
 use std::collections::{BTreeMap, HashMap};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Once};
 use std::{fs, panic};
 
@@ -16,45 +18,86 @@ use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use tailcall::blueprint::{self, Blueprint};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
-use tailcall::config::{Config, Source};
-use tailcall::http::{AppContext, Method, Response};
+use tailcall::config::reader::ConfigReader;
+use tailcall::config::{Config, ConfigModule, Source};
+use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
-use tailcall::valid::{Cause, ValidationError};
-use tailcall::{EnvIO, FileIO, HttpIO, TailcallBuilder, TailcallExecutor};
+use tailcall::valid::{Cause, ValidationError, Validator as _};
+use tailcall::{EnvIO, FileIO, HttpIO};
 use url::Url;
 
 #[cfg(test)]
 pub mod test {
     use std::collections::HashMap;
     use std::sync::Arc;
+    use std::time::Duration;
 
     use anyhow::{anyhow, Result};
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
     use hyper::body::Bytes;
     use reqwest::Client;
+    use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cache::InMemoryCache;
+    use tailcall::cli::javascript;
     use tailcall::http::Response;
     use tailcall::runtime::TargetRuntime;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::{EnvIO, FileIO, HttpIO};
+    use crate::blueprint::Upstream;
+    use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
-        client: Client,
+        client: ClientWithMiddleware,
     }
 
     impl Default for TestHttp {
         fn default() -> Self {
-            Self { client: Client::new() }
+            Self { client: ClientBuilder::new(Client::new()).build() }
         }
     }
 
     impl TestHttp {
-        fn init() -> Self {
-            Default::default()
+        fn init(upstream: &Upstream) -> Arc<Self> {
+            let mut builder = Client::builder()
+                .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
+                .timeout(Duration::from_secs(upstream.timeout))
+                .connect_timeout(Duration::from_secs(upstream.connect_timeout))
+                .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
+                .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
+                .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
+                .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
+                .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
+                .user_agent(upstream.user_agent.clone());
+
+            // Add Http2 Prior Knowledge
+            if upstream.http2_only {
+                builder = builder.http2_prior_knowledge();
+            }
+
+            // Add Http Proxy
+            if let Some(ref proxy) = upstream.proxy {
+                builder = builder.proxy(
+                    reqwest::Proxy::http(proxy.url.clone())
+                        .expect("Failed to set proxy in http client"),
+                );
+            }
+
+            let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
+
+            if upstream.http_cache {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: MokaManager::default(),
+                    options: HttpCacheOptions::default(),
+                }))
+            }
+            Arc::new(Self { client: client.build() })
         }
     }
 
@@ -112,10 +155,21 @@ pub mod test {
         }
     }
 
-    pub fn init() -> TargetRuntime {
-        let http: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init());
+    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+        let http = if let Some(script) = script.clone() {
+            javascript::init_http(TestHttp::init(&Default::default()), script)
+        } else {
+            TestHttp::init(&Default::default())
+        };
 
-        let http2: Arc<dyn HttpIO + Sync + Send> = Arc::new(TestHttp::init());
+        let http2 = if let Some(script) = script {
+            javascript::init_http(
+                TestHttp::init(&Upstream::default().http2_only(true)),
+                script,
+            )
+        } else {
+            TestHttp::init(&Upstream::default().http2_only(true))
+        };
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();
@@ -185,6 +239,10 @@ fn default_status() -> u16 {
     200
 }
 
+fn default_expected_hits() -> usize {
+    1
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct UpstreamRequest(APIRequest);
 
@@ -202,6 +260,8 @@ enum ConfigSource {
 struct Mock {
     request: UpstreamRequest,
     response: UpstreamResponse,
+    #[serde(default = "default_expected_hits")]
+    expected_hits: usize,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -298,7 +358,8 @@ impl ExecutionSpec {
             }
         }
 
-        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+        // If any spec has the Only annotation, use those; otherwise, use the filtered
+        // list.
         if !only_specs.is_empty() {
             only_specs
         } else {
@@ -529,24 +590,20 @@ impl ExecutionSpec {
         anyhow::Ok(spec)
     }
 
-    async fn server_context(
+    async fn app_context(
         &self,
-        tailcall_executor: Result<TailcallExecutor, ValidationError<String>>,
+        config: &ConfigModule,
         env: HashMap<String, String>,
-    ) -> TailcallExecutor {
-        let tailcall_executor = tailcall_executor.unwrap();
-        let http = MockHttpClient::new(self.clone());
-        let http = if let Some(script) = tailcall_executor.get_blueprint_server().script.clone() {
-            javascript::init_http(http, script)
+        http_client: Arc<MockHttpClient>,
+    ) -> Arc<AppContext> {
+        let blueprint = Blueprint::try_from(config).unwrap();
+        let http = if let Some(script) = blueprint.server.script.clone() {
+            javascript::init_http(http_client, script)
         } else {
-            Arc::new(http)
+            http_client
         };
 
-        let http2_only = if self.mock.is_some() {
-            Arc::new(MockHttpClient::new(self.clone()))
-        } else {
-            http.clone()
-        };
+        let http2_only = http.clone();
 
         let runtime = TargetRuntime {
             http,
@@ -555,23 +612,86 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
         };
-        let mut tailcall_executor = tailcall_executor.clone();
-        tailcall_executor.app_ctx = Arc::new(AppContext::new(
-            tailcall_executor.app_ctx.blueprint.clone(),
-            runtime,
-        ));
-        tailcall_executor.clone()
+        Arc::new(AppContext::new(blueprint, runtime))
+    }
+}
+
+#[derive(Clone)]
+struct ExecutionMock {
+    mock: Mock,
+    actual_hits: Arc<AtomicUsize>,
+}
+
+impl ExecutionMock {
+    fn assert_hits(&self) {
+        let url = &self.mock.request.0.url;
+        let is_batch_graphql = url.path().starts_with("/graphql")
+            && self
+                .mock
+                .request
+                .0
+                .body
+                .as_str()
+                .map(|s| s.contains(','))
+                .unwrap_or_default();
+
+        // do not assert hits for mocks for batch graphql requests
+        // since that requires having 2 mocks with different order of queries in
+        // single request and only one of that mocks is actually called during run.
+        // for other protocols there is no issues right now, because:
+        // - for http the keys are always sorted https://github.com/tailcallhq/tailcall/blob/51d8b7aff838f0f4c362d4ee9e39492ae1f51fdb/src/http/data_loader.rs#L71
+        // - for grpc body is not used for matching the mock and grpc will use grouping based on id https://github.com/tailcallhq/tailcall/blob/733b641c41f17c60b15b36b025b4db99d0f9cdcd/tests/execution_spec.rs#L769
+        if is_batch_graphql {
+            return;
+        }
+
+        let expected_hits = self.mock.expected_hits;
+        let actual_hits = self.actual_hits.load(Ordering::Relaxed);
+
+        assert_eq!(
+            expected_hits,
+            actual_hits,
+            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times",
+        );
     }
 }
 
 #[derive(Clone)]
 struct MockHttpClient {
-    spec: ExecutionSpec,
+    mocks: Vec<ExecutionMock>,
+    spec_path: String,
 }
 
 impl MockHttpClient {
-    fn new(spec: ExecutionSpec) -> Self {
-        MockHttpClient { spec }
+    fn new(spec: &ExecutionSpec) -> Self {
+        let mocks = spec
+            .mock
+            .as_ref()
+            .map(|mocks| {
+                mocks
+                    .iter()
+                    .map(|mock| ExecutionMock {
+                        mock: mock.clone(),
+                        actual_hits: Arc::new(AtomicUsize::default()),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let spec_path = spec
+            .path
+            .strip_prefix(std::env::current_dir().unwrap())
+            .unwrap_or(&spec.path)
+            .to_string_lossy()
+            .into_owned();
+
+        MockHttpClient { mocks, spec_path }
+    }
+
+    fn assert_hits(&self) {
+        for mock in &self.mocks {
+            mock.assert_hits();
+        }
     }
 }
 
@@ -606,15 +726,15 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        let mocks = self.spec.mock.as_ref().unwrap();
-
         // Determine if the request is a GRPC request based on PORT
         let is_grpc = req.url().as_str().contains("50051");
 
         // Try to find a matching mock for the incoming request.
-        let mock = mocks
+        let execution_mock = self
+            .mocks
             .iter()
-            .find(|Mock { request: mock_req, response: _ }| {
+            .find(|mock| {
+                let mock_req = &mock.mock.request;
                 let method_match = req.method() == mock_req.0.method.clone().to_hyper();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let req_body = match req.body() {
@@ -632,22 +752,35 @@ impl HttpIO for MockHttpClient {
                     None => Value::Null,
                 };
                 let body_match = req_body == mock_req.0.body;
-                method_match && url_match && (body_match || is_grpc)
+                let headers_match = req
+                    .headers()
+                    .iter()
+                    .filter(|(key, _)| *key != "content-type")
+                    .all(|(key, value)| {
+                        let header_name = key.to_string();
+
+                        let header_value = value.to_str().unwrap();
+                        let mock_header_value = "".to_string();
+                        let mock_header_value = mock_req
+                            .0
+                            .headers
+                            .get(&header_name)
+                            .unwrap_or(&mock_header_value);
+                        header_value == mock_header_value
+                    });
+                method_match && url_match && headers_match && (body_match || is_grpc)
             })
             .ok_or(anyhow!(
                 "No mock found for request: {:?} {} in {}",
                 req.method(),
                 req.url(),
-                self.spec
-                    .path
-                    .strip_prefix(std::env::current_dir()?)
-                    .unwrap_or(&self.spec.path)
-                    .to_str()
-                    .unwrap()
+                self.spec_path
             ))?;
 
+        execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
+
         // Clone the response from the mock to avoid borrowing issues.
-        let mock_response = mock.response.clone();
+        let mock_response = execution_mock.mock.response.clone();
 
         // Build the response with the status code from the mock.
         let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
@@ -713,10 +846,7 @@ impl FileIO for MockFileSystem {
 }
 
 async fn assert_spec(spec: ExecutionSpec) {
-    let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
-
     // Parse and validate all server configs + check for identity
-    log::info!("{} {} ...", spec.name, spec.path.display());
 
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
@@ -725,21 +855,23 @@ async fn assert_spec(spec: ExecutionSpec) {
         if !matches!(source, Source::GraphQL) {
             panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
         }
-        let mut runtime = test::init();
-        runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
-        let tailcall_builder = TailcallBuilder::new();
 
-        let tailcall_executor = tailcall_builder
-            .with_config_source(Source::GraphQL, content, spec.path.parent())
-            .build(runtime)
-            .await
-            .map_err(|e| {
-                let err_str = e.to_string();
-                e.downcast::<ValidationError<String>>()
-                    .unwrap_or(ValidationError::new(err_str))
-            });
+        let config = Config::from_sdl(content).to_result();
 
-        match tailcall_executor {
+        let config = match config {
+            Ok(config) => {
+                let mut runtime = test::init(None);
+                runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
+                let reader = ConfigReader::init(runtime);
+                match reader.resolve(config, spec.path.parent()).await {
+                    Ok(config) => Blueprint::try_from(&config),
+                    Err(e) => Err(ValidationError::new(e.to_string())),
+                }
+            }
+            Err(e) => Err(e),
+        };
+
+        match config {
             Ok(_) => {
                 log::error!("\terror FAIL");
                 panic!(
@@ -751,15 +883,9 @@ async fn assert_spec(spec: ExecutionSpec) {
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                log::info!("\terrors... (snapshot)");
-
                 let snapshot_name = format!("{}_errors", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
-
-                if will_insta_panic {
-                    log::info!("\terrors ok");
-                }
             }
         };
 
@@ -780,13 +906,12 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = Config::default().merge_right(&config);
 
-        log::info!("\tserver #{} parse ok", i + 1);
-
         // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code style
-        // the re-serializing check gives us some of the advantages of the identity check too,
-        // but we are missing out on some by having it only enabled for either new tests that request it
-        // or old graphql_spec tests that were explicitly written with it in mind
+        // but GraphQL identity checking is very hard, since a lot depends on the code
+        // style the re-serializing check gives us some of the advantages of the
+        // identity check too, but we are missing out on some by having it only
+        // enabled for either new tests that request it or old graphql_spec
+        // tests that were explicitly written with it in mind
         if spec.check_identity {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
@@ -797,8 +922,6 @@ async fn assert_spec(spec: ExecutionSpec) {
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
-
-                log::info!("\tserver #{} identity ok", i + 1);
             } else {
                 panic!(
                     "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
@@ -811,7 +934,6 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // merged: Run merged specs
-    log::info!("\tmerged... (snapshot)");
 
     let merged = server
         .iter()
@@ -822,58 +944,57 @@ async fn assert_spec(spec: ExecutionSpec) {
 
     insta::assert_snapshot!(snapshot_name, merged);
 
-    if will_insta_panic {
-        log::info!("\tmerged ok");
-    }
-
     // Resolve all configs
-    let mut runtime = test::init();
+    let mut runtime = test::init(None);
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
-    let tailcall_builder = TailcallBuilder::new();
+    let reader = ConfigReader::init(runtime);
 
-    let server: Vec<Result<TailcallExecutor, ValidationError<String>>> =
-        join_all(server.into_iter().map(|config| {
-            let runtime = runtime.clone();
-            tailcall_builder
-                .clone()
-                .with_config_source(Source::GraphQL, config.to_sdl(), spec.path.parent())
-                .build(runtime)
-        }))
-        .await
-        .into_iter()
-        .map(|executor| executor.map_err(|e| ValidationError::new(e.to_string())))
-        .collect();
+    let server: Vec<ConfigModule> = join_all(
+        server
+            .into_iter()
+            .map(|config| reader.resolve(config, spec.path.parent())),
+    )
+    .await
+    .into_iter()
+    .enumerate()
+    .map(|(i, result)| {
+        result.unwrap_or_else(|e| {
+            panic!(
+                "Couldn't resolve GraphQL in server definition #{} of {:#?}: {}",
+                i + 1,
+                spec.path,
+                e
+            )
+        })
+    })
+    .collect();
 
     if server.len() == 1 {
-        let tailcall_executor = server.first().cloned().unwrap().unwrap();
+        let config = &server[0];
 
         // client: Check if client spec matches snapshot
-        let client = print_schema(tailcall_executor.app_ctx.blueprint.to_schema());
+        let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
 
-        log::info!("\tclient... (snapshot)");
         insta::assert_snapshot!(snapshot_name, client);
-
-        if will_insta_panic {
-            log::info!("\tclient ok");
-        }
     }
 
     if let Some(assert_spec) = spec.assert.as_ref() {
+        let mock_http_client = Arc::new(MockHttpClient::new(&spec));
+        let app_ctx = spec
+            .app_context(
+                server.first().unwrap(),
+                spec.env.clone().unwrap_or_default(),
+                mock_http_client.clone(),
+            )
+            .await;
+
         // assert: Run assert specs
         for (i, assertion) in assert_spec.iter().enumerate() {
-            let response = run_assert(
-                &spec,
-                &spec
-                    .env
-                    .clone()
-                    .unwrap_or_else(|| HashMap::with_capacity(0)),
-                assertion,
-                server.first().unwrap().clone(),
-            )
-            .await
-            .context(spec.path.to_str().unwrap().to_string())
-            .unwrap();
+            let response = run_assert(app_ctx.clone(), assertion)
+                .await
+                .context(spec.path.to_str().unwrap().to_string())
+                .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
@@ -893,24 +1014,36 @@ async fn assert_spec(spec: ExecutionSpec) {
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
-            log::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
-
-            if will_insta_panic {
-                log::info!("\tassert #{} ok", i + 1);
-            }
         }
+
+        mock_http_client.assert_hits();
     }
+
+    log::info!("[{}] {} ... ok", spec.name, spec.path.display());
 }
 
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
     env_logger::builder()
+        .format(|buf, record| {
+            let level = record.level();
+            let color_styles = buf.default_level_style(level);
+            writeln!(
+                buf,
+                "{color_styles}[{}]{color_styles:#} {}",
+                record.level(),
+                record.args(),
+            )?;
+
+            Ok(())
+        })
         .filter(Some("execution_spec"), log::LevelFilter::Info)
         .init();
 
     // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
+    // This is used by testconv to auto-apply the snapshots of unconvertable
+    // fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();
     let expected_arg = ["insta", "i"];
@@ -948,16 +1081,13 @@ async fn test() -> anyhow::Result<()> {
 }
 
 async fn run_assert(
-    spec: &ExecutionSpec,
-    env: &HashMap<String, String>,
+    app_ctx: Arc<AppContext>,
     request: &APIRequest,
-    tailcall_executor: Result<TailcallExecutor, ValidationError<String>>,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();
     let headers = request.headers.clone();
     let url = request.url.clone();
-    let server_context = spec.server_context(tailcall_executor, env.clone()).await;
     let req = headers
         .into_iter()
         .fold(
@@ -968,5 +1098,10 @@ async fn run_assert(
         )
         .body(Body::from(query_string))?;
 
-    server_context.execute(req).await
+    // TODO: reuse logic from server.rs to select the correct handler
+    if app_ctx.blueprint.server.enable_batch_requests {
+        handle_request::<GraphQLBatchRequest>(req, app_ctx).await
+    } else {
+        handle_request::<GraphQLRequest>(req, app_ctx).await
+    }
 }

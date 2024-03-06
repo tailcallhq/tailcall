@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::Path;
 use std::{env, fs};
 
@@ -169,7 +170,8 @@ fn logger_init() {
     const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
     const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
 
-    // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
+    // Select which env variable to use for the log level filter. This is because
+    // filter_or doesn't allow picking between multiple env_var for the filter value
     let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
         .map(|_| LONG_ENV_FILTER_VAR_NAME)
         .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
@@ -177,5 +179,18 @@ fn logger_init() {
     // use the log level from the env if there is one, otherwise use the default.
     let env = Env::new().filter_or(filter_env_name, "info");
 
-    env_logger::Builder::from_env(env).init();
+    env_logger::Builder::from_env(env)
+        .format(|buf, record| {
+            let level = record.level();
+            let color_styles = buf.default_level_style(level);
+            writeln!(
+                buf,
+                "{color_styles}[{}]{color_styles:#} {}",
+                record.level(),
+                record.args(),
+            )?;
+
+            Ok(())
+        })
+        .init();
 }

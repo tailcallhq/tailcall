@@ -48,7 +48,7 @@ pub mod test {
     }
 
     impl TestHttp {
-        fn init(upstream: &Upstream) -> Self {
+        fn init(upstream: &Upstream) -> Arc<Self> {
             let mut builder = Client::builder()
                 .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
                 .timeout(Duration::from_secs(upstream.timeout))
@@ -82,7 +82,7 @@ pub mod test {
                     options: HttpCacheOptions::default(),
                 }))
             }
-            Self { client: client.build() }
+            Arc::new(Self { client: client.build() })
         }
     }
 
@@ -141,19 +141,19 @@ pub mod test {
     }
 
     pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
-        let http: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script.clone() {
+        let http = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
         } else {
-            Arc::new(TestHttp::init(&Default::default()))
+            TestHttp::init(&Default::default())
         };
 
-        let http2: Arc<dyn HttpIO + Sync + Send> = if let Some(script) = script {
+        let http2 = if let Some(script) = script {
             javascript::init_http(
                 TestHttp::init(&Upstream::default().http2_only(true)),
                 script,
             )
         } else {
-            Arc::new(TestHttp::init(&Upstream::default().http2_only(true)))
+            TestHttp::init(&Upstream::default().http2_only(true))
         };
 
         let file = TestFileIO::init();

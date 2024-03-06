@@ -90,7 +90,6 @@ mod tests {
 
         let res = tailcall.execute(req).await.unwrap();
 
-        println!("{:#?}", res);
         assert!(res.status().is_success())
     }
 }

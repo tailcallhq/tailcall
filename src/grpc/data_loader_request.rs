@@ -59,6 +59,7 @@ mod tests {
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
     use url::Url;
+    use crate::blueprint::GrpcMethod;
 
     use super::DataLoaderRequest;
     use crate::config::{Config, ConfigReader, Field, Grpc, Link, LinkType, Type};
@@ -71,20 +72,19 @@ mod tests {
 
         test_file.pop();
         test_file.push("tests");
+        test_file.push("proto");
         test_file.push("greetings.proto");
-
-        let id = "greetings".to_string();
         let mut config = Config::default().links(vec![Link {
-            id: Some(id.clone()),
+            id: None,
             src: test_file.to_str().unwrap().to_string(),
             type_of: LinkType::Protobuf,
         }]);
-        let service = "Greeter";
-        let method = "SayHello";
-        let grpc = Grpc {
-            method: format!("{}.{}.{}", id, service, method),
-            ..Default::default()
+        let method = GrpcMethod {
+            package: "greetings".to_string(),
+            service: "Greeter".to_string(),
+            name: "SayHello".to_string(),
         };
+        let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
@@ -97,14 +97,14 @@ mod tests {
         let protobuf_set = ProtobufSet::from_proto_file(
             config_module
                 .extensions
-                .get_file_descriptor(id.as_str())
+                .get_file_descriptor_set(&method)
                 .unwrap(),
         )
         .unwrap();
 
-        let service = protobuf_set.find_service(service).unwrap();
+        let service = protobuf_set.find_service(&method).unwrap();
 
-        service.find_operation(method).unwrap()
+        service.find_operation(&method).unwrap()
     }
 
     #[tokio::test]

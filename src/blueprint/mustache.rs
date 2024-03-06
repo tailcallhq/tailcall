@@ -88,8 +88,8 @@ impl<'a> MustachePartsValidator<'a> {
                 }
             }
             "headers" | "env" => {
-                // "headers" and "env" refers to values known at runtime, which we can't
-                // validate here
+                // "headers" and "env" refers to values known at runtime, which
+                // we can't validate here
             }
             _ => {
                 return Valid::fail(format!("unknown template directive '{head}'"));

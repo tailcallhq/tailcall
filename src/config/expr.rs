@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{GraphQL, Grpc, Http};
+use super::{Call, GraphQL, Grpc, Http};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 /// Allows composing operators as simple expressions
@@ -38,6 +38,10 @@ pub enum ExprBody {
     /// Fetch a resources using the graphQL operator
     #[serde(rename = "graphQL")]
     GraphQL(GraphQL),
+
+    /// Reuses a resolver pre-defined on `Query` or `Mutation`
+    #[serde(rename = "call")]
+    Call(Call),
 
     /// Evaluate to constant data
     #[serde(rename = "const")]
@@ -119,12 +123,12 @@ pub enum ExprBody {
 impl ExprBody {
     ///
     /// Performs a deep check on if the expression has any IO.
-    ///
     pub fn has_io(&self) -> bool {
         match self {
             ExprBody::Http(_) => true,
             ExprBody::Grpc(_) => true,
             ExprBody::GraphQL(_) => true,
+            ExprBody::Call(_) => true,
             ExprBody::Const(_) => false,
             ExprBody::If(If { cond, on_true, on_false }) => {
                 cond.has_io() || on_true.has_io() || on_false.has_io()
