@@ -221,11 +221,12 @@ impl Blueprint {
         let mut schema = SchemaBuilder::from(&blueprint);
 
         if let Some(ref apollo) = server.apollo {
+            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
             schema = schema.extension(ApolloTracing::new(
                 apollo.api_key.clone(),
                 apollo.platform.clone(),
-                apollo.graph_id.clone(),
-                apollo.variant.clone(),
+                graph_id.to_string(),
+                variant.to_string(),
                 apollo.version.clone(),
             ));
         }

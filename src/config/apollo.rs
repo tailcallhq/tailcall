@@ -6,11 +6,8 @@ pub struct Apollo {
     /// Setting `api_key` for Apollo.
     pub api_key: String,
     ///
-    /// Setting `graph_id` for Apollo.
-    pub graph_id: String,
-    ///
-    /// Setting `variant` for Apollo.
-    pub variant: String,
+    /// Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
+    pub graph_ref: String,
     ///
     /// Setting `userVersion` for Apollo.
     #[serde(default = "default_user_version")]

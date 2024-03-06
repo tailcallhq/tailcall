@@ -406,9 +406,9 @@ input Apollo {
   """
   api_key: String!
   """
-  Setting `graph_id` for Apollo.
+  Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
   """
-  graph_id: String!
+  graph_ref: String!
   """
   Setting `platform` for Apollo.
   """
@@ -417,10 +417,6 @@ input Apollo {
   Setting `userVersion` for Apollo.
   """
   user_version: String!
-  """
-  Setting `variant` for Apollo.
-  """
-  variant: String!
   """
   Setting `version` for Apollo.
   """
