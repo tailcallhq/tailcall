@@ -68,19 +68,19 @@ impl Query {
 }
 
 #[derive(Debug, PartialEq, Setters, Default)]
-pub struct Router {
+pub struct Endpoint {
     method: Method,
     path: Path,
     query: Query,
     body: Option<String>,
 }
 
-impl Router {
+impl Endpoint {
     pub fn new(method: Method, path: Path, query: Query) -> Self {
         Self { method, path, query, body: None }
     }
 
-    pub fn from_path(route_string: &str) -> anyhow::Result<Router> {
+    pub fn from_path(route_string: &str) -> anyhow::Result<Endpoint> {
         let path = Path::parse(route_string)?;
         Ok(Self::default().path(path))
     }
