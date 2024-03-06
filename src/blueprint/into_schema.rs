@@ -124,6 +124,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
             if let Some(description) = &def.description {
                 scalar = scalar.description(description);
             }
+            scalar = scalar.validator(def.validator);
             dynamic::Type::Scalar(scalar)
         }
         Definition::Enum(def) => {

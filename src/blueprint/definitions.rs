@@ -5,18 +5,19 @@ use regex::Regex;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config;
 use crate::config::{Config, Field, GraphQLOperationType, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
+use crate::{config, scalars};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
         name: name.to_string(),
         directive: Vec::new(),
         description: None,
+        validator: scalars::get_scalar(name),
     }))
 }
 

@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
-use tailcall::config;
+use tailcall::{config, scalars};
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 
@@ -608,8 +608,16 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
+    let scalars = schemars::schema_for!(scalars::CustomScalar);
+
     let defs = schema.definitions;
-    let mut scalars = HashSet::new();
+
+    let mut scalars = scalars
+        .definitions
+        .keys()
+        .map(|v| v.to_string())
+        .collect::<HashSet<String>>();
+
     let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
