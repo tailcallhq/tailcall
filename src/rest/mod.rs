@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use derive_setters::Setters;
+
 use crate::http::Method;
 
 #[derive(Debug, PartialEq)]
@@ -16,7 +20,7 @@ impl Segment {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Path {
     segments: Vec<Segment>,
 }
@@ -27,7 +31,7 @@ impl Path {
             .split('/')
             .filter(|s| !s.is_empty())
             .map(|s| {
-                if s.starts_with(':') {
+                if s.starts_with('$') {
                     Segment::param(&s[1..])
                 } else {
                     Segment::literal(s)
@@ -42,23 +46,53 @@ impl Path {
     }
 }
 
+#[derive(Debug, PartialEq, Default)]
 pub struct Query {
-    params: Vec<(String, String)>,
+    params: Vec<(String, Segment)>,
 }
 
+impl Query {
+    fn from_map(map: HashMap<String, String>) -> Self {
+        let params = map
+            .into_iter()
+            .map(|(k, v)| {
+                if k.starts_with('$') {
+                    (k, Segment::param(&v))
+                } else {
+                    (k, Segment::literal(&v))
+                }
+            })
+            .collect();
+        Self { params }
+    }
+}
+
+#[derive(Debug, PartialEq, Setters, Default)]
 pub struct Router {
     method: Method,
     path: Path,
     query: Query,
+    body: Option<String>,
 }
 
 impl Router {
     pub fn new(method: Method, path: Path, query: Query) -> Self {
-        Self { method, path, query }
+        Self { method, path, query, body: None }
     }
 
-    pub fn parse(route_string: &str) -> anyhow::Result<Router> {
-        todo!()
+    pub fn from_path(route_string: &str) -> anyhow::Result<Router> {
+        let path = Path::parse(route_string)?;
+        Ok(Self::default().path(path))
+    }
+
+    pub fn with_query_params(mut self, query_params: HashMap<String, String>) -> Self {
+        self.query = Query::from_map(query_params);
+        self
+    }
+
+    pub fn with_path_str(mut self, path: &str) -> anyhow::Result<Self> {
+        self.path = Path::parse(path)?;
+        Ok(self)
     }
 }
 
@@ -72,11 +106,11 @@ mod tests {
         let inputs = vec![
             ("/users", vec![Segment::literal("users")]),
             (
-                "/users/:id",
+                "/users/$id",
                 vec![Segment::literal("users"), Segment::param("id")],
             ),
             (
-                "/users/:id/posts",
+                "/users/$id/posts",
                 vec![
                     Segment::literal("users"),
                     Segment::param("id"),
@@ -88,6 +122,26 @@ mod tests {
         for (input, expected) in inputs {
             let path = Path::parse(input).unwrap();
             assert_eq!(path, Path::new(expected));
+        }
+    }
+
+    #[test]
+    fn test_from_query() {
+        let inputs = vec![
+            (vec![], Query { params: vec![] }),
+            (
+                vec![("id".to_string(), "1".to_string())],
+                Query { params: vec![("id".to_string(), Segment::literal("1"))] },
+            ),
+            (
+                vec![("id".to_string(), "$id".to_string())],
+                Query { params: vec![("id".to_string(), Segment::param("id"))] },
+            ),
+        ];
+
+        for (input, expected) in inputs {
+            let query = Query::from_map(input.into_iter().collect());
+            assert_eq!(query, expected);
         }
     }
 }
