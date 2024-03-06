@@ -71,6 +71,7 @@
     method: GET
     url: https://jsonplaceholder.typicode.com/users/1
     body: null
+  expected_hits: 2
   response:
     status: 200
     body:

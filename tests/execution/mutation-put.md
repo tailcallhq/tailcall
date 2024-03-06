@@ -40,15 +40,6 @@ type User {
 
 ```yml
 - request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-    body: null
-  response:
-    status: 200
-    body:
-      id: 1
-      name: Leanne Graham
-- request:
     method: PUT
     url: http://jsonplaceholder.typicode.com/posts/100
     body: '{"body":"abc","id":100,"title":"bar","userId":1}'
