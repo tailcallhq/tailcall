@@ -328,4 +328,77 @@ mod grpc_fetch {
 
         Ok(())
     }
+    #[tokio::test]
+    async fn test_list_all_files_empty_response() -> Result<()> {
+        let server = start_mock_server();
+
+        let http_reflection_list_all_empty = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .body("\0\0\0\0\x02:\0");
+            then.status(200).body("\0\0\0\0\x02:\0"); // Mock an empty response
+        });
+
+        let runtime = crate::runtime::test::init(None);
+        let resp = list_all_files(&format!("http://localhost:{}", server.port()), &runtime).await;
+
+        assert_eq!(
+            "Expected listServicesResponse but found none",
+            resp.err().unwrap().to_string()
+        );
+
+        http_reflection_list_all_empty.assert();
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_by_service_not_found() -> Result<()> {
+        let server = start_mock_server();
+
+        let http_reflection_service_not_found = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
+            then.status(404); // Mock a 404 not found response
+        });
+
+        let runtime = crate::runtime::test::init(None);
+        let result = get_by_service(
+            &format!("http://localhost:{}", server.port()),
+            &runtime,
+            "nonexistent.Service",
+        )
+        .await;
+
+        assert!(result.is_err());
+
+        http_reflection_service_not_found.assert();
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_by_proto_name_not_found() -> Result<()> {
+        let server = start_mock_server();
+
+        let http_reflection_proto_not_found = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
+            then.status(404); // Mock a 404 not found response
+        });
+
+        let runtime = crate::runtime::test::init(None);
+        let result = get_by_proto_name(
+            &format!("http://localhost:{}", server.port()),
+            &runtime,
+            "nonexistent.proto",
+        )
+        .await;
+
+        assert!(result.is_err());
+
+        http_reflection_proto_not_found.assert();
+
+        Ok(())
+    }
 }
