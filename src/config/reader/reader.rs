@@ -13,8 +13,8 @@ use rustls_pki_types::{
 };
 use url::Url;
 
-use super::{ConfigModule, Content, Link, LinkType};
-use crate::config::{Config, Source};
+use crate::config::reader::{get_by_proto_name, get_by_service, list_all_files};
+use crate::config::{Config, ConfigModule, Content, Link, LinkType, Source};
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
@@ -174,7 +174,7 @@ impl ConfigReader {
                 LinkType::ReflectionWithFileName => {
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
-                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_proto_name(
+                    let file_descriptor_proto = get_by_proto_name(
                         config_link.src.as_str(),
                         &self.runtime,
                         &config_link
@@ -205,7 +205,7 @@ impl ConfigReader {
                 LinkType::ReflectionWithService => {
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
-                    let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
+                    let file_descriptor_proto = get_by_service(
                         config_link.src.as_str(),
                         &self.runtime,
                         config_link
@@ -238,21 +238,15 @@ impl ConfigReader {
                 }
                 LinkType::ReflectionAllFiles => {
                     let link = &config_link.src;
-                    let service_list =
-                        crate::config::grpc_fetch::list_all_files(link.as_str(), &self.runtime)
-                            .await?;
+                    let service_list = list_all_files(link.as_str(), &self.runtime).await?;
                     for service in service_list {
                         let mut file_descriptor_set = FileDescriptorSet::default();
 
                         if service.eq("grpc.reflection.v1alpha.ServerReflection") {
                             continue;
                         }
-                        let file_descriptor_proto = crate::config::grpc_fetch::get_by_service(
-                            link.as_str(),
-                            &self.runtime,
-                            &service,
-                        )
-                        .await?;
+                        let file_descriptor_proto =
+                            get_by_service(link.as_str(), &self.runtime, &service).await?;
 
                         let id = Valid::from_option(
                             file_descriptor_proto.package.clone(),
@@ -466,6 +460,7 @@ mod test_proto_config {
     async fn test_nested_imports() -> Result<()> {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut test_dir = root_dir.join(file!());
+        test_dir.pop(); // reader
         test_dir.pop(); // config
         test_dir.pop(); // src
 

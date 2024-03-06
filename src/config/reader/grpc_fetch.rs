@@ -216,7 +216,7 @@ mod grpc_fetch {
 
     use anyhow::Result;
 
-    use crate::config::grpc_fetch::{get_by_proto_name, get_by_service, list_all_files};
+    use crate::config::reader::grpc_fetch::{get_by_proto_name, get_by_service, list_all_files};
 
     const NEWS_PROTO: &[u8] = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
