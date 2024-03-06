@@ -86,13 +86,6 @@ type News {
   response:
     status: 200
     body: \0\0\0\0t\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3
-- request:
-    method: POST
-    url: http://localhost:50051/news.NewsService/GetMultipleNews
-    body: \0\0\0\0\n\x02\x08\x03\n\x02\x08\x02
-  response:
-    status: 200
-    body: \0\0\0\0t\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
 #### assert:

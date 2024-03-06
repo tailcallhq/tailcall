@@ -27,10 +27,10 @@ pub struct RequestFilter {
 
 impl RequestFilter {
     pub fn new(
-        client: impl HttpIO + Send + Sync + 'static,
-        worker: impl WorkerIO<Event, Command>,
+        client: Arc<impl HttpIO + Send + Sync + 'static>,
+        worker: Arc<impl WorkerIO<Event, Command>>,
     ) -> Self {
-        Self { worker: Arc::new(worker), client: Arc::new(client) }
+        Self { worker, client }
     }
 
     #[async_recursion::async_recursion]

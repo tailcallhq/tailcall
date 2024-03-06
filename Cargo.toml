@@ -60,7 +60,7 @@ cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
 log = "0.4.21"
-env_logger = "0.11.2"
+env_logger = "0.11.3"
 stripmargin = "0.1.1"
 num_cpus = "1.16.0"
 fnv = "1.0.7"
@@ -68,7 +68,7 @@ futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.3", features = ["wasm-bindgen"] }
 futures-util = { version = "0.3.30" }
 lru = { version = "0.12.3" }
-webbrowser = { version = "0.8.12", features = ["hardened", "disable-wsl"] }
+webbrowser = { version = "0.8.13", features = ["hardened", "disable-wsl"] }
 async-std = { version = "1.12.0", features = [
     "wasm-bindgen-futures",
     "unstable",

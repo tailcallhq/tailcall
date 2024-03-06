@@ -60,6 +60,7 @@ type User {
     method: POST
     url: http://jsonplaceholder.typicode.com/posts
     body: '{"body":"post-body","title":"post-title","userId":1}'
+  expected_hits: 2
   response:
     status: 200
     body:
