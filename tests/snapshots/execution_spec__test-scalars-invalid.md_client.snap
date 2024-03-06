@@ -4,8 +4,11 @@ expression: client
 ---
 scalar Email
 
+scalar PhoneNumber
+
 type Query {
   value(email: Email!): Email!
+  value_phone(phone: PhoneNumber!): PhoneNumber!
 }
 
 schema {

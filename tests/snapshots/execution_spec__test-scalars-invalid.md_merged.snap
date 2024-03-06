@@ -10,6 +10,11 @@ input Email {
 
 }
 
+input PhoneNumber {
+
+}
+
 type Query {
   value(email: Email!): Email! @const(data: "{{args.email}}")
+  value_phone(phone: PhoneNumber!): PhoneNumber! @const(data: "{{args.phone}}")
 }
