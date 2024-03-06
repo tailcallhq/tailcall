@@ -185,7 +185,16 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
 pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow::Result<()> {
     if let Some(config) = &config.0 {
         global::set_error_handler(|error| {
-            if !matches!(error, global::Error::Trace(TraceError::Other(_)),) {
+            if !matches!(
+                error,
+                // ignore errors related to _Signal_(Other(ChannelFull))
+                // that happens on high number of signals generated
+                // when mpsc::channel size exceeds
+                // TODO: increase the default size of channel for providers if required
+                global::Error::Trace(TraceError::Other(_))
+                    | global::Error::Metric(MetricsError::Other(_))
+                    | global::Error::Log(LogError::Other(_)),
+            ) {
                 eprintln!("OpenTelemetry error: {:?}", error);
             }
         })?;
