@@ -195,7 +195,7 @@
         "Email": {
           "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
           "type": "string",
-          "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+          "pattern": "/^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/"
         }
       }
     },
@@ -1364,6 +1364,18 @@
     },
     "Omit": {
       "type": "object"
+    },
+    "PhoneNumber": {
+      "type": "object",
+      "required": [
+        "PhoneNumber"
+      ],
+      "properties": {
+        "PhoneNumber": {
+          "description": "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).",
+          "type": "string"
+        }
+      }
     },
     "Proxy": {
       "type": "object",
