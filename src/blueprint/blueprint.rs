@@ -2,6 +2,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::ValidationMode;
+#[cfg(all(feature = "apollo-tracing", not(target = "wasm32")))]
 use async_graphql_extension_apollo_tracing::ApolloTracing;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
