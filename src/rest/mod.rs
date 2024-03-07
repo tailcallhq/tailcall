@@ -97,6 +97,7 @@ pub struct Path {
 
 #[derive(Debug)]
 struct TypeMap(BTreeMap<String, Type>);
+
 impl TypeMap {
     fn get(&self, key: &str) -> Option<&Type> {
         self.0.get(key)
@@ -134,18 +135,18 @@ impl Path {
         Self { segments }
     }
 
-    fn eval_vars(&self, path: &str) -> Option<Variables> {
+    fn eval_vars(&self, path: &str) -> anyhow::Result<Option<Variables>> {
         let mut variables = Variables::default();
         let mut path_segments = path.split('/').filter(|s| !s.is_empty());
         for segment in &self.segments {
             if let Some(path_segment) = path_segments.next() {
                 if let Segment::Param(t_var) = segment {
-                    let tpe = t_var.to_value(path_segment).ok()?;
+                    let tpe = t_var.to_value(path_segment)?;
                     variables.insert(Name::new(t_var.name.clone()), tpe);
                 }
             }
         }
-        Some(variables)
+        Ok(Some(variables))
     }
 }
 
@@ -212,15 +213,15 @@ impl Query {
         Ok(Self { params })
     }
 
-    fn eval_vars(&self, query_params: BTreeMap<String, String>) -> Option<Variables> {
+    fn eval_vars(&self, query_params: BTreeMap<String, String>) -> anyhow::Result<Option<Variables>> {
         let mut variables = Variables::default();
         for (key, t_var) in &self.params {
             if let Some(query_param) = query_params.get(key) {
-                let value = t_var.to_value(query_param).ok()?;
+                let value = t_var.to_value(query_param)?;
                 variables.insert(Name::new(t_var.name.clone()), value);
             }
         }
-        Some(variables)
+        Ok(Some(variables))
     }
 }
 
@@ -328,7 +329,7 @@ impl Endpoint {
         Ok(endpoints)
     }
 
-    fn eval_vars(&mut self, request: &reqwest::Request) -> Option<Variables> {
+    fn eval_vars(&mut self, request: &reqwest::Request) -> anyhow::Result<Option<Variables>> {
         let query_params = request
             .url()
             .query_pairs()
@@ -339,23 +340,28 @@ impl Endpoint {
 
         // Method
         if self.method.clone().to_hyper() != request.method() {
-            return None;
+            return Ok(None);
         }
 
         // Path
-        variables = merge_variables(
-            variables,
-            self.path.clone().eval_vars(request.url().path())?,
-        );
+        if let Some(path) = self.path.eval_vars(request.url().path())? {
+            variables = merge_variables(variables, path);
+        } else {
+            return Ok(None);
+        }
 
         // Query
-        variables = merge_variables(variables, self.query.eval_vars(query_params)?.clone());
+        if let Some(query) = self.query.eval_vars(query_params)? {
+            variables = merge_variables(variables, query);
+        } else {
+            return Ok(None);
+        }
 
-        Some(variables)
+        Ok(Some(variables))
     }
 
     pub fn eval(&mut self, request: &reqwest::Request) -> anyhow::Result<Option<GraphQLRequest>> {
-        match self.eval_vars(request) {
+        match self.eval_vars(request)? {
             None => Ok(None),
             Some(mut variables) => {
                 let body = request
@@ -392,6 +398,7 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 #[cfg(test)]
 mod tests {
     use std::ops::Deref;
+    use anyhow::anyhow;
 
     use async_graphql_value::ConstValue;
     use maplit::btreemap;
@@ -408,8 +415,9 @@ mod tests {
         |    value
         |  }
         "#
-        .strip_margin()
+            .strip_margin()
     }
+
     fn test_directive() -> Directive {
         async_graphql::parser::parse_query(test_query())
             .unwrap()
@@ -449,7 +457,7 @@ mod tests {
             endpoint.path,
             Path::new(vec![
                 Segment::lit("foo"),
-                Segment::param(UrlParamType::Number(N::NegInt), "a")
+                Segment::param(UrlParamType::Number(N::NegInt), "a"),
             ])
         );
         assert_eq!(
@@ -462,19 +470,62 @@ mod tests {
         assert_eq!(endpoint.body, Some("d".to_string()));
     }
 
-    #[test]
-    fn test_eval_vars() {
-        let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-        let request = reqwest::Request::new(
-            reqwest::Method::POST,
-            Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
-        );
-        let actual = endpoint.eval_vars(&request).unwrap();
-        let expected = &btreemap! {
+    mod eval_vars {
+        use std::ops::Deref;
+        use async_graphql_value::{ConstValue, Name};
+        use maplit::btreemap;
+        use url::Url;
+        use crate::rest::Endpoint;
+        use crate::rest::tests::test_query;
+
+        #[test]
+        fn test_valid() {
+            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
+            let request = reqwest::Request::new(
+                reqwest::Method::POST,
+                Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
+            );
+            let actual = endpoint.eval_vars(&request).unwrap().unwrap();
+            let expected = &btreemap! {
             Name::new("a") => ConstValue::from(1),
             Name::new("b") => ConstValue::from("b"),
             Name::new("c") => ConstValue::from(true),
         };
-        assert_eq!(actual.deref(), expected)
+            pretty_assertions::assert_eq!(actual.deref(), expected)
+        }
+
+        #[test]
+        fn test_invalid_url_param() {
+            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
+            let request = reqwest::Request::new(
+                reqwest::Method::POST,
+                Url::parse("http://localhost:8080/foo/a?b=b&c=true").unwrap(),
+            );
+            let actual = endpoint.eval_vars(&request).unwrap_err().to_string();
+            ;
+            pretty_assertions::assert_eq!(actual, "invalid digit found in string")
+        }
+
+        #[test]
+        fn test_invalid_query_param() {
+            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
+            let request = reqwest::Request::new(
+                reqwest::Method::POST,
+                Url::parse("http://localhost:8080/foo/1?b=b&c=c").unwrap(),
+            );
+            let actual = endpoint.eval_vars(&request).unwrap_err().to_string();
+            pretty_assertions::assert_eq!(actual, "provided string was not `true` or `false`")
+        }
+
+        #[test]
+        fn test_method_not_match() {
+            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
+            let request = reqwest::Request::new(
+                reqwest::Method::GET,
+                Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
+            );
+            let actual = endpoint.eval_vars(&request).unwrap();
+            pretty_assertions::assert_eq!(actual, None)
+        }
     }
 }
