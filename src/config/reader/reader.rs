@@ -404,7 +404,11 @@ impl ConfigReader {
         let server = &mut config_module.config.server;
         let opentelemetry = &mut config_module.config.opentelemetry;
 
-        let reader_ctx = ConfigReaderContext { env: self.runtime.env.clone(), vars: &server.vars };
+        let reader_ctx = ConfigReaderContext {
+            runtime: &self.runtime,
+            vars: &server.vars,
+            headers: Default::default(),
+        };
 
         opentelemetry.render_mustache(&reader_ctx)?;
 

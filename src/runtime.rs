@@ -1,12 +1,7 @@
-use std::borrow::Cow;
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
-use hyper::HeaderMap;
 
-use crate::has_headers::HasHeaders;
-use crate::path::PathString;
 use crate::{Cache, EnvIO, FileIO, HttpIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
@@ -19,34 +14,6 @@ pub struct TargetRuntime {
     pub env: Arc<dyn EnvIO>,
     pub file: Arc<dyn FileIO>,
     pub cache: Arc<dyn Cache<Key = u64, Value = ConstValue>>,
-}
-
-#[derive(Clone)]
-pub struct TargetRuntimeContext<'a> {
-    pub runtime: &'a TargetRuntime,
-    pub vars: &'a BTreeMap<String, String>,
-    pub headers: HeaderMap, // TODO
-}
-
-impl<'a> PathString for TargetRuntimeContext<'a> {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
-        if path.is_empty() {
-            return None;
-        }
-
-        path.split_first()
-            .and_then(|(head, tail)| match head.as_ref() {
-                "vars" => self.vars.get(tail[0].as_ref()).map(|v| v.into()),
-                "env" => self.runtime.env.get(tail[0].as_ref()).map(|v| v.into()),
-                _ => None,
-            })
-    }
-}
-
-impl<'a> HasHeaders for TargetRuntimeContext<'a> {
-    fn headers(&self) -> &HeaderMap {
-        &self.headers
-    }
 }
 
 #[cfg(test)]

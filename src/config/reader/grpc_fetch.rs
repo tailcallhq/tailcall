@@ -8,10 +8,11 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use crate::config::ConfigReaderContext;
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::RequestTemplate;
 use crate::mustache::Mustache;
-use crate::runtime::{TargetRuntime, TargetRuntimeContext};
+use crate::runtime::TargetRuntime;
 
 const REFLECTION_PROTO: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -69,7 +70,6 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
     let reflection_service = protobuf_set.find_service(&grpc_method)?;
     let operation = reflection_service.find_operation(&grpc_method)?;
 
-    // let mut methods = vec![];
     let mut url: url::Url = url.parse()?;
     url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
 
@@ -84,7 +84,7 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
         operation_type: Default::default(),
     };
 
-    let ctx = TargetRuntimeContext {
+    let ctx = ConfigReaderContext {
         runtime: target_runtime,
         vars: &Default::default(),
         headers: Default::default(),
@@ -141,7 +141,7 @@ pub async fn get_by_service(
         operation_type: Default::default(),
     };
 
-    let ctx = TargetRuntimeContext {
+    let ctx = ConfigReaderContext {
         runtime: target_runtime,
         vars: &Default::default(),
         headers: Default::default(),
@@ -179,7 +179,7 @@ pub async fn get_by_proto_name(
         operation_type: Default::default(),
     };
 
-    let ctx = TargetRuntimeContext {
+    let ctx = ConfigReaderContext {
         runtime: target_runtime,
         vars: &Default::default(),
         headers: Default::default(),
