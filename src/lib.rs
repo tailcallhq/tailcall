@@ -80,6 +80,11 @@ pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
 }
 
+pub fn is_scalar(type_name: &str) -> bool {
+    ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
+        || scalars::CUSTOM_SCALARS.keys().any(|v| (*v).eq(type_name))
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::collections::HashMap;

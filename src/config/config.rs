@@ -10,7 +10,6 @@ use serde_json::Value;
 
 use super::telemetry::Telemetry;
 use super::{Expr, Link, Server, Upstream};
-use crate::blueprint::is_scalar;
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::KeyValues;
@@ -109,7 +108,7 @@ impl Config {
                     for (_, arg) in field
                         .args
                         .iter()
-                        .filter(|(_, arg)| !is_scalar(&arg.type_of))
+                        .filter(|(_, arg)| !crate::is_scalar(&arg.type_of))
                     {
                         if let Some(t) = self.find_type(&arg.type_of) {
                             t.fields.iter().for_each(|(_, f)| {
