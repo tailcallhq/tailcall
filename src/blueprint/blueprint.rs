@@ -8,6 +8,7 @@ use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde_json::Value;
 
+use super::telemetry::Telemetry;
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
@@ -22,6 +23,7 @@ pub struct Blueprint {
     pub schema: SchemaDefinition,
     pub server: Server,
     pub upstream: Upstream,
+    pub opentelemetry: Telemetry,
 }
 
 #[derive(Clone, Debug)]

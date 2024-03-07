@@ -11,36 +11,6 @@ expression: response
     "data": {
       "fieldCache": {
         "id": 1
-      },
-      "fieldCacheList": [
-        {
-          "id": 1
-        },
-        {
-          "id": 2
-        },
-        {
-          "id": 3
-        }
-      ],
-      "typeCache": {
-        "a": {
-          "id": 11
-        },
-        "b": {
-          "id": 21
-        },
-        "list": [
-          {
-            "id": 31
-          },
-          {
-            "id": 32
-          },
-          {
-            "id": 33
-          }
-        ]
       }
     }
   }

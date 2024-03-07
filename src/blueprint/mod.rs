@@ -10,6 +10,7 @@ mod operation;
 mod operators;
 mod schema;
 mod server;
+pub mod telemetry;
 mod timeout;
 mod upstream;
 
