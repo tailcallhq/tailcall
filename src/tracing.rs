@@ -19,6 +19,8 @@ pub fn default_tracing() -> impl Subscriber {
 
     tracing_subscriber::fmt()
         .with_max_level(level)
+        .without_time()
+        .with_target(false)
         .compact()
         .finish()
         .with(default_filter_target())
