@@ -8,8 +8,9 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use crate::blueprint::GrpcMethod;
 use crate::config::ConfigReaderContext;
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+use crate::grpc::protobuf::ProtobufSet;
 use crate::grpc::RequestTemplate;
 use crate::mustache::Mustache;
 use crate::runtime::TargetRuntime;
@@ -61,50 +62,69 @@ struct CustomResponse {
     file_descriptor_response: Option<FileDescriptorProtoResponse>,
 }
 
+impl CustomResponse {
+    async fn execute(
+        url: &str,
+        grpc_method: GrpcMethod,
+        body: serde_json::Value,
+        target_runtime: &TargetRuntime,
+    ) -> Result<CustomResponse> {
+        let protobuf_set = get_protobuf_set()?;
+        let reflection_service = protobuf_set.find_service(&grpc_method)?;
+        let operation = reflection_service.find_operation(&grpc_method)?;
+        let mut url: url::Url = url.parse()?;
+        url.set_path(
+            format!(
+                "{}.{}/{}",
+                grpc_method.package, grpc_method.service, grpc_method.name
+            )
+            .as_str(),
+        );
+        let req_template = RequestTemplate {
+            url: Mustache::parse(url.as_str())?,
+            headers: vec![(
+                HeaderName::from_static("content-type"),
+                Mustache::parse("application/grpc+proto")?,
+            )],
+            body: Mustache::parse(body.to_string().as_str()).ok(),
+            operation: operation.clone(),
+            operation_type: Default::default(),
+        };
+
+        let ctx = ConfigReaderContext {
+            runtime: target_runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
+        let req = req_template.render(&ctx)?.to_request()?;
+
+        let resp = target_runtime.http.execute(req).await?;
+        let body = resp.body.as_bytes();
+
+        let response: CustomResponse = operation.convert_output(body)?;
+        Ok(response)
+    }
+}
+
 /// Makes `ListService` request to the grpc reflection server
 pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
-    let protobuf_set = get_protobuf_set()?;
-
     let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
 
-    let reflection_service = protobuf_set.find_service(&grpc_method)?;
-    let operation = reflection_service.find_operation(&grpc_method)?;
-
-    let mut url: url::Url = url.parse()?;
-    url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
-
-    let req_template = RequestTemplate {
-        url: Mustache::parse(url.as_str())?,
-        headers: vec![(
-            HeaderName::from_static("content-type"),
-            Mustache::parse("application/grpc+proto")?,
-        )],
-        body: Mustache::parse(json!({"list_services": ""}).to_string().as_str()).ok(),
-        operation: operation.clone(),
-        operation_type: Default::default(),
-    };
-
-    let ctx = ConfigReaderContext {
-        runtime: target_runtime,
-        vars: &Default::default(),
-        headers: Default::default(),
-    };
-
-    let req = req_template.render(&ctx)?.to_request()?;
-
-    let resp = target_runtime.http.execute(req).await?;
-    let body = resp.body.as_bytes();
-
-    let response: CustomResponse = operation.convert_output(body)?;
-
     // Extracting names from services
-    let methods: Vec<String> = response
-        .list_services_response
-        .context("Expected listServicesResponse but found none")?
-        .service
-        .iter()
-        .map(|s| s.name.clone())
-        .collect();
+    let methods: Vec<String> = CustomResponse::execute(
+        url,
+        grpc_method,
+        json!({"list_services": ""}),
+        target_runtime,
+    )
+    .await?
+    .list_services_response
+    .context("Expected listServicesResponse but found none")?
+    .service
+    .iter()
+    .map(|s| s.name.clone())
+    .collect();
 
     Ok(methods)
 }
@@ -115,41 +135,16 @@ pub async fn get_by_service(
     target_runtime: &TargetRuntime,
     service: &str,
 ) -> Result<FileDescriptorProto> {
-    let protobuf_set = get_protobuf_set()?;
-
     let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
+    let resp = CustomResponse::execute(
+        url,
+        grpc_method,
+        json!({"file_containing_symbol": service}),
+        target_runtime,
+    )
+    .await?;
 
-    let reflection_service = protobuf_set.find_service(&grpc_method)?;
-    let operation = reflection_service.find_operation(&grpc_method)?;
-
-    let mut url: url::Url = url.parse()?;
-    url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
-
-    let req_template = RequestTemplate {
-        url: Mustache::parse(url.as_str())?,
-        headers: vec![(
-            HeaderName::from_static("content-type"),
-            Mustache::parse("application/grpc+proto")?,
-        )],
-        body: Mustache::parse(
-            json!({"file_containing_symbol": service})
-                .to_string()
-                .as_str(),
-        )
-        .ok(),
-        operation: operation.clone(),
-        operation_type: Default::default(),
-    };
-
-    let ctx = ConfigReaderContext {
-        runtime: target_runtime,
-        vars: &Default::default(),
-        headers: Default::default(),
-    };
-
-    let req = req_template.render(&ctx)?.to_request()?;
-
-    request_proto(req, target_runtime, operation).await
+    request_proto(resp).await
 }
 
 /// Makes `Get Proto/Symbol Name` request to the grpc reflection server
@@ -158,48 +153,19 @@ pub async fn get_by_proto_name(
     target_runtime: &TargetRuntime,
     proto_name: &str,
 ) -> Result<FileDescriptorProto> {
-    let protobuf_set = get_protobuf_set()?;
-
     let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
 
-    let reflection_service = protobuf_set.find_service(&grpc_method)?;
-    let operation = reflection_service.find_operation(&grpc_method)?;
-
-    let mut url: url::Url = url.parse()?;
-    url.set_path("grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
-
-    let req_template = RequestTemplate {
-        url: Mustache::parse(url.as_str())?,
-        headers: vec![(
-            HeaderName::from_static("content-type"),
-            Mustache::parse("application/grpc+proto")?,
-        )],
-        body: Mustache::parse(json!({"file_by_filename": proto_name}).to_string().as_str()).ok(),
-        operation: operation.clone(),
-        operation_type: Default::default(),
-    };
-
-    let ctx = ConfigReaderContext {
-        runtime: target_runtime,
-        vars: &Default::default(),
-        headers: Default::default(),
-    };
-
-    let req = req_template.render(&ctx)?.to_request()?;
-
-    request_proto(req, target_runtime, operation).await
+    let resp = CustomResponse::execute(
+        url,
+        grpc_method,
+        json!({"file_by_filename": proto_name}),
+        target_runtime,
+    )
+    .await?;
+    request_proto(resp).await
 }
 
-async fn request_proto(
-    req: reqwest::Request,
-    target_runtime: &TargetRuntime,
-    operation: ProtobufOperation,
-) -> Result<FileDescriptorProto> {
-    let resp = target_runtime.http.execute(req).await?;
-    let body = resp.body.as_bytes();
-
-    let response: CustomResponse = operation.convert_output(body)?;
-
+async fn request_proto(response: CustomResponse) -> Result<FileDescriptorProto> {
     let file_descriptor_resp = response
         .file_descriptor_response
         .context("Expected fileDescriptorResponse but found none")?;
