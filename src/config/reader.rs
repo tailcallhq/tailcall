@@ -36,15 +36,15 @@ impl ConfigReader {
 
     /// Reads a file from the filesystem or from an HTTP URL
     async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
-        if cfg!(windows) {
-            let content = self.runtime.file.read(&file.to_string()).await?;
-            return Ok(FileRead {
-                content,
-                path: file.to_string(),
-            });
-        }
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
+            if cfg!(windows) && !url.scheme().starts_with("http") {
+                let content = self.runtime.file.read(&file.to_string()).await?;
+                return Ok(FileRead {
+                    content,
+                    path: file.to_string(),
+                });
+            }
             let response = self
                 .runtime
                 .http
