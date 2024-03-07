@@ -8,7 +8,7 @@ schema
     port: 8000
     graphiql: true
     hostname: "0.0.0.0"
-    apollo: {api_key: "service:tailcall-demo-3:dSBBMsdjJexBjuhHnHXAWw", graph_ref: "tailcall-demo-3@current"}
+    apollo: {api_key: "<api_key>", graph_ref: "tailcall-demo-3@current"}
   ) {
   query: Query
 }
