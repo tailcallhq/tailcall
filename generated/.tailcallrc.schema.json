@@ -99,7 +99,7 @@
         },
         "user_version": {
           "description": "Setting `userVersion` for Apollo.",
-          "default": "platform",
+          "default": "1.0",
           "type": "string"
         },
         "version": {

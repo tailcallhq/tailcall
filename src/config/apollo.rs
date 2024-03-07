@@ -23,7 +23,7 @@ pub struct Apollo {
 }
 
 fn default_user_version() -> String {
-    "platform".to_string()
+    "1.0".to_string()
 }
 
 fn default_platform() -> String {
