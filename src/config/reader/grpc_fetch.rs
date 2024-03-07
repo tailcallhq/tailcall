@@ -6,7 +6,7 @@ use nom::AsBytes;
 use prost::Message;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::RequestTemplate;
@@ -95,8 +95,7 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
     let resp = target_runtime.http.execute(req).await?;
     let body = resp.body.as_bytes();
 
-    let response: Value = serde_json::from_value(operation.convert_output(body)?.into_json()?)?;
-    let response: CustomResponse = serde_json::from_value(response)?;
+    let response: CustomResponse = operation.convert_output(body)?;
 
     // Extracting names from services
     let methods: Vec<String> = response
@@ -199,8 +198,8 @@ async fn request_proto(
     let resp = target_runtime.http.execute(req).await?;
     let body = resp.body.as_bytes();
 
-    let response = operation.convert_output(body)?.into_json()?;
-    let response: CustomResponse = serde_json::from_value(response)?;
+    let response: CustomResponse = operation.convert_output(body)?;
+
     let file_descriptor_resp = response
         .file_descriptor_response
         .context("Expected fileDescriptorResponse but found none")?;

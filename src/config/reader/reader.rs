@@ -14,7 +14,7 @@ use rustls_pki_types::{
 use url::Url;
 
 use crate::config::reader::{get_by_proto_name, get_by_service, list_all_files};
-use crate::config::{Config, ConfigReaderContext, ConfigModule, Content, Link, LinkType, Source};
+use crate::config::{Config, ConfigModule, ConfigReaderContext, Content, Link, LinkType, Source};
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 

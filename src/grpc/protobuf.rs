@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use anyhow::{anyhow, bail, Context, Result};
-use async_graphql::Value;
 use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::prost_types::FileDescriptorSet;
@@ -178,7 +177,7 @@ impl ProtobufOperation {
         message_to_bytes(message).map(|result| (result, ids))
     }
 
-    pub fn convert_output(&self, bytes: &[u8]) -> Result<Value> {
+    pub fn convert_output<T: serde::de::DeserializeOwned>(&self, bytes: &[u8]) -> Result<T> {
         if bytes.len() < 5 {
             bail!("Empty response");
         }
@@ -196,7 +195,7 @@ impl ProtobufOperation {
 
         let json = serde_json::to_value(message)?;
 
-        Ok(async_graphql::Value::from_json(json)?)
+        Ok(serde_json::from_value(json)?)
     }
 }
 
@@ -340,10 +339,10 @@ mod tests {
 
         let output = b"\0\0\0\0\x0e\n\x0ctest message";
 
-        let parsed = operation.convert_output(output)?;
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            parsed,
             json!({
               "message": "test message"
             })
@@ -366,10 +365,10 @@ mod tests {
 
         let output = b"\0\0\0\x005\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1";
 
-        let parsed = operation.convert_output(output)?;
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            parsed,
             json!({
               "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1"
             })
@@ -401,10 +400,10 @@ mod tests {
 
         let output = b"\0\0\0\0o\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n#\x08\x05\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5";
 
-        let parsed = multiple_operation.convert_output(output)?;
+        let parsed = multiple_operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
-            serde_json::to_value(parsed)?,
+            parsed,
             json!({
               "news": [
                 { "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1" },
