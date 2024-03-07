@@ -7,6 +7,7 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use crate::blueprint::is_scalar;
 
 use super::telemetry::Telemetry;
 use super::{Expr, Link, Server, Upstream};
@@ -105,7 +106,7 @@ impl Config {
         for (_, type_of) in self.types.iter() {
             if !type_of.interface {
                 for (_, field) in type_of.fields.iter() {
-                    for (_, arg) in field.args.iter() {
+                    for (_, arg) in field.args.iter().filter(|(_,arg)| !is_scalar(&arg.type_of)) {
                         if let Some(t) = self.find_type(&arg.type_of) {
                             t.fields.iter().for_each(|(_, f)| {
                                 types.insert(&f.type_of);
@@ -296,7 +297,7 @@ fn merge_unions(
 }
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
 )]
 #[setters(strip_option)]
 pub struct RootSchema {
