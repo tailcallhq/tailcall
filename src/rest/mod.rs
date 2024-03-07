@@ -1,34 +1,36 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
-use async_graphql::{
-    parser::types::{BaseType, ExecutableDocument, Type},
-    Name, Value, Variables,
-};
+use async_graphql::parser::types::{BaseType, Directive, ExecutableDocument, Type};
+use async_graphql::{Name, Variables};
+use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
 use hyper::body::Bytes;
+use serde::{Deserialize, Serialize};
 
+use crate::directive::DirectiveCodec;
 use crate::http::Method;
+use crate::is_default;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum VariableType {
+pub enum UrlParamType {
     String,
     Int,
     Boolean,
 }
 
-impl VariableType {
-    fn to_value(&self, value: &str) -> anyhow::Result<Value> {
+impl UrlParamType {
+    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
         Ok(match self {
-            Self::String => Value::String(value.to_string()),
+            Self::String => ConstValue::String(value.to_string()),
 
             // FIXME: this should decode to a numeric type instead of a string
-            Self::Int => Value::from(value),
-            Self::Boolean => Value::Boolean(value.parse()?),
+            Self::Int => ConstValue::from(value),
+            Self::Boolean => ConstValue::Boolean(value.parse()?),
         })
     }
 }
 
-impl TryFrom<&Type> for VariableType {
+impl TryFrom<&Type> for UrlParamType {
     type Error = anyhow::Error;
     fn try_from(value: &Type) -> anyhow::Result<Self> {
         match &value.base {
@@ -50,11 +52,11 @@ pub enum Segment {
 }
 
 impl Segment {
-    pub fn literal(s: &str) -> Self {
+    pub fn lit(s: &str) -> Self {
         Self::Literal(s.to_string())
     }
 
-    pub fn param(t: VariableType, s: &str) -> Self {
+    pub fn param(t: UrlParamType, s: &str) -> Self {
         Self::Param(TypedVariable::new(t, s))
     }
 
@@ -103,10 +105,10 @@ impl Path {
                     s,
                     input
                 ))?;
-                let t = VariableType::try_from(value)?;
-                segments.push(Segment::param(t, &key));
+                let t = UrlParamType::try_from(value)?;
+                segments.push(Segment::param(t, key));
             } else {
-                segments.push(Segment::literal(s));
+                segments.push(Segment::lit(s));
             }
         }
         Ok(Self { segments })
@@ -146,29 +148,29 @@ impl From<Vec<(&str, TypedVariable)>> for Query {
 
 #[derive(Clone, Debug, PartialEq, Setters)]
 struct TypedVariable {
-    type_of: VariableType,
+    type_of: UrlParamType,
     name: String,
     nullable: bool,
 }
 
 impl TypedVariable {
-    fn new(tpe: VariableType, name: &str) -> Self {
+    fn new(tpe: UrlParamType, name: &str) -> Self {
         Self { type_of: tpe, name: name.to_string(), nullable: false }
     }
 
     fn string(name: &str) -> Self {
-        Self::new(VariableType::String, name)
+        Self::new(UrlParamType::String, name)
     }
 
     fn int(name: &str) -> Self {
-        Self::new(VariableType::Int, name)
+        Self::new(UrlParamType::Int, name)
     }
 
     fn boolean(name: &str) -> Self {
-        Self::new(VariableType::Boolean, name)
+        Self::new(UrlParamType::Boolean, name)
     }
 
-    fn to_value(&self, value: &str) -> anyhow::Result<Value> {
+    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
         self.type_of.to_value(value)
     }
 }
@@ -177,19 +179,11 @@ impl Query {
     fn try_from_map(q: &TypeMap, map: HashMap<String, String>) -> anyhow::Result<Self> {
         let mut params = Vec::new();
         for (k, v) in map {
-            if k.starts_with('$') {
-                let key = &k[1..];
-                let t = VariableType::try_from(
-                    q.get(&key)
-                        .ok_or(anyhow::anyhow!("undefined query param: {}", key))?,
-                )?;
-                params.push((k, TypedVariable::new(t, &v)));
-            } else {
-                return Err(anyhow::anyhow!(
-                    "query param: {} should map to a $variable",
-                    k
-                ));
-            }
+            let t = UrlParamType::try_from(
+                q.get(&k)
+                    .ok_or(anyhow::anyhow!("undefined query param: {}", k))?,
+            )?;
+            params.push((k, TypedVariable::new(t, &v)));
         }
         Ok(Self { params })
     }
@@ -216,43 +210,94 @@ pub struct Endpoint {
     type_map: TypeMap,
 }
 
+#[derive(Default, Debug, Deserialize, Serialize, PartialEq, Setters)]
+struct Rest {
+    path: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    method: Option<Method>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    query: HashMap<String, String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    body: Option<String>,
+}
+
+impl TryFrom<&Directive> for Rest {
+    type Error = anyhow::Error;
+
+    fn try_from(directive: &Directive) -> anyhow::Result<Self> {
+        let mut rest = Rest::default();
+
+        for (k, v) in directive.arguments.iter() {
+            if k.node.as_str() == "path" {
+                rest.path = serde_json::from_str(v.node.to_string().as_str())?;
+            }
+            if k.node.as_str() == "method" {
+                rest.method = serde_json::from_str(v.node.to_string().to_uppercase().as_str())?;
+            }
+            if k.node.as_str() == "query" {
+                if let Value::Object(map) = &v.node {
+                    for (k, v) in map {
+                        if let Value::Variable(v) = v {
+                            rest.query
+                                .insert(k.as_str().to_owned(), v.as_str().to_string());
+                        }
+                    }
+                }
+            }
+            if k.node.as_str() == "body" {
+                if let Value::Variable(v) = &v.node {
+                    rest.body = Some(v.to_string());
+                }
+            }
+        }
+
+        Ok(rest)
+    }
+}
+
 impl Endpoint {
-    pub fn new(doc: ExecutableDocument) -> Self {
-        let type_map = TypeMap(
-            doc.operations
-                .iter()
-                .flat_map(|(_, op)| {
-                    op.node.variable_definitions.iter().map(|pos| {
+    pub fn try_new(operations: &str) -> anyhow::Result<Vec<Self>> {
+        let doc = async_graphql::parser::parse_query(operations)?;
+        let mut endpoints = Vec::new();
+
+        for (_name, op) in doc.operations.iter() {
+            let type_map = TypeMap(
+                op.node
+                    .variable_definitions
+                    .iter()
+                    .map(|pos| {
                         (
                             pos.node.name.node.to_string(),
                             pos.node.var_type.node.clone(),
                         )
                     })
-                })
-                .collect::<HashMap<_, _>>(),
-        );
+                    .collect::<HashMap<_, _>>(),
+            );
 
-        Self {
-            method: Default::default(),
-            path: Default::default(),
-            query: Default::default(),
-            body: Default::default(),
-            doc,
-            type_map,
+            let rest = op.node.directives.iter().find_map(|d| {
+                if d.node.name.node == Rest::directive_name() {
+                    let rest = Rest::try_from(&d.node);
+                    Some(rest)
+                } else {
+                    None
+                }
+            });
+
+            if let Some(rest) = rest {
+                let rest = rest?;
+                let endpoint = Self {
+                    method: rest.method.unwrap_or_default(),
+                    path: Path::parse(&type_map, &rest.path)?,
+                    query: Query::try_from_map(&type_map, rest.query)?,
+                    body: rest.body,
+                    doc: doc.clone(),
+                    type_map,
+                };
+                endpoints.push(endpoint);
+            }
         }
-    }
 
-    pub fn with_query_params(
-        mut self,
-        query_params: HashMap<String, String>,
-    ) -> anyhow::Result<Self> {
-        self.query = Query::try_from_map(&self.type_map, query_params)?;
-        Ok(self)
-    }
-
-    pub fn with_path_str(mut self, path: &str) -> anyhow::Result<Self> {
-        self.path = Path::parse(&self.type_map, path)?;
-        Ok(self)
+        Ok(endpoints)
     }
 
     pub fn eval(
@@ -271,7 +316,7 @@ impl Endpoint {
         variables = merge_variables(variables, self.path.clone().eval(path)?);
         variables = merge_variables(variables, self.query.eval(query_params)?.clone());
         if let (Some(body), Some(key)) = (body, body_param) {
-            let value = serde_json::from_slice::<Value>(&body)?;
+            let value = serde_json::from_slice::<ConstValue>(&body)?;
             variables.insert(Name::new(key), value);
         }
 
@@ -295,63 +340,70 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use maplit::hashmap;
     use pretty_assertions::assert_eq;
+    use stripmargin::StripMargin;
 
-    fn new_type(name: &str) -> Type {
-        Type { base: BaseType::Named(Name::new(name)), nullable: false }
+    use super::*;
+
+    fn test_query() -> String {
+        r#"
+        |query ($a: Int, $b: String, $c: Boolean, $d: String)
+        |  @rest(method: "post", path: "/foo/$a", query: {b: $b, c: $c}, body: $d) {
+        |    value
+        |  }
+        "#
+        .strip_margin()
+    }
+    fn test_directive() -> Directive {
+        async_graphql::parser::parse_query(test_query())
+            .unwrap()
+            .operations
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .node
+            .directives
+            .first()
+            .unwrap()
+            .node
+            .clone()
     }
 
     #[test]
-    fn test_parse_path() {
-        let inputs = vec![
-            ("/users", vec![Segment::literal("users")]),
-            (
-                "/users/$id",
-                vec![Segment::literal("users"), Segment::int("id")],
-            ),
-            (
-                "/users/$id/posts",
-                vec![
-                    Segment::literal("users"),
-                    Segment::int("id"),
-                    Segment::literal("posts"),
-                ],
-            ),
-        ];
-
-        let t_map = TypeMap::from(vec![("id", new_type("Int")), ("name", new_type("String"))]);
-        for (input, expected) in inputs {
-            let path = Path::parse(&t_map, input).unwrap();
-            assert_eq!(path, Path::new(expected));
-        }
-    }
-
-    #[test]
-    fn test_from_query() {
-        let type_map = TypeMap::from(vec![("id", new_type("Int")), ("name", new_type("String"))]);
-        let inputs = vec![
-            (vec![], Query { params: vec![] }),
-            (
-                vec![("id", "$name")],
-                Query::from(vec![("id", TypedVariable::int("name"))]),
-            ),
-            (
-                vec![("id", "$id")],
-                Query::from(vec![("id", TypedVariable::int("id"))]),
-            ),
-        ];
-
-        for (input, expected) in inputs {
-            let query = Query::try_from_map(
-                &type_map,
-                input
-                    .into_iter()
-                    .map(|(a, b)| (a.to_owned(), b.to_owned()))
-                    .collect(),
+    fn test_rest() {
+        let directive = test_directive();
+        let actual = Rest::try_from(&directive).unwrap();
+        let expected = Rest::default()
+            .path("/foo/$a".to_string())
+            .method(Some(Method::POST))
+            .query(
+                hashmap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string() },
             )
-            .unwrap();
-            assert_eq!(query, expected);
-        }
+            .body(Some("d".to_string()));
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_endpoint() {
+        let endpoint = &Endpoint::try_new(test_query().as_str()).unwrap()[0];
+        assert_eq!(endpoint.method, Method::POST);
+        assert_eq!(
+            endpoint.path,
+            Path::new(vec![
+                Segment::lit("foo"),
+                Segment::param(UrlParamType::Int, "a")
+            ])
+        );
+        assert_eq!(
+            endpoint.query,
+            Query::from(vec![
+                ("b", TypedVariable::string("b")),
+                ("c", TypedVariable::boolean("c")),
+            ])
+        );
+        assert_eq!(endpoint.body, Some("d".to_string()));
     }
 }
