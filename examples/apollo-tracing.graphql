@@ -3,7 +3,7 @@ schema
     port: 8000
     graphiql: true
     hostname: "0.0.0.0"
-    apollo: {api_key: "service:tailcall-demo-3:dSBBMsdjJexBjuhHnHXAWw", graph_ref: "tailcall-demo-3@current"}
+    apollo: {api_key: "<api-key>", graph_ref: "tailcall-demo-3@current"}
   )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
