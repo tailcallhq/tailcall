@@ -14,7 +14,7 @@ schema
 }
 
 type Query {
-    hello: String! @http(path: "/", baseURL: "http://api.com")
+  hello: String! @http(path: "/", baseURL: "http://api.com")
 }
 ```
 
