@@ -1,8 +1,6 @@
 use std::collections::BTreeMap;
 
-use async_graphql::parser::types::{
-    BaseType, Directive, OperationDefinition, Type,
-};
+use async_graphql::parser::types::{BaseType, Directive, OperationDefinition, Type};
 use async_graphql::{Name, Variables};
 use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
@@ -16,8 +14,25 @@ use crate::is_default;
 #[derive(Clone, Debug, PartialEq)]
 pub enum UrlParamType {
     String,
-    Int,
+    Number(N),
     Boolean,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum N {
+    PosInt,
+    NegInt,
+    Float,
+}
+
+impl N {
+    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
+        Ok(match self {
+            Self::PosInt => ConstValue::from(value.parse::<u64>()?),
+            Self::NegInt => ConstValue::from(value.parse::<i64>()?),
+            Self::Float => ConstValue::from(value.parse::<f64>()?),
+        })
+    }
 }
 
 impl UrlParamType {
@@ -26,7 +41,7 @@ impl UrlParamType {
             Self::String => ConstValue::String(value.to_string()),
 
             // FIXME: this should decode to a numeric type instead of a string
-            Self::Int => ConstValue::from(value),
+            Self::Number(n) => n.to_value(value)?,
             Self::Boolean => ConstValue::Boolean(value.parse()?),
         })
     }
@@ -38,7 +53,7 @@ impl TryFrom<&Type> for UrlParamType {
         match &value.base {
             BaseType::Named(name) => match name.as_str() {
                 "String" => Ok(Self::String),
-                "Int" => Ok(Self::Int),
+                "Int" => Ok(Self::Number(N::NegInt)),
                 "Boolean" => Ok(Self::Boolean),
                 _ => Err(anyhow::anyhow!("unsupported type: {}", name)),
             },
@@ -48,7 +63,7 @@ impl TryFrom<&Type> for UrlParamType {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Segment {
+enum Segment {
     Literal(String),
     Param(TypedVariable),
 }
@@ -100,8 +115,7 @@ impl Path {
 
         let mut segments = Vec::new();
         for s in input.split('/').filter(|s| !s.is_empty()) {
-            if s.starts_with('$') {
-                let key = &s[1..];
+            if let Some(key) = s.strip_prefix('$') {
                 let value = variables.get(key).ok_or(anyhow::anyhow!(
                     "undefined param: {} in {}",
                     s,
@@ -165,7 +179,15 @@ impl TypedVariable {
     }
 
     fn int(name: &str) -> Self {
-        Self::new(UrlParamType::Int, name)
+        Self::new(UrlParamType::Number(N::NegInt), name)
+    }
+
+    fn pos_int(name: &str) -> Self {
+        Self::new(UrlParamType::Number(N::PosInt), name)
+    }
+
+    fn float(name: &str) -> Self {
+        Self::new(UrlParamType::Number(N::Float), name)
     }
 
     fn boolean(name: &str) -> Self {
@@ -369,9 +391,13 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
+    use async_graphql_value::ConstValue;
     use maplit::btreemap;
     use pretty_assertions::assert_eq;
     use stripmargin::StripMargin;
+    use url::Url;
 
     use super::*;
 
@@ -423,7 +449,7 @@ mod tests {
             endpoint.path,
             Path::new(vec![
                 Segment::lit("foo"),
-                Segment::param(UrlParamType::Int, "a")
+                Segment::param(UrlParamType::Number(N::NegInt), "a")
             ])
         );
         assert_eq!(
@@ -434,5 +460,21 @@ mod tests {
             ])
         );
         assert_eq!(endpoint.body, Some("d".to_string()));
+    }
+
+    #[test]
+    fn test_eval_vars() {
+        let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
+        let request = reqwest::Request::new(
+            reqwest::Method::POST,
+            Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
+        );
+        let actual = endpoint.eval_vars(&request).unwrap();
+        let expected = &btreemap! {
+            Name::new("a") => ConstValue::from(1),
+            Name::new("b") => ConstValue::from("b"),
+            Name::new("c") => ConstValue::from(true),
+        };
+        assert_eq!(actual.deref(), expected)
     }
 }
