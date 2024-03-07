@@ -37,6 +37,10 @@ fn run_blocking() -> anyhow::Result<()> {
 }
 
 fn main() -> anyhow::Result<()> {
+    // enable tracing subscriber for current thread until this block ends
+    // that will show any logs from cli itself to the user
+    // despite of @telemetry settings that
+    let _guard = tracing::subscriber::set_default(default_tracing());
     let result = run_blocking();
     match result {
         Ok(_) => {}

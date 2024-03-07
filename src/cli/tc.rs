@@ -15,14 +15,12 @@ use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::config::Config;
 use crate::print_schema;
-use crate::tracing::default_tracing;
 use crate::valid::Validator;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub async fn run() -> Result<()> {
-    let tracing_guard = tracing::subscriber::set_default(default_tracing());
     let cli = Cli::parse();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Upstream::default(), None);
@@ -32,7 +30,6 @@ pub async fn run() -> Result<()> {
             let config_module = config_reader.read_all(&file_paths).await?;
             tracing::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
             let server = Server::new(config_module);
-            drop(tracing_guard);
             server.fork_start().await?;
             Ok(())
         }
