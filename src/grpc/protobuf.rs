@@ -290,8 +290,7 @@ mod tests {
                 error.to_string(),
                 "The system cannot find the file specified. (os error 2)".to_string()
             );
-        }
-        else {
+        } else {
             assert_eq!(
                 error.to_string(),
                 "No such file or directory (os error 2)".to_string()

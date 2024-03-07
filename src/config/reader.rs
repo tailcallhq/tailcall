@@ -40,10 +40,7 @@ impl ConfigReader {
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if cfg!(windows) && !url.scheme().starts_with("http") {
                 let content = self.runtime.file.read(&file.to_string()).await?;
-                return Ok(FileRead {
-                    content,
-                    path: file.to_string(),
-                });
+                return Ok(FileRead { content, path: file.to_string() });
             }
             let response = self
                 .runtime
@@ -52,12 +49,12 @@ impl ConfigReader {
                 .await?;
 
             String::from_utf8(response.body.to_vec())?
-            } else {
-                // Is a file path
+        } else {
+            // Is a file path
 
-                self.runtime.file.read(&file.to_string()).await?
-            };
-    
+            self.runtime.file.read(&file.to_string()).await?
+        };
+
         Ok(FileRead { content, path: file.to_string() })
     }
 
@@ -333,7 +330,17 @@ mod test_proto_config {
                 path_to_file_name(path.as_path()).context("It must be able to extract path")?;
             let source = file_rt.read(&path_str).await?;
             let expected = protox_parse::parse(&path_str, &source)?;
-            let actual = helper_map
+            let mut helper_map_clone = helper_map.clone();
+
+            if cfg!(windows) {
+                for item in &mut helper_map_clone {
+                    if let Some(name) = &mut item.name {
+                        *name = name.replace('/', "\\");
+                    }
+                }
+            }
+
+            let actual = helper_map_clone
                 .iter()
                 .find(|v| v.name.eq(&expected.name))
                 .unwrap();
@@ -489,8 +496,7 @@ mod reader_tests {
                 "\\foo\\bar\\my.proto",
                 ConfigReader::resolve_path(file_absolute, Some(path_dir))
             );
-        }
-        else {
+        } else {
             let path_dir = Path::new("abc/xyz");
             let file_relative = "foo/bar/my.proto";
             let file_absolute = "/foo/bar/my.proto";
