@@ -8,6 +8,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
+use super::telemetry::Telemetry;
 use super::JS;
 use crate::config::{
     self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
@@ -44,14 +45,18 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
             .fuse(unions)
             .fuse(schema)
             .fuse(links(sd))
-            .map(|(server, upstream, types, unions, schema, links)| Config {
-                server,
-                upstream,
-                types,
-                unions,
-                schema,
-                links,
-            })
+            .fuse(opentelemetry(sd))
+            .map(
+                |(server, upstream, types, unions, schema, links, opentelemetry)| Config {
+                    server,
+                    upstream,
+                    types,
+                    unions,
+                    schema,
+                    links,
+                    opentelemetry,
+                },
+            )
     })
 }
 
@@ -110,6 +115,13 @@ fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
 
 fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
     process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
+}
+
+fn opentelemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
+    process_schema_directives(
+        schema_definition,
+        config::telemetry::Telemetry::directive_name().as_str(),
+    )
 }
 
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {

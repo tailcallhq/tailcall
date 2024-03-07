@@ -8,8 +8,8 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
 }
 
 type Query {
-  fieldCache: Type @http(path: "/field-cache") @cache(maxAge: 300)
-  fieldCacheList: [Type] @http(path: "/field-cache-list") @cache(maxAge: 300)
+  fieldCache: Type @http(path: "/field-cache") @cache(maxAge: 3000)
+  fieldCacheList: [Type] @http(path: "/field-cache-list") @cache(maxAge: 3000)
   typeCache: TypeCache
 }
 
@@ -17,7 +17,7 @@ type Type {
   id: Int
 }
 
-type TypeCache @cache(maxAge: 100) {
+type TypeCache @cache(maxAge: 1000) {
   a: Type @http(path: "/type-cache-a")
   b: Type @http(path: "/type-cache-b")
   list: [Type] @http(path: "/type-cache-list")
@@ -75,6 +75,17 @@ type TypeCache @cache(maxAge: 100) {
 #### assert:
 
 ```yml
+# the same request to validate caching
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: >
+      query {
+        fieldCache { id }
+      }
+  assert_traces: true
+  assert_metrics: true
+
 - method: POST
   url: http://localhost:8080/graphql
   body:

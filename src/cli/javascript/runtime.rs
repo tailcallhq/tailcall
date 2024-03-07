@@ -36,7 +36,7 @@ impl LocalRuntime {
         });
         let global = js_runtime.execute_script("<anon>", FastString::from_static("globalThis"))?;
         js_runtime.execute_script("<anon>", FastString::from(source))?;
-        log::debug!("JS Runtime created: {:?}", thread::current().name());
+        tracing::debug!("JS Runtime created: {:?}", thread::current().name());
 
         Ok(Self { js_runtime, global })
     }

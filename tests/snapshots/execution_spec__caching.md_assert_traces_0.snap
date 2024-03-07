@@ -1,0 +1,18 @@
+---
+source: tests/execution_spec.rs
+expression: opentelemetry.get_traces().unwrap()
+---
+[
+  {
+    "name": "eval"
+  },
+  {
+    "name": "eval"
+  },
+  {
+    "name": "field::resolver"
+  },
+  {
+    "name": "handle_request"
+  }
+]

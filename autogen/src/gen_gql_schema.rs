@@ -53,6 +53,13 @@ static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "JS",
     "Modify",
+    "Telemetry",
+    "TelemetryInner",
+    "TelemetryExporter",
+    "StdoutExporter",
+    "OtlpExporter",
+    "PrometheusFormat",
+    "PrometheusExporter",
 ];
 
 #[derive(Clone, Copy)]
