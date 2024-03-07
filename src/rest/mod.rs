@@ -1,14 +1,14 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{
-    BaseType, Directive, ExecutableDocument, OperationDefinition, Type,
+    BaseType, Directive, OperationDefinition, Type,
 };
 use async_graphql::{Name, Variables};
 use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
-
 use serde::{Deserialize, Serialize};
 
+use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
@@ -81,7 +81,7 @@ pub struct Path {
 }
 
 #[derive(Debug)]
-struct TypeMap(HashMap<String, Type>);
+struct TypeMap(BTreeMap<String, Type>);
 impl TypeMap {
     fn get(&self, key: &str) -> Option<&Type> {
         self.0.get(key)
@@ -120,18 +120,18 @@ impl Path {
         Self { segments }
     }
 
-    fn eval(&self, path: &str) -> anyhow::Result<Variables> {
+    fn eval_vars(&self, path: &str) -> Option<Variables> {
         let mut variables = Variables::default();
         let mut path_segments = path.split('/').filter(|s| !s.is_empty());
         for segment in &self.segments {
             if let Some(path_segment) = path_segments.next() {
                 if let Segment::Param(t_var) = segment {
-                    let tpe = t_var.to_value(path_segment)?;
+                    let tpe = t_var.to_value(path_segment).ok()?;
                     variables.insert(Name::new(t_var.name.clone()), tpe);
                 }
             }
         }
-        Ok(variables)
+        Some(variables)
     }
 }
 
@@ -178,7 +178,7 @@ impl TypedVariable {
 }
 
 impl Query {
-    fn try_from_map(q: &TypeMap, map: HashMap<String, String>) -> anyhow::Result<Self> {
+    fn try_from_map(q: &TypeMap, map: BTreeMap<String, String>) -> anyhow::Result<Self> {
         let mut params = Vec::new();
         for (k, v) in map {
             let t = UrlParamType::try_from(
@@ -190,15 +190,15 @@ impl Query {
         Ok(Self { params })
     }
 
-    fn eval(&self, query_params: HashMap<String, String>) -> anyhow::Result<Variables> {
+    fn eval_vars(&self, query_params: BTreeMap<String, String>) -> Option<Variables> {
         let mut variables = Variables::default();
         for (key, t_var) in &self.params {
             if let Some(query_param) = query_params.get(key) {
-                let value = t_var.to_value(query_param)?;
+                let value = t_var.to_value(query_param).ok()?;
                 variables.insert(Name::new(t_var.name.clone()), value);
             }
         }
-        Ok(variables)
+        Some(variables)
     }
 }
 
@@ -210,6 +210,7 @@ pub struct Endpoint {
     body: Option<String>,
     operation: OperationDefinition,
     type_map: TypeMap,
+    request: GraphQLRequest,
 }
 
 #[derive(Default, Debug, Deserialize, Serialize, PartialEq, Setters)]
@@ -218,7 +219,7 @@ struct Rest {
     #[serde(default, skip_serializing_if = "is_default")]
     method: Option<Method>,
     #[serde(default, skip_serializing_if = "is_default")]
-    query: HashMap<String, String>,
+    query: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
     body: Option<String>,
 }
@@ -273,7 +274,7 @@ impl Endpoint {
                             pos.node.var_type.node.clone(),
                         )
                     })
-                    .collect::<HashMap<_, _>>(),
+                    .collect::<BTreeMap<_, _>>(),
             );
 
             let rest = op.node.directives.iter().find_map(|d| {
@@ -285,6 +286,8 @@ impl Endpoint {
                 }
             });
 
+            let query = serde_json::to_string(&op.node)?;
+
             if let Some(rest) = rest {
                 let rest = rest?;
                 let endpoint = Self {
@@ -293,6 +296,7 @@ impl Endpoint {
                     query: Query::try_from_map(&type_map, rest.query)?,
                     body: rest.body,
                     operation: op.node.clone(),
+                    request: GraphQLRequest(async_graphql::Request::new(query)),
                     type_map,
                 };
                 endpoints.push(endpoint);
@@ -302,37 +306,50 @@ impl Endpoint {
         Ok(endpoints)
     }
 
-    pub fn eval(&self, request: &reqwest::Request) -> anyhow::Result<Variables> {
+    fn eval_vars(&mut self, request: &reqwest::Request) -> Option<Variables> {
         let query_params = request
             .url()
             .query_pairs()
             .map(|(a, b)| (a.to_string(), b.to_string()))
-            .collect::<HashMap<_, _>>();
-        let body = request
-            .body()
-            .and_then(|b| b.as_bytes())
-            .map(serde_json::from_slice::<ConstValue>);
+            .collect::<BTreeMap<_, _>>();
 
         let mut variables = Variables::default();
 
         // Method
         if self.method.clone().to_hyper() != request.method() {
-            return Ok(variables);
+            return None;
         }
 
         // Path
-        variables = merge_variables(variables, self.path.clone().eval(request.url().path())?);
+        variables = merge_variables(
+            variables,
+            self.path.clone().eval_vars(request.url().path())?,
+        );
 
         // Query
-        variables = merge_variables(variables, self.query.eval(query_params)?.clone());
+        variables = merge_variables(variables, self.query.eval_vars(query_params)?.clone());
 
-        // Body
-        let body_param = self.body.clone();
-        if let (Some(body), Some(key)) = (body, body_param) {
-            variables.insert(Name::new(key), body?);
+        Some(variables)
+    }
+
+    pub fn eval(&mut self, request: &reqwest::Request) -> anyhow::Result<Option<GraphQLRequest>> {
+        match self.eval_vars(request) {
+            None => Ok(None),
+            Some(mut variables) => {
+                let body = request
+                    .body()
+                    .and_then(|b| b.as_bytes())
+                    .map(serde_json::from_slice::<ConstValue>);
+                let body_param = self.body.clone();
+                if let (Some(body), Some(key)) = (body, body_param) {
+                    variables.insert(Name::new(key), body?);
+                }
+
+                Ok(Some(GraphQLRequest(
+                    async_graphql::Request::new(self.request.0.query.clone()).variables(variables),
+                )))
+            }
         }
-
-        Ok(variables)
     }
 }
 
@@ -352,7 +369,7 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 
 #[cfg(test)]
 mod tests {
-    use maplit::hashmap;
+    use maplit::btreemap;
     use pretty_assertions::assert_eq;
     use stripmargin::StripMargin;
 
@@ -391,7 +408,7 @@ mod tests {
             .path("/foo/$a".to_string())
             .method(Some(Method::POST))
             .query(
-                hashmap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string() },
+                btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string() },
             )
             .body(Some("d".to_string()));
 
