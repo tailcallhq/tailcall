@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(apollo: {api_key: "service:tailcall-demo-3:dSBBMsdjJexBjuhHnHXAWw", graph_ref: "tailcall-demo-3@current", user_version: "1.0", platform: "platform", version: "1.0"}, graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream {
+  query: Query
+}
+
+type Query {
+  hello: String! @http(baseURL: "http://api.com", path: "/")
+}
