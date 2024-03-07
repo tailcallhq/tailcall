@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use async_graphql::parser::types::{BaseType, Directive, ExecutableDocument, Type};
+use async_graphql::parser::types::{
+    BaseType, Directive, ExecutableDocument, OperationDefinition, Type,
+};
 use async_graphql::{Name, Variables};
 use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
@@ -206,7 +208,7 @@ pub struct Endpoint {
     path: Path,
     query: Query,
     body: Option<String>,
-    doc: ExecutableDocument,
+    operation: OperationDefinition,
     type_map: TypeMap,
 }
 
@@ -290,7 +292,7 @@ impl Endpoint {
                     path: Path::parse(&type_map, &rest.path)?,
                     query: Query::try_from_map(&type_map, rest.query)?,
                     body: rest.body,
-                    doc: doc.clone(),
+                    operation: op.node.clone(),
                     type_map,
                 };
                 endpoints.push(endpoint);
@@ -301,8 +303,6 @@ impl Endpoint {
     }
 
     pub fn eval(&self, request: &reqwest::Request) -> anyhow::Result<Variables> {
-        let method = request.method();
-        let path = request.url().path();
         let query_params = request
             .url()
             .query_pairs()
@@ -314,13 +314,19 @@ impl Endpoint {
             .map(serde_json::from_slice::<ConstValue>);
 
         let mut variables = Variables::default();
-        if self.method.clone().to_hyper() != method {
+
+        // Method
+        if self.method.clone().to_hyper() != request.method() {
             return Ok(variables);
         }
 
-        variables = merge_variables(variables, self.path.clone().eval(path)?);
+        // Path
+        variables = merge_variables(variables, self.path.clone().eval(request.url().path())?);
+
+        // Query
         variables = merge_variables(variables, self.query.eval(query_params)?.clone());
 
+        // Body
         let body_param = self.body.clone();
         if let (Some(body), Some(key)) = (body, body_param) {
             variables.insert(Name::new(key), body?);
