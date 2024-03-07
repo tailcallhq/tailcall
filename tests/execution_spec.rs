@@ -1,7 +1,8 @@
 extern crate core;
 
+mod telemetry;
+
 use std::collections::{BTreeMap, HashMap};
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -23,6 +24,7 @@ use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
+use tailcall::cli::metrics::init_metrics;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
@@ -30,6 +32,8 @@ use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
+use telemetry::in_memory::InMemoryTelemetry;
+use telemetry::init::init_opentelemetry;
 use url::Url;
 
 #[cfg(test)]
@@ -195,7 +199,6 @@ enum Annotation {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
 struct APIRequest {
     #[serde(default)]
     method: Method,
@@ -204,6 +207,10 @@ struct APIRequest {
     headers: BTreeMap<String, String>,
     #[serde(default)]
     body: serde_json::Value,
+    #[serde(default)]
+    assert_traces: bool,
+    #[serde(default)]
+    assert_metrics: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -352,7 +359,7 @@ impl ExecutionSpec {
         for spec in specs {
             match spec.runner {
                 Some(Annotation::Skip) => {
-                    log::warn!("{} {} ... skipped", spec.name, spec.path.display())
+                    tracing::warn!("{} {} ... skipped", spec.name, spec.path.display())
                 }
                 Some(Annotation::Only) => only_specs.push(spec),
                 None => filtered_specs.push(spec),
@@ -613,6 +620,10 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
         };
+
+        // TODO: move inside tailcall core if possible
+        init_metrics(&runtime).unwrap();
+
         Arc::new(AppContext::new(blueprint, runtime))
     }
 }
@@ -846,7 +857,7 @@ impl FileIO for MockFileSystem {
     }
 }
 
-async fn assert_spec(spec: ExecutionSpec) {
+async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     // Parse and validate all server configs + check for identity
 
     if spec.sdl_error {
@@ -874,7 +885,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         match config {
             Ok(_) => {
-                log::error!("\terror FAIL");
+                tracing::error!("\terror FAIL");
                 panic!(
                     "Spec {} {:?} with \"sdl error\" directive did not have a validation error.",
                     spec.name, spec.path
@@ -992,6 +1003,8 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         // assert: Run assert specs
         for (i, assertion) in assert_spec.iter().enumerate() {
+            opentelemetry.reset();
+
             let response = run_assert(app_ctx.clone(), assertion)
                 .await
                 .context(spec.path.to_str().unwrap().to_string())
@@ -1016,12 +1029,25 @@ async fn assert_spec(spec: ExecutionSpec) {
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
             insta::assert_json_snapshot!(snapshot_name, response);
+
+            if assertion.assert_traces {
+                let snapshot_name = format!("{}_assert_traces_{}", spec.safe_name, i);
+                insta::assert_json_snapshot!(snapshot_name, opentelemetry.get_traces().unwrap());
+            }
+
+            if assertion.assert_metrics {
+                let snapshot_name = format!("{}_assert_metrics_{}", spec.safe_name, i);
+                insta::assert_json_snapshot!(
+                    snapshot_name,
+                    opentelemetry.get_metrics().await.unwrap()
+                );
+            }
         }
 
         mock_http_client.assert_hits();
     }
 
-    log::info!("[{}] {} ... ok", spec.name, spec.path.display());
+    tracing::info!("[{}] {} ... ok", spec.name, spec.path.display());
 }
 
 fn start_mock_server() -> Server {
@@ -1042,21 +1068,8 @@ const REFLECTION_LIST_ALL: &[u8] = &[
 
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
-    env_logger::builder()
-        .format(|buf, record| {
-            let level = record.level();
-            let color_styles = buf.default_level_style(level);
-            writeln!(
-                buf,
-                "{color_styles}[{}]{color_styles:#} {}",
-                record.level(),
-                record.args(),
-            )?;
+    let opentelemetry = init_opentelemetry();
 
-            Ok(())
-        })
-        .filter(Some("execution_spec"), log::LevelFilter::Info)
-        .init();
     let mut server = start_mock_server();
     let http_reflection_file_mock = server
         .mock(
@@ -1122,7 +1135,7 @@ async fn test() -> anyhow::Result<()> {
     };
 
     for spec in spec.into_iter() {
-        assert_spec(spec).await;
+        assert_spec(spec, &opentelemetry).await;
     }
 
     http_reflection_file_mock.assert();

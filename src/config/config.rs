@@ -8,6 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::telemetry::Telemetry;
 use super::{Expr, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
@@ -56,6 +57,9 @@ pub struct Config {
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Enable [opentelemetry](https://opentelemetry.io) support
+    pub opentelemetry: Telemetry,
 }
 impl Config {
     pub fn port(&self) -> u16 {
@@ -169,8 +173,17 @@ impl Config {
         let schema = self.schema.merge_right(other.schema.clone());
         let upstream = self.upstream.merge_right(other.upstream.clone());
         let links = merge_links(self.links, other.links.clone());
+        let opentelemetry = self.opentelemetry.merge_right(other.opentelemetry.clone());
 
-        Self { server, upstream, types, schema, unions, links }
+        Self {
+            server,
+            upstream,
+            types,
+            schema,
+            unions,
+            links,
+            opentelemetry,
+        }
     }
 }
 

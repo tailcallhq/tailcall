@@ -651,17 +651,56 @@ input Modify {
   name: String
   omit: Boolean!
 }
+"""
+Output the opentelemetry data to otlp collector
+"""
+input OtlpExporter {
+  headers: KeyValues
+  url: String!
+}
+"""
+Output the telemetry metrics data to prometheus server
+"""
+input PrometheusExporter {
+  format: PrometheusFormat
+  path: String!
+}
+"""
+Output format for prometheus data
+"""
+enum PrometheusFormat {
+  text
+  protobuf
+}
 input Proxy {
   url: String!
 }
 input ScriptOptions {
   timeout: Int
 }
+"""
+Output the opentelemetry data to the stdout. Mostly used for debug purposes
+"""
+input StdoutExporter {
+  """
+  Output to stdout in pretty human-readable format
+  """
+  pretty: Boolean!
+}
+input Telemetry {
+  export: TelemetryExporter
+}
+input TelemetryExporter {
+  stdout: StdoutExporter
+  otlp: OtlpExporter
+  prometheus: PrometheusExporter
+}
 input Schema {
   Obj: JSON
   Arr: Schema
   Opt: Schema
 }
+scalar Email
 scalar KeyValues
 scalar JSON
 
