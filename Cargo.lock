@@ -292,7 +292,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-extension-apollo-tracing"
 version = "3.2.13"
-source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extension?branch=reqwest-dep-fix#d5df877b6efcaf981f6735d216323351ef8255b5"
+source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extension?branch=reqwest-dep-fix#cb908b765de39b3e17330b8f17198cfdcb6e2ac8"
 dependencies = [
  "anyhow",
  "async-graphql",
@@ -317,7 +317,6 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "uuid",
- "wasm-bindgen",
  "wasm-bindgen-futures",
 ]
 
@@ -4976,8 +4975,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4be2531df63900aeb2bca0daaaddec08491ee64ceecbee5076636a3b026795a8"
 dependencies = [
  "cfg-if",
- "serde",
- "serde_json",
  "wasm-bindgen-macro",
 ]
 
