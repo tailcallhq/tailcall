@@ -4,7 +4,7 @@ use async_graphql::parser::types::{BaseType, Directive, ExecutableDocument, Type
 use async_graphql::{Name, Variables};
 use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
-use hyper::body::Bytes;
+
 use serde::{Deserialize, Serialize};
 
 use crate::directive::DirectiveCodec;
@@ -260,7 +260,7 @@ impl Endpoint {
         let doc = async_graphql::parser::parse_query(operations)?;
         let mut endpoints = Vec::new();
 
-        for (_name, op) in doc.operations.iter() {
+        for (_, op) in doc.operations.iter() {
             let type_map = TypeMap(
                 op.node
                     .variable_definitions
@@ -300,24 +300,30 @@ impl Endpoint {
         Ok(endpoints)
     }
 
-    pub fn eval(
-        &self,
-        method: Method,
-        path: &str,
-        query_params: HashMap<String, String>,
-        body: Option<Bytes>,
-    ) -> anyhow::Result<Variables> {
+    pub fn eval(&self, request: &reqwest::Request) -> anyhow::Result<Variables> {
+        let method = request.method();
+        let path = request.url().path();
+        let query_params = request
+            .url()
+            .query_pairs()
+            .map(|(a, b)| (a.to_string(), b.to_string()))
+            .collect::<HashMap<_, _>>();
+        let body = request
+            .body()
+            .and_then(|b| b.as_bytes())
+            .map(serde_json::from_slice::<ConstValue>);
+
         let mut variables = Variables::default();
-        if self.method != method {
+        if self.method.clone().to_hyper() != method {
             return Ok(variables);
         }
 
-        let body_param = self.body.clone();
         variables = merge_variables(variables, self.path.clone().eval(path)?);
         variables = merge_variables(variables, self.query.eval(query_params)?.clone());
+
+        let body_param = self.body.clone();
         if let (Some(body), Some(key)) = (body, body_param) {
-            let value = serde_json::from_slice::<ConstValue>(&body)?;
-            variables.insert(Name::new(key), value);
+            variables.insert(Name::new(key), body?);
         }
 
         Ok(variables)
