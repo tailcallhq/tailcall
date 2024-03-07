@@ -14,7 +14,7 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
-use crate::config::{Config, Source};
+use crate::config::{Config, ConfigReaderContext, Source};
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
@@ -233,7 +233,9 @@ impl ConfigReader {
         let config_module = ConfigModule::from(config);
 
         // Extend it with the links
-        let config_module = self.ext_links(config_module, parent_dir).await?;
+        let mut config_module = self.ext_links(config_module, parent_dir).await?;
+
+        self.update_opentelemetry(&mut config_module)?;
 
         Ok(config_module)
     }
@@ -286,6 +288,17 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
+    }
+
+    fn update_opentelemetry(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
+        let server = &mut config_module.config.server;
+        let opentelemetry = &mut config_module.config.opentelemetry;
+
+        let reader_ctx = ConfigReaderContext { env: self.runtime.env.clone(), vars: &server.vars };
+
+        opentelemetry.render_mustache(&reader_ctx)?;
+
+        Ok(())
     }
 }
 

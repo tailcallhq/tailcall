@@ -107,7 +107,7 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
     let arguments = field
         .arguments()
         .map_err(|error| {
-            log::warn!("Failed to resolve arguments for field {name}, due to error: {error}");
+            tracing::warn!("Failed to resolve arguments for field {name}, due to error: {error}");
 
             error
         })

@@ -39,7 +39,7 @@ impl HttpIO for CloudflareHttp {
             Response::from_reqwest(response).await
         })
         .await?;
-        log::info!("{} {} {}", method, url, res.status.as_u16());
+        tracing::info!("{} {} {}", method, url, res.status.as_u16());
         Ok(res)
     }
 }

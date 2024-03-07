@@ -70,15 +70,15 @@ impl HttpIO for NativeHttp {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }
-        log::info!(
+        tracing::info!(
             "{} {} {:?}",
             request.method(),
             request.url(),
             request.version()
         );
-        log::debug!("request: {:?}", request);
+        tracing::debug!("request: {:?}", request);
         let response = self.client.execute(request).await;
-        log::debug!("response: {:?}", response);
+        tracing::debug!("response: {:?}", response);
         Ok(Response::from_reqwest(response?.error_for_status()?).await?)
     }
 }
