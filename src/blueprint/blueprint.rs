@@ -222,6 +222,7 @@ impl Blueprint {
         let server = &blueprint.server;
         let mut schema = SchemaBuilder::from(&blueprint);
 
+        #[cfg(all(feature = "apollo-tracing", not(target = "wasm32")))]
         if let Some(ref apollo) = server.apollo {
             let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
             schema = schema.extension(ApolloTracing::new(
