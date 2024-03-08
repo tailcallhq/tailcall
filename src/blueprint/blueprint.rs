@@ -1,9 +1,7 @@
 use std::collections::{BTreeSet, HashMap};
 use std::fmt::Formatter;
-use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
-use async_graphql::extensions::ExtensionFactory;
 use async_graphql::ValidationMode;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
@@ -13,6 +11,7 @@ use super::telemetry::Telemetry;
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
+use crate::schema_extension::SchemaExtension;
 
 /// Blueprint is an intermediary representation that allows us to generate
 /// graphQL APIs. It can only be generated from a valid Config.
@@ -179,7 +178,7 @@ pub struct SchemaModifiers {
     /// If true, the generated schema will not have any resolvers.
     pub no_resolver: bool,
     /// List of extensions to add to the schema.
-    pub extensions: Vec<Arc<dyn ExtensionFactory>>,
+    pub extensions: Vec<SchemaExtension>,
 }
 
 impl std::fmt::Debug for SchemaModifiers {
@@ -196,12 +195,6 @@ impl SchemaModifiers {
     pub fn with_no_resolver(mut self) -> Self {
         self.no_resolver = true;
         self
-    }
-
-    pub fn add_extension(self, extension: impl ExtensionFactory) -> Self {
-        let mut extensions = self.extensions;
-        extensions.push(Arc::new(extension));
-        Self { extensions, ..self }
     }
 }
 
@@ -259,6 +252,10 @@ impl Blueprint {
 
         if !server.get_enable_introspection() || schema_modifiers.no_resolver {
             schema = schema.disable_introspection();
+        }
+
+        for extension in schema_modifiers.extensions {
+            schema = schema.extension(extension);
         }
 
         // We should safely assume the blueprint is correct and,

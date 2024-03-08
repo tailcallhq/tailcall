@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_graphql::extensions::ExtensionFactory;
 use async_graphql_value::ConstValue;
 
+use crate::schema_extension::SchemaExtension;
 use crate::{Cache, EnvIO, FileIO, HttpIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
@@ -10,17 +11,27 @@ use crate::{Cache, EnvIO, FileIO, HttpIO};
 /// over the codebase.
 #[derive(Clone)]
 pub struct TargetRuntime {
+    /// HTTP client for making standard HTTP requests.
     pub http: Arc<dyn HttpIO>,
+    /// HTTP client optimized for HTTP/2 requests.
     pub http2_only: Arc<dyn HttpIO>,
+    /// Interface for accessing environment variables specific to the target
+    /// environment.
     pub env: Arc<dyn EnvIO>,
+    /// Interface for file operations, tailored to the target environment's
+    /// capabilities.
     pub file: Arc<dyn FileIO>,
+    /// Cache for storing and retrieving entity data, improving performance and
+    /// reducing external calls.
     pub cache: Arc<dyn Cache<Key = u64, Value = ConstValue>>,
-    pub extensions: Vec<Arc<dyn ExtensionFactory>>,
+    /// A list of extensions that can be used to extend the runtime's
+    /// functionality or integrate additional features.
+    pub extensions: Vec<SchemaExtension>,
 }
 
 impl TargetRuntime {
     pub fn add_extension(&mut self, extension: impl ExtensionFactory) {
-        self.extensions.push(Arc::new(extension));
+        self.extensions.push(SchemaExtension::new(extension));
     }
 }
 
