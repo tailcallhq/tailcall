@@ -121,7 +121,7 @@ opentelemetry-prometheus = "0.15.0"
 phonenumber = "0.3.3"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-async-graphql-extension-apollo-tracing = { version = "3.2.14", optional = true }
+async-graphql-extension-apollo-tracing = { version = "3.2.14" }
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -159,13 +159,10 @@ cli = [
     "dep:opentelemetry-system-metrics"
 ]
 
-# Feature Flag to enable Apollo Tracing.
-apollo-tracing = ["dep:async-graphql-extension-apollo-tracing"]
-
 # Feature flag to enable all default features.
 # This is used by default locally while developing and on CI.
 # We generally want to interface via CLI and have V8 enabled, while running tests.
-default = ["cli", "js", "apollo-tracing"]
+default = ["cli", "js"]
 
 
 [workspace]
