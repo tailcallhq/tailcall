@@ -21,7 +21,7 @@ pub async fn fetch(
     env: worker::Env,
     _: worker::Context,
 ) -> anyhow::Result<worker::Response> {
-    log::info!(
+    tracing::info!(
         "{} {:?}",
         req.method().to_string(),
         req.url().map(|u| u.to_string())
@@ -62,7 +62,7 @@ async fn get_app_ctx(
     if let Some(file_path) = &file_path {
         if let Some(app_ctx) = read_app_ctx() {
             if app_ctx.0 == file_path.borrow() {
-                log::info!("Using cached application context");
+                tracing::info!("Using cached application context");
                 return Ok(Ok(app_ctx.clone().1));
             }
         }
@@ -75,7 +75,7 @@ async fn get_app_ctx(
             if let Some(file_path) = file_path {
                 *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
             }
-            log::info!("Initialized new application context");
+            tracing::info!("Initialized new application context");
             Ok(Ok(app_ctx))
         }
         Err(e) => Ok(Err(e)),
