@@ -720,8 +720,8 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-scalar PhoneNumber
 scalar KeyValues
 scalar Email
+scalar PhoneNumber
 scalar JSON
 
