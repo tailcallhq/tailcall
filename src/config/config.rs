@@ -15,9 +15,9 @@ use crate::config::source::Source;
 use crate::config::KeyValues;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
-use crate::is_default;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, Validator};
+use crate::{is_default, scalars};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -108,7 +108,7 @@ impl Config {
                     for (_, arg) in field
                         .args
                         .iter()
-                        .filter(|(_, arg)| !crate::is_scalar(&arg.type_of))
+                        .filter(|(_, arg)| !scalars::SCALAR_TYPES.contains(arg.type_of.as_str()))
                     {
                         if let Some(t) = self.find_type(&arg.type_of) {
                             t.fields.iter().for_each(|(_, f)| {
