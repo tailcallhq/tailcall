@@ -19,7 +19,7 @@ expression: response
           }
         ],
         "path": [
-          "value_phone"
+          "phone"
         ]
       }
     ]

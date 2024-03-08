@@ -11,8 +11,8 @@ schema @server(port: 8000, graphiql: true, hostname: "localhost") {
 }
 
 type Query {
-  value(email: Email!): Email! @const(data: "{{args.email}}")
-  value_phone(phone: PhoneNumber!): PhoneNumber! @const(data: "{{args.phone}}")
+  email(value: Email!): Email! @const(data: "{{args.value}}")
+  phone(value: PhoneNumber!): PhoneNumber! @const(data: "{{args.value}}")
 }
 ```
 
@@ -22,9 +22,9 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ value(email: "alo@valid.com") }'
+    query: '{ email(value: "alo@valid.com") }'
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ value_phone(phone: "+1 (614) 1234567") }'
+    query: '{ phone(value: "+1 (614) 1234567") }'
 ```

@@ -9,7 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "value_phone": "+1 (614) 1234567"
+      "phone": "+1 (614) 1234567"
     }
   }
 }

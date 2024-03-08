@@ -11,6 +11,6 @@ scalar Email
 scalar PhoneNumber
 
 type Query {
-  value(email: Email!): Email! @const(data: "{{args.email}}")
-  value_phone(phone: PhoneNumber!): PhoneNumber! @const(data: "{{args.phone}}")
+  email(value: Email!): Email! @const(data: "{{args.value}}")
+  phone(value: PhoneNumber!): PhoneNumber! @const(data: "{{args.value}}")
 }

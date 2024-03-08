@@ -7,8 +7,8 @@ scalar Email
 scalar PhoneNumber
 
 type Query {
-  value(email: Email!): Email!
-  value_phone(phone: PhoneNumber!): PhoneNumber!
+  email(value: Email!): Email!
+  phone(value: PhoneNumber!): PhoneNumber!
 }
 
 schema {
