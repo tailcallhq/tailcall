@@ -195,6 +195,7 @@
       }
     },
     "Date": {
+      "title": "Date",
       "type": "object",
       "required": [
         "Date"
@@ -207,6 +208,7 @@
       }
     },
     "Email": {
+      "title": "Email",
       "type": "object",
       "required": [
         "Email"
@@ -1401,6 +1403,7 @@
       }
     },
     "PhoneNumber": {
+      "title": "PhoneNumber",
       "type": "object",
       "required": [
         "PhoneNumber"
@@ -1913,6 +1916,7 @@
       }
     },
     "Url": {
+      "title": "Url",
       "type": "object",
       "required": [
         "Url"
