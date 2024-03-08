@@ -623,7 +623,11 @@ impl ExecutionSpec {
         // TODO: move inside tailcall core if possible
         init_metrics(&runtime).unwrap();
 
-        Arc::new(AppContext::new(blueprint, runtime))
+        Arc::new(AppContext::new(
+            blueprint,
+            runtime,
+            Some(config.extensions.rest_endpoints.clone()),
+        ))
     }
 }
 

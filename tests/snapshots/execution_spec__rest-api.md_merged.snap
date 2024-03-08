@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(src: "operation-user.graphql", type: RestOperation) {
+  query: Query
+}
+
+type Query {
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type User {
+  id: Int!
+  name: String!
+}
