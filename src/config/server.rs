@@ -170,6 +170,7 @@ impl Server {
     }
 
     pub fn merge_right(mut self, other: Self) -> Self {
+        self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
         self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
         self.graphiql = other.graphiql.or(self.graphiql);
         self.introspection = other.introspection.or(self.introspection);
