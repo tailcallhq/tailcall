@@ -25,7 +25,7 @@ use tracing_subscriber::{Layer, Registry};
 use super::metrics::init_metrics;
 use crate::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::runtime::TargetRuntime;
-use crate::tracing::{default_filter_target, default_tracing};
+use crate::tracing::{default_tailcall_tracing, tailcall_filter_target};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
@@ -213,13 +213,13 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     context.lookup_current().is_none()
                 })),
             )
-            .with(default_filter_target());
+            .with(tailcall_filter_target());
 
         init_metrics(runtime)?;
 
         set_tracing_subscriber(subscriber);
     } else {
-        set_tracing_subscriber(default_tracing());
+        set_tracing_subscriber(default_tailcall_tracing());
     }
 
     Ok(())
