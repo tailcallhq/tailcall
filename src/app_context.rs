@@ -4,7 +4,7 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition};
+use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
@@ -102,7 +102,8 @@ impl AppContext {
             }
         }
 
-        let schema = blueprint.to_schema();
+        let schema = blueprint
+            .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
 
         AppContext {
             schema,

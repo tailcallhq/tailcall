@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use async_graphql::extensions::ExtensionFactory;
 use async_graphql_value::ConstValue;
 
 use crate::{Cache, EnvIO, FileIO, HttpIO};
@@ -14,6 +15,13 @@ pub struct TargetRuntime {
     pub env: Arc<dyn EnvIO>,
     pub file: Arc<dyn FileIO>,
     pub cache: Arc<dyn Cache<Key = u64, Value = ConstValue>>,
+    pub extensions: Vec<Arc<dyn ExtensionFactory>>,
+}
+
+impl TargetRuntime {
+    pub fn add_extension(&mut self, extension: impl ExtensionFactory) {
+        self.extensions.push(Arc::new(extension));
+    }
 }
 
 #[cfg(test)]
@@ -165,6 +173,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: vec![],
         }
     }
 }

@@ -1,6 +1,9 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
+use async_graphql_extension_apollo_tracing::ApolloTracing;
+
+use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::runtime::init;
 use crate::http::AppContext;
@@ -12,10 +15,20 @@ pub struct ServerConfig {
 
 impl ServerConfig {
     pub fn new(blueprint: Blueprint) -> Self {
-        let server_context = Arc::new(AppContext::new(
-            blueprint.clone(),
-            init(&blueprint.upstream, blueprint.server.script.clone()),
-        ));
+        let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
+
+        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.opentelemetry.export.as_ref() {
+            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
+            rt.add_extension(ApolloTracing::new(
+                apollo.api_key.clone(),
+                apollo.platform.clone(),
+                graph_id.to_string(),
+                variant.to_string(),
+                apollo.version.clone(),
+            ));
+        }
+
+        let server_context = Arc::new(AppContext::new(blueprint.clone(), rt));
         Self { app_ctx: server_context, blueprint }
     }
 

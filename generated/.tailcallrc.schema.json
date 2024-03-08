@@ -1492,6 +1492,13 @@
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
       "type": "object",
       "properties": {
+        "apolloTracing": {
+          "description": "`apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "batchRequests": {
           "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.",
           "type": [

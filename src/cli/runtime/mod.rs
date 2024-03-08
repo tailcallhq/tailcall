@@ -56,5 +56,6 @@ pub fn init(upstream: &Upstream, script: Option<blueprint::Script>) -> TargetRun
         env: init_env(),
         file: init_file(),
         cache: Arc::new(init_in_memory_cache()),
+        extensions: vec![],
     }
 }

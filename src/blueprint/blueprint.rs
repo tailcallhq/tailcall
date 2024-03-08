@@ -1,14 +1,15 @@
 use std::collections::{BTreeSet, HashMap};
+use std::fmt::Formatter;
+use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
+use async_graphql::extensions::ExtensionFactory;
 use async_graphql::ValidationMode;
-#[cfg(all(feature = "apollo-tracing", not(target = "wasm32")))]
-use async_graphql_extension_apollo_tracing::ApolloTracing;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::telemetry::{Telemetry, TelemetryExporter};
+use super::telemetry::Telemetry;
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
@@ -173,23 +174,34 @@ pub struct UnionTypeDefinition {
 
 ///
 /// Controls the kind of blueprint that is generated.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Default, Setters)]
 pub struct SchemaModifiers {
     /// If true, the generated schema will not have any resolvers.
     pub no_resolver: bool,
-    /// If true, the generated schema will have Apollo Tracing enabled.
-    pub enable_apollo_tracing: bool,
+    /// List of extensions to add to the schema.
+    pub extensions: Vec<Arc<dyn ExtensionFactory>>,
+}
+
+impl std::fmt::Debug for SchemaModifiers {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "SchemaModifiers {{ no_resolver: {:?} }}",
+            self.no_resolver
+        )
+    }
 }
 
 impl SchemaModifiers {
-    pub fn no_resolver(mut self) -> Self {
+    pub fn with_no_resolver(mut self) -> Self {
         self.no_resolver = true;
         self
     }
 
-    pub fn enable_apollo_tracing(mut self) -> Self {
-        self.enable_apollo_tracing = true;
-        self
+    pub fn add_extension(self, extension: impl ExtensionFactory) -> Self {
+        let mut extensions = self.extensions;
+        extensions.push(Arc::new(extension));
+        Self { extensions, ..self }
     }
 }
 
@@ -217,7 +229,7 @@ impl Blueprint {
     ///
     /// This function is used to generate a schema from a blueprint.
     pub fn to_schema(&self) -> Schema {
-        self.to_schema_with(SchemaModifiers::default().enable_apollo_tracing())
+        self.to_schema_with(SchemaModifiers::default())
     }
 
     ///
@@ -232,21 +244,6 @@ impl Blueprint {
 
         let server = &blueprint.server;
         let mut schema = SchemaBuilder::from(&blueprint);
-
-        if schema_modifiers.enable_apollo_tracing {
-            #[cfg(all(feature = "apollo-tracing", not(target = "wasm32")))]
-            if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.opentelemetry.export.as_ref()
-            {
-                let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
-                schema = schema.extension(ApolloTracing::new(
-                    apollo.api_key.clone(),
-                    apollo.platform.clone(),
-                    graph_id.to_string(),
-                    variant.to_string(),
-                    apollo.version.clone(),
-                ));
-            }
-        }
 
         if server.global_response_timeout > 0 {
             schema = schema

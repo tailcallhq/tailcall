@@ -12,6 +12,11 @@ use crate::is_default;
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
+    /// `apolloTracing` exposes GraphQL query performance data, including
+    /// execution time of queries and individual resolvers.
+    pub apollo_tracing: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
     /// `batchRequests` combines multiple requests into one, improving
     /// performance but potentially introducing latency and complicating
     /// debugging. Use judiciously. @default `false`.
@@ -108,6 +113,9 @@ pub enum HttpVersion {
 }
 
 impl Server {
+    pub fn enable_apollo_tracing(&self) -> bool {
+        self.apollo_tracing.unwrap_or(false)
+    }
     pub fn enable_graphiql(&self) -> bool {
         self.graphiql.unwrap_or(false)
     }

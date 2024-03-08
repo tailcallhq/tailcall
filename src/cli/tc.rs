@@ -28,6 +28,7 @@ pub async fn run() -> Result<()> {
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
+
             tracing::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
             let server = Server::new(config_module);
             server.fork_start().await?;

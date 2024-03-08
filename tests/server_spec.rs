@@ -149,6 +149,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: vec![],
         }
     }
 }

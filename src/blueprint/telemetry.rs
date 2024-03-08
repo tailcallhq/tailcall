@@ -72,7 +72,9 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
 }
 
 fn validate_apollo(apollo: Apollo) -> Valid<Apollo, String> {
-    validate_graph_ref(&apollo.graph_ref).map(|_| apollo)
+    validate_graph_ref(&apollo.graph_ref)
+        .map(|_| apollo)
+        .trace("apollo.graph_ref")
 }
 
 fn validate_graph_ref(graph_ref: &str) -> Valid<(), String> {
