@@ -1,9 +1,9 @@
-use async_graphql::Variables;
-use reqwest::Request;
 
-use super::endpoint::{self, Endpoint};
-use crate::async_graphql_hyper::GraphQLRequest;
 
+use super::endpoint::{self, Endpoint, PartialRequest};
+
+
+type Request = hyper::Request<hyper::Body>;
 #[derive(Default, Clone, Debug)]
 pub struct EndpointSet {
     endpoints: Vec<super::endpoint::Endpoint>,
@@ -37,17 +37,7 @@ impl EndpointSet {
         self
     }
 
-    pub fn matches(&self, request: &Request) -> Option<Variables> {
+    pub fn matches(&self, request: &Request) -> Option<PartialRequest> {
         self.endpoints.iter().find_map(|e| e.matches(request))
-    }
-
-    pub fn eval(&self, request: &Request) -> anyhow::Result<Option<GraphQLRequest>> {
-        for endpoint in &self.endpoints {
-            if let Some(request) = endpoint.eval(request)? {
-                return Ok(Some(request));
-            }
-        }
-
-        Ok(None)
     }
 }

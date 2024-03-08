@@ -697,7 +697,7 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-scalar Email
 scalar KeyValues
+scalar Email
 scalar JSON
 

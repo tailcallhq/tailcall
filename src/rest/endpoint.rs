@@ -11,6 +11,8 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 
+type Request = hyper::Request<hyper::Body>;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum UrlParamType {
     String,
@@ -332,12 +334,12 @@ impl Endpoint {
         Ok(endpoints)
     }
 
-    pub fn matches(&self, request: &reqwest::Request) -> Option<Variables> {
+    pub fn matches<'a>(&'a self, request: &Request) -> Option<PartialRequest<'a>> {
         let query_params = request
-            .url()
-            .query_pairs()
-            .map(|(a, b)| (a.to_string(), b.to_string()))
-            .collect::<BTreeMap<_, _>>();
+            .uri()
+            .query()
+            .map(|query| serde_urlencoded::from_str(query).unwrap_or_else(|_| BTreeMap::new()))
+            .unwrap_or_default();
 
         let mut variables = Variables::default();
 
@@ -347,35 +349,43 @@ impl Endpoint {
         }
 
         // Path
-        let path = self.path.matches(request.url().path())?;
+        let path = self.path.matches(request.uri().path())?;
 
         // Query
         let query = self.query_params.matches(query_params)?;
 
+        // FIXME: Too much cloning is happening via merge_variables
         variables = merge_variables(variables, path);
         variables = merge_variables(variables, query);
 
-        Some(variables)
+        Some(PartialRequest {
+            body: self.body.as_ref(),
+            graphql_query: &self.graphql_query,
+            variables,
+        })
     }
+}
 
-    pub fn eval(&self, request: &reqwest::Request) -> anyhow::Result<Option<GraphQLRequest>> {
-        match self.matches(request) {
-            None => Ok(None),
-            Some(mut variables) => {
-                let body = request
-                    .body()
-                    .and_then(|b| b.as_bytes())
-                    .map(serde_json::from_slice::<ConstValue>);
-                let body_param = self.body.clone();
-                if let (Some(body), Some(key)) = (body, body_param) {
-                    variables.insert(Name::new(key), body?);
-                }
+#[derive(Debug, PartialEq)]
+pub struct PartialRequest<'a> {
+    body: Option<&'a String>,
+    graphql_query: &'a String,
+    variables: Variables,
+}
 
-                Ok(Some(GraphQLRequest(
-                    async_graphql::Request::new(self.graphql_query.clone()).variables(variables),
-                )))
-            }
+impl<'a> PartialRequest<'a> {
+    pub async fn to_request(self, request: Request) -> anyhow::Result<GraphQLRequest> {
+        let mut variables = self.variables;
+        let bytes = hyper::body::to_bytes(request.into_body()).await?;
+        let body: ConstValue = serde_json::from_slice(&bytes)?;
+        let body_param = self.body.clone();
+        if let Some(key) = body_param {
+            variables.insert(Name::new(key), body);
         }
+
+        Ok(GraphQLRequest(
+            async_graphql::Request::new(self.graphql_query.clone()).variables(variables),
+        ))
     }
 }
 
@@ -464,62 +474,63 @@ mod tests {
     }
 
     mod matches {
-        use std::ops::Deref;
-
         use async_graphql_value::{ConstValue, Name};
+        use hyper::{Body, Method, Request, Uri, Version};
         use maplit::btreemap;
-        use url::Url;
+        use pretty_assertions::assert_eq;
+        use std::ops::Deref;
+        use std::str::FromStr;
 
         use super::test_query;
         use crate::rest::endpoint::Endpoint;
 
+        fn test_request(method: Method, uri: &str) -> anyhow::Result<hyper::Request<Body>> {
+            Ok(Request::builder()
+                .method(method)
+                .uri(Uri::from_str(uri)?)
+                .version(Version::HTTP_11)
+                .body(Body::empty())?)
+        }
+
         #[test]
         fn test_valid() {
             let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request = reqwest::Request::new(
-                reqwest::Method::POST,
-                Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
-            );
-            let actual = endpoint.matches(&request).unwrap();
+            let mut request =
+                test_request(Method::POST, "http://localhost:8080/foo/1?b=b&c=true").unwrap();
+            let actual = endpoint.matches(&request).unwrap().variables;
             let expected = &btreemap! {
                 Name::new("a") => ConstValue::from(1),
                 Name::new("b") => ConstValue::from("b"),
                 Name::new("c") => ConstValue::from(true),
             };
-            pretty_assertions::assert_eq!(actual.deref(), expected)
+            assert_eq!(actual.deref(), expected)
         }
 
         #[test]
         fn test_invalid_url_param() {
             let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request = reqwest::Request::new(
-                reqwest::Method::POST,
-                Url::parse("http://localhost:8080/foo/a?b=b&c=true").unwrap(),
-            );
+            let request =
+                test_request(Method::POST, "http://localhost:8080/foo/a?b=b&c=true").unwrap();
             let actual = endpoint.matches(&request);
-            pretty_assertions::assert_eq!(actual, None)
+            assert_eq!(actual, None)
         }
 
         #[test]
         fn test_invalid_query_param() {
             let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request = reqwest::Request::new(
-                reqwest::Method::POST,
-                Url::parse("http://localhost:8080/foo/1?b=b&c=c").unwrap(),
-            );
+            let request =
+                test_request(Method::POST, "http://localhost:8080/foo/1?b=b&c=c").unwrap();
             let actual = endpoint.matches(&request);
-            pretty_assertions::assert_eq!(actual, None)
+            assert_eq!(actual, None)
         }
 
         #[test]
         fn test_method_not_match() {
             let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request = reqwest::Request::new(
-                reqwest::Method::GET,
-                Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
-            );
+            let request =
+                test_request(Method::GET, "http://localhost:8080/foo/1?b=b&c=true").unwrap();
             let actual = endpoint.matches(&request);
-            pretty_assertions::assert_eq!(actual, None)
+            assert_eq!(actual, None)
         }
     }
 }

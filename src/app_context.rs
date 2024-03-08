@@ -11,6 +11,7 @@ use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
+use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 
 pub struct AppContext {
@@ -20,6 +21,7 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub endpoints: EndpointSet,
 }
 
 impl AppContext {
@@ -111,6 +113,9 @@ impl AppContext {
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
+
+            // FIXME: Insert actual endpoint-set
+            endpoints: EndpointSet::default(),
         }
     }
 
