@@ -23,7 +23,7 @@ pub mod mustache;
 pub mod path;
 pub mod print_schema;
 pub mod runtime;
-pub mod scalars;
+pub mod scalar;
 mod serde_value_ext;
 pub mod tracing;
 pub mod try_fold;

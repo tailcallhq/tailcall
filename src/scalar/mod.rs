@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql_value::ConstValue;
 use lazy_static::lazy_static;
 
-pub use crate::scalars::email::Email;
+pub use crate::scalar::email::Email;
 
 mod email;
 
