@@ -135,18 +135,18 @@ impl Path {
         Self { segments }
     }
 
-    fn eval_vars(&self, path: &str) -> anyhow::Result<Option<Variables>> {
+    fn matches(&self, path: &str) -> Option<Variables> {
         let mut variables = Variables::default();
         let mut path_segments = path.split('/').filter(|s| !s.is_empty());
         for segment in &self.segments {
             if let Some(path_segment) = path_segments.next() {
                 if let Segment::Param(t_var) = segment {
-                    let tpe = t_var.to_value(path_segment)?;
+                    let tpe = t_var.to_value(path_segment).ok()?;
                     variables.insert(Name::new(t_var.name.clone()), tpe);
                 }
             }
         }
-        Ok(Some(variables))
+        Some(variables)
     }
 }
 
@@ -213,15 +213,15 @@ impl Query {
         Ok(Self { params })
     }
 
-    fn eval_vars(&self, query_params: BTreeMap<String, String>) -> anyhow::Result<Option<Variables>> {
+    fn matches(&self, query_params: BTreeMap<String, String>) -> Option<Variables> {
         let mut variables = Variables::default();
         for (key, t_var) in &self.params {
             if let Some(query_param) = query_params.get(key) {
-                let value = t_var.to_value(query_param)?;
+                let value = t_var.to_value(query_param).ok()?;
                 variables.insert(Name::new(t_var.name.clone()), value);
             }
         }
-        Ok(Some(variables))
+        Some(variables)
     }
 }
 
@@ -229,6 +229,8 @@ impl Query {
 pub struct Endpoint {
     method: Method,
     path: Path,
+
+    // Can use persisted queries for better performance
     query: Query,
     body: Option<String>,
     operation: OperationDefinition,
@@ -247,6 +249,7 @@ struct Rest {
     body: Option<String>,
 }
 
+/// Creates a Rest instance from @rest directive
 impl TryFrom<&Directive> for Rest {
     type Error = anyhow::Error;
 
@@ -329,7 +332,7 @@ impl Endpoint {
         Ok(endpoints)
     }
 
-    fn eval_vars(&mut self, request: &reqwest::Request) -> anyhow::Result<Option<Variables>> {
+    fn matches(&mut self, request: &reqwest::Request) -> Option<Variables> {
         let query_params = request
             .url()
             .query_pairs()
@@ -340,28 +343,23 @@ impl Endpoint {
 
         // Method
         if self.method.clone().to_hyper() != request.method() {
-            return Ok(None);
+            return None;
         }
 
         // Path
-        if let Some(path) = self.path.eval_vars(request.url().path())? {
-            variables = merge_variables(variables, path);
-        } else {
-            return Ok(None);
-        }
+        let path = self.path.matches(request.url().path())?;
 
         // Query
-        if let Some(query) = self.query.eval_vars(query_params)? {
-            variables = merge_variables(variables, query);
-        } else {
-            return Ok(None);
-        }
+        let query = self.query.matches(query_params)?;
 
-        Ok(Some(variables))
+        variables = merge_variables(variables, path);
+        variables = merge_variables(variables, query);
+
+        Some(variables)
     }
 
     pub fn eval(&mut self, request: &reqwest::Request) -> anyhow::Result<Option<GraphQLRequest>> {
-        match self.eval_vars(request)? {
+        match self.matches(request) {
             None => Ok(None),
             Some(mut variables) => {
                 let body = request
@@ -397,14 +395,9 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-    use anyhow::anyhow;
-
-    use async_graphql_value::ConstValue;
     use maplit::btreemap;
     use pretty_assertions::assert_eq;
     use stripmargin::StripMargin;
-    use url::Url;
 
     use super::*;
 
@@ -415,7 +408,7 @@ mod tests {
         |    value
         |  }
         "#
-            .strip_margin()
+        .strip_margin()
     }
 
     fn test_directive() -> Directive {
@@ -470,13 +463,13 @@ mod tests {
         assert_eq!(endpoint.body, Some("d".to_string()));
     }
 
-    mod eval_vars {
-        use std::ops::Deref;
+    mod matches {
+        use crate::rest::tests::test_query;
+        use crate::rest::Endpoint;
         use async_graphql_value::{ConstValue, Name};
         use maplit::btreemap;
+        use std::ops::Deref;
         use url::Url;
-        use crate::rest::Endpoint;
-        use crate::rest::tests::test_query;
 
         #[test]
         fn test_valid() {
@@ -485,12 +478,12 @@ mod tests {
                 reqwest::Method::POST,
                 Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
             );
-            let actual = endpoint.eval_vars(&request).unwrap().unwrap();
+            let actual = endpoint.matches(&request).unwrap();
             let expected = &btreemap! {
-            Name::new("a") => ConstValue::from(1),
-            Name::new("b") => ConstValue::from("b"),
-            Name::new("c") => ConstValue::from(true),
-        };
+                Name::new("a") => ConstValue::from(1),
+                Name::new("b") => ConstValue::from("b"),
+                Name::new("c") => ConstValue::from(true),
+            };
             pretty_assertions::assert_eq!(actual.deref(), expected)
         }
 
@@ -501,8 +494,7 @@ mod tests {
                 reqwest::Method::POST,
                 Url::parse("http://localhost:8080/foo/a?b=b&c=true").unwrap(),
             );
-            let actual = endpoint.eval_vars(&request).unwrap_err().to_string();
-            ;
+            let actual = endpoint.matches(&request).unwrap().to_string();
             pretty_assertions::assert_eq!(actual, "invalid digit found in string")
         }
 
@@ -513,7 +505,7 @@ mod tests {
                 reqwest::Method::POST,
                 Url::parse("http://localhost:8080/foo/1?b=b&c=c").unwrap(),
             );
-            let actual = endpoint.eval_vars(&request).unwrap_err().to_string();
+            let actual = endpoint.matches(&request).unwrap().to_string();
             pretty_assertions::assert_eq!(actual, "provided string was not `true` or `false`")
         }
 
@@ -524,7 +516,7 @@ mod tests {
                 reqwest::Method::GET,
                 Url::parse("http://localhost:8080/foo/1?b=b&c=true").unwrap(),
             );
-            let actual = endpoint.eval_vars(&request).unwrap();
+            let actual = endpoint.matches(&request);
             pretty_assertions::assert_eq!(actual, None)
         }
     }
