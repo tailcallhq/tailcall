@@ -99,7 +99,7 @@ strum_macros = "0.26.1"
 # TODO: disable some levels with features?
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
-tracing-opentelemetry = "0.22.0"
+tracing-opentelemetry = "0.23.0"
 getrandom = { version = "0.2.11", features = ["js"] }
 prometheus = "0.13.3"
 tonic = { version = "0.9.2", default-features = false }
