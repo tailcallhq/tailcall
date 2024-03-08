@@ -33,7 +33,10 @@ impl Server {
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
-        let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
+        let server_config = Arc::new(ServerConfig::new(
+            blueprint.clone(),
+            Some(self.config_module.extensions.rest_endpoints),
+        ));
 
         init_opentelemetry(
             blueprint.opentelemetry.clone(),

@@ -320,7 +320,8 @@ impl Endpoint {
                 }
             });
 
-            let graphql_query = serde_json::to_string(&op.node)?;
+            // TODO: convert single operation instead of using the whole operations content
+            let graphql_query = operations.to_owned();
 
             if let Some(rest) = rest {
                 let rest = rest?;
@@ -382,15 +383,14 @@ pub struct PartialRequest<'a> {
 impl<'a> PartialRequest<'a> {
     pub async fn to_request(self, request: Request) -> anyhow::Result<GraphQLRequest> {
         let mut variables = self.variables;
-        let bytes = hyper::body::to_bytes(request.into_body()).await?;
-        let body: ConstValue = serde_json::from_slice(&bytes)?;
-        let body_param = self.body;
-        if let Some(key) = body_param {
+        if let Some(key) = self.body {
+            let bytes = hyper::body::to_bytes(request.into_body()).await?;
+            let body: ConstValue = serde_json::from_slice(&bytes)?;
             variables.insert(Name::new(key), body);
         }
 
         Ok(GraphQLRequest(
-            async_graphql::Request::new(self.graphql_query.clone()).variables(variables),
+            async_graphql::Request::new(self.graphql_query).variables(variables),
         ))
     }
 }
@@ -413,7 +413,6 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 mod tests {
     use maplit::btreemap;
     use pretty_assertions::assert_eq;
-
 
     use super::*;
 

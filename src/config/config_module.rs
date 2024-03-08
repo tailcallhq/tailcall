@@ -47,7 +47,7 @@ pub struct Extensions {
     pub keys: Arc<Vec<PrivateKeyDer<'static>>>,
 
     /// Contains the endpoints
-    pub endpoints: EndpointSet,
+    pub rest_endpoints: EndpointSet,
 }
 
 impl Extensions {
@@ -59,6 +59,7 @@ impl Extensions {
         if !other.keys.is_empty() {
             self.keys = other.keys.clone();
         }
+        self.rest_endpoints.extend(other.rest_endpoints.clone());
         self
     }
 

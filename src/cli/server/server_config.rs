@@ -4,6 +4,7 @@ use std::sync::Arc;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::runtime::init;
 use crate::http::AppContext;
+use crate::rest::EndpointSet;
 
 pub struct ServerConfig {
     pub blueprint: Blueprint,
@@ -11,10 +12,11 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn new(blueprint: Blueprint) -> Self {
+    pub fn new(blueprint: Blueprint, rest_endpoints: Option<EndpointSet>) -> Self {
         let server_context = Arc::new(AppContext::new(
             blueprint.clone(),
             init(&blueprint.upstream, blueprint.server.script.clone()),
+            rest_endpoints,
         ));
         Self { app_ctx: server_context, blueprint }
     }

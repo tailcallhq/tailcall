@@ -138,26 +138,21 @@ async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    if request.uri().path().starts_with(API_URL_PREFIX) {
-        *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
-        let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
-        match app_ctx.endpoints.matches(&request) {
-            Some(p_request) => {
-                let graphql_request = p_request.to_request(request).await?;
-                let mut response = graphql_request
-                    .data(req_ctx.clone())
-                    .execute(&app_ctx.schema)
-                    .await;
-                response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
-                let mut resp = response.to_response()?;
-                update_response_headers(&mut resp, app_ctx.as_ref());
-                Ok(resp)
-            }
-            None => not_found(),
-        }
-    } else {
-        not_found()
+    *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
+    let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
+    if let Some(p_request) = app_ctx.rest_endpoints.matches(&request) {
+        let graphql_request = p_request.to_request(request).await?;
+        let mut response = graphql_request
+            .data(req_ctx.clone())
+            .execute(&app_ctx.schema)
+            .await;
+        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
+        let mut resp = response.to_response()?;
+        update_response_headers(&mut resp, app_ctx.as_ref());
+        return Ok(resp);
     }
+
+    not_found()
 }
 
 #[instrument(skip_all, err, fields(method = %req.method(), url = %req.uri()))]
@@ -165,6 +160,10 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
+    if req.uri().path().starts_with(API_URL_PREFIX) {
+        return handle_rest_apis(req, app_ctx).await;
+    }
+
     match *req.method() {
         // NOTE:
         // The first check for the route should be for `/graphql`
@@ -200,6 +199,6 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
             not_found()
         }
-        _ => Ok(handle_rest_apis(req, app_ctx).await?),
+        _ => not_found(),
     }
 }

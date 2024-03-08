@@ -632,6 +632,7 @@ enum LinkType {
   Script
   Cert
   Key
+  RestOperation
 }
 enum Method {
   GET
@@ -697,7 +698,7 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-scalar Email
 scalar KeyValues
+scalar Email
 scalar JSON
 

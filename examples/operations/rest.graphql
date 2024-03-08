@@ -1,0 +1,6 @@
+query ($id: Int!) @rest(method: "get", path: "/user/$id") {
+  user(id: $id) {
+    id
+    name
+  }
+}
