@@ -34,7 +34,6 @@ lazy_static! {
 }
 
 pub fn is_scalar(type_name: &str) -> bool {
-    println!("h");
     SCALAR_TYPES.contains(type_name)
 }
 
