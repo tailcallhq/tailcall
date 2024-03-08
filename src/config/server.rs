@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::apollo::Apollo;
 use crate::config::KeyValues;
 use crate::is_default;
 
@@ -12,11 +11,6 @@ use crate::is_default;
 /// comprehensive set of server configurations. It dictates how the server
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `apollo` exposes GraphQL query performance data, including
-    /// execution time of queries and individual resolvers.
-    pub apollo: Option<Apollo>,
-
     #[serde(default, skip_serializing_if = "is_default")]
     /// `batchRequests` combines multiple requests into one, improving
     /// performance but potentially introducing latency and complicating
@@ -114,9 +108,6 @@ pub enum HttpVersion {
 }
 
 impl Server {
-    pub fn get_apollo(&self) -> Option<Apollo> {
-        self.apollo.clone()
-    }
     pub fn enable_graphiql(&self) -> bool {
         self.graphiql.unwrap_or(false)
     }
@@ -171,7 +162,6 @@ impl Server {
     }
 
     pub fn merge_right(mut self, other: Self) -> Self {
-        self.apollo = other.apollo.or(self.apollo);
         self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
         self.graphiql = other.graphiql.or(self.graphiql);
         self.introspection = other.introspection.or(self.introspection);

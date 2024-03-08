@@ -233,11 +233,6 @@ for various use-cases.
 """
 directive @server(
   """
-  `apollo` exposes GraphQL query performance data, including execution time of queries 
-  and individual resolvers.
-  """
-  apollo: Apollo
-  """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
@@ -400,28 +395,6 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
-input Apollo {
-  """
-  Setting `api_key` for Apollo.
-  """
-  api_key: String!
-  """
-  Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
-  """
-  graph_ref: String!
-  """
-  Setting `platform` for Apollo.
-  """
-  platform: String!
-  """
-  Setting `userVersion` for Apollo.
-  """
-  user_version: String!
-  """
-  Setting `version` for Apollo.
-  """
-  version: String!
-}
 input Batch {
   delay: Int!
   headers: [String!]
@@ -713,13 +686,14 @@ input TelemetryExporter {
   stdout: StdoutExporter
   otlp: OtlpExporter
   prometheus: PrometheusExporter
+  apollo: Apollo
 }
 input Schema {
   Obj: JSON
   Arr: Schema
   Opt: Schema
 }
-scalar KeyValues
 scalar Email
+scalar KeyValues
 scalar JSON
 

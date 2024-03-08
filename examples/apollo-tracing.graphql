@@ -1,11 +1,7 @@
 schema
-  @server(
-    port: 8000
-    graphiql: true
-    hostname: "0.0.0.0"
-    apollo: {api_key: "<api-key>", graph_ref: "tailcall-demo-3@current"}
-  )
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com")
+  @telemetry(export: {apollo: {api_key: "{{env.APOLLO_API_KEY}}", graph_ref: "tailcall-demo-3@current"}}) {
   query: Query
 }
 
@@ -18,5 +14,4 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
 }

@@ -8,7 +8,7 @@ use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde_json::Value;
 
-use super::telemetry::Telemetry;
+use super::telemetry::{Telemetry, TelemetryExporter};
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
@@ -177,11 +177,19 @@ pub struct UnionTypeDefinition {
 pub struct SchemaModifiers {
     /// If true, the generated schema will not have any resolvers.
     pub no_resolver: bool,
+    /// If true, the generated schema will have Apollo Tracing enabled.
+    pub enable_apollo_tracing: bool,
 }
 
 impl SchemaModifiers {
-    pub fn no_resolver() -> Self {
-        Self { no_resolver: true }
+    pub fn no_resolver(mut self) -> Self {
+        self.no_resolver = true;
+        self
+    }
+
+    pub fn enable_apollo_tracing(mut self) -> Self {
+        self.enable_apollo_tracing = true;
+        self
     }
 }
 
@@ -209,7 +217,7 @@ impl Blueprint {
     ///
     /// This function is used to generate a schema from a blueprint.
     pub fn to_schema(&self) -> Schema {
-        self.to_schema_with(SchemaModifiers::default())
+        self.to_schema_with(SchemaModifiers::default().enable_apollo_tracing())
     }
 
     ///
@@ -225,16 +233,19 @@ impl Blueprint {
         let server = &blueprint.server;
         let mut schema = SchemaBuilder::from(&blueprint);
 
-        #[cfg(all(feature = "apollo-tracing", not(target = "wasm32")))]
-        if let Some(ref apollo) = server.apollo {
-            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
-            schema = schema.extension(ApolloTracing::new(
-                apollo.api_key.clone(),
-                apollo.platform.clone(),
-                graph_id.to_string(),
-                variant.to_string(),
-                apollo.version.clone(),
-            ));
+        if schema_modifiers.enable_apollo_tracing {
+            #[cfg(all(feature = "apollo-tracing", not(target = "wasm32")))]
+            if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.opentelemetry.export.as_ref()
+            {
+                let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
+                schema = schema.extension(ApolloTracing::new(
+                    apollo.api_key.clone(),
+                    apollo.platform.clone(),
+                    graph_id.to_string(),
+                    variant.to_string(),
+                    apollo.version.clone(),
+                ));
+            }
         }
 
         if server.global_response_timeout > 0 {

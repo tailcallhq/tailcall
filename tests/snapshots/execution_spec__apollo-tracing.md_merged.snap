@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(apollo: {api_key: "<api_key>", graph_ref: "tailcall-demo-3@current", user_version: "1.0", platform: "platform", version: "1.0"}, graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream {
+schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream {
   query: Query
 }
 

@@ -1492,17 +1492,6 @@
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
       "type": "object",
       "properties": {
-        "apollo": {
-          "description": "`apollo` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Apollo"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "batchRequests": {
           "description": "`batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.",
           "type": [
@@ -1691,6 +1680,18 @@
           "properties": {
             "prometheus": {
               "$ref": "#/definitions/PrometheusExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "apollo"
+          ],
+          "properties": {
+            "apollo": {
+              "$ref": "#/definitions/Apollo"
             }
           },
           "additionalProperties": false

@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use super::KeyValues;
-use crate::config::ConfigReaderContext;
+use crate::config::{Apollo, ConfigReaderContext};
 use crate::helpers::headers::to_mustache_headers;
 use crate::is_default;
 use crate::mustache::Mustache;
@@ -83,6 +83,7 @@ pub enum TelemetryExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
     Prometheus(PrometheusExporter),
+    Apollo(Apollo),
 }
 
 impl TelemetryExporter {
@@ -121,15 +122,19 @@ impl Telemetry {
     }
 
     pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<()> {
-        if let Some(TelemetryExporter::Otlp(otlp)) = &mut self.export {
-            let url_tmpl = Mustache::parse(&otlp.url)?;
-            otlp.url = url_tmpl.render(reader_ctx);
+        match &mut self.export {
+            Some(TelemetryExporter::Otlp(otlp)) => {
+                let url_tmpl = Mustache::parse(&otlp.url)?;
+                otlp.url = url_tmpl.render(reader_ctx);
 
-            let headers = to_mustache_headers(&otlp.headers).to_result()?;
-            otlp.headers = headers
-                .into_iter()
-                .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
-                .collect();
+                let headers = to_mustache_headers(&otlp.headers).to_result()?;
+                otlp.headers = headers
+                    .into_iter()
+                    .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
+                    .collect();
+            }
+            Some(TelemetryExporter::Apollo(apollo)) => apollo.render_mustache(reader_ctx)?,
+            _ => {}
         }
 
         Ok(())

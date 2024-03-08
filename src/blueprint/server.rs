@@ -8,7 +8,6 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::config::apollo::Apollo;
 use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -30,7 +29,7 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
-    pub apollo: Option<Apollo>,
+    // pub apollo: Option<Apollo>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -103,33 +102,29 @@ impl TryFrom<crate::config::ConfigModule> for Server {
         };
 
         validate_hostname((config_server).get_hostname().to_lowercase())
-            .fuse(validate_apollo((config_server).get_apollo()))
             .fuse(http_server)
             .fuse(handle_response_headers(
                 (config_server).get_response_headers().0,
             ))
             .fuse(to_script(&config_module))
-            .map(
-                |(hostname, apollo, http, response_headers, script)| Server {
-                    enable_cache_control_header: (config_server).enable_cache_control(),
-                    enable_graphiql: (config_server).enable_graphiql(),
-                    enable_introspection: (config_server).enable_introspection(),
-                    enable_query_validation: (config_server).enable_query_validation(),
-                    enable_response_validation: (config_server).enable_http_validation(),
-                    enable_batch_requests: (config_server).enable_batch_requests(),
-                    enable_showcase: (config_server).enable_showcase(),
-                    global_response_timeout: (config_server).get_global_response_timeout(),
-                    http,
-                    worker: (config_server).get_workers(),
-                    port: (config_server).get_port(),
-                    hostname,
-                    vars: (config_server).get_vars(),
-                    pipeline_flush: (config_server).get_pipeline_flush(),
-                    response_headers,
-                    script,
-                    apollo,
-                },
-            )
+            .map(|(hostname, http, response_headers, script)| Server {
+                enable_cache_control_header: (config_server).enable_cache_control(),
+                enable_graphiql: (config_server).enable_graphiql(),
+                enable_introspection: (config_server).enable_introspection(),
+                enable_query_validation: (config_server).enable_query_validation(),
+                enable_response_validation: (config_server).enable_http_validation(),
+                enable_batch_requests: (config_server).enable_batch_requests(),
+                enable_showcase: (config_server).enable_showcase(),
+                global_response_timeout: (config_server).get_global_response_timeout(),
+                http,
+                worker: (config_server).get_workers(),
+                port: (config_server).get_port(),
+                hostname,
+                vars: (config_server).get_vars(),
+                pipeline_flush: (config_server).get_pipeline_flush(),
+                response_headers,
+                script,
+            })
             .to_result()
     }
 }
@@ -161,22 +156,6 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
         .trace("hostname")
         .trace("@server")
         .trace("schema")
-    }
-}
-
-fn validate_apollo(apollo: Option<Apollo>) -> Valid<Option<Apollo>, String> {
-    match apollo {
-        Some(apollo) => {
-            let is_valid = regex::Regex::new(r"[A-Za-z0-9-_]@[A-Za-z0-9-_]")
-                .unwrap()
-                .is_match(&apollo.graph_ref);
-            if is_valid {
-                Valid::succeed(Some(apollo))
-            } else {
-                Valid::fail("Invalid value in graph_ref".to_string())
-            }
-        }
-        None => Valid::succeed(None),
     }
 }
 
