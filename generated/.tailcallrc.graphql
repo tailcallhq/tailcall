@@ -698,9 +698,9 @@ input Schema {
   Opt: Schema
 }
 scalar KeyValues
-scalar Email
-scalar Url
-scalar Date
 scalar PhoneNumber
+scalar Date
+scalar Url
+scalar Email
 scalar JSON
 

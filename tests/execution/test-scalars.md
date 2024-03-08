@@ -23,6 +23,7 @@ type Query {
 #### assert:
 
 ```yml
+# Valid value tests
 - method: POST
   url: http://localhost:8000/graphql
   body:
@@ -41,4 +42,28 @@ type Query {
   url: http://localhost:8000/graphql
   body:
     query: '{ url(value: "https://tailcall.run/") }'
+
+# Invalid value test
+
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: '{ email(value: "alo@invalid") }'
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: '{ phone(value: "0") }'
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: '{ phone(value: "1234567890") }'
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: '{ date(value: "2023-03-08T12:45") }'
+
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: '{ url(value: "invalidhost") }'
 ```
