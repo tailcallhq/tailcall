@@ -27,7 +27,6 @@ pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
 use crate::config::{Arg, ConfigModule, Field};
-use crate::scalars::CUSTOM_SCALARS;
 use crate::try_fold::TryFold;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
@@ -99,9 +98,4 @@ where
     } else {
         Type::NamedType { name: name.to_string(), non_null }
     }
-}
-
-pub fn is_scalar(type_name: &str) -> bool {
-    ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
-        || CUSTOM_SCALARS.keys().any(|v| (*v).eq(type_name))
 }

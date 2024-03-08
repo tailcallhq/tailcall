@@ -10,14 +10,14 @@ use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
-use crate::{config, scalars};
+use crate::{config, scalar};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
         name: name.to_string(),
         directive: Vec::new(),
         description: None,
-        validator: scalars::get_scalar(name),
+        validator: scalar::get_scalar(name),
     }))
 }
 
@@ -126,7 +126,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
         }
 
         let next_is_required = is_required && next_field.required;
-        if is_scalar(&next_field.type_of) {
+        if scalar::is_scalar(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -358,7 +358,7 @@ pub fn update_cache_resolvers<'a>(
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
     let field_type = &field.type_of;
-    if !is_scalar(field_type) && !config.contains(field_type) {
+    if !scalar::is_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
     } else {
         Valid::succeed(())
