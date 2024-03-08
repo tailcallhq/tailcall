@@ -22,16 +22,14 @@ pub enum UrlParamType {
 
 #[derive(Clone, Debug, PartialEq)]
 enum N {
-    PosInt,
-    NegInt,
+    Int,
     Float,
 }
 
 impl N {
     fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
         Ok(match self {
-            Self::PosInt => ConstValue::from(value.parse::<u64>()?),
-            Self::NegInt => ConstValue::from(value.parse::<i64>()?),
+            Self::Int => ConstValue::from(value.parse::<i64>()?),
             Self::Float => ConstValue::from(value.parse::<f64>()?),
         })
     }
@@ -41,8 +39,6 @@ impl UrlParamType {
     fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
         Ok(match self {
             Self::String => ConstValue::String(value.to_string()),
-
-            // FIXME: this should decode to a numeric type instead of a string
             Self::Number(n) => n.to_value(value)?,
             Self::Boolean => ConstValue::Boolean(value.parse()?),
         })
@@ -55,10 +51,12 @@ impl TryFrom<&Type> for UrlParamType {
         match &value.base {
             BaseType::Named(name) => match name.as_str() {
                 "String" => Ok(Self::String),
-                "Int" => Ok(Self::Number(N::NegInt)),
+                "Int" => Ok(Self::Number(N::Int)),
                 "Boolean" => Ok(Self::Boolean),
+                "Float" => Ok(Self::Number(N::Float)),
                 _ => Err(anyhow::anyhow!("unsupported type: {}", name)),
             },
+            // TODO: support for list types
             _ => Err(anyhow::anyhow!("unsupported type: {:?}", value)),
         }
     }
@@ -139,15 +137,26 @@ impl Path {
 
     fn matches(&self, path: &str) -> Option<Variables> {
         let mut variables = Variables::default();
-        let mut path_segments = path.split('/').filter(|s| !s.is_empty());
-        for segment in &self.segments {
-            if let Some(path_segment) = path_segments.next() {
-                if let Segment::Param(t_var) = segment {
-                    let tpe = t_var.to_value(path_segment).ok()?;
+        let mut req_segments = path.split('/').filter(|s| !s.is_empty());
+        for (segment, req_segment) in self.segments.iter().zip(&mut req_segments) {
+            match segment {
+                Segment::Literal(segment) => {
+                    if segment != req_segment {
+                        return None;
+                    }
+                }
+                Segment::Param(t_var) => {
+                    let tpe = t_var.to_value(req_segment).ok()?;
                     variables.insert(Name::new(t_var.name.clone()), tpe);
                 }
             }
         }
+
+        // If there is still some segments in incoming request it should not match
+        if req_segments.next().is_some() {
+            return None;
+        }
+
         Some(variables)
     }
 }
@@ -169,6 +178,7 @@ impl From<Vec<(&str, TypedVariable)>> for QueryParams {
 struct TypedVariable {
     type_of: UrlParamType,
     name: String,
+    // TODO: validate types for query
     nullable: bool,
 }
 
@@ -182,11 +192,7 @@ impl TypedVariable {
     }
 
     fn int(name: &str) -> Self {
-        Self::new(UrlParamType::Number(N::NegInt), name)
-    }
-
-    fn pos_int(name: &str) -> Self {
-        Self::new(UrlParamType::Number(N::PosInt), name)
+        Self::new(UrlParamType::Number(N::Int), name)
     }
 
     fn float(name: &str) -> Self {
@@ -407,22 +413,19 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 mod tests {
     use maplit::btreemap;
     use pretty_assertions::assert_eq;
-    use stripmargin::StripMargin;
+
 
     use super::*;
 
-    fn test_query() -> String {
-        r#"
-        |query ($a: Int, $b: String, $c: Boolean, $d: String)
-        |  @rest(method: "post", path: "/foo/$a", query: {b: $b, c: $c}, body: $d) {
-        |    value
-        |  }
-        "#
-        .strip_margin()
-    }
+    const TEST_QUERY: &str = r#"
+        query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
+          @rest(method: "post", path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
+            value
+          }
+        "#;
 
     fn test_directive() -> Directive {
-        async_graphql::parser::parse_query(test_query())
+        async_graphql::parser::parse_query(TEST_QUERY)
             .unwrap()
             .operations
             .iter()
@@ -445,22 +448,22 @@ mod tests {
             .path("/foo/$a".to_string())
             .method(Some(Method::POST))
             .query(
-                btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string() },
+                btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
             )
-            .body(Some("d".to_string()));
+            .body(Some("v".to_string()));
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_endpoint() {
-        let endpoint = &Endpoint::try_new(test_query().as_str()).unwrap()[0];
+        let endpoint = &Endpoint::try_new(TEST_QUERY).unwrap()[0];
         assert_eq!(endpoint.method, Method::POST);
         assert_eq!(
             endpoint.path,
             Path::new(vec![
                 Segment::lit("foo"),
-                Segment::param(UrlParamType::Number(N::NegInt), "a"),
+                Segment::param(UrlParamType::Number(N::Int), "a"),
             ])
         );
         assert_eq!(
@@ -468,21 +471,22 @@ mod tests {
             QueryParams::from(vec![
                 ("b", TypedVariable::string("b")),
                 ("c", TypedVariable::boolean("c")),
+                ("d", TypedVariable::float("d"))
             ])
         );
-        assert_eq!(endpoint.body, Some("d".to_string()));
+        assert_eq!(endpoint.body, Some("v".to_string()));
     }
 
     mod matches {
-        use std::ops::Deref;
         use std::str::FromStr;
 
+        use async_graphql::Variables;
         use async_graphql_value::{ConstValue, Name};
         use hyper::{Body, Method, Request, Uri, Version};
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
 
-        use super::test_query;
+        use crate::rest::endpoint::tests::TEST_QUERY;
         use crate::rest::endpoint::Endpoint;
 
         fn test_request(method: Method, uri: &str) -> anyhow::Result<hyper::Request<Body>> {
@@ -493,44 +497,90 @@ mod tests {
                 .body(Body::empty())?)
         }
 
+        fn test_matches(query: &str, method: Method, uri: &str) -> Option<Variables> {
+            let endpoint = &mut Endpoint::try_new(query).unwrap()[0];
+            let request = test_request(method, uri).unwrap();
+
+            endpoint.matches(&request).map(|req| req.variables)
+        }
+
         #[test]
         fn test_valid() {
-            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request =
-                test_request(Method::POST, "http://localhost:8080/foo/1?b=b&c=true").unwrap();
-            let actual = endpoint.matches(&request).unwrap().variables;
+            let actual = test_matches(
+                TEST_QUERY,
+                Method::POST,
+                "http://localhost:8080/foo/1?b=b&c=true&d=1.25",
+            );
             let expected = &btreemap! {
                 Name::new("a") => ConstValue::from(1),
                 Name::new("b") => ConstValue::from("b"),
                 Name::new("c") => ConstValue::from(true),
+                Name::new("d") => ConstValue::from(1.25),
             };
-            assert_eq!(actual.deref(), expected)
+            pretty_assertions::assert_eq!(actual.as_deref(), Some(expected))
+        }
+
+        #[test]
+        fn test_path_not_match() {
+            let actual = test_matches(
+                TEST_QUERY,
+                Method::POST,
+                "http://localhost:8080/bar/1?b=b&c=true",
+            );
+
+            assert_eq!(actual, None);
+            let actual = test_matches(
+                TEST_QUERY,
+                Method::POST,
+                "http://localhost:8080/foo/1/nested?b=b&c=true",
+            );
+
+            assert_eq!(actual, None);
         }
 
         #[test]
         fn test_invalid_url_param() {
-            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request =
-                test_request(Method::POST, "http://localhost:8080/foo/a?b=b&c=true").unwrap();
-            let actual = endpoint.matches(&request);
-            assert_eq!(actual, None)
+            let actual = test_matches(
+                TEST_QUERY,
+                Method::POST,
+                "http://localhost:8080/foo/a?b=b&c=true",
+            );
+            pretty_assertions::assert_eq!(actual, None)
+        }
+
+        #[test]
+        fn test_query_params_optional() {
+            let actual = test_matches(TEST_QUERY, Method::POST, "http://localhost:8080/foo/1");
+            let expected = &btreemap! {
+                Name::new("a") => ConstValue::from(1),
+            };
+            pretty_assertions::assert_eq!(actual.as_deref(), Some(expected));
+
+            let actual = test_matches(TEST_QUERY, Method::POST, "http://localhost:8080/foo/1/?b=b");
+            let expected = &btreemap! {
+                Name::new("a") => ConstValue::from(1),
+                Name::new("b") => ConstValue::from("b"),
+            };
+            pretty_assertions::assert_eq!(actual.as_deref(), Some(expected))
         }
 
         #[test]
         fn test_invalid_query_param() {
-            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request =
-                test_request(Method::POST, "http://localhost:8080/foo/1?b=b&c=c").unwrap();
-            let actual = endpoint.matches(&request);
+            let actual = test_matches(
+                TEST_QUERY,
+                Method::POST,
+                "http://localhost:8080/foo/1?b=b&c=c",
+            );
             assert_eq!(actual, None)
         }
 
         #[test]
         fn test_method_not_match() {
-            let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let request =
-                test_request(Method::GET, "http://localhost:8080/foo/1?b=b&c=true").unwrap();
-            let actual = endpoint.matches(&request);
+            let actual = test_matches(
+                TEST_QUERY,
+                Method::GET,
+                "http://localhost:8080/foo/1?b=b&c=true",
+            );
             assert_eq!(actual, None)
         }
     }
