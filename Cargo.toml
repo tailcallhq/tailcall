@@ -120,6 +120,7 @@ opentelemetry-appender-tracing = { version = "0.3.0" }
 opentelemetry-prometheus = "0.15.0"
 phonenumber = "0.3.3"
 
+# TODO: move this flag into `cli`, like other dependencies.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 async-graphql-extension-apollo-tracing = { version = "3.2.14" }
 
