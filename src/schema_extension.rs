@@ -1,4 +1,3 @@
-use std::fmt::Formatter;
 use std::sync::Arc;
 
 use async_graphql::extensions::{Extension, ExtensionFactory};
@@ -6,12 +5,6 @@ use async_graphql::extensions::{Extension, ExtensionFactory};
 #[derive(Clone)]
 pub struct SchemaExtension {
     extension_factory: Arc<dyn ExtensionFactory>,
-}
-
-impl std::fmt::Debug for SchemaExtension {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SchemaExtension")
-    }
 }
 
 impl SchemaExtension {

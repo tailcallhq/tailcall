@@ -1,5 +1,4 @@
 use std::collections::{BTreeSet, HashMap};
-use std::fmt::Formatter;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::ValidationMode;
@@ -179,16 +178,6 @@ pub struct SchemaModifiers {
     pub no_resolver: bool,
     /// List of extensions to add to the schema.
     pub extensions: Vec<SchemaExtension>,
-}
-
-impl std::fmt::Debug for SchemaModifiers {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "SchemaModifiers {{ no_resolver: {:?} }}",
-            self.no_resolver
-        )
-    }
 }
 
 impl SchemaModifiers {
