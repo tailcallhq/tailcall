@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use async_graphql::validators::email;
 use async_graphql_value::ConstValue;
 use schemars::JsonSchema;
@@ -19,6 +21,12 @@ fn email_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::S
         ..Default::default()
     }));
     schema.into()
+}
+
+impl Display for Email {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Email")
+    }
 }
 
 impl super::Scalar for Email {

@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use async_graphql_value::ConstValue;
 use schemars::JsonSchema;
 
@@ -8,6 +10,12 @@ pub struct PhoneNumber {
     #[serde(rename = "PhoneNumber")]
     /// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
     pub phone_no: String,
+}
+
+impl Display for PhoneNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PhoneNumber")
+    }
 }
 
 impl super::Scalar for PhoneNumber {

@@ -9,6 +9,7 @@ mod phone;
 mod url;
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
@@ -23,35 +24,29 @@ pub struct ScalarMetadata {
 
 lazy_static! {
     pub static ref CUSTOM_SCALARS: HashMap<String, ScalarMetadata> = {
-        let mut hm = HashMap::new();
-        hm.insert(
-            "Email".to_string(),
+        let scalars = vec![
             ScalarMetadata {
                 instance: Arc::new(Email::default()),
                 schema: Schema::Object(schema_for!(Email).schema),
             },
-        );
-        hm.insert(
-            "PhoneNumber".to_string(),
             ScalarMetadata {
                 instance: Arc::new(PhoneNumber::default()),
                 schema: Schema::Object(schema_for!(PhoneNumber).schema),
             },
-        );
-        hm.insert(
-            "Date".to_string(),
             ScalarMetadata {
                 instance: Arc::new(Date::default()),
                 schema: Schema::Object(schema_for!(Date).schema),
             },
-        );
-        hm.insert(
-            "Url".to_string(),
             ScalarMetadata {
                 instance: Arc::new(Url::default()),
                 schema: Schema::Object(schema_for!(Url).schema),
             },
-        );
+        ];
+        let mut hm = HashMap::new();
+
+        for scalar in scalars {
+            hm.insert(scalar.instance.to_string(), scalar);
+        }
         hm
     };
 }
@@ -68,7 +63,7 @@ pub fn is_scalar(type_name: &str) -> bool {
     SCALAR_TYPES.contains(type_name)
 }
 
-pub trait Scalar {
+pub trait Scalar: Display {
     fn validate(&self) -> fn(&ConstValue) -> bool;
 }
 
@@ -81,11 +76,12 @@ pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
 
 #[cfg(test)]
 mod test {
-    use serde::Serialize;
+    use schemars::schema::Schema;
+    
 
     use crate::scalar::CUSTOM_SCALARS;
 
-    fn get_name(v: impl Serialize) -> String {
+    fn get_name(v: Schema) -> String {
         serde_json::to_value(v)
             .unwrap()
             .as_object()
