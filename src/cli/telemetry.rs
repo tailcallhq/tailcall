@@ -2,14 +2,14 @@ use std::io::Write;
 
 use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
-use opentelemetry::global;
 use opentelemetry::logs::{LogError, LogResult};
 use opentelemetry::metrics::{MetricsError, Result as MetricsResult};
 use opentelemetry::trace::{TraceError, TraceResult, TracerProvider as _};
+use opentelemetry::{global, KeyValue};
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::{TonicExporterBuilder, WithExportConfig};
 use opentelemetry_sdk::logs::{Logger, LoggerProvider};
-use opentelemetry_sdk::metrics::{MeterProvider, PeriodicReader};
+use opentelemetry_sdk::metrics::{MeterProviderBuilder, PeriodicReader};
 use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::trace::{Tracer, TracerProvider};
 use opentelemetry_sdk::{runtime, Resource};
@@ -29,9 +29,14 @@ use crate::tracing::{default_tailcall_tracing, tailcall_filter_target};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
-        opentelemetry_semantic_conventions::resource::SERVICE_NAME.string("tailcall"),
-        opentelemetry_semantic_conventions::resource::SERVICE_VERSION
-            .string(option_env!("APP_VERSION").unwrap_or("dev")),
+        KeyValue::new(
+            opentelemetry_semantic_conventions::resource::SERVICE_NAME,
+            "tailcall",
+        ),
+        KeyValue::new(
+            opentelemetry_semantic_conventions::resource::SERVICE_VERSION,
+            option_env!("APP_VERSION").unwrap_or("dev"),
+        ),
     ]))
 });
 
@@ -119,10 +124,8 @@ fn set_logger_provider(
             .with_exporter(otlp_exporter(config))
             .with_log_config(opentelemetry_sdk::logs::config().with_resource(RESOURCE.clone()))
             .install_batch(runtime::Tokio)?
-            .provider()
-            .ok_or(LogError::Other(
-                anyhow!("Failed to instantiate OTLP provider").into(),
-            ))?,
+            .provider().clone()
+        ,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
     };
@@ -148,7 +151,7 @@ fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
             let exporter = builder.build();
             let reader = PeriodicReader::builder(exporter, Tokio).build();
 
-            MeterProvider::builder()
+            MeterProviderBuilder::default()
                 .with_reader(reader)
                 .with_resource(RESOURCE.clone())
                 .build()
@@ -163,7 +166,7 @@ fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
                 .with_registry(prometheus::default_registry().clone())
                 .build()?;
 
-            MeterProvider::builder()
+            MeterProviderBuilder::default()
                 .with_resource(RESOURCE.clone())
                 .with_reader(exporter)
                 .build()
