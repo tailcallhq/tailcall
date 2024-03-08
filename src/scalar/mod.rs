@@ -1,7 +1,12 @@
+pub use date::*;
 pub use email::*;
 pub use phone::*;
+pub use url::*;
+
+mod date;
 mod email;
 mod phone;
+mod url;
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -14,6 +19,8 @@ lazy_static! {
         let mut hm: HashMap<String, Arc<dyn Scalar + Send + Sync>> = HashMap::new();
         hm.insert("Email".to_string(), Arc::new(Email::default()));
         hm.insert("PhoneNumber".to_string(), Arc::new(PhoneNumber::default()));
+        hm.insert("Date".to_string(), Arc::new(Date::default()));
+        hm.insert("Url".to_string(), Arc::new(Url::default()));
         hm
     };
 }
@@ -27,6 +34,7 @@ lazy_static! {
 }
 
 pub fn is_scalar(type_name: &str) -> bool {
+    println!("h");
     SCALAR_TYPES.contains(type_name)
 }
 
@@ -34,6 +42,8 @@ pub fn is_scalar(type_name: &str) -> bool {
 pub enum CustomScalar {
     Email(Email),
     PhoneNumber(PhoneNumber),
+    Date(Date),
+    Url(Url),
 }
 
 pub trait Scalar {

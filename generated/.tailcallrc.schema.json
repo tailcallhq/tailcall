@@ -194,6 +194,18 @@
         "data": true
       }
     },
+    "Date": {
+      "type": "object",
+      "required": [
+        "Date"
+      ],
+      "properties": {
+        "Date": {
+          "description": "A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.",
+          "type": "string"
+        }
+      }
+    },
     "Email": {
       "type": "object",
       "required": [
@@ -1897,6 +1909,18 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "Url": {
+      "type": "object",
+      "required": [
+        "Url"
+      ],
+      "properties": {
+        "Url": {
+          "description": "A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.",
+          "type": "string"
         }
       }
     },
