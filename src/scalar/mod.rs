@@ -77,7 +77,6 @@ pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
 #[cfg(test)]
 mod test {
     use schemars::schema::Schema;
-    
 
     use crate::scalar::CUSTOM_SCALARS;
 
