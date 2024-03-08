@@ -721,7 +721,7 @@ input Schema {
   Opt: Schema
 }
 scalar PhoneNumber
-scalar KeyValues
 scalar Email
+scalar KeyValues
 scalar JSON
 
