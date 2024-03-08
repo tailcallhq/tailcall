@@ -17,6 +17,8 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
+const API_URL_PREFIX: &str = "/api";
+
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
@@ -133,10 +135,11 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 }
 
 async fn handle_rest_apis(
-    request: Request<Body>,
+    mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    if request.uri().path().starts_with("/api") {
+    if request.uri().path().starts_with(API_URL_PREFIX) {
+        *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
         let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
         match app_ctx.endpoints.matches(&request) {
             Some(p_request) => {
