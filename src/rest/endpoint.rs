@@ -378,7 +378,7 @@ impl<'a> PartialRequest<'a> {
         let mut variables = self.variables;
         let bytes = hyper::body::to_bytes(request.into_body()).await?;
         let body: ConstValue = serde_json::from_slice(&bytes)?;
-        let body_param = self.body.clone();
+        let body_param = self.body;
         if let Some(key) = body_param {
             variables.insert(Name::new(key), body);
         }
@@ -474,12 +474,13 @@ mod tests {
     }
 
     mod matches {
+        use std::ops::Deref;
+        use std::str::FromStr;
+
         use async_graphql_value::{ConstValue, Name};
         use hyper::{Body, Method, Request, Uri, Version};
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
-        use std::ops::Deref;
-        use std::str::FromStr;
 
         use super::test_query;
         use crate::rest::endpoint::Endpoint;
@@ -495,7 +496,7 @@ mod tests {
         #[test]
         fn test_valid() {
             let endpoint = &mut Endpoint::try_new(test_query().as_str()).unwrap()[0];
-            let mut request =
+            let request =
                 test_request(Method::POST, "http://localhost:8080/foo/1?b=b&c=true").unwrap();
             let actual = endpoint.matches(&request).unwrap().variables;
             let expected = &btreemap! {
