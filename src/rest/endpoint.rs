@@ -95,7 +95,7 @@ pub struct Path {
     segments: Vec<Segment>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct TypeMap(BTreeMap<String, Type>);
 
 impl TypeMap {
@@ -150,12 +150,12 @@ impl Path {
     }
 }
 
-#[derive(Debug, PartialEq, Default)]
-pub struct Query {
+#[derive(Debug, PartialEq, Default, Clone)]
+pub struct QueryParams {
     params: Vec<(String, TypedVariable)>,
 }
 
-impl From<Vec<(&str, TypedVariable)>> for Query {
+impl From<Vec<(&str, TypedVariable)>> for QueryParams {
     fn from(value: Vec<(&str, TypedVariable)>) -> Self {
         Self {
             params: value.into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
@@ -200,7 +200,7 @@ impl TypedVariable {
     }
 }
 
-impl Query {
+impl QueryParams {
     fn try_from_map(q: &TypeMap, map: BTreeMap<String, String>) -> anyhow::Result<Self> {
         let mut params = Vec::new();
         for (k, v) in map {
@@ -225,17 +225,17 @@ impl Query {
     }
 }
 
-#[derive(Debug, Setters)]
+#[derive(Debug, Setters, Clone)]
 pub struct Endpoint {
     method: Method,
     path: Path,
 
     // Can use persisted queries for better performance
-    query: Query,
+    query_params: QueryParams,
     body: Option<String>,
     operation: OperationDefinition,
     type_map: TypeMap,
-    request: GraphQLRequest,
+    graphql_query: String,
 }
 
 #[derive(Default, Debug, Deserialize, Serialize, PartialEq, Setters)]
@@ -312,17 +312,17 @@ impl Endpoint {
                 }
             });
 
-            let query = serde_json::to_string(&op.node)?;
+            let graphql_query = serde_json::to_string(&op.node)?;
 
             if let Some(rest) = rest {
                 let rest = rest?;
                 let endpoint = Self {
                     method: rest.method.unwrap_or_default(),
                     path: Path::parse(&type_map, &rest.path)?,
-                    query: Query::try_from_map(&type_map, rest.query)?,
+                    query_params: QueryParams::try_from_map(&type_map, rest.query)?,
                     body: rest.body,
                     operation: op.node.clone(),
-                    request: GraphQLRequest(async_graphql::Request::new(query)),
+                    graphql_query,
                     type_map,
                 };
                 endpoints.push(endpoint);
@@ -350,7 +350,7 @@ impl Endpoint {
         let path = self.path.matches(request.url().path())?;
 
         // Query
-        let query = self.query.matches(query_params)?;
+        let query = self.query_params.matches(query_params)?;
 
         variables = merge_variables(variables, path);
         variables = merge_variables(variables, query);
@@ -372,7 +372,7 @@ impl Endpoint {
                 }
 
                 Ok(Some(GraphQLRequest(
-                    async_graphql::Request::new(self.request.0.query.clone()).variables(variables),
+                    async_graphql::Request::new(self.graphql_query.clone()).variables(variables),
                 )))
             }
         }
@@ -454,8 +454,8 @@ mod tests {
             ])
         );
         assert_eq!(
-            endpoint.query,
-            Query::from(vec![
+            endpoint.query_params,
+            QueryParams::from(vec![
                 ("b", TypedVariable::string("b")),
                 ("c", TypedVariable::boolean("c")),
             ])

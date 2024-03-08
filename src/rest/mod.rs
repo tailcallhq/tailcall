@@ -1,2 +1,5 @@
-pub mod endpoint;
-pub mod endpoint_set;
+mod endpoint;
+mod endpoint_set;
+
+
+pub use endpoint_set::EndpointSet;

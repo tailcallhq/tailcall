@@ -4,8 +4,8 @@ use reqwest::Request;
 use super::endpoint::{self, Endpoint};
 use crate::async_graphql_hyper::GraphQLRequest;
 
-#[derive(Default)]
-struct EndpointSet {
+#[derive(Default, Clone, Debug)]
+pub struct EndpointSet {
     endpoints: Vec<super::endpoint::Endpoint>,
 }
 
