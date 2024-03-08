@@ -6,7 +6,7 @@ use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::async_graphql_hyper::GraphQLRequest;
+use crate::{async_graphql_hyper::GraphQLRequest, document::print_operation};
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
@@ -320,8 +320,7 @@ impl Endpoint {
                 }
             });
 
-            // TODO: convert single operation instead of using the whole operations content
-            let graphql_query = operations.to_owned();
+            let graphql_query = print_operation(&op.node);
 
             if let Some(rest) = rest {
                 let rest = rest?;
