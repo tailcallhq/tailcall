@@ -1,6 +1,6 @@
 use opentelemetry::global;
 use opentelemetry::trace::TracerProvider as _;
-use opentelemetry_sdk::metrics::{MeterProvider, PeriodicReader};
+use opentelemetry_sdk::metrics::{MeterProviderBuilder, PeriodicReader};
 use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::testing::metrics::InMemoryMetricsExporter;
 use opentelemetry_sdk::testing::trace::InMemorySpanExporter;
@@ -29,7 +29,9 @@ fn set_trace_provider(exporter: InMemorySpanExporter) -> OpenTelemetryLayer<Regi
 fn set_meter_provider(exporter: InMemoryMetricsExporter) -> PeriodicReader {
     let reader: PeriodicReader = PeriodicReader::builder(exporter, Tokio).build();
 
-    let provider = MeterProvider::builder().with_reader(reader.clone()).build();
+    let provider = MeterProviderBuilder::default()
+        .with_reader(reader.clone())
+        .build();
     global::set_meter_provider(provider);
 
     reader
