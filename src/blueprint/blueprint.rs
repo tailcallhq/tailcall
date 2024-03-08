@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
+use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::ValidationMode;
@@ -177,7 +178,7 @@ pub struct SchemaModifiers {
     /// If true, the generated schema will not have any resolvers.
     pub no_resolver: bool,
     /// List of extensions to add to the schema.
-    pub extensions: Vec<SchemaExtension>,
+    pub extensions: Arc<Vec<SchemaExtension>>,
 }
 
 impl SchemaModifiers {
@@ -243,7 +244,7 @@ impl Blueprint {
             schema = schema.disable_introspection();
         }
 
-        for extension in schema_modifiers.extensions {
+        for extension in schema_modifiers.extensions.iter().cloned() {
             schema = schema.extension(extension);
         }
 

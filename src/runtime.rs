@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use async_graphql::extensions::ExtensionFactory;
 use async_graphql_value::ConstValue;
 
 use crate::schema_extension::SchemaExtension;
@@ -26,12 +25,12 @@ pub struct TargetRuntime {
     pub cache: Arc<dyn Cache<Key = u64, Value = ConstValue>>,
     /// A list of extensions that can be used to extend the runtime's
     /// functionality or integrate additional features.
-    pub extensions: Vec<SchemaExtension>,
+    pub extensions: Arc<Vec<SchemaExtension>>,
 }
 
 impl TargetRuntime {
-    pub fn add_extension(&mut self, extension: impl ExtensionFactory) {
-        self.extensions.push(SchemaExtension::new(extension));
+    pub fn add_extensions(&mut self, extensions: Vec<SchemaExtension>) {
+        self.extensions = Arc::new(extensions);
     }
 }
 
@@ -184,7 +183,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
-            extensions: vec![],
+            extensions: Arc::new(vec![]),
         }
     }
 }

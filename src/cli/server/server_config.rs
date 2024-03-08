@@ -7,6 +7,7 @@ use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::runtime::init;
 use crate::http::AppContext;
+use crate::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
     pub blueprint: Blueprint,
@@ -17,16 +18,19 @@ impl ServerConfig {
     pub fn new(blueprint: Blueprint) -> Self {
         let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
 
+        let mut extensions = vec![];
+
         if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.opentelemetry.export.as_ref() {
             let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
-            rt.add_extension(ApolloTracing::new(
+            extensions.push(SchemaExtension::new(ApolloTracing::new(
                 apollo.api_key.clone(),
                 apollo.platform.clone(),
                 graph_id.to_string(),
                 variant.to_string(),
                 apollo.version.clone(),
-            ));
+            )));
         }
+        rt.add_extensions(extensions);
 
         let server_context = Arc::new(AppContext::new(blueprint.clone(), rt));
         Self { app_ctx: server_context, blueprint }

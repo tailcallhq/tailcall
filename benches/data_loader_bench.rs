@@ -79,7 +79,7 @@ fn benchmark_data_loader(c: &mut Criterion) {
                     env: Arc::new(Env {}),
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
-                    extensions: vec![],
+                    extensions: Arc::new(vec![]),
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
                 let loader = loader.to_data_loader(Batch::default().delay(1));
