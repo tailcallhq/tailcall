@@ -126,7 +126,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
         }
 
         let next_is_required = is_required && next_field.required;
-        if scalars::SCALAR_TYPES.contains(next_field.type_of.as_str()) {
+        if scalars::is_scalar(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -358,7 +358,7 @@ pub fn update_cache_resolvers<'a>(
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
     let field_type = &field.type_of;
-    if !scalars::SCALAR_TYPES.contains(field_type.as_str()) && !config.contains(field_type) {
+    if !scalars::is_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
     } else {
         Valid::succeed(())

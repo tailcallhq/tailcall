@@ -108,7 +108,7 @@ impl Config {
                     for (_, arg) in field
                         .args
                         .iter()
-                        .filter(|(_, arg)| !scalars::SCALAR_TYPES.contains(arg.type_of.as_str()))
+                        .filter(|(_, arg)| !scalars::is_scalar(&arg.type_of))
                     {
                         if let Some(t) = self.find_type(&arg.type_of) {
                             t.fields.iter().for_each(|(_, f)| {

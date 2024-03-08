@@ -16,12 +16,16 @@ lazy_static! {
     };
 }
 lazy_static! {
-    pub static ref SCALAR_TYPES: HashSet<&'static str> = {
+    static ref SCALAR_TYPES: HashSet<&'static str> = {
         let mut set = HashSet::new();
         set.extend(["String", "Int", "Float", "Boolean", "ID", "JSON"]);
         set.extend(CUSTOM_SCALARS.keys().map(|k| k.as_str()));
         set
     };
+}
+
+pub fn is_scalar(type_name: &str) -> bool {
+    SCALAR_TYPES.contains(type_name)
 }
 
 #[derive(schemars::JsonSchema)]
