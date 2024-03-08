@@ -494,8 +494,8 @@ mod tests {
                 reqwest::Method::POST,
                 Url::parse("http://localhost:8080/foo/a?b=b&c=true").unwrap(),
             );
-            let actual = endpoint.matches(&request).unwrap().to_string();
-            pretty_assertions::assert_eq!(actual, "invalid digit found in string")
+            let actual = endpoint.matches(&request);
+            pretty_assertions::assert_eq!(actual, None)
         }
 
         #[test]
@@ -505,8 +505,8 @@ mod tests {
                 reqwest::Method::POST,
                 Url::parse("http://localhost:8080/foo/1?b=b&c=c").unwrap(),
             );
-            let actual = endpoint.matches(&request).unwrap().to_string();
-            pretty_assertions::assert_eq!(actual, "provided string was not `true` or `false`")
+            let actual = endpoint.matches(&request);
+            pretty_assertions::assert_eq!(actual, None)
         }
 
         #[test]
