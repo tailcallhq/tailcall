@@ -6,13 +6,9 @@ schema @server(graphiql: true, hostname: "localhost", port: 8000) @upstream {
   query: Query
 }
 
-input Email {
+scalar Email
 
-}
-
-input PhoneNumber {
-
-}
+scalar PhoneNumber
 
 type Query {
   value(email: Email!): Email! @const(data: "{{args.email}}")

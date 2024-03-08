@@ -27,7 +27,7 @@ mod test {
     use async_graphql_value::ConstValue;
 
     use super::*;
-    use crate::scalars::Scalar;
+    use crate::scalar::Scalar;
 
     #[test]
     fn test_phone_number() {
