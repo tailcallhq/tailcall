@@ -13,6 +13,14 @@
         "$ref": "#/definitions/Link"
       }
     },
+    "opentelemetry": {
+      "description": "Enable [opentelemetry](https://opentelemetry.io) support",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Telemetry"
+        }
+      ]
+    },
     "schema": {
       "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
       "allOf": [
@@ -195,7 +203,7 @@
         "Email": {
           "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
           "type": "string",
-          "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+          "pattern": "/^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/"
         }
       }
     },
@@ -1365,6 +1373,54 @@
     "Omit": {
       "type": "object"
     },
+    "OtlpExporter": {
+      "description": "Output the opentelemetry data to otlp collector",
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "headers": {
+          "$ref": "#/definitions/KeyValues"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "PhoneNumber": {
+      "type": "object",
+      "required": [
+        "PhoneNumber"
+      ],
+      "properties": {
+        "PhoneNumber": {
+          "description": "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).",
+          "type": "string"
+        }
+      }
+    },
+    "PrometheusExporter": {
+      "description": "Output the telemetry metrics data to prometheus server",
+      "type": "object",
+      "properties": {
+        "format": {
+          "$ref": "#/definitions/PrometheusFormat"
+        },
+        "path": {
+          "default": "/metrics",
+          "type": "string"
+        }
+      }
+    },
+    "PrometheusFormat": {
+      "description": "Output format for prometheus data",
+      "type": "string",
+      "enum": [
+        "text",
+        "protobuf"
+      ]
+    },
     "Proxy": {
       "type": "object",
       "required": [
@@ -1551,6 +1607,71 @@
           "minimum": 0.0
         }
       }
+    },
+    "StdoutExporter": {
+      "description": "Output the opentelemetry data to the stdout. Mostly used for debug purposes",
+      "type": "object",
+      "properties": {
+        "pretty": {
+          "description": "Output to stdout in pretty human-readable format",
+          "type": "boolean"
+        }
+      }
+    },
+    "Telemetry": {
+      "type": "object",
+      "properties": {
+        "export": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TelemetryExporter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TelemetryExporter": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "stdout"
+          ],
+          "properties": {
+            "stdout": {
+              "$ref": "#/definitions/StdoutExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "otlp"
+          ],
+          "properties": {
+            "otlp": {
+              "$ref": "#/definitions/OtlpExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "prometheus"
+          ],
+          "properties": {
+            "prometheus": {
+              "$ref": "#/definitions/PrometheusExporter"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",

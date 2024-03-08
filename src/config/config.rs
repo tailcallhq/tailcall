@@ -8,15 +8,16 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::telemetry::Telemetry;
 use super::{Expr, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::KeyValues;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
-use crate::is_default;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, Validator};
+use crate::{is_default, scalar};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -56,6 +57,9 @@ pub struct Config {
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Enable [opentelemetry](https://opentelemetry.io) support
+    pub opentelemetry: Telemetry,
 }
 impl Config {
     pub fn port(&self) -> u16 {
@@ -101,7 +105,11 @@ impl Config {
         for (_, type_of) in self.types.iter() {
             if !type_of.interface {
                 for (_, field) in type_of.fields.iter() {
-                    for (_, arg) in field.args.iter() {
+                    for (_, arg) in field
+                        .args
+                        .iter()
+                        .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
+                    {
                         if let Some(t) = self.find_type(&arg.type_of) {
                             t.fields.iter().for_each(|(_, f)| {
                                 types.insert(&f.type_of);
@@ -169,8 +177,17 @@ impl Config {
         let schema = self.schema.merge_right(other.schema.clone());
         let upstream = self.upstream.merge_right(other.upstream.clone());
         let links = merge_links(self.links, other.links.clone());
+        let opentelemetry = self.opentelemetry.merge_right(other.opentelemetry.clone());
 
-        Self { server, upstream, types, schema, unions, links }
+        Self {
+            server,
+            upstream,
+            types,
+            schema,
+            unions,
+            links,
+            opentelemetry,
+        }
     }
 }
 

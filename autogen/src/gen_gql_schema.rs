@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
-use tailcall::{config, scalars};
+use tailcall::{config, scalar};
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 
@@ -53,6 +53,13 @@ static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "JS",
     "Modify",
+    "Telemetry",
+    "TelemetryInner",
+    "TelemetryExporter",
+    "StdoutExporter",
+    "OtlpExporter",
+    "PrometheusFormat",
+    "PrometheusExporter",
 ];
 
 #[derive(Clone, Copy)]
@@ -335,7 +342,7 @@ fn write_input_type(
     name: String,
     typ: SchemaObject,
     defs: &BTreeMap<String, Schema>,
-    scalars: &mut HashSet<String>,
+    scalar: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
     types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
@@ -357,7 +364,7 @@ fn write_input_type(
     write_description(writer, description)?;
     if let Some(obj) = typ.object {
         if obj.properties.is_empty() {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -384,7 +391,7 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
         if list.is_empty() {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -406,7 +413,7 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
         if list.is_empty() {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -424,7 +431,7 @@ fn write_input_type(
         if let Some(name) = item.into_object().reference {
             writeln!(writer, "{name}")?;
         } else {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
         }
     }
 
@@ -601,11 +608,11 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
-    let scalars = schemars::schema_for!(scalars::CustomScalar);
+    let scalar = schemars::schema_for!(scalar::CustomScalar);
 
     let defs = schema.definitions;
 
-    let mut scalars = scalars
+    let mut scalar = scalar
         .definitions
         .keys()
         .map(|v| v.to_string())
@@ -620,7 +627,7 @@ fn write_all_input_types(
             name,
             input_type.clone().into_object(),
             &defs,
-            &mut scalars,
+            &mut scalar,
             &mut extra_it,
             &mut types_added,
         )?;
@@ -637,7 +644,7 @@ fn write_all_input_types(
                         name,
                         schema.into_object(),
                         &defs,
-                        &mut scalars,
+                        &mut scalar,
                         &mut new_extra_it,
                         &mut types_added,
                     )?
@@ -649,7 +656,7 @@ fn write_all_input_types(
         }
     }
 
-    for name in scalars {
+    for name in scalar {
         writeln!(writer, "scalar {name}")?;
     }
 

@@ -32,7 +32,7 @@ impl FileIO for NativeFileIO {
             CLIError::new(format!("Failed to write file: {}", path).as_str())
                 .description(err.to_string())
         })?;
-        log::info!("File write: {} ... ok", path);
+        tracing::info!("File write: {} ... ok", path);
         Ok(())
     }
 
@@ -41,7 +41,7 @@ impl FileIO for NativeFileIO {
             CLIError::new(format!("Failed to read file: {}", path).as_str())
                 .description(err.to_string())
         })?;
-        log::info!("File read: {} ... ok", path);
+        tracing::info!("File read: {} ... ok", path);
         Ok(content)
     }
 }
