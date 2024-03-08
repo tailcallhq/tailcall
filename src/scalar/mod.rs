@@ -78,3 +78,31 @@ pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
         .map(|v| v.instance.validate())
         .unwrap_or(|_| true)
 }
+
+#[cfg(test)]
+mod test {
+    use serde::Serialize;
+
+    use crate::scalar::CUSTOM_SCALARS;
+
+    fn get_name(v: impl Serialize) -> String {
+        serde_json::to_value(v)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .get("title")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string()
+    }
+
+    #[test]
+    fn assert_scalar_types() {
+        // it's easy to accidentally add a different scalar type to the schema
+        // this test ensures that the scalar types are correctly defined
+        for (k, v) in CUSTOM_SCALARS.iter() {
+            assert_eq!(k.clone(), get_name(v.schema.clone()));
+        }
+    }
+}
