@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use async_graphql::parser::types::Type;
 
-///
 /// A intermediary data structure that allows fast access to the type of a
 /// variable by it's name.
 #[derive(Debug, Clone)]

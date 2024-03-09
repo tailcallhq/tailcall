@@ -2,6 +2,7 @@ use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
 use super::Request;
 
+/// Collection of endpoints
 #[derive(Default, Clone, Debug)]
 pub struct EndpointSet {
     endpoints: Vec<Endpoint>,

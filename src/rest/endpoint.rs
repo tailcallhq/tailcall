@@ -13,6 +13,7 @@ use super::Request;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 
+/// An executable Http Endpoint created from a GraphQL query
 #[derive(Debug, Setters, Clone)]
 pub struct Endpoint {
     method: Method,
