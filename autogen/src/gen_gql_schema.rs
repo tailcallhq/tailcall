@@ -612,7 +612,7 @@ fn write_all_input_types(
 
     let scalar = CUSTOM_SCALARS
         .iter()
-        .map(|(k, v)| (k.clone(), v.schema.clone()))
+        .map(|(k, v)| (k.clone(), v.scalar()))
         .collect::<Map<String, Schema>>();
 
     let defs = schema.definitions;

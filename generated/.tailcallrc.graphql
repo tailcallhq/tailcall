@@ -697,10 +697,10 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
+scalar Email
+scalar PhoneNumber
 scalar Url
 scalar KeyValues
-scalar PhoneNumber
 scalar Date
-scalar Email
 scalar JSON
 

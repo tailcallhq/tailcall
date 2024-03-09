@@ -95,7 +95,7 @@ async fn get_updated_json() -> Result<Value> {
     let mut schema: RootSchema = schemars::schema_for!(config::Config);
     let scalar = CUSTOM_SCALARS
         .iter()
-        .map(|(k, v)| (k.clone(), v.schema.clone()))
+        .map(|(k, v)| (k.clone(), v.scalar()))
         .collect::<Map<String, Schema>>();
     schema.definitions.extend(scalar);
 

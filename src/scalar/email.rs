@@ -1,8 +1,7 @@
-use std::fmt::{Display, Formatter};
-
 use async_graphql::validators::email;
 use async_graphql_value::ConstValue;
-use schemars::JsonSchema;
+use schemars::schema::Schema;
+use schemars::{schema_for, JsonSchema};
 
 use crate::json::JsonLike;
 
@@ -23,12 +22,6 @@ fn email_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::S
     schema.into()
 }
 
-impl Display for Email {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Email")
-    }
-}
-
 impl super::Scalar for Email {
     /// Function used to validate the email address
     fn validate(&self) -> fn(&ConstValue) -> bool {
@@ -39,6 +32,9 @@ impl super::Scalar for Email {
             }
             false
         }
+    }
+    fn scalar(&self) -> Schema {
+        Schema::Object(schema_for!(Self).schema)
     }
 }
 

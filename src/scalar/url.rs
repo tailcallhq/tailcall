@@ -1,7 +1,6 @@
-use std::fmt::{Display, Formatter};
-
 use async_graphql_value::ConstValue;
-use schemars::JsonSchema;
+use schemars::schema::Schema;
+use schemars::{schema_for, JsonSchema};
 
 use crate::json::JsonLike;
 
@@ -10,12 +9,6 @@ pub struct Url {
     #[serde(rename = "Url")]
     /// A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
     pub url: String,
-}
-
-impl Display for Url {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Url")
-    }
 }
 
 impl super::Scalar for Url {
@@ -27,6 +20,9 @@ impl super::Scalar for Url {
             }
             false
         }
+    }
+    fn scalar(&self) -> Schema {
+        Schema::Object(schema_for!(Self).schema)
     }
 }
 
