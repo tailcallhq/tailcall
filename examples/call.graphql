@@ -1,4 +1,4 @@
-schema @server(graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(lint:{autoFix:true}, graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
