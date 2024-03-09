@@ -22,6 +22,7 @@ pub mod lambda;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
+mod rest;
 pub mod runtime;
 pub mod scalar;
 mod serde_value_ext;

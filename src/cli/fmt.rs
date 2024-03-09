@@ -20,7 +20,7 @@ impl Fmt {
     pub fn table(labels: Vec<(String, String)>) -> String {
         let max_length = labels.iter().map(|(key, _)| key.len()).max().unwrap_or(0) + 1;
         let padding = " ".repeat(max_length);
-        let mut table = labels
+        let table = labels
             .iter()
             .map(|(key, value)| {
                 Fmt::heading(
@@ -33,7 +33,6 @@ impl Fmt {
             })
             .collect::<Vec<String>>()
             .join("\n");
-        table.push('\n');
         table
     }
 
@@ -50,7 +49,7 @@ impl Fmt {
         let query_data: Vec<String> = query_paths
             .iter()
             .map(|query_path| {
-                let mut path = "  query { ".to_string();
+                let mut path = "query { ".to_string();
                 path.push_str(
                     query_path
                         .iter()
@@ -77,19 +76,23 @@ impl Fmt {
         }))
     }
 
-    pub fn n_plus_one_data(n_plus_one_queries: bool, config: &Config) -> (String, String) {
+    pub fn n_plus_one_data(
+        mut table: Vec<(String, String)>,
+        show_npo: bool,
+        config: &Config,
+    ) -> Vec<(String, String)> {
         let n_plus_one_info = config.n_plus_one();
-        if n_plus_one_queries {
-            (
+        if show_npo {
+            table.push((
                 "N + 1".to_string(),
                 [
                     n_plus_one_info.len().to_string(),
                     Self::format_n_plus_one_queries(n_plus_one_info),
                 ]
                 .join("\n"),
-            )
-        } else {
-            ("N + 1".to_string(), n_plus_one_info.len().to_string())
+            ))
         }
+
+        table
     }
 }

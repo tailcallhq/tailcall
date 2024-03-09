@@ -636,6 +636,7 @@ enum LinkType {
   Script
   Cert
   Key
+  Operation
 }
 input Lint {
   autoFix: Boolean

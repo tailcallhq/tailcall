@@ -1339,7 +1339,8 @@
         "Protobuf",
         "Script",
         "Cert",
-        "Key"
+        "Key",
+        "Operation"
       ]
     },
     "Lint": {
