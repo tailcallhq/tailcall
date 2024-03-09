@@ -35,7 +35,7 @@ impl Server {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
         let server_config = Arc::new(ServerConfig::new(
             blueprint.clone(),
-            Some(self.config_module.extensions.rest_endpoints),
+            self.config_module.extensions.endpoints,
         ));
 
         init_opentelemetry(

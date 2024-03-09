@@ -285,8 +285,10 @@ fn print_selection(set: &SelectionSet) -> String {
         return "".to_string();
     }
 
-    let selection = set.items.iter().map(|entry| {
-        match &entry.node {
+    let selection = set
+        .items
+        .iter()
+        .map(|entry| match &entry.node {
             Selection::Field(field) => {
                 let field = &field.node;
                 let name = field.name.node.to_string();
@@ -294,23 +296,28 @@ fn print_selection(set: &SelectionSet) -> String {
                 let args = if field.arguments.is_empty() {
                     "".to_string()
                 } else {
-                    let args = field.arguments.iter().map(|(name, value)| {
-                        let name = name.node.to_string();
-                        let value = value.node.to_string();
+                    let args = field
+                        .arguments
+                        .iter()
+                        .map(|(name, value)| {
+                            let name = name.node.to_string();
+                            let value = value.node.to_string();
 
-                        format!("{name}: {value}")
-                    }).collect::<Vec<_>>().join(", ");
+                            format!("{name}: {value}")
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
 
                     format!("({args})")
                 };
 
                 format!("{name}{args}{selection_set}")
-
-            },
+            }
             Selection::FragmentSpread(_) => todo!(),
             Selection::InlineFragment(_) => todo!(),
-        }
-    }).collect::<Vec<_>>().join(" ");
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
 
     format!(" {{ {selection} }}")
 }
@@ -328,7 +335,7 @@ pub fn print_operation(op: &OperationDefinition) -> String {
                 let name = &node.name.node;
                 let typ = &node.var_type.node;
                 let default = if let Some(default) = &node.default_value {
-                    format!(" = {}", default.node.to_string())
+                    format!(" = {}", default.node)
                 } else {
                     "".to_string()
                 };
@@ -368,7 +375,10 @@ mod tests {
 
         #[test]
         fn test_print_operation() {
-            assert_eq!(print_operation(&get_operation()), r#"query($id: Int!) { user(id: $id) { id name } }"#);
+            assert_eq!(
+                print_operation(&get_operation()),
+                r#"query($id: Int!) { user(id: $id) { id name } }"#
+            );
         }
     }
 }

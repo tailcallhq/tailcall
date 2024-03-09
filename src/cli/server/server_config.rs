@@ -12,11 +12,11 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn new(blueprint: Blueprint, rest_endpoints: Option<EndpointSet>) -> Self {
+    pub fn new(blueprint: Blueprint, endpoints: EndpointSet) -> Self {
         let server_context = Arc::new(AppContext::new(
             blueprint.clone(),
             init(&blueprint.upstream, blueprint.server.script.clone()),
-            rest_endpoints,
+            endpoints,
         ));
         Self { app_ctx: server_context, blueprint }
     }

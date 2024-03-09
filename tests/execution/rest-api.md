@@ -11,7 +11,6 @@ query ($id: Int!) @rest(method: "get", path: "/user/$id") {
     name
   }
 }
-
 ```
 
 #### server:

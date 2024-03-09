@@ -626,7 +626,7 @@ impl ExecutionSpec {
         Arc::new(AppContext::new(
             blueprint,
             runtime,
-            Some(config.extensions.rest_endpoints.clone()),
+            config.extensions.endpoints.clone(),
         ))
     }
 }

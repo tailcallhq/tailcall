@@ -26,11 +26,7 @@ pub struct AppContext {
 
 impl AppContext {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        mut blueprint: Blueprint,
-        runtime: TargetRuntime,
-        rest_endpoints: Option<EndpointSet>,
-    ) -> Self {
+    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -117,7 +113,7 @@ impl AppContext {
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
-            rest_endpoints: rest_endpoints.unwrap_or_default(),
+            rest_endpoints: endpoints,
         }
     }
 

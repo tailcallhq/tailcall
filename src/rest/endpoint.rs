@@ -1,20 +1,21 @@
 use std::collections::BTreeMap;
 
-use async_graphql::parser::types::{BaseType, Directive, OperationDefinition, Type};
+use async_graphql::parser::types::{BaseType, Directive, Type};
 use async_graphql::{Name, Variables};
 use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::{async_graphql_hyper::GraphQLRequest, document::print_operation};
+use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
+use crate::document::print_operation;
 use crate::http::Method;
 use crate::is_default;
 
 type Request = hyper::Request<hyper::Body>;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum UrlParamType {
+enum UrlParamType {
     String,
     Number(N),
     Boolean,
@@ -76,18 +77,6 @@ impl Segment {
     pub fn param(t: UrlParamType, s: &str) -> Self {
         Self::Param(TypedVariable::new(t, s))
     }
-
-    pub fn string(s: &str) -> Self {
-        Self::Param(TypedVariable::string(s))
-    }
-
-    pub fn int(s: &str) -> Self {
-        Self::Param(TypedVariable::int(s))
-    }
-
-    pub fn boolean(s: &str) -> Self {
-        Self::Param(TypedVariable::boolean(s))
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -129,10 +118,6 @@ impl Path {
             }
         }
         Ok(Self { segments })
-    }
-
-    fn new(segments: Vec<Segment>) -> Self {
-        Self { segments }
     }
 
     fn matches(&self, path: &str) -> Option<Variables> {
@@ -187,22 +172,6 @@ impl TypedVariable {
         Self { type_of: tpe, name: name.to_string(), nullable: false }
     }
 
-    fn string(name: &str) -> Self {
-        Self::new(UrlParamType::String, name)
-    }
-
-    fn int(name: &str) -> Self {
-        Self::new(UrlParamType::Number(N::Int), name)
-    }
-
-    fn float(name: &str) -> Self {
-        Self::new(UrlParamType::Number(N::Float), name)
-    }
-
-    fn boolean(name: &str) -> Self {
-        Self::new(UrlParamType::Boolean, name)
-    }
-
     fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
         self.type_of.to_value(value)
     }
@@ -241,8 +210,6 @@ pub struct Endpoint {
     // Can use persisted queries for better performance
     query_params: QueryParams,
     body: Option<String>,
-    operation: OperationDefinition,
-    type_map: TypeMap,
     graphql_query: String,
 }
 
@@ -329,9 +296,7 @@ impl Endpoint {
                     path: Path::parse(&type_map, &rest.path)?,
                     query_params: QueryParams::try_from_map(&type_map, rest.query)?,
                     body: rest.body,
-                    operation: op.node.clone(),
                     graphql_query,
-                    type_map,
                 };
                 endpoints.push(endpoint);
             }
@@ -380,7 +345,7 @@ pub struct PartialRequest<'a> {
 }
 
 impl<'a> PartialRequest<'a> {
-    pub async fn to_request(self, request: Request) -> anyhow::Result<GraphQLRequest> {
+    pub async fn into_request(self, request: Request) -> anyhow::Result<GraphQLRequest> {
         let mut variables = self.variables;
         if let Some(key) = self.body {
             let bytes = hyper::body::to_bytes(request.into_body()).await?;
@@ -422,6 +387,25 @@ mod tests {
           }
         "#;
 
+    impl TypedVariable {
+        fn string(name: &str) -> Self {
+            Self::new(UrlParamType::String, name)
+        }
+
+        fn float(name: &str) -> Self {
+            Self::new(UrlParamType::Number(N::Float), name)
+        }
+
+        fn boolean(name: &str) -> Self {
+            Self::new(UrlParamType::Boolean, name)
+        }
+    }
+
+    impl Path {
+        fn new(segments: Vec<Segment>) -> Self {
+            Self { segments }
+        }
+    }
     fn test_directive() -> Directive {
         async_graphql::parser::parse_query(TEST_QUERY)
             .unwrap()

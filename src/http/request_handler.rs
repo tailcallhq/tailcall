@@ -141,7 +141,7 @@ async fn handle_rest_apis(
     *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.rest_endpoints.matches(&request) {
-        let graphql_request = p_request.to_request(request).await?;
+        let graphql_request = p_request.into_request(request).await?;
         let mut response = graphql_request
             .data(req_ctx.clone())
             .execute(&app_ctx.schema)
