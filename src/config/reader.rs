@@ -18,6 +18,8 @@ use crate::config::{Config, ConfigReaderContext, Source};
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
+use crate::config::lint_schema::LintSchema;
+
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
@@ -207,14 +209,14 @@ impl ConfigReader {
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
+            let config = LintSchema::lint(
+                Config::from_source(source, schema)?,
+                &file.path,
+                Source::detect(&file.path)?,
+            );
 
             // Create initial config module
-            let new_config_module = self
-                .resolve(
-                    Config::from_source(source, schema)?,
-                    Path::new(&file.path).parent(),
-                )
-                .await?;
+            let new_config_module = self.resolve(config, Path::new(&file.path).parent()).await?;
 
             // Merge it with the original config set
             config_module = config_module.merge_right(&new_config_module);

@@ -1,9 +1,31 @@
 use std::collections::BTreeMap;
 
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 use crate::config::KeyValues;
 use crate::is_default;
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Lint {
+    pub auto_fix: bool,
+    pub field_name: bool,
+    pub type_name: bool,
+    pub enum_name: bool,
+    pub enum_value: bool,
+}
+impl Default for Lint {
+    fn default() -> Self {
+        Lint {
+            auto_fix: false,
+            field_name: false,
+            type_name: false,
+            enum_name: false,
+            enum_value: false,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -97,6 +119,8 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    pub lint: Lint,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

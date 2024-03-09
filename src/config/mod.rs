@@ -10,6 +10,7 @@ pub use telemetry::*;
 pub use upstream::*;
 mod config;
 mod config_module;
+mod lint_schema;
 mod expr;
 mod from_document;
 pub mod group_by;
