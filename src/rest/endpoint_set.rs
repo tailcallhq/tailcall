@@ -1,4 +1,5 @@
-use super::endpoint::{Endpoint, PartialRequest};
+use super::endpoint::Endpoint;
+use super::partial_request::PartialRequest;
 
 type Request = hyper::Request<hyper::Body>;
 #[derive(Default, Clone, Debug)]

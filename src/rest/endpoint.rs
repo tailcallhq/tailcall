@@ -1,208 +1,18 @@
 use std::collections::BTreeMap;
 
-use async_graphql::{Name, Variables};
-use async_graphql_value::ConstValue;
+use async_graphql::Variables;
 use derive_setters::Setters;
-use typed_variable::{TypedVariable, UrlParamType};
 
-use self::query_params::QueryParams;
 use super::directive::Rest;
+use super::partial_request::PartialRequest;
+use super::path::Path;
+use super::query_params::QueryParams;
 use super::type_map::TypeMap;
-use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
 use crate::document::print_operation;
 use crate::http::Method;
 
 type Request = hyper::Request<hyper::Body>;
-
-#[derive(Clone, Debug, PartialEq)]
-enum Segment {
-    Literal(String),
-    Param(TypedVariable),
-}
-
-impl Segment {
-    pub fn lit(s: &str) -> Self {
-        Self::Literal(s.to_string())
-    }
-
-    pub fn param(t: UrlParamType, s: &str) -> Self {
-        Self::Param(TypedVariable::new(t, s))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Default)]
-pub struct Path {
-    segments: Vec<Segment>,
-}
-
-impl Path {
-    fn parse(q: &TypeMap, input: &str) -> anyhow::Result<Self> {
-        let variables = q;
-
-        let mut segments = Vec::new();
-        for s in input.split('/').filter(|s| !s.is_empty()) {
-            if let Some(key) = s.strip_prefix('$') {
-                let value = variables.get(key).ok_or(anyhow::anyhow!(
-                    "undefined param: {} in {}",
-                    s,
-                    input
-                ))?;
-                let t = UrlParamType::try_from(value)?;
-                segments.push(Segment::param(t, key));
-            } else {
-                segments.push(Segment::lit(s));
-            }
-        }
-        Ok(Self { segments })
-    }
-
-    fn matches(&self, path: &str) -> Option<Variables> {
-        let mut variables = Variables::default();
-        let mut req_segments = path.split('/').filter(|s| !s.is_empty());
-        for (segment, req_segment) in self.segments.iter().zip(&mut req_segments) {
-            match segment {
-                Segment::Literal(segment) => {
-                    if segment != req_segment {
-                        return None;
-                    }
-                }
-                Segment::Param(t_var) => {
-                    let tpe = t_var.to_value(req_segment).ok()?;
-                    variables.insert(Name::new(t_var.name.clone()), tpe);
-                }
-            }
-        }
-
-        // If there is still some segments in incoming request it should not match
-        if req_segments.next().is_some() {
-            return None;
-        }
-
-        Some(variables)
-    }
-}
-
-mod typed_variable {
-
-    use async_graphql::parser::types::{BaseType, Type};
-    use async_graphql_value::ConstValue;
-    use derive_setters::Setters;
-
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum UrlParamType {
-        String,
-        Number(N),
-        Boolean,
-    }
-
-    #[derive(Clone, Debug, PartialEq)]
-    pub enum N {
-        Int,
-        Float,
-    }
-
-    impl N {
-        fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
-            Ok(match self {
-                Self::Int => ConstValue::from(value.parse::<i64>()?),
-                Self::Float => ConstValue::from(value.parse::<f64>()?),
-            })
-        }
-    }
-
-    impl UrlParamType {
-        fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
-            Ok(match self {
-                Self::String => ConstValue::String(value.to_string()),
-                Self::Number(n) => n.to_value(value)?,
-                Self::Boolean => ConstValue::Boolean(value.parse()?),
-            })
-        }
-    }
-
-    impl TryFrom<&Type> for UrlParamType {
-        type Error = anyhow::Error;
-        fn try_from(value: &Type) -> anyhow::Result<Self> {
-            match &value.base {
-                BaseType::Named(name) => match name.as_str() {
-                    "String" => Ok(Self::String),
-                    "Int" => Ok(Self::Number(N::Int)),
-                    "Boolean" => Ok(Self::Boolean),
-                    "Float" => Ok(Self::Number(N::Float)),
-                    _ => Err(anyhow::anyhow!("unsupported type: {}", name)),
-                },
-                // TODO: support for list types
-                _ => Err(anyhow::anyhow!("unsupported type: {:?}", value)),
-            }
-        }
-    }
-    #[derive(Clone, Debug, PartialEq, Setters)]
-    pub struct TypedVariable {
-        pub type_of: UrlParamType,
-        pub name: String,
-        // TODO: validate types for query
-        pub nullable: bool,
-    }
-
-    impl TypedVariable {
-        pub fn new(tpe: UrlParamType, name: &str) -> Self {
-            Self { type_of: tpe, name: name.to_string(), nullable: false }
-        }
-
-        pub fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
-            self.type_of.to_value(value)
-        }
-    }
-}
-
-mod query_params {
-
-    use std::collections::BTreeMap;
-
-    use async_graphql::{Name, Variables};
-
-    use super::typed_variable::{TypedVariable, UrlParamType};
-    use super::TypeMap;
-
-    #[derive(Debug, PartialEq, Default, Clone)]
-    pub struct QueryParams {
-        params: Vec<(String, TypedVariable)>,
-    }
-
-    impl From<Vec<(&str, TypedVariable)>> for QueryParams {
-        fn from(value: Vec<(&str, TypedVariable)>) -> Self {
-            Self {
-                params: value.into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
-            }
-        }
-    }
-
-    impl QueryParams {
-        pub fn try_from_map(q: &TypeMap, map: BTreeMap<String, String>) -> anyhow::Result<Self> {
-            let mut params = Vec::new();
-            for (k, v) in map {
-                let t = UrlParamType::try_from(
-                    q.get(&k)
-                        .ok_or(anyhow::anyhow!("undefined query param: {}", k))?,
-                )?;
-                params.push((k, TypedVariable::new(t, &v)));
-            }
-            Ok(Self { params })
-        }
-
-        pub fn matches(&self, query_params: BTreeMap<String, String>) -> Option<Variables> {
-            let mut variables = Variables::default();
-            for (key, t_var) in &self.params {
-                if let Some(query_param) = query_params.get(key) {
-                    let value = t_var.to_value(query_param).ok()?;
-                    variables.insert(Name::new(t_var.name.clone()), value);
-                }
-            }
-            Some(variables)
-        }
-    }
-}
 
 #[derive(Debug, Setters, Clone)]
 pub struct Endpoint {
@@ -295,28 +105,6 @@ impl Endpoint {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct PartialRequest<'a> {
-    body: Option<&'a String>,
-    graphql_query: &'a String,
-    variables: Variables,
-}
-
-impl<'a> PartialRequest<'a> {
-    pub async fn into_request(self, request: Request) -> anyhow::Result<GraphQLRequest> {
-        let mut variables = self.variables;
-        if let Some(key) = self.body {
-            let bytes = hyper::body::to_bytes(request.into_body()).await?;
-            let body: ConstValue = serde_json::from_slice(&bytes)?;
-            variables.insert(Name::new(key), body);
-        }
-
-        Ok(GraphQLRequest(
-            async_graphql::Request::new(self.graphql_query).variables(variables),
-        ))
-    }
-}
-
 fn merge_variables(a: Variables, b: Variables) -> Variables {
     let mut variables = Variables::default();
 
@@ -337,8 +125,9 @@ mod tests {
     use maplit::btreemap;
     use pretty_assertions::assert_eq;
 
-    use self::typed_variable::N;
     use super::*;
+    use crate::rest::path::Segment;
+    use crate::rest::typed_variables::TypedVariable;
 
     const TEST_QUERY: &str = r#"
         query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
@@ -346,20 +135,6 @@ mod tests {
             value
           }
         "#;
-
-    impl TypedVariable {
-        fn string(name: &str) -> Self {
-            Self::new(UrlParamType::String, name)
-        }
-
-        fn float(name: &str) -> Self {
-            Self::new(UrlParamType::Number(N::Float), name)
-        }
-
-        fn boolean(name: &str) -> Self {
-            Self::new(UrlParamType::Boolean, name)
-        }
-    }
 
     impl Path {
         fn new(segments: Vec<Segment>) -> Self {
@@ -405,7 +180,7 @@ mod tests {
             endpoint.path,
             Path::new(vec![
                 Segment::lit("foo"),
-                Segment::param(UrlParamType::Number(N::Int), "a"),
+                Segment::param(TypedVariable::int("a")),
             ])
         );
         assert_eq!(
