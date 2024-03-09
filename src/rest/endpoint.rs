@@ -9,10 +9,9 @@ use super::partial_request::PartialRequest;
 use super::path::Path;
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
+use super::Request;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
-
-type Request = hyper::Request<hyper::Body>;
 
 #[derive(Debug, Setters, Clone)]
 pub struct Endpoint {

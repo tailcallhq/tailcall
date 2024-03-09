@@ -1,6 +1,10 @@
 btreemap
 entr
+insta
 jsonplaceholder
 maplit
+mdast
+opentelemetry
+peekable
 tailcall
 tailcallrc

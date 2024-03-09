@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 use crate::http::Method;
 use crate::is_default;
 
-///
-/// A structure that represents the REST directive. It allows easy parse
+/// A structure that represents the REST directive.
+/// It allows easy parsing of the GraphQL query and extracting the REST
+/// directive.
 #[derive(Default, Debug, Deserialize, Serialize, PartialEq, Setters)]
 pub(crate) struct Rest {
     pub path: String,

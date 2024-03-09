@@ -2,9 +2,8 @@ use async_graphql::parser::types::ExecutableDocument;
 use async_graphql::{Name, Variables};
 use async_graphql_value::ConstValue;
 
+use super::Request;
 use crate::async_graphql_hyper::GraphQLRequest;
-
-type Request = hyper::Request<hyper::Body>;
 
 #[derive(Debug)]
 pub struct PartialRequest<'a> {

@@ -8,3 +8,5 @@ mod type_map;
 mod typed_variables;
 
 pub use endpoint_set::EndpointSet;
+
+type Request = hyper::Request<hyper::Body>;

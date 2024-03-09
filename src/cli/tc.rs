@@ -170,5 +170,5 @@ pub fn display_schema(blueprint: &Blueprint) {
 fn display_config(config: &Config, n_plus_one_queries: bool) {
     let table = vec![];
     let table = Fmt::n_plus_one_data(table, n_plus_one_queries, config);
-    tracing::info!("{:6}", Fmt::table(table));
+    tracing::info!("{}", Fmt::table(table));
 }

@@ -1,7 +1,7 @@
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
+use super::Request;
 
-type Request = hyper::Request<hyper::Body>;
 #[derive(Default, Clone, Debug)]
 pub struct EndpointSet {
     endpoints: Vec<Endpoint>,
