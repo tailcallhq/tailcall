@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use async_graphql::parser::types::{DocumentOperations, ExecutableDocument};
 use async_graphql::Variables;
 use derive_setters::Setters;
 
@@ -9,7 +10,6 @@ use super::path::Path;
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
 use crate::directive::DirectiveCodec;
-use crate::document::print_operation;
 use crate::http::Method;
 
 type Request = hyper::Request<hyper::Body>;
@@ -22,7 +22,7 @@ pub struct Endpoint {
     // Can use persisted queries for better performance
     query_params: QueryParams,
     body: Option<String>,
-    graphql_query: String,
+    doc: ExecutableDocument,
 }
 
 /// Creates a Rest instance from @rest directive
@@ -55,8 +55,6 @@ impl Endpoint {
                 }
             });
 
-            let graphql_query = print_operation(&op.node);
-
             if let Some(rest) = rest {
                 let rest = rest?;
                 let endpoint = Self {
@@ -64,7 +62,10 @@ impl Endpoint {
                     path: Path::parse(&type_map, &rest.path)?,
                     query_params: QueryParams::try_from_map(&type_map, rest.query)?,
                     body: rest.body,
-                    graphql_query,
+                    doc: ExecutableDocument {
+                        operations: DocumentOperations::Single(op.clone()),
+                        fragments: doc.fragments.clone(),
+                    },
                 };
                 endpoints.push(endpoint);
             }
@@ -97,11 +98,7 @@ impl Endpoint {
         variables = merge_variables(variables, path);
         variables = merge_variables(variables, query);
 
-        Some(PartialRequest {
-            body: self.body.as_ref(),
-            graphql_query: &self.graphql_query,
-            variables,
-        })
+        Some(PartialRequest { body: self.body.as_ref(), doc: &self.doc, variables })
     }
 }
 
