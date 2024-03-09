@@ -632,7 +632,7 @@ enum LinkType {
   Script
   Cert
   Key
-  RestOperation
+  Operation
 }
 enum Method {
   GET

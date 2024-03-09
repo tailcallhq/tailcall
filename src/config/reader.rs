@@ -158,7 +158,7 @@ impl ConfigReader {
                     config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
-                LinkType::RestOperation => {
+                LinkType::Operation => {
                     config_module.extensions.endpoints = EndpointSet::try_new(&content)?;
                 }
             }
