@@ -1,7 +1,5 @@
 # Rest API
 
-##### only
-
 #### file:operation-user.graphql
 
 ```graphql

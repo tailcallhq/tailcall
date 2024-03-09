@@ -136,6 +136,19 @@ mod tests {
           }
         "#;
 
+    const MULTIPLE_TEST_QUERY: &str = r#"        
+        query q1 ($a: Int)
+          @rest(method: "post", path: "/foo/$a") {
+            value
+          }
+
+
+        query q2 ($a: Int)
+          @rest(method: "post", path: "/bar/$a") {
+            value
+          }
+        "#;
+
     impl Path {
         fn new(segments: Vec<Segment>) -> Self {
             Self { segments }
@@ -192,6 +205,12 @@ mod tests {
             ])
         );
         assert_eq!(endpoint.body, Some("v".to_string()));
+    }
+
+    #[test]
+    fn test_multiple_queries() {
+        let endpoints = Endpoint::try_new(MULTIPLE_TEST_QUERY).unwrap();
+        assert_eq!(endpoints.len(), 2);
     }
 
     mod matches {

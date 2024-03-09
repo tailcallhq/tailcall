@@ -1,5 +1,12 @@
-query ($id: Int!) @rest(method: "get", path: "/user/$id") {
+query userById($id: Int!) @rest(method: "get", path: "/user/$id") {
   user(id: $id) {
+    id
+    name
+  }
+}
+
+query users @rest(method: "get", path: "/users") {
+  users {
     id
     name
   }
