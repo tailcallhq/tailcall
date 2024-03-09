@@ -1,67 +1,19 @@
 use std::collections::BTreeMap;
 
-use async_graphql::parser::types::{BaseType, Directive, Type};
+use async_graphql::parser::types::Type;
 use async_graphql::{Name, Variables};
-use async_graphql_value::{ConstValue, Value};
+use async_graphql_value::ConstValue;
 use derive_setters::Setters;
-use serde::{Deserialize, Serialize};
+use rest::Rest;
+use typed_variable::{TypedVariable, UrlParamType};
 
+use self::query_params::QueryParams;
 use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
 use crate::document::print_operation;
 use crate::http::Method;
-use crate::is_default;
 
 type Request = hyper::Request<hyper::Body>;
-
-#[derive(Clone, Debug, PartialEq)]
-enum UrlParamType {
-    String,
-    Number(N),
-    Boolean,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-enum N {
-    Int,
-    Float,
-}
-
-impl N {
-    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
-        Ok(match self {
-            Self::Int => ConstValue::from(value.parse::<i64>()?),
-            Self::Float => ConstValue::from(value.parse::<f64>()?),
-        })
-    }
-}
-
-impl UrlParamType {
-    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
-        Ok(match self {
-            Self::String => ConstValue::String(value.to_string()),
-            Self::Number(n) => n.to_value(value)?,
-            Self::Boolean => ConstValue::Boolean(value.parse()?),
-        })
-    }
-}
-
-impl TryFrom<&Type> for UrlParamType {
-    type Error = anyhow::Error;
-    fn try_from(value: &Type) -> anyhow::Result<Self> {
-        match &value.base {
-            BaseType::Named(name) => match name.as_str() {
-                "String" => Ok(Self::String),
-                "Int" => Ok(Self::Number(N::Int)),
-                "Boolean" => Ok(Self::Boolean),
-                "Float" => Ok(Self::Number(N::Float)),
-                _ => Err(anyhow::anyhow!("unsupported type: {}", name)),
-            },
-            // TODO: support for list types
-            _ => Err(anyhow::anyhow!("unsupported type: {:?}", value)),
-        }
-    }
-}
 
 #[derive(Clone, Debug, PartialEq)]
 enum Segment {
@@ -85,7 +37,7 @@ pub struct Path {
 }
 
 #[derive(Debug, Clone)]
-struct TypeMap(BTreeMap<String, Type>);
+pub struct TypeMap(BTreeMap<String, Type>);
 
 impl TypeMap {
     fn get(&self, key: &str) -> Option<&Type> {
@@ -146,59 +98,124 @@ impl Path {
     }
 }
 
-#[derive(Debug, PartialEq, Default, Clone)]
-pub struct QueryParams {
-    params: Vec<(String, TypedVariable)>,
-}
+mod typed_variable {
 
-impl From<Vec<(&str, TypedVariable)>> for QueryParams {
-    fn from(value: Vec<(&str, TypedVariable)>) -> Self {
-        Self {
-            params: value.into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
+    use async_graphql::parser::types::{BaseType, Type};
+    use async_graphql_value::ConstValue;
+    use derive_setters::Setters;
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum UrlParamType {
+        String,
+        Number(N),
+        Boolean,
+    }
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum N {
+        Int,
+        Float,
+    }
+
+    impl N {
+        fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
+            Ok(match self {
+                Self::Int => ConstValue::from(value.parse::<i64>()?),
+                Self::Float => ConstValue::from(value.parse::<f64>()?),
+            })
         }
     }
-}
 
-#[derive(Clone, Debug, PartialEq, Setters)]
-struct TypedVariable {
-    type_of: UrlParamType,
-    name: String,
-    // TODO: validate types for query
-    nullable: bool,
-}
-
-impl TypedVariable {
-    fn new(tpe: UrlParamType, name: &str) -> Self {
-        Self { type_of: tpe, name: name.to_string(), nullable: false }
-    }
-
-    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
-        self.type_of.to_value(value)
-    }
-}
-
-impl QueryParams {
-    fn try_from_map(q: &TypeMap, map: BTreeMap<String, String>) -> anyhow::Result<Self> {
-        let mut params = Vec::new();
-        for (k, v) in map {
-            let t = UrlParamType::try_from(
-                q.get(&k)
-                    .ok_or(anyhow::anyhow!("undefined query param: {}", k))?,
-            )?;
-            params.push((k, TypedVariable::new(t, &v)));
+    impl UrlParamType {
+        fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
+            Ok(match self {
+                Self::String => ConstValue::String(value.to_string()),
+                Self::Number(n) => n.to_value(value)?,
+                Self::Boolean => ConstValue::Boolean(value.parse()?),
+            })
         }
-        Ok(Self { params })
     }
 
-    fn matches(&self, query_params: BTreeMap<String, String>) -> Option<Variables> {
-        let mut variables = Variables::default();
-        for (key, t_var) in &self.params {
-            if let Some(query_param) = query_params.get(key) {
-                let value = t_var.to_value(query_param).ok()?;
-                variables.insert(Name::new(t_var.name.clone()), value);
+    impl TryFrom<&Type> for UrlParamType {
+        type Error = anyhow::Error;
+        fn try_from(value: &Type) -> anyhow::Result<Self> {
+            match &value.base {
+                BaseType::Named(name) => match name.as_str() {
+                    "String" => Ok(Self::String),
+                    "Int" => Ok(Self::Number(N::Int)),
+                    "Boolean" => Ok(Self::Boolean),
+                    "Float" => Ok(Self::Number(N::Float)),
+                    _ => Err(anyhow::anyhow!("unsupported type: {}", name)),
+                },
+                // TODO: support for list types
+                _ => Err(anyhow::anyhow!("unsupported type: {:?}", value)),
             }
         }
-        Some(variables)
+    }
+    #[derive(Clone, Debug, PartialEq, Setters)]
+    pub struct TypedVariable {
+        pub type_of: UrlParamType,
+        pub name: String,
+        // TODO: validate types for query
+        pub nullable: bool,
+    }
+
+    impl TypedVariable {
+        pub fn new(tpe: UrlParamType, name: &str) -> Self {
+            Self { type_of: tpe, name: name.to_string(), nullable: false }
+        }
+
+        pub fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
+            self.type_of.to_value(value)
+        }
+    }
+}
+
+mod query_params {
+
+    use std::collections::BTreeMap;
+
+    use async_graphql::{Name, Variables};
+
+    use super::typed_variable::{TypedVariable, UrlParamType};
+    use super::TypeMap;
+
+    #[derive(Debug, PartialEq, Default, Clone)]
+    pub struct QueryParams {
+        params: Vec<(String, TypedVariable)>,
+    }
+
+    impl From<Vec<(&str, TypedVariable)>> for QueryParams {
+        fn from(value: Vec<(&str, TypedVariable)>) -> Self {
+            Self {
+                params: value.into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
+            }
+        }
+    }
+
+    impl QueryParams {
+        pub fn try_from_map(q: &TypeMap, map: BTreeMap<String, String>) -> anyhow::Result<Self> {
+            let mut params = Vec::new();
+            for (k, v) in map {
+                let t = UrlParamType::try_from(
+                    q.get(&k)
+                        .ok_or(anyhow::anyhow!("undefined query param: {}", k))?,
+                )?;
+                params.push((k, TypedVariable::new(t, &v)));
+            }
+            Ok(Self { params })
+        }
+
+        pub fn matches(&self, query_params: BTreeMap<String, String>) -> Option<Variables> {
+            let mut variables = Variables::default();
+            for (key, t_var) in &self.params {
+                if let Some(query_param) = query_params.get(key) {
+                    let value = t_var.to_value(query_param).ok()?;
+                    variables.insert(Name::new(t_var.name.clone()), value);
+                }
+            }
+            Some(variables)
+        }
     }
 }
 
@@ -213,51 +230,64 @@ pub struct Endpoint {
     graphql_query: String,
 }
 
-#[derive(Default, Debug, Deserialize, Serialize, PartialEq, Setters)]
-struct Rest {
-    path: String,
-    #[serde(default, skip_serializing_if = "is_default")]
-    method: Option<Method>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    query: BTreeMap<String, String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    body: Option<String>,
-}
+mod rest {
+    use std::collections::BTreeMap;
 
-/// Creates a Rest instance from @rest directive
-impl TryFrom<&Directive> for Rest {
-    type Error = anyhow::Error;
+    use async_graphql::parser::types::Directive;
+    use async_graphql_value::Value;
+    use derive_setters::Setters;
+    use serde::{Deserialize, Serialize};
 
-    fn try_from(directive: &Directive) -> anyhow::Result<Self> {
-        let mut rest = Rest::default();
+    use crate::http::Method;
+    use crate::is_default;
 
-        for (k, v) in directive.arguments.iter() {
-            if k.node.as_str() == "path" {
-                rest.path = serde_json::from_str(v.node.to_string().as_str())?;
-            }
-            if k.node.as_str() == "method" {
-                rest.method = serde_json::from_str(v.node.to_string().to_uppercase().as_str())?;
-            }
-            if k.node.as_str() == "query" {
-                if let Value::Object(map) = &v.node {
-                    for (k, v) in map {
-                        if let Value::Variable(v) = v {
-                            rest.query
-                                .insert(k.as_str().to_owned(), v.as_str().to_string());
+    #[derive(Default, Debug, Deserialize, Serialize, PartialEq, Setters)]
+    pub(crate) struct Rest {
+        pub path: String,
+        #[serde(default, skip_serializing_if = "is_default")]
+        pub method: Option<Method>,
+        #[serde(default, skip_serializing_if = "is_default")]
+        pub query: BTreeMap<String, String>,
+        #[serde(default, skip_serializing_if = "is_default")]
+        pub body: Option<String>,
+    }
+
+    impl TryFrom<&Directive> for Rest {
+        type Error = anyhow::Error;
+
+        fn try_from(directive: &Directive) -> anyhow::Result<Self> {
+            let mut rest = Rest::default();
+
+            for (k, v) in directive.arguments.iter() {
+                if k.node.as_str() == "path" {
+                    rest.path = serde_json::from_str(v.node.to_string().as_str())?;
+                }
+                if k.node.as_str() == "method" {
+                    rest.method = serde_json::from_str(v.node.to_string().to_uppercase().as_str())?;
+                }
+                if k.node.as_str() == "query" {
+                    if let Value::Object(map) = &v.node {
+                        for (k, v) in map {
+                            if let Value::Variable(v) = v {
+                                rest.query
+                                    .insert(k.as_str().to_owned(), v.as_str().to_string());
+                            }
                         }
                     }
                 }
-            }
-            if k.node.as_str() == "body" {
-                if let Value::Variable(v) = &v.node {
-                    rest.body = Some(v.to_string());
+                if k.node.as_str() == "body" {
+                    if let Value::Variable(v) = &v.node {
+                        rest.body = Some(v.to_string());
+                    }
                 }
             }
-        }
 
-        Ok(rest)
+            Ok(rest)
+        }
     }
 }
+
+/// Creates a Rest instance from @rest directive
 
 impl Endpoint {
     pub fn try_new(operations: &str) -> anyhow::Result<Vec<Self>> {
@@ -375,9 +405,11 @@ fn merge_variables(a: Variables, b: Variables) -> Variables {
 
 #[cfg(test)]
 mod tests {
+    use async_graphql::parser::types::Directive;
     use maplit::btreemap;
     use pretty_assertions::assert_eq;
 
+    use self::typed_variable::N;
     use super::*;
 
     const TEST_QUERY: &str = r#"
