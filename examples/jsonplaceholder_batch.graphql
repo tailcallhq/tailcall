@@ -1,5 +1,5 @@
 schema
-  @server(port: 8000, graphiql: true)
+  @server(lint:{autoFix:true}, port: 8000, graphiql: true)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }

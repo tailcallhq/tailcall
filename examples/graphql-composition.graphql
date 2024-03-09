@@ -3,7 +3,7 @@
 # and then you can run this example and test it on 8001 port
 
 schema
-  @server(port: 8001, graphiql: true, queryValidation: false, hostname: "0.0.0.0")
+  @server(lint:{autoFix:true}, port: 8001, graphiql: true, queryValidation: false, hostname: "0.0.0.0")
   @upstream(baseURL: "http://localhost:8000/graphql", httpCache: true, batch: {delay: 1}) {
   query: Query
 }

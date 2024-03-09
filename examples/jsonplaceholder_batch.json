@@ -1,7 +1,10 @@
 {
   "server": {
     "port": 8000,
-    "graphiql": true
+    "graphiql": true,
+    "lint":{
+      "autoFix":true
+    }
   },
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
