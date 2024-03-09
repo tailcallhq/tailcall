@@ -17,6 +17,8 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
+const API_URL_PREFIX: &str = "/api";
+
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
@@ -96,8 +98,8 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    let request = serde_json::from_slice::<T>(&bytes);
-    match request {
+    let graphql_request = serde_json::from_slice::<T>(&bytes);
+    match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
             response = update_cache_control_header(response, app_ctx, req_ctx);
@@ -132,11 +134,36 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+async fn handle_rest_apis(
+    mut request: Request<Body>,
+    app_ctx: Arc<AppContext>,
+) -> Result<Response<Body>> {
+    *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
+    let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
+    if let Some(p_request) = app_ctx.endpoints.matches(&request) {
+        let graphql_request = p_request.into_request(request).await?;
+        let mut response = graphql_request
+            .data(req_ctx.clone())
+            .execute(&app_ctx.schema)
+            .await;
+        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
+        let mut resp = response.to_response()?;
+        update_response_headers(&mut resp, app_ctx.as_ref());
+        return Ok(resp);
+    }
+
+    not_found()
+}
+
 #[instrument(skip_all, err, fields(method = %req.method(), url = %req.uri()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
+    if req.uri().path().starts_with(API_URL_PREFIX) {
+        return handle_rest_apis(req, app_ctx).await;
+    }
+
     match *req.method() {
         // NOTE:
         // The first check for the route should be for `/graphql`

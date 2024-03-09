@@ -180,6 +180,7 @@ pub fn display_schema(blueprint: &Blueprint) {
 }
 
 fn display_config(config: &Config, n_plus_one_queries: bool) {
-    let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
-    Fmt::display(Fmt::table(seq));
+    let table = vec![];
+    let table = Fmt::n_plus_one_data(table, n_plus_one_queries, config);
+    tracing::info!("{}", Fmt::table(table));
 }
