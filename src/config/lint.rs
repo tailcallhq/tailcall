@@ -8,15 +8,15 @@ use crate::config::{AddField, Config, Type};
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Lint {
     #[serde(rename = "field")]
-    pub field_lint: bool,
+    pub field_lint: Option<bool>,
     #[serde(rename = "type")]
-    pub type_lint: bool,
+    pub type_lint: Option<bool>,
     #[serde(rename = "enum")]
-    pub enum_lint: bool,
+    pub enum_lint: Option<bool>,
     #[serde(rename = "enumValue")]
-    pub enum_value_lint: bool,
+    pub enum_value_lint: Option<bool>,
     #[serde(rename = "autoFix")]
-    pub autofix: bool,
+    pub autofix: Option<bool>,
 }
 
 // Type -> PascalCase
@@ -26,17 +26,19 @@ pub struct Lint {
 
 pub fn lint_fix(mut config: Config) -> Config {
     if let Some(lint) = &config.server.lint {
-        let mut fixed_types = BTreeMap::new();
-        for (k, ty) in config.types.iter() {
-            fixed_types.insert(
-                match lint.type_lint {
-                    true => k.to_case(convert_case::Case::Pascal),
-                    false => k.clone(),
-                },
-                fix_type(lint, ty),
-            );
+        if *lint.autofix.as_ref().unwrap_or(&false) {
+            let mut fixed_types = BTreeMap::new();
+            for (k, ty) in config.types.iter() {
+                fixed_types.insert(
+                    match lint.type_lint.as_ref().unwrap_or(&false) {
+                        true => k.to_case(convert_case::Case::Pascal),
+                        false => k.clone(),
+                    },
+                    fix_type(lint, ty),
+                );
+            }
+            config.types = fixed_types;
         }
-        config.types = fixed_types;
     }
     config
 }
@@ -46,7 +48,7 @@ fn fix_type(lint: &Lint, ty: &Type) -> Type {
     let mut new_ty = Type::default();
 
     // for enum
-    if lint.enum_lint {
+    if *lint.enum_value_lint.as_ref().unwrap_or(&false) {
         if let Some(variants) = &ty.variants {
             let mut set = BTreeSet::new();
             for variant in variants {
@@ -56,7 +58,7 @@ fn fix_type(lint: &Lint, ty: &Type) -> Type {
         }
     }
 
-    if lint.field_lint {
+    if *lint.field_lint.as_ref().unwrap_or(&false) {
         for (k, field) in &ty.fields {
             new_ty
                 .fields

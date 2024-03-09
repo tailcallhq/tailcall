@@ -1344,28 +1344,36 @@
     },
     "Lint": {
       "type": "object",
-      "required": [
-        "autoFix",
-        "enum",
-        "enumValue",
-        "field",
-        "type"
-      ],
       "properties": {
         "autoFix": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "enum": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "enumValue": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "field": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "type": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },

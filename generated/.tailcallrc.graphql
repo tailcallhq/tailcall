@@ -638,11 +638,11 @@ enum LinkType {
   Key
 }
 input Lint {
-  autoFix: Boolean!
-  enum: Boolean!
-  enumValue: Boolean!
-  field: Boolean!
-  type: Boolean!
+  autoFix: Boolean
+  enum: Boolean
+  enumValue: Boolean
+  field: Boolean
+  type: Boolean
 }
 enum Method {
   GET
