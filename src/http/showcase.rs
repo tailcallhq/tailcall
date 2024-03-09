@@ -10,6 +10,7 @@ use super::AppContext;
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::Blueprint;
 use crate::config::reader::ConfigReader;
+use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
@@ -60,7 +61,11 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    Ok(Ok(AppContext::new(blueprint, runtime)))
+    Ok(Ok(AppContext::new(
+        blueprint,
+        runtime,
+        EndpointSet::default(),
+    )))
 }
 
 #[cfg(test)]
