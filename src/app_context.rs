@@ -21,7 +21,7 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-    pub rest_endpoints: EndpointSet,
+    pub endpoints: EndpointSet,
 }
 
 impl AppContext {
@@ -113,7 +113,7 @@ impl AppContext {
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
-            rest_endpoints: endpoints,
+            endpoints,
         }
     }
 

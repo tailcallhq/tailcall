@@ -699,7 +699,7 @@ input Schema {
   Opt: Schema
 }
 scalar KeyValues
-scalar Email
 scalar PhoneNumber
+scalar Email
 scalar JSON
 
