@@ -7,6 +7,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::blueprint::GrpcMethod;
 use crate::config::Config;
+use crate::rest::EndpointSet;
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default, Setters)]
@@ -44,6 +45,9 @@ pub struct Extensions {
 
     /// Contains the key used on HTTP2 with TLS
     pub keys: Arc<Vec<PrivateKeyDer<'static>>>,
+
+    /// Contains the endpoints
+    pub endpoints: EndpointSet,
 }
 
 impl Extensions {
@@ -55,6 +59,7 @@ impl Extensions {
         if !other.keys.is_empty() {
             self.keys = other.keys.clone();
         }
+        self.endpoints.extend(other.endpoints.clone());
         self
     }
 
