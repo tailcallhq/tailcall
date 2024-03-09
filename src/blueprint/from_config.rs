@@ -121,8 +121,9 @@ impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
+        let config_module = config_module.clone().lint_fix();
         config_blueprint()
-            .try_fold(config_module, Blueprint::default())
+            .try_fold(&config_module, Blueprint::default())
             .to_result()
     }
 }

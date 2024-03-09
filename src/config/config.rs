@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{Expr, Link, Server, Upstream};
+use super::{lint, Expr, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::config::KeyValues;
@@ -62,6 +62,10 @@ pub struct Config {
     pub opentelemetry: Telemetry,
 }
 impl Config {
+    pub fn lint_fix(self) -> Self {
+        lint::lint_fix(self)
+    }
+
     pub fn port(&self) -> u16 {
         self.server.port.unwrap_or(8000)
     }

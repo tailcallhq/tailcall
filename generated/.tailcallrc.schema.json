@@ -1342,6 +1342,33 @@
         "Key"
       ]
     },
+    "Lint": {
+      "type": "object",
+      "required": [
+        "autoFix",
+        "enum",
+        "enumValue",
+        "field",
+        "type"
+      ],
+      "properties": {
+        "autoFix": {
+          "type": "boolean"
+        },
+        "enum": {
+          "type": "boolean"
+        },
+        "enumValue": {
+          "type": "boolean"
+        },
+        "field": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "boolean"
+        }
+      }
+    },
     "Method": {
       "type": "string",
       "enum": [
@@ -1520,6 +1547,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "lint": {
+          "description": "`lint` allows users to automatically apply lint fixes",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Lint"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "pipelineFlush": {

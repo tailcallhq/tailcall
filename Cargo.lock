@@ -4622,6 +4622,7 @@ dependencies = [
  "cache_control",
  "clap",
  "colored",
+ "convert_case",
  "criterion",
  "deno_core",
  "derive_setters",
