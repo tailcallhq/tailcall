@@ -9,20 +9,20 @@ pub struct ValidationError<E>(Vec<Cause<E>>);
 
 impl<E: Display> Display for ValidationError<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Validation Error\n")?;
+        f.write_str("Invalid Configuration\nCaused by:\n")?;
         let errors = self.as_vec();
         for error in errors {
-            f.write_str(format!("{} {}", '\u{2022}', error.message).as_str())?;
+            f.write_str(format!("   {} {}", '\u{2022}', error.message).as_str())?;
             if !error.trace.is_empty() {
                 f.write_str(
                     &(format!(
-                        " [{}]",
+                        " [at schema.{}]",
                         error
                             .trace
                             .iter()
                             .cloned()
                             .collect::<Vec<String>>()
-                            .join(", ")
+                            .join(".")
                     )),
                 )?;
             }
@@ -145,7 +145,7 @@ mod tests {
             Cause::new("3"),
         ]);
         let expected_output = "\
-        |Validation Error
+        |Invalid Configuration
         |• 1 [a, b]
         |• 2
         |• 3
