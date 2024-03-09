@@ -22,6 +22,26 @@ directive @cache(
   the cache.
   """
   maxAge: Int!
+) on OBJECT | FIELD_DEFINITION
+
+"""
+Provides the ability to refer to a field defined in the root Query or Mutation.
+"""
+directive @call(
+  """
+  The arguments of the field on the `Query` or `Mutation` type that you want to call. 
+  For instance `{id: "{{value.userId}}"}`.
+  """
+  args: JSON
+  """
+  The name of the field on the `Mutation` type that you want to call. For instance 
+  `createUser`.
+  """
+  mutation: String
+  """
+  The name of the field on the `Query` type that you want to call. For instance `user`.
+  """
+  query: String
 ) on FIELD_DEFINITION
 
 """
@@ -432,6 +452,7 @@ input ExprBody {
   http: Http
   grpc: Grpc
   graphQL: GraphQL
+  call: Call
   const: JSON
   if: ExprIf
   and: [ExprBody]
@@ -641,11 +662,49 @@ input Modify {
   name: String
   omit: Boolean!
 }
+"""
+Output the opentelemetry data to otlp collector
+"""
+input OtlpExporter {
+  headers: KeyValues
+  url: String!
+}
+"""
+Output the telemetry metrics data to prometheus server
+"""
+input PrometheusExporter {
+  format: PrometheusFormat
+  path: String!
+}
+"""
+Output format for prometheus data
+"""
+enum PrometheusFormat {
+  text
+  protobuf
+}
 input Proxy {
   url: String!
 }
 input ScriptOptions {
   timeout: Int
+}
+"""
+Output the opentelemetry data to the stdout. Mostly used for debug purposes
+"""
+input StdoutExporter {
+  """
+  Output to stdout in pretty human-readable format
+  """
+  pretty: Boolean!
+}
+input Telemetry {
+  export: TelemetryExporter
+}
+input TelemetryExporter {
+  stdout: StdoutExporter
+  otlp: OtlpExporter
+  prometheus: PrometheusExporter
 }
 input Schema {
   Obj: JSON
@@ -653,5 +712,7 @@ input Schema {
   Opt: Schema
 }
 scalar KeyValues
+scalar Email
+scalar PhoneNumber
 scalar JSON
 

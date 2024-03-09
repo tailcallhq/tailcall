@@ -35,6 +35,7 @@ type Query {
     method: GET
     url: http://example.com/simple.graphql
     body: null
+  expected_hits: 2
   response:
     status: 200
     textBody: |2-

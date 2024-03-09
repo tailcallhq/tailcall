@@ -8,9 +8,10 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
+use super::telemetry::Telemetry;
 use super::JS;
 use crate::config::{
-    self, Cache, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
+    self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
     Upstream,
 };
 use crate::directive::DirectiveCodec;
@@ -44,14 +45,18 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
             .fuse(unions)
             .fuse(schema)
             .fuse(links(sd))
-            .map(|(server, upstream, types, unions, schema, links)| Config {
-                server,
-                upstream,
-                types,
-                unions,
-                schema,
-                links,
-            })
+            .fuse(opentelemetry(sd))
+            .map(
+                |(server, upstream, types, unions, schema, links, opentelemetry)| Config {
+                    server,
+                    upstream,
+                    types,
+                    unions,
+                    schema,
+                    links,
+                    opentelemetry,
+                },
+            )
     })
 }
 
@@ -110,6 +115,13 @@ fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
 
 fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
     process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
+}
+
+fn opentelemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
+    process_schema_directives(
+        schema_definition,
+        config::telemetry::Telemetry::directive_name().as_str(),
+    )
 }
 
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
@@ -281,26 +293,30 @@ where
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(JS::from_directives(directives.iter()))
-        .map(|(http, graphql, cache, grpc, expr, omit, modify, script)| {
-            let const_field = to_const_field(directives);
-            config::Field {
-                type_of,
-                list,
-                required: !nullable,
-                list_type_required,
-                args,
-                doc,
-                modify,
-                omit,
-                http,
-                grpc,
-                script,
-                const_field,
-                graphql,
-                expr,
-                cache,
-            }
-        })
+        .fuse(Call::from_directives(directives.iter()))
+        .map(
+            |(http, graphql, cache, grpc, expr, omit, modify, script, call)| {
+                let const_field = to_const_field(directives);
+                config::Field {
+                    type_of,
+                    list,
+                    required: !nullable,
+                    list_type_required,
+                    args,
+                    doc,
+                    modify,
+                    omit,
+                    http,
+                    grpc,
+                    script,
+                    const_field,
+                    graphql,
+                    expr,
+                    cache,
+                    call,
+                }
+            },
+        )
 }
 
 fn to_type_of(type_: &Type) -> String {

@@ -1,10 +1,8 @@
-use std::io::Write;
+use std::fs;
 use std::path::Path;
-use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
-use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
 
@@ -24,14 +22,13 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
 pub async fn run() -> Result<()> {
     let cli = Cli::parse();
-    logger_init();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Upstream::default(), None);
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
-            log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
+            tracing::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
             let server = Server::new(config_module);
             server.fork_start().await?;
             Ok(())
@@ -42,7 +39,7 @@ pub async fn run() -> Result<()> {
 
             match blueprint {
                 Ok(blueprint) => {
-                    log::info!("{}", "Config successfully validated".to_string());
+                    tracing::info!("{}", "Config successfully validated".to_string());
                     display_config(&config_module, n_plus_one_queries);
                     if schema {
                         display_schema(&blueprint);
@@ -173,34 +170,4 @@ pub fn display_schema(blueprint: &Blueprint) {
 fn display_config(config: &Config, n_plus_one_queries: bool) {
     let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
     Fmt::display(Fmt::table(seq));
-}
-
-// initialize logger
-fn logger_init() {
-    // set the log level
-    const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
-    const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
-
-    // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
-    let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
-        .map(|_| LONG_ENV_FILTER_VAR_NAME)
-        .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
-
-    // use the log level from the env if there is one, otherwise use the default.
-    let env = Env::new().filter_or(filter_env_name, "info");
-
-    env_logger::Builder::from_env(env)
-        .format(|buf, record| {
-            let level = record.level();
-            let color_styles = buf.default_level_style(level);
-
-            writeln!(
-                buf,
-                "{color_styles}[{}]{color_styles:#} {}",
-                record.level(),
-                record.args(),
-            )?;
-            Ok(())
-        })
-        .init();
 }

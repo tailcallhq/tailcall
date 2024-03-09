@@ -1,0 +1,65 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type Post {
+  body: String
+  id: Int
+  news: NewsData!
+  newsWithPortArg: NewsData!
+  title: String
+  user: User
+  user1: User
+  userFromValue: User
+  userGraphQL: User
+  userGraphQLHeaders: User
+  userHttpHeaders: User
+  userHttpQuery: User
+  userId: Int!
+}
+
+type Query {
+  news: NewsData!
+  newsWithPortArg(port: Int!): NewsData!
+  posts: [Post]
+  user(id: Int!): User
+  user1: User
+  userFromValue: User
+  userGraphQL(id: Int): User
+  userGraphQLHeaders(id: Int!): User
+  userHttpHeaders(id: ID!): User
+  userHttpQuery(id: ID!): User
+  userId: Int!
+  userPosts(id: ID!): [Post]
+  userWithPosts: UserWithPosts
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  username: String!
+  website: String
+}
+
+type UserWithPosts {
+  id: Int!
+  name: String!
+  posts: [Post]
+}
+
+schema {
+  query: Query
+}

@@ -20,29 +20,29 @@ fn init_file() -> Arc<dyn FileIO> {
     Arc::new(file::NativeFileIO::init())
 }
 
-fn init_hook_http(http: impl HttpIO, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
+fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     #[cfg(feature = "js")]
     if let Some(script) = script {
         return crate::cli::javascript::init_http(http, script);
     }
 
     #[cfg(not(feature = "js"))]
-    log::warn!("JS capabilities are disabled in this build");
+    tracing::warn!("JS capabilities are disabled in this build");
     let _ = script;
 
-    Arc::new(http)
+    http
 }
 
 // Provides access to http in native rust environment
 fn init_http(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     let http_io = http::NativeHttp::init(upstream);
-    init_hook_http(http_io, script)
+    init_hook_http(Arc::new(http_io), script)
 }
 
 // Provides access to http in native rust environment
 fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     let http_io = http::NativeHttp::init(&upstream.clone().http2_only(true));
-    init_hook_http(http_io, script)
+    init_hook_http(Arc::new(http_io), script)
 }
 
 fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {

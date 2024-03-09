@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "File descriptor not found for proto id: abc",
+    "message": "File descriptor not found for method: abc.NewsService.GetAllNews",
     "trace": [
       "Query",
       "news",

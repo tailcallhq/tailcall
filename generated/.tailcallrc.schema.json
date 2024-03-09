@@ -13,6 +13,14 @@
         "$ref": "#/definitions/Link"
       }
     },
+    "opentelemetry": {
+      "description": "Enable [opentelemetry](https://opentelemetry.io) support",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Telemetry"
+        }
+      ]
+    },
     "schema": {
       "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
       "allOf": [
@@ -151,6 +159,31 @@
         }
       }
     },
+    "Call": {
+      "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
+      "type": "object",
+      "properties": {
+        "args": {
+          "description": "The arguments of the field on the `Query` or `Mutation` type that you want to call. For instance `{id: \"{{value.userId}}\"}`.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "mutation": {
+          "description": "The name of the field on the `Mutation` type that you want to call. For instance `createUser`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "query": {
+          "description": "The name of the field on the `Query` type that you want to call. For instance `user`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
       "type": "object",
@@ -161,69 +194,16 @@
         "data": true
       }
     },
-    "ConstOrMirror": {
-      "anyOf": [
-        {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "CorsParams": {
+    "Email": {
       "type": "object",
       "required": [
-        "allowHeaders",
-        "allowMethods",
-        "allowOrigin",
-        "allowPrivateNetwork",
-        "vary"
+        "Email"
       ],
       "properties": {
-        "allowCredentials": {
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "allowHeaders": {
-          "$ref": "#/definitions/ConstOrMirror"
-        },
-        "allowMethods": {
-          "$ref": "#/definitions/ConstOrMirror"
-        },
-        "allowOrigin": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "allowPrivateNetwork": {
-          "type": "boolean"
-        },
-        "exposeHeaders": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "maxAge": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "vary": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "Email": {
+          "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
+          "type": "string",
+          "pattern": "/^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/"
         }
       }
     },
@@ -288,6 +268,19 @@
           "properties": {
             "graphQL": {
               "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Reuses a resolver pre-defined on `Query` or `Mutation`",
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
             }
           },
           "additionalProperties": false
@@ -993,6 +986,17 @@
             }
           ]
         },
+        "call": {
+          "description": "Inserts a call resolver for the field.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Call"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "const": {
           "description": "Inserts a constant resolver for the field.",
           "anyOf": [
@@ -1369,6 +1373,54 @@
     "Omit": {
       "type": "object"
     },
+    "OtlpExporter": {
+      "description": "Output the opentelemetry data to otlp collector",
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "headers": {
+          "$ref": "#/definitions/KeyValues"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "PhoneNumber": {
+      "type": "object",
+      "required": [
+        "PhoneNumber"
+      ],
+      "properties": {
+        "PhoneNumber": {
+          "description": "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).",
+          "type": "string"
+        }
+      }
+    },
+    "PrometheusExporter": {
+      "description": "Output the telemetry metrics data to prometheus server",
+      "type": "object",
+      "properties": {
+        "format": {
+          "$ref": "#/definitions/PrometheusFormat"
+        },
+        "path": {
+          "default": "/metrics",
+          "type": "string"
+        }
+      }
+    },
+    "PrometheusFormat": {
+      "description": "Output format for prometheus data",
+      "type": "string",
+      "enum": [
+        "text",
+        "protobuf"
+      ]
+    },
     "Proxy": {
       "type": "object",
       "required": [
@@ -1439,17 +1491,6 @@
           "type": [
             "boolean",
             "null"
-          ]
-        },
-        "corsParams": {
-          "description": "`corsParams` sets the number of worker threads. @default the number of system cores.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/CorsParams"
-            },
-            {
-              "type": "null"
-            }
           ]
         },
         "globalResponseTimeout": {
@@ -1566,6 +1607,71 @@
           "minimum": 0.0
         }
       }
+    },
+    "StdoutExporter": {
+      "description": "Output the opentelemetry data to the stdout. Mostly used for debug purposes",
+      "type": "object",
+      "properties": {
+        "pretty": {
+          "description": "Output to stdout in pretty human-readable format",
+          "type": "boolean"
+        }
+      }
+    },
+    "Telemetry": {
+      "type": "object",
+      "properties": {
+        "export": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TelemetryExporter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TelemetryExporter": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "stdout"
+          ],
+          "properties": {
+            "stdout": {
+              "$ref": "#/definitions/StdoutExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "otlp"
+          ],
+          "properties": {
+            "otlp": {
+              "$ref": "#/definitions/OtlpExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "prometheus"
+          ],
+          "properties": {
+            "prometheus": {
+              "$ref": "#/definitions/PrometheusExporter"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "Type": {
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",

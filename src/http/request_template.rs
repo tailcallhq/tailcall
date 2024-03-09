@@ -735,7 +735,6 @@ mod tests {
         use crate::mustache::Mustache;
 
         fn assert_no_duplicate<const N: usize>(arr: [u64; N]) {
-            println!("{arr:?}");
             let set = HashSet::from(arr);
             assert_eq!(arr.len(), set.len());
         }

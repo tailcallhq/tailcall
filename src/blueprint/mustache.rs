@@ -1,6 +1,7 @@
-use super::{is_scalar, to_type, FieldDefinition, Type};
+use super::{to_type, FieldDefinition, Type};
 use crate::config::{self, Config};
 use crate::lambda::{Expression, IO};
+use crate::scalar;
 use crate::valid::{Valid, Validator};
 
 struct MustachePartsValidator<'a> {
@@ -28,7 +29,7 @@ impl<'a> MustachePartsValidator<'a> {
 
             if !is_query && val_type.is_nullable() {
                 return Err(format!("value '{}' is a nullable type", item.as_str()));
-            } else if len == 1 && !is_scalar(val_type.name()) {
+            } else if len == 1 && !scalar::is_scalar(val_type.name()) {
                 return Err(format!("value '{}' is not of a scalar type", item.as_str()));
             } else if len == 1 {
                 break;
@@ -88,8 +89,8 @@ impl<'a> MustachePartsValidator<'a> {
                 }
             }
             "headers" | "env" => {
-                // "headers" and "env" refers to values known at runtime, which we can't
-                // validate here
+                // "headers" and "env" refers to values known at runtime, which
+                // we can't validate here
             }
             _ => {
                 return Valid::fail(format!("unknown template directive '{head}'"));

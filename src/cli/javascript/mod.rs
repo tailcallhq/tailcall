@@ -15,9 +15,12 @@ pub use runtime::Runtime;
 
 use crate::{blueprint, HttpIO};
 
-pub fn init_http(http: impl HttpIO, script: blueprint::Script) -> Arc<dyn HttpIO + Sync + Send> {
-    log::debug!("Initializing JavaScript HTTP filter: {}", script.source);
-    let script_io = Runtime::new(script);
+pub fn init_http(
+    http: Arc<impl HttpIO>,
+    script: blueprint::Script,
+) -> Arc<dyn HttpIO + Sync + Send> {
+    tracing::debug!("Initializing JavaScript HTTP filter: {}", script.source);
+    let script_io = Arc::new(Runtime::new(script));
     Arc::new(RequestFilter::new(http, script_io))
 }
 

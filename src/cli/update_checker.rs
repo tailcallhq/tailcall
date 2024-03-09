@@ -50,7 +50,7 @@ pub async fn check_for_update() {
             let github_release_url =
                 format!("https://github.com/{name}/releases/tag/{latest_version}",);
             let installation_method = get_installation_method();
-            log::warn!(
+            tracing::warn!(
                 "{}",
                 format!(
                     "A new release of tailcall is available: {} {} {}",
@@ -61,20 +61,20 @@ pub async fn check_for_update() {
                 .yellow()
             );
             match installation_method {
-                InstallationMethod::Npx => log::warn!(
+                InstallationMethod::Npx => tracing::warn!(
                     "You're running an outdated version, run: npx @tailcallhq/tailcall@latest"
                 ),
                 InstallationMethod::Npm => {
-                    log::warn!("To upgrade, run: npm update -g @tailcallhq/tailcall")
+                    tracing::warn!("To upgrade, run: npm update -g @tailcallhq/tailcall")
                 }
                 InstallationMethod::Brew => {
-                    log::warn!("To upgrade, run: brew upgrade tailcall")
+                    tracing::warn!("To upgrade, run: brew upgrade tailcall")
                 }
                 InstallationMethod::Direct => {
-                    log::warn!("Please update by downloading the latest release from GitHub")
+                    tracing::warn!("Please update by downloading the latest release from GitHub")
                 }
             }
-            log::warn!("{}", github_release_url.yellow());
+            tracing::warn!("{}", github_release_url.yellow());
         }
     });
 }

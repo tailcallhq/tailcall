@@ -55,7 +55,7 @@ impl FileIO for CloudflareFileIO {
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
         spawn_local(put(bucket, path_cloned, content)).await?;
-        log::info!("File write: {} ... ok", path);
+        tracing::info!("File write: {} ... ok", path);
         Ok(())
     }
 
@@ -63,7 +63,7 @@ impl FileIO for CloudflareFileIO {
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
         let content = spawn_local(get(bucket, path_cloned)).await?;
-        log::info!("File read: {} ... ok", path);
+        tracing::info!("File read: {} ... ok", path);
         Ok(content)
     }
 }
