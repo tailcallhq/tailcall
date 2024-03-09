@@ -632,6 +632,7 @@ enum LinkType {
   Script
   Cert
   Key
+  Operation
 }
 enum Method {
   GET
@@ -697,10 +698,10 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
+scalar Date
 scalar Email
+scalar KeyValues
 scalar PhoneNumber
 scalar Url
-scalar KeyValues
-scalar Date
 scalar JSON
 
