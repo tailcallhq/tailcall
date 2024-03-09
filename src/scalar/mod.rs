@@ -9,7 +9,6 @@ mod phone;
 mod url;
 
 use std::collections::{HashMap, HashSet};
-
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
