@@ -31,7 +31,15 @@
     },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
-      "default": {},
+      "default": {
+        "lint": {
+          "autoFix": false,
+          "fieldName": false,
+          "typeName": false,
+          "enumName": false,
+          "enumValue": false
+        }
+      },
       "allOf": [
         {
           "$ref": "#/definitions/Server"
@@ -1342,6 +1350,31 @@
         "Key"
       ]
     },
+    "Lint": {
+      "type": "object",
+      "properties": {
+        "autoFix": {
+          "default": false,
+          "type": "boolean"
+        },
+        "enumName": {
+          "default": false,
+          "type": "boolean"
+        },
+        "enumValue": {
+          "default": false,
+          "type": "boolean"
+        },
+        "fieldName": {
+          "default": false,
+          "type": "boolean"
+        },
+        "typeName": {
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
     "Method": {
       "type": "string",
       "enum": [
@@ -1471,6 +1504,9 @@
     "Server": {
       "description": "The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.",
       "type": "object",
+      "required": [
+        "lint"
+      ],
       "properties": {
         "apolloTracing": {
           "description": "`apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.",
@@ -1521,6 +1557,9 @@
             "boolean",
             "null"
           ]
+        },
+        "lint": {
+          "$ref": "#/definitions/Lint"
         },
         "pipelineFlush": {
           "description": "`pipelineFlush` allows to control flushing behavior of the server pipeline.",

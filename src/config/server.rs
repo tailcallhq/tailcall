@@ -8,23 +8,13 @@ use crate::is_default;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
+#[derive(Default)]
 pub struct Lint {
     pub auto_fix: bool,
     pub field_name: bool,
     pub type_name: bool,
     pub enum_name: bool,
     pub enum_value: bool,
-}
-impl Default for Lint {
-    fn default() -> Self {
-        Lint {
-            auto_fix: false,
-            field_name: false,
-            type_name: false,
-            enum_name: false,
-            enum_value: false,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

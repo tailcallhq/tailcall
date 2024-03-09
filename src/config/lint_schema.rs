@@ -1,7 +1,8 @@
-use super::Source;
-use crate::config::Config;
 use colored::Colorize;
 use regex::Regex;
+
+use super::Source;
+use crate::config::Config;
 
 pub struct LintSchema {}
 impl LintSchema {
@@ -38,7 +39,7 @@ impl LintSchema {
         for name in config.types.keys() {
             if let Some(temp1) = config.types.get(name) {
                 if !Self::is_pascal_case(name) {
-                    if let Some(_) = &temp1.variants {
+                    if temp1.variants.is_some() {
                         warnings.push(
                             "Enum Name : ".to_string()
                                 + name
@@ -102,10 +103,7 @@ impl LintSchema {
 
     fn auto_fix(config: Config) -> Config {
         let modified_config = config.clone();
-        println!(
-            "{}\n{}",
-            "AutoFix :", "We can modify config here if any lint errors."
-        );
+        println!("AutoFix :\nWe can modify config here if any lint errors.");
         // autofix all the linting errors and show the changes to the user.
         // it involves making changes to config and going for build with new config.
 
@@ -118,7 +116,7 @@ impl LintSchema {
         for name in config.types.keys() {
             if let Some(temp1) = config.types.get(name) {
                 if !Self::is_camel_case(name) {
-                    if let Some(_) = &temp1.variants {
+                    if temp1.variants.is_some() {
                         // enum
                         // change starting letter to CAPITAL
                     } else {
@@ -151,7 +149,8 @@ impl LintSchema {
 
         Self::show_lint_errors(config.clone(), file_path);
 
-        // config.lint: {field: true, type: true, enum: true, enumValue: true, autoFix: false}
+        // config.lint: {field: true, type: true, enum: true, enumValue: true, autoFix:
+        // false}
         if config.server.lint.auto_fix && auto_fix_runnable {
             Self::auto_fix(config.clone())
         } else {

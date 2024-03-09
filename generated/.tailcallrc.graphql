@@ -268,6 +268,7 @@ directive @server(
   `true`.
   """
   introspection: Boolean
+  lint: Lint
   """
   `pipelineFlush` allows to control flushing behavior of the server pipeline.
   """
@@ -633,6 +634,13 @@ enum LinkType {
   Cert
   Key
 }
+input Lint {
+  autoFix: Boolean!
+  enumName: Boolean!
+  enumValue: Boolean!
+  fieldName: Boolean!
+  typeName: Boolean!
+}
 enum Method {
   GET
   POST
@@ -697,8 +705,8 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-scalar KeyValues
-scalar Email
 scalar PhoneNumber
+scalar Email
+scalar KeyValues
 scalar JSON
 

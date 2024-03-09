@@ -1,5 +1,5 @@
 schema
-  @server(port: 8000)
+  @server(lint: {autoFix:true}, port: 8000)
   @upstream(baseURL: "http://localhost:50051")
   @link(id: "news", src: "proto/news_no_pkg.proto", type: Protobuf) {
   query: Query

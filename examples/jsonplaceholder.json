@@ -1,6 +1,13 @@
 {
   "$schema": "./.tailcallrc.schema.json",
   "server": {
+    "lint":{
+      "autoFix":true,
+      "fieldName":true,
+      "typeName":true,
+      "enumName":true,
+      "enumValue":true
+    },
     "graphiql": true,
     "hostname": "0.0.0.0",
     "port": 8000

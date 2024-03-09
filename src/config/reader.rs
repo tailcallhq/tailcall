@@ -14,11 +14,10 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
+use crate::config::lint_schema::LintSchema;
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
-
-use crate::config::lint_schema::LintSchema;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
