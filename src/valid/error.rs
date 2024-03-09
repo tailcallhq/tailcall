@@ -146,9 +146,10 @@ mod tests {
         ]);
         let expected_output = "\
         |Invalid Configuration
-        |• 1 [a, b]
-        |• 2
-        |• 3
+        |Caused by:
+        |   • 1 [at schema.a.b]
+        |   • 2
+        |   • 3
         |"
         .strip_margin();
         assert_eq!(format!("{}", error), expected_output);

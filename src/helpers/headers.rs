@@ -62,8 +62,9 @@ mod tests {
         // range see https://github.com/hyperium/http/issues/519
         assert_eq!(
             error.to_string(),
-            r"Validation Error
-• invalid HTTP header name [😅]
+            r"Invalid Configuration
+Caused by:
+   • invalid HTTP header name [at schema.😅]
 "
         );
     }
