@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use async_graphql::parser::types::Type;
 use async_graphql::{Name, Variables};
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
@@ -8,6 +7,7 @@ use rest::Rest;
 use typed_variable::{TypedVariable, UrlParamType};
 
 use self::query_params::QueryParams;
+use super::type_map::TypeMap;
 use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
 use crate::document::print_operation;
@@ -34,21 +34,6 @@ impl Segment {
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Path {
     segments: Vec<Segment>,
-}
-
-#[derive(Debug, Clone)]
-pub struct TypeMap(BTreeMap<String, Type>);
-
-impl TypeMap {
-    fn get(&self, key: &str) -> Option<&Type> {
-        self.0.get(key)
-    }
-}
-
-impl From<Vec<(&str, Type)>> for TypeMap {
-    fn from(map: Vec<(&str, Type)>) -> Self {
-        Self(map.iter().map(|a| (a.0.to_owned(), a.1.clone())).collect())
-    }
 }
 
 impl Path {
@@ -295,7 +280,7 @@ impl Endpoint {
         let mut endpoints = Vec::new();
 
         for (_, op) in doc.operations.iter() {
-            let type_map = TypeMap(
+            let type_map = TypeMap::new(
                 op.node
                     .variable_definitions
                     .iter()
