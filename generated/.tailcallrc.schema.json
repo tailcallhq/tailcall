@@ -1353,7 +1353,8 @@
         "Protobuf",
         "Script",
         "Cert",
-        "Key"
+        "Key",
+        "Operation"
       ]
     },
     "Method": {
