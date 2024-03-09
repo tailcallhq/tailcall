@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(src: "operation-user.graphql", type: RestOperation) {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(src: "operation-user.graphql", type: Operation) {
   query: Query
 }
 

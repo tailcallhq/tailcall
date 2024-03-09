@@ -19,7 +19,7 @@ query ($id: Int!) @rest(method: "get", path: "/user/$id") {
 schema
   @server
   @upstream(baseURL: "http://jsonplaceholder.typicode.com")
-  @link(type: RestOperation, src: "operation-user.graphql") {
+  @link(type: Operation, src: "operation-user.graphql") {
   query: Query
 }
 
