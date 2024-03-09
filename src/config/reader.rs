@@ -15,6 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
+use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
@@ -156,6 +157,9 @@ impl ConfigReader {
                 LinkType::Key => {
                     config_module.extensions.keys =
                         Arc::new(self.load_private_key(content.clone()).await?)
+                }
+                LinkType::Operation => {
+                    config_module.extensions.endpoints = EndpointSet::try_new(&content)?;
                 }
             }
         }
