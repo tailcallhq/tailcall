@@ -611,17 +611,14 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
-    let scalar = CUSTOM_SCALARS
+    let scalar_map: Map<String, Schema> = CUSTOM_SCALARS
         .iter()
         .map(|(k, v)| (k.clone(), v.scalar()))
-        .collect::<Map<String, Schema>>();
+        .collect();
 
     let defs = schema.definitions;
 
-    let mut scalar = scalar
-        .keys()
-        .map(|v| v.to_string())
-        .collect::<HashSet<String>>();
+    let mut scalar_set: HashSet<String> = scalar_map.keys().cloned().collect();
 
     let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
@@ -632,7 +629,7 @@ fn write_all_input_types(
             name,
             input_type.clone().into_object(),
             &defs,
-            &mut scalar,
+            &mut scalar_set,
             &mut extra_it,
             &mut types_added,
         )?;
@@ -649,19 +646,19 @@ fn write_all_input_types(
                         name,
                         schema.into_object(),
                         &defs,
-                        &mut scalar,
+                        &mut scalar_set,
                         &mut new_extra_it,
                         &mut types_added,
-                    )?
+                    )?;
                 }
             }
             ExtraTypes::ObjectValidation(obj_valid) => {
-                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?;
             }
         }
     }
 
-    for name in scalar {
+    for name in scalar_set {
         writeln!(writer, "scalar {name}")?;
     }
 
