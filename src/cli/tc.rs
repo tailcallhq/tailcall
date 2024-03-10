@@ -14,7 +14,6 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
-use crate::config::Config;
 use crate::print_schema;
 use crate::valid::Validator;
 
@@ -32,7 +31,7 @@ pub async fn run() -> Result<()> {
             api_client.post_data("start").await.unwrap();
 
             let config_module = config_reader.read_all(&file_paths).await?;
-            tracing::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
+            Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
             server.fork_start().await?;
             Ok(())
@@ -45,8 +44,8 @@ pub async fn run() -> Result<()> {
 
             match blueprint {
                 Ok(blueprint) => {
-                    tracing::info!("{}", "Config successfully validated".to_string());
-                    display_config(&config_module, n_plus_one_queries);
+                    tracing::info!("Config {} ... ok", file_paths.join(", "));
+                    Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config);
                     if schema {
                         display_schema(&blueprint);
                     }
@@ -177,10 +176,4 @@ pub fn display_schema(blueprint: &Blueprint) {
     Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
     let sdl = blueprint.to_schema();
     Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
-}
-
-fn display_config(config: &Config, n_plus_one_queries: bool) {
-    let table = vec![];
-    let table = Fmt::n_plus_one_data(table, n_plus_one_queries, config);
-    tracing::info!("{}", Fmt::table(table));
 }

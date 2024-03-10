@@ -6,8 +6,10 @@ use std::process::exit;
 
 use anyhow::{anyhow, Result};
 use gen_gql_schema::update_gql;
-use schemars::schema::RootSchema;
+use schemars::schema::{RootSchema, Schema};
+use schemars::Map;
 use serde_json::{json, Value};
+use tailcall::scalar::CUSTOM_SCALARS;
 use tailcall::tracing::default_crate_tracing;
 use tailcall::{cli, config};
 
@@ -91,9 +93,11 @@ fn get_file_path() -> PathBuf {
 
 async fn get_updated_json() -> Result<Value> {
     let mut schema: RootSchema = schemars::schema_for!(config::Config);
-
-    let scalar: RootSchema = schemars::schema_for!(tailcall::scalar::CustomScalar);
-    schema.definitions.extend(scalar.definitions);
+    let scalar = CUSTOM_SCALARS
+        .iter()
+        .map(|(k, v)| (k.clone(), v.scalar()))
+        .collect::<Map<String, Schema>>();
+    schema.definitions.extend(scalar);
 
     let schema = json!(schema);
     Ok(schema)

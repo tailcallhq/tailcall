@@ -2,14 +2,20 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
 scalar Email
 
 scalar PhoneNumber
 
 type Query {
+  date(value: Date!): Date!
   email(value: Email!): Email!
   phone(value: PhoneNumber!): PhoneNumber!
+  url(value: Url!): Url!
 }
+
+scalar Url
 
 schema {
   query: Query
