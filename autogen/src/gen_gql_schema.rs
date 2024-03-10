@@ -538,22 +538,6 @@ fn write_directive(
     Ok(())
 }
 
-fn insert_key_value(extra_it: &mut BTreeMap<String, ExtraTypes>) {
-    extra_it.insert("KeyValue".to_string(), ExtraTypes::ObjectValidation(ObjectValidation {
-        properties: vec![
-            ("key".to_string(), Schema::Object(Box::new(SchemaObject {
-                instance_type: Some(InstanceType::String),
-                ..Default::default()
-            }))),
-            ("value".to_string(), Schema::Object(Box::new(SchemaObject {
-                instance_type: Some(InstanceType::String),
-                ..Default::default()
-            }))),
-        ],
-        ..Default::default()
-    }));
-}
-
 fn write_all_directives(
     writer: &mut IndentedWriter<impl Write>,
     written_directives: &mut HashSet<String>,
@@ -712,7 +696,7 @@ fn generate_rc_file(file: File) -> Result<()> {
     let mut written_directives = HashSet::new();
 
     let mut extra_it = BTreeMap::new();
-    insert_key_value(&mut extra_it);
+    extra_it.insert("KeyValue".to_string(), ExtraTypes::KeyValue);
 
     write_all_directives(&mut file, &mut written_directives, &mut extra_it)?;
     write_all_input_types(&mut file, extra_it)?;
