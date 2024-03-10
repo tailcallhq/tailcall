@@ -50,18 +50,6 @@ pub enum Command {
         format: Option<Source>,
     },
 
-    /// Merge multiple configuration file into one
-    Compose {
-        /// Path for the configuration files separated by spaces if more than
-        /// one
-        #[arg(required = true)]
-        file_paths: Vec<String>,
-
-        /// Format of the result. Accepted values: JSON|YML|GQL.
-        #[clap(short, long, default_value = "gql")]
-        format: Source,
-    },
-
     /// Initialize a new project
     Init {
         // default is current directory
