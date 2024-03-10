@@ -48,6 +48,10 @@ pub enum Command {
         /// Operations to check
         #[arg(short, long, value_delimiter=',', num_args = 1..)]
         operations: Vec<String>,
+
+        /// format of the result. Accepted values: JSON|YML|GQL.
+        #[clap(short, long)]
+        format: Option<Source>,
     },
 
     /// Merge multiple configuration file into one

@@ -32,8 +32,11 @@ pub async fn run() -> Result<()> {
             server.fork_start().await?;
             Ok(())
         }
-        Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
+        Command::Check { file_paths, n_plus_one_queries, schema, operations, format } => {
             let config_module = (config_reader.read_all(&file_paths)).await?;
+            if let Some(format) = format {
+                Fmt::display(format.encode(&config_module)?);
+            }
             let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
             match blueprint {
