@@ -323,7 +323,7 @@ directive @server(
 
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
-the observability of your GraphQL services powered by Tailcall. By leveraging this 
+the observability of your GraphQL services powered by Tailcall.  By leveraging this 
 directive, developers gain access to valuable insights into the performance and behavior 
 of their applications.
 """
@@ -702,7 +702,7 @@ input StdoutExporter {
 }
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
-the observability of your GraphQL services powered by Tailcall. By leveraging this 
+the observability of your GraphQL services powered by Tailcall.  By leveraging this 
 directive, developers gain access to valuable insights into the performance and behavior 
 of their applications.
 """
