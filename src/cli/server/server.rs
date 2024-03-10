@@ -32,9 +32,7 @@ impl Server {
 
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
-        println!("{:?}", self.config_module.config.server.cors_params);
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
-        println!("{:?}", blueprint.server.cors_params);
         let server_config = Arc::new(ServerConfig::new(blueprint.clone()));
 
         init_opentelemetry(
