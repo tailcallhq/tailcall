@@ -3,13 +3,12 @@ use std::{env, fmt};
 
 use colored::Colorize;
 use tracing::{Event, Level, Subscriber};
+use tracing_subscriber::filter::filter_fn;
+use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::fmt::{FmtContext, FormatEvent, FormatFields};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::Layer;
-use tracing_subscriber::{filter::filter_fn, fmt::FormatEvent};
-use tracing_subscriber::{
-    fmt::{format::Writer, FmtContext, FormatFields},
-    layer::SubscriberExt,
-    registry::LookupSpan,
-};
 struct FmtLevel<'a> {
     level: &'a Level,
     ansi: bool,

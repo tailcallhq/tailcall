@@ -198,7 +198,9 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     | global::Error::Metric(MetricsError::Other(_))
                     | global::Error::Log(LogError::Other(_)),
             ) {
-                eprintln!("OpenTelemetry error: {:?}", error);
+                tracing::subscriber::with_default(default_tailcall_tracing(), || {
+                    tracing::error!("OpenTelemetry error: {:?}", error);
+                });
             }
         })?;
 
