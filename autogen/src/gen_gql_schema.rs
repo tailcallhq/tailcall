@@ -701,7 +701,6 @@ fn generate_rc_file(file: File) -> Result<()> {
     let mut written_directives = HashSet::new();
 
     let mut extra_it = BTreeMap::new();
-    extra_it.insert("KeyValue".to_string(), ExtraTypes::KeyValue);
 
     write_all_directives(&mut file, &mut written_directives, &mut extra_it)?;
     write_all_input_types(&mut file, extra_it)?;

@@ -703,10 +703,6 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-input KeyValue {
-  key: String
-  value: String
-}
 scalar Date
 scalar Email
 scalar KeyValues
