@@ -51,11 +51,6 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Compose { file_paths, format } => {
-            let config = (config_reader.read_all(&file_paths).await)?;
-            Fmt::display(format.encode(&config)?);
-            Ok(())
-        }
     }
 }
 
