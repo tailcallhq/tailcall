@@ -104,8 +104,10 @@ impl TelemetryExporter {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-/// The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.
-///  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.
+/// The @telemetry directive facilitates seamless integration with
+/// OpenTelemetry, enhancing the observability of your GraphQL services powered
+/// by Tailcall.  By leveraging this directive, developers gain access to
+/// valuable insights into the performance and behavior of their applications.
 pub struct Telemetry {
     pub export: Option<TelemetryExporter>,
 }
