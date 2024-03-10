@@ -606,6 +606,16 @@ fn write_object_validation(
     }
 }
 
+fn write_key_value_definition(writer: &mut IndentedWriter<impl Write>) -> std::io::Result<()> {
+    writeln!(writer, "input KeyValue {{")?;
+    writer.indent();
+    writeln!(writer, "key: String")?;
+    writeln!(writer, "value: String")?;
+    writer.unindent();
+    writeln!(writer, "}}")?;
+    Ok(())
+}
+
 fn write_all_input_types(
     writer: &mut IndentedWriter<impl Write>,
     mut extra_it: BTreeMap<String, ExtraTypes>,
@@ -660,12 +670,7 @@ fn write_all_input_types(
                 write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
             }
             ExtraTypes::KeyValue => {
-                writeln!(writer, "input KeyValue {{")?;
-                writer.indent();
-                writeln!(writer, "key: String")?;
-                writeln!(writer, "value: String")?;
-                writer.unindent();
-                writeln!(writer, "}}")?;
+                write_key_value_definition(writer)?;
             }
         }
     }
