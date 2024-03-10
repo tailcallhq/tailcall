@@ -69,7 +69,7 @@ directive @graphQL(
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
-  args: KeyValues
+  args: [KeyValues]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
@@ -86,7 +86,7 @@ directive @graphQL(
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
   names and their values.
   """
-  headers: KeyValues
+  headers: [KeyValues]
   """
   Specifies the root field on the upstream to request data from. This maps a field 
   in your schema to a field in the upstream schema. When a query is received for this 
@@ -126,7 +126,7 @@ directive @grpc(
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
   """
-  headers: KeyValues
+  headers: [KeyValues]
   """
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
@@ -168,7 +168,7 @@ directive @http(
   by the `@http` operator. It is used by specifying a key-value map of header names 
   and their values.
   """
-  headers: KeyValues
+  headers: [KeyValues]
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
@@ -193,7 +193,7 @@ directive @http(
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL.
   """
-  query: KeyValues
+  query: [KeyValues]
 ) on FIELD_DEFINITION
 
 directive @js(
@@ -286,7 +286,7 @@ directive @server(
   for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
   or additional headers for downstream services.
   """
-  responseHeaders: KeyValues
+  responseHeaders: [KeyValues]
   """
   `responseValidation` Tailcall automatically validates responses from upstream services 
   using inferred schema. @default `false`.
@@ -304,7 +304,7 @@ directive @server(
   This configuration defines local variables for server operations. Useful for storing 
   constant configurations, secrets, or shared information.
   """
-  vars: KeyValues
+  vars: [KeyValues]
   """
   `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. 
   @default `HTTP1`.
@@ -495,7 +495,7 @@ input GraphQL {
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
-  args: KeyValues
+  args: [KeyValues]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
@@ -512,7 +512,7 @@ input GraphQL {
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
   names and their values.
   """
-  headers: KeyValues
+  headers: [KeyValues]
   """
   Specifies the root field on the upstream to request data from. This maps a field 
   in your schema to a field in the upstream schema. When a query is received for this 
@@ -551,7 +551,7 @@ input Grpc {
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
   """
-  headers: KeyValues
+  headers: [KeyValues]
   """
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
@@ -617,7 +617,7 @@ input Http {
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL.
   """
-  query: KeyValues
+  query: [KeyValues]
 }
 enum HttpVersion {
   HTTP1
@@ -653,7 +653,7 @@ input Modify {
 Output the opentelemetry data to otlp collector
 """
 input OtlpExporter {
-  headers: KeyValues
+  headers: [KeyValues]
   url: String!
 }
 """
@@ -698,9 +698,14 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
+
+input Keyvalues {
+  key: String
+  value: String
+}
+
 scalar Url
 scalar Email
-scalar KeyValues
 scalar Date
 scalar PhoneNumber
 scalar JSON
