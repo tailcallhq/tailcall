@@ -323,6 +323,7 @@ impl RootSchema {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// Used to omit a field from public consumption.
 pub struct Omit {}
 
 ///
