@@ -162,7 +162,7 @@ impl Server {
     }
 
     pub fn get_response_headers(&self) -> BTreeMap<String, String> {
-        self.vars
+        self.response_headers
             .clone()
             .iter()
             .map(|kv| (kv.key.clone(), kv.value.clone()))
@@ -192,12 +192,28 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
-        let mut vars = self.vars.clone();
-        vars.extend(other.vars);
-        self.vars = vars;
-        let mut response_headers = self.response_headers.clone();
-        response_headers.extend(other.response_headers);
-        self.response_headers = response_headers;
+        self.vars = other.vars.iter().fold(self.vars, |mut acc, kv| {
+            let position = acc.iter().position(|x| x.key == kv.key);
+            if let Some(pos) = position {
+                acc[pos] = kv.clone();
+            } else {
+                acc.push(kv.clone());
+            };
+            acc
+        });
+        self.response_headers =
+            other
+                .response_headers
+                .iter()
+                .fold(self.response_headers, |mut acc, kv| {
+                    let position = acc.iter().position(|x| x.key == kv.key);
+                    if let Some(pos) = position {
+                        acc[pos] = kv.clone();
+                    } else {
+                        acc.push(kv.clone());
+                    };
+                    acc
+                });
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
