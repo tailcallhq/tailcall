@@ -8,14 +8,13 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
+use crate::blueprint::{Blueprint, Upstream};
 use crate::cli::analytics_request::ApiClient;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::print_schema;
-use crate::valid::Validator;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -36,10 +35,13 @@ pub async fn run() -> Result<()> {
             server.fork_start().await?;
             Ok(())
         }
-        Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
+        Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             api_client.post_data("check").await.unwrap();
 
             let config_module = (config_reader.read_all(&file_paths)).await?;
+            if let Some(format) = format {
+                Fmt::display(format.encode(&config_module)?);
+            }
             let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
             match blueprint {
@@ -49,27 +51,7 @@ pub async fn run() -> Result<()> {
                     if schema {
                         display_schema(&blueprint);
                     }
-
-                    let ops: Vec<OperationQuery> =
-                        futures_util::future::join_all(operations.iter().map(|op| async {
-                            runtime
-                                .file
-                                .read(op)
-                                .await
-                                .map(|query| OperationQuery::new(query, op.clone()))
-                        }))
-                        .await
-                        .into_iter()
-                        .collect::<Result<Vec<_>>>()?;
-
-                    validate_operations(&blueprint, ops)
-                        .await
-                        .to_result()
-                        .map_err(|e| {
-                            CLIError::from(e)
-                                .message("Invalid Operation".to_string())
-                                .into()
-                        })
+                    Ok(())
                 }
                 Err(e) => Err(e.into()),
             }
@@ -78,13 +60,6 @@ pub async fn run() -> Result<()> {
             api_client.post_data("init").await.unwrap();
 
             init(&folder_path).await
-        }
-        Command::Compose { file_paths, format } => {
-            api_client.post_data("compose").await.unwrap();
-
-            let config = (config_reader.read_all(&file_paths).await)?;
-            Fmt::display(format.encode(&config)?);
-            Ok(())
         }
     }
 }
