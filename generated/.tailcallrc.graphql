@@ -61,6 +61,10 @@ directive @expr(
   body: ExprBody
 ) on FIELD_DEFINITION
 
+directive @telemetry(
+  export: TelemetryExporter
+) on FIELD_DEFINITION
+
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
 from.

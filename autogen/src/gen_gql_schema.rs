@@ -21,6 +21,7 @@ lazy_static! {
         ("http", vec![Entity::FieldDefinition], false),
         ("call", vec![Entity::FieldDefinition], false),
         ("grpc", vec![Entity::FieldDefinition], false),
+        ("telemetry", vec![Entity::FieldDefinition], false),
         ("addField", vec![Entity::Object], true),
         ("modify", vec![Entity::FieldDefinition], false),
         ("omit", vec![Entity::FieldDefinition], false),
