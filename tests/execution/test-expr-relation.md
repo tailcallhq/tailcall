@@ -4,9 +4,8 @@ This test has invalid GraphQL that wasn't caught by http_spec before conversion.
 
 ##### skip
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @upstream(baseURL: "http://example.com") {
   query: Query
 }
@@ -77,9 +76,8 @@ type User {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://example.com/user
@@ -169,8 +167,7 @@ type User {
           - 1
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 []
 ```

@@ -2,9 +2,8 @@
 
 ###### sdl error
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server(responseHeaders: [{key: "a b", value: "a \n b"}, {key: "a c", value: "a \n b"}]) {
   query: Query
 }

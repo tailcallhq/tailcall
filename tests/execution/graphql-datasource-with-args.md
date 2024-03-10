@@ -1,8 +1,7 @@
 # Graphql datasource
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema {
   query: Query
 }
@@ -25,9 +24,8 @@ type Query {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: POST
     url: http://upstream/graphql
@@ -52,9 +50,8 @@ type Query {
             name: Leanne Graham
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

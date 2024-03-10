@@ -1,8 +1,7 @@
 # Sending requests to verify Cache-Control behavior
 
-#### server:
-
-```json
+####
+```json @server
 {
   "server": {
     "cacheControlHeader": true
@@ -53,9 +52,8 @@
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1
@@ -113,9 +111,8 @@
       name: barfoo
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

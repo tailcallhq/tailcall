@@ -1,8 +1,7 @@
 # Nullable arg query
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema {
   query: Query
 }
@@ -18,9 +17,8 @@ type User {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
@@ -48,9 +46,8 @@ type User {
       - id: 1
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

@@ -2,9 +2,8 @@
 
 ###### sdl error
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server(hostname: "abc") {
   query: Query
 }

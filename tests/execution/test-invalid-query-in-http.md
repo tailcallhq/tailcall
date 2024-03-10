@@ -2,9 +2,8 @@
 
 ###### sdl error
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server(vars: [{key: "id", value: "1"}]) {
   query: Query
 }

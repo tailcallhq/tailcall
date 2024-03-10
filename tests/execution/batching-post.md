@@ -1,8 +1,7 @@
 # Batching post
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema
   @server(port: 8000, queryValidation: false)
   @upstream(
@@ -31,9 +30,8 @@ type User {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?id=1
@@ -54,9 +52,8 @@ type User {
       name: Leanne Graham
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

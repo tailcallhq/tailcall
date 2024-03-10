@@ -1,8 +1,7 @@
 # Test const with mustache
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema {
   query: Query
 }
@@ -32,9 +31,8 @@ type D {
 }
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8000/graphql
   body:

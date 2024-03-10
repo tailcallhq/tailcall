@@ -2,21 +2,18 @@
 
 ###### sdl error
 
-#### file:test1.js
-
-```js
+####
+```js @file:test1.js
 function onRequest(request) {}
 ```
 
-#### file:test2.js
-
-```js
+####
+```js @file:test2.js
 function onRequest(request) {}
 ```
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server @link(type: Script, src: "test1.js") @link(type: Script, src: "test2.js") {
   query: Query
 }

@@ -1,8 +1,7 @@
 # Batching group by
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema
   @server(port: 8000, queryValidation: false)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {
@@ -28,9 +27,8 @@ type User {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
@@ -59,9 +57,8 @@ type User {
         name: Ervin Howell
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

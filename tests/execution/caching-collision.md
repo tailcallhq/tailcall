@@ -1,8 +1,7 @@
 # Caching Collision
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
@@ -21,9 +20,8 @@ type Bar {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://example.com/bars
@@ -933,9 +931,8 @@ type Bar {
       id: 99
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

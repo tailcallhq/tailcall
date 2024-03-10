@@ -1,8 +1,7 @@
 # n + 1 Request
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
@@ -25,9 +24,8 @@ type Bar {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://example.com/foos
@@ -52,9 +50,8 @@ type Bar {
         id: 2
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

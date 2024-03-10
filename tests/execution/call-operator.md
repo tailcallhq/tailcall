@@ -1,8 +1,7 @@
 # Test call operator
 
-#### file:news.proto
-
-```protobuf
+####
+```protobuf @file:news.proto
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
@@ -38,9 +37,8 @@ message NewsList {
 }
 ```
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
@@ -110,9 +108,8 @@ type Post {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     url: http://jsonplaceholder.typicode.com/users/1
   expected_hits: 4
@@ -174,9 +171,8 @@ type Post {
     body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

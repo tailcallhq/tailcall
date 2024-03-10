@@ -1,8 +1,7 @@
 # expr concat
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema {
   query: Query
 }
@@ -12,9 +11,8 @@ type Query {
 }
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

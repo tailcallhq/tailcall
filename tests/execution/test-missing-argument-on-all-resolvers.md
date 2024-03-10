@@ -2,9 +2,8 @@
 
 ###### sdl error
 
-#### file:news.proto
-
-```protobuf
+####
+```protobuf @file:news.proto
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
@@ -40,9 +39,8 @@ message NewsList {
 }
 ```
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

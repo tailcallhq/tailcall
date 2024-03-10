@@ -2,9 +2,8 @@
 
 ###### sdl error
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server @upstream(baseURL: "http://localhost:3000") {
   query: Query
 }

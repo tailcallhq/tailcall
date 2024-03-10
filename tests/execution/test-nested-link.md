@@ -2,9 +2,8 @@
 
 ###### check identity
 
-#### file:link-enum.graphql
-
-```graphql
+####
+```graphql @file:link-enum.graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -19,9 +18,8 @@ type Query {
 }
 ```
 
-#### file:graphql-with-link.graphql
-
-```graphql
+####
+```graphql @file:graphql-with-link.graphql
 schema @server @upstream(baseURL: "http://localhost:8000/graphql") @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }
@@ -42,9 +40,8 @@ type User {
 }
 ```
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {
   query: Query
 }

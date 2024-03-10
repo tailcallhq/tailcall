@@ -1,8 +1,7 @@
 # Graphql datasource
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema {
   query: Query
   mutation: Mutation
@@ -29,9 +28,8 @@ type UserInput {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: POST
     url: http://upstream/graphql
@@ -44,9 +42,8 @@ type UserInput {
           name: Test Name
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

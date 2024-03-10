@@ -1,8 +1,7 @@
 # Batched graphql request to batched upstream query
 
-#### server:
-
-```json
+####
+```json @server
 {
   "server": {
     "batchRequests": true
@@ -61,9 +60,8 @@
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1&id=2
@@ -79,9 +77,8 @@
         name: bar
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

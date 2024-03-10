@@ -1,8 +1,7 @@
 # test-conflict-vars
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]) @upstream {
   query: Query
 }
@@ -12,9 +11,8 @@ type Query {
 }
 ```
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server(vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]) @upstream {
   query: Query
 }

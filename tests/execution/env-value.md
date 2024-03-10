@@ -1,8 +1,7 @@
 # Env value
 
-#### server:
-
-```json
+####
+```json @server
 {
   "server": {},
   "upstream": {
@@ -64,9 +63,8 @@
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/1
@@ -102,17 +100,15 @@
       userId: 3
 ```
 
-#### env:
-
-```yml
+####
+```yml @env
 ID: "1"
 POST_ID: "2"
 NESTED_POST_ID: "3"
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

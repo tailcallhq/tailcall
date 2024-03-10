@@ -1,8 +1,7 @@
 # Showcase GraphQL Request
 
-#### server:
-
-```graphql
+####
+```graphql @server
 schema @server(showcase: true) {
   query: Query
 }
@@ -17,9 +16,8 @@ type Query {
 }
 ```
 
-#### mock:
-
-```yml
+####
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
@@ -51,9 +49,8 @@ type Query {
     body: dsjfsjdfjdsfjkdskjfjkds
 ```
 
-#### assert:
-
-```yml
+####
+```yml @assert
 - method: POST
   url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql
   body:
