@@ -45,9 +45,9 @@ pub enum Command {
         #[arg(short, long)]
         schema: bool,
 
-        /// Operations to check
-        #[arg(short, long, value_delimiter=',', num_args = 1..)]
-        operations: Vec<String>,
+        /// Prints the input config in the provided format.
+        #[clap(short, long)]
+        format: Option<Source>,
     },
 
     /// Merge multiple configuration file into one
