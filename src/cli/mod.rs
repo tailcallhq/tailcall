@@ -1,3 +1,4 @@
+mod analytics_request;
 mod command;
 mod error;
 mod fmt;
