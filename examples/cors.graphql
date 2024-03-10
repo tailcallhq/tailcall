@@ -1,0 +1,31 @@
+schema
+  @server(
+    port: 8000
+    graphiql: true
+    hostname: "0.0.0.0"
+    corsParams: {allowOrigin: "*", allowHeaders: "*", allowMethods: "POST, GET, OPTIONS", exposeHeaders: "*"}
+  )
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Query @cache(maxAge: 30000) {
+  posts: [Post] @http(path: "/posts")
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @http(path: "/users/{{value.userId}}")
+}

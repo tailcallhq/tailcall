@@ -426,12 +426,12 @@ input Const {
   data: JSON
 }
 input CorsParams {
-  allowCredentials: Boolean
+  allowCredentials: Boolean!
   allowHeaders: ConstOrMirror
   allowMethods: ConstOrMirror
-  allowOrigin: [String!]
+  allowOrigin: StringOrSequence
   allowPrivateNetwork: Boolean!
-  exposeHeaders: String
+  exposeHeaders: StringOrSequence
   maxAge: Int
   vary: [String!]
 }
@@ -698,6 +698,8 @@ input StdoutExporter {
   """
   pretty: Boolean!
 }
+input StringOrSequence {
+}
 input Telemetry {
   export: TelemetryExporter
 }
@@ -711,8 +713,8 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-scalar KeyValues
 scalar Email
 scalar PhoneNumber
+scalar KeyValues
 scalar JSON
 

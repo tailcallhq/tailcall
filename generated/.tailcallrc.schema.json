@@ -194,6 +194,84 @@
         "data": true
       }
     },
+    "ConstOrMirror": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/MirrorRequest"
+        },
+        {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      ]
+    },
+    "CorsParams": {
+      "type": "object",
+      "properties": {
+        "allowCredentials": {
+          "default": false,
+          "type": "boolean"
+        },
+        "allowHeaders": {
+          "default": null,
+          "allOf": [
+            {
+              "$ref": "#/definitions/ConstOrMirror"
+            }
+          ]
+        },
+        "allowMethods": {
+          "default": null,
+          "allOf": [
+            {
+              "$ref": "#/definitions/ConstOrMirror"
+            }
+          ]
+        },
+        "allowOrigin": {
+          "default": [],
+          "allOf": [
+            {
+              "$ref": "#/definitions/StringOrSequence"
+            }
+          ]
+        },
+        "allowPrivateNetwork": {
+          "default": false,
+          "type": "boolean"
+        },
+        "exposeHeaders": {
+          "default": [],
+          "allOf": [
+            {
+              "$ref": "#/definitions/StringOrSequence"
+            }
+          ]
+        },
+        "maxAge": {
+          "default": null,
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "vary": {
+          "default": [
+            "origin",
+            "access-control-request-method",
+            "access-control-request-headers"
+          ],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "Email": {
       "type": "object",
       "required": [
@@ -1356,6 +1434,9 @@
         "TRACE"
       ]
     },
+    "MirrorRequest": {
+      "type": "null"
+    },
     "Modify": {
       "type": "object",
       "properties": {
@@ -1493,6 +1574,17 @@
             "null"
           ]
         },
+        "corsParams": {
+          "description": "`corsParams` sets the number of worker threads. @default the number of system cores.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CorsParams"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
@@ -1617,6 +1709,19 @@
           "type": "boolean"
         }
       }
+    },
+    "StringOrSequence": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "Telemetry": {
       "type": "object",

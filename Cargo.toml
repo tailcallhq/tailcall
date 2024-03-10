@@ -119,6 +119,8 @@ opentelemetry-stdout = { version = "0.3.0", features = [
 opentelemetry-appender-tracing = { version = "0.3.0" }
 opentelemetry-prometheus = "0.15.0"
 phonenumber = "0.3.3"
+tower = "0.4.13"
+serde_unit_struct = "0.1.3"
 
 [dev-dependencies]
 criterion = "0.5.1"

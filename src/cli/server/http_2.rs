@@ -8,8 +8,8 @@ use hyper_rustls::TlsAcceptor;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio::sync::oneshot;
 use tower::service_fn;
-use tower_http::cors::CorsLayer;
 
+// use tower_http::cors::CorsLayer;
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::GraphQLRequest;
 use crate::cli::CLIError;
@@ -29,7 +29,7 @@ pub async fn start_http_2(
         .with_incoming(incoming);
     let make_svc_single_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
-        let _cors = CorsLayer::permissive();
+        // let _cors = CorsP::permissive();
 
         async move {
             let state = state.clone();
@@ -55,7 +55,7 @@ pub async fn start_http_2(
 
     let make_svc_batch_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
-        let _cors = CorsLayer::permissive();
+        // let _cors = CorsLayer::permissive();
 
         async move {
             let state = state.clone();

@@ -6,7 +6,8 @@ use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use hyper::header::{self, CONTENT_TYPE};
-use hyper::{http::Method, Body, HeaderMap, Request, Response, StatusCode};
+use hyper::http::Method;
+use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 use tracing::instrument;
@@ -14,8 +15,8 @@ use tracing::instrument;
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::blueprint::CorsParams;
 use crate::blueprint::telemetry::TelemetryExporter;
+use crate::blueprint::CorsParams;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
@@ -133,36 +134,52 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+fn ensure_usable_cors_rules(layer: &CorsParams) {
+    if layer.allow_credentials {
+        assert!(
+            !layer.allow_headers.is_wildcard(),
+            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+             with `Access-Control-Allow-Headers: *`"
+        );
+
+        assert!(
+            !layer.allow_methods.is_wildcard(),
+            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+             with `Access-Control-Allow-Methods: *`"
+        );
+
+        assert!(
+            !layer.allow_origin.is_wildcard(),
+            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+             with `Access-Control-Allow-Origin: *`"
+        );
+
+        assert!(
+            !layer.expose_headers_is_wildcard(),
+            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+             with `Access-Control-Expose-Headers: *`"
+        );
+    }
+}
+
 pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     layer: &CorsParams,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
+    ensure_usable_cors_rules(layer);
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
 
     let mut headers = HeaderMap::new();
 
-    // These headers are applied to both preflight and subsequent regular CORS requests:
-    // https://fetch.spec.whatwg.org/#http-responses
+    // These headers are applied to both preflight and subsequent regular CORS
+    // requests: https://fetch.spec.whatwg.org/#http-responses
 
     headers.extend(layer.allow_origin_to_header(origin));
     headers.extend(layer.allow_credentials_to_header());
     headers.extend(layer.allow_private_network_to_header(&parts));
-
-    let mut vary_headers = layer.vary.iter().cloned();
-    if let Some(first) = vary_headers.next() {
-        let mut header = match headers.entry(header::VARY) {
-            header::Entry::Occupied(_) => {
-                unreachable!("no vary header inserted up to this point")
-            }
-            header::Entry::Vacant(v) => v.insert_entry(first),
-        };
-
-        for val in vary_headers {
-            header.append(val);
-        }
-    }
+    headers.extend(layer.vary_to_header());
 
     // Return results immediately upon preflight request
     if parts.method == Method::OPTIONS {
@@ -170,6 +187,8 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
         headers.extend(layer.allow_methods_to_header(&parts));
         headers.extend(layer.allow_headers_to_header(&parts));
         headers.extend(layer.max_age_to_header());
+
+        println!("{headers:?}");
 
         let mut response = Response::new(Body::default());
         std::mem::swap(response.headers_mut(), &mut headers);

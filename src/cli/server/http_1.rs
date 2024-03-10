@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
-use tower_http::cors::CorsLayer;
 
+// use tower_http::cors::CorsLayer;
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::GraphQLRequest;
 use crate::cli::CLIError;
@@ -41,7 +41,7 @@ pub async fn start_http_1(
 
     let make_svc_batch_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
-        let _cors = CorsLayer::permissive();
+        // let _cors = CorsLayer::permissive();
 
         async move {
             let state = state.clone();

@@ -100,7 +100,8 @@ pub struct Server {
     pub workers: Option<usize>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `corsParams` sets the number of worker threads. @default the number of system cores.
+    /// `corsParams` sets the number of worker threads. @default the number of
+    /// system cores.
     pub cors_params: Option<CorsParams>,
 }
 
@@ -202,6 +203,7 @@ impl Server {
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
+        self.cors_params = other.cors_params.or(self.cors_params);
         self
     }
 }

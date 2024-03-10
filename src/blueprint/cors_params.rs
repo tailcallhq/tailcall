@@ -4,13 +4,14 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::http::request::Parts;
 
 use crate::config;
+use crate::config::cors_params::StringOrSequence;
 
 #[derive(Clone, Debug, Setters)]
 pub struct CorsParams {
-    pub allow_credentials: Option<bool>,
+    pub allow_credentials: bool,
     pub allow_headers: ConstOrMirror,
     pub allow_methods: ConstOrMirror,
-    pub allow_origin: Vec<HeaderValue>,
+    pub allow_origin: ConstOrList,
     pub allow_private_network: bool,
     pub expose_headers: Option<HeaderValue>,
     pub max_age: Option<HeaderValue>,
@@ -22,14 +23,15 @@ impl CorsParams {
         &self,
         origin: Option<&HeaderValue>,
     ) -> Option<(HeaderName, HeaderValue)> {
-        Some((
-            header::ACCESS_CONTROL_ALLOW_ORIGIN,
-            origin.filter(|o| self.allow_origin.contains(o))?.clone(),
-        ))
+        let allow_origin = match &self.allow_origin {
+            ConstOrList::Const(v) => v.clone(),
+            ConstOrList::List(l) => origin.filter(|o| l.contains(o))?.clone(),
+        };
+        Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin))
     }
 
     pub fn allow_credentials_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
-        self.allow_credentials?.then(|| {
+        self.allow_credentials.then(|| {
             (
                 header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
                 HeaderValue::from_static("true"),
@@ -68,18 +70,24 @@ impl CorsParams {
     }
 
     pub fn allow_methods_to_header(&self, parts: &Parts) -> Option<(HeaderName, HeaderValue)> {
-        self.const_or_mirror_to_header(&self.allow_methods, parts)
+        Some((
+            header::ACCESS_CONTROL_ALLOW_METHODS,
+            self.const_or_mirror_to_header(&self.allow_methods, parts)?,
+        ))
     }
 
     pub fn allow_headers_to_header(&self, parts: &Parts) -> Option<(HeaderName, HeaderValue)> {
-        self.const_or_mirror_to_header(&self.allow_headers, parts)
+        Some((
+            header::ACCESS_CONTROL_ALLOW_HEADERS,
+            self.const_or_mirror_to_header(&self.allow_headers, parts)?,
+        ))
     }
 
     pub fn const_or_mirror_to_header(
         &self,
         const_or_mirror: &ConstOrMirror,
         parts: &Parts,
-    ) -> Option<(HeaderName, HeaderValue)> {
+    ) -> Option<HeaderValue> {
         let allow_methods = match &const_or_mirror {
             ConstOrMirror::Const(v) => v.clone()?,
             ConstOrMirror::MirrorRequest => parts
@@ -88,7 +96,7 @@ impl CorsParams {
                 .clone(),
         };
 
-        Some((header::ACCESS_CONTROL_ALLOW_METHODS, allow_methods))
+        Some(allow_methods)
     }
 
     pub fn max_age_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
@@ -104,6 +112,24 @@ impl CorsParams {
             self.expose_headers.as_ref()?.clone(),
         ))
     }
+
+    pub fn vary_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
+        let values = &self.vary;
+        let mut res = values.first()?.as_bytes().to_owned();
+        for val in &values[1..] {
+            res.extend_from_slice(b", ");
+            res.extend_from_slice(val.as_bytes());
+        }
+
+        let header_val = HeaderValue::from_bytes(&res)
+            .expect("comma-separated list of HeaderValues is always a valid HeaderValue");
+        Some((header::VARY, header_val))
+    }
+
+    #[allow(clippy::borrow_interior_mutable_const)]
+    pub fn expose_headers_is_wildcard(&self) -> bool {
+        matches!(&self.expose_headers, Some(v) if v == WILDCARD)
+    }
 }
 
 impl TryFrom<config::cors_params::CorsParams> for CorsParams {
@@ -114,13 +140,9 @@ impl TryFrom<config::cors_params::CorsParams> for CorsParams {
             allow_credentials: value.allow_credentials,
             allow_headers: value.allow_headers.try_into()?,
             allow_methods: value.allow_methods.try_into()?,
-            allow_origin: value
-                .allow_origin
-                .iter()
-                .map(|val| Ok(val.parse()?))
-                .collect::<anyhow::Result<_>>()?,
+            allow_origin: value.allow_origin.try_into()?,
             allow_private_network: false,
-            expose_headers: value.expose_headers.map(|val| val.parse()).transpose()?,
+            expose_headers: Some(value.expose_headers.try_into()?),
             max_age: value.max_age.map(|val| val.into()),
             vary: value
                 .vary
@@ -137,6 +159,16 @@ pub enum ConstOrMirror {
     MirrorRequest,
 }
 
+#[allow(clippy::declare_interior_mutable_const)]
+const WILDCARD: HeaderValue = HeaderValue::from_static("*");
+
+impl ConstOrMirror {
+    #[allow(clippy::borrow_interior_mutable_const)]
+    pub fn is_wildcard(&self) -> bool {
+        matches!(&self, Self::Const(Some(v)) if v == WILDCARD)
+    }
+}
+
 impl TryFrom<config::cors_params::ConstOrMirror> for ConstOrMirror {
     type Error = anyhow::Error;
 
@@ -145,7 +177,36 @@ impl TryFrom<config::cors_params::ConstOrMirror> for ConstOrMirror {
             config::cors_params::ConstOrMirror::Const(val) => {
                 ConstOrMirror::Const(val.map(|val| val.parse()).transpose()?)
             }
-            config::cors_params::ConstOrMirror::MirrorRequest => ConstOrMirror::MirrorRequest,
+            config::cors_params::ConstOrMirror::MirrorRequest(_) => ConstOrMirror::MirrorRequest,
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ConstOrList {
+    Const(HeaderValue),
+    List(Vec<HeaderValue>),
+}
+
+impl ConstOrList {
+    #[allow(clippy::borrow_interior_mutable_const)]
+    pub fn is_wildcard(&self) -> bool {
+        matches!(&self, Self::Const(v) if v == WILDCARD)
+    }
+}
+
+impl TryFrom<StringOrSequence> for ConstOrList {
+    type Error = anyhow::Error;
+
+    fn try_from(value: StringOrSequence) -> anyhow::Result<Self> {
+        Ok(match value {
+            StringOrSequence::String(string) => Self::Const(string.parse()?),
+            StringOrSequence::Sequence(sequence) => Self::List(
+                sequence
+                    .into_iter()
+                    .map(|val| Ok(val.parse()?))
+                    .collect::<anyhow::Result<Vec<_>>>()?,
+            ),
         })
     }
 }
