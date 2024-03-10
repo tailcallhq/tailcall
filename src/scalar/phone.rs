@@ -1,5 +1,6 @@
 use async_graphql_value::ConstValue;
-use schemars::JsonSchema;
+use schemars::schema::Schema;
+use schemars::{schema_for, JsonSchema};
 
 use crate::json::JsonLike;
 
@@ -9,7 +10,6 @@ pub struct PhoneNumber {
     /// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
     pub phone_no: String,
 }
-
 impl super::Scalar for PhoneNumber {
     /// Function used to validate the phone number
     fn validate(&self) -> fn(&ConstValue) -> bool {
@@ -19,6 +19,9 @@ impl super::Scalar for PhoneNumber {
             }
             false
         }
+    }
+    fn scalar(&self) -> Schema {
+        Schema::Object(schema_for!(Self).schema)
     }
 }
 

@@ -3,7 +3,7 @@ schema
     port: 8000
     graphiql: true
     hostname: "0.0.0.0"
-    corsParams: {allowOrigin: "*", allowHeaders: "*", allowMethods: "POST, GET, OPTIONS", exposeHeaders: "*"}
+    corsParams: {allowOrigin: "*", allowHeaders: "*", allowMethods: "POST, GET, OPTIONS"}
   )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query

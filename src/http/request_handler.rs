@@ -19,6 +19,8 @@ use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::CorsParams;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
+const API_URL_PREFIX: &str = "/api";
+
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
     let endpoint = "/graphql";
@@ -98,8 +100,8 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    let request = serde_json::from_slice::<T>(&bytes);
-    match request {
+    let graphql_request = serde_json::from_slice::<T>(&bytes);
+    match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
             response = update_cache_control_header(response, app_ctx, req_ctx);
@@ -164,10 +166,10 @@ fn ensure_usable_cors_rules(layer: &CorsParams) {
 
 pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    layer: &CorsParams,
+    cors: &CorsParams,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    ensure_usable_cors_rules(layer);
+    ensure_usable_cors_rules(cors);
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
 
@@ -176,19 +178,17 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     // These headers are applied to both preflight and subsequent regular CORS
     // requests: https://fetch.spec.whatwg.org/#http-responses
 
-    headers.extend(layer.allow_origin_to_header(origin));
-    headers.extend(layer.allow_credentials_to_header());
-    headers.extend(layer.allow_private_network_to_header(&parts));
-    headers.extend(layer.vary_to_header());
+    headers.extend(cors.allow_origin_to_header(origin));
+    headers.extend(cors.allow_credentials_to_header());
+    headers.extend(cors.allow_private_network_to_header(&parts));
+    headers.extend(cors.vary_to_header());
 
     // Return results immediately upon preflight request
     if parts.method == Method::OPTIONS {
         // These headers are applied only to preflight requests
-        headers.extend(layer.allow_methods_to_header(&parts));
-        headers.extend(layer.allow_headers_to_header(&parts));
-        headers.extend(layer.max_age_to_header());
-
-        println!("{headers:?}");
+        headers.extend(cors.allow_methods_to_header(&parts));
+        headers.extend(cors.allow_headers_to_header(&parts));
+        headers.extend(cors.max_age_to_header());
 
         let mut response = Response::new(Body::default());
         std::mem::swap(response.headers_mut(), &mut headers);
@@ -196,7 +196,7 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(response)
     } else {
         // This header is applied only to non-preflight requests
-        headers.extend(layer.expose_headers_to_header());
+        headers.extend(cors.expose_headers_to_header());
 
         let req = Request::from_parts(parts, body);
         let mut response = handle_request::<T>(req, app_ctx).await?;
@@ -215,11 +215,36 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+async fn handle_rest_apis(
+    mut request: Request<Body>,
+    app_ctx: Arc<AppContext>,
+) -> Result<Response<Body>> {
+    *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
+    let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
+    if let Some(p_request) = app_ctx.endpoints.matches(&request) {
+        let graphql_request = p_request.into_request(request).await?;
+        let mut response = graphql_request
+            .data(req_ctx.clone())
+            .execute(&app_ctx.schema)
+            .await;
+        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
+        let mut resp = response.to_response()?;
+        update_response_headers(&mut resp, app_ctx.as_ref());
+        return Ok(resp);
+    }
+
+    not_found()
+}
+
 #[instrument(skip_all, err, fields(method = %req.method(), url = %req.uri()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
+    if req.uri().path().starts_with(API_URL_PREFIX) {
+        return handle_rest_apis(req, app_ctx).await;
+    }
+
     match *req.method() {
         // NOTE:
         // The first check for the route should be for `/graphql`

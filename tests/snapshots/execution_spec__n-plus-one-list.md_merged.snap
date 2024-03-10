@@ -7,13 +7,13 @@ schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, header
 }
 
 type Bar {
-  foo: [Foo] @http(groupBy: ["id"], path: "/foos", query: [{key: "id", value: "{{value.fooId}}"}])
+  foo: [Foo] @http(batchKey: ["id"], path: "/foos", query: [{key: "id", value: "{{value.fooId}}"}])
   fooId: Int!
   id: Int!
 }
 
 type Foo {
-  bar: Bar @http(groupBy: ["fooId"], path: "/bars", query: [{key: "fooId", value: "{{value.id}}"}])
+  bar: Bar @http(batchKey: ["fooId"], path: "/bars", query: [{key: "fooId", value: "{{value.id}}"}])
   id: Int!
   name: String!
 }

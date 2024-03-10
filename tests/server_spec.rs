@@ -149,6 +149,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: Arc::new(vec![]),
         }
     }
 }
@@ -177,6 +178,7 @@ mod server_spec {
 
         // required since our cert is self signed
         let client = Client::builder()
+            .use_rustls_tls()
             .danger_accept_invalid_certs(true)
             .build()
             .unwrap();

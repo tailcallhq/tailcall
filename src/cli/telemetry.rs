@@ -24,6 +24,7 @@ use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
 use crate::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
+use crate::cli::CLIError;
 use crate::runtime::TargetRuntime;
 use crate::tracing::{default_tailcall_tracing, tailcall_filter_target};
 
@@ -89,6 +90,7 @@ fn set_trace_provider(
             ))?,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
+        TelemetryExporter::Apollo(_) => return Ok(None),
     };
     let tracer = provider.tracer("tracing");
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
@@ -128,6 +130,7 @@ fn set_logger_provider(
         ,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
+        TelemetryExporter::Apollo(_) => return Ok(None),
     };
 
     let otel_tracing_appender = OpenTelemetryTracingBridge::new(&provider);
@@ -171,6 +174,7 @@ fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
                 .with_reader(exporter)
                 .build()
         }
+        _ => return Ok(()),
     };
 
     global::set_meter_provider(provider);
@@ -198,7 +202,12 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     | global::Error::Metric(MetricsError::Other(_))
                     | global::Error::Log(LogError::Other(_)),
             ) {
-                eprintln!("OpenTelemetry error: {:?}", error);
+                tracing::subscriber::with_default(default_tailcall_tracing(), || {
+                    let cli = crate::cli::CLIError::new("Open Telemetry Error")
+                        .caused_by(vec![CLIError::new(error.to_string().as_str())])
+                        .trace(vec!["schema".to_string(), "@telemetry".to_string()]);
+                    tracing::error!("{}", cli.color(true));
+                });
             }
         })?;
 

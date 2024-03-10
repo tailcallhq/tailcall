@@ -9,7 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "value": "alo@valid.com"
+      "url": "https://tailcall.run/"
     }
   }
 }
