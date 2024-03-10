@@ -8,13 +8,13 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
+use crate::blueprint::{Blueprint, Upstream};
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::print_schema;
-use crate::valid::Validator;
+
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
