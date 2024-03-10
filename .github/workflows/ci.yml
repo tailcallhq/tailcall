@@ -126,10 +126,13 @@ jobs:
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
+      - name: Build Project
+        run: cargo build
+
       - name: Check all examples
         run: |
           find ./examples -type f \( -iname \*.json -o -iname \*.yml -o -iname \*.yaml -o -iname \*.graphql -o -iname \*.gql \) | while read file; do
-            cargo run -- check "$file"
+            ./target/debug/tailcall --check "$file" || exit 1
           done
 
   draft_release:
