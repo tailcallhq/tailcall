@@ -23,6 +23,7 @@ lazy_static! {
         ("grpc", vec![Entity::FieldDefinition], false),
         ("addField", vec![Entity::Object], true),
         ("modify", vec![Entity::FieldDefinition], false),
+        ("telemetry", vec![Entity::FieldDefinition], false),
         ("omit", vec![Entity::FieldDefinition], false),
         ("groupBy", vec![Entity::FieldDefinition], false),
         ("const", vec![Entity::FieldDefinition], false),
@@ -63,6 +64,7 @@ static OBJECT_WHITELIST: &[&str] = &[
     "OtlpExporter",
     "PrometheusFormat",
     "PrometheusExporter",
+    "Apollo",
 ];
 
 #[derive(Clone, Copy)]

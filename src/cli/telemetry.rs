@@ -89,6 +89,7 @@ fn set_trace_provider(
             ))?,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
+        TelemetryExporter::Apollo(_) => return Ok(None),
     };
     let tracer = provider.tracer("tracing");
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
@@ -128,6 +129,7 @@ fn set_logger_provider(
         ,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
+        TelemetryExporter::Apollo(_) => return Ok(None),
     };
 
     let otel_tracing_appender = OpenTelemetryTracingBridge::new(&provider);
@@ -171,6 +173,7 @@ fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
                 .with_reader(exporter)
                 .build()
         }
+        _ => return Ok(()),
     };
 
     global::set_meter_provider(provider);

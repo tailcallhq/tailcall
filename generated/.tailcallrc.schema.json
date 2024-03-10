@@ -85,6 +85,38 @@
         }
       }
     },
+    "Apollo": {
+      "type": "object",
+      "required": [
+        "api_key",
+        "graph_ref"
+      ],
+      "properties": {
+        "api_key": {
+          "description": "Setting `api_key` for Apollo.",
+          "type": "string"
+        },
+        "graph_ref": {
+          "description": "Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.",
+          "type": "string"
+        },
+        "platform": {
+          "description": "Setting `platform` for Apollo.",
+          "default": "platform",
+          "type": "string"
+        },
+        "user_version": {
+          "description": "Setting `userVersion` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        },
+        "version": {
+          "description": "Setting `version` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        }
+      }
+    },
     "Arg": {
       "type": "object",
       "required": [
@@ -1181,19 +1213,19 @@
             "null"
           ]
         },
+        "batchKey": {
+          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "body": {
           "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.",
           "type": [
             "string",
             "null"
           ]
-        },
-        "groupBy": {
-          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
@@ -1223,6 +1255,13 @@
             "null"
           ]
         },
+        "batchKey": {
+          "description": "The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "body": {
           "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
           "type": [
@@ -1237,13 +1276,6 @@
               "$ref": "#/definitions/Encoding"
             }
           ]
-        },
-        "groupBy": {
-          "description": "The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.",
@@ -1636,6 +1668,7 @@
       }
     },
     "Telemetry": {
+      "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
       "properties": {
         "export": {
@@ -1684,6 +1717,18 @@
           "properties": {
             "prometheus": {
               "$ref": "#/definitions/PrometheusExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "apollo"
+          ],
+          "properties": {
+            "apollo": {
+              "$ref": "#/definitions/Apollo"
             }
           },
           "additionalProperties": false
