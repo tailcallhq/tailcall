@@ -40,9 +40,7 @@
                 "value": "{{value.userId}}"
               }
             ],
-            "batchKey": [
-              "id"
-            ]
+            "batchKey": ["id"]
           }
         },
         "userId": {
