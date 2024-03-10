@@ -168,7 +168,7 @@ directive @http(
   by the `@http` operator. It is used by specifying a key-value map of header names 
   and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
