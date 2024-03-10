@@ -1,7 +1,12 @@
-query userById($id: Int!) @rest(method: "get", path: "/user/$id") {
-  user(id: $id) {
+query posts @rest(method: "get", path: "/posts") {
+  posts {
     id
-    name
+    title
+    body
+    user {
+      id
+      name
+    }
   }
 }
 
@@ -9,5 +14,9 @@ query users @rest(method: "get", path: "/users") {
   users {
     id
     name
+    posts {
+      id
+      title
+    }
   }
 }
