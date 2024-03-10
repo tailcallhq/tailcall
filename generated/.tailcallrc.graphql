@@ -415,6 +415,28 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
+input Apollo {
+  """
+  Setting `api_key` for Apollo.
+  """
+  api_key: String!
+  """
+  Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
+  """
+  graph_ref: String!
+  """
+  Setting `platform` for Apollo.
+  """
+  platform: String!
+  """
+  Setting `userVersion` for Apollo.
+  """
+  user_version: String!
+  """
+  Setting `version` for Apollo.
+  """
+  version: String!
+}
 input Batch {
   delay: Int!
   headers: [String!]
@@ -713,6 +735,7 @@ input TelemetryExporter {
   stdout: StdoutExporter
   otlp: OtlpExporter
   prometheus: PrometheusExporter
+  apollo: Apollo
 }
 input Schema {
   Obj: JSON
