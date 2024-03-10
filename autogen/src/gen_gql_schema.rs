@@ -35,6 +35,11 @@ lazy_static! {
         ("expr", vec![Entity::FieldDefinition], false),
         ("js", vec![Entity::FieldDefinition], false),
     ];
+    static ref EXTRA_IT: BTreeMap<String, ExtraTypes> = {
+        let mut map = BTreeMap::new();
+        map.insert("KeyValue".to_string(), ExtraTypes::KeyValue);
+        map
+    };
 }
 
 static OBJECT_WHITELIST: &[&str] = &[
