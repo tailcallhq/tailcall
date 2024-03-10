@@ -700,7 +700,7 @@ fn generate_rc_file(file: File) -> Result<()> {
     let mut cloned_extra_it = extra_it.clone(); 
 
     write_all_directives(&mut file, &mut written_directives, &mut cloned_extra_it)?;
-    write_all_input_types(&mut file, cloned_extra_it)?;
+    write_all_input_types(&mut file,&mut cloned_extra_it)?;
     writeln!(&mut file, "scalar JSON\n")?;
 
     Ok(())
