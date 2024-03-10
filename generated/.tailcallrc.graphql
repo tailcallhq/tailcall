@@ -321,6 +321,12 @@ directive @server(
   workers: Int
 ) on SCHEMA
 
+"""
+The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
+the observability of your GraphQL services powered by Tailcall. By leveraging this 
+directive, developers gain access to valuable insights into the performance and behavior 
+of their applications.
+"""
 directive @telemetry(
   export: TelemetryExporter
 ) on FIELD_DEFINITION
@@ -694,6 +700,12 @@ input StdoutExporter {
   """
   pretty: Boolean!
 }
+"""
+The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
+the observability of your GraphQL services powered by Tailcall. By leveraging this 
+directive, developers gain access to valuable insights into the performance and behavior 
+of their applications.
+"""
 input Telemetry {
   export: TelemetryExporter
 }
