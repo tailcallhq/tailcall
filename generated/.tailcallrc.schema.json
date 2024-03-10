@@ -1386,6 +1386,7 @@
       }
     },
     "Omit": {
+      "description": "Used to omit a field from public consumption.",
       "type": "object"
     },
     "OtlpExporter": {

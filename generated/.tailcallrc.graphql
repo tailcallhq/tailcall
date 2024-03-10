@@ -227,6 +227,11 @@ directive @modify(
 ) on FIELD_DEFINITION
 
 """
+Used to omit a field from public consumption.
+"""
+directive @omit on FIELD_DEFINITION
+
+"""
 The `@server` directive, when applied at the schema level, offers a comprehensive 
 set of server configurations. It dictates how the server behaves and helps tune tailcall 
 for various use-cases.
@@ -698,10 +703,10 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-scalar Url
-scalar Email
-scalar KeyValues
 scalar Date
+scalar Email
 scalar PhoneNumber
+scalar KeyValues
+scalar Url
 scalar JSON
 
