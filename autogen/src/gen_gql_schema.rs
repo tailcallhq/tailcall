@@ -35,11 +35,6 @@ lazy_static! {
         ("expr", vec![Entity::FieldDefinition], false),
         ("js", vec![Entity::FieldDefinition], false),
     ];
-    static ref EXTRA_IT: BTreeMap<String, ExtraTypes> = {
-        let mut map = BTreeMap::new();
-        map.insert("KeyValue".to_string(), ExtraTypes::KeyValue);
-        map
-    };
 }
 
 static OBJECT_WHITELIST: &[&str] = &[
@@ -202,7 +197,7 @@ impl<W: std::io::Write> Write for IndentedWriter<W> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum ExtraTypes {
     Schema,
     ObjectValidation(ObjectValidation),
@@ -620,7 +615,6 @@ fn write_key_value_definition(writer: &mut IndentedWriter<impl Write>) -> std::i
     writeln!(writer, "}}")?;
     Ok(())
 }
-
 fn write_all_input_types(
     writer: &mut IndentedWriter<impl Write>,
     mut extra_it: BTreeMap<String, ExtraTypes>,
@@ -701,10 +695,12 @@ fn generate_rc_file(file: File) -> Result<()> {
     let mut written_directives = HashSet::new();
 
     let mut extra_it = BTreeMap::new();
+    extra_it.insert("KeyValue".to_string(), ExtraTypes::KeyValue);
 
-    write_all_directives(&mut file, &mut written_directives, &mut extra_it)?;
-    write_all_input_types(&mut file, extra_it)?;
+    let mut cloned_extra_it = extra_it.clone(); 
 
+    write_all_directives(&mut file, &mut written_directives, &mut cloned_extra_it)?;
+    write_all_input_types(&mut file, cloned_extra_it)?;
     writeln!(&mut file, "scalar JSON\n")?;
 
     Ok(())
