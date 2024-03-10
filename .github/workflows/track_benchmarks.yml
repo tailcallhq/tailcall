@@ -1,0 +1,40 @@
+name: Track Benchmark
+
+on:
+  push:
+    paths-ignore: ["docs/**", "**.md"]
+    branches:
+      - main
+
+jobs:
+    track_benchmark_with_bencher:    
+      name: Track Benchmarks with Bencher
+      permissions:
+        pull-requests: write
+        contents: write
+      runs-on: ubuntu-latest
+      env:
+        BENCHER_PROJECT: tailcall
+        BENCHER_TESTBED: ubuntu-latest
+        BENCHER_ADAPTER: json
+        BASE_BENCHMARK_RESULTS: benches/track_benchmark.json
+      steps:
+        - name: Check out code
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ github.event.pull_request.head.sha }}
+
+        - name: Convert Cache into Proper Json
+          run: |
+            cat benches/main_benchmarks.json | jq -s 'map(select(.id and .mean and .slope and .median) | {id: .id, mean: .mean, slope: .slope, median: .median})' > benches/track_benchmark.json
+
+        - uses: bencherdev/bencher@main
+        - name: Track base Benchmarks
+          run: |
+            bencher run \
+            --branch 'main' \
+            --token "${{ secrets.BENCHER_API_TOKEN }}" \
+            --ci-id '${{ github.event.pull_request.number }}' \
+            --github-actions "${{ secrets.GITHUB_TOKEN }}" \
+            --err \
+            --file "$BASE_BENCHMARK_RESULTS"
