@@ -703,10 +703,10 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
-scalar Url
-scalar KeyValues
 scalar Date
 scalar Email
+scalar KeyValues
 scalar PhoneNumber
+scalar Url
 scalar JSON
 
