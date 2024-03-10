@@ -15,7 +15,6 @@ use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::print_schema;
 
-
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 
