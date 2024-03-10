@@ -667,6 +667,10 @@ fn write_all_input_types(
     scalar_vector.sort();
 
     for name in scalar_vector {
+        let def = defs.keys().find(|k| k.to_lowercase() == name.to_lowercase()).unwrap();
+        writeln!(writer, "\"\"\"")?;
+        writeln!(writer, "{def}")?;
+        writeln!(writer, "\"\"\"")?;
         writeln!(writer, "scalar {name}")?;
     }
 
