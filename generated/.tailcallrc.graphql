@@ -705,7 +705,10 @@ input Schema {
 }
 scalar Date
 scalar Email
-scalar KeyValues
+input KeyValue {
+  key: String
+  value: String
+}
 scalar PhoneNumber
 scalar Url
 scalar JSON
