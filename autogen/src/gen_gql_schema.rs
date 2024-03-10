@@ -660,8 +660,8 @@ fn write_all_input_types(
             }
         }
     }
-
-    for name in scalar {
+    
+    for name in scalar.into_iter().collect().sort() {
         writeln!(writer, "scalar {name}")?;
     }
 
