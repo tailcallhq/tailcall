@@ -20,7 +20,7 @@ type Post {
       body: {
         if: {
           cond: {const: {data: true}}
-          then: {http: {path: "/users", query: [{key: "id", value: "{{value.userId}}"}], groupBy: ["id"]}}
+          then: {http: {path: "/users", query: [{key: "id", value: "{{value.userId}}"}], batchKey: ["id"]}}
           else: {const: {data: {}}}
         }
       }
@@ -34,8 +34,8 @@ type User {
     @expr(
       body: {
         concat: [
-          {http: {path: "/users-values-1", query: [{key: "id", value: "{{value.id}}"}], groupBy: ["id"]}}
-          {http: {path: "/users-values-2", query: [{key: "id", value: "{{value.id}}"}], groupBy: ["id"]}}
+          {http: {path: "/users-values-1", query: [{key: "id", value: "{{value.id}}"}], batchKey: ["id"]}}
+          {http: {path: "/users-values-2", query: [{key: "id", value: "{{value.id}}"}], batchKey: ["id"]}}
         ]
       }
     )

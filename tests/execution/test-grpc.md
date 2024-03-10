@@ -66,6 +66,6 @@ type NewsData {
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
   newsById(news: NewsInput!): News! @grpc(body: "{{args.news}}", method: "news.NewsService.GetNews")
-  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", groupBy: ["news", "id"], method: "news.NewsService.GetMultipleNews")
+  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", batchKey: ["news", "id"], method: "news.NewsService.GetMultipleNews")
 }
 ```

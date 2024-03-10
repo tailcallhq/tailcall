@@ -14,6 +14,6 @@ type User {
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], groupBy: ["id"])
+  user(id: Int!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], batchKey: ["id"])
 }
 ```

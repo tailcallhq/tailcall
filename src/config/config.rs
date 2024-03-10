@@ -61,6 +61,7 @@ pub struct Config {
     /// Enable [opentelemetry](https://opentelemetry.io) support
     pub opentelemetry: Telemetry,
 }
+
 impl Config {
     pub fn port(&self) -> u16 {
         self.server.port.unwrap_or(8000)
@@ -323,6 +324,7 @@ impl RootSchema {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// Used to omit a field from public consumption.
 pub struct Omit {}
 
 ///
@@ -557,8 +559,8 @@ pub struct Http {
     /// `ApplicationJson`.
     pub encoding: Encoding,
 
-    #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
-    /// The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
+    /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -638,7 +640,7 @@ pub struct Grpc {
     /// static object or use Mustache template for dynamic parameters. These
     /// parameters will be added in the body in `protobuf` format.
     pub body: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
     #[serde(default, skip_serializing_if = "is_default")]
@@ -760,7 +762,6 @@ pub enum Encoding {
 }
 
 #[cfg(test)]
-
 mod tests {
     use pretty_assertions::assert_eq;
 

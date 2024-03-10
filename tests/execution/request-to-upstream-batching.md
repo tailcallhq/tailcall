@@ -36,7 +36,7 @@
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com",
-            "groupBy": ["id"]
+            "batchKey": ["id"]
           },
           "cache": null
         }

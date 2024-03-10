@@ -23,6 +23,8 @@ lazy_static! {
         ("grpc", vec![Entity::FieldDefinition], false),
         ("addField", vec![Entity::Object], true),
         ("modify", vec![Entity::FieldDefinition], false),
+        ("telemetry", vec![Entity::FieldDefinition], false),
+        ("omit", vec![Entity::FieldDefinition], false),
         ("groupBy", vec![Entity::FieldDefinition], false),
         ("const", vec![Entity::FieldDefinition], false),
         ("graphQL", vec![Entity::FieldDefinition], false),
@@ -62,6 +64,7 @@ static OBJECT_WHITELIST: &[&str] = &[
     "OtlpExporter",
     "PrometheusFormat",
     "PrometheusExporter",
+    "Apollo",
 ];
 
 #[derive(Clone, Copy)]
@@ -660,7 +663,10 @@ fn write_all_input_types(
         }
     }
 
-    for name in scalar {
+    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
+    scalar_vector.sort();
+
+    for name in scalar_vector {
         writeln!(writer, "scalar {name}")?;
     }
 
