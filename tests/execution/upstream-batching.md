@@ -1,6 +1,7 @@
 # Sending requests to be batched by the upstream server
 
 ####
+
 ```json @server
 {
   "server": {},
@@ -58,6 +59,7 @@
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -75,6 +77,7 @@
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

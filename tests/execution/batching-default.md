@@ -1,6 +1,7 @@
 # Batching default
 
 ####
+
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 10}) {
   query: Query
@@ -26,6 +27,7 @@ type User {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -50,6 +52,7 @@ type User {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

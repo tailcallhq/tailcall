@@ -1,6 +1,7 @@
 # Grpc datasource
 
 ####
+
 ```protobuf @file:news.proto
 syntax = "proto3";
 
@@ -38,6 +39,7 @@ message NewsList {
 ```
 
 ####
+
 ```graphql @server
 schema
   @server(port: 8000, graphiql: true)
@@ -69,6 +71,7 @@ type News {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: POST
@@ -80,6 +83,7 @@ type News {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

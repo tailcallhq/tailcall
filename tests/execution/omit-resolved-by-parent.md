@@ -1,6 +1,7 @@
 # Resolved by parent
 
 ####
+
 ```graphql @server
 schema {
   query: Query
@@ -20,6 +21,7 @@ type User @addField(name: "address", path: ["address", "street"]) {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -35,6 +37,7 @@ type User @addField(name: "address", path: ["address", "street"]) {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

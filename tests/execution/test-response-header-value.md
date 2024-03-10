@@ -3,6 +3,7 @@
 ###### sdl error
 
 ####
+
 ```graphql @server
 schema @server(responseHeaders: [{key: "a", value: "a \n b"}]) {
   query: Query

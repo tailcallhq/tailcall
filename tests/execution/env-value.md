@@ -1,6 +1,7 @@
 # Env value
 
 ####
+
 ```json @server
 {
   "server": {},
@@ -64,6 +65,7 @@
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -101,6 +103,7 @@
 ```
 
 ####
+
 ```yml @env
 ID: "1"
 POST_ID: "2"
@@ -108,6 +111,7 @@ NESTED_POST_ID: "3"
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

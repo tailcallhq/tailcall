@@ -1,6 +1,7 @@
 # Graphql datasource
 
 ####
+
 ```graphql @server
 schema {
   query: Query
@@ -25,6 +26,7 @@ type Query {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: POST
@@ -51,6 +53,7 @@ type Query {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

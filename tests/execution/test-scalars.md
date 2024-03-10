@@ -1,6 +1,7 @@
 # test-scalar-email
 
 ####
+
 ```graphql @server
 scalar Email
 scalar PhoneNumber
@@ -20,6 +21,7 @@ type Query {
 ```
 
 ####
+
 ```yml @assert
 # Valid value tests
 - method: POST

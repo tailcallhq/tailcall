@@ -5,6 +5,7 @@ This test has invalid GraphQL that wasn't caught by http_spec before conversion.
 ##### skip
 
 ####
+
 ```graphql @server
 schema @upstream(baseURL: "http://example.com") {
   query: Query
@@ -77,6 +78,7 @@ type User {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -168,6 +170,7 @@ type User {
 ```
 
 ####
+
 ```yml @assert
 []
 ```

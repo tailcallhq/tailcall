@@ -1,6 +1,7 @@
 # Caching
 
 ####
+
 ```graphql @server
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
@@ -24,6 +25,7 @@ type TypeCache @cache(maxAge: 1000) {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -71,6 +73,7 @@ type TypeCache @cache(maxAge: 1000) {
 ```
 
 ####
+
 ```yml @assert
 # the same request to validate caching
 - method: POST

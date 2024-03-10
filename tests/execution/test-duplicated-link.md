@@ -3,6 +3,7 @@
 ###### sdl error
 
 ####
+
 ```graphql @file:jsonplaceholder.graphql
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
@@ -35,6 +36,7 @@ type Post {
 ```
 
 ####
+
 ```graphql @server
 schema
   @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder")

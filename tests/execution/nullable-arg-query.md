@@ -1,6 +1,7 @@
 # Nullable arg query
 
 ####
+
 ```graphql @server
 schema {
   query: Query
@@ -18,6 +19,7 @@ type User {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -47,6 +49,7 @@ type User {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

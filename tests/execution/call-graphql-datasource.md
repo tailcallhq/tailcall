@@ -1,6 +1,7 @@
 # Call operator with graphQL datasource
 
 ####
+
 ```graphql @server
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
@@ -33,6 +34,7 @@ type Post {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -78,6 +80,7 @@ type Post {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

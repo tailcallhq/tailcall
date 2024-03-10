@@ -3,6 +3,7 @@
 ###### sdl error
 
 ####
+
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query

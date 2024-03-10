@@ -473,9 +473,8 @@ impl ExecutionSpec {
                                 heading
                             ));
                         }
-                    } 
-                    else if heading.depth == 4 {}
-                    else {
+                    } else if heading.depth == 4 {
+                    } else {
                         return Err(anyhow!(
                             "Unexpected level {} heading in {:?}: {:#?}",
                             heading.depth,
@@ -487,10 +486,14 @@ impl ExecutionSpec {
                 Node::Code(code) => {
                     // Parse following code block
                     let (content, lang, meta) = {
-                        (code.value.to_owned(), code.lang.to_owned(), code.meta.to_owned())
+                        (
+                            code.value.to_owned(),
+                            code.lang.to_owned(),
+                            code.meta.to_owned(),
+                        )
                     };
                     if let Some(meta_str) = meta.as_ref().filter(|s| s.contains('@')) {
-                        let temp_cleaned_meta  = meta_str.replace('@', "");
+                        let temp_cleaned_meta = meta_str.replace('@', "");
                         let name: &str = &temp_cleaned_meta;
                         if let Some(name) = name.strip_prefix("file:") {
                             if files.insert(name.to_string(), content).is_some() {
@@ -508,9 +511,9 @@ impl ExecutionSpec {
                                     path
                                 )),
                             }?;
-                
+
                             let source = Source::from_str(&lang)?;
-                
+
                             match name {
                                 "server" => {
                                     // Server configs are only parsed if the test isn't skipped.
@@ -562,7 +565,7 @@ impl ExecutionSpec {
                     } else {
                         return Err(anyhow!(
                             "Unexpected content of code in {:?}: {:#?}",
-                            path, 
+                            path,
                             meta
                         ));
                     }

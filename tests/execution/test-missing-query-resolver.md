@@ -3,6 +3,7 @@
 ###### sdl error
 
 ####
+
 ```graphql @server
 schema {
   query: Query

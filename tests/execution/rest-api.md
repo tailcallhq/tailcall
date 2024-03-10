@@ -1,6 +1,7 @@
 # Rest API
 
 ####
+
 ```graphql @file:operation-user.graphql
 query ($id: Int!) @rest(method: "get", path: "/user/$id") {
   user(id: $id) {
@@ -11,6 +12,7 @@ query ($id: Int!) @rest(method: "get", path: "/user/$id") {
 ```
 
 ####
+
 ```graphql @server
 schema
   @server
@@ -30,6 +32,7 @@ type User {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -45,6 +48,7 @@ type User {
 ```
 
 ####
+
 ```yml @assert
 - method: GET
   url: http://localhost:8080/api/user/1

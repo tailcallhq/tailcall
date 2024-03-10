@@ -1,6 +1,7 @@
 # Batching group by default
 
 ####
+
 ```graphql @server
 schema
   @server
@@ -28,6 +29,7 @@ type User {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -58,6 +60,7 @@ type User {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

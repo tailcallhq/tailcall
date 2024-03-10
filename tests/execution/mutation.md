@@ -1,6 +1,7 @@
 # Mutation
 
 ####
+
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
@@ -35,6 +36,7 @@ type User {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: POST
@@ -49,6 +51,7 @@ type User {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql

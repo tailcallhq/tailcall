@@ -3,6 +3,7 @@
 ###### check identity
 
 ####
+
 ```graphql @server
 schema @server @upstream(proxy: {url: "http://localhost:8085"}) {
   query: Query

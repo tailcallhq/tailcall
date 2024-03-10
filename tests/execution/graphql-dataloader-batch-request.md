@@ -1,6 +1,7 @@
 # Graphql datasource
 
 ####
+
 ```graphql @server
 schema @upstream(batch: {delay: 1}) {
   query: Query
@@ -30,6 +31,7 @@ type Query {
 ```
 
 ####
+
 ```yml @mock
 - request:
     method: GET
@@ -79,6 +81,7 @@ type Query {
 ```
 
 ####
+
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
