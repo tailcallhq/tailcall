@@ -111,6 +111,27 @@ jobs:
             files: lcov.info
             fail_ci_if_error: true
 
+  check-examples:
+    name: Check Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Check all examples
+        run: |
+          find ./examples -type f \( -iname \*.json -o -iname \*.yml -o -iname \*.yaml -o -iname \*.graphql -o -iname \*.gql \) | while read file; do
+            cargo run -- check "$file"
+          done
+
   draft_release:
     name: Draft Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
