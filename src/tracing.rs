@@ -30,11 +30,11 @@ impl<'a> fmt::Display for FmtLevel<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.ansi {
             match *self.level {
-                Level::TRACE => write!(f, "{}", TRACE_STR.magenta()),
-                Level::DEBUG => write!(f, "{}", DEBUG_STR.blue()),
-                Level::INFO => write!(f, "{}", INFO_STR.green()),
-                Level::WARN => write!(f, "{}", WARN_STR.yellow()),
-                Level::ERROR => write!(f, "{}", ERROR_STR.red()),
+                Level::TRACE => write!(f, "{:>5} ", TRACE_STR.magenta()),
+                Level::DEBUG => write!(f, "{:>5} ", DEBUG_STR.blue()),
+                Level::INFO => write!(f, "{:>5} ", INFO_STR.green()),
+                Level::WARN => write!(f, "{:>5} ", WARN_STR.yellow()),
+                Level::ERROR => write!(f, "{:>5} ", ERROR_STR.red()),
             }
         } else {
             match *self.level {
@@ -63,7 +63,7 @@ where
     ) -> fmt::Result {
         let meta = event.metadata();
         let fmt_level = FmtLevel::new(meta.level(), writer.has_ansi_escapes());
-        write!(writer, "[{}] ", fmt_level)?;
+        write!(writer, "{}", fmt_level)?;
         ctx.field_format().format_fields(writer.by_ref(), event)?;
 
         writeln!(writer)
