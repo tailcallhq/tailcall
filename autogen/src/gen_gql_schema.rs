@@ -656,7 +656,10 @@ fn write_all_input_types(
         }
     }
 
-    for name in scalar {
+    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
+    scalar_vector.sort();
+
+    for name in scalar_vector {
         writeln!(writer, "scalar {name}")?;
     }
 
