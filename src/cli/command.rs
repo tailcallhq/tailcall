@@ -45,7 +45,7 @@ pub enum Command {
         #[arg(short, long)]
         schema: bool,
 
-        /// format of the result. Accepted values: JSON|YML|GQL.
+        /// Prints the input config in the provided format.
         #[clap(short, long)]
         format: Option<Source>,
     },
