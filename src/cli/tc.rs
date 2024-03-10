@@ -32,7 +32,7 @@ pub async fn run() -> Result<()> {
             server.fork_start().await?;
             Ok(())
         }
-        Command::Check { file_paths, n_plus_one_queries, schema, operations, format } => {
+        Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             let config_module = (config_reader.read_all(&file_paths)).await?;
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
@@ -46,27 +46,7 @@ pub async fn run() -> Result<()> {
                     if schema {
                         display_schema(&blueprint);
                     }
-
-                    let ops: Vec<OperationQuery> =
-                        futures_util::future::join_all(operations.iter().map(|op| async {
-                            runtime
-                                .file
-                                .read(op)
-                                .await
-                                .map(|query| OperationQuery::new(query, op.clone()))
-                        }))
-                        .await
-                        .into_iter()
-                        .collect::<Result<Vec<_>>>()?;
-
-                    validate_operations(&blueprint, ops)
-                        .await
-                        .to_result()
-                        .map_err(|e| {
-                            CLIError::from(e)
-                                .message("Invalid Operation".to_string())
-                                .into()
-                        })
+                    Ok(())
                 }
                 Err(e) => Err(e.into()),
             }

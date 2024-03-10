@@ -45,10 +45,6 @@ pub enum Command {
         #[arg(short, long)]
         schema: bool,
 
-        /// Operations to check
-        #[arg(short, long, value_delimiter=',', num_args = 1..)]
-        operations: Vec<String>,
-
         /// format of the result. Accepted values: JSON|YML|GQL.
         #[clap(short, long)]
         format: Option<Source>,
