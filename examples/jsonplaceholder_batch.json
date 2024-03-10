@@ -40,7 +40,9 @@
                 "value": "{{value.userId}}"
               }
             ],
-            "groupBy": ["id"]
+            "batchKey": [
+              "id"
+            ]
           }
         },
         "userId": {
