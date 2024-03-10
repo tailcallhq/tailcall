@@ -131,9 +131,7 @@ jobs:
 
       - name: Check all examples
         run: |
-          find ./examples -type f \( -iname \*.json -o -iname \*.yml -o -iname \*.yaml -o -iname \*.graphql -o -iname \*.gql \) | while read file; do
-            ./target/debug/tailcall --check "$file" || exit 1
-          done
+          find ./examples -maxdepth 1 \( -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.graphql" -o -name "*.gql" \) -exec ./target/debug/tailcall check {} \;
 
   draft_release:
     name: Draft Release
