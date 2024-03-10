@@ -51,13 +51,17 @@ reqwest = { version = "0.11", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-async-graphql = { version = "7.0.2", features = [
+# TODO: Modification with the ability to set a parsed GraphQL operation.
+# Remove this once https://github.com/async-graphql/async-graphql/pull/1483/files is merged
+async-graphql = { git ="https://github.com/tusharmath/async-graphql.git", branch = "add-setter", features = [
     "dynamic-schema",
     "dataloader",
     "apollo_tracing",
     "opentelemetry",
 ] }
-async-graphql-value = "7.0.2"
+# TODO: Modification with the ability to set a parsed GraphQL operation.
+# Remove this once https://github.com/async-graphql/async-graphql/pull/1483/files is merged
+async-graphql-value = {git ="https://github.com/tusharmath/async-graphql.git", branch = "add-setter"}
 indexmap = "2.2"
 once_cell = "1.19.0"
 clap = { version = "4.5.2", features = ["derive"] }
@@ -65,7 +69,7 @@ colored = "2"
 regex = "1.10.3"
 reqwest-middleware = "0.2.4"
 async-trait = "0.1.77"
-serde_path_to_error = "0.1.15"
+serde_path_to_error = "0.1.16"
 cache_control = "0.2.0"
 nom = "7.1.3"
 exitcode = "1.1.2"
@@ -119,10 +123,16 @@ opentelemetry-stdout = { version = "0.3.0", features = [
 opentelemetry-appender-tracing = { version = "0.3.0" }
 opentelemetry-prometheus = "0.15.0"
 phonenumber = "0.3.3"
+chrono = "0.4.35"
 
 # TODO: move this flag into `cli`, like other dependencies.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 async-graphql-extension-apollo-tracing = { version = "3.2.14" }
+
+[patch.crates-io]
+# TODO: update this once https://github.com/haixuanTao/opentelemetry-system-metrics/pull/2 gets merged
+async-graphql-value = {git ="https://github.com/tusharmath/async-graphql.git", branch = "add-setter"}
+async-graphql = {git ="https://github.com/tusharmath/async-graphql.git", branch = "add-setter"}
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -133,6 +143,7 @@ markdown = "1.0.0-alpha.16"
 insta = { version = "1.36.1", features = ["json"] }
 tempfile = "3.10.1"
 temp-env = "0.3.6"
+maplit = "1.0.2"
 
 [features]
 

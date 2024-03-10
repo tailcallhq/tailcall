@@ -7,6 +7,7 @@ use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::runtime::init;
 use crate::http::AppContext;
+use crate::rest::EndpointSet;
 use crate::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
@@ -15,7 +16,7 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn new(blueprint: Blueprint) -> Self {
+    pub fn new(blueprint: Blueprint, endpoints: EndpointSet) -> Self {
         let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
 
         let mut extensions = vec![];
@@ -32,7 +33,7 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let server_context = Arc::new(AppContext::new(blueprint.clone(), rt));
+        let server_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
         Self { app_ctx: server_context, blueprint }
     }
 

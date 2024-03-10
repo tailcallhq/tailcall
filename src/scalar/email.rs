@@ -1,6 +1,7 @@
 use async_graphql::validators::email;
 use async_graphql_value::ConstValue;
-use schemars::JsonSchema;
+use schemars::schema::Schema;
+use schemars::{schema_for, JsonSchema};
 
 use crate::json::JsonLike;
 
@@ -31,6 +32,9 @@ impl super::Scalar for Email {
             }
             false
         }
+    }
+    fn scalar(&self) -> Schema {
+        Schema::Object(schema_for!(Self).schema)
     }
 }
 

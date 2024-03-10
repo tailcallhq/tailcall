@@ -226,7 +226,21 @@
         "data": true
       }
     },
+    "Date": {
+      "title": "Date",
+      "type": "object",
+      "required": [
+        "Date"
+      ],
+      "properties": {
+        "Date": {
+          "description": "A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.",
+          "type": "string"
+        }
+      }
+    },
     "Email": {
+      "title": "Email",
       "type": "object",
       "required": [
         "Email"
@@ -1199,19 +1213,19 @@
             "null"
           ]
         },
+        "batchKey": {
+          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "body": {
           "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.",
           "type": [
             "string",
             "null"
           ]
-        },
-        "groupBy": {
-          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
@@ -1241,6 +1255,13 @@
             "null"
           ]
         },
+        "batchKey": {
+          "description": "The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "body": {
           "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
           "type": [
@@ -1255,13 +1276,6 @@
               "$ref": "#/definitions/Encoding"
             }
           ]
-        },
-        "groupBy": {
-          "description": "The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.",
@@ -1371,7 +1385,8 @@
         "Protobuf",
         "Script",
         "Cert",
-        "Key"
+        "Key",
+        "Operation"
       ]
     },
     "Method": {
@@ -1403,6 +1418,7 @@
       }
     },
     "Omit": {
+      "description": "Used to omit a field from public consumption.",
       "type": "object"
     },
     "OtlpExporter": {
@@ -1421,6 +1437,7 @@
       }
     },
     "PhoneNumber": {
+      "title": "PhoneNumber",
       "type": "object",
       "required": [
         "PhoneNumber"
@@ -1651,6 +1668,7 @@
       }
     },
     "Telemetry": {
+      "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
       "properties": {
         "export": {
@@ -1941,6 +1959,19 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "Url": {
+      "title": "Url",
+      "type": "object",
+      "required": [
+        "Url"
+      ],
+      "properties": {
+        "Url": {
+          "description": "A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.",
+          "type": "string"
         }
       }
     },

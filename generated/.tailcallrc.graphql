@@ -111,16 +111,16 @@ directive @grpc(
   """
   baseURL: String
   """
+  The key path in the response which should be used to group multiple requests. For 
+  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
   This refers to the arguments of your gRPC call. You can pass it as a static object 
   or use Mustache template for dynamic parameters. These parameters will be added in 
   the body in `protobuf` format.
   """
   body: String
-  """
-  The key path in the response which should be used to group multiple requests. For 
-  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
   """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
@@ -148,6 +148,11 @@ directive @http(
   """
   baseURL: String
   """
+  The `batchKey` parameter groups multiple data requests into a single call. For more 
+  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
   The body of the API call. It's used for methods like POST or PUT that send data to 
   the server. You can pass it as a static object or use a Mustache template to substitute 
   variables from the GraphQL variables.
@@ -158,11 +163,6 @@ directive @http(
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   """
   encoding: Encoding
-  """
-  The `groupBy` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
   """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@http` operator. It is used by specifying a key-value map of header names 
@@ -225,6 +225,11 @@ directive @modify(
   name: String
   omit: Boolean!
 ) on FIELD_DEFINITION
+
+"""
+Used to omit a field from public consumption.
+"""
+directive @omit on FIELD_DEFINITION
 
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
@@ -315,6 +320,16 @@ directive @server(
   """
   workers: Int
 ) on SCHEMA
+
+"""
+The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
+the observability of your GraphQL services powered by Tailcall.  By leveraging this 
+directive, developers gain access to valuable insights into the performance and behavior 
+of their applications.
+"""
+directive @telemetry(
+  export: TelemetryExporter
+) on FIELD_DEFINITION
 
 """
 The `upstream` directive allows you to control various aspects of the upstream server 
@@ -558,16 +573,16 @@ input Grpc {
   """
   baseURL: String
   """
+  The key path in the response which should be used to group multiple requests. For 
+  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
   This refers to the arguments of your gRPC call. You can pass it as a static object 
   or use Mustache template for dynamic parameters. These parameters will be added in 
   the body in `protobuf` format.
   """
   body: String
-  """
-  The key path in the response which should be used to group multiple requests. For 
-  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
   """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
@@ -594,6 +609,11 @@ input Http {
   """
   baseURL: String
   """
+  The `batchKey` parameter groups multiple data requests into a single call. For more 
+  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
   The body of the API call. It's used for methods like POST or PUT that send data to 
   the server. You can pass it as a static object or use a Mustache template to substitute 
   variables from the GraphQL variables.
@@ -604,11 +624,6 @@ input Http {
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   """
   encoding: Encoding
-  """
-  The `groupBy` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
   """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@http` operator. It is used by specifying a key-value map of header names 
@@ -654,6 +669,7 @@ enum LinkType {
   Script
   Cert
   Key
+  Operation
 }
 enum Method {
   GET
@@ -706,6 +722,12 @@ input StdoutExporter {
   """
   pretty: Boolean!
 }
+"""
+The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
+the observability of your GraphQL services powered by Tailcall.  By leveraging this 
+directive, developers gain access to valuable insights into the performance and behavior 
+of their applications.
+"""
 input Telemetry {
   export: TelemetryExporter
 }
@@ -720,8 +742,10 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
+scalar Date
+scalar Email
 scalar KeyValues
 scalar PhoneNumber
-scalar Email
+scalar Url
 scalar JSON
 
