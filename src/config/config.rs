@@ -483,7 +483,13 @@ impl Field {
     }
 
     pub fn is_omitted(&self) -> bool {
-        self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).unwrap_or(false)
+        self.omit.is_some()
+            || self
+                .modify
+                .as_ref()
+                .map(|m| m.omit)
+                .unwrap_or(None)
+                .is_some()
     }
 }
 
@@ -497,7 +503,7 @@ pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
     pub name: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub omit: bool,
+    pub omit: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

@@ -223,7 +223,7 @@ directive @link(
 
 directive @modify(
   name: String
-  omit: Boolean!
+  omit: Boolean
 ) on FIELD_DEFINITION
 
 """
@@ -666,7 +666,7 @@ enum Method {
 }
 input Modify {
   name: String
-  omit: Boolean!
+  omit: Boolean
 }
 """
 Output the opentelemetry data to otlp collector
