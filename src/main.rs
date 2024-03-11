@@ -18,6 +18,7 @@ thread_local! {
 
 fn run_blocking() -> anyhow::Result<()> {
     let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
         .on_thread_start(|| {
             // initialize default tracing setup for the cli execution for every thread that
             // is spawned based on https://github.com/tokio-rs/tracing/issues/593#issuecomment-589857097
