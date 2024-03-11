@@ -23,6 +23,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install Bencher CLI
         uses: bencherdev/bencher@main
 
@@ -36,4 +39,4 @@ jobs:
           --ci-id '${{ github.event.pull_request.number }}' \
           --github-actions "${{ secrets.GITHUB_TOKEN }}" \
           --err \
-          'cargo criterion'
+          'cargo bench'
