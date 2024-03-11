@@ -2519,9 +2519,9 @@ dependencies = [
 
 [[package]]
 name = "inquire"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd05e4e63529f3c9c5f5c668c398217f72756ffe48c85266b49692c55accd1f7"
+checksum = "1d98c2ec0b4c8e12455b249aedacfda205df26ee9c6498945b00353a4e682ea6"
 dependencies = [
  "bitflags 2.4.2",
  "crossterm",
@@ -4989,9 +4989,9 @@ dependencies = [
 
 [[package]]
 name = "strum_macros"
-version = "0.26.1"
+version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a3417fc93d76740d974a01654a09777cb500428cc874ca9f45edfe0c4d4cd18"
+checksum = "c6cf59daf282c0a494ba14fd21610a0325f9f90ec9d1231dea26bcb1d696c946"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -5147,7 +5147,7 @@ dependencies = [
  "serde_urlencoded",
  "serde_yaml",
  "stripmargin",
- "strum_macros 0.26.1",
+ "strum_macros 0.26.2",
  "temp-env",
  "tempfile",
  "thiserror",
