@@ -31,7 +31,9 @@
     },
     "server": {
       "description": "Dictates how the server behaves and helps tune tailcall for all ingress requests. Features such as request batching, SSL, HTTP2 etc. can be configured here.",
-      "default": {},
+      "default": {
+        "lint": null
+      },
       "allOf": [
         {
           "$ref": "#/definitions/Server"
@@ -1361,6 +1363,63 @@
         "Operation"
       ]
     },
+    "Lint": {
+      "description": "The @lint directive allows you to configure linting.",
+      "type": "object",
+      "properties": {
+        "autoFix": {
+          "description": "To autoFix the lint. Example Usage lint:{autoFix:true}",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "enum": {
+          "description": "This enum is provided with appropriate TextCase. Example Usage: lint:{enum:Pascal}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumValue": {
+          "description": "This enumValue is provided with appropriate TextCase. Example Usage: lint:{enumValue:ScreamingSnake}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field": {
+          "description": "This field is provided with appropriate TextCase. Example Usage: lint:{field:Camel}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "description": "This type is provided with appropriate TextCase. Example Usage: lint:{type:Pascal}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "Method": {
       "type": "string",
       "enum": [
@@ -1549,6 +1608,16 @@
             "null"
           ]
         },
+        "lint": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Lint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "pipelineFlush": {
           "description": "`pipelineFlush` allows to control flushing behavior of the server pipeline.",
           "type": [
@@ -1697,6 +1766,15 @@
           },
           "additionalProperties": false
         }
+      ]
+    },
+    "TextCase": {
+      "type": "string",
+      "enum": [
+        "Camel",
+        "Pascal",
+        "Snake",
+        "ScreamingSnake"
       ]
     },
     "Type": {

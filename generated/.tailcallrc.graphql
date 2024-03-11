@@ -273,6 +273,7 @@ directive @server(
   `true`.
   """
   introspection: Boolean
+  lint: Lint
   """
   `pipelineFlush` allows to control flushing behavior of the server pipeline.
   """
@@ -653,6 +654,31 @@ enum LinkType {
   Key
   Operation
 }
+"""
+The @lint directive allows you to configure linting.
+"""
+input Lint {
+  """
+  To autoFix the lint. Example Usage lint:{autoFix:true}
+  """
+  autoFix: Boolean
+  """
+  This enum is provided with appropriate TextCase. Example Usage: lint:{enum:Pascal}
+  """
+  enum: TextCase
+  """
+  This enumValue is provided with appropriate TextCase. Example Usage: lint:{enumValue:ScreamingSnake}
+  """
+  enumValue: TextCase
+  """
+  This field is provided with appropriate TextCase. Example Usage: lint:{field:Camel}
+  """
+  field: TextCase
+  """
+  This type is provided with appropriate TextCase. Example Usage: lint:{type:Pascal}
+  """
+  type: TextCase
+}
 enum Method {
   GET
   POST
@@ -717,6 +743,12 @@ input TelemetryExporter {
   stdout: StdoutExporter
   otlp: OtlpExporter
   prometheus: PrometheusExporter
+}
+enum TextCase {
+  Camel
+  Pascal
+  Snake
+  ScreamingSnake
 }
 input Schema {
   Obj: JSON
