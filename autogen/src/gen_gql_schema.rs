@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashSet};
 use std::fs::File;
 use std::io::Write;
@@ -7,7 +8,6 @@ use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
-use schemars::Map;
 use tailcall::config;
 use tailcall::scalar::CUSTOM_SCALARS;
 
@@ -71,6 +71,23 @@ enum Entity {
     Schema,
     Object,
     FieldDefinition,
+}
+
+#[derive(Clone, Eq, PartialEq, Hash)]
+struct ScalarMetadata {
+    name: String,
+    description: Option<String>,
+}
+impl PartialOrd<Self> for ScalarMetadata {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ScalarMetadata {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name.cmp(&other.name)
+    }
 }
 
 trait ToGraphql {
@@ -328,6 +345,7 @@ fn write_type(
         }
     }
 }
+
 #[allow(clippy::too_many_arguments)]
 fn write_field(
     writer: &mut IndentedWriter<impl Write>,
@@ -340,13 +358,14 @@ fn write_field(
     write_type(writer, name, schema, defs, extra_it)?;
     writeln!(writer)
 }
+
 #[allow(clippy::too_many_arguments)]
 fn write_input_type(
     writer: &mut IndentedWriter<impl Write>,
     name: String,
     typ: SchemaObject,
     defs: &BTreeMap<String, Schema>,
-    scalar: &mut HashSet<String>,
+    scalar: &mut HashSet<ScalarMetadata>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
     types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
@@ -368,7 +387,10 @@ fn write_input_type(
     write_description(writer, description)?;
     if let Some(obj) = typ.object {
         if obj.properties.is_empty() {
-            scalar.insert(name.to_string());
+            scalar.insert(ScalarMetadata {
+                name: name.to_string(),
+                description: description.cloned(),
+            });
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -395,7 +417,10 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
         if list.is_empty() {
-            scalar.insert(name.to_string());
+            scalar.insert(ScalarMetadata {
+                name: name.to_string(),
+                description: description.cloned(),
+            });
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -417,7 +442,10 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
         if list.is_empty() {
-            scalar.insert(name.to_string());
+            scalar.insert(ScalarMetadata {
+                name: name.to_string(),
+                description: description.cloned(),
+            });
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -432,15 +460,24 @@ fn write_input_type(
         writer.unindent();
         writeln!(writer, "}}")?;
     } else if let Some(SingleOrVec::Single(item)) = typ.array.and_then(|arr| arr.items) {
-        if let Some(name) = item.into_object().reference {
+        let object = item.into_object();
+        let description = object
+            .metadata
+            .as_ref()
+            .and_then(|metadata| metadata.description.as_ref());
+        if let Some(name) = object.reference {
             writeln!(writer, "{name}")?;
         } else {
-            scalar.insert(name.to_string());
+            scalar.insert(ScalarMetadata {
+                name: name.to_string(),
+                description: description.cloned(),
+            });
         }
     }
 
     Ok(())
 }
+
 #[allow(clippy::too_many_arguments)]
 fn write_property(
     writer: &mut IndentedWriter<impl Write>,
@@ -484,6 +521,7 @@ fn input_allow_list_lookup<'a>(
 
     None
 }
+
 #[allow(clippy::too_many_arguments)]
 fn write_directive(
     writer: &mut IndentedWriter<impl Write>,
@@ -561,6 +599,7 @@ fn write_all_directives(
 
     Ok(())
 }
+
 #[allow(clippy::too_many_arguments)]
 fn write_array_validation(
     writer: &mut IndentedWriter<impl Write>,
@@ -585,6 +624,7 @@ fn write_array_validation(
     }
     write!(writer, "]")
 }
+
 #[allow(clippy::too_many_arguments)]
 fn write_object_validation(
     writer: &mut IndentedWriter<impl Write>,
@@ -612,17 +652,12 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
-    let scalar = CUSTOM_SCALARS
-        .iter()
-        .map(|(k, v)| (k.clone(), v.scalar()))
-        .collect::<Map<String, Schema>>();
-
     let defs = schema.definitions;
 
-    let mut scalar = scalar
-        .keys()
-        .map(|v| v.to_string())
-        .collect::<HashSet<String>>();
+    let mut scalar = CUSTOM_SCALARS
+        .iter()
+        .map(|(k, v)| ScalarMetadata { name: k.clone(), description: get_description(v.scalar()) })
+        .collect::<HashSet<ScalarMetadata>>();
 
     let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
@@ -662,14 +697,42 @@ fn write_all_input_types(
         }
     }
 
-    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
+    let mut scalar_vector: Vec<ScalarMetadata> = Vec::from_iter(scalar);
     scalar_vector.sort();
 
-    for name in scalar_vector {
-        writeln!(writer, "scalar {name}")?;
+    for scalar_metadata in scalar_vector {
+        write_description(writer, scalar_metadata.description.as_ref())?;
+        writeln!(writer, "scalar {}", scalar_metadata.name)?;
     }
 
     Ok(())
+}
+
+fn get_description(schema: Schema) -> Option<String> {
+    let object = schema.into_object();
+    let desc = object
+        .metadata
+        .as_ref()
+        .and_then(|metadata| metadata.description.as_ref())
+        .cloned();
+    if desc.is_some() {
+        return desc;
+    }
+    let object = object.object?;
+
+    if let Some(p) = object
+        .properties
+        .into_iter()
+        .map(|v| v.1.into_object())
+        .next()
+    {
+        return p
+            .metadata
+            .as_ref()
+            .and_then(|metadata| metadata.description.as_ref())
+            .cloned();
+    }
+    None
 }
 
 pub fn update_gql() -> Result<()> {
