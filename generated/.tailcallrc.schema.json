@@ -1385,7 +1385,10 @@
           ]
         },
         "omit": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },
