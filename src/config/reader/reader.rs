@@ -13,7 +13,9 @@ use rustls_pki_types::{
 };
 use url::Url;
 
+use crate::config::reader::{get_by_service, list_all_files};
 use crate::config::{Config, ConfigModule, ConfigReaderContext, Content, Link, LinkType, Source};
+use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
@@ -171,7 +173,42 @@ impl ConfigReader {
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
                 LinkType::Operation => {
+                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let source = self.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module.extensions.endpoints = EndpointSet::try_new(&content)?;
+                }
+                LinkType::GrpcReflection => {
+                    let link = &config_link.src;
+                    let service_list = list_all_files(link.as_str(), &self.runtime).await?;
+                    for service in service_list {
+                        let mut file_descriptor_set = FileDescriptorSet::default();
+
+                        if service.eq("grpc.reflection.v1alpha.ServerReflection") {
+                            continue;
+                        }
+                        let file_descriptor_proto =
+                            get_by_service(link.as_str(), &self.runtime, &service).await?;
+
+                        let id = Valid::from_option(
+                            file_descriptor_proto.package.clone(),
+                            format!(
+                                "Expected package name for proto file: {:?} but found none",
+                                file_descriptor_proto.name
+                            ),
+                        )
+                        .to_result()?;
+
+                        let mut resolved_descriptor =
+                            self.resolve_descriptors(file_descriptor_proto).await?;
+                        file_descriptor_set.file.append(&mut resolved_descriptor);
+
+                        config_module
+                            .extensions
+                            .grpc_file_descriptors
+                            .push(Content { id: Some(id), content: file_descriptor_set });
+                    }
                 }
             }
         }
@@ -311,12 +348,13 @@ impl ConfigReader {
         let opentelemetry = &mut config_module.config.opentelemetry;
 
         let reader_ctx = ConfigReaderContext {
-            env: self.runtime.env.clone(),
+            runtime: &self.runtime,
             vars: &server
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
+            headers: Default::default(),
         };
 
         opentelemetry.render_mustache(&reader_ctx)?;

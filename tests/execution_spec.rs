@@ -1075,15 +1075,6 @@ async fn test() -> anyhow::Result<()> {
     let opentelemetry = init_opentelemetry();
 
     let mut server = start_mock_server();
-    let http_reflection_file_mock = server
-        .mock(
-            "POST",
-            "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo",
-        )
-        .match_body("\0\0\0\0\x0c\x1a\nnews.proto")
-        .with_body(NEWS_PROTO)
-        .with_status(200)
-        .create();
 
     let http_reflection_symbol_mock = server
         .mock(
@@ -1093,7 +1084,6 @@ async fn test() -> anyhow::Result<()> {
         .match_body("\0\0\0\0\x12\"\x10news.NewsService")
         .with_body(NEWS_PROTO)
         .with_status(200)
-        .expect(2)
         .create();
 
     let http_reflection_list_all = server
@@ -1142,7 +1132,6 @@ async fn test() -> anyhow::Result<()> {
         assert_spec(spec, &opentelemetry).await;
     }
 
-    http_reflection_file_mock.assert();
     http_reflection_symbol_mock.assert();
     http_reflection_list_all.assert();
 

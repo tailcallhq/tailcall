@@ -6,7 +6,7 @@
 schema
   @server(port: 8000, graphiql: true)
   @upstream(httpCache: true, batch: {delay: 10})
-  @link(src: "http://localhost:50051", type: ReflectionAllFiles) {
+  @link(src: "http://localhost:50051", type: GrpcReflection) {
   query: Query
 }
 

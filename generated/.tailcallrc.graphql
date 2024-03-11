@@ -652,6 +652,7 @@ enum LinkType {
   Cert
   Key
   Operation
+  GrpcReflection
 }
 enum Method {
   GET

@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(graphiql: true, port: 8000) @upstream(batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) @link(src: "http://localhost:50051", type: ReflectionAllFiles) {
+schema @server(graphiql: true, port: 8000) @upstream(batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) @link(src: "http://localhost:50051", type: GrpcReflection) {
   query: Query
 }
 
