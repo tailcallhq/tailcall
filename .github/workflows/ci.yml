@@ -86,7 +86,23 @@ jobs:
 
       - name: Test CF
         run: npm test
-
+  check_build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      has_ci_build_label: ${{ steps.check_build.outputs.check_build }}
+    env:
+      LABEL: "${{ contains(github.event.pull_request.labels.*.name, 'ci: build') && 'true' || 'false' }}"
+    steps:
+      - id: check_build
+        run: |
+          echo "h1"
+          if [ -n "$LABEL" ]; then
+            echo "h"
+            echo "::set-output name=has_ci_build_label::true"
+          else
+            echo "::set-output name=has_ci_build_label::false"
+          fi
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -163,9 +179,11 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, draft_release, check_if_build, test_cf]
+    needs: [test, draft_release, check_if_build, test_cf, check_build]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') ||
+      needs.check_build.outputs.check_build == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
