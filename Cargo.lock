@@ -2519,9 +2519,9 @@ dependencies = [
 
 [[package]]
 name = "inquire"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd05e4e63529f3c9c5f5c668c398217f72756ffe48c85266b49692c55accd1f7"
+checksum = "1d98c2ec0b4c8e12455b249aedacfda205df26ee9c6498945b00353a4e682ea6"
 dependencies = [
  "bitflags 2.4.2",
  "crossterm",
