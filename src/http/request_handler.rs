@@ -157,7 +157,7 @@ async fn handle_rest_apis(
     not_found()
 }
 
-#[instrument(skip_all, err, fields(method = % req.method(), url = % req.uri()))]
+#[instrument(skip_all, err, fields(otel.name = % req.uri(), method = % req.method()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,

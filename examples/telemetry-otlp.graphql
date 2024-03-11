@@ -17,7 +17,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(path: "/posts") @cache(maxAge: 3000)
   user(id: Int!): User @http(path: "/users/{{args.id}}")
 }
 
