@@ -7,7 +7,7 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
-use crate::config::{GraphQLOperationType, KeyValues};
+use crate::config::{GraphQLOperationType, KeyValue};
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::http::Method::POST;
@@ -103,7 +103,7 @@ impl RequestTemplate {
         url: String,
         operation_type: &GraphQLOperationType,
         operation_name: &str,
-        args: Option<&KeyValues>,
+        args: Option<&Vec<KeyValue>>,
         headers: MustacheHeaders,
     ) -> anyhow::Result<Self> {
         let mut operation_arguments = None;
@@ -111,7 +111,7 @@ impl RequestTemplate {
         if let Some(args) = args.as_ref() {
             operation_arguments = Some(
                 args.iter()
-                    .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v)?)))
+                    .map(|kv| Ok((kv.key.to_owned(), Mustache::parse(&kv.value)?)))
                     .collect::<anyhow::Result<Vec<_>>>()?,
             );
         }

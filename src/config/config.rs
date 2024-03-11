@@ -9,10 +9,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{Expr, Link, Server, Upstream};
+use super::{Expr, KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
-use crate::config::KeyValues;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -424,6 +423,8 @@ impl Field {
             || self.expr.is_some()
             || self.call.is_some()
     }
+
+    /// Returns a list of resolvable directives for the field.
     pub fn resolvable_directives(&self) -> Vec<String> {
         let mut directives = Vec::new();
         if self.http.is_some() {
@@ -567,7 +568,7 @@ pub struct Http {
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@http` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: KeyValues,
+    pub headers: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Schema of the input of the API call. It is automatically inferred in
@@ -595,7 +596,7 @@ pub struct Http {
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    pub query: KeyValues,
+    pub query: Vec<KeyValue>,
 }
 
 ///
@@ -648,7 +649,7 @@ pub struct Grpc {
     /// request made by the `@grpc` operator. It is used by specifying a
     /// key-value map of header names and their values. Note: content-type is
     /// automatically set to application/grpc
-    pub headers: KeyValues,
+    pub headers: Vec<KeyValue>,
     /// This refers to the gRPC method you're going to call. For instance
     /// `GetAllNews`.
     pub method: String,
@@ -660,7 +661,7 @@ pub struct Grpc {
 pub struct GraphQL {
     #[serde(default, skip_serializing_if = "is_default")]
     /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
-    pub args: Option<KeyValues>,
+    pub args: Option<Vec<KeyValue>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
@@ -680,7 +681,7 @@ pub struct GraphQL {
     /// The headers parameter allows you to customize the headers of the GraphQL
     /// request made by the `@graphQL` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: KeyValues,
+    pub headers: Vec<KeyValue>,
 
     /// Specifies the root field on the upstream to request data from. This maps
     /// a field in your schema to a field in the upstream schema. When a query
