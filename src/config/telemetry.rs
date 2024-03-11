@@ -134,7 +134,7 @@ impl Telemetry {
                 .into_iter()
                 .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
                 .map(|(key, value)| KeyValue { key, value })
-                    .collect();
+                .collect();
         }
 
         Ok(())
