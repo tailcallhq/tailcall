@@ -12,28 +12,22 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: benchmarking-runner
     env:
       BENCHER_PROJECT: tailcall
-      BENCHER_TESTBED: ubuntu-latest
+      BENCHER_TESTBED: benchmarking-runner
       BENCHER_ADAPTER: rust_criterion
-      BASE_BENCHMARK_RESULTS: benches/track_benchmark.json
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Convert Cache into Proper Json
-        run: |
-          cat benches/main_benchmarks.json | jq -s 'map(select(.id and .mean and .slope and .median) | {id: .id, mean: .mean, slope: .slope, median: .median})' > benches/track_benchmark.json
-
       - name: Install Bencher CLI
         uses: bencherdev/bencher@main
 
       - name: Track base Benchmarks
         run: |
-          bencher run \
           bencher run \
           --if-branch '${{ github.event.pull_request.head.ref }}' \
           --else-if-branch '${{ github.event.pull_request.base.ref }}' \
@@ -42,4 +36,4 @@ jobs:
           --ci-id '${{ github.event.pull_request.number }}' \
           --github-actions "${{ secrets.GITHUB_TOKEN }}" \
           --err \
-          --file "$BASE_BENCHMARK_RESULTS"
+          'cargo criterion'
