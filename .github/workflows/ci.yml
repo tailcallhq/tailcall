@@ -88,10 +88,111 @@ jobs:
         run: npm test
 
   check_build:
-    if: "contains(github.event.pull_request.labels.*.name, 'ci: build')"
-    runs-on: ubuntu-latest
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: build matrix')"
+    runs-on: ${{ matrix.os }}
     outputs:
       check_build: ${{ steps.check_build.outputs.check_build }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          [
+            linux-x64-gnu,
+            linux-x64-musl,
+            linux-arm64-gnu,
+            linux-arm64-musl,
+            linux-ia32-gnu,
+            darwin-arm64,
+            darwin-x64,
+            win32-x64-msvc,
+            win32-x64-gnu,
+            win32-arm64-msvc,
+            win32-ia32-gnu,
+          ]
+        include:
+          - build: linux-x64-gnu
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-gnu
+            libc: glibc
+            cross: false
+
+          - build: linux-x64-musl
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            features: --no-default-features --features cli
+            libc: musl
+            cross: true
+
+          - build: linux-arm64-gnu
+            os: ubuntu-latest
+            rust: stable
+            target: aarch64-unknown-linux-gnu
+            libc: glibc
+            cross: true
+
+          - build: linux-arm64-musl
+            os: ubuntu-latest
+            rust: stable
+            target: aarch64-unknown-linux-musl
+            features: --no-default-features --features cli
+            libc: musl
+            cross: true
+
+          - build: linux-ia32-gnu
+            os: ubuntu-latest
+            rust: stable
+            target: i686-unknown-linux-gnu
+            features: --no-default-features --features cli
+            libc: glibc
+            cross: true
+
+          - build: darwin-arm64
+            os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+
+          - build: darwin-x64
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            cross: false
+
+          - build: win32-x64-msvc
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+            libc: msvc
+            ext: ".exe"
+
+          - build: win32-x64-gnu
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-gnu
+            features: --no-default-features --features cli
+            libc: glibc
+            ext: ".exe"
+
+          - build: win32-arm64-msvc
+            os: windows-latest
+            rust: stable
+            target: aarch64-pc-windows-msvc
+            features: --no-default-features --features cli
+            libc: msvc
+            ext: ".exe"
+
+          - build: win32-ia32-gnu
+            os: ubuntu-latest
+            rust: stable
+            target: i686-pc-windows-gnu
+            features: --no-default-features --features cli
+            cross: true
+            libc: glibc
+            ext: ".exe"
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - id: check_build
         run: |
@@ -100,6 +201,8 @@ jobs:
           else
             echo "::set-output name=check_build::false"
           fi
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
 
   test:
     name: Run Tests
