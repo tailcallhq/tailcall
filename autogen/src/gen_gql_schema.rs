@@ -204,18 +204,10 @@ enum ExtraTypes {
     ObjectValidation(ObjectValidation),
 }
 
-fn write_description(
-    writer: &mut IndentedWriter<impl Write>,
-    description: Option<&String>,
-) -> std::io::Result<()> {
+fn write_description(writer: &mut IndentedWriter<impl Write>, description: Option<&String>) -> std::io::Result<()> {
     if let Some(description) = description {
-        let description: String = description.chars().filter(|ch| ch != &'\n').collect();
-        let line_breaker = LineBreaker::new(&description, 80);
-        writeln!(writer, "\"\"\"")?;
-        for line in line_breaker {
-            writeln!(writer, "{line}")?;
-        }
-        writeln!(writer, "\"\"\"")?;
+        let formatted_description: String = description.replace("\"", "\\\"");
+        writeln!(writer, "description: \"{}\"", formatted_description)?;
     }
     Ok(())
 }
@@ -648,7 +640,7 @@ fn write_all_input_types(
                 }
             }
             ExtraTypes::ObjectValidation(obj_valid) => {
-                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?;
             }
         }
     }
