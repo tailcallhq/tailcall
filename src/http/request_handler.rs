@@ -126,11 +126,13 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
     let mut new_headers = HeaderMap::new();
     for (k, v) in headers.iter() {
-        if allowed.contains(k.as_str()) {
+        if allowed
+            .iter()
+            .any(|allowed_key| allowed_key.eq_ignore_ascii_case(k.as_str()))
+        {
             new_headers.insert(k, v.clone());
         }
     }
-
     new_headers
 }
 
@@ -155,7 +157,7 @@ async fn handle_rest_apis(
     not_found()
 }
 
-#[instrument(skip_all, err, fields(method = %req.method(), url = %req.uri()))]
+#[instrument(skip_all, err, fields(method = % req.method(), url = % req.uri()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
@@ -200,5 +202,29 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             not_found()
         }
         _ => not_found(),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_create_allowed_headers() {
+        use std::collections::BTreeSet;
+
+        use hyper::header::{HeaderMap, HeaderValue};
+
+        use super::create_allowed_headers;
+
+        let mut headers = HeaderMap::new();
+        headers.insert("X-foo", HeaderValue::from_static("bar"));
+        headers.insert("x-bar", HeaderValue::from_static("foo"));
+        headers.insert("x-baz", HeaderValue::from_static("baz"));
+
+        let allowed = BTreeSet::from_iter(vec!["x-foo".to_string(), "X-bar".to_string()]);
+
+        let new_headers = create_allowed_headers(&headers, &allowed);
+        assert_eq!(new_headers.len(), 2);
+        assert_eq!(new_headers.get("x-foo").unwrap(), "bar");
+        assert_eq!(new_headers.get("x-bar").unwrap(), "foo");
     }
 }

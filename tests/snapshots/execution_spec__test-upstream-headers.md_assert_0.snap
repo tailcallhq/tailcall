@@ -9,7 +9,14 @@ expression: response
   },
   "body": {
     "data": {
-      "hello": "hello"
+      "posts": [
+        {
+          "id": 11
+        },
+        {
+          "id": 3
+        }
+      ]
     }
   }
 }

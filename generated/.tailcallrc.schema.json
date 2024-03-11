@@ -85,38 +85,6 @@
         }
       }
     },
-    "Apollo": {
-      "type": "object",
-      "required": [
-        "api_key",
-        "graph_ref"
-      ],
-      "properties": {
-        "api_key": {
-          "description": "Setting `api_key` for Apollo.",
-          "type": "string"
-        },
-        "graph_ref": {
-          "description": "Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.",
-          "type": "string"
-        },
-        "platform": {
-          "description": "Setting `platform` for Apollo.",
-          "default": "platform",
-          "type": "string"
-        },
-        "user_version": {
-          "description": "Setting `userVersion` for Apollo.",
-          "default": "1.0",
-          "type": "string"
-        },
-        "version": {
-          "description": "Setting `version` for Apollo.",
-          "default": "1.0",
-          "type": "string"
-        }
-      }
-    },
     "Arg": {
       "type": "object",
       "required": [
@@ -1165,14 +1133,13 @@
       "properties": {
         "args": {
           "description": "Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
@@ -1187,11 +1154,10 @@
         },
         "headers": {
           "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "name": {
           "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
@@ -1229,11 +1195,10 @@
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "method": {
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
@@ -1279,11 +1244,10 @@
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "input": {
           "description": "Schema of the input of the API call. It is automatically inferred in most cases.",
@@ -1321,11 +1285,10 @@
         },
         "query": {
           "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         }
       }
     },
@@ -1347,10 +1310,19 @@
         }
       }
     },
-    "KeyValues": {
+    "KeyValue": {
       "type": "object",
-      "additionalProperties": {
-        "type": "string"
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
       }
     },
     "Link": {
@@ -1413,7 +1385,10 @@
           ]
         },
         "omit": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },
@@ -1429,7 +1404,10 @@
       ],
       "properties": {
         "headers": {
-          "$ref": "#/definitions/KeyValues"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "url": {
           "type": "string"
@@ -1596,11 +1574,10 @@
         },
         "responseHeaders": {
           "description": "The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
@@ -1629,11 +1606,10 @@
         },
         "vars": {
           "description": "This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "version": {
           "description": "`version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`.",
@@ -1717,18 +1693,6 @@
           "properties": {
             "prometheus": {
               "$ref": "#/definitions/PrometheusExporter"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "apollo"
-          ],
-          "properties": {
-            "apollo": {
-              "$ref": "#/definitions/Apollo"
             }
           },
           "additionalProperties": false

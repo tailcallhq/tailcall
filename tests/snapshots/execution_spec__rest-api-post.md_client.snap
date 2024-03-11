@@ -3,7 +3,12 @@ source: tests/execution_spec.rs
 expression: client
 ---
 type Query {
-  hello: String!
+  user(id: Int!): User
+}
+
+type User {
+  id: Int!
+  name: String!
 }
 
 schema {

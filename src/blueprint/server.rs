@@ -104,7 +104,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
         validate_hostname((config_server).get_hostname().to_lowercase())
             .fuse(http_server)
             .fuse(handle_response_headers(
-                (config_server).get_response_headers().0,
+                (config_server).get_response_headers(),
             ))
             .fuse(to_script(&config_module))
             .map(|(hostname, http, response_headers, script)| Server {
