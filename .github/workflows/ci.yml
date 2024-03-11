@@ -291,6 +291,9 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
 
+      - name: Check Protoc
+        run: protoc --version
+
       - name: Build
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
