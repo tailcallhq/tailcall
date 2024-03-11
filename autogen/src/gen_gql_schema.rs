@@ -7,7 +7,6 @@ use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
-use schemars::Map;
 use tailcall::config;
 use tailcall::scalar::{CUSTOM_SCALARS,CUSTOM_SCHEMA_FOR_SCALARS};
 
@@ -614,7 +613,7 @@ fn write_all_input_types(
     let scalar = CUSTOM_SCALARS
         .iter()
         .map(|(k, v)| (k.clone(), v.scalar()))
-        .collect::<Map<String, Schema>>();
+        .collect::<BTreeMap<String, Schema>>();
 
     let defs = schema.definitions;
 
