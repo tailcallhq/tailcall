@@ -190,6 +190,24 @@ jobs:
             cross: true
             libc: glibc
             ext: ".exe"
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+
+      - name: Install Correct Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Build
+        env:
+          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: ClementTsang/cargo-action@v0.0.6
+        with:
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: ${{matrix.features}} --release --target ${{ matrix.target }}
     permissions:
       contents: write
       pull-requests: write
