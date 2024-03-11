@@ -194,7 +194,21 @@
         "data": true
       }
     },
+    "Date": {
+      "title": "Date",
+      "type": "object",
+      "required": [
+        "Date"
+      ],
+      "properties": {
+        "Date": {
+          "description": "A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.",
+          "type": "string"
+        }
+      }
+    },
     "Email": {
+      "title": "Email",
       "type": "object",
       "required": [
         "Email"
@@ -1119,14 +1133,13 @@
       "properties": {
         "args": {
           "description": "Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "baseURL": {
           "description": "This refers to the base URL of the API. If not specified, the default base URL is the one specified in the `@upstream` operator.",
@@ -1141,11 +1154,10 @@
         },
         "headers": {
           "description": "The headers parameter allows you to customize the headers of the GraphQL request made by the `@graphQL` operator. It is used by specifying a key-value map of header names and their values.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "name": {
           "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
@@ -1167,6 +1179,13 @@
             "null"
           ]
         },
+        "batchKey": {
+          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "body": {
           "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.",
           "type": [
@@ -1174,20 +1193,12 @@
             "null"
           ]
         },
-        "groupBy": {
-          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "method": {
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
@@ -1209,6 +1220,13 @@
             "null"
           ]
         },
+        "batchKey": {
+          "description": "The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "body": {
           "description": "The body of the API call. It's used for methods like POST or PUT that send data to the server. You can pass it as a static object or use a Mustache template to substitute variables from the GraphQL variables.",
           "type": [
@@ -1224,20 +1242,12 @@
             }
           ]
         },
-        "groupBy": {
-          "description": "The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@http` operator. It is used by specifying a key-value map of header names and their values.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "input": {
           "description": "Schema of the input of the API call. It is automatically inferred in most cases.",
@@ -1275,11 +1285,10 @@
         },
         "query": {
           "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         }
       }
     },
@@ -1301,10 +1310,19 @@
         }
       }
     },
-    "KeyValues": {
+    "KeyValue": {
       "type": "object",
-      "additionalProperties": {
-        "type": "string"
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
       }
     },
     "Link": {
@@ -1402,11 +1420,15 @@
           ]
         },
         "omit": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },
     "Omit": {
+      "description": "Used to omit a field from public consumption.",
       "type": "object"
     },
     "OtlpExporter": {
@@ -1417,7 +1439,10 @@
       ],
       "properties": {
         "headers": {
-          "$ref": "#/definitions/KeyValues"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "url": {
           "type": "string"
@@ -1425,6 +1450,7 @@
       }
     },
     "PhoneNumber": {
+      "title": "PhoneNumber",
       "type": "object",
       "required": [
         "PhoneNumber"
@@ -1594,11 +1620,10 @@
         },
         "responseHeaders": {
           "description": "The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
@@ -1627,11 +1652,10 @@
         },
         "vars": {
           "description": "This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/KeyValues"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         },
         "version": {
           "description": "`version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`.",
@@ -1666,6 +1690,7 @@
       }
     },
     "Telemetry": {
+      "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
       "properties": {
         "export": {
@@ -1944,6 +1969,19 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "Url": {
+      "title": "Url",
+      "type": "object",
+      "required": [
+        "Url"
+      ],
+      "properties": {
+        "Url": {
+          "description": "A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.",
+          "type": "string"
         }
       }
     },

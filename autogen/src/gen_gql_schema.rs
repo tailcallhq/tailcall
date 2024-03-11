@@ -7,7 +7,9 @@ use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
-use tailcall::{config, scalar};
+use schemars::Map;
+use tailcall::config;
+use tailcall::scalar::CUSTOM_SCALARS;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 
@@ -21,6 +23,8 @@ lazy_static! {
         ("grpc", vec![Entity::FieldDefinition], false),
         ("addField", vec![Entity::Object], true),
         ("modify", vec![Entity::FieldDefinition], false),
+        ("telemetry", vec![Entity::FieldDefinition], false),
+        ("omit", vec![Entity::FieldDefinition], false),
         ("groupBy", vec![Entity::FieldDefinition], false),
         ("const", vec![Entity::FieldDefinition], false),
         ("graphQL", vec![Entity::FieldDefinition], false),
@@ -608,12 +612,14 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
-    let scalar = schemars::schema_for!(scalar::CustomScalar);
+    let scalar = CUSTOM_SCALARS
+        .iter()
+        .map(|(k, v)| (k.clone(), v.scalar()))
+        .collect::<Map<String, Schema>>();
 
     let defs = schema.definitions;
 
     let mut scalar = scalar
-        .definitions
         .keys()
         .map(|v| v.to_string())
         .collect::<HashSet<String>>();
@@ -656,7 +662,10 @@ fn write_all_input_types(
         }
     }
 
-    for name in scalar {
+    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
+    scalar_vector.sort();
+
+    for name in scalar_vector {
         writeln!(writer, "scalar {name}")?;
     }
 

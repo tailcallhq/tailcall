@@ -9,7 +9,14 @@ expression: response
   },
   "body": {
     "data": {
-      "value": "alo@valid.com"
+      "posts": [
+        {
+          "id": 11
+        },
+        {
+          "id": 3
+        }
+      ]
     }
   }
 }
