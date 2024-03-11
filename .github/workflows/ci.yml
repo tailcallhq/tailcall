@@ -293,7 +293,7 @@ jobs:
         with:
           version: "26.0-rc3"
           include-pre-releases: true
-        run: PROTOC=$(which protoc)
+        run: PROTOC="$(which protoc)"
 
       - name: Check Protoc
         run: protoc --version
