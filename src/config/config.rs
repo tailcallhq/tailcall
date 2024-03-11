@@ -483,13 +483,7 @@ impl Field {
     }
 
     pub fn is_omitted(&self) -> bool {
-        self.omit.is_some()
-            || self
-                .modify
-                .as_ref()
-                .map(|m| m.omit)
-                .unwrap_or(None)
-                .is_some()
+        self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).is_some()
     }
 }
 
