@@ -723,9 +723,54 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
+"""
+Provides the ability to refer to a field defined in the root Query or Mutation.
+"""
+input Call {
+  """
+  The arguments of the field on the `Query` or `Mutation` type that you want to call. 
+  For instance `{id: "{{value.userId}}"}`.
+  """
+  args: JSON
+  """
+  The name of the field on the `Mutation` type that you want to call. For instance 
+  `createUser`.
+  """
+  mutation: String
+  """
+  The name of the field on the `Query` type that you want to call. For instance `user`.
+  """
+  query: String
+}
+scalar Batch
+scalar Cache
+scalar Call
+scalar Const
 scalar Date
 scalar Email
+scalar Encoding
+scalar Expr
+scalar ExprBody
+scalar ExprIf
+scalar GraphQL
+scalar Grpc
+scalar Http
+scalar HttpVersion
+scalar JS
+scalar KeyValue
+scalar LinkType
+scalar Method
+scalar Modify
+scalar OtlpExporter
 scalar PhoneNumber
+scalar PrometheusExporter
+scalar PrometheusFormat
+scalar Proxy
+scalar Schema
+scalar ScriptOptions
+scalar StdoutExporter
+scalar Telemetry
+scalar TelemetryExporter
 scalar Url
 scalar JSON
 

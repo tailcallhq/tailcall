@@ -198,7 +198,7 @@ impl<W: std::io::Write> Write for IndentedWriter<W> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum ExtraTypes {
     Schema,
     ObjectValidation(ObjectValidation),
@@ -296,7 +296,7 @@ fn write_type(
                 if !typ.properties.is_empty() {
                     let mut name = name;
                     first_char_to_upper(&mut name);
-                    write!(writer, "{name}")?;
+                    write!(writer, "{}", name)?;
                     extra_it.insert(name, ExtraTypes::ObjectValidation(*typ));
                     Ok(())
                 } else {
@@ -346,7 +346,6 @@ fn write_input_type(
     name: String,
     typ: SchemaObject,
     defs: &BTreeMap<String, Schema>,
-    scalar: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
     types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
@@ -368,10 +367,9 @@ fn write_input_type(
     write_description(writer, description)?;
     if let Some(obj) = typ.object {
         if obj.properties.is_empty() {
-            scalar.insert(name.to_string());
             return Ok(());
         }
-        writeln!(writer, "input {name} {{")?;
+        writeln!(writer, "input {} {{", name)?;
         writer.indent();
         for (name, property) in obj.properties.into_iter() {
             let property = property.into_object();
@@ -385,7 +383,7 @@ fn write_input_type(
         writer.unindent();
         writeln!(writer, "}}")?;
     } else if let Some(enm) = typ.enum_values {
-        writeln!(writer, "enum {name} {{")?;
+        writeln!(writer, "enum {} {{", name)?;
         writer.indent();
         for val in enm {
             let val: String = format!("{val}").chars().filter(|ch| ch != &'"').collect();
@@ -395,10 +393,9 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
         if list.is_empty() {
-            scalar.insert(name.to_string());
             return Ok(());
         }
-        writeln!(writer, "input {name} {{")?;
+        writeln!(writer, "input {} {{", name)?;
         writer.indent();
         for property in list {
             let property = property.clone().into_object();
@@ -417,10 +414,9 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
         if list.is_empty() {
-            scalar.insert(name.to_string());
             return Ok(());
         }
-        writeln!(writer, "input {name} {{")?;
+        writeln!(writer, "input {} {{", name)?;
         writer.indent();
         for property in list {
             if let Some(obj) = property.clone().into_object().object {
@@ -433,9 +429,7 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(SingleOrVec::Single(item)) = typ.array.and_then(|arr| arr.items) {
         if let Some(name) = item.into_object().reference {
-            writeln!(writer, "{name}")?;
-        } else {
-            scalar.insert(name.to_string());
+            writeln!(writer, "{}", name)?;
         }
     }
 
@@ -612,19 +606,18 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
-    let scalar = CUSTOM_SCALARS
+    let scalar_set = CUSTOM_SCALARS
         .iter()
         .map(|(k, v)| (k.clone(), v.scalar()))
-        .collect::<Map<String, Schema>>();
+        .collect::<BTreeMap<String, Schema>>();
 
     let defs = schema.definitions;
 
-    let mut scalar = scalar
+    let mut scalar_set = scalar_set
         .keys()
         .map(|v| v.to_string())
         .collect::<HashSet<String>>();
 
-    let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
@@ -633,15 +626,14 @@ fn write_all_input_types(
             name,
             input_type.clone().into_object(),
             &defs,
-            &mut scalar,
             &mut extra_it,
-            &mut types_added,
+            &mut scalar_set,
         )?;
     }
 
     let mut new_extra_it = BTreeMap::new();
 
-    for (name, extra_type) in extra_it.into_iter() {
+    for (name, extra_type) in extra_it.clone().into_iter() {
         match extra_type {
             ExtraTypes::Schema => {
                 if let Some(schema) = defs.get(&name).cloned() {
@@ -650,10 +642,9 @@ fn write_all_input_types(
                         name,
                         schema.into_object(),
                         &defs,
-                        &mut scalar,
-                        &mut new_extra_it,
-                        &mut types_added,
-                    )?
+                        &mut extra_it,
+                        &mut scalar_set,
+                    )?;
                 }
             }
             ExtraTypes::ObjectValidation(obj_valid) => {
@@ -662,7 +653,7 @@ fn write_all_input_types(
         }
     }
 
-    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
+    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar_set);
     scalar_vector.sort();
 
     for name in scalar_vector {
