@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fs::File;
 use std::io::Write;
 
@@ -346,7 +346,7 @@ fn write_input_type(
     name: String,
     typ: SchemaObject,
     defs: &BTreeMap<String, Schema>,
-    scalar: &mut HashSet<String>,
+    scalar: &mut BTreeSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
     types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
@@ -619,10 +619,10 @@ fn write_all_input_types(
 
     let defs = schema.definitions;
 
-    let mut scalar = scalar
+    let mut scalars = scalar
         .keys()
         .map(|v| v.to_string())
-        .collect::<HashSet<String>>();
+        .collect::<BTreeSet<String>>();
 
     let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
@@ -633,7 +633,7 @@ fn write_all_input_types(
             name,
             input_type.clone().into_object(),
             &defs,
-            &mut scalar,
+            &mut scalars,
             &mut extra_it,
             &mut types_added,
         )?;
@@ -650,7 +650,7 @@ fn write_all_input_types(
                         name,
                         schema.into_object(),
                         &defs,
-                        &mut scalar,
+                        &mut scalars,
                         &mut new_extra_it,
                         &mut types_added,
                     )?
@@ -662,10 +662,7 @@ fn write_all_input_types(
         }
     }
 
-    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
-    scalar_vector.sort();
-
-    for name in scalar_vector {
+    for name in scalars {
         let schema = CUSTOM_SCALARS_SCHEMAS.iter().find(|schema| {
             schema
                 .schema
