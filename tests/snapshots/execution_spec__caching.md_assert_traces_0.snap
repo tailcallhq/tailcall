@@ -4,15 +4,15 @@ expression: opentelemetry.get_traces().unwrap()
 ---
 [
   {
-    "name": "eval"
+    "name": "IO(Http)"
   },
   {
-    "name": "eval"
+    "name": "Cache"
   },
   {
-    "name": "field::resolver"
+    "name": "fieldCache"
   },
   {
-    "name": "handle_request"
+    "name": "http://localhost:8080/graphql"
   }
 ]
