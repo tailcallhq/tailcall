@@ -716,6 +716,7 @@ fn get_description(schema: Schema) -> Option<String> {
         .and_then(|metadata| metadata.description.as_ref())
         .cloned();
     if desc.is_some() {
+        // if scalar struct has the documentation then it's used directly/
         return desc;
     }
     let object = object.object?;
@@ -726,6 +727,7 @@ fn get_description(schema: Schema) -> Option<String> {
         .map(|v| v.1.into_object())
         .next()
     {
+        // if the field of the struct has document then that is used.
         return p
             .metadata
             .as_ref()
