@@ -92,7 +92,10 @@ fn set_trace_provider(
         TelemetryExporter::Prometheus(_) => return Ok(None),
     };
     let tracer = provider.tracer("tracing");
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let telemetry = tracing_opentelemetry::layer()
+        .with_location(false)
+        .with_threads(false)
+        .with_tracer(tracer);
 
     global::set_tracer_provider(provider);
 
