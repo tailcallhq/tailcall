@@ -37,6 +37,5 @@ pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
         env: init_env(env.clone()),
         file: init_file(env.clone(), bucket_id)?,
         cache: init_cache(env),
-        extensions: Arc::new(vec![]),
     })
 }

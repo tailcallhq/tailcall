@@ -128,20 +128,20 @@ mod tests {
 
     const TEST_QUERY: &str = r#"
         query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
-          @rest(method: "post", path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
+          @rest(method: POST, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
             value
           }
         "#;
 
     const MULTIPLE_TEST_QUERY: &str = r#"        
         query q1 ($a: Int)
-          @rest(method: "post", path: "/foo/$a") {
+          @rest(method: POST, path: "/foo/$a") {
             value
           }
 
 
         query q2 ($a: Int)
-          @rest(method: "post", path: "/bar/$a") {
+          @rest(method: POST, path: "/bar/$a") {
             value
           }
         "#;

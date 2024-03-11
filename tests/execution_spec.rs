@@ -184,7 +184,6 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
-            extensions: Arc::new(vec![]),
         }
     }
 }
@@ -619,7 +618,6 @@ impl ExecutionSpec {
             file: Arc::new(MockFileSystem::new(self.clone())),
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
-            extensions: Arc::new(vec![]),
         };
 
         // TODO: move inside tailcall core if possible

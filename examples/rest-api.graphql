@@ -1,7 +1,7 @@
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
-  @link(type: Operation, src: "./operations/rest.graphql") {
+  @link(type: Operation, src: "operations/routes.graphql") {
   query: Query
 }
 
