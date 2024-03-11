@@ -90,18 +90,16 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
-      has_ci_build_label: ${{ steps.check_build.outputs.check_build }}
+      check_build: ${{ steps.check_build.outputs.check_build }}
     env:
       LABEL: "${{ contains(github.event.pull_request.labels.*.name, 'ci: build') && 'true' || 'false' }}"
     steps:
       - id: check_build
         run: |
-          echo "h1"
           if [ -n "$LABEL" ]; then
-            echo "h"
-            echo "::set-output name=has_ci_build_label::true"
+            echo "::set-output name=check_build::true"
           else
-            echo "::set-output name=has_ci_build_label::false"
+            echo "::set-output name=check_build::false"
           fi
   test:
     name: Run Tests
