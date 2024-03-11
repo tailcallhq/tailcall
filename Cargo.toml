@@ -127,7 +127,7 @@ chrono = "0.4.35"
 
 # TODO: move this flag into `cli`, like other dependencies.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-async-graphql-extension-apollo-tracing = { version = "3.2.14", optional = true }
+async-graphql-extension-apollo-tracing = { version = "3.2.14" }
 
 [patch.crates-io]
 # TODO: update this once https://github.com/haixuanTao/opentelemetry-system-metrics/pull/2 gets merged
@@ -168,8 +168,7 @@ cli = [
     "opentelemetry_sdk/testing",
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
-    "dep:opentelemetry-system-metrics",
-    "dep:async-graphql-extension-apollo-tracing",
+    "dep:opentelemetry-system-metrics"
 ]
 
 # Feature flag to enable all default features.
