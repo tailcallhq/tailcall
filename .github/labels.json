@@ -222,4 +222,10 @@
     "description": "Runs benchmarks",
     "aliases": ["ci:benchmark"]
   }
+  {
+    "name": "ci: build matrix",
+    "color": "FFFF00",
+    "description": "Build pr on all platforms",
+    "aliases": ["ci: build matrix"]
+  }
 ]
