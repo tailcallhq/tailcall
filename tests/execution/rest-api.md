@@ -3,7 +3,7 @@
 #### file:operation-user.graphql
 
 ```graphql
-query ($id: Int!) @rest(method: "get", path: "/user/$id") {
+query ($id: Int!) @rest(method: GET, path: "/user/$id") {
   user(id: $id) {
     id
     name
