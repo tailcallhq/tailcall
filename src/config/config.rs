@@ -423,6 +423,8 @@ impl Field {
             || self.expr.is_some()
             || self.call.is_some()
     }
+
+    /// Returns a list of resolvable directives for the field.
     pub fn resolvable_directives(&self) -> Vec<String> {
         let mut directives = Vec::new();
         if self.http.is_some() {
