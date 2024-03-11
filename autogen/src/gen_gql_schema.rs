@@ -9,7 +9,7 @@ use schemars::schema::{
 };
 use schemars::Map;
 use tailcall::config;
-use tailcall::scalar::CUSTOM_SCALARS;
+use tailcall::scalar::{CUSTOM_SCALARS,CUSTOM_SCHEMA_FOR_SCALARS};
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 
@@ -198,16 +198,24 @@ impl<W: std::io::Write> Write for IndentedWriter<W> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 enum ExtraTypes {
     Schema,
     ObjectValidation(ObjectValidation),
 }
 
-fn write_description(writer: &mut IndentedWriter<impl Write>, description: Option<&String>) -> std::io::Result<()> {
+fn write_description(
+    writer: &mut IndentedWriter<impl Write>,
+    description: Option<&String>,
+) -> std::io::Result<()> {
     if let Some(description) = description {
-        let formatted_description: String = description.replace("\"", "\\\"");
-        writeln!(writer, "description: \"{}\"", formatted_description)?;
+        let description: String = description.chars().filter(|ch| ch != &'\n').collect();
+        let line_breaker = LineBreaker::new(&description, 80);
+        writeln!(writer, "\"\"\"")?;
+        for line in line_breaker {
+            writeln!(writer, "{line}")?;
+        }
+        writeln!(writer, "\"\"\"")?;
     }
     Ok(())
 }
@@ -288,7 +296,7 @@ fn write_type(
                 if !typ.properties.is_empty() {
                     let mut name = name;
                     first_char_to_upper(&mut name);
-                    write!(writer, "{}", name)?;
+                    write!(writer, "{name}")?;
                     extra_it.insert(name, ExtraTypes::ObjectValidation(*typ));
                     Ok(())
                 } else {
@@ -338,6 +346,7 @@ fn write_input_type(
     name: String,
     typ: SchemaObject,
     defs: &BTreeMap<String, Schema>,
+    scalar: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
     types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
@@ -359,9 +368,10 @@ fn write_input_type(
     write_description(writer, description)?;
     if let Some(obj) = typ.object {
         if obj.properties.is_empty() {
+            scalar.insert(name.to_string());
             return Ok(());
         }
-        writeln!(writer, "input {} {{", name)?;
+        writeln!(writer, "input {name} {{")?;
         writer.indent();
         for (name, property) in obj.properties.into_iter() {
             let property = property.into_object();
@@ -375,7 +385,7 @@ fn write_input_type(
         writer.unindent();
         writeln!(writer, "}}")?;
     } else if let Some(enm) = typ.enum_values {
-        writeln!(writer, "enum {} {{", name)?;
+        writeln!(writer, "enum {name} {{")?;
         writer.indent();
         for val in enm {
             let val: String = format!("{val}").chars().filter(|ch| ch != &'"').collect();
@@ -385,9 +395,10 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
         if list.is_empty() {
+            scalar.insert(name.to_string());
             return Ok(());
         }
-        writeln!(writer, "input {} {{", name)?;
+        writeln!(writer, "input {name} {{")?;
         writer.indent();
         for property in list {
             let property = property.clone().into_object();
@@ -406,9 +417,10 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
         if list.is_empty() {
+            scalar.insert(name.to_string());
             return Ok(());
         }
-        writeln!(writer, "input {} {{", name)?;
+        writeln!(writer, "input {name} {{")?;
         writer.indent();
         for property in list {
             if let Some(obj) = property.clone().into_object().object {
@@ -421,7 +433,9 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(SingleOrVec::Single(item)) = typ.array.and_then(|arr| arr.items) {
         if let Some(name) = item.into_object().reference {
-            writeln!(writer, "{}", name)?;
+            writeln!(writer, "{name}")?;
+        } else {
+            scalar.insert(name.to_string());
         }
     }
 
@@ -591,25 +605,25 @@ fn write_object_validation(
         Ok(())
     }
 }
-
 fn write_all_input_types(
     writer: &mut IndentedWriter<impl Write>,
     mut extra_it: BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
-    let scalar_set = CUSTOM_SCALARS
+    let scalar = CUSTOM_SCALARS
         .iter()
         .map(|(k, v)| (k.clone(), v.scalar()))
-        .collect::<BTreeMap<String, Schema>>();
+        .collect::<Map<String, Schema>>();
 
     let defs = schema.definitions;
 
-    let mut scalar_set = scalar_set
+    let mut scalar = scalar
         .keys()
         .map(|v| v.to_string())
         .collect::<HashSet<String>>();
 
+    let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
         first_char_to_upper(&mut name);
@@ -618,14 +632,15 @@ fn write_all_input_types(
             name,
             input_type.clone().into_object(),
             &defs,
+            &mut scalar,
             &mut extra_it,
-            &mut scalar_set,
+            &mut types_added,
         )?;
     }
 
     let mut new_extra_it = BTreeMap::new();
 
-    for (name, extra_type) in extra_it.clone().into_iter() {
+    for (name, extra_type) in extra_it.into_iter() {
         match extra_type {
             ExtraTypes::Schema => {
                 if let Some(schema) = defs.get(&name).cloned() {
@@ -634,21 +649,39 @@ fn write_all_input_types(
                         name,
                         schema.into_object(),
                         &defs,
-                        &mut extra_it,
-                        &mut scalar_set,
-                    )?;
+                        &mut scalar,
+                        &mut new_extra_it,
+                        &mut types_added,
+                    )?
                 }
             }
             ExtraTypes::ObjectValidation(obj_valid) => {
-                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?;
+                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
             }
         }
     }
 
-    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar_set);
+    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
     scalar_vector.sort();
-
     for name in scalar_vector {
+        if let Some(schema_entry) = CUSTOM_SCHEMA_FOR_SCALARS.iter().find(|entry| {
+            entry.schema.metadata
+                .as_ref()
+                .map(|metadata| metadata.title.as_ref() == Some(&name))
+                .unwrap_or(false)
+        }) {
+            if let Some(properties) = schema_entry.schema.object.as_ref().map(|object| object.properties.clone()) {
+                if let Some((_, property)) = properties.into_iter().next() {
+                    let property = property.into_object();
+                    let description = property.metadata
+                        .as_ref()
+                        .and_then(|metadata| metadata.description.as_ref());
+                    write_description(writer, description)?;
+                }
+            }
+        }
+    
+        // Write the scalar declaration
         writeln!(writer, "scalar {name}")?;
     }
 
