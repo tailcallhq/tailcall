@@ -95,8 +95,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       check_build: ${{ steps.check_build.outputs.check_build }}
-    env:
-      LABEL: "${{ contains(github.event.pull_request.labels.*.name, 'ci: build') && 'true' || 'false' }}"
     steps:
       - id: check_build
         run: |
