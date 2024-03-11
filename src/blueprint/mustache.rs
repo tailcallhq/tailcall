@@ -84,7 +84,7 @@ impl<'a> MustachePartsValidator<'a> {
                 }
             }
             "vars" => {
-                if config.server.vars.get(tail).is_none() {
+                if !config.server.vars.iter().any(|vars| vars.key == tail) {
                     return Valid::fail(format!("var '{tail}' is not set in the server config"));
                 }
             }

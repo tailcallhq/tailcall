@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Field, GraphQLOperationType, KeyValues};
+use crate::config::{Field, GraphQLOperationType, KeyValue};
 use crate::lambda::Expression;
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
@@ -97,14 +97,12 @@ pub fn compile_call(
 
 fn replace_key_values<'a>(
     args: &'a Iter<'a, String, Value>,
-) -> impl Fn(KeyValues) -> KeyValues + 'a {
+) -> impl Fn(Vec<KeyValue>) -> Vec<KeyValue> + 'a {
     |key_values| {
-        KeyValues(
-            key_values
-                .iter()
-                .map(|(k, v)| (k.clone(), replace_string(args)(v.clone())))
-                .collect(),
-        )
+        key_values
+            .iter()
+            .map(|kv| KeyValue { value: replace_string(args)(kv.value.clone()), ..kv.clone() })
+            .collect()
     }
 }
 
