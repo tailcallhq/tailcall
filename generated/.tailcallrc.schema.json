@@ -85,6 +85,38 @@
         }
       }
     },
+    "Apollo": {
+      "type": "object",
+      "required": [
+        "api_key",
+        "graph_ref"
+      ],
+      "properties": {
+        "api_key": {
+          "description": "Setting `api_key` for Apollo.",
+          "type": "string"
+        },
+        "graph_ref": {
+          "description": "Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.",
+          "type": "string"
+        },
+        "platform": {
+          "description": "Setting `platform` for Apollo.",
+          "default": "platform",
+          "type": "string"
+        },
+        "user_version": {
+          "description": "Setting `userVersion` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        },
+        "version": {
+          "description": "Setting `version` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        }
+      }
+    },
     "Arg": {
       "type": "object",
       "required": [
@@ -1690,6 +1722,18 @@
           "properties": {
             "prometheus": {
               "$ref": "#/definitions/PrometheusExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "apollo"
+          ],
+          "properties": {
+            "apollo": {
+              "$ref": "#/definitions/Apollo"
             }
           },
           "additionalProperties": false
