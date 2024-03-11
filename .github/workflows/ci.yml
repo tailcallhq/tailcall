@@ -55,6 +55,9 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
+      - name: Install protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Build
         run: cargo lambda build
 
@@ -87,6 +90,22 @@ jobs:
       - name: Test CF
         run: npm test
 
+  check_build:
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: build')"
+    runs-on: ubuntu-latest
+    outputs:
+      check_build: ${{ steps.check_build.outputs.check_build }}
+    env:
+      LABEL: "${{ contains(github.event.pull_request.labels.*.name, 'ci: build') && 'true' || 'false' }}"
+    steps:
+      - id: check_build
+        run: |
+          if [ -n "$LABEL" ]; then
+            echo "::set-output name=check_build::true"
+          else
+            echo "::set-output name=check_build::false"
+          fi
+
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -96,6 +115,9 @@ jobs:
 
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
 
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
@@ -125,6 +147,9 @@ jobs:
 
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
 
       - name: Build Project
         run: cargo build
@@ -163,9 +188,9 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, draft_release, check_if_build, test_cf]
+    needs: [test, draft_release, check_if_build, test_cf, check_build]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')) ||needs.check_build.outputs.check_build == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
