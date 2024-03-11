@@ -498,3 +498,21 @@ jobs:
 
       - name: Update Homebrew Formula
         run: ./update-formula.sh ${{needs.draft_release.outputs.create_release_name }}
+
+  ci_build_all:
+    name: CI Build All
+    if: contains(github.event_name, 'pull_request') && contains(github.event.pull_request.labels.*.name, 'ci: build all')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux-x64-gnu, linux-x64-musl, linux-arm64-gnu, linux-arm64-musl, linux-ia32-gnu, darwin-arm64, darwin-x64, win32-x64-msvc, win32-x64-gnu, win32-arm64-msvc, win32-ia32-gnu]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Correct Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.os }}
+
+      - name: Build on ${{ matrix.os }}
+        run: cargo build
