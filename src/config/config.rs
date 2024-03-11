@@ -423,6 +423,8 @@ impl Field {
             || self.expr.is_some()
             || self.call.is_some()
     }
+
+    /// Returns a list of resolvable directives for the field.
     pub fn resolvable_directives(&self) -> Vec<String> {
         let mut directives = Vec::new();
         if self.http.is_some() {
@@ -481,7 +483,12 @@ impl Field {
     }
 
     pub fn is_omitted(&self) -> bool {
-        self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).unwrap_or(false)
+        self.omit.is_some()
+            || self
+                .modify
+                .as_ref()
+                .and_then(|m| m.omit)
+                .unwrap_or_default()
     }
 }
 
@@ -495,7 +502,7 @@ pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
     pub name: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub omit: bool,
+    pub omit: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
