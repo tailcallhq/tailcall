@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::config::cors_params::CorsParams;
-use crate::config::KeyValues;
+use crate::config::KeyValue;
 use crate::is_default;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -68,7 +68,7 @@ pub struct Server {
     /// The `responseHeaders` are key-value pairs included in every server
     /// response. Useful for setting headers like `Access-Control-Allow-Origin`
     /// for cross-origin requests or additional headers for downstream services.
-    pub response_headers: KeyValues,
+    pub response_headers: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `responseValidation` Tailcall automatically validates responses from
@@ -87,7 +87,7 @@ pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
     /// This configuration defines local variables for server operations. Useful
     /// for storing constant configurations, secrets, or shared information.
-    pub vars: KeyValues,
+    pub vars: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `version` sets the HTTP version for the server. Options are `HTTP1` and
@@ -160,11 +160,19 @@ impl Server {
     }
 
     pub fn get_vars(&self) -> BTreeMap<String, String> {
-        self.vars.clone().0
+        self.vars
+            .clone()
+            .iter()
+            .map(|kv| (kv.key.clone(), kv.value.clone()))
+            .collect()
     }
 
-    pub fn get_response_headers(&self) -> KeyValues {
-        self.response_headers.clone()
+    pub fn get_response_headers(&self) -> BTreeMap<String, String> {
+        self.response_headers
+            .clone()
+            .iter()
+            .map(|kv| (kv.key.clone(), kv.value.clone()))
+            .collect()
     }
 
     pub fn get_version(self) -> HttpVersion {
@@ -194,12 +202,28 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
-        let mut vars = self.vars.0.clone();
-        vars.extend(other.vars.0);
-        self.vars = KeyValues(vars);
-        let mut response_headers = self.response_headers.0.clone();
-        response_headers.extend(other.response_headers.0);
-        self.response_headers = KeyValues(response_headers);
+        self.vars = other.vars.iter().fold(self.vars, |mut acc, kv| {
+            let position = acc.iter().position(|x| x.key == kv.key);
+            if let Some(pos) = position {
+                acc[pos] = kv.clone();
+            } else {
+                acc.push(kv.clone());
+            };
+            acc
+        });
+        self.response_headers =
+            other
+                .response_headers
+                .iter()
+                .fold(self.response_headers, |mut acc, kv| {
+                    let position = acc.iter().position(|x| x.key == kv.key);
+                    if let Some(pos) = position {
+                        acc[pos] = kv.clone();
+                    } else {
+                        acc.push(kv.clone());
+                    };
+                    acc
+                });
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);

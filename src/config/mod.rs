@@ -1,4 +1,3 @@
-pub use apollo::*;
 pub use config::*;
 pub use config_module::*;
 pub use expr::*;
@@ -9,7 +8,6 @@ pub use server::*;
 pub use source::*;
 pub use telemetry::*;
 pub use upstream::*;
-mod apollo;
 mod config;
 mod config_module;
 pub mod cors_params;
