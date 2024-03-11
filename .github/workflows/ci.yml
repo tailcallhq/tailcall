@@ -293,7 +293,7 @@ jobs:
         with:
           version: "26.0-rc3"
           include-pre-releases: true
-        env: {{  }}
+        env: {{}}
 
       - name: Check Protoc
         run: |
