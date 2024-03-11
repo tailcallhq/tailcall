@@ -9,15 +9,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{Expr, Link, Server, Upstream};
+use super::{Expr, KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
-use crate::config::KeyValues;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
-use crate::is_default;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, Validator};
+use crate::{is_default, scalar};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -61,6 +60,7 @@ pub struct Config {
     /// Enable [opentelemetry](https://opentelemetry.io) support
     pub opentelemetry: Telemetry,
 }
+
 impl Config {
     pub fn port(&self) -> u16 {
         self.server.port.unwrap_or(8000)
@@ -105,7 +105,11 @@ impl Config {
         for (_, type_of) in self.types.iter() {
             if !type_of.interface {
                 for (_, field) in type_of.fields.iter() {
-                    for (_, arg) in field.args.iter() {
+                    for (_, arg) in field
+                        .args
+                        .iter()
+                        .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
+                    {
                         if let Some(t) = self.find_type(&arg.type_of) {
                             t.fields.iter().for_each(|(_, f)| {
                                 types.insert(&f.type_of);
@@ -319,6 +323,7 @@ impl RootSchema {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+/// Used to omit a field from public consumption.
 pub struct Omit {}
 
 ///
@@ -418,6 +423,8 @@ impl Field {
             || self.expr.is_some()
             || self.call.is_some()
     }
+
+    /// Returns a list of resolvable directives for the field.
     pub fn resolvable_directives(&self) -> Vec<String> {
         let mut directives = Vec::new();
         if self.http.is_some() {
@@ -476,7 +483,12 @@ impl Field {
     }
 
     pub fn is_omitted(&self) -> bool {
-        self.omit.is_some() || self.modify.as_ref().map(|m| m.omit).unwrap_or(false)
+        self.omit.is_some()
+            || self
+                .modify
+                .as_ref()
+                .and_then(|m| m.omit)
+                .unwrap_or_default()
     }
 }
 
@@ -490,7 +502,7 @@ pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
     pub name: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub omit: bool,
+    pub omit: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -553,15 +565,15 @@ pub struct Http {
     /// `ApplicationJson`.
     pub encoding: Encoding,
 
-    #[serde(rename = "groupBy", default, skip_serializing_if = "is_default")]
-    /// The `groupBy` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
+    /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@http` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: KeyValues,
+    pub headers: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Schema of the input of the API call. It is automatically inferred in
@@ -589,7 +601,7 @@ pub struct Http {
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    pub query: KeyValues,
+    pub query: Vec<KeyValue>,
 }
 
 ///
@@ -634,7 +646,7 @@ pub struct Grpc {
     /// static object or use Mustache template for dynamic parameters. These
     /// parameters will be added in the body in `protobuf` format.
     pub body: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
     #[serde(default, skip_serializing_if = "is_default")]
@@ -642,7 +654,7 @@ pub struct Grpc {
     /// request made by the `@grpc` operator. It is used by specifying a
     /// key-value map of header names and their values. Note: content-type is
     /// automatically set to application/grpc
-    pub headers: KeyValues,
+    pub headers: Vec<KeyValue>,
     /// This refers to the gRPC method you're going to call. For instance
     /// `GetAllNews`.
     pub method: String,
@@ -654,7 +666,7 @@ pub struct Grpc {
 pub struct GraphQL {
     #[serde(default, skip_serializing_if = "is_default")]
     /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
-    pub args: Option<KeyValues>,
+    pub args: Option<Vec<KeyValue>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
@@ -674,7 +686,7 @@ pub struct GraphQL {
     /// The headers parameter allows you to customize the headers of the GraphQL
     /// request made by the `@graphQL` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: KeyValues,
+    pub headers: Vec<KeyValue>,
 
     /// Specifies the root field on the upstream to request data from. This maps
     /// a field in your schema to a field in the upstream schema. When a query
@@ -756,7 +768,6 @@ pub enum Encoding {
 }
 
 #[cfg(test)]
-
 mod tests {
     use pretty_assertions::assert_eq;
 

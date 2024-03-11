@@ -19,7 +19,7 @@ type Post {
   body: String
   userId: Int!
   user: User
-    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], groupBy: ["id"])
+    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], batchKey: ["id"])
 }
 
 type User {
@@ -48,7 +48,7 @@ type User {
         userId: 2
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
+    url: http://jsonplaceholder.typicode.com/users?id=1&foo=bar&id=2&foo=bar
     body: null
   response:
     status: 200

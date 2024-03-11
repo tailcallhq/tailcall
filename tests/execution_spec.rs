@@ -474,7 +474,7 @@ impl ExecutionSpec {
                             ));
                         }
                     } else if heading.depth == 4 {
-                        // Parse following code hblock
+                        // Parse following code block
                         let (content, lang) = if let Some(Node::Code(code)) = children.next() {
                             (code.value.to_owned(), code.lang.to_owned())
                         } else {
@@ -497,7 +497,7 @@ impl ExecutionSpec {
                                 let lang = match lang {
                                     Some(x) => Ok(x),
                                     None => Err(anyhow!(
-                                        "Unexpected languageless code block in {:?}",
+                                        "Unexpected code block with no specific language in {:?}",
                                         path
                                     )),
                                 }?;
@@ -624,7 +624,11 @@ impl ExecutionSpec {
         // TODO: move inside tailcall core if possible
         init_metrics(&runtime).unwrap();
 
-        Arc::new(AppContext::new(blueprint, runtime))
+        Arc::new(AppContext::new(
+            blueprint,
+            runtime,
+            config.extensions.endpoints.clone(),
+        ))
     }
 }
 
@@ -1103,7 +1107,7 @@ async fn test() -> anyhow::Result<()> {
         .create();
 
     // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable
+    // This is used by test-convertor to auto-apply the snapshots of incompatible
     // fail-annotated http specs
 
     let args: Vec<String> = std::env::args().collect();

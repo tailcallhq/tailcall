@@ -20,7 +20,7 @@ impl FromIterator<(String, String)> for KeyValues {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
 pub struct KeyValue {
     pub key: String,
     pub value: String,

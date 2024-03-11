@@ -5,7 +5,8 @@ use std::cell::Cell;
 
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
-use tailcall::tracing::default_tracing;
+use tailcall::tracing::default_tailcall_tracing;
+use tailcall::valid::ValidationError;
 use tracing::subscriber::DefaultGuard;
 
 #[global_allocator]
@@ -25,7 +26,7 @@ fn run_blocking() -> anyhow::Result<()> {
             // to use the default tracing configuration for cli output. And
             // since `set_default` works only for current thread incorporate this
             // with tokio runtime
-            let guard = tracing::subscriber::set_default(default_tracing());
+            let guard = tracing::subscriber::set_default(default_tailcall_tracing());
 
             TRACING_GUARD.set(Some(guard));
         })
@@ -40,7 +41,7 @@ fn main() -> anyhow::Result<()> {
     // enable tracing subscriber for current thread until this block ends
     // that will show any logs from cli itself to the user
     // despite of @telemetry settings that
-    let _guard = tracing::subscriber::set_default(default_tracing());
+    let _guard = tracing::subscriber::set_default(default_tailcall_tracing());
     let result = run_blocking();
     match result {
         Ok(_) => {}
@@ -49,12 +50,19 @@ fn main() -> anyhow::Result<()> {
             let cli_error = match error.downcast::<CLIError>() {
                 Ok(cli_error) => cli_error,
                 Err(error) => {
-                    let sources = error
-                        .source()
-                        .map(|error| vec![CLIError::new(error.to_string().as_str())])
-                        .unwrap_or_default();
+                    // Convert other errors to CLIError
+                    let cli_error = match error.downcast::<ValidationError<String>>() {
+                        Ok(validation_error) => CLIError::from(validation_error),
+                        Err(error) => {
+                            let sources = error
+                                .source()
+                                .map(|error| vec![CLIError::new(error.to_string().as_str())])
+                                .unwrap_or_default();
 
-                    CLIError::new(&error.to_string()).caused_by(sources)
+                            CLIError::new(&error.to_string()).caused_by(sources)
+                        }
+                    };
+                    cli_error
                 }
             };
             tracing::error!("{}", cli_error.color(true));

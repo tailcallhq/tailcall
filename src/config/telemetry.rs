@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::KeyValues;
+use super::KeyValue;
 use crate::config::ConfigReaderContext;
 use crate::helpers::headers::to_mustache_headers;
 use crate::is_default;
@@ -37,15 +37,15 @@ impl StdoutExporter {
 pub struct OtlpExporter {
     pub url: String,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub headers: KeyValues,
+    pub headers: Vec<KeyValue>,
 }
 
 impl OtlpExporter {
     fn merge_right(&self, other: Self) -> Self {
-        let mut headers = other.headers.0;
-        headers.extend(self.headers.iter().map(|(k, v)| (k.clone(), v.clone())));
+        let mut headers = self.headers.clone();
+        headers.extend(other.headers.iter().cloned());
 
-        Self { url: other.url, headers: KeyValues(headers) }
+        Self { url: other.url, headers }
     }
 }
 
@@ -104,6 +104,10 @@ impl TelemetryExporter {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+/// The @telemetry directive facilitates seamless integration with
+/// OpenTelemetry, enhancing the observability of your GraphQL services powered
+/// by Tailcall.  By leveraging this directive, developers gain access to
+/// valuable insights into the performance and behavior of their applications.
 pub struct Telemetry {
     pub export: Option<TelemetryExporter>,
 }
@@ -129,6 +133,7 @@ impl Telemetry {
             otlp.headers = headers
                 .into_iter()
                 .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
+                .map(|(key, value)| KeyValue { key, value })
                 .collect();
         }
 
@@ -149,13 +154,13 @@ mod tests {
         let exporter_otlp_1 = Telemetry {
             export: Some(TelemetryExporter::Otlp(OtlpExporter {
                 url: "test-url".to_owned(),
-                headers: KeyValues::from_iter([("header_a".to_owned(), "a".to_owned())]),
+                headers: vec![KeyValue { key: "header_a".to_owned(), value: "a".to_owned() }],
             })),
         };
         let exporter_otlp_2 = Telemetry {
             export: Some(TelemetryExporter::Otlp(OtlpExporter {
                 url: "test-url-2".to_owned(),
-                headers: KeyValues::from_iter([("header_b".to_owned(), "b".to_owned())]),
+                headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }],
             })),
         };
         let exporter_prometheus_1 = Telemetry {
@@ -201,10 +206,10 @@ mod tests {
             Telemetry {
                 export: Some(TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url-2".to_owned(),
-                    headers: KeyValues::from_iter([
-                        ("header_a".to_owned(), "a".to_owned()),
-                        ("header_b".to_owned(), "b".to_owned())
-                    ]),
+                    headers: vec![
+                        KeyValue { key: "header_a".to_owned(), value: "a".to_owned() },
+                        KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }
+                    ]
                 })),
             }
         );
