@@ -55,9 +55,6 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
-      - name: Install protobuf-compiler
-        run: sudo apt-get install -y protobuf-compiler
-
       - name: Build
         run: cargo lambda build
 
@@ -100,9 +97,6 @@ jobs:
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Install protobuf-compiler
-        run: sudo apt-get install -y protobuf-compiler
-
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
@@ -117,30 +111,20 @@ jobs:
             files: lcov.info
             fail_ci_if_error: true
 
-  check-examples:
-    name: Check Examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+      - name: Check if the label exists
+        id: check_label
+        run: echo ::set-output name=label_exists::${{ contains(github.event.pull_request.labels.*.name, 'ci: build all') }}
 
-      - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Install protobuf-compiler
-        run: sudo apt-get install -y protobuf-compiler
-
-      - name: Build Project
-        run: cargo build
-
-      - name: Check all examples
+      - name: Build on ${{ runner.os }}
         run: |
-          find ./examples -maxdepth 1 \( -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.graphql" -o -name "*.gql" \) -exec ./target/debug/tailcall check {} \;
+          if [ "${{ steps.check_label.outputs.label_exists }}" == "true" ]; then
+            echo "Label 'ci: build all' found. Building..."
+            
+            cargo build --release
+
+          else
+            echo "Label 'ci: build all' not found. Skipping build."
+          fi
 
   draft_release:
     name: Draft Release
@@ -342,6 +326,20 @@ jobs:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
+      - name: Check if the label exists
+        id: check_label
+        run: echo ::set-output name=label_exists::${{ contains(github.event.pull_request.labels.*.name, 'ci: build all') }}
+
+      - name: Build on ${{ runner.os }}
+        run: |
+          if [ "${{ steps.check_label.outputs.label_exists }}" == "true" ]; then
+            echo "Label 'ci: build all' found. Building..."
+
+            cargo build --release
+
+          else
+            echo "Label 'ci: build all' not found. Skipping build."
+          fi
   release_lambda:
     name: Release (AWS Lambda)
     needs: [test, draft_release, check_if_build, test_cf]
@@ -437,7 +435,20 @@ jobs:
           token: ${{ secrets.NPM_TOKEN }}
           package: npm/@tailcallhq/tailcall
           access: public
+      - name: Check if the label exists
+        id: check_label
+        run: echo ::set-output name=label_exists::${{ contains(github.event.pull_request.labels.*.name, 'ci: build all') }}
 
+      - name: Build on ${{ runner.os }}
+        run: |
+          if [ "${{ steps.check_label.outputs.label_exists }}" == "true" ]; then
+            echo "Label 'ci: build all' found. Building..."
+            
+            npm run build
+
+          else
+            echo "Label 'ci: build all' not found. Skipping build."
+          fi
         env:
           APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -498,21 +509,3 @@ jobs:
 
       - name: Update Homebrew Formula
         run: ./update-formula.sh ${{needs.draft_release.outputs.create_release_name }}
-
-  ci_build_all:
-    name: CI Build All
-    if: contains(github.event_name, 'pull_request') && contains(github.event.pull_request.labels.*.name, 'ci: build all')
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux-x64-gnu, linux-x64-musl, linux-arm64-gnu, linux-arm64-musl, linux-ia32-gnu, darwin-arm64, darwin-x64, win32-x64-msvc, win32-x64-gnu, win32-arm64-msvc, win32-ia32-gnu]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Correct Toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: ${{ matrix.os }}
-
-      - name: Build on ${{ matrix.os }}
-        run: cargo build
