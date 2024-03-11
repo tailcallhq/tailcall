@@ -13,9 +13,16 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 use lazy_static::lazy_static;
-use schemars::schema::Schema;
+use schemars::schema::{RootSchema, Schema};
+use schemars::schema_for;
 
 lazy_static! {
+    pub static ref CUSTOM_SCALARS_SCHEMAS: Vec<RootSchema> = vec![
+        schema_for!(Email),
+        schema_for!(PhoneNumber),
+        schema_for!(Date),
+        schema_for!(Url),
+    ];
     pub static ref CUSTOM_SCALARS: HashMap<String, Arc<dyn Scalar + Send + Sync>> = {
         let scalars: Vec<Arc<dyn Scalar + Send + Sync>> = vec![
             Arc::new(Email::default()),

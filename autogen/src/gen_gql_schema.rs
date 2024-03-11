@@ -9,7 +9,7 @@ use schemars::schema::{
 };
 use schemars::Map;
 use tailcall::config;
-use tailcall::scalar::CUSTOM_SCALARS;
+use tailcall::scalar::{CUSTOM_SCALARS, CUSTOM_SCALARS_SCHEMAS};
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 
@@ -666,6 +666,34 @@ fn write_all_input_types(
     scalar_vector.sort();
 
     for name in scalar_vector {
+        let schema = CUSTOM_SCALARS_SCHEMAS.iter().find(|schema| {
+            schema
+                .schema
+                .metadata
+                .as_ref()
+                .map(|metadata| metadata.title.as_ref() == Some(&name))
+                .unwrap_or(false)
+        });
+
+        if let Some(schema) = schema {
+            if let Some(properties) = schema
+                .schema
+                .object
+                .as_ref()
+                .map(|object| object.properties.clone())
+            {
+                let mut properties_iter = properties.into_iter();
+
+                if let Some((_, property)) = properties_iter.next() {
+                    let property = property.into_object();
+                    let description = property
+                        .metadata
+                        .as_ref()
+                        .and_then(|metadata| metadata.description.as_ref());
+                    write_description(writer, description)?;
+                }
+            }
+        }
         writeln!(writer, "scalar {name}")?;
     }
 
