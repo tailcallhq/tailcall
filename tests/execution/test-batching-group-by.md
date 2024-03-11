@@ -2,7 +2,6 @@
 
 ###### check identity
 
-####
 
 ```graphql @server
 schema @server(port: 4000) @upstream(baseURL: "http://abc.com", batch: {delay: 1, headers: [], maxSize: 1000}) {

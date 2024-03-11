@@ -1,6 +1,5 @@
 # Batching group by default
 
-####
 
 ```graphql @server
 schema
@@ -28,7 +27,6 @@ type User {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -59,7 +57,6 @@ type User {
         name: bar
 ```
 
-####
 
 ```yml @assert
 - method: POST

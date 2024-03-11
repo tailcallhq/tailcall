@@ -2,7 +2,6 @@
 
 ###### sdl error
 
-####
 
 ```graphql @file:jsonplaceholder.graphql
 schema
@@ -35,7 +34,6 @@ type Post {
 }
 ```
 
-####
 
 ```graphql @server
 schema

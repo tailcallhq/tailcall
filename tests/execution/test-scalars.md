@@ -1,6 +1,5 @@
 # test-scalar-email
 
-####
 
 ```graphql @server
 scalar Email
@@ -20,7 +19,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @assert
 # Valid value tests

@@ -1,6 +1,5 @@
 # Graphql datasource
 
-####
 
 ```graphql @server
 schema @upstream(batch: {delay: 1}) {
@@ -30,7 +29,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -80,7 +78,6 @@ type Query {
             name: Leanne Graham
 ```
 
-####
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # expr intersection
 
-####
 
 ```graphql @server
 schema {
@@ -12,7 +11,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @assert
 - method: POST

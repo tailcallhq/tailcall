@@ -1,6 +1,5 @@
 # Ref other nested
 
-####
 
 ```json @server
 {
@@ -64,7 +63,6 @@
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -79,7 +77,6 @@
       name: Leanne Graham
 ```
 
-####
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # Graphql datasource
 
-####
 
 ```graphql @server
 schema @upstream(batch: {delay: 1}) {
@@ -24,7 +23,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -68,7 +66,6 @@ type Query {
           name: Ervin Howell
 ```
 
-####
 
 ```yml @assert
 - method: POST

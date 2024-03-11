@@ -2,7 +2,6 @@
 
 ###### check identity
 
-####
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://localhost:8000/graphql") {

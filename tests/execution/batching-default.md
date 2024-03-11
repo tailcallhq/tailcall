@@ -1,6 +1,5 @@
 # Batching default
 
-####
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 10}) {
@@ -26,7 +25,6 @@ type User {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -51,7 +49,6 @@ type User {
       - id: 2
 ```
 
-####
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # test-server-base-types
 
-####
 
 ```graphql @server
 schema @server(port: 3000) @upstream(baseURL: "http://abc.com") {
@@ -12,7 +11,6 @@ type Query {
 }
 ```
 
-####
 
 ```graphql @server
 schema @server(port: 8000) @upstream(proxy: {url: "http://localhost:3000"}) {

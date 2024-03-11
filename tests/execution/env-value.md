@@ -1,6 +1,5 @@
 # Env value
 
-####
 
 ```json @server
 {
@@ -64,7 +63,6 @@
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -102,7 +100,6 @@
       userId: 3
 ```
 
-####
 
 ```yml @env
 ID: "1"
@@ -110,7 +107,6 @@ POST_ID: "2"
 NESTED_POST_ID: "3"
 ```
 
-####
 
 ```yml @assert
 - method: POST

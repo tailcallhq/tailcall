@@ -1,6 +1,5 @@
 # Sending a batched graphql request
 
-####
 
 ```json @server
 {
@@ -42,7 +41,6 @@
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -59,7 +57,6 @@
       name: foo
 ```
 
-####
 
 ```yml @assert
 - method: POST

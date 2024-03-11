@@ -1,6 +1,5 @@
 # Simple GraphQL Request
 
-####
 
 ```graphql @server
 schema {
@@ -17,7 +16,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -29,7 +27,6 @@ type Query {
     body: {}
 ```
 
-####
 
 ```yml @assert
 - method: POST

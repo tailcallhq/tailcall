@@ -2,7 +2,6 @@
 
 ###### sdl error
 
-####
 
 ```graphql @server
 schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {

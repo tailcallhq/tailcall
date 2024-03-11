@@ -1,6 +1,5 @@
 # Nullable arg query
 
-####
 
 ```graphql @server
 schema {
@@ -18,7 +17,6 @@ type User {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -48,7 +46,6 @@ type User {
       - id: 1
 ```
 
-####
 
 ```yml @assert
 - method: POST

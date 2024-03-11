@@ -1,6 +1,5 @@
 # Batching inside nested @expr
 
-####
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 10}) {
@@ -47,7 +46,6 @@ type Value {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -81,7 +79,6 @@ type Value {
       - {id: 2, value: 9}
 ```
 
-####
 
 ```yml @assert
 - method: POST

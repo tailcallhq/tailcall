@@ -2,7 +2,6 @@
 
 ###### sdl error
 
-####
 
 ```graphql @server
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {

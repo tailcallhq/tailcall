@@ -1,6 +1,5 @@
 # Simple query
 
-####
 
 ```json @server
 {
@@ -41,7 +40,6 @@
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -55,7 +53,6 @@
       name: foo
 ```
 
-####
 
 ```yml @assert
 - method: POST

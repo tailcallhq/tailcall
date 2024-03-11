@@ -1,6 +1,5 @@
 # Resolve with vars
 
-####
 
 ```graphql @server
 schema @server(vars: [{key: "id", value: "1"}]) {
@@ -18,7 +17,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -32,7 +30,6 @@ type Query {
         name: Leanne Graham
 ```
 
-####
 
 ```yml @assert
 - method: POST

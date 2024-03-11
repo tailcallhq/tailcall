@@ -1,6 +1,5 @@
 # Http with args as body
 
-####
 
 ```graphql @server
 schema @server(port: 8000, graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
@@ -17,7 +16,6 @@ type User {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -31,7 +29,6 @@ type User {
       name: foo
 ```
 
-####
 
 ```yml @assert
 - method: POST

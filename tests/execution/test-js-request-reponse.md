@@ -1,6 +1,5 @@
 # Js Request Response Hello World
 
-####
 
 ```js @file:test.js
 function onRequest({request}) {
@@ -27,7 +26,6 @@ function onRequest({request}) {
 }
 ```
 
-####
 
 ```graphql @server
 schema @server @link(type: Script, src: "test.js") {
@@ -40,7 +38,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -51,7 +48,6 @@ type Query {
     body: hello world
 ```
 
-####
 
 ```yml @assert
 - method: POST

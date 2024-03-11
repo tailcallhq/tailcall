@@ -1,6 +1,5 @@
 # Batching post
 
-####
 
 ```graphql @server
 schema
@@ -31,7 +30,6 @@ type User {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -54,7 +52,6 @@ type User {
       name: Leanne Graham
 ```
 
-####
 
 ```yml @assert
 - method: POST

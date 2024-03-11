@@ -1,6 +1,5 @@
 # Resolve with headers
 
-####
 
 ```graphql @server
 schema @upstream(allowedHeaders: ["authorization"]) {
@@ -19,7 +18,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -36,7 +34,6 @@ type Query {
       title: post title
 ```
 
-####
 
 ```yml @assert
 - method: POST

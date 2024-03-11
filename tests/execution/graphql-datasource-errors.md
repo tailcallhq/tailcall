@@ -1,6 +1,5 @@
 # Graphql datasource
 
-####
 
 ```graphql @server
 schema {
@@ -18,7 +17,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -54,7 +52,6 @@ type Query {
           message: Failed to resolve name
 ```
 
-####
 
 ```yml @assert
 - method: POST

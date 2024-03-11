@@ -1,6 +1,5 @@
 # Caching
 
-####
 
 ```graphql @server
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
@@ -24,7 +23,6 @@ type TypeCache @cache(maxAge: 1000) {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -72,7 +70,6 @@ type TypeCache @cache(maxAge: 1000) {
       - id: 33
 ```
 
-####
 
 ```yml @assert
 # the same request to validate caching

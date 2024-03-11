@@ -1,6 +1,5 @@
 # Sending requests to be batched by the upstream server
 
-####
 
 ```json @server
 {
@@ -58,7 +57,6 @@
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -76,7 +74,6 @@
         name: bar
 ```
 
-####
 
 ```yml @assert
 - method: POST

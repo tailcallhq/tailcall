@@ -1,6 +1,5 @@
 # Batched graphql request to batched upstream query
 
-####
 
 ```json @server
 {
@@ -61,7 +60,6 @@
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -79,7 +77,6 @@
         name: bar
 ```
 
-####
 
 ```yml @assert
 - method: POST

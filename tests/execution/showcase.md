@@ -1,6 +1,5 @@
 # Showcase GraphQL Request
 
-####
 
 ```graphql @server
 schema @server(showcase: true) {
@@ -17,7 +16,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -51,7 +49,6 @@ type Query {
     body: dsjfsjdfjdsfjkdskjfjkds
 ```
 
-####
 
 ```yml @assert
 - method: POST

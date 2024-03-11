@@ -1,6 +1,5 @@
 # Add field with modify
 
-####
 
 ```graphql @server
 schema {
@@ -16,7 +15,6 @@ type Query @addField(name: "user1", path: ["person1", "name"]) @addField(name: "
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -39,7 +37,6 @@ type Query @addField(name: "user1", path: ["person1", "name"]) @addField(name: "
       name: Ervin Howell
 ```
 
-####
 
 ```yml @assert
 - method: POST

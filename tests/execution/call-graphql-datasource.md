@@ -1,6 +1,5 @@
 # Call operator with graphQL datasource
 
-####
 
 ```graphql @server
 schema
@@ -33,7 +32,6 @@ type Post {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -79,7 +77,6 @@ type Post {
           name: Ervin Howell
 ```
 
-####
 
 ```yml @assert
 - method: POST

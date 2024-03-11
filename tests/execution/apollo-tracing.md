@@ -1,6 +1,5 @@
 # Apollo Tracing
 
-####
 
 ```graphql @server
 schema
@@ -14,7 +13,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -26,7 +24,6 @@ type Query {
     body: hello
 ```
 
-####
 
 ```yml @assert
 - method: POST

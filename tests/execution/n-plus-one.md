@@ -1,6 +1,5 @@
 # n + 1 Request
 
-####
 
 ```graphql @server
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
@@ -25,7 +24,6 @@ type Bar {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -52,7 +50,6 @@ type Bar {
         id: 2
 ```
 
-####
 
 ```yml @assert
 - method: POST

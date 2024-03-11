@@ -1,6 +1,5 @@
 # Sending requests to verify Cache-Control behavior
 
-####
 
 ```json @server
 {
@@ -53,7 +52,6 @@
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -113,7 +111,6 @@
       name: barfoo
 ```
 
-####
 
 ```yml @assert
 - method: POST

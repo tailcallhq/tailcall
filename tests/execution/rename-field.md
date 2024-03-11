@@ -1,6 +1,5 @@
 # Rename field
 
-####
 
 ```graphql @server
 schema {
@@ -16,7 +15,6 @@ type Query {
 }
 ```
 
-####
 
 ```yml @mock
 - request:
@@ -39,7 +37,6 @@ type Query {
       name: Ervin Howell
 ```
 
-####
 
 ```yml @assert
 - method: POST
