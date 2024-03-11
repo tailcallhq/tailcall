@@ -180,7 +180,7 @@ jobs:
     needs: [test, draft_release, check_if_build, test_cf, check_build]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')) ||
       needs.check_build.outputs.check_build == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
