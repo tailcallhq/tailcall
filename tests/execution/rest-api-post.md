@@ -3,7 +3,7 @@
 #### file:operation-user.graphql
 
 ```graphql
-query ($id: Int!) @rest(method: GET, path: "/user/$id") {
+query ($id: Int!) @rest(method: POST, path: "/user/$id") {
   user(id: $id) {
     id
     name
@@ -50,6 +50,6 @@ type User {
 #### assert:
 
 ```yml
-- method: GET
+- method: POST
   url: http://localhost:8080/api/user/1
 ```
