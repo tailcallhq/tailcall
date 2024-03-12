@@ -258,7 +258,8 @@ directive @server(
   """
   graphiql: Boolean
   """
-  `headers` contains key-value pairs that are included in server
+  `headers` contains key-value pairs that are included as default headers in server 
+  responses, allowing for consistent header management across all responses.
   """
   headers: Headers
   """
@@ -576,7 +577,7 @@ input Headers {
   `max-age` value is the least of the values received from upstream services. @default 
   `false`.
   """
-  cacheControlHeader: Boolean
+  cacheControl: Boolean
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 

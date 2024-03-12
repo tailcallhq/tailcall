@@ -24,7 +24,9 @@ pub struct Server {
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `headers` contains key-value pairs that are included in server
+    /// `headers` contains key-value pairs that are included as default headers
+    /// in server responses, allowing for consistent header management across
+    /// all responses.
     pub headers: Option<Headers>,
 
     #[serde(default, skip_serializing_if = "is_default")]
