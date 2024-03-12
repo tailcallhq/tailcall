@@ -156,6 +156,31 @@ impl From<rustls::Error> for CLIError {
     }
 }
 
+impl From<anyhow::Error> for CLIError {
+    fn from(error: anyhow::Error) -> Self {
+        // Convert other errors to CLIError
+        let cli_error = match error.downcast::<CLIError>() {
+            Ok(cli_error) => cli_error,
+            Err(error) => {
+                // Convert other errors to CLIError
+                let cli_error = match error.downcast::<ValidationError<String>>() {
+                    Ok(validation_error) => CLIError::from(validation_error),
+                    Err(error) => {
+                        let sources = error
+                            .source()
+                            .map(|error| vec![CLIError::new(error.to_string().as_str())])
+                            .unwrap_or_default();
+
+                        CLIError::new(&error.to_string()).caused_by(sources)
+                    }
+                };
+                cli_error
+            }
+        };
+        cli_error
+    }
+}
+
 impl From<std::io::Error> for CLIError {
     fn from(error: std::io::Error) -> Self {
         let cli_error = CLIError::new("IO Error");
@@ -350,6 +375,49 @@ mod tests {
                      |Caused by:
                      |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
             .strip_margin();
+
+        assert_eq!(error.to_string(), expected);
+    }
+
+    #[test]
+    fn test_cli_error_downcasting() {
+        let cli_error = CLIError::new("Server could not be started")
+            .description("The port is already in use".to_string())
+            .trace(vec!["@server".into(), "port".into()]);
+        let anyhow_error: anyhow::Error = cli_error.into();
+        let error = CLIError::from(anyhow_error);
+        let expected =
+            r"|Server could not be started: The port is already in use [at @server.port]"
+                .strip_margin();
+
+        assert_eq!(error.to_string(), expected);
+    }
+
+    #[test]
+    fn test_validation_error_downcasting() {
+        let cause = Cause::new("Base URL needs to be specified".to_string()).trace(vec![
+            "Query".to_string(),
+            "users".to_string(),
+            "@http".to_string(),
+            "baseURL".to_string(),
+        ]);
+        let validation_error: ValidationError<String> = ValidationError::from(cause);
+        let anyhow_error: anyhow::Error = validation_error.into();
+        let error = CLIError::from(anyhow_error);
+
+        let expected = r"|Invalid Configuration
+                     |Caused by:
+                     |  • Base URL needs to be specified [at Query.users.@http.baseURL]"
+            .strip_margin();
+
+        assert_eq!(error.to_string(), expected);
+    }
+
+    #[test]
+    fn test_generic_error_downcasting() {
+        let anyhow_error = anyhow::anyhow!("Some error msg");
+        let error: CLIError = CLIError::from(anyhow_error);
+        let expected = r"|Some error msg".strip_margin();
 
         assert_eq!(error.to_string(), expected);
     }
