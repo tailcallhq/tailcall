@@ -50,7 +50,7 @@ pub async fn validate_operations(
     blueprint: &Blueprint,
     operations: Vec<OperationQuery>,
 ) -> Valid<(), String> {
-    let schema = blueprint.to_schema_with(SchemaModifiers::default().with_no_resolver());
+    let schema = blueprint.to_schema_with(SchemaModifiers::no_resolver());
     Valid::from_iter(
         futures_util::future::join_all(operations.into_iter().map(|op| op.validate(&schema)))
             .await

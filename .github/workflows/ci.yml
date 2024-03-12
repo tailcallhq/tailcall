@@ -55,9 +55,6 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
-      - name: Install protobuf-compiler
-        run: sudo apt-get install -y protobuf-compiler
-
       - name: Build
         run: cargo lambda build
 
@@ -100,9 +97,6 @@ jobs:
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Install protobuf-compiler
-        run: sudo apt-get install -y protobuf-compiler
-
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
@@ -131,9 +125,6 @@ jobs:
 
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Install protobuf-compiler
-        run: sudo apt-get install -y protobuf-compiler
 
       - name: Build Project
         run: cargo build

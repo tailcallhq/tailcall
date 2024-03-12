@@ -1,9 +1,7 @@
 # Rest API
 
-#### file:operation-user.graphql
-
-```graphql
-query ($id: Int!) @rest(method: "get", path: "/user/$id") {
+```graphql @file:operation-user.graphql
+query ($id: Int!) @rest(method: GET, path: "/user/$id") {
   user(id: $id) {
     id
     name
@@ -11,9 +9,7 @@ query ($id: Int!) @rest(method: "get", path: "/user/$id") {
 }
 ```
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @server
   @upstream(baseURL: "http://jsonplaceholder.typicode.com")
@@ -31,9 +27,7 @@ type User {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
@@ -47,9 +41,7 @@ type User {
       name: foo
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: GET
   url: http://localhost:8080/api/user/1
 ```

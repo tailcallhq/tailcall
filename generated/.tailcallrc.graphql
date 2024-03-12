@@ -69,7 +69,7 @@ directive @graphQL(
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
-  args: KeyValues
+  args: [KeyValue]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
@@ -86,7 +86,7 @@ directive @graphQL(
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
   names and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   Specifies the root field on the upstream to request data from. This maps a field 
   in your schema to a field in the upstream schema. When a query is received for this 
@@ -126,7 +126,7 @@ directive @grpc(
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
@@ -168,7 +168,7 @@ directive @http(
   by the `@http` operator. It is used by specifying a key-value map of header names 
   and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
@@ -193,7 +193,7 @@ directive @http(
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL.
   """
-  query: KeyValues
+  query: [KeyValue]
 ) on FIELD_DEFINITION
 
 directive @js(
@@ -223,7 +223,7 @@ directive @link(
 
 directive @modify(
   name: String
-  omit: Boolean!
+  omit: Boolean
 ) on FIELD_DEFINITION
 
 """
@@ -248,12 +248,6 @@ directive @server(
   """
   batchRequests: Boolean
   """
-  `cacheControlHeader` sends `Cache-Control` headers in responses when activated. The 
-  `max-age` value is the least of the values received from upstream services. @default 
-  `false`.
-  """
-  cacheControlHeader: Boolean
-  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
@@ -263,6 +257,11 @@ directive @server(
   query development and testing. @default `false`.
   """
   graphiql: Boolean
+  """
+  `headers` contains key-value pairs that are included as default headers in server 
+  responses, allowing for consistent header management across all responses.
+  """
+  headers: Headers
   """
   `hostname` sets the server hostname.
   """
@@ -291,7 +290,7 @@ directive @server(
   for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
   or additional headers for downstream services.
   """
-  responseHeaders: KeyValues
+  responseHeaders: [KeyValue]
   """
   `responseValidation` Tailcall automatically validates responses from upstream services 
   using inferred schema. @default `false`.
@@ -309,7 +308,7 @@ directive @server(
   This configuration defines local variables for server operations. Useful for storing 
   constant configurations, secrets, or shared information.
   """
-  vars: KeyValues
+  vars: [KeyValue]
   """
   `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. 
   @default `HTTP1`.
@@ -415,28 +414,6 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
-input Apollo {
-  """
-  Setting `api_key` for Apollo.
-  """
-  api_key: String!
-  """
-  Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
-  """
-  graph_ref: String!
-  """
-  Setting `platform` for Apollo.
-  """
-  platform: String!
-  """
-  Setting `userVersion` for Apollo.
-  """
-  user_version: String!
-  """
-  Setting `version` for Apollo.
-  """
-  version: String!
-}
 input Batch {
   delay: Int!
   headers: [String!]
@@ -532,7 +509,7 @@ input GraphQL {
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
-  args: KeyValues
+  args: [KeyValue]
   """
   This refers to the base URL of the API. If not specified, the default base URL is 
   the one specified in the `@upstream` operator.
@@ -549,7 +526,7 @@ input GraphQL {
   made by the `@graphQL` operator. It is used by specifying a key-value map of header 
   names and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   Specifies the root field on the upstream to request data from. This maps a field 
   in your schema to a field in the upstream schema. When a query is received for this 
@@ -588,11 +565,18 @@ input Grpc {
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
   and their values. Note: content-type is automatically set to application/grpc
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+}
+input Headers {
+  """
+  `cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` 
+  value is the least of the values received from upstream services. @default `false`.
+  """
+  cacheControl: Boolean
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
@@ -629,7 +613,7 @@ input Http {
   by the `@http` operator. It is used by specifying a key-value map of header names 
   and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
@@ -654,7 +638,7 @@ input Http {
   object or use Mustache template for dynamic parameters. These parameters will be 
   added to the URL.
   """
-  query: KeyValues
+  query: [KeyValue]
 }
 enum HttpVersion {
   HTTP1
@@ -662,6 +646,10 @@ enum HttpVersion {
 }
 input JS {
   script: String!
+}
+input KeyValue {
+  key: String!
+  value: String!
 }
 enum LinkType {
   Config
@@ -684,13 +672,13 @@ enum Method {
 }
 input Modify {
   name: String
-  omit: Boolean!
+  omit: Boolean
 }
 """
 Output the opentelemetry data to otlp collector
 """
 input OtlpExporter {
-  headers: KeyValues
+  headers: [KeyValue]
   url: String!
 }
 """
@@ -735,17 +723,27 @@ input TelemetryExporter {
   stdout: StdoutExporter
   otlp: OtlpExporter
   prometheus: PrometheusExporter
-  apollo: Apollo
 }
 input Schema {
   Obj: JSON
   Arr: Schema
   Opt: Schema
 }
+"""
+A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
+"""
 scalar Date
+"""
+field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
 scalar Email
-scalar KeyValues
+"""
+A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
+"""
 scalar PhoneNumber
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
+"""
 scalar Url
 scalar JSON
 
