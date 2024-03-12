@@ -293,13 +293,14 @@ jobs:
         with:
           version: "26.0-rc3"
           include-pre-releases: true
-        env: {{}}
 
-      - name: Check Protoc
-        run: |
-          protoc --version
-          export PROTOC=$(which protoc)
-          echo $PROTOC
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Run Script
+        run: python .github/scripts/python-script.py
 
       - name: Build
         env:
