@@ -1,8 +1,6 @@
 # Add field with modify
 
-#### server:
-
-```graphql
+```graphql @server
 schema {
   query: Query
 }
@@ -16,9 +14,7 @@ type Query @addField(name: "user1", path: ["person1", "name"]) @addField(name: "
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
@@ -39,9 +35,7 @@ type Query @addField(name: "user1", path: ["person1", "name"]) @addField(name: "
       name: Ervin Howell
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

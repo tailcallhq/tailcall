@@ -1,8 +1,6 @@
 # Test const with mustache
 
-#### server:
-
-```graphql
+```graphql @server
 schema {
   query: Query
 }
@@ -27,9 +25,7 @@ type D {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     url: http://localhost:3000/a
   response:
@@ -41,9 +37,7 @@ type D {
       f: true
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8000/graphql
   body:
