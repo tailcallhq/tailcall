@@ -1206,6 +1206,18 @@
         }
       }
     },
+    "Headers": {
+      "type": "object",
+      "properties": {
+        "cacheControl": {
+          "description": "`cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
     "Http": {
       "description": "The @http operator indicates that a field or node is backed by a REST API.\n\nFor instance, if you add the @http operator to the `users` field of the Query type with a path argument of `\"/users\"`, it signifies that the `users` field is backed by a REST API. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
       "type": "object",
@@ -1513,13 +1525,6 @@
             "null"
           ]
         },
-        "cacheControlHeader": {
-          "description": "`cacheControlHeader` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
@@ -1533,6 +1538,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "headers": {
+          "description": "`headers` contains key-value pairs that are included as default headers in server responses, allowing for consistent header management across all responses.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Headers"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "hostname": {

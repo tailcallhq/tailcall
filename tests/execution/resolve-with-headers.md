@@ -1,8 +1,6 @@
 # Resolve with headers
 
-#### server:
-
-```graphql
+```graphql @server
 schema @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }
@@ -19,9 +17,7 @@ type Query {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/1
@@ -36,9 +32,7 @@ type Query {
       title: post title
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   headers:
