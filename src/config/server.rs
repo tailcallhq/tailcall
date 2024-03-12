@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
 
@@ -23,10 +24,8 @@ pub struct Server {
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cacheControlHeader` sends `Cache-Control` headers in responses when
-    /// activated. The `max-age` value is the least of the values received from
-    /// upstream services. @default `false`.
-    pub cache_control_header: Option<bool>,
+    /// `headers` contains key-value pairs that are included in server
+    pub headers: Option<Headers>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `globalResponseTimeout` sets the maximum query duration before
@@ -134,7 +133,10 @@ impl Server {
         self.response_validation.unwrap_or(false)
     }
     pub fn enable_cache_control(&self) -> bool {
-        self.cache_control_header.unwrap_or(false)
+        self.headers
+            .as_ref()
+            .map(|h| h.enable_cache_control())
+            .unwrap_or(false)
     }
     pub fn enable_introspection(&self) -> bool {
         self.introspection.unwrap_or(true)
@@ -179,7 +181,7 @@ impl Server {
 
     pub fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
-        self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
+        self.headers = other.headers.or(self.headers);
         self.graphiql = other.graphiql.or(self.graphiql);
         self.introspection = other.introspection.or(self.introspection);
         self.query_validation = other.query_validation.or(self.query_validation);

@@ -248,12 +248,6 @@ directive @server(
   """
   batchRequests: Boolean
   """
-  `cacheControlHeader` sends `Cache-Control` headers in responses when activated. The 
-  `max-age` value is the least of the values received from upstream services. @default 
-  `false`.
-  """
-  cacheControlHeader: Boolean
-  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
@@ -263,6 +257,10 @@ directive @server(
   query development and testing. @default `false`.
   """
   graphiql: Boolean
+  """
+  `headers` contains key-value pairs that are included in server
+  """
+  headers: Headers
   """
   `hostname` sets the server hostname.
   """
@@ -571,6 +569,14 @@ input Grpc {
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
+}
+input Headers {
+  """
+  `cacheControlHeader` sends `Cache-Control` headers in responses when activated. The 
+  `max-age` value is the least of the values received from upstream services. @default 
+  `false`.
+  """
+  cacheControlHeader: Boolean
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
