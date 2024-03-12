@@ -25,7 +25,6 @@ pub mod print_schema;
 mod rest;
 pub mod runtime;
 pub mod scalar;
-mod schema_extension;
 mod serde_value_ext;
 pub mod tracing;
 pub mod try_fold;

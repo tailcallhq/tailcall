@@ -1,22 +1,24 @@
 use hyper::header::HeaderName;
 
-use crate::config::KeyValues;
+use crate::config::KeyValue;
 use crate::mustache::Mustache;
 use crate::valid::{Valid, ValidationError, Validator};
 
 pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
 
-pub fn to_mustache_headers(headers: &KeyValues) -> Valid<MustacheHeaders, String> {
-    Valid::from_iter(headers.iter(), |(k, v)| {
+pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, String> {
+    Valid::from_iter(headers.iter(), |key_value| {
         let name = Valid::from(
-            HeaderName::from_bytes(k.as_bytes()).map_err(|e| ValidationError::new(e.to_string())),
+            HeaderName::from_bytes(key_value.key.as_bytes())
+                .map_err(|e| ValidationError::new(e.to_string())),
         )
-        .trace(k);
+        .trace(&key_value.key);
 
         let value = Valid::from(
-            Mustache::parse(v.as_str()).map_err(|e| ValidationError::new(e.to_string())),
+            Mustache::parse(key_value.value.as_str())
+                .map_err(|e| ValidationError::new(e.to_string())),
         )
-        .trace(v);
+        .trace(&key_value.value);
 
         name.zip(value).map(|(name, value)| (name, value))
     })
@@ -28,13 +30,13 @@ mod tests {
     use hyper::header::HeaderName;
 
     use super::to_mustache_headers;
-    use crate::config::KeyValues;
+    use crate::config::KeyValue;
     use crate::mustache::Mustache;
     use crate::valid::Validator;
 
     #[test]
     fn valid_headers() -> Result<()> {
-        let input: KeyValues = serde_json::from_str(
+        let input: Vec<KeyValue> = serde_json::from_str(
             r#"[{"key": "a", "value": "str"}, {"key": "b", "value": "123"}]"#,
         )?;
 
@@ -53,7 +55,7 @@ mod tests {
 
     #[test]
     fn not_valid_due_to_utf8() {
-        let input: KeyValues =
+        let input: Vec<KeyValue> =
             serde_json::from_str(r#"[{"key": "😅", "value": "str"}, {"key": "b", "value": "🦀"}]"#)
                 .unwrap();
         let error = to_mustache_headers(&input).to_result().unwrap_err();
