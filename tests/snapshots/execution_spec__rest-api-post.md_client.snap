@@ -2,10 +2,13 @@
 source: tests/execution_spec.rs
 expression: client
 ---
-scalar Email
-
 type Query {
-  value(email: Email!): Email!
+  user(id: Int!): User
+}
+
+type User {
+  id: Int!
+  name: String!
 }
 
 schema {

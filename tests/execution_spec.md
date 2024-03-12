@@ -16,6 +16,7 @@ A Markdown-based snapshot testing framework for Tailcall.
 - [Test process](#test-process)
 - [Snapshots](#snapshots)
 - [Porting from `http_spec`/`graphql_spec`](#porting-from-graphql_spechttp_spec)
+- [Maintainance](#Maintenance)
 
 ## Structure
 
@@ -273,3 +274,7 @@ Each test's `.md` file may have a file name suffix of `-error` if the bare file 
 1. An [`sdl error` instruction](#instruction) is appended.
 1. The server SDL is put into a [`server` block](#server).
 1. The expected errors are put into an `errors` snapshot.
+
+## Maintenance
+
+1. To clean unused snapshots, run `cargo insta test --delete-unreferenced-snapshots`.

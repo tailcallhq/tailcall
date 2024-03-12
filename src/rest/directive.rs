@@ -33,7 +33,8 @@ impl TryFrom<&Directive> for Rest {
                 rest.path = serde_json::from_str(v.node.to_string().as_str())?;
             }
             if k.node.as_str() == "method" {
-                rest.method = serde_json::from_str(v.node.to_string().to_uppercase().as_str())?;
+                let value = serde_json::Value::String(v.node.to_string().to_uppercase());
+                rest.method = serde_json::from_value(value)?;
             }
             if k.node.as_str() == "query" {
                 if let Value::Object(map) = &v.node {

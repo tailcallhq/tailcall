@@ -9,7 +9,10 @@ expression: response
   },
   "body": {
     "data": {
-      "hello": "hello"
+      "user": {
+        "id": 1,
+        "name": "foo"
+      }
     }
   }
 }
