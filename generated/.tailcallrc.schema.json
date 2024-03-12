@@ -1215,6 +1215,16 @@
             "boolean",
             "null"
           ]
+        },
+        "custom": {
+          "description": "The `headers` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
         }
       }
     },
@@ -1587,13 +1597,6 @@
             "boolean",
             "null"
           ]
-        },
-        "responseHeaders": {
-          "description": "The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
         },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",

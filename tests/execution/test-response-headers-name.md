@@ -3,7 +3,7 @@
 ###### sdl error
 
 ```graphql @server
-schema @server(responseHeaders: [{key: "🤣", value: "a"}]) {
+schema @server(headers: { custom: [{key: "🤣", value: "a"}]}) {
   query: Query
 }
 

@@ -64,12 +64,6 @@ pub struct Server {
     /// @default `false`.
     pub query_validation: Option<bool>,
 
-    #[serde(skip_serializing_if = "is_default", default)]
-    /// The `responseHeaders` are key-value pairs included in every server
-    /// response. Useful for setting headers like `Access-Control-Allow-Origin`
-    /// for cross-origin requests or additional headers for downstream services.
-    pub response_headers: Vec<KeyValue>,
-
     #[serde(default, skip_serializing_if = "is_default")]
     /// `responseValidation` Tailcall automatically validates responses from
     /// upstream services using inferred schema. @default `false`.
@@ -166,11 +160,12 @@ impl Server {
     }
 
     pub fn get_response_headers(&self) -> BTreeMap<String, String> {
-        self.response_headers
-            .clone()
-            .iter()
-            .map(|kv| (kv.key.clone(), kv.value.clone()))
-            .collect()
+        self.headers
+            .as_ref()
+            .and_then(|h| h.custom.as_ref())
+            .map_or_else(BTreeMap::new, |custom| {
+                custom.iter().map(|kv| (kv.key.clone(), kv.value.clone())).collect()
+            })
     }
 
     pub fn get_version(self) -> HttpVersion {
@@ -205,19 +200,6 @@ impl Server {
             };
             acc
         });
-        self.response_headers =
-            other
-                .response_headers
-                .iter()
-                .fold(self.response_headers, |mut acc, kv| {
-                    let position = acc.iter().position(|x| x.key == kv.key);
-                    if let Some(pos) = position {
-                        acc[pos] = kv.clone();
-                    } else {
-                        acc.push(kv.clone());
-                    };
-                    acc
-                });
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);

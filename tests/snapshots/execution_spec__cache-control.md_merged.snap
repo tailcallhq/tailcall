@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(headers: {cacheControl: true}) @upstream {
+schema @server(headers: {cacheControl: true, custom: null}) @upstream {
   query: Query
 }
 
