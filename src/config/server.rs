@@ -64,12 +64,6 @@ pub struct Server {
     /// @default `false`.
     pub query_validation: Option<bool>,
 
-    #[serde(skip_serializing_if = "is_default", default)]
-    /// The `responseHeaders` are key-value pairs included in every server
-    /// response. Useful for setting headers like `Access-Control-Allow-Origin`
-    /// for cross-origin requests or additional headers for downstream services.
-    pub response_headers: Vec<KeyValue>,
-
     #[serde(default, skip_serializing_if = "is_default")]
     /// `responseValidation` Tailcall automatically validates responses from
     /// upstream services using inferred schema. @default `false`.
@@ -166,11 +160,15 @@ impl Server {
     }
 
     pub fn get_response_headers(&self) -> BTreeMap<String, String> {
-        self.response_headers
-            .clone()
-            .iter()
-            .map(|kv| (kv.key.clone(), kv.value.clone()))
-            .collect()
+        self.headers
+            .as_ref()
+            .map(|h| h.custom.clone())
+            .map_or(BTreeMap::new(), |headers| {
+                headers
+                    .iter()
+                    .map(|kv| (kv.key.clone(), kv.value.clone()))
+                    .collect()
+            })
     }
 
     pub fn get_version(self) -> HttpVersion {
@@ -181,9 +179,35 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 
+    fn merge_key_value_iterators(
+        &self,
+        iter: std::slice::Iter<'_, KeyValue>,
+        other: std::slice::Iter<'_, KeyValue>,
+    ) -> Vec<KeyValue> {
+        other.fold(iter.cloned().collect(), |mut acc, kv| {
+            let position = acc.iter().position(|x| x.key == kv.key);
+            if let Some(pos) = position {
+                acc[pos] = kv.clone();
+            } else {
+                acc.push(kv.clone());
+            };
+            acc
+        })
+    }
+
     pub fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
-        self.headers = other.headers.or(self.headers);
+        if let Some(headers) = other.headers {
+            if let Some(mut self_headers) = self.headers.clone() {
+                self_headers.cache_control = headers.cache_control.or(self_headers.cache_control);
+                self_headers.custom = self
+                    .merge_key_value_iterators(self_headers.custom.iter(), headers.custom.iter());
+
+                self.headers = Some(self_headers);
+            } else {
+                self.headers = Some(headers);
+            }
+        }
         self.graphiql = other.graphiql.or(self.graphiql);
         self.introspection = other.introspection.or(self.introspection);
         self.query_validation = other.query_validation.or(self.query_validation);
@@ -196,28 +220,7 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
-        self.vars = other.vars.iter().fold(self.vars, |mut acc, kv| {
-            let position = acc.iter().position(|x| x.key == kv.key);
-            if let Some(pos) = position {
-                acc[pos] = kv.clone();
-            } else {
-                acc.push(kv.clone());
-            };
-            acc
-        });
-        self.response_headers =
-            other
-                .response_headers
-                .iter()
-                .fold(self.response_headers, |mut acc, kv| {
-                    let position = acc.iter().position(|x| x.key == kv.key);
-                    if let Some(pos) = position {
-                        acc[pos] = kv.clone();
-                    } else {
-                        acc.push(kv.clone());
-                    };
-                    acc
-                });
+        self.vars = self.merge_key_value_iterators(self.vars.iter(), other.vars.iter());
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);

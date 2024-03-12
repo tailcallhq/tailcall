@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::config::KeyValue;
 use crate::is_default;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -10,6 +11,12 @@ pub struct Headers {
     /// activated. The `max-age` value is the least of the values received from
     /// upstream services. @default `false`.
     pub cache_control: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `headers` are key-value pairs included in every server
+    /// response. Useful for setting headers like `Access-Control-Allow-Origin`
+    /// for cross-origin requests or additional headers for downstream services.
+    pub custom: Vec<KeyValue>,
 }
 
 impl Headers {
