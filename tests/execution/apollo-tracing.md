@@ -1,8 +1,6 @@
 # Apollo Tracing
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @telemetry(export: {apollo: {api_key: "<api_key>", graph_ref: "tailcall-demo-3@current"}}) {
@@ -14,9 +12,7 @@ type Query {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://api.com
@@ -26,9 +22,7 @@ type Query {
     body: hello
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8000/graphql
   body:
