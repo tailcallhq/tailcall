@@ -1,8 +1,6 @@
 # Add field with composition
 
-#### server:
-
-```graphql
+```graphql @server
 schema {
   query: Query
 }
@@ -28,13 +26,12 @@ type Query
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
     body: null
+  expected_hits: 2
   response:
     status: 200
     body:
@@ -46,9 +43,7 @@ type Query
       name: foo
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

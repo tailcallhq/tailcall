@@ -10,6 +10,7 @@ mod operation;
 mod operators;
 mod schema;
 mod server;
+pub mod telemetry;
 mod timeout;
 mod upstream;
 
@@ -97,8 +98,4 @@ where
     } else {
         Type::NamedType { name: name.to_string(), non_null }
     }
-}
-
-pub fn is_scalar(type_name: &str) -> bool {
-    ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }

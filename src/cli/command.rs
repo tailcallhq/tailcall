@@ -24,14 +24,16 @@ pub struct Cli {
 pub enum Command {
     /// Starts the GraphQL server on the configured port
     Start {
-        /// Path for the configuration files or http(s) link to config files separated by spaces if more than one
+        /// Path for the configuration files or http(s) link to config files
+        /// separated by spaces if more than one
         #[arg(required = true)]
         file_paths: Vec<String>,
     },
 
     /// Validate a composition spec
     Check {
-        /// Path for the configuration files separated by spaces if more than one
+        /// Path for the configuration files separated by spaces if more than
+        /// one
         #[arg(required = true)]
         file_paths: Vec<String>,
 
@@ -43,20 +45,9 @@ pub enum Command {
         #[arg(short, long)]
         schema: bool,
 
-        /// Operations to check
-        #[arg(short, long, value_delimiter=',', num_args = 1..)]
-        operations: Vec<String>,
-    },
-
-    /// Merge multiple configuration file into one
-    Compose {
-        /// Path for the configuration files separated by spaces if more than one
-        #[arg(required = true)]
-        file_paths: Vec<String>,
-
-        /// Format of the result. Accepted values: JSON|YML|GQL.
-        #[clap(short, long, default_value = "gql")]
-        format: Source,
+        /// Prints the input config in the provided format.
+        #[clap(short, long)]
+        format: Option<Source>,
     },
 
     /// Initialize a new project

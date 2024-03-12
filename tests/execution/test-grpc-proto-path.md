@@ -2,9 +2,7 @@
 
 ###### sdl error
 
-#### server:
-
-```graphql
+```graphql @server
 schema @link(id: "news", src: "tailcall/src/grpcnews.proto", type: Protobuf) {
   query: Query
 }

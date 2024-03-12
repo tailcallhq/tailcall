@@ -2,9 +2,7 @@
 
 ###### check identity
 
-#### file:news.proto
-
-```protobuf
+```protobuf @file:news.proto
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
@@ -40,9 +38,7 @@ message NewsList {
 }
 ```
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000}) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
@@ -68,6 +64,6 @@ type NewsData {
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
   newsById(news: NewsInput!): News! @grpc(body: "{{args.news}}", method: "news.NewsService.GetNews")
-  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", groupBy: ["news", "id"], method: "news.NewsService.GetMultipleNews")
+  newsByIdBatch(news: NewsInput!): News! @grpc(body: "{{args.news}}", batchKey: ["news", "id"], method: "news.NewsService.GetMultipleNews")
 }
 ```
