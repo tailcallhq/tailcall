@@ -164,7 +164,10 @@ impl Server {
             .as_ref()
             .and_then(|h| h.custom.as_ref())
             .map_or_else(BTreeMap::new, |custom| {
-                custom.iter().map(|kv| (kv.key.clone(), kv.value.clone())).collect()
+                custom
+                    .iter()
+                    .map(|kv| (kv.key.clone(), kv.value.clone()))
+                    .collect()
             })
     }
 

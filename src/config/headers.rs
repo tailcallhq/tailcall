@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::is_default;
-
 use super::KeyValue;
+use crate::is_default;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
