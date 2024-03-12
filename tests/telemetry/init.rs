@@ -5,9 +5,9 @@ use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::testing::metrics::InMemoryMetricsExporter;
 use opentelemetry_sdk::testing::trace::InMemorySpanExporter;
 use opentelemetry_sdk::trace::{Tracer, TracerProvider};
+use tailcall::tracing::{default_tracing, filter_target};
 use tracing::Subscriber;
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::filter::filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
@@ -51,13 +51,9 @@ pub fn init_opentelemetry() -> InMemoryTelemetry {
     let trace_layer = set_trace_provider(trace_exporter.clone());
     let metrics_reader = set_meter_provider(metrics_exporter.clone());
 
-    let subscriber = tracing_subscriber::registry().with(trace_layer).with(
-        tracing_subscriber::fmt::layer()
-            .compact()
-            .with_filter(filter_fn(|metadata| {
-                metadata.target().starts_with("execution_spec")
-            })),
-    );
+    let subscriber = tracing_subscriber::registry()
+        .with(trace_layer)
+        .with(default_tracing().with_filter(filter_target("execution_spec")));
 
     set_tracing_subscriber(subscriber);
 

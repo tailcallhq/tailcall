@@ -2,13 +2,16 @@ use std::str::FromStr;
 use std::{env, fmt};
 
 use colored::Colorize;
-use tracing::{Event, Level, Subscriber};
-use tracing_subscriber::filter::filter_fn;
+use tracing::{level_filters::LevelFilter, Event, Level, Metadata, Subscriber};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::fmt::{FmtContext, FormatEvent, FormatFields};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::registry::LookupSpan;
 use tracing_subscriber::Layer;
+use tracing_subscriber::{
+    filter::{filter_fn, FilterFn},
+    registry,
+};
 struct FmtLevel<'a> {
     level: &'a Level,
     ansi: bool,
@@ -70,15 +73,19 @@ where
     }
 }
 
-pub fn default_tailcall_tracing() -> impl Subscriber {
-    default_tracing().with(tailcall_filter_target())
+pub fn default_tracing_tailcall() -> impl Subscriber {
+    default_tracing_for_name("tailcall")
 }
 
-pub fn default_crate_tracing(name: &'static str) -> impl Subscriber {
-    default_tracing().with(filter_target(name))
+pub fn default_tracing_for_name(name: &'static str) -> impl Subscriber {
+    registry().with(default_tracing().with_filter(filter_target(name)))
 }
 
-pub fn default_tracing() -> impl Subscriber {
+pub fn default_tracing<S>() -> impl Layer<S>
+where
+    S: Subscriber,
+    for<'a> S: registry::LookupSpan<'a>,
+{
     const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
     const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
 
@@ -89,18 +96,17 @@ pub fn default_tracing() -> impl Subscriber {
         // use the log level from the env if there is one, otherwise use the default.
         .unwrap_or(tracing::Level::INFO);
 
-    tracing_subscriber::fmt()
-        .with_max_level(level)
+    tracing_subscriber::fmt::layer()
         .without_time()
         .with_target(false)
         .event_format(CliFmt)
-        .finish()
+        .with_filter(LevelFilter::from_level(level))
 }
 
-pub fn tailcall_filter_target<S: Subscriber>() -> impl Layer<S> {
+pub fn tailcall_filter_target() -> FilterFn<impl Fn(&Metadata<'_>) -> bool> {
     filter_target("tailcall")
 }
 
-pub fn filter_target<S: Subscriber>(name: &'static str) -> impl Layer<S> {
-    filter_fn(move |metadata| metadata.target().starts_with(name))
+pub fn filter_target(name: &'static str) -> FilterFn<impl Fn(&Metadata<'_>) -> bool> {
+    filter_fn(move |metadata: &Metadata<'_>| metadata.target().starts_with(name))
 }
