@@ -244,7 +244,7 @@ jobs:
             rust: stable
             target: x86_64-pc-windows-gnu
             features: --no-default-features --features cli
-            libc: msvc
+            libc: glibc
             ext: ".exe"
 
           - build: win32-arm64-msvc
