@@ -742,10 +742,22 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
+"""
+A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
+"""
 scalar Date
+"""
+field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
 scalar Email
 scalar KeyValues
+"""
+A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
+"""
 scalar PhoneNumber
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
+"""
 scalar Url
 scalar JSON
 

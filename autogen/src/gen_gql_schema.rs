@@ -618,6 +618,18 @@ fn write_all_input_types(
         .map(|(k, v)| (k.clone(), v.scalar()))
         .collect::<Map<String, Schema>>();
 
+    let mut scalar_defs = BTreeMap::new();
+
+    for (name, obj) in scalar.iter() {
+        let scalar_definition = obj.clone().into_object()
+            .object.as_ref().unwrap()
+            .properties.get(name).unwrap().clone().into_object()
+            .metadata.as_ref().unwrap()
+            .description.as_ref().unwrap().to_string();
+    
+        scalar_defs.insert(name.clone(), scalar_definition);
+    }
+
     let defs = schema.definitions;
 
     let mut scalar = scalar
@@ -667,11 +679,15 @@ fn write_all_input_types(
     scalar_vector.sort();
 
     for name in scalar_vector {
-        let def = defs.keys().find(|k| k.to_lowercase() == name.to_lowercase()).unwrap();
-        writeln!(writer, "\"\"\"")?;
-        writeln!(writer, "{def}")?;
-        writeln!(writer, "\"\"\"")?;
-        writeln!(writer, "scalar {name}")?;
+        if scalar_defs.contains_key(&name) {
+            let def = scalar_defs.get(&name).unwrap();
+            writeln!(writer, "\"\"\"")?;
+            writeln!(writer, "{def}")?;
+            writeln!(writer, "\"\"\"")?;
+            writeln!(writer, "scalar {name}")?;
+        } else {
+            writeln!(writer, "scalar {name}")?;
+        }
     }
 
     Ok(())
