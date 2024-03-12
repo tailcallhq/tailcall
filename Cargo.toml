@@ -134,13 +134,6 @@ async-graphql-extension-apollo-tracing = { git = "https://github.com/shashitnak/
 async-graphql-value = {git ="https://github.com/tusharmath/async-graphql.git", branch = "add-setter"}
 async-graphql = {git ="https://github.com/tusharmath/async-graphql.git", branch = "add-setter"}
 
-[target.x86_64-pc-windows-gnu]
-linker = "/usr/bin/x86_64-w64-mingw32-gcc"
-
-[target.i686-pc-windows-gnu]
-linker = "/usr/bin/i686-w64-mingw32-gcc"
-rustflags = "-C panic=abort"
-
 [dev-dependencies]
 criterion = "0.5.1"
 httpmock = "0.7.0"
