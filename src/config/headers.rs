@@ -6,7 +6,7 @@ use crate::is_default;
 #[serde(rename_all = "camelCase")]
 pub struct Headers {
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cacheControlHeader` sends `Cache-Control` headers in responses when
+    /// `cacheControl` sends `Cache-Control` headers in responses when
     /// activated. The `max-age` value is the least of the values received from
     /// upstream services. @default `false`.
     pub cache_control: Option<bool>,

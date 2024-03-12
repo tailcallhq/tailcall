@@ -1210,7 +1210,7 @@
       "type": "object",
       "properties": {
         "cacheControl": {
-          "description": "`cacheControlHeader` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
+          "description": "`cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
           "type": [
             "boolean",
             "null"
