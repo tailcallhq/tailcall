@@ -1,8 +1,6 @@
 # Grpc datasource
 
-#### file:news.proto
-
-```protobuf
+```protobuf @file:news.proto
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
@@ -38,9 +36,7 @@ message NewsList {
 }
 ```
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @server(port: 8000, graphiql: true)
   @upstream(httpCache: true, batch: {delay: 10}, baseURL: "http://not-a-valid-grpc-url.com")
@@ -71,9 +67,7 @@ type News {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: POST
     url: http://localhost:50051/news.NewsService/GetAllNews
@@ -83,9 +77,7 @@ type News {
     body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

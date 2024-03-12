@@ -1,8 +1,6 @@
 # test-upstream-headers
 
-#### server:
-
-```graphql
+```graphql @server
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", allowedHeaders: ["x-foo", "X-bar"]) {
   query: Query
 }
@@ -14,9 +12,7 @@ type Post {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts
@@ -37,9 +33,7 @@ type Post {
         userId: 2
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8000/graphql
   headers:

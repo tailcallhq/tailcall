@@ -1,8 +1,6 @@
 # Custom Headers
 
-#### server:
-
-```json
+```json @server
 {
   "server": {
     "responseHeaders": [
@@ -37,9 +35,7 @@
 }
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:
