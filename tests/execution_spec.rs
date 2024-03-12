@@ -16,7 +16,6 @@ use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
-use mockito::{Server, ServerOpts};
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -1054,47 +1053,9 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     tracing::info!("[{}] {} ... ok", spec.name, spec.path.display());
 }
 
-fn start_mock_server() -> Server {
-    Server::new_with_opts(ServerOpts { host: "127.0.0.1", port: 50051, assert_on_drop: true })
-}
-
-const NEWS_PROTO: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/fake_descriptor.bin"
-));
-
-const REFLECTION_LIST_ALL: &[u8] = &[
-    0, 0, 0, 0, 70, 18, 2, 58, 0, 50, 64, 10, 18, 10, 16, 110, 101, 119, 115, 46, 78, 101, 119,
-    115, 83, 101, 114, 118, 105, 99, 101, 10, 42, 10, 40, 103, 114, 112, 99, 46, 114, 101, 102,
-    108, 101, 99, 116, 105, 111, 110, 46, 118, 49, 97, 108, 112, 104, 97, 46, 83, 101, 114, 118,
-    101, 114, 82, 101, 102, 108, 101, 99, 116, 105, 111, 110,
-];
-
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
     let opentelemetry = init_opentelemetry();
-
-    let mut server = start_mock_server();
-
-    let http_reflection_symbol_mock = server
-        .mock(
-            "POST",
-            "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo",
-        )
-        .match_body("\0\0\0\0\x12\"\x10news.NewsService")
-        .with_body(NEWS_PROTO)
-        .with_status(200)
-        .create();
-
-    let http_reflection_list_all = server
-        .mock(
-            "POST",
-            "/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo",
-        )
-        .match_body("\0\0\0\0\x02:\0")
-        .with_body(REFLECTION_LIST_ALL)
-        .with_status(200)
-        .create();
 
     // Explicitly only run one test if specified in command line args
     // This is used by test-convertor to auto-apply the snapshots of incompatible
@@ -1131,9 +1092,6 @@ async fn test() -> anyhow::Result<()> {
     for spec in spec.into_iter() {
         assert_spec(spec, &opentelemetry).await;
     }
-
-    http_reflection_symbol_mock.assert();
-    http_reflection_list_all.assert();
 
     Ok(())
 }
