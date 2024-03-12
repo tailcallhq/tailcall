@@ -33,8 +33,6 @@ jobs:
         run: npm install --global prettier
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
       - name: Run Lint Script
         run: ./lint.sh --mode=$LINT_MODE
       - name: Commit and push if changed

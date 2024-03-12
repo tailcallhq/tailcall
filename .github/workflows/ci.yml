@@ -55,9 +55,6 @@ jobs:
       - name: Install cargo-lambda
         run: pip install cargo-lambda
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-
       - name: Build
         run: cargo lambda build
 
@@ -100,9 +97,6 @@ jobs:
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
@@ -131,9 +125,6 @@ jobs:
 
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
 
       - name: Build Project
         run: cargo build
@@ -253,7 +244,7 @@ jobs:
             rust: stable
             target: x86_64-pc-windows-gnu
             features: --no-default-features --features cli
-            libc: glibc
+            libc: msvc
             ext: ".exe"
 
           - build: win32-arm64-msvc
@@ -287,20 +278,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          version: "26.0-rc3"
-          include-pre-releases: true
-
-      - name: Install Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.9"
-
-      - name: Run Script
-        run: python .github/scripts/python-script.py
 
       - name: Build
         env:
@@ -372,9 +349,6 @@ jobs:
 
       - name: Install Correct Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
 
       - name: Install Python
         uses: actions/setup-python@v5
