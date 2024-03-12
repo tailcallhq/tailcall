@@ -243,7 +243,7 @@ dependencies = [
 [[package]]
 name = "async-graphql"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#f72cf7da34341e7006667d2c59f2db5d67367ce2"
+source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -280,7 +280,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-derive"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#f72cf7da34341e7006667d2c59f2db5d67367ce2"
+source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -296,8 +296,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-extension-apollo-tracing"
 version = "3.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d157f25cc225308d76fc39fc8b186f6319db56e1e4eff338b6fb8bad8bfbd43"
+source = "git+https://github.com/shashitnak/async_graphql_apollo_studio_extension/?branch=rust-protobuf#275e72f67bb6c3862bc026871b14098db71bf673"
 dependencies = [
  "anyhow",
  "async-graphql",
@@ -310,6 +309,7 @@ dependencies = [
  "libflate",
  "prost",
  "prost-types",
+ "protoc-bin-vendored",
  "reqwest",
  "serde",
  "serde_json",
@@ -325,7 +325,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-parser"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#f72cf7da34341e7006667d2c59f2db5d67367ce2"
+source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -336,7 +336,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-value"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#f72cf7da34341e7006667d2c59f2db5d67367ce2"
+source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
 dependencies = [
  "bytes 1.5.0",
  "indexmap 2.2.5",
@@ -4021,6 +4021,56 @@ name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
+
+[[package]]
+name = "protoc-bin-vendored"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "005ca8623e5633e298ad1f917d8be0a44bcf406bf3cde3b80e63003e49a3f27d"
+dependencies = [
+ "protoc-bin-vendored-linux-aarch_64",
+ "protoc-bin-vendored-linux-ppcle_64",
+ "protoc-bin-vendored-linux-x86_32",
+ "protoc-bin-vendored-linux-x86_64",
+ "protoc-bin-vendored-macos-x86_64",
+ "protoc-bin-vendored-win32",
+]
+
+[[package]]
+name = "protoc-bin-vendored-linux-aarch_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fb9fc9cce84c8694b6ea01cc6296617b288b703719b725b8c9c65f7c5874435"
+
+[[package]]
+name = "protoc-bin-vendored-linux-ppcle_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02d2a07dcf7173a04d49974930ccbfb7fd4d74df30ecfc8762cf2f895a094516"
+
+[[package]]
+name = "protoc-bin-vendored-linux-x86_32"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d54fef0b04fcacba64d1d80eed74a20356d96847da8497a59b0a0a436c9165b0"
+
+[[package]]
+name = "protoc-bin-vendored-linux-x86_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8782f2ce7d43a9a5c74ea4936f001e9e8442205c244f7a3d4286bd4c37bc924"
+
+[[package]]
+name = "protoc-bin-vendored-macos-x86_64"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5de656c7ee83f08e0ae5b81792ccfdc1d04e7876b1d9a38e6876a9e09e02537"
+
+[[package]]
+name = "protoc-bin-vendored-win32"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9653c3ed92974e34c5a6e0a510864dab979760481714c172e0a34e437cb98804"
 
 [[package]]
 name = "protox"
