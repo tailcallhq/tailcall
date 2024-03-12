@@ -46,7 +46,7 @@ type User {
         userId: 2
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1&foo=bar&id=2
+    url: http://jsonplaceholder.typicode.com/users?id=1&foo=bar&id=2&foo=bar
     body: null
   response:
     status: 200
