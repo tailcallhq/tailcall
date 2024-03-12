@@ -38,9 +38,9 @@ rustls-pemfile = { version = "1.0.4" }
 schemars = { version = "0.8.16", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"], default-features = false }
 tokio = { version = "1.36.0", features = ["rt", "time"] }
-anyhow = "1.0.80"
+anyhow = "1.0.81"
 derive_setters = "0.1.6"
-thiserror = "1.0.57"
+thiserror = "1.0.58"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_qs = "0.12"

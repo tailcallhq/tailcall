@@ -2,9 +2,7 @@
 
 **This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
   @upstream(baseURL: "http://upstream/graphql", httpCache: true, batch: {delay: 1}) {
@@ -34,9 +32,7 @@ type B {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: POST
     url: http://upstream/graphql
@@ -86,9 +82,7 @@ type B {
             y: 1
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:
