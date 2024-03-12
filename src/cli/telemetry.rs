@@ -23,10 +23,13 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
-use crate::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::cli::CLIError;
 use crate::runtime::TargetRuntime;
 use crate::tracing::{default_tracing_tailcall, tailcall_filter_target};
+use crate::{
+    blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter},
+    tracing::get_log_level,
+};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
@@ -226,7 +229,7 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                 })),
             )
             .with(tailcall_filter_target())
-            .with(LevelFilter::INFO);
+            .with(LevelFilter::from_level(get_log_level().unwrap_or(tracing::Level::INFO)));
 
         init_metrics(runtime)?;
 

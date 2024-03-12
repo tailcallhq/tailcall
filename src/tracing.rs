@@ -81,26 +81,28 @@ pub fn default_tracing_for_name(name: &'static str) -> impl Subscriber {
     registry().with(default_tracing().with_filter(filter_target(name)))
 }
 
+pub fn get_log_level() -> Option<Level> {
+    const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
+    const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
+
+    env::var(LONG_ENV_FILTER_VAR_NAME)
+        .or(env::var(SHORT_ENV_FILTER_VAR_NAME))
+        .ok()
+        .and_then(|v| Level::from_str(&v).ok())
+}
+
 pub fn default_tracing<S>() -> impl Layer<S>
 where
     S: Subscriber,
     for<'a> S: registry::LookupSpan<'a>,
 {
-    const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
-    const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
-
-    let level = env::var(LONG_ENV_FILTER_VAR_NAME)
-        .or(env::var(SHORT_ENV_FILTER_VAR_NAME))
-        .ok()
-        .and_then(|v| tracing::Level::from_str(&v).ok())
-        // use the log level from the env if there is one, otherwise use the default.
-        .unwrap_or(tracing::Level::INFO);
-
     tracing_subscriber::fmt::layer()
         .without_time()
         .with_target(false)
         .event_format(CliFmt)
-        .with_filter(LevelFilter::from_level(level))
+        .with_filter(LevelFilter::from_level(
+            get_log_level().unwrap_or(Level::INFO),
+        ))
 }
 
 pub fn tailcall_filter_target() -> FilterFn<impl Fn(&Metadata<'_>) -> bool> {
