@@ -173,7 +173,8 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
         name.zip(value)
     })
     .map(|headers| headers.into_iter().collect::<HeaderMap>())
-    .trace("responseHeaders")
+    .trace("custom")
+    .trace("headers")
     .trace("@server")
     .trace("schema")
 }
