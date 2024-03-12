@@ -15,6 +15,7 @@ mod config_module;
 mod expr;
 mod from_document;
 pub mod group_by;
+mod headers;
 mod into_document;
 mod key_values;
 mod link;
