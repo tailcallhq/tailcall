@@ -1,8 +1,6 @@
 # Graphql datasource
 
-#### server:
-
-```graphql
+```graphql @server
 schema @upstream(batch: {delay: 1}) {
   query: Query
 }
@@ -24,9 +22,7 @@ type Query {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts
@@ -68,9 +64,7 @@ type Query {
           name: Ervin Howell
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:
