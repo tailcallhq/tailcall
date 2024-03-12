@@ -5,15 +5,15 @@
   "server": {
     "headers": {
       "custom": [
-      {
-        "key": "x-id",
-        "value": "1"
-      },
-      {
-        "key": "x-name",
-        "value": "John Doe"
-      }
-    ]
+        {
+          "key": "x-id",
+          "value": "1"
+        },
+        {
+          "key": "x-name",
+          "value": "John Doe"
+        }
+      ]
     }
   },
   "upstream": {},
