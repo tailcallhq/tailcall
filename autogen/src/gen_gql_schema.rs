@@ -620,13 +620,18 @@ fn write_all_input_types(
     let mut scalar_defs = BTreeMap::new();
 
     for (name, obj) in scalar.iter() {
-        let scalar_definition = obj.clone().into_object()
-            .object.as_ref().unwrap()
-            .properties.get(name).unwrap().clone().into_object()
-            .metadata.as_ref().unwrap()
-            .description.as_ref().unwrap().to_string();
-    
-        scalar_defs.insert(name.clone(), scalar_definition);
+        let scalar_definition = obj
+            .clone()
+            .into_object()
+            .object
+            .as_ref()
+            .and_then(|a| a.properties.get(name))
+            .and_then(|a| a.clone().into_object().metadata)
+            .and_then(|a| a.description);
+
+        if let Some(scalar_definition) = scalar_definition {
+            scalar_defs.insert(name.clone(), scalar_definition);
+        }
     }
 
     let defs = schema.definitions;
