@@ -2,7 +2,7 @@
 schema
   @server(port: 8000, graphiql: true)
   @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
-  @link(src: "http://localhost:50051", type: ReflectionAllFiles) { # ReflectionAllFiles fetches all services from reflection server
+  @link(src: "http://localhost:50051", type: GrpcReflection) {
   query: Query
 }
 
@@ -10,7 +10,7 @@ type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
   newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
   newsByIdBatch(news: NewsInput!): News!
-    @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.news}}", groupBy: ["news", "id"])
+    @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.news}}", batchKey: ["news", "id"])
 }
 
 type News {
