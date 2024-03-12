@@ -1,6 +1,5 @@
 # With nesting
 
-
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
@@ -28,7 +27,6 @@ type Post {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -52,7 +50,6 @@ type Post {
       - title: title2
       - title: title3
 ```
-
 
 ```yml @assert
 - method: POST

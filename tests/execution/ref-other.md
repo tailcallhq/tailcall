@@ -1,6 +1,5 @@
 # Ref other
 
-
 ```graphql @server
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
@@ -20,7 +19,6 @@ type Query {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -32,7 +30,6 @@ type Query {
       id: 1
       name: Leanne Graham
 ```
-
 
 ```yml @assert
 - method: POST

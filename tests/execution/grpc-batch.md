@@ -1,6 +1,5 @@
 # Grpc datasource with batching
 
-
 ```protobuf @file:news.proto
 syntax = "proto3";
 
@@ -36,7 +35,6 @@ message NewsList {
     repeated News news = 1;
 }
 ```
-
 
 ```graphql @server
 schema
@@ -74,7 +72,6 @@ type News {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: POST
@@ -84,7 +81,6 @@ type News {
     status: 200
     body: \0\0\0\0t\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3
 ```
-
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # Graphql datasource
 
-
 ```graphql @server
 schema {
   query: Query
@@ -28,7 +27,6 @@ type UserInput {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: POST
@@ -41,7 +39,6 @@ type UserInput {
         createUser:
           name: Test Name
 ```
-
 
 ```yml @assert
 - method: POST

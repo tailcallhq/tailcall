@@ -2,7 +2,6 @@
 
 ###### sdl error
 
-
 ```graphql @server
 schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query

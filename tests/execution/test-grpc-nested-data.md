@@ -2,7 +2,6 @@
 
 ###### sdl error
 
-
 ```protobuf @file:news.proto
 syntax = "proto3";
 
@@ -38,7 +37,6 @@ message NewsList {
     repeated News news = 1;
 }
 ```
-
 
 ```graphql @server
 schema

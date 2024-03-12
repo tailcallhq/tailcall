@@ -1,6 +1,5 @@
 # Batching disabled
 
-
 ```json @server
 {
   "server": {},
@@ -56,7 +55,6 @@
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -77,7 +75,6 @@
       id: 2
       name: Leanne Graham
 ```
-
 
 ```yml @assert
 - method: POST

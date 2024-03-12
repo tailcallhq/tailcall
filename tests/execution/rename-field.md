@@ -1,6 +1,5 @@
 # Rename field
 
-
 ```graphql @server
 schema {
   query: Query
@@ -14,7 +13,6 @@ type Query {
   person2: User @modify(name: "user2") @http(path: "/users/2", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -36,7 +34,6 @@ type Query {
       id: 2
       name: Ervin Howell
 ```
-
 
 ```yml @assert
 - method: POST

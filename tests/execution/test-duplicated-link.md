@@ -2,7 +2,6 @@
 
 ###### sdl error
 
-
 ```graphql @file:jsonplaceholder.graphql
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
@@ -33,7 +32,6 @@ type Post {
   user: User @http(path: "/users/{{value.userId}}")
 }
 ```
-
 
 ```graphql @server
 schema

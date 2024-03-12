@@ -1,6 +1,5 @@
 # Showcase GraphQL Request
 
-
 ```graphql @server
 schema @server(showcase: true) {
   query: Query
@@ -15,7 +14,6 @@ type Query {
   not_user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -48,7 +46,6 @@ type Query {
     status: 200
     body: dsjfsjdfjdsfjkdskjfjkds
 ```
-
 
 ```yml @assert
 - method: POST

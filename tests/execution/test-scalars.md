@@ -1,6 +1,5 @@
 # test-scalar-email
 
-
 ```graphql @server
 scalar Email
 scalar PhoneNumber
@@ -18,7 +17,6 @@ type Query {
   url(value: Url!): Url! @const(data: "{{args.value}}")
 }
 ```
-
 
 ```yml @assert
 # Valid value tests

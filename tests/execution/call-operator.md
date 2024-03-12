@@ -1,6 +1,5 @@
 # Test call operator
 
-
 ```protobuf @file:news.proto
 syntax = "proto3";
 
@@ -36,7 +35,6 @@ message NewsList {
     repeated News news = 1;
 }
 ```
-
 
 ```graphql @server
 schema
@@ -108,7 +106,6 @@ type Post {
 }
 ```
 
-
 ```yml @mock
 - request:
     url: http://jsonplaceholder.typicode.com/users/1
@@ -170,7 +167,6 @@ type Post {
   response:
     body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
-
 
 ```yml @assert
 - method: POST

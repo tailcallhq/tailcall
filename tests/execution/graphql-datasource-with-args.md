@@ -1,6 +1,5 @@
 # Graphql datasource
 
-
 ```graphql @server
 schema {
   query: Query
@@ -23,7 +22,6 @@ type Query {
     @graphQL(baseURL: "http://upstream/graphql", name: "post", args: [{key: "id", value: "{{args.id}}"}])
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -49,7 +47,6 @@ type Query {
           user:
             name: Leanne Graham
 ```
-
 
 ```yml @assert
 - method: POST

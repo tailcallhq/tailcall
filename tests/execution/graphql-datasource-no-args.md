@@ -1,6 +1,5 @@
 # Graphql datasource
 
-
 ```graphql @server
 schema {
   query: Query
@@ -16,7 +15,6 @@ type Query {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: POST
@@ -30,7 +28,6 @@ type Query {
           - name: Leanne Graham
           - name: Ervin Howell
 ```
-
 
 ```yml @assert
 - method: POST

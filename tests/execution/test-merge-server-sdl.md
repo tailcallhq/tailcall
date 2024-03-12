@@ -1,6 +1,5 @@
 # test-merge-server-sdl
 
-
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query

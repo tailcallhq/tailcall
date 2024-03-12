@@ -1,6 +1,5 @@
 # Test const with mustache
 
-
 ```graphql @server
 schema {
   query: Query
@@ -30,7 +29,6 @@ type D {
   e: Int
 }
 ```
-
 
 ```yml @assert
 - method: POST

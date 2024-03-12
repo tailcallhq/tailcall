@@ -1,6 +1,5 @@
 # Custom Headers
 
-
 ```json @server
 {
   "server": {
@@ -35,7 +34,6 @@
   }
 }
 ```
-
 
 ```yml @assert
 - method: POST

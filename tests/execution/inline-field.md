@@ -1,6 +1,5 @@
 # Inline field
 
-
 ```graphql @server
 schema {
   query: Query
@@ -23,7 +22,6 @@ type Query {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -38,7 +36,6 @@ type Query {
       id: 1
       name: foo
 ```
-
 
 ```yml @assert
 - method: POST

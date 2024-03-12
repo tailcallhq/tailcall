@@ -1,6 +1,5 @@
 # Batching group by
 
-
 ```graphql @server
 schema
   @server(port: 8000, queryValidation: false)
@@ -26,7 +25,6 @@ type User {
   name: String
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -56,7 +54,6 @@ type User {
       - id: 2
         name: Ervin Howell
 ```
-
 
 ```yml @assert
 - method: POST

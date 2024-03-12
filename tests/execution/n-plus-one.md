@@ -1,6 +1,5 @@
 # n + 1 Request
 
-
 ```graphql @server
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
@@ -23,7 +22,6 @@ type Bar {
   foo: [Foo] @http(path: "/foos", query: [{key: "id", value: "{{value.fooId}}"}], batchKey: ["id"])
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -49,7 +47,6 @@ type Bar {
       - fooId: "2"
         id: 2
 ```
-
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # Modified field
 
-
 ```graphql @server
 schema {
   query: Query
@@ -15,7 +14,6 @@ type Query {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -27,7 +25,6 @@ type Query {
       id: 1
       name: Leanne Graham
 ```
-
 
 ```yml @assert
 - method: POST

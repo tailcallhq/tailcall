@@ -1,6 +1,5 @@
 # expr logic
 
-
 ```graphql @server
 schema {
   query: Query
@@ -19,7 +18,6 @@ type Query {
   sum: Int @expr(body: {sum: [{const: 20}, {const: 15}, {const: 7}]})
 }
 ```
-
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # Caching Collision
 
-
 ```graphql @server
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
@@ -19,7 +18,6 @@ type Bar {
   foo: Foo @http(path: "/foo?id={{value.id}}") @cache(maxAge: 300)
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -930,7 +928,6 @@ type Bar {
     body:
       id: 99
 ```
-
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # Sending field index list
 
-
 ```graphql @server
 schema {
   query: Query
@@ -15,7 +14,6 @@ type Query @addField(name: "username", path: ["users", "0", "name"]) {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -27,7 +25,6 @@ type Query @addField(name: "username", path: ["users", "0", "name"]) {
       - id: 1
         name: Leanne Graham
 ```
-
 
 ```yml @assert
 - method: POST

@@ -4,7 +4,6 @@ This test has invalid GraphQL that wasn't caught by http_spec before conversion.
 
 ##### skip
 
-
 ```graphql @server
 schema @upstream(baseURL: "http://example.com") {
   query: Query
@@ -75,7 +74,6 @@ type User {
   friend: User
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -166,7 +164,6 @@ type User {
         symmetricDifference2:
           - 1
 ```
-
 
 ```yml @assert
 []

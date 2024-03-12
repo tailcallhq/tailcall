@@ -1,6 +1,5 @@
 # Graphql datasource
 
-
 ```graphql @server
 schema {
   query: Query
@@ -16,7 +15,6 @@ type Query {
     @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -51,7 +49,6 @@ type Query {
               line: 1
           message: Failed to resolve name
 ```
-
 
 ```yml @assert
 - method: POST

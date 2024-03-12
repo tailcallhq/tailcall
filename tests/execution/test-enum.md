@@ -2,7 +2,6 @@
 
 ###### check identity
 
-
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query

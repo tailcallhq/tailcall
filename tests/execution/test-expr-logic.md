@@ -1,6 +1,5 @@
 # expr logic
 
-
 ```graphql @server
 schema {
   query: Query
@@ -42,7 +41,6 @@ type Query {
   ifOne: Int @expr(body: {if: {cond: {const: false}, then: {const: 0}, else: {const: 1}}})
 }
 ```
-
 
 ```yml @assert
 - method: POST

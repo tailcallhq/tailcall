@@ -2,7 +2,6 @@
 
 **This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))
 
-
 ```graphql @server
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -32,7 +31,6 @@ type B {
   y: String!
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -83,7 +81,6 @@ type B {
           b:
             y: 1
 ```
-
 
 ```yml @assert
 - method: POST

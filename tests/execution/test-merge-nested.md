@@ -1,6 +1,5 @@
 # test-merge-nested
 
-
 ```graphql @server
 schema @server @upstream(baseURL: "http://abc.com") {
   query: Query
@@ -17,7 +16,6 @@ type Foo {
   b: String
 }
 ```
-
 
 ```graphql @server
 schema @server {

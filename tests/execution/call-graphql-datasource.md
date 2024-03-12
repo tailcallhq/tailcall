@@ -1,6 +1,5 @@
 # Call operator with graphQL datasource
 
-
 ```graphql @server
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
@@ -31,7 +30,6 @@ type Post {
   user: User @call(query: "user", args: {id: "{{value.userId}}"})
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -76,7 +74,6 @@ type Post {
         user:
           name: Ervin Howell
 ```
-
 
 ```yml @assert
 - method: POST

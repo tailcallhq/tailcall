@@ -1,6 +1,5 @@
 # With args URL
 
-
 ```json @server
 {
   "server": {},
@@ -47,7 +46,6 @@
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -61,7 +59,6 @@
       id: 1
       name: foo
 ```
-
 
 ```yml @assert
 - method: POST

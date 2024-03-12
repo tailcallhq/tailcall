@@ -1,6 +1,5 @@
 # Nesting level 3
 
-
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
@@ -31,7 +30,6 @@ type Post {
   user: User @http(path: "/users/{{value.userId}}")
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -65,7 +63,6 @@ type Post {
       - completed: false
       - completed: false
 ```
-
 
 ```yml @assert
 - method: POST

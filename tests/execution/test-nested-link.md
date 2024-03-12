@@ -2,7 +2,6 @@
 
 ###### check identity
 
-
 ```graphql @file:link-enum.graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
@@ -17,7 +16,6 @@ type Query {
   foo: Foo @http(path: "/foo")
 }
 ```
-
 
 ```graphql @file:graphql-with-link.graphql
 schema @server @upstream(baseURL: "http://localhost:8000/graphql") @link(src: "link-enum.graphql", type: Config) {
@@ -39,7 +37,6 @@ type User {
   name: String
 }
 ```
-
 
 ```graphql @server
 schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {

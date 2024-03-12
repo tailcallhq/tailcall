@@ -1,6 +1,5 @@
 # Against a server with HTTPS
 
-
 ```json @server
 {
   "server": {},
@@ -41,7 +40,6 @@
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -53,7 +51,6 @@
       id: 1
       name: Leanne Graham
 ```
-
 
 ```yml @assert
 - method: POST

@@ -1,6 +1,5 @@
 # Graphql datasource
 
-
 ```graphql @server
 schema @upstream(batch: {delay: 1}) {
   query: Query
@@ -22,7 +21,6 @@ type Query {
   posts: [Post] @http(path: "/posts", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
-
 
 ```yml @mock
 - request:
@@ -65,7 +63,6 @@ type Query {
         user:
           name: Ervin Howell
 ```
-
 
 ```yml @assert
 - method: POST

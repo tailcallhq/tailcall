@@ -1,6 +1,5 @@
 # Js Request Response Hello World
 
-
 ```js @file:test.js
 function onRequest({request}) {
   if (request.url.endsWith("/hello")) {
@@ -26,7 +25,6 @@ function onRequest({request}) {
 }
 ```
 
-
 ```graphql @server
 schema @server @link(type: Script, src: "test.js") {
   query: Query
@@ -38,7 +36,6 @@ type Query {
 }
 ```
 
-
 ```yml @mock
 - request:
     method: GET
@@ -47,7 +44,6 @@ type Query {
     status: 200
     body: hello world
 ```
-
 
 ```yml @assert
 - method: POST
