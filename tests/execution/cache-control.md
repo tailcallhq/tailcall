@@ -5,7 +5,9 @@
 ```json
 {
   "server": {
-    "cacheControlHeader": true
+    "headers": {
+      "cacheControl": true
+    }
   },
   "upstream": {},
   "schema": {
