@@ -32,11 +32,6 @@ jobs:
       - name: Track base Benchmarks
         run: |
           bencher run \
-          --if-branch '${{ github.event.pull_request.head.ref }}' \
-          --else-if-branch '${{ github.event.pull_request.base.ref }}' \
-          --else-if-branch main \
           --token "${{ secrets.BENCHER_API_TOKEN }}" \
-          --ci-id '${{ github.event.pull_request.number }}' \
           --github-actions "${{ secrets.GITHUB_TOKEN }}" \
-          --err \
           'cargo bench'
