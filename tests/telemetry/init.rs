@@ -38,10 +38,6 @@ fn set_meter_provider(exporter: InMemoryMetricsExporter) -> PeriodicReader {
 }
 
 fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
-    // ignore errors since there is only one possible error when the global
-    // subscriber is already set. The init is called multiple times in the same
-    // process many times inside tests, so we want to ignore if it is already
-    // set
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
@@ -54,6 +50,7 @@ pub fn init_opentelemetry() -> InMemoryTelemetry {
     let subscriber = tracing_subscriber::registry().with(trace_layer).with(
         tracing_subscriber::fmt::layer()
             .compact()
+            .without_time() // This line removes the timestamp from logs
             .with_filter(filter_fn(|metadata| {
                 metadata.target().starts_with("execution_spec")
             })),

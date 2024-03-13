@@ -181,6 +181,22 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 
+    fn merge_key_value_iterators(
+        &self,
+        iter: std::slice::Iter<'_, KeyValue>,
+        other: std::slice::Iter<'_, KeyValue>,
+    ) -> Vec<KeyValue> {
+        other.fold(iter.cloned().collect(), |mut acc, kv| {
+            let position = acc.iter().position(|x| x.key == kv.key);
+            if let Some(pos) = position {
+                acc[pos] = kv.clone();
+            } else {
+                acc.push(kv.clone());
+            };
+            acc
+        })
+    }
+
     pub fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
         self.headers = merge_headers(self.headers, other.headers);

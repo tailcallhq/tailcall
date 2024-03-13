@@ -103,7 +103,7 @@ deno_core = { version = "0.269.0", optional = true, features = ["v8_use_custom_l
 strum_macros = "0.26.2"
 # TODO: disable some levels with features?
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["default"] }
+tracing-subscriber = { version = "0.3.18", features = ["default","fmt","env-filter"] }
 tracing-opentelemetry = "0.23.0"
 getrandom = { version = "0.2.12", features = ["js"] }
 prometheus = "0.13.3"
