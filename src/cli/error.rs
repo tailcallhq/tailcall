@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::valid::ValidationError;
 
-#[derive(Debug, Error, Setters)]
+#[derive(Debug, Error, Setters, PartialEq, Clone)]
 pub struct CLIError {
     is_root: bool,
     #[setters(skip)]
@@ -384,33 +384,28 @@ mod tests {
         let cli_error = CLIError::new("Server could not be started")
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
-        let anyhow_error: anyhow::Error = cli_error.into();
-        let error = CLIError::from(anyhow_error);
-        let expected =
-            r"|Server could not be started: The port is already in use [at @server.port]"
-                .strip_margin();
 
-        assert_eq!(error.to_string(), expected);
+        let cli_error_copy = cli_error.clone();
+        let anyhow_error: anyhow::Error = cli_error_copy.into();
+        let error = CLIError::from(anyhow_error);
+        let expected = cli_error;
+
+        assert_eq!(error, expected);
     }
 
     #[test]
     fn test_validation_error_downcasting() {
-        let cause = Cause::new("Base URL needs to be specified".to_string()).trace(vec![
-            "Query".to_string(),
-            "users".to_string(),
-            "@http".to_string(),
-            "baseURL".to_string(),
-        ]);
+        let cause = Cause::new("Test Error".to_string()).trace(vec!["Query".to_string()]);
         let validation_error: ValidationError<String> = ValidationError::from(cause);
         let anyhow_error: anyhow::Error = validation_error.into();
         let error = CLIError::from(anyhow_error);
 
-        let expected = r"|Invalid Configuration
-                     |Caused by:
-                     |  • Base URL needs to be specified [at Query.users.@http.baseURL]"
-            .strip_margin();
+        let expected = CLIError::new("Invalid Configuration")
+            .caused_by(vec![
+                CLIError::new("Test Error").trace(vec!["Query".to_string()])
+            ]);
 
-        assert_eq!(error.to_string(), expected);
+        assert_eq!(error, expected);
     }
 
     #[test]
