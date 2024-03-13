@@ -6,7 +6,7 @@ use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
 
-use super::merge_key_value_vecs;
+use super::{merge_headers, merge_key_value_vecs};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -183,17 +183,7 @@ impl Server {
 
     pub fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
-        if let Some(headers) = other.headers {
-            if let Some(mut self_headers) = self.headers.clone() {
-                self_headers.cache_control = headers.cache_control.or(self_headers.cache_control);
-                self_headers.custom = self
-                    .merge_key_value_iterators(self_headers.custom.iter(), headers.custom.iter());
-
-                self.headers = Some(self_headers);
-            } else {
-                self.headers = Some(headers);
-            }
-        }
+        self.headers = merge_headers(self.headers, other.headers);
         self.graphiql = other.graphiql.or(self.graphiql);
         self.introspection = other.introspection.or(self.introspection);
         self.query_validation = other.query_validation.or(self.query_validation);
@@ -206,6 +196,18 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
+        self.vars = other
+            .vars
+            .iter()
+            .fold(self.vars.iter().cloned().collect(), |mut acc, kv| {
+                let position = acc.iter().position(|x| x.key == kv.key);
+                if let Some(pos) = position {
+                    acc[pos] = kv.clone();
+                } else {
+                    acc.push(kv.clone());
+                };
+                acc
+            });
         self.vars = merge_key_value_vecs(&self.vars, &other.vars);
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
