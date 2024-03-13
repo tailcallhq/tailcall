@@ -27,16 +27,16 @@ pub struct KeyValue {
 }
 
 pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
-    let mut acc: BTreeMap<String, KeyValue> = current
-        .iter()
-        .map(|kv| (kv.key.clone(), kv.clone()))
-        .collect();
+    let mut acc: BTreeMap<&String, &String> =
+        current.iter().map(|kv| (&kv.key, &kv.value)).collect();
 
     for kv in other {
-        acc.insert(kv.key.clone(), kv.clone());
+        acc.insert(&kv.key, &kv.value);
     }
 
-    acc.into_iter().map(|(_, v)| v).collect()
+    acc.iter()
+        .map(|(k, v)| KeyValue { key: k.to_string(), value: v.to_string() })
+        .collect()
 }
 
 impl Serialize for KeyValues {
@@ -158,6 +158,6 @@ mod tests {
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].key, "key1");
-        assert_eq!(result[0].value, "value2"); // `other`'s value should overwrite `current`'s value
+        assert_eq!(result[0].value, "value2");
     }
 }
