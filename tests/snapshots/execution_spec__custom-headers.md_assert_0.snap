@@ -6,8 +6,8 @@ expression: response
   "status": 200,
   "headers": {
     "content-type": "application/json",
-    "x-name": "John Doe",
-    "x-id": "1"
+    "x-id": "1",
+    "x-name": "John Doe"
   },
   "body": {
     "data": {

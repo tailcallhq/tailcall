@@ -125,7 +125,6 @@ phonenumber = "0.3.3"
 chrono = "0.4.35"
 
 [dev-dependencies]
-multimap = { version = "0.10.0", features = ["serde"] }
 criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"

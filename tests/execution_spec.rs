@@ -16,7 +16,6 @@ use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
-use multimap::MultiMap;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
@@ -193,7 +192,7 @@ pub mod test {
 static INIT: Once = Once::new();
 
 #[derive(Clone, Debug, Deserialize, Default)]
-struct CustomHeaders(MultiMap<String, String>);
+struct CustomHeaders(BTreeMap<String, Vec<String>>);
 
 impl Serialize for CustomHeaders {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -203,7 +202,7 @@ impl Serialize for CustomHeaders {
         let mut map = serializer.serialize_map(Some(self.0.len()))?;
         for (key, values) in &self.0 {
             if values.len() == 1 {
-                map.serialize_entry(key, &values[0])?;
+                map.serialize_entry(key, values[0].as_str())?;
             } else {
                 map.serialize_entry(key, &values)?;
             }
@@ -1039,10 +1038,10 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 .context(spec.path.to_str().unwrap().to_string())
                 .unwrap();
 
-            let mut headers: MultiMap<String, String> = MultiMap::new();
+            let mut headers: BTreeMap<String, Vec<String>> = BTreeMap::new();
 
             for (key, value) in response.headers() {
-                headers.insert(key.to_string(), value.to_str().unwrap().to_string());
+                headers.insert(key.to_string(), vec![value.to_str().unwrap().to_string()]);
             }
 
             let response: APIResponse = APIResponse {
