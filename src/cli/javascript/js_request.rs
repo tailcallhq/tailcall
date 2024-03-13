@@ -58,7 +58,7 @@ impl Display for Uri {
         let host = self.host.as_deref().unwrap_or("localhost");
         let port = self
             .port
-            .map(|p| format!(":{}", p.to_string()))
+            .map(|p| format!(":{}", p))
             .unwrap_or_default();
         let scheme = match self.scheme {
             Scheme::Https => "https",
