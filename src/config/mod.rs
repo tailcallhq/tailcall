@@ -2,6 +2,7 @@ pub use apollo::*;
 pub use config::*;
 pub use config_module::*;
 pub use expr::*;
+pub use headers::*;
 pub use key_values::*;
 pub use link::*;
 pub use reader_context::*;
