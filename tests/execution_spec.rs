@@ -1052,7 +1052,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         mock_http_client.assert_hits();
     }
 
-    tracing::info!("[{}] {} ... ok", spec.name, spec.path.display());
+    tracing::info!("{} ... ok", spec.path.display());
 }
 
 #[tokio::test]
