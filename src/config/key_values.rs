@@ -27,15 +27,16 @@ pub struct KeyValue {
 }
 
 pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
-    other.iter().fold(current.to_vec(), |mut acc, kv| {
-        let position = acc.iter().position(|x| x.key == kv.key);
-        if let Some(pos) = position {
-            acc[pos] = kv.clone();
-        } else {
-            acc.push(kv.clone());
-        };
-        acc
-    })
+    let mut map: BTreeMap<String, String> = current
+        .iter()
+        .map(|kv| (kv.key.clone(), kv.value.clone()))
+        .collect();
+    for kv in other {
+        map.entry(kv.key.clone()).or_insert(kv.value.clone());
+    }
+    map.into_iter()
+        .map(|(key, value)| KeyValue { key, value })
+        .collect()
 }
 
 impl Serialize for KeyValues {
