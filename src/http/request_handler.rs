@@ -39,18 +39,21 @@ fn update_request_count(telemetry: &Telemetry, route: &str, req: &Request<Body>)
         return;
     }
 
+    let observable_headers = &telemetry.request_headers;
     let headers = req.headers();
-    let mut attributes = Vec::with_capacity(headers.len() + 3);
+    let mut attributes = Vec::with_capacity(observable_headers.len() + 3);
 
     attributes.push(KeyValue::new(URL_PATH, req.uri().path().to_string()));
     attributes.push(KeyValue::new(HTTP_REQUEST_METHOD, req.method().to_string()));
     attributes.push(KeyValue::new(HTTP_ROUTE, route.to_string()));
 
-    for (name, value) in headers {
-        attributes.push(KeyValue::new(
-            format!("http.request.header.{}", name),
-            format!("{:?}", value),
-        ));
+    for name in observable_headers {
+        if let Some(value) = headers.get(name) {
+            attributes.push(KeyValue::new(
+                format!("http.request.header.{}", name),
+                format!("{:?}", value),
+            ));
+        }
     }
 
     REQUEST_COUNTER.add(1, &attributes);

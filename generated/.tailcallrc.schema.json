@@ -13,14 +13,6 @@
         "$ref": "#/definitions/Link"
       }
     },
-    "opentelemetry": {
-      "description": "Enable [opentelemetry](https://opentelemetry.io) support",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Telemetry"
-        }
-      ]
-    },
     "schema": {
       "description": "Specifies the entry points for query and mutation in the generated GraphQL schema.",
       "allOf": [
@@ -35,6 +27,14 @@
       "allOf": [
         {
           "$ref": "#/definitions/Server"
+        }
+      ]
+    },
+    "telemetry": {
+      "description": "Enable [opentelemetry](https://opentelemetry.io) support",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Telemetry"
         }
       ]
     },
@@ -1656,6 +1656,13 @@
               "type": "null"
             }
           ]
+        },
+        "requestHeaders": {
+          "description": "The list of headers that will be sent as additional attributes to telemetry exporters Be careful about **leaking sensitive information** from requests when enabling the headers that may contain sensitive data",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

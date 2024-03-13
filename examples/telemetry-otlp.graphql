@@ -12,6 +12,7 @@ schema
         ]
       }
     }
+    requestHeaders: ["user-id"]
   ) {
   query: Query
 }
