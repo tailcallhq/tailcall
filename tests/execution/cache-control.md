@@ -64,7 +64,8 @@
   response:
     status: 200
     headers:
-      Cache-Control: max-age=3600
+      Cache-Control:
+        - max-age=3600
     body:
       id: 1
       name: foo
@@ -77,7 +78,8 @@
   response:
     status: 200
     headers:
-      Cache-Control: max-age=7200
+      Cache-Control:
+        - max-age=7200
     body:
       id: 2
       name: bar
@@ -91,7 +93,8 @@
   response:
     status: 200
     headers:
-      Cache-Control: max-age=7200, private
+      Cache-Control:
+        - max-age=7200, private
     body:
       id: 3
       name: foobar
@@ -105,7 +108,8 @@
   response:
     status: 200
     headers:
-      Cache-Control: no-cache
+      Cache-Control:
+        - no-cache
     body:
       id: 4
       name: barfoo

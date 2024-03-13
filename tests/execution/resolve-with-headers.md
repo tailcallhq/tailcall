@@ -26,7 +26,8 @@ type Query {
   response:
     status: 200
     headers:
-      authorization: "1"
+      authorization:
+        - "1"
     body:
       id: 1
       title: post title

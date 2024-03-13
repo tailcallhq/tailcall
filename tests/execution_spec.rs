@@ -16,8 +16,10 @@ use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
+use multimap::MultiMap;
 use reqwest::header::{HeaderName, HeaderValue};
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint};
@@ -190,6 +192,26 @@ pub mod test {
 
 static INIT: Once = Once::new();
 
+#[derive(Clone, Debug, Deserialize, Default)]
+struct CustomHeaders(MultiMap<String, String>);
+
+impl Serialize for CustomHeaders {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for (key, values) in &self.0 {
+            if values.len() == 1 {
+                map.serialize_entry(key, &values[0])?;
+            } else {
+                map.serialize_entry(key, &values)?;
+            }
+        }
+        map.end()
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 enum Annotation {
@@ -218,7 +240,7 @@ struct APIResponse {
     #[serde(default = "default_status")]
     status: u16,
     #[serde(default)]
-    headers: BTreeMap<String, String>,
+    headers: CustomHeaders,
     #[serde(default)]
     body: serde_json::Value,
     #[serde(default)]
@@ -809,10 +831,12 @@ impl HttpIO for MockHttpClient {
         let mut response = Response { status: status_code, ..Default::default() };
 
         // Insert headers from the mock into the response.
-        for (key, value) in mock_response.0.headers {
+        for (key, values) in mock_response.0.headers.0 {
             let header_name = HeaderName::from_str(&key)?;
-            let header_value = HeaderValue::from_str(&value)?;
-            response.headers.insert(header_name, header_value);
+            for value in values {
+                let header_value = HeaderValue::from_str(&value)?;
+                response.headers.append(header_name.clone(), header_value);
+            }
         }
 
         // Special Handling for GRPC
@@ -1015,7 +1039,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 .context(spec.path.to_str().unwrap().to_string())
                 .unwrap();
 
-            let mut headers: BTreeMap<String, String> = BTreeMap::new();
+            let mut headers: MultiMap<String, String> = MultiMap::new();
 
             for (key, value) in response.headers() {
                 headers.insert(key.to_string(), value.to_str().unwrap().to_string());
@@ -1023,7 +1047,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
             let response: APIResponse = APIResponse {
                 status: response.status().clone().as_u16(),
-                headers,
+                headers: CustomHeaders(headers),
                 body: serde_json::from_slice(
                     &hyper::body::to_bytes(response.into_body()).await.unwrap(),
                 )

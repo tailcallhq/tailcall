@@ -5,8 +5,8 @@ expression: response
 {
   "status": 200,
   "headers": {
-    "cache-control": "no-cache, private",
-    "content-type": "application/json"
+    "content-type": "application/json",
+    "cache-control": "no-cache, private"
   },
   "body": {
     "data": {

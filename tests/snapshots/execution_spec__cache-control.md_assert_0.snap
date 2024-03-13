@@ -5,8 +5,8 @@ expression: response
 {
   "status": 200,
   "headers": {
-    "cache-control": "max-age=3600",
-    "content-type": "application/json"
+    "content-type": "application/json",
+    "cache-control": "max-age=3600"
   },
   "body": {
     "data": {
