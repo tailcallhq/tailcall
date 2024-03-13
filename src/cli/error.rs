@@ -385,8 +385,7 @@ mod tests {
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
-        let cli_error_copy = cli_error.clone();
-        let anyhow_error: anyhow::Error = cli_error_copy.into();
+        let anyhow_error: anyhow::Error = cli_error.clone().into();
         let error = CLIError::from(anyhow_error);
         let expected = cli_error;
 
@@ -412,8 +411,8 @@ mod tests {
     fn test_generic_error_downcasting() {
         let anyhow_error = anyhow::anyhow!("Some error msg");
         let error: CLIError = CLIError::from(anyhow_error);
-        let expected = r"|Some error msg".strip_margin();
+        let expected = CLIError::new("Some error msg");
 
-        assert_eq!(error.to_string(), expected);
+        assert_eq!(error, expected);
     }
 }
