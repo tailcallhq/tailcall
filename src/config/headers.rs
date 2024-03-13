@@ -11,6 +11,8 @@ pub struct Headers {
     /// upstream services. @default `false`.
     pub cache_control: Option<bool>,
 
+    /// `setCookies` when enabled stores `set-cookie` headers
+    /// and all the response will be sent with the headers.
     #[serde(default, skip_serializing_if = "is_default")]
     pub set_cookies: Option<bool>,
 }

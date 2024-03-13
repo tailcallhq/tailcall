@@ -1217,6 +1217,7 @@
           ]
         },
         "setCookies": {
+          "description": "`setCookies` when enabled stores `set-cookie` headers and all the response will be sent with the headers.",
           "type": [
             "boolean",
             "null"

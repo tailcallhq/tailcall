@@ -44,16 +44,6 @@ impl RequestContext {
         *self.cache_public.lock().unwrap()
     }
 
-    /*    pub fn set_cookie_headers(&self, headers: &HeaderMap) {
-        if let Some(cookie_headers) = &self.cookie_headers {
-            for (k, v) in headers {
-                if k.as_str().to_lowercase().contains("set-cookie") {
-                    cookie_headers.lock().unwrap().insert(k.clone(), v.clone());
-                }
-            }
-        }
-    }*/
-
     pub fn set_min_max_age(&self, max_age: i32) {
         let min_max_age_lock = self.get_min_max_age();
         match min_max_age_lock {
@@ -104,12 +94,6 @@ impl RequestContext {
 
 impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
-        /*let set_cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
-                    Some(Arc::new(Mutex::new(HeaderMap::new())))
-                } else {
-                    None
-                };
-        */
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),

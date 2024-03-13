@@ -577,6 +577,10 @@ input Headers {
   value is the least of the values received from upstream services. @default `false`.
   """
   cacheControl: Boolean
+  """
+  `setCookies` when enabled stores `set-cookie` headers and all the response will be 
+  sent with the headers.
+  """
   setCookies: Boolean
 }
 """
