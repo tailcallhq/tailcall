@@ -39,7 +39,7 @@ pub struct Uri {
 }
 
 impl From<&reqwest::Url> for Uri {
-    fn from(value: &reqwest::Url) -> Self {
+    fn from(value: &reqwest::Url) -> Self {        
         Self {
             path: value.path().to_string(),
             query: value.query_pairs().into_owned().collect(),
@@ -56,7 +56,10 @@ impl From<&reqwest::Url> for Uri {
 impl Display for Uri {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let host = self.host.as_deref().unwrap_or("localhost");
-        let port = self.port.map(|p| p.to_string()).unwrap_or_default();
+        let port = self
+            .port
+            .map(|p| format!(":{}", p.to_string()))
+            .unwrap_or_default();
         let scheme = match self.scheme {
             Scheme::Https => "https",
             _ => "http",
@@ -68,7 +71,12 @@ impl Display for Uri {
             .map(|(k, v)| format!("{}={}", k, v))
             .collect::<Vec<String>>()
             .join("&");
-        write!(f, "{}://{}:{}{}?{}", scheme, host, port, path, query)
+
+        if !query.is_empty() {
+            write!(f, "{}://{}:{}{}?{}", scheme, host, port, path, query)
+        } else {
+            write!(f, "{}://{}{}{}", scheme, host, port, path)
+        }
     }
 }
 
