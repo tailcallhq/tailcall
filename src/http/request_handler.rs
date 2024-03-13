@@ -174,17 +174,17 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             graphql_request::<T>(req, app_ctx.as_ref()).await
         }
         hyper::Method::POST
-        if app_ctx.blueprint.server.enable_showcase
-            && req.uri().path() == "/showcase/graphql" =>
-            {
-                let app_ctx =
-                    match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
-                        Ok(app_ctx) => app_ctx,
-                        Err(res) => return Ok(res),
-                    };
+            if app_ctx.blueprint.server.enable_showcase
+                && req.uri().path() == "/showcase/graphql" =>
+        {
+            let app_ctx =
+                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
+                    Ok(app_ctx) => app_ctx,
+                    Err(res) => return Ok(res),
+                };
 
-                graphql_request::<T>(req, &app_ctx).await
-            }
+            graphql_request::<T>(req, &app_ctx).await
+        }
 
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =

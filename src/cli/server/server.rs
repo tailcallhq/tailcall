@@ -40,8 +40,7 @@ impl Server {
             self.config_module.extensions.endpoints.clone(),
         ));
 
-        let _ =
-            validate_operations_pvt(&blueprint, &self.config_module.extensions.endpoints).await?;
+        validate_operations_pvt(&blueprint, &self.config_module.extensions.endpoints).await?;
 
         init_opentelemetry(
             blueprint.opentelemetry.clone(),
@@ -81,7 +80,7 @@ async fn validate_operations_pvt(
         let operation_qry = OperationQuery::new(req, String::new())?; // TODO fix trace
         operations.push(operation_qry);
     }
-    let _ = crate::blueprint::validate_operations(blueprint, operations)
+    crate::blueprint::validate_operations(blueprint, operations)
         .await
         .to_result()?;
     Ok(())
