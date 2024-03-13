@@ -1215,6 +1215,12 @@
             "boolean",
             "null"
           ]
+        },
+        "setCookies": {
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },

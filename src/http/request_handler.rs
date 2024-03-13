@@ -69,7 +69,22 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
     let headers = create_allowed_headers(req.headers(), &allowed);
-    RequestContext::from(app_ctx).req_headers(headers)
+    let mut req_ctx = RequestContext::from(app_ctx).req_headers(headers);
+    if app_ctx.blueprint.server.enable_set_cookie_header {
+        let cookie_headers = create_cookie_headers(req.headers());
+        req_ctx = req_ctx.cookie_headers(cookie_headers);
+    }
+    req_ctx
+}
+
+fn create_cookie_headers(headers: &HeaderMap) -> HeaderMap {
+    let mut map = HeaderMap::new();
+    for (k, v) in headers {
+        if k.as_str().to_lowercase().contains("set-cookie") {
+            map.insert(k.clone(), v.clone());
+        }
+    }
+    map
 }
 
 fn update_cache_control_header(

@@ -19,7 +19,7 @@ pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
     pub req_headers: HeaderMap,
-    pub set_cookie_headers: HeaderMap,
+    pub cookie_headers: HeaderMap,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
@@ -43,6 +43,16 @@ impl RequestContext {
     pub fn is_cache_public(&self) -> Option<bool> {
         *self.cache_public.lock().unwrap()
     }
+
+    /*    pub fn set_cookie_headers(&self, headers: &HeaderMap) {
+        if let Some(cookie_headers) = &self.cookie_headers {
+            for (k, v) in headers {
+                if k.as_str().to_lowercase().contains("set-cookie") {
+                    cookie_headers.lock().unwrap().insert(k.clone(), v.clone());
+                }
+            }
+        }
+    }*/
 
     pub fn set_min_max_age(&self, max_age: i32) {
         let min_max_age_lock = self.get_min_max_age();
@@ -94,11 +104,17 @@ impl RequestContext {
 
 impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
+        /*let set_cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
+                    Some(Arc::new(Mutex::new(HeaderMap::new())))
+                } else {
+                    None
+                };
+        */
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
             req_headers: HeaderMap::new(),
-            set_cookie_headers: HeaderMap::new(),
+            cookie_headers: HeaderMap::new(),
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
@@ -129,7 +145,7 @@ mod test {
             let upstream = Upstream::try_from(upstream).unwrap();
             RequestContext {
                 req_headers: HeaderMap::new(),
-                set_cookie_headers: HeaderMap::new(),
+                cookie_headers: HeaderMap::new(),
                 server,
                 runtime: crate::runtime::test::init(None),
                 upstream,
