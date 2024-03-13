@@ -2,9 +2,7 @@
 
 ###### check identity
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream(baseURL: "http://abc.com") {
   query: Query
 }

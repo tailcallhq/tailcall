@@ -6,7 +6,6 @@ use std::cell::Cell;
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
 use tailcall::tracing::default_tracing_tailcall;
-use tailcall::valid::ValidationError;
 use tracing::subscriber::DefaultGuard;
 
 #[global_allocator]
@@ -47,24 +46,7 @@ fn main() -> anyhow::Result<()> {
         Ok(_) => {}
         Err(error) => {
             // Ensure all errors are converted to CLIErrors before being printed.
-            let cli_error = match error.downcast::<CLIError>() {
-                Ok(cli_error) => cli_error,
-                Err(error) => {
-                    // Convert other errors to CLIError
-                    let cli_error = match error.downcast::<ValidationError<String>>() {
-                        Ok(validation_error) => CLIError::from(validation_error),
-                        Err(error) => {
-                            let sources = error
-                                .source()
-                                .map(|error| vec![CLIError::new(error.to_string().as_str())])
-                                .unwrap_or_default();
-
-                            CLIError::new(&error.to_string()).caused_by(sources)
-                        }
-                    };
-                    cli_error
-                }
-            };
+            let cli_error: CLIError = error.into();
             tracing::error!("{}", cli_error.color(true));
             std::process::exit(exitcode::CONFIG);
         }

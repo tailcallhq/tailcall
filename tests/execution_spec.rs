@@ -473,97 +473,99 @@ impl ExecutionSpec {
                             ));
                         }
                     } else if heading.depth == 4 {
-                        // Parse following code block
-                        let (content, lang) = if let Some(Node::Code(code)) = children.next() {
-                            (code.value.to_owned(), code.lang.to_owned())
-                        } else {
-                            return Err(anyhow!("Unexpected non-code block node or EOF after component definition in {:?}", path));
-                        };
-
-                        // Parse component name
-                        if let Some(Node::Text(text)) = heading.children.first() {
-                            let name = text.value.as_str();
-
-                            if let Some(name) = name.strip_prefix("file:") {
-                                if files.insert(name.to_string(), content).is_some() {
-                                    return Err(anyhow!(
-                                        "Double declaration of file {:?} in {:#?}",
-                                        name,
-                                        path
-                                    ));
-                                }
-                            } else {
-                                let lang = match lang {
-                                    Some(x) => Ok(x),
-                                    None => Err(anyhow!(
-                                        "Unexpected code block with no specific language in {:?}",
-                                        path
-                                    )),
-                                }?;
-
-                                let source = Source::from_str(&lang)?;
-
-                                match name {
-                                    "server:" => {
-                                        // Server configs are only parsed if the test isn't skipped.
-                                        server.push((source, content));
-                                    }
-                                    "mock:" => {
-                                        if mock.is_none() {
-                                            mock = match source {
-                                                Source::Json => Ok(serde_json::from_str(&content)?),
-                                                Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                                _ => Err(anyhow!("Unexpected language in mock block in {:?} (only JSON and YAML are supported)", path)),
-                                            }?;
-                                        } else {
-                                            return Err(anyhow!("Unexpected number of mock blocks in {:?} (only one is allowed)", path));
-                                        }
-                                    }
-                                    "env:" => {
-                                        if env.is_none() {
-                                            env = match source {
-                                                Source::Json => Ok(serde_json::from_str(&content)?),
-                                                Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                                _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
-                                            }?;
-                                        } else {
-                                            return Err(anyhow!("Unexpected number of env blocks in {:?} (only one is allowed)", path));
-                                        }
-                                    }
-                                    "assert:" => {
-                                        if assert.is_none() {
-                                            assert = match source {
-                                                Source::Json => Ok(serde_json::from_str(&content)?),
-                                                Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                                _ => Err(anyhow!("Unexpected language in assert block in {:?} (only JSON and YAML are supported)", path)),
-                                            }?;
-                                        } else {
-                                            return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
-                                        }
-                                    }
-                                    _ => {
-                                        return Err(anyhow!(
-                                            "Unexpected component {:?} in {:?}: {:#?}",
-                                            name,
-                                            path,
-                                            heading
-                                        ));
-                                    }
-                                }
-                            }
-                        } else {
-                            return Err(anyhow!(
-                                "Unexpected content of level 4 heading in {:?}: {:#?}",
-                                path,
-                                heading
-                            ));
-                        }
                     } else {
                         return Err(anyhow!(
                             "Unexpected level {} heading in {:?}: {:#?}",
                             heading.depth,
                             path,
                             heading
+                        ));
+                    }
+                }
+                Node::Code(code) => {
+                    // Parse following code block
+                    let (content, lang, meta) = {
+                        (
+                            code.value.to_owned(),
+                            code.lang.to_owned(),
+                            code.meta.to_owned(),
+                        )
+                    };
+                    if let Some(meta_str) = meta.as_ref().filter(|s| s.contains('@')) {
+                        let temp_cleaned_meta = meta_str.replace('@', "");
+                        let name: &str = &temp_cleaned_meta;
+                        if let Some(name) = name.strip_prefix("file:") {
+                            if files.insert(name.to_string(), content).is_some() {
+                                return Err(anyhow!(
+                                    "Double declaration of file {:?} in {:#?}",
+                                    name,
+                                    path
+                                ));
+                            }
+                        } else {
+                            let lang = match lang {
+                                Some(x) => Ok(x),
+                                None => Err(anyhow!(
+                                    "Unexpected code block with no specific language in {:?}",
+                                    path
+                                )),
+                            }?;
+
+                            let source = Source::from_str(&lang)?;
+
+                            match name {
+                                "server" => {
+                                    // Server configs are only parsed if the test isn't skipped.
+                                    server.push((source, content));
+                                }
+                                "mock" => {
+                                    if mock.is_none() {
+                                        mock = match source {
+                                            Source::Json => Ok(serde_json::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            _ => Err(anyhow!("Unexpected language in mock block in {:?} (only JSON and YAML are supported)", path)),
+                                        }?;
+                                    } else {
+                                        return Err(anyhow!("Unexpected number of mock blocks in {:?} (only one is allowed)", path));
+                                    }
+                                }
+                                "env" => {
+                                    if env.is_none() {
+                                        env = match source {
+                                            Source::Json => Ok(serde_json::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
+                                        }?;
+                                    } else {
+                                        return Err(anyhow!("Unexpected number of env blocks in {:?} (only one is allowed)", path));
+                                    }
+                                }
+                                "assert" => {
+                                    if assert.is_none() {
+                                        assert = match source {
+                                            Source::Json => Ok(serde_json::from_str(&content)?),
+                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                            _ => Err(anyhow!("Unexpected language in assert block in {:?} (only JSON and YAML are supported)", path)),
+                                        }?;
+                                    } else {
+                                        return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
+                                    }
+                                }
+                                _ => {
+                                    return Err(anyhow!(
+                                        "Unexpected component {:?} in {:?}: {:#?}",
+                                        name,
+                                        path,
+                                        meta
+                                    ));
+                                }
+                            }
+                        }
+                    } else {
+                        return Err(anyhow!(
+                            "Unexpected content of code in {:?}: {:#?}",
+                            path,
+                            meta
                         ));
                     }
                 }
@@ -1050,7 +1052,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         mock_http_client.assert_hits();
     }
 
-    tracing::info!("[{}] {} ... ok", spec.name, spec.path.display());
+    tracing::info!("{} ... ok", spec.path.display());
 }
 
 #[tokio::test]

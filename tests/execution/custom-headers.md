@@ -1,20 +1,20 @@
 # Custom Headers
 
-#### server:
-
-```json
+```json @server
 {
   "server": {
-    "responseHeaders": [
-      {
-        "key": "x-id",
-        "value": "1"
-      },
-      {
-        "key": "x-name",
-        "value": "John Doe"
-      }
-    ]
+    "headers": {
+      "custom": [
+        {
+          "key": "x-id",
+          "value": "1"
+        },
+        {
+          "key": "x-name",
+          "value": "John Doe"
+        }
+      ]
+    }
   },
   "upstream": {},
   "schema": {
@@ -37,9 +37,7 @@
 }
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

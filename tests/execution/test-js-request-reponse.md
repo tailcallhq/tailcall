@@ -1,10 +1,8 @@
 # Js Request Response Hello World
 
-#### file:test.js
-
-```js
+```js @file:test.js
 function onRequest({request}) {
-  if (request.url.endsWith("/hello")) {
+  if (request.uri.path.endsWith("/hello")) {
     return {
       response: {
         status: 200,
@@ -14,22 +12,17 @@ function onRequest({request}) {
         body: JSON.stringify("hello world"),
       },
     }
-  } else if (request.url.endsWith("/hi")) {
-    return {
-      request: {
-        url: "http://localhost:3000/bye",
-        method: "GET",
-      },
-    }
+  } else if (request.uri.path.endsWith("/hi")) {
+    request.uri.path = "/bye"
+    console.log({request})
+    return {request}
   } else {
     return {request}
   }
 }
 ```
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server @link(type: Script, src: "test.js") {
   query: Query
 }
@@ -40,9 +33,7 @@ type Query {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://localhost:3000/bye
@@ -51,9 +42,7 @@ type Query {
     body: hello world
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

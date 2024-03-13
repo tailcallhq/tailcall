@@ -248,12 +248,6 @@ directive @server(
   """
   batchRequests: Boolean
   """
-  `cacheControlHeader` sends `Cache-Control` headers in responses when activated. The 
-  `max-age` value is the least of the values received from upstream services. @default 
-  `false`.
-  """
-  cacheControlHeader: Boolean
-  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
@@ -263,6 +257,11 @@ directive @server(
   query development and testing. @default `false`.
   """
   graphiql: Boolean
+  """
+  `headers` contains key-value pairs that are included as default headers in server 
+  responses, allowing for consistent header management across all responses.
+  """
+  headers: Headers
   """
   `hostname` sets the server hostname.
   """
@@ -286,12 +285,6 @@ directive @server(
   errors from invalid queries. Can be disabled for performance. @default `false`.
   """
   queryValidation: Boolean
-  """
-  The `responseHeaders` are key-value pairs included in every server response. Useful 
-  for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
-  or additional headers for downstream services.
-  """
-  responseHeaders: [KeyValue]
   """
   `responseValidation` Tailcall automatically validates responses from upstream services 
   using inferred schema. @default `false`.
@@ -578,6 +571,19 @@ input Grpc {
   """
   method: String!
 }
+input Headers {
+  """
+  `cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` 
+  value is the least of the values received from upstream services. @default `false`.
+  """
+  cacheControl: Boolean
+  """
+  `headers` are key-value pairs included in every server response. Useful for setting 
+  headers like `Access-Control-Allow-Origin` for cross-origin requests or additional 
+  headers for downstream services.
+  """
+  custom: [KeyValue]
+}
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
 if you add the @http operator to the `users` field of the Query type with a path 
@@ -735,9 +741,21 @@ input Schema {
   Arr: Schema
   Opt: Schema
 }
+"""
+A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
+"""
 scalar Date
+"""
+field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
 scalar Email
+"""
+A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
+"""
 scalar PhoneNumber
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
+"""
 scalar Url
 scalar JSON
 
