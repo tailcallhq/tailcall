@@ -437,7 +437,8 @@ jobs:
 
       - name: Check if the label exists
         id: check_label
-        run: echo ::set-output name=label_exists::${{ contains(github.event.pull_request.labels.*.name, 'ci: build all') }}
+        if: contains(github.event.pull_request.labels.*.name, 'ci: build all')
+        run: echo "Label 'ci: build all' exists"
 
       - name: Build on ${{ runner.os }}
         run: |
@@ -546,7 +547,8 @@ jobs:
           access: public
       - name: Check if the label exists
         id: check_label
-        run: echo ::set-output name=label_exists::${{ contains(github.event.pull_request.labels.*.name, 'ci: build all') }}
+        if: contains(github.event.pull_request.labels.*.name, 'ci: build all')
+        run: echo "Label 'ci: build all' exists"
 
       - name: Build on ${{ runner.os }}
         run: |
