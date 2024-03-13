@@ -221,11 +221,5 @@
     "color": "F9D0C4",
     "description": "Runs benchmarks",
     "aliases": ["ci:benchmark"]
-  },
-  {
-    "name": "ci: build all",
-    "color": "F9D0C4", 
-    "description": "Build on all supported platforms.",
-    "aliases": ["ci: build all"]
   }
 ]
