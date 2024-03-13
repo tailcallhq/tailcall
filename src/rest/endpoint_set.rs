@@ -8,6 +8,34 @@ pub struct EndpointSet {
     endpoints: Vec<Endpoint>,
 }
 
+impl Iterator for EndpointSet {
+    type Item = Endpoint;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.endpoints.pop()
+    }
+}
+
+pub struct EndpointSetIter<'a> {
+    inner: std::slice::Iter<'a, Endpoint>,
+}
+
+impl<'a> IntoIterator for &'a EndpointSet {
+    type Item = &'a Endpoint;
+    type IntoIter = EndpointSetIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        EndpointSetIter { inner: self.endpoints.iter() }
+    }
+}
+impl<'a> Iterator for EndpointSetIter<'a> {
+    type Item = &'a Endpoint;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+}
+
 impl From<Endpoint> for EndpointSet {
     fn from(endpoint: Endpoint) -> Self {
         let mut set = EndpointSet::default();

@@ -7,10 +7,12 @@ use tokio::sync::oneshot::{self};
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
-use crate::blueprint::{Blueprint, Http};
+use crate::blueprint::{Blueprint, Http, OperationQuery};
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
 use crate::config::ConfigModule;
+use crate::rest::EndpointSet;
+use crate::valid::Validator;
 
 pub struct Server {
     config_module: ConfigModule,
@@ -35,8 +37,11 @@ impl Server {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
         let server_config = Arc::new(ServerConfig::new(
             blueprint.clone(),
-            self.config_module.extensions.endpoints,
+            self.config_module.extensions.endpoints.clone(),
         ));
+
+        let _ =
+            validate_operations_pvt(&blueprint, &self.config_module.extensions.endpoints).await?;
 
         init_opentelemetry(
             blueprint.opentelemetry.clone(),
@@ -63,4 +68,21 @@ impl Server {
 
         result
     }
+}
+
+async fn validate_operations_pvt(
+    blueprint: &Blueprint,
+    endpoint_set: &EndpointSet,
+) -> anyhow::Result<()> {
+    let mut operations = vec![];
+
+    for endpoint in endpoint_set {
+        let req = endpoint.clone().into_request();
+        let operation_qry = OperationQuery::new(req, String::new())?; // TODO fix trace
+        operations.push(operation_qry);
+    }
+    let _ = crate::blueprint::validate_operations(blueprint, operations)
+        .await
+        .to_result()?;
+    Ok(())
 }

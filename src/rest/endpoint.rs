@@ -10,6 +10,7 @@ use super::path::Path;
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
 use super::Request;
+use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 
@@ -72,6 +73,12 @@ impl Endpoint {
         }
 
         Ok(endpoints)
+    }
+
+    pub fn into_request(self) -> GraphQLRequest {
+        let mut req = async_graphql::Request::new("");
+        req.set_parsed_query(self.doc.clone());
+        GraphQLRequest(req)
     }
 
     pub fn matches<'a>(&'a self, request: &Request) -> Option<PartialRequest<'a>> {

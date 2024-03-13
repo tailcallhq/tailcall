@@ -13,8 +13,7 @@ pub struct OperationQuery {
 }
 
 impl OperationQuery {
-    pub fn new(query: String, trace: String) -> anyhow::Result<Self> {
-        let query = serde_json::from_str(query.as_str())?;
+    pub fn new(query: GraphQLRequest, trace: String) -> anyhow::Result<Self> {
         Ok(Self { query, file: trace })
     }
 
