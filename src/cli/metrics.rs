@@ -6,7 +6,7 @@ fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
     let meter = opentelemetry::global::meter("cache");
     let cache = runtime.cache.clone();
     let counter = meter
-        .f64_observable_counter("hit_rate")
+        .f64_observable_counter("cache.hit_rate")
         .with_description("Cache hit rate ratio")
         .init();
 
@@ -27,7 +27,7 @@ fn process_resources_metrics() -> Result<()> {
 
 pub fn init_metrics(runtime: &TargetRuntime) -> Result<()> {
     cache_metrics(runtime)?;
-    process_resources_metrics()?;
+    // process_resources_metrics()?;
 
     Ok(())
 }
