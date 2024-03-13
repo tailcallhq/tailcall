@@ -98,7 +98,12 @@ impl Endpoint {
         variables = merge_variables(variables, path);
         variables = merge_variables(variables, query);
 
-        Some(PartialRequest { body: self.body.as_ref(), doc: &self.doc, variables, path: &self.path })
+        Some(PartialRequest {
+            body: self.body.as_ref(),
+            doc: &self.doc,
+            variables,
+            path: &self.path,
+        })
     }
 }
 
@@ -183,10 +188,7 @@ mod tests {
         assert_eq!(endpoint.method, Method::POST);
         assert_eq!(
             endpoint.path.segments,
-            vec![
-                Segment::lit("foo"),
-                Segment::param(TypedVariable::int("a")),
-            ]
+            vec![Segment::lit("foo"), Segment::param(TypedVariable::int("a")),]
         );
         assert_eq!(
             endpoint.query_params,

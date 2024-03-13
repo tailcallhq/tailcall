@@ -38,10 +38,7 @@ impl Server {
             self.config_module.extensions.endpoints,
         ));
 
-        init_opentelemetry(
-            blueprint.telemetry.clone(),
-            &server_config.app_ctx.runtime,
-        )?;
+        init_opentelemetry(blueprint.telemetry.clone(), &server_config.app_ctx.runtime)?;
 
         match blueprint.server.http.clone() {
             Http::HTTP2 { cert, key } => {

@@ -110,9 +110,10 @@ impl TelemetryExporter {
 /// valuable insights into the performance and behavior of their applications.
 pub struct Telemetry {
     pub export: Option<TelemetryExporter>,
-    /// The list of headers that will be sent as additional attributes to telemetry exporters
-    /// Be careful about **leaking sensitive information** from requests when enabling
-    /// the headers that may contain sensitive data
+    /// The list of headers that will be sent as additional attributes to
+    /// telemetry exporters Be careful about **leaking sensitive
+    /// information** from requests when enabling the headers that may
+    /// contain sensitive data
     #[serde(default, skip_serializing_if = "is_default")]
     pub request_headers: Vec<String>,
 }

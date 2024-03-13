@@ -8,7 +8,8 @@ use async_graphql::ServerError;
 use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use once_cell::sync::Lazy;
-use opentelemetry::{metrics::Counter, KeyValue};
+use opentelemetry::metrics::Counter;
+use opentelemetry::KeyValue;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE, URL_PATH};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
@@ -16,12 +17,9 @@ use tracing::Instrument;
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
-use crate::blueprint::telemetry::TelemetryExporter;
+use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::blueprint::telemetry::{Telemetry, TelemetryExporter};
 use crate::config::{PrometheusExporter, PrometheusFormat};
-use crate::{
-    async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse},
-    blueprint::telemetry::Telemetry,
-};
 
 const API_URL_PREFIX: &str = "/api";
 
@@ -205,7 +203,7 @@ async fn handle_rest_apis(
             response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
             let mut resp = response.to_response()?;
             update_response_headers(&mut resp, app_ctx.as_ref());
-            return Ok(resp);
+            Ok(resp)
         }
         .instrument(span)
         .await;

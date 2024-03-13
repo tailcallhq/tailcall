@@ -61,7 +61,6 @@ When implementing any functionality that requires observability consider the fol
 - Due to limitations of tracing libraries span names could only be defined as static strings. This could be solved by specifying an additional field with special name `otel.name` (for details refer `tracing-opentelemetry` docs).
 - The naming of the attributes should follow the opentelemetry's [semantic convention](https://opentelemetry.io/docs/concepts/semantic-conventions/). Existing constants can be obtained with the [opentelemetry_semantic_conventions](https://docs.rs/opentelemetry-semantic-conventions/latest/opentelemetry_semantic_conventions/index.html) crate.
 
-
 ## Benchmarks Comparison
 
 ### Criterion Benchmarks
