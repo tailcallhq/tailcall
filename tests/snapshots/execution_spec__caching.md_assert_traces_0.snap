@@ -13,6 +13,9 @@ expression: opentelemetry.get_traces().unwrap()
     "name": "fieldCache"
   },
   {
-    "name": "http://localhost:8080/graphql"
+    "name": "graphql_request"
+  },
+  {
+    "name": "handle_request"
   }
 ]

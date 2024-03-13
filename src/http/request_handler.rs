@@ -9,16 +9,19 @@ use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use once_cell::sync::Lazy;
 use opentelemetry::{metrics::Counter, KeyValue};
-use opentelemetry_semantic_conventions::trace;
+use opentelemetry_semantic_conventions::trace::{self, HTTP_REQUEST_METHOD, HTTP_ROUTE, URL_PATH};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 use tracing::Instrument;
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
-use crate::{async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse}, blueprint::telemetry::Telemetry};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
+use crate::{
+    async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse},
+    blueprint::telemetry::Telemetry,
+};
 
 const API_URL_PREFIX: &str = "/api";
 
@@ -31,19 +34,17 @@ static REQUEST_COUNTER: Lazy<Counter<u64>> = Lazy::new(|| {
         .init()
 });
 
-fn update_request_count(telemetry: &Telemetry, req: &Request<Body>) {
+fn update_request_count(telemetry: &Telemetry, route: &str, req: &Request<Body>) {
     if telemetry.export.is_none() {
         return;
     }
 
     let headers = req.headers();
-    let mut attributes = Vec::with_capacity(headers.len() + 2);
+    let mut attributes = Vec::with_capacity(headers.len() + 3);
 
-    attributes.push(KeyValue::new(trace::URL_PATH, req.uri().path().to_string()));
-    attributes.push(KeyValue::new(
-        trace::HTTP_REQUEST_METHOD,
-        req.method().to_string(),
-    ));
+    attributes.push(KeyValue::new(URL_PATH, req.uri().path().to_string()));
+    attributes.push(KeyValue::new(HTTP_REQUEST_METHOD, req.method().to_string()));
+    attributes.push(KeyValue::new(HTTP_ROUTE, route.to_string()));
 
     for (name, value) in headers {
         attributes.push(KeyValue::new(
@@ -128,11 +129,12 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, app_ctx:
     }
 }
 
-#[tracing::instrument(skip_all, fields(otel.name = "POST /graphql"))]
+#[tracing::instrument(skip_all)]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
 ) -> Result<Response<Body>> {
+    update_request_count(&app_ctx.blueprint.opentelemetry, "/graphql", &req);
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
@@ -180,15 +182,30 @@ async fn handle_rest_apis(
     *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
-        let graphql_request = p_request.into_request(request).await?;
-        let mut response = graphql_request
-            .data(req_ctx.clone())
-            .execute(&app_ctx.schema)
-            .await;
-        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
-        let mut resp = response.to_response()?;
-        update_response_headers(&mut resp, app_ctx.as_ref());
-        return Ok(resp);
+        update_request_count(
+            &app_ctx.blueprint.opentelemetry,
+            p_request.path.as_str(),
+            &request,
+        );
+        let span = tracing::info_span!(
+            "handle_rest_apis",
+            otel.name = format!("{} {}", request.method(), p_request.path.as_str()),
+            { HTTP_REQUEST_METHOD } = %request.method(),
+            { HTTP_ROUTE } = p_request.path.as_str()
+        );
+        return async {
+            let graphql_request = p_request.into_request(request).await?;
+            let mut response = graphql_request
+                .data(req_ctx.clone())
+                .execute(&app_ctx.schema)
+                .await;
+            response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
+            let mut resp = response.to_response()?;
+            update_response_headers(&mut resp, app_ctx.as_ref());
+            return Ok(resp);
+        }
+        .instrument(span)
+        .await;
     }
 
     not_found()
@@ -199,8 +216,6 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    update_request_count(&app_ctx.blueprint.opentelemetry, &req);
-
     if req.uri().path().starts_with(API_URL_PREFIX) {
         return handle_rest_apis(req, app_ctx).await;
     }
