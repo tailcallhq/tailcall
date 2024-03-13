@@ -2,11 +2,14 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql::dynamic;
+use async_graphql_extension_apollo_tracing::register::register_dynamic;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
+use crate::blueprint::telemetry::TelemetryExporter::Apollo;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
@@ -33,10 +36,9 @@ impl Server {
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
-        let server_config = Arc::new(ServerConfig::new(
-            blueprint.clone(),
-            self.config_module.extensions.endpoints,
-        ));
+        let server_config =
+            ServerConfig::new(blueprint.clone(), self.config_module.extensions.endpoints).await?;
+        let server_config = Arc::new(server_config);
 
         init_opentelemetry(
             blueprint.opentelemetry.clone(),

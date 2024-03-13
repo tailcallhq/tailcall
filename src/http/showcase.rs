@@ -61,11 +61,8 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    Ok(Ok(AppContext::new(
-        blueprint,
-        runtime,
-        EndpointSet::default(),
-    )))
+    let app_ctx = AppContext::new(blueprint, runtime, EndpointSet::default()).await?;
+    Ok(Ok(app_ctx))
 }
 
 #[cfg(test)]

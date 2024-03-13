@@ -127,7 +127,8 @@ chrono = "0.4.35"
 
 # TODO: move this flag into `cli`, like other dependencies.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-async-graphql-extension-apollo-tracing = { git = "https://github.com/shashitnak/async_graphql_apollo_studio_extension/", branch = "rust-protobuf", optional = true }
+async-graphql-extension-apollo-tracing = { path = "../async_graphql_apollo_studio_extension", optional = true }
+#async-graphql-extension-apollo-tracing = { git = "https://github.com/shashitnak/async_graphql_apollo_studio_extension/", branch = "rust-protobuf", optional = true }
 
 [patch.crates-io]
 # TODO: update this once https://github.com/haixuanTao/opentelemetry-system-metrics/pull/2 gets merged

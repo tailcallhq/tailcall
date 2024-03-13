@@ -2,9 +2,11 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
+use async_graphql_extension_apollo_tracing::register::register_dynamic;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
+use crate::blueprint::telemetry::TelemetryExporter;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
@@ -26,7 +28,11 @@ pub struct AppContext {
 
 impl AppContext {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
+    pub async fn new(
+        mut blueprint: Blueprint,
+        runtime: TargetRuntime,
+        endpoints: EndpointSet,
+    ) -> anyhow::Result<Self> {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -107,7 +113,20 @@ impl AppContext {
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
 
-        AppContext {
+        if let Some(TelemetryExporter::Apollo(ref apollo)) = blueprint.opentelemetry.export {
+            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
+            register_dynamic(
+                &apollo.api_key,
+                &schema,
+                &graph_id,
+                &variant,
+                &apollo.user_version,
+                &apollo.platform,
+            )
+            .await?;
+        }
+
+        Ok(AppContext {
             schema,
             runtime,
             blueprint,
@@ -115,7 +134,7 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
-        }
+        })
     }
 
     pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
