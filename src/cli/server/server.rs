@@ -39,7 +39,7 @@ impl Server {
         ));
 
         init_opentelemetry(
-            blueprint.opentelemetry.clone(),
+            blueprint.telemetry.clone(),
             &server_config.app_ctx.runtime,
         )?;
 

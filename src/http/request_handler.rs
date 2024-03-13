@@ -9,7 +9,7 @@ use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use once_cell::sync::Lazy;
 use opentelemetry::{metrics::Counter, KeyValue};
-use opentelemetry_semantic_conventions::trace::{self, HTTP_REQUEST_METHOD, HTTP_ROUTE, URL_PATH};
+use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE, URL_PATH};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 use tracing::Instrument;
@@ -134,7 +134,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
 ) -> Result<Response<Body>> {
-    update_request_count(&app_ctx.blueprint.opentelemetry, "/graphql", &req);
+    update_request_count(&app_ctx.blueprint.telemetry, "/graphql", &req);
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
@@ -183,7 +183,7 @@ async fn handle_rest_apis(
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
         update_request_count(
-            &app_ctx.blueprint.opentelemetry,
+            &app_ctx.blueprint.telemetry,
             p_request.path.as_str(),
             &request,
         );
@@ -242,7 +242,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
-                app_ctx.blueprint.opentelemetry.export.as_ref()
+                app_ctx.blueprint.telemetry.export.as_ref()
             {
                 if req.uri().path() == prometheus.path {
                     return prometheus_metrics(prometheus);
