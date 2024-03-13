@@ -2,11 +2,10 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
-
-use super::{merge_headers, merge_key_value_vecs};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -199,7 +198,7 @@ impl Server {
         self.vars = other
             .vars
             .iter()
-            .fold(self.vars.iter().cloned().collect(), |mut acc, kv| {
+            .fold(self.vars.to_vec(), |mut acc, kv| {
                 let position = acc.iter().position(|x| x.key == kv.key);
                 if let Some(pos) = position {
                     acc[pos] = kv.clone();

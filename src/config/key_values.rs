@@ -29,7 +29,7 @@ pub struct KeyValue {
 pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
     other
         .iter()
-        .fold(current.iter().cloned().collect(), |mut acc, kv| {
+        .fold(current.to_vec(), |mut acc, kv| {
             let position = acc.iter().position(|x| x.key == kv.key);
             if let Some(pos) = position {
                 acc[pos] = kv.clone();
