@@ -112,9 +112,7 @@ jobs:
             fail_ci_if_error: true
 
       - name: Build on ${{ runner.os }}
-        run: |
-            echo "Label 'ci: build all' found. Building..."
-            cargo build --release
+        run: cargo build --release
 
   check-examples:
     name: Check Examples
