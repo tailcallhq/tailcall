@@ -6,6 +6,8 @@ use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
 
+use super::merge_key_value_vecs;
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 /// The `@server` directive, when applied at the schema level, offers a
@@ -179,22 +181,6 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 
-    fn merge_key_value_iterators(
-        &self,
-        iter: std::slice::Iter<'_, KeyValue>,
-        other: std::slice::Iter<'_, KeyValue>,
-    ) -> Vec<KeyValue> {
-        other.fold(iter.cloned().collect(), |mut acc, kv| {
-            let position = acc.iter().position(|x| x.key == kv.key);
-            if let Some(pos) = position {
-                acc[pos] = kv.clone();
-            } else {
-                acc.push(kv.clone());
-            };
-            acc
-        })
-    }
-
     pub fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
         if let Some(headers) = other.headers {
@@ -220,7 +206,7 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
-        self.vars = self.merge_key_value_iterators(self.vars.iter(), other.vars.iter());
+        self.vars = merge_key_value_vecs(&self.vars, &other.vars);
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
