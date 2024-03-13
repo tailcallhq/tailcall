@@ -13,7 +13,6 @@ use tracing_subscriber::{Layer, Registry};
 
 use super::in_memory::InMemoryTelemetry;
 
-
 fn set_trace_provider(exporter: InMemorySpanExporter) -> OpenTelemetryLayer<Registry, Tracer> {
     let provider = TracerProvider::builder()
         .with_simple_exporter(exporter)
