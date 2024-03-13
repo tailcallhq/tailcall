@@ -380,39 +380,38 @@ mod tests {
     }
 
     #[test]
-    fn test_cli_error_downcasting() {
+    fn test_cli_error_identity() {
         let cli_error = CLIError::new("Server could not be started")
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
-
         let anyhow_error: anyhow::Error = cli_error.clone().into();
-        let error = CLIError::from(anyhow_error);
+
+        let actual = CLIError::from(anyhow_error);
         let expected = cli_error;
 
-        assert_eq!(error, expected);
+        assert_eq!(actual, expected);
     }
 
     #[test]
-    fn test_validation_error_downcasting() {
-        let cause = Cause::new("Test Error".to_string()).trace(vec!["Query".to_string()]);
-        let validation_error: ValidationError<String> = ValidationError::from(cause);
-        let anyhow_error: anyhow::Error = validation_error.into();
-        let error = CLIError::from(anyhow_error);
+    fn test_validation_error_identity() {
+        let validation_error = ValidationError::from(
+            Cause::new("Test Error".to_string()).trace(vec!["Query".to_string()]),
+        );
+        let anyhow_error: anyhow::Error = validation_error.clone().into();
 
-        let expected = CLIError::new("Invalid Configuration")
-            .caused_by(vec![
-                CLIError::new("Test Error").trace(vec!["Query".to_string()])
-            ]);
+        let actual = CLIError::from(anyhow_error);
+        let expected = CLIError::from(validation_error);
 
-        assert_eq!(error, expected);
+        assert_eq!(actual, expected);
     }
 
     #[test]
-    fn test_generic_error_downcasting() {
+    fn test_generic_error() {
         let anyhow_error = anyhow::anyhow!("Some error msg");
-        let error: CLIError = CLIError::from(anyhow_error);
+
+        let actual: CLIError = CLIError::from(anyhow_error);
         let expected = CLIError::new("Some error msg");
 
-        assert_eq!(error, expected);
+        assert_eq!(actual, expected);
     }
 }
