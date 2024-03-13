@@ -72,7 +72,7 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     RequestContext::from(app_ctx).req_headers(headers)
 }
 
-fn update_headers(
+fn update_cache_control_header(
     response: GraphQLResponse,
     app_ctx: &AppContext,
     req_ctx: Arc<RequestContext>,
@@ -87,15 +87,15 @@ fn update_headers(
 
 pub fn update_response_headers(
     resp: &mut hyper::Response<hyper::Body>,
-    headers_ext: Option<HeaderMap>,
+    cookie_headers: Option<HeaderMap>,
     app_ctx: &AppContext,
 ) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
     }
-    if let Some(headers_ext) = headers_ext {
-        resp.headers_mut().extend(headers_ext);
+    if let Some(cookie_headers) = cookie_headers {
+        resp.headers_mut().extend(cookie_headers);
     }
 }
 
@@ -110,9 +110,8 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
             let cookie_headers = req_ctx.cookie_headers.clone();
-            response = update_headers(response, app_ctx, req_ctx);
+            response = update_cache_control_header(response, app_ctx, req_ctx);
             let mut resp = response.to_response()?;
-
             update_response_headers(
                 &mut resp,
                 cookie_headers.map(|v| v.lock().unwrap().clone()),
@@ -162,7 +161,7 @@ async fn handle_rest_apis(
             .execute(&app_ctx.schema)
             .await;
         let cookie_headers = req_ctx.cookie_headers.clone();
-        response = update_headers(response, app_ctx.as_ref(), req_ctx);
+        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
         let mut resp = response.to_response()?;
         update_response_headers(
             &mut resp,

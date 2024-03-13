@@ -16,7 +16,7 @@ use hyper::body::Bytes;
 use hyper::{Body, Request};
 use markdown::mdast::Node;
 use markdown::ParseOptions;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
@@ -218,7 +218,7 @@ struct APIResponse {
     #[serde(default = "default_status")]
     status: u16,
     #[serde(default)]
-    headers: Vec<(String, String)>,
+    headers: BTreeMap<String, String>,
     #[serde(default)]
     body: serde_json::Value,
     #[serde(default)]
@@ -1015,10 +1015,10 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 .context(spec.path.to_str().unwrap().to_string())
                 .unwrap();
 
-            let mut headers= vec![];
+            let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
             for (key, value) in response.headers() {
-                headers.insert((key.to_string(), value.to_str().unwrap().to_string()));
+                headers.insert(key.to_string(), value.to_str().unwrap().to_string());
             }
 
             let response: APIResponse = APIResponse {

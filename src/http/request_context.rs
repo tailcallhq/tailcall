@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
-use reqwest::header::{HeaderMap, HeaderName};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
@@ -75,10 +75,36 @@ impl RequestContext {
     }
 
     pub fn set_cookie_headers(&self, headers: &HeaderMap) {
+        // TODO fix execution_spec test and use append method
+        // to allow multiple set cookie
         if let Some(map) = &self.cookie_headers {
             let map = &mut map.lock().unwrap();
-            if let Some(value) = headers.get("set-cookie") {
-                map.append(HeaderName::from_str("set-cookie").unwrap(), value.clone());
+
+            // Check if the incoming headers contain 'set-cookie'
+            if let Some(new_cookies) = headers.get("set-cookie") {
+                let cookie_name = HeaderName::from_str("set-cookie").unwrap();
+
+                // Check if 'set-cookie' already exists in our map
+                if let Some(existing_cookies) = map.get(&cookie_name) {
+                    // Convert the existing HeaderValue to a str, append the new cookies,
+                    // and then convert back to a HeaderValue. If the conversion fails, we skip
+                    // appending.
+                    if let Ok(existing_str) = existing_cookies.to_str() {
+                        if let Ok(new_cookies_str) = new_cookies.to_str() {
+                            // Create a new value by appending the new cookies to the existing ones
+                            let combined_cookies = format!("{}; {}", existing_str, new_cookies_str);
+
+                            // Replace the old value with the new, combined value
+                            map.insert(
+                                cookie_name,
+                                HeaderValue::from_str(&combined_cookies).unwrap(),
+                            );
+                        }
+                    }
+                } else {
+                    // If 'set-cookie' does not already exist in our map, just insert the new value
+                    map.insert(cookie_name, new_cookies.clone());
+                }
             }
         }
     }

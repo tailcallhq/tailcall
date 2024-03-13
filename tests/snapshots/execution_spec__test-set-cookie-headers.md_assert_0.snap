@@ -6,12 +6,15 @@ expression: response
   "status": 200,
   "headers": {
     "content-type": "application/json",
-    "set-cookie": "foo2=bar2"
+    "set-cookie": "user=1; user=2"
   },
   "body": {
     "data": {
-      "user": {
+      "u1": {
         "name": "foo"
+      },
+      "u2": {
+        "name": "bar"
       }
     }
   }
