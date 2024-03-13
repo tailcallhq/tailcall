@@ -33,6 +33,7 @@ use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
 use telemetry::in_memory::InMemoryTelemetry;
 use telemetry::init::init_opentelemetry;
+// use std::panic::{self, AssertUnwindSafe};
 use url::Url;
 
 #[cfg(test)]
@@ -313,7 +314,7 @@ struct ExecutionSpec {
     // Annotations for the runner
     runner: Option<Annotation>,
 
-    check_identity: bool,
+    // check_identity: bool,
     sdl_error: bool,
 }
 
@@ -391,7 +392,6 @@ impl ExecutionSpec {
         let mut files: BTreeMap<String, String> = BTreeMap::new();
         let mut assert: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
-        let mut check_identity = false;
         let mut sdl_error = false;
 
         while let Some(node) = children.next() {
@@ -451,9 +451,6 @@ impl ExecutionSpec {
                     } else if heading.depth == 6 {
                         if let Some(Node::Text(text)) = heading.children.first() {
                             match text.value.as_str() {
-                                "check identity" => {
-                                    check_identity = true;
-                                }
                                 "sdl error" => {
                                     sdl_error = true;
                                 }
@@ -592,7 +589,7 @@ impl ExecutionSpec {
             files,
 
             runner,
-            check_identity,
+            // check_identity,
             sdl_error,
         };
 
@@ -862,6 +859,7 @@ impl FileIO for MockFileSystem {
     }
 }
 
+
 async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     // Parse and validate all server configs + check for identity
 
@@ -923,30 +921,15 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
         let config = Config::default().merge_right(&config);
 
-        // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code
-        // style the re-serializing check gives us some of the advantages of the
-        // identity check too, but we are missing out on some by having it only
-        // enabled for either new tests that request it or old graphql_spec
-        // tests that were explicitly written with it in mind
-        if spec.check_identity {
-            if matches!(source, Source::GraphQL) {
-                let identity = config.to_sdl();
+        let identity = config.to_sdl();
 
-                pretty_assertions::assert_eq!(
-                    content.as_ref(),
-                    identity,
-                    "Identity check failed for {:#?}",
-                    spec.path,
-                );
-            } else {
-                panic!(
-                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
-                    spec.path
-                );
-            }
-        }
-
+            pretty_assertions::assert_eq!(
+                content.as_ref(),
+                identity,
+                "Identity check failed for {:#?}",
+                spec.path,
+            );
+            
         server.push(config);
     }
 
@@ -1089,11 +1072,9 @@ async fn test() -> anyhow::Result<()> {
         }
         vec
     };
-
     for spec in spec.into_iter() {
         assert_spec(spec, &opentelemetry).await;
     }
-
     Ok(())
 }
 

@@ -1,7 +1,5 @@
 # test-http-headers
 
-###### check identity
-
 ```graphql @server
 schema @server @upstream(baseURL: "http://localhost:4000") {
   query: Query

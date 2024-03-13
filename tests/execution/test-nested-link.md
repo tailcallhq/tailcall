@@ -1,7 +1,5 @@
 # test-nested-link
 
-###### check identity
-
 ```graphql @file:link-enum.graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query

@@ -1,7 +1,5 @@
 # test-add-link-to-empty-config
 
-###### check identity
-
 ```graphql @file:link-const.graphql
 schema @server @upstream {
   query: Query

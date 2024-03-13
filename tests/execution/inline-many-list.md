@@ -1,7 +1,5 @@
 # inline-many-list
 
-###### check identity
-
 ```graphql @server
 schema @server @upstream {
   query: Query

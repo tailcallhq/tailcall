@@ -1,7 +1,5 @@
 # test-grpc
 
-###### check identity
-
 ```protobuf @file:news.proto
 syntax = "proto3";
 

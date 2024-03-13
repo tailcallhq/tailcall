@@ -1,7 +1,5 @@
 # test-const
 
-###### check identity
-
 ```graphql @server
 schema @server @upstream {
   query: Query

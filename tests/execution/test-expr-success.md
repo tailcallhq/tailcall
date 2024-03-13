@@ -1,7 +1,5 @@
 # test-expr-success
 
-###### check identity
-
 ```protobuf @file:news.proto
 syntax = "proto3";
 
