@@ -125,7 +125,7 @@ phonenumber = "0.3.3"
 chrono = "0.4.35"
 
 # TODO: move this flag into `cli`, like other dependencies.
-async-graphql-extension-apollo-tracing = { git = "https://github.com/shashitnak/async_graphql_apollo_studio_extension/", branch = "std-protobuf", optional = true }
+async-graphql-extension-apollo-tracing = { git = "https://github.com/shashitnak/async_graphql_apollo_studio_extension/", branch = "std-protobuf" }
 
 [patch.crates-io]
 # TODO: update this once https://github.com/haixuanTao/opentelemetry-system-metrics/pull/2 gets merged
@@ -166,8 +166,7 @@ cli = [
     "opentelemetry_sdk/testing",
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
-    "dep:opentelemetry-system-metrics",
-    "dep:async-graphql-extension-apollo-tracing",
+    "dep:opentelemetry-system-metrics"
 ]
 
 # Feature flag to enable all default features.
