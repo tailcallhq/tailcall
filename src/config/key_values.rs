@@ -27,17 +27,15 @@ pub struct KeyValue {
 }
 
 pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
-    other
-        .iter()
-        .fold(current.to_vec(), |mut acc, kv| {
-            let position = acc.iter().position(|x| x.key == kv.key);
-            if let Some(pos) = position {
-                acc[pos] = kv.clone();
-            } else {
-                acc.push(kv.clone());
-            };
-            acc
-        })
+    other.iter().fold(current.to_vec(), |mut acc, kv| {
+        let position = acc.iter().position(|x| x.key == kv.key);
+        if let Some(pos) = position {
+            acc[pos] = kv.clone();
+        } else {
+            acc.push(kv.clone());
+        };
+        acc
+    })
 }
 
 impl Serialize for KeyValues {

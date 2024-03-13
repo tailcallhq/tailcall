@@ -195,18 +195,15 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
-        self.vars = other
-            .vars
-            .iter()
-            .fold(self.vars.to_vec(), |mut acc, kv| {
-                let position = acc.iter().position(|x| x.key == kv.key);
-                if let Some(pos) = position {
-                    acc[pos] = kv.clone();
-                } else {
-                    acc.push(kv.clone());
-                };
-                acc
-            });
+        self.vars = other.vars.iter().fold(self.vars.to_vec(), |mut acc, kv| {
+            let position = acc.iter().position(|x| x.key == kv.key);
+            if let Some(pos) = position {
+                acc[pos] = kv.clone();
+            } else {
+                acc.push(kv.clone());
+            };
+            acc
+        });
         self.vars = merge_key_value_vecs(&self.vars, &other.vars);
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
