@@ -7,17 +7,53 @@ use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use once_cell::sync::Lazy;
+use opentelemetry::{metrics::Counter, KeyValue};
+use opentelemetry_semantic_conventions::trace;
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
-use tracing::instrument;
+use tracing::Instrument;
 
 use super::request_context::RequestContext;
 use super::{showcase, AppContext};
-use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::{async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse}, blueprint::telemetry::Telemetry};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 const API_URL_PREFIX: &str = "/api";
+
+static REQUEST_COUNTER: Lazy<Counter<u64>> = Lazy::new(|| {
+    let meter = opentelemetry::global::meter("http_request");
+
+    meter
+        .u64_counter("request.count")
+        .with_description("Incoming request hit count")
+        .init()
+});
+
+fn update_request_count(telemetry: &Telemetry, req: &Request<Body>) {
+    if telemetry.export.is_none() {
+        return;
+    }
+
+    let headers = req.headers();
+    let mut attributes = Vec::with_capacity(headers.len() + 2);
+
+    attributes.push(KeyValue::new(trace::URL_PATH, req.uri().path().to_string()));
+    attributes.push(KeyValue::new(
+        trace::HTTP_REQUEST_METHOD,
+        req.method().to_string(),
+    ));
+
+    for (name, value) in headers {
+        attributes.push(KeyValue::new(
+            format!("http.request.header.{}", name),
+            format!("{:?}", value),
+        ));
+    }
+
+    REQUEST_COUNTER.add(1, &attributes);
+}
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
@@ -158,11 +194,13 @@ async fn handle_rest_apis(
     not_found()
 }
 
-#[tracing::instrument(skip_all, err, fields(url.path = %req.uri(), http.request.method = %req.method()))]
+#[tracing::instrument(skip_all, err, fields(url.path = %req.uri().path(), http.request.method = %req.method()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
+    update_request_count(&app_ctx.blueprint.opentelemetry, &req);
+
     if req.uri().path().starts_with(API_URL_PREFIX) {
         return handle_rest_apis(req, app_ctx).await;
     }
