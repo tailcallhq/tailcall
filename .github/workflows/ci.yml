@@ -87,12 +87,85 @@ jobs:
       - name: Test CF
         run: npm test
 
-  check_build:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Install Stable Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run Cargo Test
+        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+
+      - name: Upload Coverage to Codecov
+        uses: Wandalen/wretry.action@v1
+        with:
+          action: codecov/codecov-action@v4
+          attempt_limit: 3
+          attempt_delay: 10000
+          with: |
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: lcov.info
+            fail_ci_if_error: true
+
+  check-examples:
+    name: Check Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build Project
+        run: cargo build
+
+      - name: Check all examples
+        run: |
+          find ./examples -maxdepth 1 \( -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.graphql" -o -name "*.gql" \) -exec ./target/debug/tailcall check {} \;
+
+  draft_release:
+    name: Draft Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Current Branch (Fast)
+        uses: actions/checkout@v4
+
+      - id: create_release
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-name: release-drafter.yml
+
+      - name: Set Output for Later Jobs
+        id: set_output
+        run: |
+          echo "create_release_name=${{ steps.create_release.outputs.name }}" >> $GITHUB_OUTPUT
+          echo "create_release_id=${{ steps.create_release.outputs.id }}" >> $GITHUB_OUTPUT
+    outputs:
+      create_release_name: ${{ steps.set_output.outputs.create_release_name }}
+      create_release_id: ${{ steps.set_output.outputs.create_release_id }}
+
+  build_all:
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') || contains(github.event.pull_request.labels.*.name, 'ci: build matrix')
     runs-on: ${{ matrix.os }}
     outputs:
-      check_build: ${{ steps.check_build.outputs.check_build }}
+      build_all: ${{ steps.build_all.outputs.build_all }}
     strategy:
       fail-fast: false
       matrix:
@@ -215,85 +288,12 @@ jobs:
     env:
       GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
 
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: Install Stable Toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Run Cargo Test
-        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
-
-      - name: Upload Coverage to Codecov
-        uses: Wandalen/wretry.action@v1
-        with:
-          action: codecov/codecov-action@v4
-          attempt_limit: 3
-          attempt_delay: 10000
-          with: |
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: lcov.info
-            fail_ci_if_error: true
-
-  check-examples:
-    name: Check Examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-
-      - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Build Project
-        run: cargo build
-
-      - name: Check all examples
-        run: |
-          find ./examples -maxdepth 1 \( -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.graphql" -o -name "*.gql" \) -exec ./target/debug/tailcall check {} \;
-
-  draft_release:
-    name: Draft Release
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout Current Branch (Fast)
-        uses: actions/checkout@v4
-
-      - id: create_release
-        uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          config-name: release-drafter.yml
-
-      - name: Set Output for Later Jobs
-        id: set_output
-        run: |
-          echo "create_release_name=${{ steps.create_release.outputs.name }}" >> $GITHUB_OUTPUT
-          echo "create_release_id=${{ steps.create_release.outputs.id }}" >> $GITHUB_OUTPUT
-    outputs:
-      create_release_name: ${{ steps.set_output.outputs.create_release_name }}
-      create_release_id: ${{ steps.set_output.outputs.create_release_id }}
-
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, draft_release, check_if_build, test_cf, check_build]
+    needs: [test, draft_release, check_if_build, test_cf, build_all]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') && (needs.check_build.outputs.check_build == 'true'))
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true') && (needs.build_all.outputs.build_all == 'true'))
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
