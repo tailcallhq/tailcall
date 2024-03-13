@@ -10,10 +10,16 @@ pub struct Headers {
     /// activated. The `max-age` value is the least of the values received from
     /// upstream services. @default `false`.
     pub cache_control: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub set_cookies: Option<bool>,
 }
 
 impl Headers {
     pub fn enable_cache_control(&self) -> bool {
         self.cache_control.unwrap_or(false)
+    }
+    pub fn set_cookies(&self) -> bool {
+        self.set_cookies.unwrap_or_default()
     }
 }

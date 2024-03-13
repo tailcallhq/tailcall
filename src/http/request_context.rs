@@ -19,6 +19,7 @@ pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
     pub req_headers: HeaderMap,
+    pub set_cookie_headers: HeaderMap,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
@@ -97,6 +98,7 @@ impl From<&AppContext> for RequestContext {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
             req_headers: HeaderMap::new(),
+            set_cookie_headers: HeaderMap::new(),
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
@@ -127,6 +129,7 @@ mod test {
             let upstream = Upstream::try_from(upstream).unwrap();
             RequestContext {
                 req_headers: HeaderMap::new(),
+                set_cookie_headers: HeaderMap::new(),
                 server,
                 runtime: crate::runtime::test::init(None),
                 upstream,
