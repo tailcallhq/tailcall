@@ -69,25 +69,10 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
     let headers = create_allowed_headers(req.headers(), &allowed);
-    let mut req_ctx = RequestContext::from(app_ctx).req_headers(headers);
-    if app_ctx.blueprint.server.enable_set_cookie_header {
-        let cookie_headers = create_cookie_headers(req.headers());
-        req_ctx = req_ctx.cookie_headers(cookie_headers);
-    }
-    req_ctx
+    RequestContext::from(app_ctx).req_headers(headers)
 }
 
-fn create_cookie_headers(headers: &HeaderMap) -> HeaderMap {
-    let mut map = HeaderMap::new();
-    for (k, v) in headers {
-        if k.as_str().to_lowercase().contains("set-cookie") {
-            map.insert(k.clone(), v.clone());
-        }
-    }
-    map
-}
-
-fn update_cache_control_header(
+fn update_headers(
     response: GraphQLResponse,
     app_ctx: &AppContext,
     req_ctx: Arc<RequestContext>,
@@ -101,15 +86,17 @@ fn update_cache_control_header(
 }
 
 pub fn update_response_headers(
-    cookie_headers: HeaderMap,
     resp: &mut hyper::Response<hyper::Body>,
+    headers_ext: Option<HeaderMap>,
     app_ctx: &AppContext,
 ) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
     }
-    resp.headers_mut().extend(cookie_headers);
+    if let Some(headers_ext) = headers_ext {
+        resp.headers_mut().extend(headers_ext);
+    }
 }
 
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
@@ -123,9 +110,14 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
             let cookie_headers = req_ctx.cookie_headers.clone();
-            response = update_cache_control_header(response, app_ctx, req_ctx);
+            response = update_headers(response, app_ctx, req_ctx);
             let mut resp = response.to_response()?;
-            update_response_headers(cookie_headers, &mut resp, app_ctx);
+
+            update_response_headers(
+                &mut resp,
+                cookie_headers.map(|v| v.lock().unwrap().clone()),
+                app_ctx,
+            );
             Ok(resp)
         }
         Err(err) => {
@@ -170,9 +162,13 @@ async fn handle_rest_apis(
             .execute(&app_ctx.schema)
             .await;
         let cookie_headers = req_ctx.cookie_headers.clone();
-        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
+        response = update_headers(response, app_ctx.as_ref(), req_ctx);
         let mut resp = response.to_response()?;
-        update_response_headers(cookie_headers, &mut resp, app_ctx.as_ref());
+        update_response_headers(
+            &mut resp,
+            cookie_headers.map(|v| v.lock().unwrap().clone()),
+            app_ctx.as_ref(),
+        );
         return Ok(resp);
     }
 

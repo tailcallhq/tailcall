@@ -1,10 +1,11 @@
 use std::num::NonZeroU64;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
-use hyper::HeaderMap;
+use reqwest::header::{HeaderMap, HeaderName};
 
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
@@ -19,7 +20,7 @@ pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
     pub req_headers: HeaderMap,
-    pub cookie_headers: HeaderMap,
+    pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
@@ -73,6 +74,15 @@ impl RequestContext {
         }
     }
 
+    pub fn set_cookie_headers(&self, headers: &HeaderMap) {
+        if let Some(map) = &self.cookie_headers {
+            let map = &mut map.lock().unwrap();
+            if let Some(value) = headers.get("set-cookie") {
+                map.append(HeaderName::from_str("set-cookie").unwrap(), value.clone());
+            }
+        }
+    }
+
     pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<ConstValue>> {
         self.runtime.cache.get(key).await
     }
@@ -94,11 +104,16 @@ impl RequestContext {
 
 impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
+        let cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
+            Some(Arc::new(Mutex::new(HeaderMap::new())))
+        } else {
+            None
+        };
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
             req_headers: HeaderMap::new(),
-            cookie_headers: HeaderMap::new(),
+            cookie_headers,
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
@@ -129,7 +144,7 @@ mod test {
             let upstream = Upstream::try_from(upstream).unwrap();
             RequestContext {
                 req_headers: HeaderMap::new(),
-                cookie_headers: HeaderMap::new(),
+                cookie_headers: None,
                 server,
                 runtime: crate::runtime::test::init(None),
                 upstream,

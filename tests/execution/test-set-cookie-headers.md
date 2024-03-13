@@ -27,16 +27,28 @@ type User {
 
   response:
     status: 200
+    headers:
+      set-cookie: user=1
     body:
       id: 1
       name: foo
+
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users/2
+
+  response:
+    status: 200
+    headers:
+      set-cookie: user=2
+    body:
+      id: 2
+      name: bar
 ```
 
 ```yaml @assert
 - method: POST
   url: http://localhost:8080/graphql
-  headers:
-    set-cookie: foo2=bar2
   body:
-    query: "query { user(id: 1) { name } }"
+    query: "query { u1:user(id: 1) { name } u2:user(id: 2) { name } }"
 ```
