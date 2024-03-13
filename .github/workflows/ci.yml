@@ -119,12 +119,34 @@ jobs:
         run: |
           if [ "${{ steps.check_label.outputs.label_exists }}" == "true" ]; then
             echo "Label 'ci: build all' found. Building..."
-            
+
             cargo build --release
 
           else
             echo "Label 'ci: build all' not found. Skipping build."
           fi
+
+  check-examples:
+    name: Check Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build Project
+        run: cargo build
+
+      - name: Check all examples
+        run: |
+          find ./examples -maxdepth 1 \( -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.graphql" -o -name "*.gql" \) -exec ./target/debug/tailcall check {} \;
 
   draft_release:
     name: Draft Release
@@ -326,6 +348,7 @@ jobs:
           release_id: ${{ needs.draft_release.outputs.create_release_id }}
           file: target/${{ matrix.target }}/release/tailcall-${{ matrix.target }}${{ matrix.ext }}
           overwrite: true
+
       - name: Check if the label exists
         id: check_label
         run: echo ::set-output name=label_exists::${{ contains(github.event.pull_request.labels.*.name, 'ci: build all') }}
