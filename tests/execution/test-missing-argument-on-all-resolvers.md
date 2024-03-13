@@ -1,8 +1,8 @@
 # test-missing-argument-on-all-resolvers
 
 ---
-expect_validation_error: true
----
+
+## expect_validation_error: true
 
 ```protobuf @file:news.proto
 syntax = "proto3";

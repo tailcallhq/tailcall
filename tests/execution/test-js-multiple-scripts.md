@@ -1,8 +1,8 @@
 # Js Hello World
 
 ---
-expect_validation_error: true
----
+
+## expect_validation_error: true
 
 ```js @file:test1.js
 function onRequest(request) {}

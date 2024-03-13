@@ -420,7 +420,7 @@ impl ExecutionSpec {
                         if let Some(Node::Paragraph(_)) = children.peek() {
                             let _ = children.next();
                         }
-                    }else if heading.depth == 2 {
+                    } else if heading.depth == 2 {
                         if let Some(Node::Text(expect)) = heading.children.first() {
                             sdl_error = expect
                                 .value
@@ -582,7 +582,7 @@ impl ExecutionSpec {
                     // skip this for and put execute logic in heading.depth
                     // above to escape ThematicBreaks like
                     // `---`, `***` or `___`
-                },
+                }
                 _ => return Err(anyhow!("Unexpected node in {:?}: {:#?}", path, node)),
             }
         }

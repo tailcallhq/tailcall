@@ -1,8 +1,8 @@
 # test-invalid-query-in-http
 
 ---
-expect_validation_error: true
----
+
+## expect_validation_error: true
 
 ```graphql @server
 schema @server(vars: [{key: "id", value: "1"}]) {

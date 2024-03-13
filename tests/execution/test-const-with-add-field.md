@@ -1,8 +1,8 @@
 # test-const-with-add-field
 
 ---
-expect_validation_error: true
----
+
+## expect_validation_error: true
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {

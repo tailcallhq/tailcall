@@ -1,8 +1,8 @@
 # test-undefined-query
 
 ---
-expect_validation_error: true
----
+
+## expect_validation_error: true
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

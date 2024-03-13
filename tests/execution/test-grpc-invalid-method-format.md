@@ -1,8 +1,8 @@
 # test-grpc-invalid-method-format
 
 ---
-expect_validation_error: true
----
+
+## expect_validation_error: true
 
 ```graphql @server
 schema {
