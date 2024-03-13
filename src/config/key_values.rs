@@ -27,16 +27,16 @@ pub struct KeyValue {
 }
 
 pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
-    let mut map: BTreeMap<String, String> = current
+    let mut acc: BTreeMap<String, KeyValue> = current
         .iter()
-        .map(|kv| (kv.key.clone(), kv.value.clone()))
+        .map(|kv| (kv.key.clone(), kv.clone()))
         .collect();
+
     for kv in other {
-        map.entry(kv.key.clone()).or_insert(kv.value.clone());
+        acc.insert(kv.key.clone(), kv.clone());
     }
-    map.into_iter()
-        .map(|(key, value)| KeyValue { key, value })
-        .collect()
+
+    acc.into_iter().map(|(_, v)| v).collect()
 }
 
 impl Serialize for KeyValues {
@@ -109,5 +109,60 @@ mod tests {
         kv.0.insert("a".to_string(), "b".to_string());
         // Using the deref trait
         assert_eq!(kv["a"], "b");
+    }
+
+    #[cfg(test)]
+    mod merge_key_value_vecs_tests {
+        use super::*;
+
+        #[test]
+        fn test_merge_with_both_empty() {
+            let current = vec![];
+            let other = vec![];
+            let result = merge_key_value_vecs(&current, &other);
+            assert!(result.is_empty());
+        }
+
+        #[test]
+        fn test_merge_with_current_empty() {
+            let current = vec![];
+            let other = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
+            let result = merge_key_value_vecs(&current, &other);
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[0].key, "key1");
+            assert_eq!(result[0].value, "value1");
+        }
+
+        #[test]
+        fn test_merge_with_other_empty() {
+            let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
+            let other = vec![];
+            let result = merge_key_value_vecs(&current, &other);
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[0].key, "key1");
+            assert_eq!(result[0].value, "value1");
+        }
+
+        #[test]
+        fn test_merge_with_unique_keys() {
+            let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
+            let other = vec![KeyValue { key: "key2".to_string(), value: "value2".to_string() }];
+            let result = merge_key_value_vecs(&current, &other);
+            assert_eq!(result.len(), 2);
+            assert_eq!(result[0].key, "key1");
+            assert_eq!(result[0].value, "value1");
+            assert_eq!(result[1].key, "key2");
+            assert_eq!(result[1].value, "value2");
+        }
+
+        #[test]
+        fn test_merge_with_overlapping_keys() {
+            let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
+            let other = vec![KeyValue { key: "key1".to_string(), value: "value2".to_string() }];
+            let result = merge_key_value_vecs(&current, &other);
+            assert_eq!(result.len(), 1);
+            assert_eq!(result[0].key, "key1");
+            assert_eq!(result[0].value, "value2"); // `other`'s value should overwrite `current`'s value
+        }
     }
 }
