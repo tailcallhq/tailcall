@@ -1,18 +1,18 @@
 use std::collections::{BTreeMap, HashMap};
 
+use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
-use crate::config::{Arg, Batch, Config, ConfigSet, Field};
+use crate::config::{Arg, Batch, Config, ConfigModule, Field};
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 
-pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
-    let server = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Server::try_from(config_set.server.clone()))
-            .map(|server| blueprint.server(server))
+pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
+    let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
+        Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
     });
 
     let schema = to_schema().transform::<Blueprint>(
@@ -25,20 +25,26 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
         |blueprint| blueprint.definitions,
     );
 
-    let upstream = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Upstream::try_from(config_set.upstream.clone()))
+    let upstream = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
+        Valid::from(Upstream::try_from(config_module.upstream.clone()))
             .map(|upstream| blueprint.upstream(upstream))
     });
 
-    let links = TryFoldConfig::<Blueprint>::new(|config_set, blueprint| {
-        Valid::from(Links::try_from(config_set.links.clone())).map_to(blueprint)
+    let links = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
+        Valid::from(Links::try_from(config_module.links.clone())).map_to(blueprint)
     });
+
+    let opentelemetry = to_opentelemetry().transform::<Blueprint>(
+        |opentelemetry, blueprint| blueprint.opentelemetry(opentelemetry),
+        |blueprint| blueprint.opentelemetry,
+    );
 
     server
         .and(schema)
         .and(definitions)
         .and(upstream)
         .and(links)
+        .and(opentelemetry)
         .update(apply_batching)
         .update(compress)
 }
@@ -47,7 +53,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigSet, Blueprint, String> {
 
 pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     for def in blueprint.definitions.iter() {
-        if let Definition::ObjectTypeDefinition(object_type_definition) = def {
+        if let Definition::Object(object_type_definition) = def {
             for field in object_type_definition.fields.iter() {
                 if let Some(Expression::IO(IO::Http { group_by: Some(_), .. })) =
                     field.resolver.clone()
@@ -111,12 +117,12 @@ where
     }
 }
 
-impl TryFrom<&ConfigSet> for Blueprint {
+impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
-    fn try_from(config_set: &ConfigSet) -> Result<Self, Self::Error> {
+    fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()
-            .try_fold(config_set, Blueprint::default())
+            .try_fold(config_module, Blueprint::default())
             .to_result()
     }
 }

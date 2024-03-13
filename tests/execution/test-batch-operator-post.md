@@ -2,9 +2,7 @@
 
 ###### sdl error
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream(baseURL: "http://localhost:3000", batch: {delay: 1}) {
   query: Query
 }
@@ -15,6 +13,6 @@ type User {
 }
 
 type Query {
-  user: User @http(path: "/posts/1", method: "POST", groupBy: ["id"])
+  user: User @http(path: "/posts/1", method: "POST", batchKey: ["id"])
 }
 ```

@@ -27,7 +27,8 @@ fn config_document(config: &Config) -> ServiceDocument {
         directive.arguments = directive
             .arguments
             .iter()
-            // "type" needs to be filtered out, because when is the default value, it is not present in the directive
+            // "type" needs to be filtered out, because when is the default value, it is not present
+            // in the directive
             .filter(|(name, _)| name != &pos(Name::new("type")))
             .map(|argument| argument.to_owned())
             .chain(std::iter::once(type_directive))
@@ -248,6 +249,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
         field.grpc.as_ref().map(|d| pos(d.to_directive())),
         field.expr.as_ref().map(|d| pos(d.to_directive())),
         field.cache.as_ref().map(|d| pos(d.to_directive())),
+        field.call.as_ref().map(|d| pos(d.to_directive())),
     ];
 
     directives.into_iter().flatten().collect()

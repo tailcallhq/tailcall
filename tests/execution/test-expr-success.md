@@ -2,10 +2,44 @@
 
 ###### check identity
 
-#### server:
+```protobuf @file:news.proto
+syntax = "proto3";
 
-```graphql
-schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000}) @link(id: "news", src: "../../src/grpc/tests/news.proto", type: Protobuf) {
+import "google/protobuf/empty.proto";
+
+package news;
+
+message News {
+    int32 id = 1;
+    string title = 2;
+    string body = 3;
+    string postImage = 4;
+}
+
+service NewsService {
+    rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
+    rpc GetNews (NewsId) returns (News) {}
+    rpc GetMultipleNews (MultipleNewsId) returns (NewsList) {}
+    rpc DeleteNews (NewsId) returns (google.protobuf.Empty) {}
+    rpc EditNews (News) returns (News) {}
+    rpc AddNews (News) returns (News) {}
+}
+
+message NewsId {
+    int32 id = 1;
+}
+
+message MultipleNewsId {
+    repeated NewsId ids = 1;
+}
+
+message NewsList {
+    repeated News news = 1;
+}
+```
+
+```graphql @server
+schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000}) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -31,7 +65,7 @@ type Post {
 type Query {
   cond: Post @expr(body: {if: {cond: {const: true}, else: {http: {path: "/posts/1"}}, then: {http: {path: "/posts/2"}}}})
   greeting: String @expr(body: {const: "hello from server"})
-  news(news: NewsInput!): News! @expr(body: {grpc: {body: "{{args.news}}", groupBy: ["news", "id"], method: "news.NewsService.GetMultipleNews"}})
+  news(news: NewsInput!): News! @expr(body: {grpc: {body: "{{args.news}}", batchKey: ["news", "id"], method: "news.NewsService.GetMultipleNews"}})
   post(id: Int!): Post @expr(body: {http: {baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}"}})
 }
 ```

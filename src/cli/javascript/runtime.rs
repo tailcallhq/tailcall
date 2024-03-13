@@ -1,36 +1,45 @@
 use std::cell::{OnceCell, RefCell};
 use std::thread;
 
-use deno_core::{extension, v8, FastString, JsRuntime, RuntimeOptions};
+use deno_core::{extension, serde_v8, v8, FastString, JsRuntime, RuntimeOptions};
 
-use super::channel::{Message, MessageContent};
+use super::request_filter::{Command, Event};
 use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime {
-    value: v8::Global<v8::Value>,
     js_runtime: JsRuntime,
+    global: v8::Global<v8::Value>,
 }
 
 thread_local! {
+    // Practically only one JS runtime is created because CHANNEL_RUNTIME is single threaded.
+    // TODO: that is causing issues in `execution_spec` tests because the runtime
+    // is initialized only once and that implementation will be reused by all the tests
   static LOCAL_RUNTIME: RefCell<OnceCell<LocalRuntime>> = const { RefCell::new(OnceCell::new()) };
+}
+
+// Single threaded JS runtime, that's shared across all tokio workers.
+lazy_static::lazy_static! {
+    static ref CHANNEL_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .build()
+        .expect("JS runtime not initialized");
 }
 
 impl LocalRuntime {
     fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
-        let source = create_closure(script.source.as_str());
+        let source = script.source;
         extension!(console, js = ["src/cli/javascript/shim/console.js",]);
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
             extensions: vec![console::init_ops_and_esm()],
             ..Default::default()
         });
-        let value = js_runtime.execute_script("<anon>", FastString::from(source))?;
-        log::debug!("JS Runtime created: {:?}", thread::current().name());
-        Ok(Self { value, js_runtime })
-    }
-}
+        let global = js_runtime.execute_script("<anon>", FastString::from_static("globalThis"))?;
+        js_runtime.execute_script("<anon>", FastString::from(source))?;
+        tracing::debug!("JS Runtime created: {:?}", thread::current().name());
 
-fn create_closure(script: &str) -> String {
-    format!("(function() {{{} return onEvent}})();", script)
+        Ok(Self { js_runtime, global })
+    }
 }
 
 pub struct Runtime {
@@ -44,37 +53,46 @@ impl Runtime {
 }
 
 #[async_trait::async_trait]
-impl WorkerIO<Message, Message> for Runtime {
-    fn dispatch(&self, event: Message) -> anyhow::Result<Message> {
-        log::debug!("event: {:?}", event);
-        let command = LOCAL_RUNTIME.with(move |cell| {
-            let script = self.script.clone();
-            // TODO: use `get_or_try_init`. Currently it is an unstable feature
-            cell.borrow()
-                .get_or_init(|| LocalRuntime::try_new(script).expect("JS runtime not initialized"));
-            on_event(event)
-        });
-        command
+impl WorkerIO<Event, Command> for Runtime {
+    async fn call(&self, name: String, event: Event) -> anyhow::Result<Option<Command>> {
+        let script = self.script.clone();
+        CHANNEL_RUNTIME
+            .spawn(async move {
+                LOCAL_RUNTIME.with(move |cell| {
+                    cell.borrow()
+                        .get_or_init(|| LocalRuntime::try_new(script).unwrap());
+                });
+
+                call(name, event)
+            })
+            .await?
     }
 }
 
-fn on_event(message: Message) -> anyhow::Result<Message> {
+fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let local_runtime = cell
+        let runtime = cell
             .get_mut()
             .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
-        let scope = &mut local_runtime.js_runtime.handle_scope();
-        let value = &local_runtime.value;
-        let local_value = v8::Local::new(scope, value);
-        let closure: v8::Local<v8::Function> = local_value.try_into()?;
-        let input = serde_v8::to_v8(scope, message)?;
-        log::debug!("js input: {:?}", input);
-        let null_ctx = v8::null(scope);
+        let js_runtime = &mut runtime.js_runtime;
+        let scope = &mut js_runtime.handle_scope();
+        let global = v8::Local::<v8::Object>::try_from(v8::Local::new(scope, &runtime.global))?;
+        let args = serde_v8::to_v8(scope, event)?;
 
-        let output = closure.call(scope, null_ctx.into(), &[input]);
-        match output {
-            None => Ok(Message { message: MessageContent::Empty, id: None }),
-            Some(output) => Ok(serde_v8::from_v8(scope, output)?),
-        }
+        // NOTE: unwrap is safe here
+        // We receive a `None` only if the name of the function is more than the set
+        // kMaxLength. kMaxLength is set to a very high value ~ 1 Billion, so we
+        // don't expect to hit this limit.
+        let fn_server_emit = v8::String::new(scope, name.as_str()).unwrap();
+        let fn_server_emit = global
+            .get(scope, fn_server_emit.into())
+            .ok_or(anyhow::anyhow!("globalThis not initialized"))?;
+
+        let fn_server_emit = v8::Local::<v8::Function>::try_from(fn_server_emit)?;
+        let command = fn_server_emit.call(scope, global.into(), &[args]);
+
+        command
+            .map(|output| Ok(serde_v8::from_v8(scope, output)?))
+            .transpose()
     })
 }

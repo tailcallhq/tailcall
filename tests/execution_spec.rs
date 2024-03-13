@@ -1,8 +1,11 @@
 extern crate core;
 
+mod telemetry;
+
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Once};
 use std::{fs, panic};
 
@@ -17,16 +20,173 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::{self, Blueprint, Upstream};
-use tailcall::cli::{init_file, init_hook_http, init_http, init_in_memory_cache, init_runtime};
+use tailcall::blueprint::{self, Blueprint};
+use tailcall::cache::InMemoryCache;
+use tailcall::cli::javascript;
+use tailcall::cli::metrics::init_metrics;
 use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigSet, Source};
+use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
-use tailcall::target_runtime::TargetRuntime;
+use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
-use tailcall::{EnvIO, HttpIO};
+use tailcall::{EnvIO, FileIO, HttpIO};
+use telemetry::in_memory::InMemoryTelemetry;
+use telemetry::init::init_opentelemetry;
 use url::Url;
+
+#[cfg(test)]
+pub mod test {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    use anyhow::{anyhow, Result};
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+    use hyper::body::Bytes;
+    use reqwest::Client;
+    use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+    use tailcall::cache::InMemoryCache;
+    use tailcall::cli::javascript;
+    use tailcall::http::Response;
+    use tailcall::runtime::TargetRuntime;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    use crate::blueprint::Upstream;
+    use crate::{blueprint, EnvIO, FileIO, HttpIO};
+
+    #[derive(Clone)]
+    struct TestHttp {
+        client: ClientWithMiddleware,
+    }
+
+    impl Default for TestHttp {
+        fn default() -> Self {
+            Self { client: ClientBuilder::new(Client::new()).build() }
+        }
+    }
+
+    impl TestHttp {
+        fn init(upstream: &Upstream) -> Arc<Self> {
+            let mut builder = Client::builder()
+                .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
+                .timeout(Duration::from_secs(upstream.timeout))
+                .connect_timeout(Duration::from_secs(upstream.connect_timeout))
+                .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
+                .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
+                .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
+                .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
+                .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
+                .user_agent(upstream.user_agent.clone());
+
+            // Add Http2 Prior Knowledge
+            if upstream.http2_only {
+                builder = builder.http2_prior_knowledge();
+            }
+
+            // Add Http Proxy
+            if let Some(ref proxy) = upstream.proxy {
+                builder = builder.proxy(
+                    reqwest::Proxy::http(proxy.url.clone())
+                        .expect("Failed to set proxy in http client"),
+                );
+            }
+
+            let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
+
+            if upstream.http_cache {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: MokaManager::default(),
+                    options: HttpCacheOptions::default(),
+                }))
+            }
+            Arc::new(Self { client: client.build() })
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl HttpIO for TestHttp {
+        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+            let response = self.client.execute(request).await;
+            Response::from_reqwest(response?.error_for_status()?).await
+        }
+    }
+
+    #[derive(Clone)]
+    struct TestFileIO {}
+
+    impl TestFileIO {
+        fn init() -> Self {
+            TestFileIO {}
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl FileIO for TestFileIO {
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+            let mut file = tokio::fs::File::create(path).await?;
+            file.write_all(content)
+                .await
+                .map_err(|e| anyhow!("{}", e))?;
+            Ok(())
+        }
+
+        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+            let mut file = tokio::fs::File::open(path).await?;
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer)
+                .await
+                .map_err(|e| anyhow!("{}", e))?;
+            Ok(String::from_utf8(buffer)?)
+        }
+    }
+
+    #[derive(Clone)]
+    struct TestEnvIO {
+        vars: HashMap<String, String>,
+    }
+
+    impl EnvIO for TestEnvIO {
+        fn get(&self, key: &str) -> Option<String> {
+            self.vars.get(key).cloned()
+        }
+    }
+
+    impl TestEnvIO {
+        pub fn init() -> Self {
+            Self { vars: std::env::vars().collect() }
+        }
+    }
+
+    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+        let http = if let Some(script) = script.clone() {
+            javascript::init_http(TestHttp::init(&Default::default()), script)
+        } else {
+            TestHttp::init(&Default::default())
+        };
+
+        let http2 = if let Some(script) = script {
+            javascript::init_http(
+                TestHttp::init(&Upstream::default().http2_only(true)),
+                script,
+            )
+        } else {
+            TestHttp::init(&Upstream::default().http2_only(true))
+        };
+
+        let file = TestFileIO::init();
+        let env = TestEnvIO::init();
+
+        TargetRuntime {
+            http,
+            http2_only: http2,
+            env: Arc::new(env),
+            file: Arc::new(file),
+            cache: Arc::new(InMemoryCache::new()),
+        }
+    }
+}
 
 static INIT: Once = Once::new();
 
@@ -38,7 +198,6 @@ enum Annotation {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
 struct APIRequest {
     #[serde(default)]
     method: Method,
@@ -47,6 +206,10 @@ struct APIRequest {
     headers: BTreeMap<String, String>,
     #[serde(default)]
     body: serde_json::Value,
+    #[serde(default)]
+    assert_traces: bool,
+    #[serde(default)]
+    assert_metrics: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -83,6 +246,10 @@ fn default_status() -> u16 {
     200
 }
 
+fn default_expected_hits() -> usize {
+    1
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct UpstreamRequest(APIRequest);
 
@@ -100,6 +267,8 @@ enum ConfigSource {
 struct Mock {
     request: UpstreamRequest,
     response: UpstreamResponse,
+    #[serde(default = "default_expected_hits")]
+    expected_hits: usize,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
@@ -139,6 +308,7 @@ struct ExecutionSpec {
     mock: Option<Vec<Mock>>,
     env: Option<HashMap<String, String>>,
     assert: Option<Vec<APIRequest>>,
+    files: BTreeMap<String, String>,
 
     // Annotations for the runner
     runner: Option<Annotation>,
@@ -188,14 +358,15 @@ impl ExecutionSpec {
         for spec in specs {
             match spec.runner {
                 Some(Annotation::Skip) => {
-                    log::warn!("{} {} ... skipped", spec.name, spec.path.display())
+                    tracing::warn!("{} {} ... skipped", spec.name, spec.path.display())
                 }
                 Some(Annotation::Only) => only_specs.push(spec),
                 None => filtered_specs.push(spec),
             }
         }
 
-        // If any spec has the Only annotation, use those; otherwise, use the filtered list.
+        // If any spec has the Only annotation, use those; otherwise, use the filtered
+        // list.
         if !only_specs.is_empty() {
             only_specs
         } else {
@@ -217,6 +388,7 @@ impl ExecutionSpec {
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut mock: Option<Vec<Mock>> = None;
         let mut env: Option<HashMap<String, String>> = None;
+        let mut files: BTreeMap<String, String> = BTreeMap::new();
         let mut assert: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
@@ -260,7 +432,7 @@ impl ExecutionSpec {
                                             "Unexpected runner annotation {:?} in {:?}",
                                             text.value,
                                             path,
-                                        ))
+                                        ));
                                     }
                                 });
                             } else {
@@ -290,7 +462,7 @@ impl ExecutionSpec {
                                         "Unexpected flag {:?} in {:?}",
                                         text.value,
                                         path,
-                                    ))
+                                    ));
                                 }
                             };
                         } else {
@@ -301,32 +473,52 @@ impl ExecutionSpec {
                             ));
                         }
                     } else if heading.depth == 4 {
-                        // Parse following code hblock
-                        let (content, lang) = if let Some(Node::Code(code)) = children.next() {
-                            (code.value.to_owned(), code.lang.to_owned())
-                        } else {
-                            return Err(anyhow!("Unexpected non-code block node or EOF after component definition in {:?}", path));
-                        };
-
-                        let lang = match lang {
-                            Some(x) => Ok(x),
-                            None => {
-                                Err(anyhow!("Unexpected languageless code block in {:?}", path))
+                    } else {
+                        return Err(anyhow!(
+                            "Unexpected level {} heading in {:?}: {:#?}",
+                            heading.depth,
+                            path,
+                            heading
+                        ));
+                    }
+                }
+                Node::Code(code) => {
+                    // Parse following code block
+                    let (content, lang, meta) = {
+                        (
+                            code.value.to_owned(),
+                            code.lang.to_owned(),
+                            code.meta.to_owned(),
+                        )
+                    };
+                    if let Some(meta_str) = meta.as_ref().filter(|s| s.contains('@')) {
+                        let temp_cleaned_meta = meta_str.replace('@', "");
+                        let name: &str = &temp_cleaned_meta;
+                        if let Some(name) = name.strip_prefix("file:") {
+                            if files.insert(name.to_string(), content).is_some() {
+                                return Err(anyhow!(
+                                    "Double declaration of file {:?} in {:#?}",
+                                    name,
+                                    path
+                                ));
                             }
-                        }?;
+                        } else {
+                            let lang = match lang {
+                                Some(x) => Ok(x),
+                                None => Err(anyhow!(
+                                    "Unexpected code block with no specific language in {:?}",
+                                    path
+                                )),
+                            }?;
 
-                        let source = Source::from_str(&lang)?;
-
-                        // Parse component name
-                        if let Some(Node::Text(text)) = heading.children.first() {
-                            let name = text.value.as_str();
+                            let source = Source::from_str(&lang)?;
 
                             match name {
-                                "server:" => {
+                                "server" => {
                                     // Server configs are only parsed if the test isn't skipped.
                                     server.push((source, content));
                                 }
-                                "mock:" => {
+                                "mock" => {
                                     if mock.is_none() {
                                         mock = match source {
                                             Source::Json => Ok(serde_json::from_str(&content)?),
@@ -337,7 +529,7 @@ impl ExecutionSpec {
                                         return Err(anyhow!("Unexpected number of mock blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
-                                "env:" => {
+                                "env" => {
                                     if env.is_none() {
                                         env = match source {
                                             Source::Json => Ok(serde_json::from_str(&content)?),
@@ -348,7 +540,7 @@ impl ExecutionSpec {
                                         return Err(anyhow!("Unexpected number of env blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
-                                "assert:" => {
+                                "assert" => {
                                     if assert.is_none() {
                                         assert = match source {
                                             Source::Json => Ok(serde_json::from_str(&content)?),
@@ -364,23 +556,16 @@ impl ExecutionSpec {
                                         "Unexpected component {:?} in {:?}: {:#?}",
                                         name,
                                         path,
-                                        heading
-                                    ))
+                                        meta
+                                    ));
                                 }
                             }
-                        } else {
-                            return Err(anyhow!(
-                                "Unexpected content of level 4 heading in {:?}: {:#?}",
-                                path,
-                                heading
-                            ));
                         }
                     } else {
                         return Err(anyhow!(
-                            "Unexpected level {} heading in {:?}: {:#?}",
-                            heading.depth,
+                            "Unexpected content of code in {:?}: {:#?}",
                             path,
-                            heading
+                            meta
                         ));
                     }
                 }
@@ -404,6 +589,7 @@ impl ExecutionSpec {
             mock,
             env,
             assert,
+            files,
 
             runner,
             check_identity,
@@ -413,46 +599,116 @@ impl ExecutionSpec {
         anyhow::Ok(spec)
     }
 
-    async fn server_context(
+    async fn app_context(
         &self,
-        config: &ConfigSet,
+        config: &ConfigModule,
         env: HashMap<String, String>,
+        http_client: Arc<MockHttpClient>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
-
-        let http = if self.mock.is_some() {
-            init_hook_http(
-                MockHttpClient::new(self.clone()),
-                blueprint.server.script.clone(),
-            )
+        let http = if let Some(script) = blueprint.server.script.clone() {
+            javascript::init_http(http_client, script)
         } else {
-            init_http(&blueprint.upstream, blueprint.server.script.clone())
+            http_client
         };
 
-        let http2_only = if self.mock.is_some() {
-            Arc::new(MockHttpClient::new(self.clone()))
-        } else {
-            http.clone()
-        };
+        let http2_only = http.clone();
 
         let runtime = TargetRuntime {
             http,
             http2_only,
-            file: init_file(),
+            file: Arc::new(MockFileSystem::new(self.clone())),
             env: Arc::new(Env::init(env)),
-            cache: Arc::new(init_in_memory_cache()),
+            cache: Arc::new(InMemoryCache::new()),
         };
-        Arc::new(AppContext::new(blueprint, runtime))
+
+        // TODO: move inside tailcall core if possible
+        init_metrics(&runtime).unwrap();
+
+        Arc::new(AppContext::new(
+            blueprint,
+            runtime,
+            config.extensions.endpoints.clone(),
+        ))
+    }
+}
+
+#[derive(Clone)]
+struct ExecutionMock {
+    mock: Mock,
+    actual_hits: Arc<AtomicUsize>,
+}
+
+impl ExecutionMock {
+    fn assert_hits(&self) {
+        let url = &self.mock.request.0.url;
+        let is_batch_graphql = url.path().starts_with("/graphql")
+            && self
+                .mock
+                .request
+                .0
+                .body
+                .as_str()
+                .map(|s| s.contains(','))
+                .unwrap_or_default();
+
+        // do not assert hits for mocks for batch graphql requests
+        // since that requires having 2 mocks with different order of queries in
+        // single request and only one of that mocks is actually called during run.
+        // for other protocols there is no issues right now, because:
+        // - for http the keys are always sorted https://github.com/tailcallhq/tailcall/blob/51d8b7aff838f0f4c362d4ee9e39492ae1f51fdb/src/http/data_loader.rs#L71
+        // - for grpc body is not used for matching the mock and grpc will use grouping based on id https://github.com/tailcallhq/tailcall/blob/733b641c41f17c60b15b36b025b4db99d0f9cdcd/tests/execution_spec.rs#L769
+        if is_batch_graphql {
+            return;
+        }
+
+        let expected_hits = self.mock.expected_hits;
+        let actual_hits = self.actual_hits.load(Ordering::Relaxed);
+
+        assert_eq!(
+            expected_hits,
+            actual_hits,
+            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times",
+        );
     }
 }
 
 #[derive(Clone)]
 struct MockHttpClient {
-    spec: ExecutionSpec,
+    mocks: Vec<ExecutionMock>,
+    spec_path: String,
 }
+
 impl MockHttpClient {
-    fn new(spec: ExecutionSpec) -> Self {
-        MockHttpClient { spec }
+    fn new(spec: &ExecutionSpec) -> Self {
+        let mocks = spec
+            .mock
+            .as_ref()
+            .map(|mocks| {
+                mocks
+                    .iter()
+                    .map(|mock| ExecutionMock {
+                        mock: mock.clone(),
+                        actual_hits: Arc::new(AtomicUsize::default()),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        let spec_path = spec
+            .path
+            .strip_prefix(std::env::current_dir().unwrap())
+            .unwrap_or(&spec.path)
+            .to_string_lossy()
+            .into_owned();
+
+        MockHttpClient { mocks, spec_path }
+    }
+
+    fn assert_hits(&self) {
+        for mock in &self.mocks {
+            mock.assert_hits();
+        }
     }
 }
 
@@ -487,15 +743,15 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        let mocks = self.spec.mock.as_ref().unwrap();
-
         // Determine if the request is a GRPC request based on PORT
         let is_grpc = req.url().as_str().contains("50051");
 
         // Try to find a matching mock for the incoming request.
-        let mock = mocks
+        let execution_mock = self
+            .mocks
             .iter()
-            .find(|Mock { request: mock_req, response: _ }| {
+            .find(|mock| {
+                let mock_req = &mock.mock.request;
                 let method_match = req.method() == mock_req.0.method.clone().to_hyper();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let req_body = match req.body() {
@@ -513,22 +769,35 @@ impl HttpIO for MockHttpClient {
                     None => Value::Null,
                 };
                 let body_match = req_body == mock_req.0.body;
-                method_match && url_match && (body_match || is_grpc)
+                let headers_match = req
+                    .headers()
+                    .iter()
+                    .filter(|(key, _)| *key != "content-type")
+                    .all(|(key, value)| {
+                        let header_name = key.to_string();
+
+                        let header_value = value.to_str().unwrap();
+                        let mock_header_value = "".to_string();
+                        let mock_header_value = mock_req
+                            .0
+                            .headers
+                            .get(&header_name)
+                            .unwrap_or(&mock_header_value);
+                        header_value == mock_header_value
+                    });
+                method_match && url_match && headers_match && (body_match || is_grpc)
             })
             .ok_or(anyhow!(
                 "No mock found for request: {:?} {} in {}",
                 req.method(),
                 req.url(),
-                self.spec
-                    .path
-                    .strip_prefix(std::env::current_dir()?)
-                    .unwrap_or(&self.spec.path)
-                    .to_str()
-                    .unwrap()
+                self.spec_path
             ))?;
 
+        execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
+
         // Clone the response from the mock to avoid borrowing issues.
-        let mock_response = mock.response.clone();
+        let mock_response = execution_mock.mock.response.clone();
 
         // Build the response with the status code from the mock.
         let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
@@ -564,13 +833,37 @@ impl HttpIO for MockHttpClient {
     }
 }
 
-async fn assert_spec(spec: ExecutionSpec) {
-    let will_insta_panic = std::env::var("INSTA_FORCE_PASS").is_err();
-    let runtime = init_runtime(&Upstream::default(), None);
-    let reader = ConfigReader::init(runtime);
+struct MockFileSystem {
+    spec: ExecutionSpec,
+}
 
+impl MockFileSystem {
+    fn new(spec: ExecutionSpec) -> MockFileSystem {
+        MockFileSystem { spec }
+    }
+}
+
+#[async_trait::async_trait]
+impl FileIO for MockFileSystem {
+    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> anyhow::Result<()> {
+        Err(anyhow!("Cannot write to a file in an execution spec"))
+    }
+
+    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/execution/");
+        let path = path
+            .strip_prefix(&base.to_string_lossy().to_string())
+            .unwrap_or(path);
+
+        match self.spec.files.get(path) {
+            Some(x) => Ok(x.to_owned()),
+            None => Err(anyhow!("No such file or directory (os error 2)")),
+        }
+    }
+}
+
+async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     // Parse and validate all server configs + check for identity
-    log::info!("{} {} ...", spec.name, spec.path.display());
 
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
@@ -584,12 +877,10 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = match config {
             Ok(config) => {
-                let runtime = init_runtime(&blueprint::Upstream::default(), None);
+                let mut runtime = test::init(None);
+                runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
                 let reader = ConfigReader::init(runtime);
-                match reader
-                    .resolve(config, Some(spec.path.to_string_lossy().to_string()))
-                    .await
-                {
+                match reader.resolve(config, spec.path.parent()).await {
                     Ok(config) => Blueprint::try_from(&config),
                     Err(e) => Err(ValidationError::new(e.to_string())),
                 }
@@ -599,7 +890,7 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         match config {
             Ok(_) => {
-                log::error!("\terror FAIL");
+                tracing::error!("\terror FAIL");
                 panic!(
                     "Spec {} {:?} with \"sdl error\" directive did not have a validation error.",
                     spec.name, spec.path
@@ -609,15 +900,9 @@ async fn assert_spec(spec: ExecutionSpec) {
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                log::info!("\terrors... (snapshot)");
-
                 let snapshot_name = format!("{}_errors", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
-
-                if will_insta_panic {
-                    log::info!("\terrors ok");
-                }
             }
         };
 
@@ -638,13 +923,12 @@ async fn assert_spec(spec: ExecutionSpec) {
 
         let config = Config::default().merge_right(&config);
 
-        log::info!("\tserver #{} parse ok", i + 1);
-
         // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code style
-        // the re-serializing check gives us some of the advantages of the identity check too,
-        // but we are missing out on some by having it only enabled for either new tests that request it
-        // or old graphql_spec tests that were explicitly written with it in mind
+        // but GraphQL identity checking is very hard, since a lot depends on the code
+        // style the re-serializing check gives us some of the advantages of the
+        // identity check too, but we are missing out on some by having it only
+        // enabled for either new tests that request it or old graphql_spec
+        // tests that were explicitly written with it in mind
         if spec.check_identity {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
@@ -655,8 +939,6 @@ async fn assert_spec(spec: ExecutionSpec) {
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
-
-                log::info!("\tserver #{} identity ok", i + 1);
             } else {
                 panic!(
                     "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
@@ -669,7 +951,6 @@ async fn assert_spec(spec: ExecutionSpec) {
     }
 
     // merged: Run merged specs
-    log::info!("\tmerged... (snapshot)");
 
     let merged = server
         .iter()
@@ -680,17 +961,15 @@ async fn assert_spec(spec: ExecutionSpec) {
 
     insta::assert_snapshot!(snapshot_name, merged);
 
-    if will_insta_panic {
-        log::info!("\tmerged ok");
-    }
-
-    dbg!(spec.path.to_string_lossy().to_string());
-
     // Resolve all configs
-    let server: Vec<ConfigSet> = join_all(
+    let mut runtime = test::init(None);
+    runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
+    let reader = ConfigReader::init(runtime);
+
+    let server: Vec<ConfigModule> = join_all(
         server
             .into_iter()
-            .map(|config| reader.resolve(config, Some(spec.path.to_string_lossy().to_string()))),
+            .map(|config| reader.resolve(config, spec.path.parent())),
     )
     .await
     .into_iter()
@@ -714,29 +993,27 @@ async fn assert_spec(spec: ExecutionSpec) {
         let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
 
-        log::info!("\tclient... (snapshot)");
         insta::assert_snapshot!(snapshot_name, client);
-
-        if will_insta_panic {
-            log::info!("\tclient ok");
-        }
     }
 
     if let Some(assert_spec) = spec.assert.as_ref() {
+        let mock_http_client = Arc::new(MockHttpClient::new(&spec));
+        let app_ctx = spec
+            .app_context(
+                server.first().unwrap(),
+                spec.env.clone().unwrap_or_default(),
+                mock_http_client.clone(),
+            )
+            .await;
+
         // assert: Run assert specs
         for (i, assertion) in assert_spec.iter().enumerate() {
-            let response = run_assert(
-                &spec,
-                &spec
-                    .env
-                    .clone()
-                    .unwrap_or_else(|| HashMap::with_capacity(0)),
-                assertion,
-                server.first().unwrap(),
-            )
-            .await
-            .context(spec.path.to_str().unwrap().to_string())
-            .unwrap();
+            opentelemetry.reset();
+
+            let response = run_assert(app_ctx.clone(), assertion)
+                .await
+                .context(spec.path.to_str().unwrap().to_string())
+                .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
 
@@ -756,59 +1033,78 @@ async fn assert_spec(spec: ExecutionSpec) {
 
             let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
 
-            log::info!("\tassert #{}... (snapshot)", i + 1);
             insta::assert_json_snapshot!(snapshot_name, response);
 
-            if will_insta_panic {
-                log::info!("\tassert #{} ok", i + 1);
+            if assertion.assert_traces {
+                let snapshot_name = format!("{}_assert_traces_{}", spec.safe_name, i);
+                insta::assert_json_snapshot!(snapshot_name, opentelemetry.get_traces().unwrap());
+            }
+
+            if assertion.assert_metrics {
+                let snapshot_name = format!("{}_assert_metrics_{}", spec.safe_name, i);
+                insta::assert_json_snapshot!(
+                    snapshot_name,
+                    opentelemetry.get_metrics().await.unwrap()
+                );
             }
         }
+
+        mock_http_client.assert_hits();
     }
+
+    tracing::info!("{} ... ok", spec.path.display());
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    env_logger::builder()
-        .filter(Some("execution_spec"), log::LevelFilter::Info)
-        .init();
-
+#[tokio::test]
+async fn test() -> anyhow::Result<()> {
+    let opentelemetry = init_opentelemetry();
     // Explicitly only run one test if specified in command line args
-    // This is used by testconv to auto-apply the snapshots of unconvertable fail-annotated http specs
-    let explicit = std::env::args().skip(1).find(|x| !x.starts_with("--"));
-    let spec = if let Some(explicit) = explicit {
-        let path = PathBuf::from(&explicit)
-            .canonicalize()
-            .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", explicit));
+    // This is used by test-convertor to auto-apply the snapshots of incompatible
+    // fail-annotated http specs
 
-        let contents = fs::read_to_string(&path)?;
-        let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
-            .await
-            .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+    let args: Vec<String> = std::env::args().collect();
+    let expected_arg = ["insta", "i"];
 
-        vec![spec]
-    } else {
+    let index = args
+        .iter()
+        .position(|arg| expected_arg.contains(&arg.as_str()))
+        .unwrap_or(usize::MAX);
+
+    let spec = if index == usize::MAX {
         let spec = ExecutionSpec::cargo_read("tests/execution").await?;
         ExecutionSpec::filter_specs(spec)
+    } else {
+        let mut vec = vec![];
+        let insta_values: Vec<&String> = args.iter().skip(index + 1).collect();
+        for arg in insta_values {
+            let path = PathBuf::from(arg)
+                .canonicalize()
+                .unwrap_or_else(|_| panic!("Failed to parse explicit test path {:?}", arg));
+
+            let contents = fs::read_to_string(&path)?;
+            let spec: ExecutionSpec = ExecutionSpec::from_source(&path, contents)
+                .await
+                .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+            vec.push(spec);
+        }
+        vec
     };
 
     for spec in spec.into_iter() {
-        assert_spec(spec).await;
+        assert_spec(spec, &opentelemetry).await;
     }
 
     Ok(())
 }
 
 async fn run_assert(
-    spec: &ExecutionSpec,
-    env: &HashMap<String, String>,
+    app_ctx: Arc<AppContext>,
     request: &APIRequest,
-    config: &ConfigSet,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let query_string = serde_json::to_string(&request.body).expect("body is required");
     let method = request.method.clone();
     let headers = request.headers.clone();
     let url = request.url.clone();
-    let server_context = spec.server_context(config, env.clone()).await;
     let req = headers
         .into_iter()
         .fold(
@@ -820,9 +1116,9 @@ async fn run_assert(
         .body(Body::from(query_string))?;
 
     // TODO: reuse logic from server.rs to select the correct handler
-    if server_context.blueprint.server.enable_batch_requests {
-        handle_request::<GraphQLBatchRequest>(req, server_context).await
+    if app_ctx.blueprint.server.enable_batch_requests {
+        handle_request::<GraphQLBatchRequest>(req, app_ctx).await
     } else {
-        handle_request::<GraphQLRequest>(req, server_context).await
+        handle_request::<GraphQLRequest>(req, app_ctx).await
     }
 }

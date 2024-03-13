@@ -9,16 +9,16 @@ use async_graphql::futures_util::future::join_all;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
 use crate::http::{DataLoaderRequest, Response};
-use crate::HttpIO;
+use crate::runtime::TargetRuntime;
 
 pub struct GraphqlDataLoader {
-    pub client: Arc<dyn HttpIO>,
+    pub runtime: TargetRuntime,
     pub batch: bool,
 }
 
 impl GraphqlDataLoader {
-    pub fn new(client: Arc<dyn HttpIO>, batch: bool) -> Self {
-        GraphqlDataLoader { client, batch }
+    pub fn new(runtime: TargetRuntime, batch: bool) -> Self {
+        GraphqlDataLoader { runtime, batch }
     }
 
     pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, GraphqlDataLoader> {
@@ -40,12 +40,12 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if self.batch {
             let batched_req = create_batched_request(keys);
-            let result = self.client.execute(batched_req).await?.to_json();
+            let result = self.runtime.http.execute(batched_req).await?.to_json();
             let hashmap = extract_responses(result, keys);
             Ok(hashmap)
         } else {
             let results = keys.iter().map(|key| async {
-                let result = self.client.execute(key.to_request()).await;
+                let result = self.runtime.http.execute(key.to_request()).await;
                 (key.clone(), result)
             });
             let results = join_all(results).await;

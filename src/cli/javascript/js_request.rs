@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fmt::Display;
 
 use hyper::body::Bytes;
 use serde::{Deserialize, Serialize};
@@ -8,7 +9,7 @@ use crate::is_default;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRequest {
-    url: String,
+    uri: Uri,
     method: String,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     headers: BTreeMap<String, String>,
@@ -16,17 +17,77 @@ pub struct JsRequest {
     body: Option<Bytes>,
 }
 
-impl TryFrom<JsRequest> for reqwest::Request {
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
+pub enum Scheme {
+    #[default]
+    Http,
+    Https,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Uri {
+    path: String,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    query: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    scheme: Scheme,
+    #[serde(default, skip_serializing_if = "is_default")]
+    host: Option<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    port: Option<u16>,
+}
+
+impl From<&reqwest::Url> for Uri {
+    fn from(value: &reqwest::Url) -> Self {
+        Self {
+            path: value.path().to_string(),
+            query: value.query_pairs().into_owned().collect(),
+            scheme: match value.scheme() {
+                "https" => Scheme::Https,
+                _ => Scheme::Http,
+            },
+            host: value.host_str().map(|u| u.to_string()),
+            port: value.port(),
+        }
+    }
+}
+
+impl Display for Uri {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let host = self.host.as_deref().unwrap_or("localhost");
+        let port = self.port.map(|p| format!(":{}", p)).unwrap_or_default();
+        let scheme = match self.scheme {
+            Scheme::Https => "https",
+            _ => "http",
+        };
+        let path = self.path.as_str();
+        let query = self
+            .query
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<String>>()
+            .join("&");
+
+        if !query.is_empty() {
+            write!(f, "{}://{}:{}{}?{}", scheme, host, port, path, query)
+        } else {
+            write!(f, "{}://{}{}{}", scheme, host, port, path)
+        }
+    }
+}
+
+impl TryInto<reqwest::Request> for JsRequest {
     type Error = anyhow::Error;
 
-    fn try_from(req: JsRequest) -> Result<Self, Self::Error> {
+    fn try_into(self) -> Result<reqwest::Request, Self::Error> {
         let mut request = reqwest::Request::new(
-            reqwest::Method::from_bytes(req.method.as_bytes())?,
-            req.url.parse()?,
+            reqwest::Method::from_bytes(self.method.as_bytes())?,
+            self.uri.to_string().parse()?,
         );
-        let headers = create_header_map(req.headers)?;
+        let headers = create_header_map(self.headers)?;
         request.headers_mut().extend(headers);
-        if let Some(bytes) = req.body {
+        if let Some(bytes) = self.body {
             let _ = request.body_mut().insert(reqwest::Body::from(bytes));
         }
 
@@ -34,11 +95,11 @@ impl TryFrom<JsRequest> for reqwest::Request {
     }
 }
 
-impl TryFrom<reqwest::Request> for JsRequest {
+impl TryFrom<&reqwest::Request> for JsRequest {
     type Error = anyhow::Error;
 
-    fn try_from(req: reqwest::Request) -> Result<Self, Self::Error> {
-        let url = req.url().to_string();
+    fn try_from(req: &reqwest::Request) -> Result<Self, Self::Error> {
+        let url = Uri::from(req.url());
         let method = req.method().as_str().to_string();
         let headers = req
             .headers()
@@ -50,12 +111,9 @@ impl TryFrom<reqwest::Request> for JsRequest {
                 )
             })
             .collect::<BTreeMap<String, String>>();
-        let body = req.body().map(|body| {
-            let bytes = body.as_bytes().unwrap_or_default();
-            Bytes::from_iter(bytes.to_vec())
-        });
 
-        Ok(JsRequest { url, method, headers, body })
+        // NOTE: We don't pass body to worker for performance reasons
+        Ok(JsRequest { uri: url, method, headers, body: None })
     }
 }
 
@@ -64,6 +122,11 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
+    impl Uri {
+        pub fn parse(input: &str) -> anyhow::Result<Self> {
+            Ok(Self::from(&reqwest::Url::parse(input)?))
+        }
+    }
 
     #[test]
     fn test_js_request_to_reqwest_request() {
@@ -72,7 +135,7 @@ mod tests {
         headers.insert("x-unusual-header".to_string(), "🚀".to_string());
 
         let js_request = JsRequest {
-            url: "http://example.com/".to_string(),
+            uri: Uri::parse("http://example.com/").unwrap(),
             method: "GET".to_string(),
             headers,
             body: Some(Bytes::from(body)),
@@ -99,10 +162,10 @@ mod tests {
         let _ = reqwest_request
             .body_mut()
             .insert(reqwest::Body::from("Hello, World!"));
-        let js_request: JsRequest = reqwest_request.try_into().unwrap();
+        let js_request: JsRequest = (&reqwest_request).try_into().unwrap();
         assert_eq!(js_request.method, "GET");
-        assert_eq!(js_request.url, "http://example.com/");
-        let body_out = js_request.body.unwrap();
-        assert_eq!(body_out, Bytes::from("Hello, World!"));
+        assert_eq!(js_request.uri.to_string(), "http://example.com/");
+        let body_out = js_request.body;
+        assert_eq!(body_out, None);
     }
 }

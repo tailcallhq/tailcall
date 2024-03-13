@@ -2,35 +2,41 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::KeyValues;
+use crate::config::headers::Headers;
+use crate::config::KeyValue;
 use crate::is_default;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-/// The `@server` directive, when applied at the schema level, offers a comprehensive set of server configurations. It dictates how the server behaves and helps tune tailcall for various use-cases.
+/// The `@server` directive, when applied at the schema level, offers a
+/// comprehensive set of server configurations. It dictates how the server
+/// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `apolloTracing` exposes GraphQL query performance data, including execution time of queries and individual resolvers.
+    /// `apolloTracing` exposes GraphQL query performance data, including
+    /// execution time of queries and individual resolvers.
     pub apollo_tracing: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `batchRequests` combines multiple requests into one, improving performance but potentially introducing latency and complicating debugging. Use judiciously. @default `false`.
+    /// `batchRequests` combines multiple requests into one, improving
+    /// performance but potentially introducing latency and complicating
+    /// debugging. Use judiciously. @default `false`.
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cacheControlHeader` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.
-    pub cache_control_header: Option<bool>,
+    /// `headers` contains key-value pairs that are included as default headers
+    /// in server responses, allowing for consistent header management across
+    /// all responses.
+    pub headers: Option<Headers>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cert` sets the path to certificate(s) for running the server over HTTP2 (HTTPS). @default `null`.
-    pub cert: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.
+    /// `globalResponseTimeout` sets the maximum query duration before
+    /// termination, acting as a safeguard against long-running queries.
     pub global_response_timeout: Option<i64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.
+    /// `graphiql` activates the GraphiQL IDE at the root path within Tailcall,
+    /// a tool for query development and testing. @default `false`.
     pub graphiql: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -38,15 +44,14 @@ pub struct Server {
     pub hostname: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `introspection` allows clients to fetch schema information directly, aiding tools and applications in understanding available types, fields, and operations. @default `true`.
+    /// `introspection` allows clients to fetch schema information directly,
+    /// aiding tools and applications in understanding available types, fields,
+    /// and operations. @default `true`.
     pub introspection: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `key` sets the path to key for running the server over HTTP2 (HTTPS). @default `null`.
-    pub key: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `pipelineFlush` allows to control flushing behavior of the server pipeline.
+    /// `pipelineFlush` allows to control flushing behavior of the server
+    /// pipeline.
     pub pipeline_flush: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -54,49 +59,50 @@ pub struct Server {
     pub port: Option<u16>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `queryValidation` checks incoming GraphQL queries against the schema, preventing errors from invalid queries. Can be disabled for performance. @default `false`.
+    /// `queryValidation` checks incoming GraphQL queries against the schema,
+    /// preventing errors from invalid queries. Can be disabled for performance.
+    /// @default `false`.
     pub query_validation: Option<bool>,
 
     #[serde(skip_serializing_if = "is_default", default)]
-    /// The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.
-    pub response_headers: KeyValues,
+    /// The `responseHeaders` are key-value pairs included in every server
+    /// response. Useful for setting headers like `Access-Control-Allow-Origin`
+    /// for cross-origin requests or additional headers for downstream services.
+    pub response_headers: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.
+    /// `responseValidation` Tailcall automatically validates responses from
+    /// upstream services using inferred schema. @default `false`.
     pub response_validation: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// A link to an external JS file that listens on every HTTP request response event.
-    pub script: Option<Script>,
+    /// A link to an external JS file that listens on every HTTP request
+    /// response event.
+    pub script: Option<ScriptOptions>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `showcase` enables the /showcase/graphql endpoint.
     pub showcase: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// This configuration defines local variables for server operations. Useful for storing constant configurations, secrets, or shared information.
-    pub vars: KeyValues,
+    /// This configuration defines local variables for server operations. Useful
+    /// for storing constant configurations, secrets, or shared information.
+    pub vars: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. @default `HTTP1`.
+    /// `version` sets the HTTP version for the server. Options are `HTTP1` and
+    /// `HTTP2`. @default `HTTP1`.
     pub version: Option<HttpVersion>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `workers` sets the number of worker threads. @default the number of system cores.
+    /// `workers` sets the number of worker threads. @default the number of
+    /// system cores.
     pub workers: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum Script {
-    Path(ScriptOptions),
-    File(ScriptOptions),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
 pub struct ScriptOptions {
-    pub src: String,
     pub timeout: Option<u64>,
 }
 
@@ -129,7 +135,10 @@ impl Server {
         self.response_validation.unwrap_or(false)
     }
     pub fn enable_cache_control(&self) -> bool {
-        self.cache_control_header.unwrap_or(false)
+        self.headers
+            .as_ref()
+            .map(|h| h.enable_cache_control())
+            .unwrap_or(false)
     }
     pub fn enable_introspection(&self) -> bool {
         self.introspection.unwrap_or(true)
@@ -149,11 +158,19 @@ impl Server {
     }
 
     pub fn get_vars(&self) -> BTreeMap<String, String> {
-        self.vars.clone().0
+        self.vars
+            .clone()
+            .iter()
+            .map(|kv| (kv.key.clone(), kv.value.clone()))
+            .collect()
     }
 
-    pub fn get_response_headers(&self) -> KeyValues {
-        self.response_headers.clone()
+    pub fn get_response_headers(&self) -> BTreeMap<String, String> {
+        self.response_headers
+            .clone()
+            .iter()
+            .map(|kv| (kv.key.clone(), kv.value.clone()))
+            .collect()
     }
 
     pub fn get_version(self) -> HttpVersion {
@@ -166,7 +183,7 @@ impl Server {
 
     pub fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
-        self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
+        self.headers = other.headers.or(self.headers);
         self.graphiql = other.graphiql.or(self.graphiql);
         self.introspection = other.introspection.or(self.introspection);
         self.query_validation = other.query_validation.or(self.query_validation);
@@ -179,15 +196,29 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
-        let mut vars = self.vars.0.clone();
-        vars.extend(other.vars.0);
-        self.vars = KeyValues(vars);
-        let mut response_headers = self.response_headers.0.clone();
-        response_headers.extend(other.response_headers.0);
-        self.response_headers = KeyValues(response_headers);
+        self.vars = other.vars.iter().fold(self.vars, |mut acc, kv| {
+            let position = acc.iter().position(|x| x.key == kv.key);
+            if let Some(pos) = position {
+                acc[pos] = kv.clone();
+            } else {
+                acc.push(kv.clone());
+            };
+            acc
+        });
+        self.response_headers =
+            other
+                .response_headers
+                .iter()
+                .fold(self.response_headers, |mut acc, kv| {
+                    let position = acc.iter().position(|x| x.key == kv.key);
+                    if let Some(pos) = position {
+                        acc[pos] = kv.clone();
+                    } else {
+                        acc.push(kv.clone());
+                    };
+                    acc
+                });
         self.version = other.version.or(self.version);
-        self.cert = other.cert.or(self.cert);
-        self.key = other.key.or(self.key);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
         self

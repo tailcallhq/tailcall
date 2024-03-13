@@ -8,9 +8,10 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
-use super::{RateLimit, JS};
+use super::telemetry::Telemetry;
+use super::JS;
 use crate::config::{
-    self, Cache, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
+    self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
     Upstream,
 };
 use crate::directive::DirectiveCodec;
@@ -44,14 +45,18 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
             .fuse(unions)
             .fuse(schema)
             .fuse(links(sd))
-            .map(|(server, upstream, types, unions, schema, links)| Config {
-                server,
-                upstream,
-                types,
-                unions,
-                schema,
-                links,
-            })
+            .fuse(opentelemetry(sd))
+            .map(
+                |(server, upstream, types, unions, schema, links, opentelemetry)| Config {
+                    server,
+                    upstream,
+                    types,
+                    unions,
+                    schema,
+                    links,
+                    opentelemetry,
+                },
+            )
     })
 }
 
@@ -112,6 +117,13 @@ fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
     process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
 }
 
+fn opentelemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
+    process_schema_directives(
+        schema_definition,
+        config::telemetry::Telemetry::directive_name().as_str(),
+    )
+}
+
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
     let query = schema_definition.query.as_ref().map(pos_name_to_string);
     let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);
@@ -130,32 +142,25 @@ fn to_types(
 ) -> Valid<BTreeMap<String, config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
-        let directives = &type_definition.node.directives;
-
-        RateLimit::from_directives(directives.iter())
-            .and_then(|rate_limit| match type_definition.node.kind.clone() {
-                TypeKind::Object(object_type) => to_object_type(
-                    &object_type,
-                    &type_definition.node.description,
-                    &type_definition.node.directives,
-                    rate_limit,
-                )
-                .some(),
-                TypeKind::Interface(interface_type) => to_object_type(
-                    &interface_type,
-                    &type_definition.node.description,
-                    &type_definition.node.directives,
-                    rate_limit,
-                )
-                .some(),
-                TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-                TypeKind::InputObject(input_object_type) => {
-                    to_input_object(input_object_type).some()
-                }
-                TypeKind::Union(_) => Valid::none(),
-                TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
-            })
-            .map(|option| (type_name, option))
+        match type_definition.node.kind.clone() {
+            TypeKind::Object(object_type) => to_object_type(
+                &object_type,
+                &type_definition.node.description,
+                &type_definition.node.directives,
+            )
+            .some(),
+            TypeKind::Interface(interface_type) => to_object_type(
+                &interface_type,
+                &type_definition.node.description,
+                &type_definition.node.directives,
+            )
+            .some(),
+            TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
+            TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
+            TypeKind::Union(_) => Valid::none(),
+            TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
+        }
+        .map(|option| (type_name, option))
     })
     .map(|vec| {
         BTreeMap::from_iter(
@@ -195,7 +200,6 @@ fn to_object_type<T>(
     object: &T,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
-    rate_limit: Option<RateLimit>,
 ) -> Valid<config::Type, String>
 where
     T: ObjectLike,
@@ -203,15 +207,6 @@ where
     let fields = object.fields();
     let implements = object.implements();
     let interface = object.is_interface();
-
-    if let Some(RateLimit { group_by: Some(ref group_by), .. }) = rate_limit {
-        if fields.iter().all(|val| !val.node.name.node.eq(group_by)) {
-            return Valid::fail_with(
-                format!("Cannot groupBy field {group_by}"),
-                format!("No field named {group_by} found for this type"),
-            );
-        }
-    }
 
     Cache::from_directives(directives.iter())
         .zip(to_fields(fields))
@@ -226,7 +221,6 @@ where
                 interface,
                 implements,
                 cache,
-                rate_limit,
                 ..Default::default()
             }
         })
@@ -295,13 +289,13 @@ where
         .fuse(GraphQL::from_directives(directives.iter()))
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(Grpc::from_directives(directives.iter()))
-        .fuse(RateLimit::from_directives(directives.iter()))
         .fuse(Expr::from_directives(directives.iter()))
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(JS::from_directives(directives.iter()))
+        .fuse(Call::from_directives(directives.iter()))
         .map(
-            |(http, graphql, cache, grpc, rate_limit, expr, omit, modify, script)| {
+            |(http, graphql, cache, grpc, expr, omit, modify, script, call)| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
@@ -319,7 +313,7 @@ where
                     graphql,
                     expr,
                     cache,
-                    rate_limit,
+                    call,
                 }
             },
         )

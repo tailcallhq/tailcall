@@ -50,7 +50,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn env_var(&self, key: &str) -> Option<String> {
-        self.req_ctx.env_vars.get(key)
+        self.req_ctx.runtime.env.get(key)
     }
 
     pub fn var(&self, key: &str) -> Option<&str> {
@@ -107,7 +107,7 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
     let arguments = field
         .arguments()
         .map_err(|error| {
-            log::warn!("Failed to resolve arguments for field {name}, due to error: {error}");
+            tracing::warn!("Failed to resolve arguments for field {name}, due to error: {error}");
 
             error
         })

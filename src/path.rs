@@ -6,22 +6,20 @@ use crate::json::JsonLike;
 use crate::lambda::{EvaluationContext, ResolverContextLike};
 
 ///
-/// The path module provides a trait for accessing values from a JSON-like structure.
-///
+/// The path module provides a trait for accessing values from a JSON-like
+/// structure.
 
 ///
-/// The PathString trait provides a method for accessing values from a JSON-like structure.
-/// The returned value is encoded as a plain string.
+/// The PathString trait provides a method for accessing values from a JSON-like
+/// structure. The returned value is encoded as a plain string.
 /// This is typically used in evaluating mustache templates.
-///
 pub trait PathString {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
 }
 
 ///
-/// The PathGraphql trait provides a method for accessing values from a JSON-like structure.
-/// The returned value is encoded as a GraphQL Value.
-///
+/// The PathGraphql trait provides a method for accessing values from a
+/// JSON-like structure. The returned value is encoded as a GraphQL Value.
 pub trait PathGraphql {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String>;
 }
@@ -208,7 +206,7 @@ mod tests {
             let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
 
             req_ctx.server.vars = TEST_VARS.clone();
-            req_ctx.env_vars = Arc::new(Env::init(TEST_ENV_VARS.clone()));
+            req_ctx.runtime.env = Arc::new(Env::init(TEST_ENV_VARS.clone()));
 
             req_ctx
         });

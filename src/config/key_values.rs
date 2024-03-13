@@ -13,7 +13,14 @@ impl Deref for KeyValues {
         &self.0
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq)]
+
+impl FromIterator<(String, String)> for KeyValues {
+    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
+        KeyValues(BTreeMap::from_iter(iter))
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
 pub struct KeyValue {
     pub key: String,
     pub value: String,

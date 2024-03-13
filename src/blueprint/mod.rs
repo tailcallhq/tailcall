@@ -1,6 +1,7 @@
 mod blueprint;
 mod compress;
 mod definitions;
+mod dynamic_value;
 mod from_config;
 mod into_schema;
 mod links;
@@ -9,10 +10,13 @@ mod operation;
 mod operators;
 mod schema;
 mod server;
+pub mod telemetry;
 mod timeout;
 mod upstream;
+
 pub use blueprint::*;
 pub use definitions::*;
+pub use dynamic_value::*;
 pub use from_config::*;
 pub use links::*;
 pub use operation::*;
@@ -22,10 +26,10 @@ pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
-use crate::config::{Arg, ConfigSet, Field};
+use crate::config::{Arg, ConfigModule, Field};
 use crate::try_fold::TryFold;
 
-pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigSet, A, String>;
+pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
 
 pub(crate) trait TypeLike {
     fn name(&self) -> &str;
@@ -94,8 +98,4 @@ where
     } else {
         Type::NamedType { name: name.to_string(), non_null }
     }
-}
-
-pub fn is_scalar(type_name: &str) -> bool {
-    ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }

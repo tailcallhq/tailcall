@@ -11,10 +11,12 @@ A Markdown-based snapshot testing framework for Tailcall.
     - [`mock`](#mock)
     - [`env`](#env)
     - [`assert`](#assert)
+    - [`file`](#file)
   - [Instruction](#instruction)
 - [Test process](#test-process)
 - [Snapshots](#snapshots)
 - [Porting from `http_spec`/`graphql_spec`](#porting-from-graphql_spechttp_spec)
+- [Maintainance](#Maintenance)
 
 ## Structure
 
@@ -145,6 +147,33 @@ Example:
 ```
 ````
 
+#### `#### file:<filename>`
+
+A `file` block creates a file in the spec's virtual file system. The [`server` block](#server) will only be able to access files created in this way: the true filesystem is not available to it.
+
+Every `file` block has the filename declared in the header. The language of the code block is optional and does not matter.
+
+Example:
+
+````md
+#### file:enum.graphql
+
+```graphql
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo: Foo @http(path: "/foo")
+}
+```
+````
+
 ### Instruction
 
 A level 6 heading (`######`), with the text being one of the following:
@@ -181,6 +210,7 @@ There must be exactly zero or one instruction in a test.
       1. If the snapshot doesn't match the generated schema, the runner generates a new snapshot and throws an error.
    1. If the test has an [`assert` block](#assert), the runner performs `assert` checks:
       1. If there is a [`mock` block](#mock), the runner sets up the mock HTTP client based on it.
+      1. If there is at least one [`file` block](#file), the runner sets up the mock filesystem based on them.
       1. If there is an [`env` block](#env), the runner uses it for the app context.
       1. Creates an app context based on the [`server` block](#server).
       1. For each assertion in the block (0-based index `i`), the runner does the following:
@@ -206,10 +236,6 @@ cargo insta test --review
 ```
 
 This will regenerate all snapshots without interrupting the test every time there's a diff, and it will also open the snapshot review interface, so you can accept or reject `.new` snapshots.
-
-## Porting from `graphql_spec`/`http_spec`
-
-Porting is automatically done by `testconv`. You can run `testconv` by doing `cargo run -p testconv`, but it is automatically performed by `./lint.sh --mode=fix`. This is a description of what it does under the hood.
 
 ### `http_spec`
 
@@ -248,3 +274,7 @@ Each test's `.md` file may have a file name suffix of `-error` if the bare file 
 1. An [`sdl error` instruction](#instruction) is appended.
 1. The server SDL is put into a [`server` block](#server).
 1. The expected errors are put into an `errors` snapshot.
+
+## Maintenance
+
+1. To clean unused snapshots, run `cargo insta test --delete-unreferenced-snapshots`.

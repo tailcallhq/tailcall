@@ -15,11 +15,10 @@ RUN mkdir .cargo \
     && cargo vendor > .cargo/config
 
 # Install required system dependencies and cleanup in the same layer
-RUN apt-get update && apt-get install -y pkg-config libssl-dev python g++ git make && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev python g++ git make libglib2.0-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy the rest of the source code
 COPY . .
-RUN sed -i 's/"cloudflare",\s*//;s/, "cloudflare"//g' Cargo.toml
 
 RUN chmod +x docker.sh && ./docker.sh
 
@@ -27,7 +26,7 @@ RUN chmod +x docker.sh && ./docker.sh
 RUN RUST_BACKTRACE=1 cargo build --release
 
 # Runner stage
-FROM fedora:34 AS runner
+FROM fedora:41 AS runner
 
 # Copy necessary files from the builder stage
 COPY --from=builder /prod/target/release/tailcall /bin

@@ -6,40 +6,42 @@ use std::process::exit;
 
 use anyhow::{anyhow, Result};
 use gen_gql_schema::update_gql;
-use schemars::schema::RootSchema;
+use schemars::schema::{RootSchema, Schema};
+use schemars::Map;
 use serde_json::{json, Value};
-use tailcall::cli::init_file;
-use tailcall::config;
+use tailcall::scalar::CUSTOM_SCALARS;
+use tailcall::tracing::default_crate_tracing;
+use tailcall::{cli, config};
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
 #[tokio::main]
 async fn main() {
-    logger_init();
+    tracing::subscriber::set_global_default(default_crate_tracing("autogen")).unwrap();
     let args: Vec<String> = env::args().collect();
     let arg = args.get(1);
 
     if arg.is_none() {
-        log::error!("An argument required, you can pass either `fix` or `check` argument");
+        tracing::error!("An argument required, you can pass either `fix` or `check` argument");
         return;
     }
     match arg.unwrap().as_str() {
         "fix" => {
             let result = mode_fix().await;
             if let Err(e) = result {
-                log::error!("{}", e);
+                tracing::error!("{}", e);
                 exit(1);
             }
         }
         "check" => {
             let result = mode_check().await;
             if let Err(e) = result {
-                log::error!("{}", e);
+                tracing::error!("{}", e);
                 exit(1);
             }
         }
         &_ => {
-            log::error!("Unknown argument, you can pass either `fix` or `check` argument");
+            tracing::error!("Unknown argument, you can pass either `fix` or `check` argument");
             return;
         }
     }
@@ -47,7 +49,8 @@ async fn main() {
 
 async fn mode_check() -> Result<()> {
     let json_schema = get_file_path();
-    let file_io = init_file();
+    let rt = cli::runtime::init(&Default::default(), None);
+    let file_io = rt.file;
     let content = file_io
         .read(
             json_schema
@@ -72,8 +75,9 @@ async fn mode_fix() -> Result<()> {
 async fn update_json() -> Result<()> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
-    let file_io = init_file();
-    log::info!("Updating JSON Schema: {}", path.to_str().unwrap());
+    let rt = cli::runtime::init(&Default::default(), None);
+    let file_io = rt.file;
+    tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
         .write(
             path.to_str().ok_or(anyhow!("Unable to determine path"))?,
@@ -88,23 +92,13 @@ fn get_file_path() -> PathBuf {
 }
 
 async fn get_updated_json() -> Result<Value> {
-    let schema: RootSchema = schemars::schema_for!(config::Config);
+    let mut schema: RootSchema = schemars::schema_for!(config::Config);
+    let scalar = CUSTOM_SCALARS
+        .iter()
+        .map(|(k, v)| (k.clone(), v.scalar()))
+        .collect::<Map<String, Schema>>();
+    schema.definitions.extend(scalar);
+
     let schema = json!(schema);
     Ok(schema)
-}
-
-fn logger_init() {
-    // set the log level
-    const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_SCHEMA_LOG_LEVEL";
-    const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_SCHEMA_LOG_LEVEL";
-
-    // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
-    let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
-        .map(|_| LONG_ENV_FILTER_VAR_NAME)
-        .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
-
-    // use the log level from the env if there is one, otherwise use the default.
-    let env = env_logger::Env::new().filter_or(filter_env_name, "info");
-
-    env_logger::Builder::from_env(env).init();
 }

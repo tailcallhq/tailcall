@@ -2,14 +2,16 @@ use std::collections::{HashMap, HashSet};
 
 use super::{Blueprint, Definition};
 
-// compress() takes a Blueprint and returns a compressed Blueprint. So that unused types are removed.
+// compress() takes a Blueprint and returns a compressed Blueprint. So that
+// unused types are removed.
 pub fn compress(mut blueprint: Blueprint) -> Blueprint {
     let graph = build_dependency_graph(&blueprint);
 
     // Pre-defined root-types for graphql
     let mut root_type = vec!["Query", "Mutation", "Subscription"];
 
-    // User-might create custom root-types other than default i.e non-default types for root-definitions.
+    // User-might create custom root-types other than default i.e non-default types
+    // for root-definitions.
     let defined_query_type = blueprint.query().clone();
     let mutation = blueprint.mutation().unwrap_or("Mutation".to_string());
 
@@ -48,33 +50,33 @@ fn build_dependency_graph(blueprint: &Blueprint) -> HashMap<&str, Vec<&str>> {
         let mut dependencies: Vec<&str> = Vec::new();
 
         match def {
-            Definition::ObjectTypeDefinition(def) => {
+            Definition::Object(def) => {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
                 for field in &def.fields {
                     dependencies.extend(field.args.iter().map(|arg| arg.of_type.name()));
                 }
                 dependencies.extend(def.implements.iter().map(|s| s.as_str()));
             }
-            Definition::InterfaceTypeDefinition(def) => {
+            Definition::Interface(def) => {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
                 for def_inner in &blueprint.definitions {
-                    if let Definition::ObjectTypeDefinition(def_inner) = def_inner {
+                    if let Definition::Object(def_inner) = def_inner {
                         if def_inner.implements.contains(&def.name) {
                             dependencies.push(&def_inner.name);
                         }
                     }
                 }
             }
-            Definition::InputObjectTypeDefinition(def) => {
+            Definition::InputObject(def) => {
                 dependencies.extend(def.fields.iter().map(|field| field.of_type.name()));
             }
-            Definition::EnumTypeDefinition(def) => {
+            Definition::Enum(def) => {
                 dependencies.extend(def.enum_values.iter().map(|value| value.name.as_str()));
             }
-            Definition::UnionTypeDefinition(def) => {
+            Definition::Union(def) => {
                 dependencies.extend(def.types.iter().map(|s| s.as_str()));
             }
-            Definition::ScalarTypeDefinition(sc) => {
+            Definition::Scalar(sc) => {
                 dependencies.push(sc.name.as_str());
             }
         }

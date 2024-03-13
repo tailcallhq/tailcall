@@ -8,19 +8,19 @@ use crate::valid::{Valid, Validator};
 struct CompilationContext<'a> {
     config_field: &'a config::Field,
     operation_type: &'a config::GraphQLOperationType,
-    config_set: &'a config::ConfigSet,
+    config_module: &'a config::ConfigModule,
 }
 
 pub fn update_expr(
     operation_type: &config::GraphQLOperationType,
-) -> TryFold<'_, (&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config_set, field, _, _), b_field| {
+) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        |(config_module, field, _, _), b_field| {
             let Some(expr) = &field.expr else {
                 return Valid::succeed(b_field);
             };
 
-            let context = CompilationContext { config_set, operation_type, config_field: field };
+            let context = CompilationContext { config_module, operation_type, config_field: field };
 
             compile(&context, expr.body.clone()).map(|compiled| b_field.resolver(Some(compiled)))
         },
@@ -29,7 +29,6 @@ pub fn update_expr(
 
 ///
 /// Compiles a list of Exprs into a list of Expressions
-///
 fn compile_list(
     context: &CompilationContext,
     expr_vec: Vec<ExprBody>,
@@ -39,7 +38,6 @@ fn compile_list(
 
 ///
 /// Compiles a tuple of Exprs into a tuple of Expressions
-///
 fn compile_ab(
     context: &CompilationContext,
     ab: (ExprBody, ExprBody),
@@ -49,17 +47,16 @@ fn compile_ab(
 
 ///
 /// Compiles expr into Expression
-///
 fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String> {
-    let config_set = ctx.config_set;
+    let config_module = ctx.config_module;
     let field = ctx.config_field;
     let operation_type = ctx.operation_type;
     match expr {
         // Io Expr
-        ExprBody::Http(http) => compile_http(config_set, field, &http),
+        ExprBody::Http(http) => compile_http(config_module, field, &http),
         ExprBody::Grpc(grpc) => {
             let grpc = CompileGrpc {
-                config_set,
+                config_module,
                 field,
                 operation_type,
                 grpc: &grpc,
@@ -67,11 +64,12 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
             };
             compile_grpc(grpc)
         }
-        ExprBody::GraphQL(gql) => compile_graphql(config_set, operation_type, &gql),
+        ExprBody::GraphQL(gql) => compile_graphql(config_module, operation_type, &gql),
+        ExprBody::Call(call) => compile_call(field, config_module, &call, operation_type),
 
         // Safe Expr
         ExprBody::Const(value) => {
-            compile_const(CompileConst { config_set, field, value: &value, validate: false })
+            compile_const(CompileConst { config_module, field, value: &value, validate: false })
         }
 
         // Logic
@@ -96,7 +94,7 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
         .and_then(|mut list| {
             compile(ctx, *default).map(|default| {
                 list.push((
-                    Box::new(Expression::Literal(true.into())),
+                    Box::new(Expression::Literal(DynamicValue::Value(true.into()))),
                     Box::new(default),
                 ));
                 Expression::Logic(Logic::Cond(list))
@@ -178,7 +176,7 @@ mod tests {
     use serde_json::{json, Number};
 
     use super::{compile, CompilationContext};
-    use crate::config::{ConfigSet, Expr, Field, GraphQLOperationType};
+    use crate::config::{ConfigModule, Expr, Field, GraphQLOperationType};
     use crate::http::RequestContext;
     use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
     use crate::valid::Validator;
@@ -218,11 +216,11 @@ mod tests {
     impl Expr {
         async fn eval(expr: serde_json::Value) -> anyhow::Result<serde_json::Value> {
             let expr = serde_json::from_value::<Expr>(expr)?;
-            let config_set = ConfigSet::default();
+            let config_module = ConfigModule::default();
             let field = Field::default();
             let operation_type = GraphQLOperationType::Query;
             let context = CompilationContext {
-                config_set: &config_set,
+                config_module: &config_module,
                 config_field: &field,
                 operation_type: &operation_type,
             };
@@ -500,27 +498,27 @@ mod tests {
         let expected = json!(0);
 
         let actual = Expr::eval(
-      json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": false}, {"const": 2}]]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": false}, {"const": 2}]]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!(1);
 
         let actual = Expr::eval(
-      json!({"body": {"cond": [{"const": 0}, [[{"const": true}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"cond": [{"const": 0}, [[{"const": true}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!(2);
         let actual = Expr::eval(
-      json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"cond": [{"const": 0}, [[{"const": false}, {"const": 1}], [{"const": true}, {"const": 2}]]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 
@@ -566,8 +564,8 @@ mod tests {
         let actual = Expr::eval(
             json!({"body": {"difference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
 
         assert_eq!(actual, expected);
     }
@@ -577,17 +575,17 @@ mod tests {
         let expected = json!([1]);
 
         let actual = Expr::eval(
-      json!({"body": {"symmetricDifference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"symmetricDifference": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let actual = Expr::eval(
-      json!({"body": {"symmetricDifference": [[{"const": 2}, {"const": 3}], [{"const": 1}, {"const": 2}, {"const": 3}]]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"symmetricDifference": [[{"const": 2}, {"const": 3}], [{"const": 1}, {"const": 2}, {"const": 3}]]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 
@@ -596,8 +594,8 @@ mod tests {
         let expected = serde_json::from_value::<HashSet<Number>>(json!([1, 2, 3, 4])).unwrap();
 
         let actual = Expr::eval(json!({"body": {"union": [[{"const": 1}, {"const": 2}, {"const": 3}], [{"const": 2}, {"const": 3}, {"const": 4}]]}}))
-      .await
-      .unwrap();
+            .await
+            .unwrap();
         let actual = serde_json::from_value::<HashSet<Number>>(actual).unwrap();
         assert_eq!(actual, expected);
     }
@@ -818,24 +816,24 @@ mod tests {
         let actual = Expr::eval(
             json!({"body": {"max": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!("z");
         let actual = Expr::eval(
             json!({"body": {"max": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!([2, 3]);
         let actual = Expr::eval(
-      json!({"body": {"max": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"max": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 
@@ -845,24 +843,24 @@ mod tests {
         let actual = Expr::eval(
             json!({"body": {"min": [{"const": 1}, {"const": 23}, {"const": -423}, {"const": 0}, {"const": 923.83}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!("abc");
         let actual = Expr::eval(
             json!({"body": {"min": [{"const": "abc"}, {"const": "z"}, {"const": "bcd"}, {"const": "foo"}]}}),
         )
-        .await
-        .unwrap();
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
 
         let expected = json!([-1, 0, 0, 0]);
         let actual = Expr::eval(
-      json!({"body": {"min": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
-    )
-    .await
-    .unwrap();
+            json!({"body": {"min": [{"const": [2, 3]}, {"const": [0, 1, 2]}, {"const": [-1, 0, 0, 0]}, {"const": [1]}]}}),
+        )
+            .await
+            .unwrap();
         assert_eq!(actual, expected);
     }
 

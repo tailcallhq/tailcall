@@ -1,5 +1,6 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::mutable_key_type)]
+
 mod app_context;
 pub mod async_graphql_hyper;
 pub mod blueprint;
@@ -22,7 +23,11 @@ pub mod mustache;
 pub mod path;
 pub mod print_schema;
 pub mod rate_limiter;
-pub mod target_runtime;
+mod rest;
+pub mod runtime;
+pub mod scalar;
+mod serde_value_ext;
+pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 
@@ -61,14 +66,40 @@ pub trait Cache: Send + Sync {
         ttl: NonZeroU64,
     ) -> anyhow::Result<()>;
     async fn get<'a>(&'a self, key: &'a Self::Key) -> anyhow::Result<Option<Self::Value>>;
+
+    fn hit_rate(&self) -> Option<f64>;
 }
 
 pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
 
-pub trait WorkerIO<Event, Command>: Send + Sync {
-    fn dispatch(&self, event: Event) -> anyhow::Result<Command>;
+#[async_trait::async_trait]
+pub trait WorkerIO<In, Out>: Send + Sync + 'static {
+    /// Calls a global JS function
+    async fn call(&self, name: String, input: In) -> anyhow::Result<Option<Out>>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
+}
+
+#[cfg(test)]
+pub mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    #[derive(Clone, Default)]
+    pub struct TestEnvIO(HashMap<String, String>);
+
+    impl EnvIO for TestEnvIO {
+        fn get(&self, key: &str) -> Option<String> {
+            self.0.get(key).cloned()
+        }
+    }
+
+    impl FromIterator<(String, String)> for TestEnvIO {
+        fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
+            Self(HashMap::from_iter(iter))
+        }
+    }
 }

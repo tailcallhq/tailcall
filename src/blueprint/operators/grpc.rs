@@ -1,9 +1,11 @@
+use std::fmt::Display;
+
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
-use crate::config::{Config, ConfigSet, Field, GraphQLOperationType, Grpc};
+use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
@@ -21,7 +23,7 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
     .and_then(|base_url| {
         let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
-        base_url.push_str(&method.service);
+        base_url.push_str(format!("{}.{}", method.package, method.service).as_str());
         base_url.push('/');
         base_url.push_str(&method.name);
 
@@ -39,14 +41,14 @@ fn to_operation(
     )
     .and_then(|set| {
         Valid::from(
-            set.find_service(&method.service)
+            set.find_service(method)
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
     .and_then(|service| {
         Valid::from(
             service
-                .find_operation(&method.name)
+                .find_operation(method)
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
@@ -72,7 +74,8 @@ fn validate_schema(
     Valid::from(JsonSchema::try_from(input_type))
         .zip(Valid::from(JsonSchema::try_from(output_type)))
         .and_then(|(_input_schema, output_schema)| {
-            // TODO: add validation for input schema - should compare result grpc.body to schema
+            // TODO: add validation for input schema - should compare result grpc.body to
+            // schema
             let fields = field_schema.field;
             let _args = field_schema.args;
             // TODO: all of the fields in protobuf are optional actually
@@ -102,7 +105,8 @@ fn validate_group_by(
     Valid::from(JsonSchema::try_from(input_type))
         .zip(Valid::from(output_type))
         .and_then(|(_input_schema, output_schema)| {
-            // TODO: add validation for input schema - should compare result grpc.body to schema considering repeated message type
+            // TODO: add validation for input schema - should compare result grpc.body to
+            // schema considering repeated message type
             let fields = &field_schema.field;
             let args = &field_schema.args;
             let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
@@ -112,62 +116,68 @@ fn validate_group_by(
 }
 
 pub struct CompileGrpc<'a> {
-    pub config_set: &'a ConfigSet,
+    pub config_module: &'a ConfigModule,
     pub operation_type: &'a GraphQLOperationType,
     pub field: &'a Field,
     pub grpc: &'a Grpc,
     pub validate_with_schema: bool,
 }
-
-struct GrpcMethod {
-    pub id: String,
+pub struct GrpcMethod {
+    pub package: String,
     pub service: String,
     pub name: String,
 }
 
-impl TryFrom<String> for GrpcMethod {
+impl Display for GrpcMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.package, self.service, self.name)
+    }
+}
+
+impl TryFrom<&str> for GrpcMethod {
     type Error = ValidationError<String>;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let method: Vec<&str> = value.split('.').collect();
-
-        if method.len() != 3 {
-            return Err(ValidationError::new(format!(
-                "Invalid method format: {}. Expected format is <package/proto_id>.<service>.<method>",
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let parts: Vec<&str> = value.rsplitn(3, '.').collect();
+        match &parts[..] {
+            &[name, service, id] => {
+                let method = GrpcMethod {
+                    package: id.to_owned(),
+                    service: service.to_owned(),
+                    name: name.to_owned(),
+                };
+                Ok(method)
+            }
+            _ => Err(ValidationError::new(format!(
+                "Invalid method format: {}. Expected format is <package>.<service>.<method>",
                 value
-            )));
+            ))),
         }
-
-        let id = method[0].to_string();
-        let service = format!("{}.{}", id, method[1]);
-        let name = method[2].to_string();
-
-        Ok(GrpcMethod { id, service, name })
     }
 }
 
 pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
-    let config_set = inputs.config_set;
+    let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
     let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
 
-    Valid::from(GrpcMethod::try_from(grpc.method.clone()))
+    Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
             Valid::from_option(
-                config_set.extensions.get_file_descriptor(&method.id),
-                format!("File descriptor not found for proto id: {}", method.id),
+                config_module.extensions.get_file_descriptor_set(&method),
+                format!("File descriptor not found for method: {}", grpc.method),
             )
             .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
-            .fuse(to_url(grpc, &method, config_set))
+            .fuse(to_url(grpc, &method, config_module))
             .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
             .fuse(helpers::body::to_body(grpc.body.as_deref()))
             .into()
         })
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
-                let field_schema = json_schema_from_field(config_set, field);
+                let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
                     validate_schema(field_schema, &operation, field.name()).unit()
                 } else {
@@ -200,22 +210,27 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
-        |(config_set, field, type_of, _name), b_field| {
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+        |(config_module, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);
             };
 
             compile_grpc(CompileGrpc {
-                config_set,
+                config_module,
                 operation_type,
                 field,
                 grpc,
                 validate_with_schema: true,
             })
             .map(|resolver| b_field.resolver(Some(resolver)))
-            .and_then(|b_field| b_field.validate_field(type_of, config_set).map_to(b_field))
+            .and_then(|b_field| {
+                b_field
+                    .validate_field(type_of, config_module)
+                    .map_to(b_field)
+            })
         },
     )
 }
@@ -229,22 +244,26 @@ mod tests {
 
     #[test]
     fn try_from_grpc_method() {
-        let method =
-            GrpcMethod::try_from("package_name.ServiceName.MethodName".to_string()).unwrap();
+        let method = GrpcMethod::try_from("package_name.ServiceName.MethodName").unwrap();
+        let method1 = GrpcMethod::try_from("package.name.ServiceName.MethodName").unwrap();
 
-        assert_eq!(method.id, "package_name");
-        assert_eq!(method.service, "package_name.ServiceName");
+        assert_eq!(method.package, "package_name");
+        assert_eq!(method.service, "ServiceName");
         assert_eq!(method.name, "MethodName");
+
+        assert_eq!(method1.package, "package.name");
+        assert_eq!(method1.service, "ServiceName");
+        assert_eq!(method1.name, "MethodName");
     }
 
     #[test]
     fn try_from_grpc_method_invalid() {
-        let result = GrpcMethod::try_from("package_name.ServiceName".to_string());
+        let result = GrpcMethod::try_from("package_name.ServiceName");
 
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
-            ValidationError::new("Invalid method format: package_name.ServiceName. Expected format is <package/proto_id>.<service>.<method>".to_string())
+            ValidationError::new("Invalid method format: package_name.ServiceName. Expected format is <package>.<service>.<method>".to_string())
         );
     }
 }

@@ -1,8 +1,6 @@
 # Ref other nested
 
-#### server:
-
-```json
+```json @server
 {
   "server": {},
   "upstream": {
@@ -64,13 +62,12 @@
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/users/1
     body: null
+  expected_hits: 2
   response:
     status: 200
     body:
@@ -78,9 +75,7 @@
       name: Leanne Graham
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

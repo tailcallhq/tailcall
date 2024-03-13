@@ -6,7 +6,7 @@ use crate::config::Field;
 use crate::lambda::Expression;
 use crate::lambda::Expression::Literal;
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, Validator};
+use crate::valid::{Valid, ValidationError, Validator};
 
 fn validate_data_with_schema(
     config: &config::Config,
@@ -23,42 +23,53 @@ fn validate_data_with_schema(
 }
 
 pub struct CompileConst<'a> {
-    pub config_set: &'a config::ConfigSet,
+    pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
     pub value: &'a serde_json::Value,
     pub validate: bool,
 }
 
 pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
-    let config_set = inputs.config_set;
+    let config_module = inputs.config_module;
     let field = inputs.field;
     let value = inputs.value;
     let validate = inputs.validate;
 
-    let data = value.to_owned();
-    match ConstValue::from_json(data.to_owned()) {
-        Ok(gql) => {
-            let validation = if validate {
-                validate_data_with_schema(config_set, field, gql)
-            } else {
-                Valid::succeed(())
-            };
-            validation.map(|_| Literal(data))
+    Valid::from(
+        DynamicValue::try_from(&value.clone()).map_err(|e| ValidationError::new(e.to_string())),
+    )
+    .and_then(|value| {
+        if !value.is_const() {
+            // TODO: Add validation for const with Mustache here
+            Valid::succeed(Literal(value.to_owned()))
+        } else {
+            let data = &value;
+            match data.try_into() {
+                Ok(gql) => {
+                    let validation = if validate {
+                        validate_data_with_schema(config_module, field, gql)
+                    } else {
+                        Valid::succeed(())
+                    };
+                    validation.map(|_| Literal(value.to_owned()))
+                }
+                Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
+            }
         }
-        Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
-    }
+    })
 }
 
 pub fn update_const_field<'a>(
-) -> TryFold<'a, (&'a ConfigSet, &'a Field, &'a config::Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigSet, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        |(config_set, field, _, _), b_field| {
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+        |(config_module, field, _, _), b_field| {
             let Some(const_field) = &field.const_field else {
                 return Valid::succeed(b_field);
             };
 
             compile_const(CompileConst {
-                config_set,
+                config_module,
                 field,
                 value: &const_field.data,
                 validate: true,

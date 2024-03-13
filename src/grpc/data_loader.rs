@@ -16,11 +16,11 @@ use crate::data_loader::{DataLoader, Loader};
 use crate::grpc::request::create_grpc_request;
 use crate::http::Response;
 use crate::json::JsonLike;
-use crate::HttpIO;
+use crate::runtime::TargetRuntime;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
-    pub(crate) client: Arc<dyn HttpIO>,
+    pub(crate) runtime: TargetRuntime,
     pub(crate) operation: ProtobufOperation,
     pub(crate) group_by: Option<GroupBy>,
 }
@@ -38,11 +38,12 @@ impl GrpcDataLoader {
     ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
-                Ok(req) => execute_grpc_request(&self.client, &self.operation, req).await,
+                Ok(req) => execute_grpc_request(&self.runtime, &self.operation, req).await,
                 Err(error) => Err(error),
             };
 
-            // TODO: do we have to clone keys here? join_all seems like returns the results in passed order
+            // TODO: do we have to clone keys here? join_all seems like returns the results
+            // in passed order
             (key.clone(), result)
         });
 
@@ -75,7 +76,7 @@ impl GrpcDataLoader {
         );
 
         let response =
-            execute_grpc_request(&self.client, &self.operation, multiple_request).await?;
+            execute_grpc_request(&self.runtime, &self.operation, multiple_request).await?;
 
         let path = &group_by.path();
         let response_body = response.body.group_by(path);

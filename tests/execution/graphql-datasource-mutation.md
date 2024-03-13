@@ -1,8 +1,6 @@
 # Graphql datasource
 
-#### server:
-
-```graphql
+```graphql @server
 schema {
   query: Query
   mutation: Mutation
@@ -29,13 +27,11 @@ type UserInput {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "mutation { createUser(user: {name: \"Test Name\",email: \"test@email\"}) { name } }" }'
+    body: '{ "query": "mutation { createUser(user: {name: \"Test Name\", email: \"test@email\"}) { name } }" }'
   response:
     status: 200
     body:
@@ -44,9 +40,7 @@ type UserInput {
           name: Test Name
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:
