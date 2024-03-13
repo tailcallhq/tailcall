@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(headers: {custom: [{key: "a", value: "a"}, {key: "a", value: "b"}]}) @upstream {
+  query: Query
+}
+
+type Query {
+  user: User @const(data: {name: "John"})
+}
+
+type User {
+  age: Int
+  name: String
+}
