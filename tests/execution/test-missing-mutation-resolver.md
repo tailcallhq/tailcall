@@ -1,6 +1,8 @@
 # test-missing-mutation-resolver
 
-###### sdl error
+---
+expect_validation_error: true
+---
 
 ```graphql @server
 schema {

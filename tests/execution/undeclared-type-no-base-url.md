@@ -1,6 +1,8 @@
 # undeclared-type-no-base-url
 
-###### sdl error
+---
+expect_validation_error: true
+---
 
 ```graphql @server
 schema @server {

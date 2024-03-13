@@ -1,6 +1,8 @@
 # test-duplicated-link
 
-###### sdl error
+---
+expect_validation_error: true
+---
 
 ```graphql @file:jsonplaceholder.graphql
 schema

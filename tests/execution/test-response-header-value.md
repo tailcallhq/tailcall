@@ -1,6 +1,8 @@
 # test-response-header-value
 
-###### sdl error
+---
+expect_validation_error: true
+---
 
 ```graphql @server
 schema @server(headers: {custom: [{key: "a", value: "a \n b"}]}) {

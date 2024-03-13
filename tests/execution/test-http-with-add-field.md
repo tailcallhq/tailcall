@@ -1,6 +1,8 @@
 # test-http-with-add-field
 
-###### sdl error
+---
+expect_validation_error: true
+---
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {

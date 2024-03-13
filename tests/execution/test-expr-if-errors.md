@@ -1,6 +1,8 @@
 # test-expr-if-errors
 
-###### sdl error
+---
+expect_validation_error: true
+---
 
 ```graphql @server
 schema @server {
