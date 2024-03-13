@@ -130,7 +130,7 @@ mod tests {
         headers.insert("x-unusual-header".to_string(), "🚀".to_string());
 
         let js_request = JsRequest {
-            uri: "http://example.com/".to_string(),
+            uri: Uri::parse("http://example.com/").unwrap(),
             method: "GET".to_string(),
             headers,
             body: Some(Bytes::from(body)),
