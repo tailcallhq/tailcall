@@ -437,7 +437,7 @@ jobs:
 
       - name: Check if the label exists
         id: check_label
-        if: contains(github.event.pull_request.labels.*.name, 'ci: build all')
+        if: "'ci: build all' in github.event.pull_request.labels.*.name"
         run: echo "Label 'ci: build all' exists"
 
       - name: Build on ${{ runner.os }}
@@ -547,7 +547,7 @@ jobs:
           access: public
       - name: Check if the label exists
         id: check_label
-        if: contains(github.event.pull_request.labels.*.name, 'ci: build all')
+        if: "'ci: build all' in github.event.pull_request.labels.*.name"
         run: echo "Label 'ci: build all' exists"
 
       - name: Build on ${{ runner.os }}
