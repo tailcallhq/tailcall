@@ -605,7 +605,7 @@ impl ExecutionSpec {
         config: &ConfigModule,
         env: HashMap<String, String>,
         http_client: Arc<MockHttpClient>,
-    ) -> Arc<AppContext> {
+    ) -> anyhow::Result<Arc<AppContext>> {
         let blueprint = Blueprint::try_from(config).unwrap();
         let http = if let Some(script) = blueprint.server.script.clone() {
             javascript::init_http(http_client, script)
@@ -629,7 +629,7 @@ impl ExecutionSpec {
 
         let app_ctx =
             AppContext::new(blueprint, runtime, config.extensions.endpoints.clone()).await?;
-        Arc::new(app_ctx)
+        Ok(Arc::new(app_ctx))
     }
 }
 
@@ -1010,7 +1010,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         for (i, assertion) in assert_spec.iter().enumerate() {
             opentelemetry.reset();
 
-            let response = run_assert(app_ctx.clone(), assertion)
+            let response = run_assert(app_ctx.as_ref().unwrap().clone(), assertion)
                 .await
                 .context(spec.path.to_str().unwrap().to_string())
                 .unwrap();

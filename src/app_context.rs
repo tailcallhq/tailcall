@@ -4,9 +4,9 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 use async_graphql_extension_apollo_tracing::register::register_dynamic;
 
+use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
-use crate::blueprint::telemetry::TelemetryExporter;
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
@@ -118,8 +118,8 @@ impl AppContext {
             register_dynamic(
                 &apollo.api_key,
                 &schema,
-                &graph_id,
-                &variant,
+                graph_id,
+                variant,
                 &apollo.user_version,
                 &apollo.platform,
             )
