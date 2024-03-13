@@ -1,4 +1,6 @@
-use std::{collections::BTreeMap, fmt::Display};
+use std::collections::BTreeMap;
+
+use std::fmt::Display;
 
 use hyper::body::Bytes;
 use serde::{Deserialize, Serialize};
@@ -16,19 +18,24 @@ pub struct JsRequest {
     body: Option<Bytes>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub enum Scheme {
-    HTTP,
-    HTTPS,
+    #[default]
+    Http,
+    Https,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Uri {
     path: String,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     query: BTreeMap<String, String>,
+    #[serde(default, skip_serializing_if = "is_default")]
     scheme: Scheme,
+    #[serde(default, skip_serializing_if = "is_default")]
     host: Option<String>,
+    #[serde(default, skip_serializing_if = "is_default")]
     port: Option<u16>,
 }
 
@@ -38,8 +45,8 @@ impl From<&reqwest::Url> for Uri {
             path: value.path().to_string(),
             query: value.query_pairs().into_owned().collect(),
             scheme: match value.scheme() {
-                "https" => Scheme::HTTPS,
-                _ => Scheme::HTTP,
+                "https" => Scheme::Https,
+                _ => Scheme::Http,
             },
             host: value.host_str().map(|u| u.to_string()),
             port: value.port(),
@@ -49,14 +56,10 @@ impl From<&reqwest::Url> for Uri {
 
 impl Display for Uri {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let host = self
-            .host
-            .as_ref()
-            .map(|h| h.as_str())
-            .unwrap_or("localhost");
+        let host = self.host.as_deref().unwrap_or("localhost");
         let port = self.port.map(|p| p.to_string()).unwrap_or_default();
         let scheme = match self.scheme {
-            Scheme::HTTPS => "https",
+            Scheme::Https => "https",
             _ => "http",
         };
         let path = self.path.as_str();
@@ -115,6 +118,11 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
+    impl Uri {
+        pub fn parse(input: &str) -> anyhow::Result<Self> {
+            Ok(Self::from(&reqwest::Url::parse(input)?))
+        }
+    }
 
     #[test]
     fn test_js_request_to_reqwest_request() {
@@ -152,7 +160,7 @@ mod tests {
             .insert(reqwest::Body::from("Hello, World!"));
         let js_request: JsRequest = (&reqwest_request).try_into().unwrap();
         assert_eq!(js_request.method, "GET");
-        assert_eq!(js_request.uri, "http://example.com/");
+        assert_eq!(js_request.uri.to_string(), "http://example.com/");
         let body_out = js_request.body;
         assert_eq!(body_out, None);
     }
