@@ -314,7 +314,6 @@ struct ExecutionSpec {
     // Annotations for the runner
     runner: Option<Annotation>,
 
-    // check_identity: bool,
     sdl_error: bool,
 }
 
@@ -589,7 +588,6 @@ impl ExecutionSpec {
             files,
 
             runner,
-            // check_identity,
             sdl_error,
         };
 
@@ -923,12 +921,12 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
         let identity = config.to_sdl();
 
-            pretty_assertions::assert_eq!(
-                content.as_ref(),
-                identity,
-                "Identity check failed for {:#?}",
-                spec.path,
-            );
+        pretty_assertions::assert_eq!(
+            content.as_ref(),
+            identity,
+            "Identity check failed for {:#?}",
+            spec.path,
+        );
             
         server.push(config);
     }
