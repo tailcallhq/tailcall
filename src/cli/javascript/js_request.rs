@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fmt::Display};
 
 use hyper::body::Bytes;
 use serde::{Deserialize, Serialize};
@@ -8,12 +8,66 @@ use crate::is_default;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRequest {
-    url: String,
+    uri: Uri,
     method: String,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
     body: Option<Bytes>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Scheme {
+    HTTP,
+    HTTPS,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Uri {
+    path: String,
+    query: BTreeMap<String, String>,
+    scheme: Scheme,
+    host: Option<String>,
+    port: Option<u16>,
+}
+
+impl From<&reqwest::Url> for Uri {
+    fn from(value: &reqwest::Url) -> Self {
+        Self {
+            path: value.path().to_string(),
+            query: value.query_pairs().into_owned().collect(),
+            scheme: match value.scheme() {
+                "https" => Scheme::HTTPS,
+                _ => Scheme::HTTP,
+            },
+            host: value.host_str().map(|u| u.to_string()),
+            port: value.port(),
+        }
+    }
+}
+
+impl Display for Uri {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let host = self
+            .host
+            .as_ref()
+            .map(|h| h.as_str())
+            .unwrap_or("localhost");
+        let port = self.port.map(|p| p.to_string()).unwrap_or_default();
+        let scheme = match self.scheme {
+            Scheme::HTTPS => "https",
+            _ => "http",
+        };
+        let path = self.path.as_str();
+        let query = self
+            .query
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<String>>()
+            .join("&");
+        write!(f, "{}://{}:{}{}?{}", scheme, host, port, path, query)
+    }
 }
 
 impl TryInto<reqwest::Request> for JsRequest {
@@ -22,7 +76,7 @@ impl TryInto<reqwest::Request> for JsRequest {
     fn try_into(self) -> Result<reqwest::Request, Self::Error> {
         let mut request = reqwest::Request::new(
             reqwest::Method::from_bytes(self.method.as_bytes())?,
-            self.url.parse()?,
+            self.uri.to_string().parse()?,
         );
         let headers = create_header_map(self.headers)?;
         request.headers_mut().extend(headers);
@@ -38,7 +92,7 @@ impl TryFrom<&reqwest::Request> for JsRequest {
     type Error = anyhow::Error;
 
     fn try_from(req: &reqwest::Request) -> Result<Self, Self::Error> {
-        let url = req.url().to_string();
+        let url = Uri::from(req.url());
         let method = req.method().as_str().to_string();
         let headers = req
             .headers()
@@ -52,7 +106,7 @@ impl TryFrom<&reqwest::Request> for JsRequest {
             .collect::<BTreeMap<String, String>>();
 
         // NOTE: We don't pass body to worker for performance reasons
-        Ok(JsRequest { url, method, headers, body: None })
+        Ok(JsRequest { uri: url, method, headers, body: None })
     }
 }
 
@@ -69,7 +123,7 @@ mod tests {
         headers.insert("x-unusual-header".to_string(), "🚀".to_string());
 
         let js_request = JsRequest {
-            url: "http://example.com/".to_string(),
+            uri: "http://example.com/".to_string(),
             method: "GET".to_string(),
             headers,
             body: Some(Bytes::from(body)),
@@ -98,7 +152,7 @@ mod tests {
             .insert(reqwest::Body::from("Hello, World!"));
         let js_request: JsRequest = (&reqwest_request).try_into().unwrap();
         assert_eq!(js_request.method, "GET");
-        assert_eq!(js_request.url, "http://example.com/");
+        assert_eq!(js_request.uri, "http://example.com/");
         let body_out = js_request.body;
         assert_eq!(body_out, None);
     }
