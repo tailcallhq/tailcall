@@ -160,7 +160,7 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
     }
 }
 
-fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<HeaderMap, String> {
+fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderMap, String> {
     Valid::from_iter(resp_headers.iter(), |(k, v)| {
         let name = Valid::from(
             HeaderName::from_bytes(k.as_bytes())

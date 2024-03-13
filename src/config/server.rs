@@ -161,11 +161,11 @@ impl Server {
             .collect()
     }
 
-    pub fn get_response_headers(&self) -> BTreeMap<String, String> {
+    pub fn get_response_headers(&self) -> Vec<(String, String)> {
         self.headers
             .as_ref()
             .map(|h| h.custom.clone())
-            .map_or(BTreeMap::new(), |headers| {
+            .map_or(Vec::new(), |headers| {
                 headers
                     .iter()
                     .map(|kv| (kv.key.clone(), kv.value.clone()))
