@@ -111,20 +111,10 @@ jobs:
             files: lcov.info
             fail_ci_if_error: true
 
-      - name: Check if the label exists
-        id: check_label
-        run: echo ::set-output name=label_exists::${{ contains(github.event.pull_request.labels.*.name, 'ci: build all') }}
-
       - name: Build on ${{ runner.os }}
         run: |
-          if [ "${{ steps.check_label.outputs.label_exists }}" == "true" ]; then
             echo "Label 'ci: build all' found. Building..."
-
             cargo build --release
-
-          else
-            echo "Label 'ci: build all' not found. Skipping build."
-          fi
 
   check-examples:
     name: Check Examples
@@ -466,7 +456,7 @@ jobs:
         run: |
           if [ "${{ steps.check_label.outputs.label_exists }}" == "true" ]; then
             echo "Label 'ci: build all' found. Building..."
-            
+
             npm run build
 
           else
