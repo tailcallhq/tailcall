@@ -25,14 +25,23 @@ pub struct AppContext {
 }
 
 impl AppContext {
-    #[allow(clippy::too_many_arguments)]
-    pub async fn new(
-        mut blueprint: Blueprint,
+    pub fn new(blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
+        Self::inner_new(blueprint, runtime, endpoints)
+    }
+
+    pub async fn new_with_validation(
+        blueprint: Blueprint,
         runtime: TargetRuntime,
         endpoints: EndpointSet,
     ) -> anyhow::Result<Self> {
         endpoints.validate(&blueprint, runtime.clone()).await?;
+        Ok(Self::inner_new(blueprint, runtime, endpoints))
+    }
 
+    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
+        self.schema.execute(request).await
+    }
+    fn inner_new(mut blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -113,7 +122,7 @@ impl AppContext {
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
 
-        Ok(AppContext {
+        AppContext {
             schema,
             runtime,
             blueprint,
@@ -121,10 +130,6 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
-        })
-    }
-
-    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
-        self.schema.execute(request).await
+        }
     }
 }

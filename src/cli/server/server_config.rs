@@ -33,8 +33,9 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let app_context =
-            Arc::new(AppContext::new(blueprint.clone(), rt, endpoints.clone()).await?);
+        let app_context = Arc::new(
+            AppContext::new_with_validation(blueprint.clone(), rt, endpoints.clone()).await?,
+        );
         // endpoints.validate(app_context.as_ref()).await?;
 
         Ok(Self { app_ctx: app_context, blueprint })
