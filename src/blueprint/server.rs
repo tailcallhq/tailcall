@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::net::{AddrParseError, IpAddr};
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,6 +16,7 @@ use crate::valid::{Valid, ValidationError, Validator};
 pub struct Server {
     pub enable_apollo_tracing: bool,
     pub enable_cache_control_header: bool,
+    pub enable_set_cookie_header: bool,
     pub enable_graphiql: bool,
     pub enable_introspection: bool,
     pub enable_query_validation: bool,
@@ -32,6 +33,7 @@ pub struct Server {
     pub pipeline_flush: bool,
     pub script: Option<Script>,
     pub cors_params: Option<CorsParams>,
+    pub experimental_headers: BTreeSet<String>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -71,6 +73,10 @@ impl Server {
 
     pub fn get_enable_query_validation(&self) -> bool {
         self.enable_query_validation
+    }
+
+    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
+        self.experimental_headers.clone()
     }
 }
 
@@ -123,12 +129,14 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 let server = Server {
                     enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                     enable_cache_control_header: (config_server).enable_cache_control(),
+                    enable_set_cookie_header: (config_server).enable_set_cookies(),
                     enable_graphiql: (config_server).enable_graphiql(),
                     enable_introspection: (config_server).enable_introspection(),
                     enable_query_validation: (config_server).enable_query_validation(),
                     enable_response_validation: (config_server).enable_http_validation(),
                     enable_batch_requests: (config_server).enable_batch_requests(),
                     enable_showcase: (config_server).enable_showcase(),
+                    experimental_headers: (config_server).get_experimental_headers(),
                     global_response_timeout: (config_server).get_global_response_timeout(),
                     http,
                     worker: (config_server).get_workers(),
@@ -177,7 +185,7 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
     }
 }
 
-fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<HeaderMap, String> {
+fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderMap, String> {
     Valid::from_iter(resp_headers.iter(), |(k, v)| {
         let name = Valid::from(
             HeaderName::from_bytes(k.as_bytes())
@@ -190,7 +198,8 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
         name.zip(value)
     })
     .map(|headers| headers.into_iter().collect::<HeaderMap>())
-    .trace("responseHeaders")
+    .trace("custom")
+    .trace("headers")
     .trace("@server")
     .trace("schema")
 }

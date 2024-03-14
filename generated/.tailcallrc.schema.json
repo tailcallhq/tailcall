@@ -85,6 +85,38 @@
         }
       }
     },
+    "Apollo": {
+      "type": "object",
+      "required": [
+        "apiKey",
+        "graphRef"
+      ],
+      "properties": {
+        "apiKey": {
+          "description": "Setting `apiKey` for Apollo.",
+          "type": "string"
+        },
+        "graphRef": {
+          "description": "Setting `graphRef` for Apollo in the format <graphId>@<variant>.",
+          "type": "string"
+        },
+        "platform": {
+          "description": "Setting `platform` for Apollo.",
+          "default": "platform",
+          "type": "string"
+        },
+        "userVersion": {
+          "description": "Setting `userVersion` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        },
+        "version": {
+          "description": "Setting `version` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        }
+      }
+    },
     "Arg": {
       "type": "object",
       "required": [
@@ -192,84 +224,6 @@
       ],
       "properties": {
         "data": true
-      }
-    },
-    "ConstOrMirror": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/MirrorRequest"
-        },
-        {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      ]
-    },
-    "CorsParams": {
-      "type": "object",
-      "properties": {
-        "allowCredentials": {
-          "default": false,
-          "type": "boolean"
-        },
-        "allowHeaders": {
-          "default": null,
-          "allOf": [
-            {
-              "$ref": "#/definitions/ConstOrMirror"
-            }
-          ]
-        },
-        "allowMethods": {
-          "default": null,
-          "allOf": [
-            {
-              "$ref": "#/definitions/ConstOrMirror"
-            }
-          ]
-        },
-        "allowOrigin": {
-          "default": [],
-          "allOf": [
-            {
-              "$ref": "#/definitions/StringOrSequence"
-            }
-          ]
-        },
-        "allowPrivateNetwork": {
-          "default": false,
-          "type": "boolean"
-        },
-        "exposeHeaders": {
-          "default": [],
-          "allOf": [
-            {
-              "$ref": "#/definitions/StringOrSequence"
-            }
-          ]
-        },
-        "maxAge": {
-          "default": null,
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "vary": {
-          "default": [
-            "origin",
-            "access-control-request-method",
-            "access-control-request-headers"
-          ],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
       }
     },
     "Date": {
@@ -1284,6 +1238,43 @@
         }
       }
     },
+    "Headers": {
+      "type": "object",
+      "properties": {
+        "cacheControl": {
+          "description": "`cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "custom": {
+          "description": "`headers` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
+        },
+        "experimental": {
+          "description": "`experimental` allows the use of `X-*` experimental headers in the response. @default `[]`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "setCookies": {
+          "description": "`setCookies` when enabled stores `set-cookie` headers and all the response will be sent with the headers.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
     "Http": {
       "description": "The @http operator indicates that a field or node is backed by a REST API.\n\nFor instance, if you add the @http operator to the `users` field of the Query type with a path argument of `\"/users\"`, it signifies that the `users` field is backed by a REST API. The path argument specifies the path of the REST API. In this scenario, the GraphQL server will make a GET request to the API endpoint specified when the `users` field is queried.",
       "type": "object",
@@ -1453,9 +1444,6 @@
         "TRACE"
       ]
     },
-    "MirrorRequest": {
-      "type": "null"
-    },
     "Modify": {
       "type": "object",
       "properties": {
@@ -1466,7 +1454,10 @@
           ]
         },
         "omit": {
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },
@@ -1591,24 +1582,6 @@
             "null"
           ]
         },
-        "cacheControlHeader": {
-          "description": "`cacheControlHeader` sends `Cache-Control` headers in responses when activated. The `max-age` value is the least of the values received from upstream services. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "corsParams": {
-          "description": "`corsParams` sets the number of worker threads. @default the number of system cores.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/CorsParams"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
@@ -1622,6 +1595,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "headers": {
+          "description": "`headers` contains key-value pairs that are included as default headers in server responses, allowing for consistent header management across all responses.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Headers"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "hostname": {
@@ -1660,13 +1644,6 @@
             "boolean",
             "null"
           ]
-        },
-        "responseHeaders": {
-          "description": "The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
         },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
@@ -1732,19 +1709,6 @@
         }
       }
     },
-    "StringOrSequence": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      ]
-    },
     "Telemetry": {
       "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
@@ -1795,6 +1759,18 @@
           "properties": {
             "prometheus": {
               "$ref": "#/definitions/PrometheusExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "apollo"
+          ],
+          "properties": {
+            "apollo": {
+              "$ref": "#/definitions/Apollo"
             }
           },
           "additionalProperties": false

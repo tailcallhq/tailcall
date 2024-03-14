@@ -1,4 +1,4 @@
-query posts @rest(method: "get", path: "/posts") {
+query posts @rest(method: GET, path: "/posts") {
   posts {
     id
     title
@@ -10,7 +10,7 @@ query posts @rest(method: "get", path: "/posts") {
   }
 }
 
-query users @rest(method: "get", path: "/users") {
+query users @rest(method: GET, path: "/users") {
   users {
     id
     name

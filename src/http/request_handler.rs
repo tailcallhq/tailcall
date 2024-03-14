@@ -70,8 +70,13 @@ fn not_found() -> Result<Response<Body>> {
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
-    let headers = create_allowed_headers(req.headers(), &allowed);
-    RequestContext::from(app_ctx).req_headers(headers)
+    let req_headers = create_allowed_headers(req.headers(), &allowed);
+
+    let allowed = app_ctx.blueprint.server.get_experimental_headers();
+    let experimental_headers = create_allowed_headers(req.headers(), &allowed);
+    RequestContext::from(app_ctx)
+        .req_headers(req_headers)
+        .experimental_headers(experimental_headers)
 }
 
 fn update_cache_control_header(
@@ -87,10 +92,29 @@ fn update_cache_control_header(
     response
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, app_ctx: &AppContext) {
+fn update_experimental_headers(
+    response: &mut hyper::Response<hyper::Body>,
+    app_ctx: &AppContext,
+    req_ctx: Arc<RequestContext>,
+) {
+    if !app_ctx.blueprint.server.experimental_headers.is_empty() {
+        response
+            .headers_mut()
+            .extend(req_ctx.experimental_headers.clone());
+    }
+}
+
+pub fn update_response_headers(
+    resp: &mut hyper::Response<hyper::Body>,
+    cookie_headers: Option<HeaderMap>,
+    app_ctx: &AppContext,
+) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
+    }
+    if let Some(cookie_headers) = cookie_headers {
+        resp.headers_mut().extend(cookie_headers);
     }
 }
 
@@ -104,9 +128,15 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-            response = update_cache_control_header(response, app_ctx, req_ctx);
+            let cookie_headers = req_ctx.cookie_headers.clone();
+            response = update_cache_control_header(response, app_ctx, req_ctx.clone());
             let mut resp = response.to_response()?;
-            update_response_headers(&mut resp, app_ctx);
+            update_response_headers(
+                &mut resp,
+                cookie_headers.map(|v| v.lock().unwrap().clone()),
+                app_ctx,
+            );
+            update_experimental_headers(&mut resp, app_ctx, req_ctx);
             Ok(resp)
         }
         Err(err) => {
@@ -128,11 +158,13 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
     let mut new_headers = HeaderMap::new();
     for (k, v) in headers.iter() {
-        if allowed.contains(k.as_str()) {
+        if allowed
+            .iter()
+            .any(|allowed_key| allowed_key.eq_ignore_ascii_case(k.as_str()))
+        {
             new_headers.insert(k, v.clone());
         }
     }
-
     new_headers
 }
 
@@ -227,16 +259,22 @@ async fn handle_rest_apis(
             .data(req_ctx.clone())
             .execute(&app_ctx.schema)
             .await;
-        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx);
+        let cookie_headers = req_ctx.cookie_headers.clone();
+        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
         let mut resp = response.to_response()?;
-        update_response_headers(&mut resp, app_ctx.as_ref());
+        update_response_headers(
+            &mut resp,
+            cookie_headers.map(|v| v.lock().unwrap().clone()),
+            app_ctx.as_ref(),
+        );
+        update_experimental_headers(&mut resp, app_ctx.as_ref(), req_ctx);
         return Ok(resp);
     }
 
     not_found()
 }
 
-#[instrument(skip_all, err, fields(method = %req.method(), url = %req.uri()))]
+#[instrument(skip_all, err, fields(method = % req.method(), url = % req.uri()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
@@ -281,5 +319,29 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
             not_found()
         }
         _ => not_found(),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_create_allowed_headers() {
+        use std::collections::BTreeSet;
+
+        use hyper::header::{HeaderMap, HeaderValue};
+
+        use super::create_allowed_headers;
+
+        let mut headers = HeaderMap::new();
+        headers.insert("X-foo", HeaderValue::from_static("bar"));
+        headers.insert("x-bar", HeaderValue::from_static("foo"));
+        headers.insert("x-baz", HeaderValue::from_static("baz"));
+
+        let allowed = BTreeSet::from_iter(vec!["x-foo".to_string(), "X-bar".to_string()]);
+
+        let new_headers = create_allowed_headers(&headers, &allowed);
+        assert_eq!(new_headers.len(), 2);
+        assert_eq!(new_headers.get("x-foo").unwrap(), "bar");
+        assert_eq!(new_headers.get("x-bar").unwrap(), "foo");
     }
 }
