@@ -247,6 +247,7 @@ fn request_context() -> RequestContext {
     };
     RequestContext {
         req_headers: HeaderMap::new(),
+        experimental_headers: HeaderMap::new(),
         cookie_headers: None,
         server,
         upstream,
