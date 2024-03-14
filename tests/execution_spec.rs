@@ -627,9 +627,11 @@ impl ExecutionSpec {
         // TODO: move inside tailcall core if possible
         init_metrics(&runtime).unwrap();
 
-        let app_ctx =
-            AppContext::new(blueprint, runtime, config.extensions.endpoints.clone()).await?;
-        Ok(Arc::new(app_ctx))
+        Ok(Arc::new(AppContext::new(
+            blueprint,
+            runtime,
+            config.extensions.endpoints.clone(),
+        )))
     }
 }
 

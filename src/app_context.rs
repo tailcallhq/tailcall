@@ -28,11 +28,7 @@ pub struct AppContext {
 
 impl AppContext {
     #[allow(clippy::too_many_arguments)]
-    pub async fn new(
-        mut blueprint: Blueprint,
-        runtime: TargetRuntime,
-        endpoints: EndpointSet,
-    ) -> anyhow::Result<Self> {
+    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -113,20 +109,7 @@ impl AppContext {
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
 
-        if let Some(TelemetryExporter::Apollo(ref apollo)) = blueprint.opentelemetry.export {
-            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
-            register_dynamic(
-                &apollo.api_key,
-                &schema,
-                graph_id,
-                variant,
-                &apollo.user_version,
-                &apollo.platform,
-            )
-            .await?;
-        }
-
-        Ok(AppContext {
+        AppContext {
             schema,
             runtime,
             blueprint,
@@ -134,7 +117,23 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
-        })
+        }
+    }
+
+    pub async fn register_apollo_schema(&self) -> anyhow::Result<()> {
+        if let Some(TelemetryExporter::Apollo(ref apollo)) = self.blueprint.opentelemetry.export {
+            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
+            register_dynamic(
+                &apollo.api_key,
+                &self.schema,
+                graph_id,
+                variant,
+                &apollo.user_version,
+                &apollo.platform,
+            )
+            .await?;
+        }
+        Ok(())
     }
 
     pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {

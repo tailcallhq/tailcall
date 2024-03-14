@@ -16,7 +16,7 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub async fn new(blueprint: Blueprint, endpoints: EndpointSet) -> anyhow::Result<Self> {
+    pub fn new(blueprint: Blueprint, endpoints: EndpointSet) -> Self {
         let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
 
         let mut extensions = vec![];
@@ -33,9 +33,8 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let server_context = AppContext::new(blueprint.clone(), rt, endpoints).await?;
-        let server_context = Arc::new(server_context);
-        Ok(Self { app_ctx: server_context, blueprint })
+        let server_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
+        Self { app_ctx: server_context, blueprint }
     }
 
     pub fn addr(&self) -> SocketAddr {

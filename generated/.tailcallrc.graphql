@@ -412,11 +412,11 @@ input Apollo {
   """
   Setting `api_key` for Apollo.
   """
-  api_key: String!
+  apiKey: String!
   """
   Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
   """
-  graph_ref: String!
+  graphRef: String!
   """
   Setting `platform` for Apollo.
   """
@@ -424,7 +424,7 @@ input Apollo {
   """
   Setting `userVersion` for Apollo.
   """
-  user_version: String!
+  userVersion: String!
   """
   Setting `version` for Apollo.
   """

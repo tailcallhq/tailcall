@@ -88,15 +88,15 @@
     "Apollo": {
       "type": "object",
       "required": [
-        "api_key",
-        "graph_ref"
+        "apiKey",
+        "graphRef"
       ],
       "properties": {
-        "api_key": {
+        "apiKey": {
           "description": "Setting `api_key` for Apollo.",
           "type": "string"
         },
-        "graph_ref": {
+        "graphRef": {
           "description": "Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.",
           "type": "string"
         },
@@ -105,7 +105,7 @@
           "default": "platform",
           "type": "string"
         },
-        "user_version": {
+        "userVersion": {
           "description": "Setting `userVersion` for Apollo.",
           "default": "1.0",
           "type": "string"

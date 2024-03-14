@@ -3,7 +3,7 @@
 ```graphql @server
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
-  @telemetry(export: {apollo: {api_key: "<api_key>", graph_ref: "tailcall-demo-3@current"}}) {
+  @telemetry(export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}) {
   query: Query
 }
 

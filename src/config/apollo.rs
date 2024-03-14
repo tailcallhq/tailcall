@@ -4,6 +4,7 @@ use crate::config::ConfigReaderContext;
 use crate::mustache::Mustache;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct Apollo {
     ///
     /// Setting `api_key` for Apollo.
