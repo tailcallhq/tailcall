@@ -1,0 +1,46 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Experimental headers must start with 'x-' or 'X-'. Got: 'bar'",
+    "trace": [
+      "schema",
+      "@server",
+      "headers",
+      "experimental"
+    ],
+    "description": null
+  },
+  {
+    "message": "Experimental headers must start with 'x-' or 'X-'. Got: 'foo'",
+    "trace": [
+      "schema",
+      "@server",
+      "headers",
+      "experimental"
+    ],
+    "description": null
+  },
+  {
+    "message": "Experimental headers must start with 'x-' or 'X-'. Got: 'non-experimental'",
+    "trace": [
+      "schema",
+      "@server",
+      "headers",
+      "experimental"
+    ],
+    "description": null
+  },
+  {
+    "message": "Experimental headers must start with 'x-' or 'X-'. Got: 'tailcall'",
+    "trace": [
+      "schema",
+      "@server",
+      "headers",
+      "experimental"
+    ],
+    "description": null
+  }
+]
