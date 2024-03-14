@@ -38,7 +38,6 @@ impl Server {
             self.config_module.extensions.endpoints,
         ));
 
-        server_config.app_ctx.register_apollo_schema().await?;
         init_opentelemetry(
             blueprint.opentelemetry.clone(),
             &server_config.app_ctx.runtime,

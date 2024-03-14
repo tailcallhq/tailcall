@@ -44,7 +44,6 @@ async fn main() -> Result<(), Error> {
         runtime,
         config.extensions.endpoints,
     ));
-    app_ctx.register_apollo_schema().await?;
 
     run(service_fn(|event| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;

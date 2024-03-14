@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
-use async_graphql_extension_apollo_tracing::register::register_dynamic;
 
-use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::data_loader::DataLoader;
@@ -118,22 +116,6 @@ impl AppContext {
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
         }
-    }
-
-    pub async fn register_apollo_schema(&self) -> anyhow::Result<()> {
-        if let Some(TelemetryExporter::Apollo(ref apollo)) = self.blueprint.opentelemetry.export {
-            let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
-            register_dynamic(
-                &apollo.api_key,
-                &self.schema,
-                graph_id,
-                variant,
-                &apollo.user_version,
-                &apollo.platform,
-            )
-            .await?;
-        }
-        Ok(())
     }
 
     pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
