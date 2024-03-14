@@ -1,0 +1,16 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(headers: {experimental: ["x-tailcall", "x-experimental"]}) @upstream {
+  query: Query
+}
+
+type Query {
+  users: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
+}
+
+type User {
+  id: Int
+  name: String
+}
