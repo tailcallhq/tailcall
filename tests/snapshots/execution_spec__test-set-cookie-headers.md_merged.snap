@@ -1,0 +1,20 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(headers: {setCookies: true}, graphiql: true, hostname: "0.0.0.0", port: 8080) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  username: String!
+  website: String
+}
