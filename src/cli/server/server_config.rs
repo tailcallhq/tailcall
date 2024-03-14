@@ -19,8 +19,6 @@ impl ServerConfig {
     pub async fn new(blueprint: Blueprint, endpoints: EndpointSet) -> anyhow::Result<Self> {
         let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
 
-        endpoints.validate(&blueprint, rt.clone()).await?;
-
         let mut extensions = vec![];
 
         if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.opentelemetry.export.as_ref() {
@@ -35,8 +33,10 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let server_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
-        Ok(Self { app_ctx: server_context, blueprint })
+        let app_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints.clone()));
+        endpoints.validate(app_context.as_ref()).await?;
+
+        Ok(Self { app_ctx: app_context, blueprint })
     }
 
     pub fn addr(&self) -> SocketAddr {

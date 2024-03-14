@@ -1,12 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
 use super::Request;
-use crate::blueprint::Blueprint;
+use crate::app_context::AppContext;
 use crate::http::RequestContext;
 use crate::rest::operation::OperationQuery;
-use crate::runtime::TargetRuntime;
 use crate::valid::Validator;
 
 /// Collection of endpoints
@@ -73,25 +72,11 @@ impl EndpointSet {
     pub fn matches(&self, request: &Request) -> Option<PartialRequest> {
         self.endpoints.iter().find_map(|e| e.matches(request))
     }
-    pub async fn validate(
-        &self,
-        blueprint: &Blueprint,
-        runtime: TargetRuntime,
-    ) -> anyhow::Result<()> {
+    pub async fn validate(&self, app_ctx: &AppContext) -> anyhow::Result<()> {
         let mut operations = vec![];
-        let req_ctx = Arc::new(RequestContext {
-            server: Default::default(),
-            upstream: Default::default(),
-            req_headers: Default::default(),
-            experimental_headers: Default::default(),
-            cookie_headers: None,
-            http_data_loaders: Arc::new(vec![]),
-            gql_data_loaders: Arc::new(vec![]),
-            grpc_data_loaders: Arc::new(vec![]),
-            min_max_age: Arc::new(Mutex::new(None)),
-            cache_public: Arc::new(Mutex::new(None)),
-            runtime,
-        });
+
+        let blueprint = &app_ctx.blueprint;
+        let req_ctx = Arc::new(RequestContext::from(app_ctx));
 
         for endpoint in self {
             let req = endpoint.clone().into_request();
