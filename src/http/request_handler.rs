@@ -18,18 +18,19 @@ use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 const API_URL_PREFIX: &str = "/api";
+const ENDPOINT: &str = "/graphql";
+const SHOWCASE_ENDPOINT: &str = "/showcase/graphql";
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
-    let endpoint = "/graphql";
     let endpoint = if let Some(query) = query {
         if query.is_empty() {
-            Cow::Borrowed(endpoint)
+            Cow::Borrowed(ENDPOINT)
         } else {
-            Cow::Owned(format!("{}?{}", endpoint, query))
+            Cow::Owned(format!("{}?{}", ENDPOINT, query))
         }
     } else {
-        Cow::Borrowed(endpoint)
+        Cow::Borrowed(ENDPOINT)
     };
 
     Ok(Response::new(Body::from(playground_source(
@@ -103,7 +104,7 @@ fn update_experimental_headers(
 }
 
 pub fn update_response_headers(
-    resp: &mut hyper::Response<hyper::Body>,
+    resp: &mut Response<Body>,
     cookie_headers: Option<HeaderMap>,
     app_ctx: &AppContext,
 ) {
@@ -113,43 +114,6 @@ pub fn update_response_headers(
     }
     if let Some(cookie_headers) = cookie_headers {
         resp.headers_mut().extend(cookie_headers);
-    }
-}
-
-pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
-    app_ctx: &AppContext,
-) -> Result<Response<Body>> {
-    let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    let graphql_request = serde_json::from_slice::<T>(&bytes);
-    match graphql_request {
-        Ok(request) => {
-            let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-            let cookie_headers = req_ctx.cookie_headers.clone();
-            response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-            let mut resp = response.to_response()?;
-            update_response_headers(
-                &mut resp,
-                cookie_headers.map(|v| v.lock().unwrap().clone()),
-                app_ctx,
-            );
-            update_experimental_headers(&mut resp, app_ctx, req_ctx);
-            Ok(resp)
-        }
-        Err(err) => {
-            tracing::error!(
-                "Failed to parse request: {}",
-                String::from_utf8(bytes.to_vec()).unwrap()
-            );
-
-            let mut response = async_graphql::Response::default();
-            let server_error =
-                ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
-            response.errors = vec![server_error];
-
-            Ok(GraphQLResponse::from(response).to_response()?)
-        }
     }
 }
 
@@ -166,27 +130,62 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+async fn get_response<T: DeserializeOwned + GraphQLRequestLike>(
+    request: T,
+    app_ctx: &AppContext,
+    request_context: Arc<RequestContext>,
+) -> Result<Response<Body>> {
+    let mut response = request
+        .data(request_context.clone())
+        .execute(&app_ctx.schema)
+        .await;
+
+    let cookie_headers = request_context.cookie_headers.clone();
+
+    response = update_cache_control_header(response, app_ctx, request_context.clone());
+    let mut resp = response.to_response()?;
+
+    update_response_headers(
+        &mut resp,
+        cookie_headers.map(|v| v.lock().unwrap().clone()),
+        app_ctx,
+    );
+
+    update_experimental_headers(&mut resp, app_ctx, request_context);
+
+    Ok(resp)
+}
+
+pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Body>,
+    app_ctx: &AppContext,
+) -> Result<Response<Body>> {
+    let req_ctx = Arc::new(create_request_context(&req, app_ctx));
+    let bytes = hyper::body::to_bytes(req.into_body()).await?;
+    let graphql_request = serde_json::from_slice::<T>(&bytes);
+    match graphql_request {
+        Ok(request) => {
+            let resp = get_response(request, app_ctx, req_ctx).await?;
+            Ok(resp)
+        }
+        Err(err) => {
+            tracing::error!(
+                "Failed to parse request: {}",
+                String::from_utf8(bytes.to_vec()).unwrap()
+            );
+        }
+    }
+}
+
 async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
+    *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
         let graphql_request = p_request.into_request(request).await?;
-        let mut response = graphql_request
-            .data(req_ctx.clone())
-            .execute(&app_ctx.schema)
-            .await;
-        let cookie_headers = req_ctx.cookie_headers.clone();
-        response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
-        let mut resp = response.to_response()?;
-        update_response_headers(
-            &mut resp,
-            cookie_headers.map(|v| v.lock().unwrap().clone()),
-            app_ctx.as_ref(),
-        );
-        update_experimental_headers(&mut resp, app_ctx.as_ref(), req_ctx);
+        let resp = get_response(graphql_request, app_ctx.as_ref(), req_ctx).await?;
         return Ok(resp);
     }
 
@@ -206,22 +205,23 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
-        hyper::Method::POST if req.uri().path() == "/graphql" => {
-            graphql_request::<T>(req, app_ctx.as_ref()).await
-        }
-        hyper::Method::POST
-            if app_ctx.blueprint.server.enable_showcase
-                && req.uri().path() == "/showcase/graphql" =>
-        {
-            let app_ctx =
-                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
-                    Ok(app_ctx) => app_ctx,
-                    Err(res) => return Ok(res),
-                };
+        hyper::Method::POST => match req.uri().path() {
+            ENDPOINT => graphql_request::<T>(req, app_ctx.as_ref()).await,
+            SHOWCASE_ENDPOINT => {
+                if app_ctx.blueprint.server.enable_showcase {
+                    let app_ctx =
+                        match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false)
+                            .await?
+                        {
+                            Ok(app_ctx) => app_ctx,
+                            Err(res) => return Ok(res),
+                        };
 
-            graphql_request::<T>(req, &app_ctx).await
-        }
-
+                    graphql_request::<T>(req, &app_ctx).await
+                }
+            }
+            _ => not_found(),
+        },
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.opentelemetry.export.as_ref()
