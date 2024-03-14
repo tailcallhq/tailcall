@@ -217,7 +217,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
                         };
                 }
                 graphql_request::<T>(req, app_ctx.as_ref()).await
-            },
+            }
             _ => not_found(),
         },
         hyper::Method::GET => {
