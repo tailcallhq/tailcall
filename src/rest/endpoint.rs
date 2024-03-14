@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
-use async_graphql::parser::types::{DocumentOperations, ExecutableDocument};
-use async_graphql::Variables;
+use async_graphql::parser::types::{Directive, DocumentOperations, ExecutableDocument};
+use async_graphql::{Positioned, Variables};
+use async_graphql_value::Name;
 use derive_setters::Setters;
 
 use super::directive::Rest;
@@ -23,7 +24,7 @@ pub struct Endpoint {
     // Can use persisted queries for better performance
     query_params: QueryParams,
     body: Option<String>,
-    doc: ExecutableDocument,
+    pub doc: ExecutableDocument,
 }
 
 /// Creates a Rest instance from @rest directive
@@ -77,8 +78,27 @@ impl Endpoint {
 
     pub fn into_request(self) -> GraphQLRequest {
         let mut req = async_graphql::Request::new("");
-        req.set_parsed_query(self.doc.clone());
+        req.set_parsed_query(Self::remove_rest_directives(self.doc));
         GraphQLRequest(req)
+    }
+
+    fn remove_rest_directives(mut doc: ExecutableDocument) -> ExecutableDocument {
+        match &mut doc.operations {
+            DocumentOperations::Single(s) => {
+                Self::drop_rest_directive(&mut s.node.directives);
+            }
+            DocumentOperations::Multiple(m) => {
+                for s in m.values_mut() {
+                    Self::drop_rest_directive(&mut s.node.directives);
+                }
+            }
+        }
+        doc
+    }
+
+    fn drop_rest_directive(directives: &mut Vec<Positioned<Directive>>) {
+        let name = Name::new("rest");
+        directives.retain(|v| v.node.name.node != name)
     }
 
     pub fn matches<'a>(&'a self, request: &Request) -> Option<PartialRequest<'a>> {
