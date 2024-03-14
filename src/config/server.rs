@@ -135,6 +135,12 @@ impl Server {
             .map(|h| h.enable_cache_control())
             .unwrap_or(false)
     }
+    pub fn enable_set_cookies(&self) -> bool {
+        self.headers
+            .as_ref()
+            .map(|h| h.set_cookies())
+            .unwrap_or(false)
+    }
     pub fn enable_introspection(&self) -> bool {
         self.introspection.unwrap_or(true)
     }
