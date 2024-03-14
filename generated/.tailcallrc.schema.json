@@ -1224,7 +1224,7 @@
           }
         },
         "experimental": {
-          "description": "`experimental` allows the use of `X-Somethign` experimental headers in the response. @default `[]`.",
+          "description": "`experimental` allows the use of `X-*` experimental headers in the response. @default `[]`.",
           "type": [
             "array",
             "null"

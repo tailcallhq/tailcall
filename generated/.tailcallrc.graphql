@@ -578,8 +578,8 @@ input Headers {
   """
   custom: [KeyValue]
   """
-  `experimental` allows the use of `X-Somethign` experimental headers in the response. 
-  @default `[]`.
+  `experimental` allows the use of `X-*` experimental headers in the response. @default 
+  `[]`.
   """
   experimental: [String!]
 }
