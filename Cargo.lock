@@ -244,7 +244,7 @@ dependencies = [
 [[package]]
 name = "async-graphql"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -281,7 +281,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-derive"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -329,7 +329,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-parser"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -340,7 +340,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-value"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
 dependencies = [
  "bytes",
  "indexmap 2.2.5",
