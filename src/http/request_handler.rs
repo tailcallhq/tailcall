@@ -21,18 +21,21 @@ const API_URL_PREFIX: &str = "/api";
 const ENDPOINT: &str = "/graphql";
 const SHOWCASE_ENDPOINT: &str = "/showcase/graphql";
 
-pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
-    let query = req.uri().query();
-    let endpoint = if let Some(query) = query {
-        if query.is_empty() {
-            Cow::Borrowed(ENDPOINT)
-        } else {
-            Cow::Owned(format!("{}?{}", ENDPOINT, query))
-        }
-    } else {
-        Cow::Borrowed(ENDPOINT)
-    };
+fn get_graphql_playground_endpoint(req: &Request<Body>) -> Cow<'static, str> {
+    req.uri().query().map_or_else(
+        || Cow::Borrowed(ENDPOINT),
+        |query| {
+            if query.is_empty() {
+                Cow::Borrowed(ENDPOINT)
+            } else {
+                Cow::Owned(format!("{}?{}", ENDPOINT, query))
+            }
+        },
+    )
+}
 
+pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
+    let endpoint = get_graphql_playground_endpoint(req);
     Ok(Response::new(Body::from(playground_source(
         GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
     ))))
@@ -91,30 +94,21 @@ fn update_cache_control_header(
     response
 }
 
-fn update_experimental_headers(
-    response: &mut hyper::Response<hyper::Body>,
-    app_ctx: &AppContext,
-    req_ctx: Arc<RequestContext>,
-) {
-    if !app_ctx.blueprint.server.experimental_headers.is_empty() {
-        response
-            .headers_mut()
-            .extend(req_ctx.experimental_headers.clone());
-    }
-}
-
 pub fn update_response_headers(
     resp: &mut Response<Body>,
     cookie_headers: Option<HeaderMap>,
     app_ctx: &AppContext,
+    req_ctx: Arc<RequestContext>,
 ) {
-    if !app_ctx.blueprint.server.response_headers.is_empty() {
-        resp.headers_mut()
-            .extend(app_ctx.blueprint.server.response_headers.clone());
-    }
     if let Some(cookie_headers) = cookie_headers {
         resp.headers_mut().extend(cookie_headers);
     }
+    if !app_ctx.blueprint.server.experimental_headers.is_empty() {
+        resp.headers_mut()
+            .extend(req_ctx.experimental_headers.clone());
+    }
+    resp.headers_mut()
+        .extend(app_ctx.blueprint.server.response_headers.clone());
 }
 
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
@@ -149,9 +143,8 @@ async fn get_response<T: DeserializeOwned + GraphQLRequestLike>(
         &mut resp,
         cookie_headers.map(|v| v.lock().unwrap().clone()),
         app_ctx,
+        request_context,
     );
-
-    update_experimental_headers(&mut resp, app_ctx, request_context);
 
     Ok(resp)
 }
