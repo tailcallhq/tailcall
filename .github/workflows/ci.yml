@@ -87,8 +87,8 @@ jobs:
       - name: Test CF
         run: npm test
 
-  test:
-    name: Run Tests
+  test-ubuntu:
+    name: Run Tests on ubuntu
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -110,6 +110,54 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: lcov.info
             fail_ci_if_error: true
+
+  test-windows:
+      name: Run Tests on Windows
+      runs-on: windows-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: taiki-e/install-action@cargo-llvm-cov
+
+        - name: Install Stable Toolchain
+          uses: actions-rust-lang/setup-rust-toolchain@v1
+
+        - name: Run Cargo Test
+          run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+
+        - name: Upload Coverage to Codecov
+          uses: Wandalen/wretry.action@v1
+          with:
+            action: codecov/codecov-action@v4
+            attempt_limit: 3
+            attempt_delay: 10000
+            with: |
+              token: ${{ secrets.CODECOV_TOKEN }}
+              files: lcov.info
+              fail_ci_if_error: true
+
+  test-macos:
+      name: Run Tests on macos
+      runs-on: macos-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: taiki-e/install-action@cargo-llvm-cov
+
+        - name: Install Stable Toolchain
+          uses: actions-rust-lang/setup-rust-toolchain@v1
+
+        - name: Run Cargo Test
+          run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+
+        - name: Upload Coverage to Codecov
+          uses: Wandalen/wretry.action@v1
+          with:
+            action: codecov/codecov-action@v4
+            attempt_limit: 3
+            attempt_delay: 10000
+            with: |
+              token: ${{ secrets.CODECOV_TOKEN }}
+              files: lcov.info
+              fail_ci_if_error: true
 
   check-examples:
     name: Check Examples
