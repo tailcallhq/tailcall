@@ -20,6 +20,7 @@ pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
     pub req_headers: HeaderMap,
+    pub experimental_headers: HeaderMap,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -139,6 +140,7 @@ impl From<&AppContext> for RequestContext {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
             req_headers: HeaderMap::new(),
+            experimental_headers: HeaderMap::new(),
             cookie_headers,
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
@@ -170,6 +172,7 @@ mod test {
             let upstream = Upstream::try_from(upstream).unwrap();
             RequestContext {
                 req_headers: HeaderMap::new(),
+                experimental_headers: HeaderMap::new(),
                 cookie_headers: None,
                 server,
                 runtime: crate::runtime::test::init(None),
