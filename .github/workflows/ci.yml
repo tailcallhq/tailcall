@@ -135,6 +135,7 @@ jobs:
 
   draft_release:
     name: Draft Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -164,6 +165,7 @@ jobs:
     name: Release
     needs: [test, draft_release, check_if_build, test_cf]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
