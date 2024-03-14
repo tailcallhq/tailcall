@@ -33,7 +33,6 @@ use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
 use telemetry::in_memory::InMemoryTelemetry;
 use telemetry::init::init_opentelemetry;
-// use std::panic::{self, AssertUnwindSafe};
 use url::Url;
 
 #[cfg(test)]
@@ -919,8 +918,12 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
         let config = Config::default().merge_right(&config);
 
-        let identity = config.to_sdl();
-
+        let identity = match source {
+            Source::GraphQL => config.to_sdl(),
+            Source::Json => config.to_json(true).expect("Failed to convert config to JSON"),
+            Source::Yml => config.to_yaml().expect("Failed to convert config to YML"),
+        };
+        
         pretty_assertions::assert_eq!(
             content.as_ref(),
             identity,
