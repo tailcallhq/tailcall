@@ -3,16 +3,18 @@
 ```json @server
 {
   "server": {
-    "responseHeaders": [
-      {
-        "key": "x-id",
-        "value": "1"
-      },
-      {
-        "key": "x-name",
-        "value": "John Doe"
-      }
-    ]
+    "headers": {
+      "custom": [
+        {
+          "key": "x-id",
+          "value": "1"
+        },
+        {
+          "key": "x-name",
+          "value": "John Doe"
+        }
+      ]
+    }
   },
   "upstream": {},
   "schema": {

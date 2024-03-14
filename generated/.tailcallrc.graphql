@@ -286,12 +286,6 @@ directive @server(
   """
   queryValidation: Boolean
   """
-  The `responseHeaders` are key-value pairs included in every server response. Useful 
-  for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
-  or additional headers for downstream services.
-  """
-  responseHeaders: [KeyValue]
-  """
   `responseValidation` Tailcall automatically validates responses from upstream services 
   using inferred schema. @default `false`.
   """
@@ -577,6 +571,22 @@ input Headers {
   value is the least of the values received from upstream services. @default `false`.
   """
   cacheControl: Boolean
+  """
+  `headers` are key-value pairs included in every server response. Useful for setting 
+  headers like `Access-Control-Allow-Origin` for cross-origin requests or additional 
+  headers for downstream services.
+  """
+  custom: [KeyValue]
+  """
+  `experimental` allows the use of `X-*` experimental headers in the response. @default 
+  `[]`.
+  """
+  experimental: [String!]
+  """
+  `setCookies` when enabled stores `set-cookie` headers and all the response will be 
+  sent with the headers.
+  """
+  setCookies: Boolean
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
