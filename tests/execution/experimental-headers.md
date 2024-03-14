@@ -1,7 +1,5 @@
 # Experimental headers
 
-##### only
-
 ```graphql @server
 schema @server(headers: {experimental: ["x-tailcall", "x-experimental"]}) {
   query: Query
