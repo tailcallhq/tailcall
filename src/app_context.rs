@@ -26,7 +26,13 @@ pub struct AppContext {
 
 impl AppContext {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
+    pub async fn new(
+        mut blueprint: Blueprint,
+        runtime: TargetRuntime,
+        endpoints: EndpointSet,
+    ) -> anyhow::Result<Self> {
+        endpoints.validate(&blueprint, runtime.clone()).await?;
+
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -107,7 +113,7 @@ impl AppContext {
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
 
-        AppContext {
+        Ok(AppContext {
             schema,
             runtime,
             blueprint,
@@ -115,7 +121,7 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
-        }
+        })
     }
 
     pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
