@@ -172,6 +172,13 @@ impl Server {
             })
     }
 
+    pub fn get_experimental_headers(&self) -> Vec<String> {
+        self.headers
+            .as_ref()
+            .map(|h| h.experimental.clone().unwrap_or_default())
+            .unwrap_or_default()
+    }
+
     pub fn get_version(self) -> HttpVersion {
         self.version.unwrap_or(HttpVersion::HTTP1)
     }

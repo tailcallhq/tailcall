@@ -577,6 +577,11 @@ input Headers {
   headers for downstream services.
   """
   custom: [KeyValue]
+  """
+  `experimental` allows the use of `X-Somethign` experimental headers in the response. 
+  @default `[]`.
+  """
+  experimental: [String!]
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 

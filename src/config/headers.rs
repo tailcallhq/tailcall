@@ -17,6 +17,11 @@ pub struct Headers {
     /// response. Useful for setting headers like `Access-Control-Allow-Origin`
     /// for cross-origin requests or additional headers for downstream services.
     pub custom: Vec<KeyValue>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `experimental` allows the use of `X-*` experimental headers
+    /// in the response. @default `[]`.
+    pub experimental: Option<Vec<String>>,
 }
 
 impl Headers {

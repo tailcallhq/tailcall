@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::net::{AddrParseError, IpAddr};
 use std::sync::Arc;
 use std::time::Duration;
@@ -30,6 +30,7 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
+    pub experimental_headers: Vec<String>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -69,6 +70,10 @@ impl Server {
 
     pub fn get_enable_query_validation(&self) -> bool {
         self.enable_query_validation
+    }
+
+    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
+        self.experimental_headers.clone().into_iter().collect()
     }
 }
 
@@ -116,6 +121,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 enable_response_validation: (config_server).enable_http_validation(),
                 enable_batch_requests: (config_server).enable_batch_requests(),
                 enable_showcase: (config_server).enable_showcase(),
+                experimental_headers: (config_server).get_experimental_headers(),
                 global_response_timeout: (config_server).get_global_response_timeout(),
                 http,
                 worker: (config_server).get_workers(),

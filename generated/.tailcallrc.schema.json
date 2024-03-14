@@ -1222,6 +1222,16 @@
           "items": {
             "$ref": "#/definitions/KeyValue"
           }
+        },
+        "experimental": {
+          "description": "`experimental` allows the use of `X-Somethign` experimental headers in the response. @default `[]`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
