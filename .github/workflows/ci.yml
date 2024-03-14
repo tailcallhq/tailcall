@@ -88,7 +88,7 @@ jobs:
         run: npm test
 
   test:
-    name: Run Tests on ${{ matrix.target }}
+    name: Run Tests on ${{ matrix.build }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
