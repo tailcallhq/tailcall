@@ -9,6 +9,7 @@ use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 use super::request_context::RequestContext;
@@ -16,6 +17,7 @@ use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
+use crate::is_default;
 
 const API_URL_PREFIX: &str = "/api";
 
@@ -166,6 +168,35 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct ResponseBody {
+    #[serde(default, skip_serializing_if = "is_default")]
+    data: serde_json::Value,
+    #[serde(default, skip_serializing_if = "is_default")]
+    errors: Option<serde_json::Value>,
+}
+
+async fn get_value_from_response(resp: &mut Response<Body>) {
+    if let Ok(bytes) = hyper::body::to_bytes(resp.body_mut()).await {
+        if let Ok(mut body) = serde_json::from_slice::<ResponseBody>(&bytes.to_vec()) {
+            if let Some(errors) = body.errors.clone() {
+                *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                *resp.body_mut() = Body::from(errors.to_string());
+            }
+
+            match body.data.take() {
+                serde_json::Value::Object(data) => {
+                    let values: Vec<serde_json::Value> = data.values().cloned().collect();
+                    if let Some(value) = values.first().clone() {
+                        *resp.body_mut() = Body::from(value.to_string());
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
@@ -187,6 +218,8 @@ async fn handle_rest_apis(
             app_ctx.as_ref(),
         );
         update_experimental_headers(&mut resp, app_ctx.as_ref(), req_ctx);
+        get_value_from_response(&mut resp).await;
+
         return Ok(resp);
     }
 
