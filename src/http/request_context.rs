@@ -1,10 +1,11 @@
 use std::num::NonZeroU64;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
-use hyper::HeaderMap;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
@@ -20,6 +21,7 @@ pub struct RequestContext {
     pub upstream: Upstream,
     pub req_headers: HeaderMap,
     pub experimental_headers: HeaderMap,
+    pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
@@ -73,6 +75,41 @@ impl RequestContext {
         }
     }
 
+    pub fn set_cookie_headers(&self, headers: &HeaderMap) {
+        // TODO fix execution_spec test and use append method
+        // to allow multiple set cookie
+        if let Some(map) = &self.cookie_headers {
+            let map = &mut map.lock().unwrap();
+
+            // Check if the incoming headers contain 'set-cookie'
+            if let Some(new_cookies) = headers.get("set-cookie") {
+                let cookie_name = HeaderName::from_str("set-cookie").unwrap();
+
+                // Check if 'set-cookie' already exists in our map
+                if let Some(existing_cookies) = map.get(&cookie_name) {
+                    // Convert the existing HeaderValue to a str, append the new cookies,
+                    // and then convert back to a HeaderValue. If the conversion fails, we skip
+                    // appending.
+                    if let Ok(existing_str) = existing_cookies.to_str() {
+                        if let Ok(new_cookies_str) = new_cookies.to_str() {
+                            // Create a new value by appending the new cookies to the existing ones
+                            let combined_cookies = format!("{}; {}", existing_str, new_cookies_str);
+
+                            // Replace the old value with the new, combined value
+                            map.insert(
+                                cookie_name,
+                                HeaderValue::from_str(&combined_cookies).unwrap(),
+                            );
+                        }
+                    }
+                } else {
+                    // If 'set-cookie' does not already exist in our map, just insert the new value
+                    map.insert(cookie_name, new_cookies.clone());
+                }
+            }
+        }
+    }
+
     pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<ConstValue>> {
         self.runtime.cache.get(key).await
     }
@@ -94,11 +131,17 @@ impl RequestContext {
 
 impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
+        let cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
+            Some(Arc::new(Mutex::new(HeaderMap::new())))
+        } else {
+            None
+        };
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
             req_headers: HeaderMap::new(),
             experimental_headers: HeaderMap::new(),
+            cookie_headers,
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
@@ -130,6 +173,7 @@ mod test {
             RequestContext {
                 req_headers: HeaderMap::new(),
                 experimental_headers: HeaderMap::new(),
+                cookie_headers: None,
                 server,
                 runtime: crate::runtime::test::init(None),
                 upstream,

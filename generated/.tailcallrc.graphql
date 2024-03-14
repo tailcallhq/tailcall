@@ -582,6 +582,11 @@ input Headers {
   `[]`.
   """
   experimental: [String!]
+  """
+  `setCookies` when enabled stores `set-cookie` headers and all the response will be 
+  sent with the headers.
+  """
+  setCookies: Boolean
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 

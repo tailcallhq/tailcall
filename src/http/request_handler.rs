@@ -102,10 +102,17 @@ fn update_experimental_headers(
     }
 }
 
-pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, app_ctx: &AppContext) {
+pub fn update_response_headers(
+    resp: &mut hyper::Response<hyper::Body>,
+    cookie_headers: Option<HeaderMap>,
+    app_ctx: &AppContext,
+) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
+    }
+    if let Some(cookie_headers) = cookie_headers {
+        resp.headers_mut().extend(cookie_headers);
     }
 }
 
@@ -119,9 +126,14 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+            let cookie_headers = req_ctx.cookie_headers.clone();
             response = update_cache_control_header(response, app_ctx, req_ctx.clone());
             let mut resp = response.to_response()?;
-            update_response_headers(&mut resp, app_ctx);
+            update_response_headers(
+                &mut resp,
+                cookie_headers.map(|v| v.lock().unwrap().clone()),
+                app_ctx,
+            );
             update_experimental_headers(&mut resp, app_ctx, req_ctx);
             Ok(resp)
         }
@@ -166,9 +178,14 @@ async fn handle_rest_apis(
             .data(req_ctx.clone())
             .execute(&app_ctx.schema)
             .await;
+        let cookie_headers = req_ctx.cookie_headers.clone();
         response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
         let mut resp = response.to_response()?;
-        update_response_headers(&mut resp, app_ctx.as_ref());
+        update_response_headers(
+            &mut resp,
+            cookie_headers.map(|v| v.lock().unwrap().clone()),
+            app_ctx.as_ref(),
+        );
         update_experimental_headers(&mut resp, app_ctx.as_ref(), req_ctx);
         return Ok(resp);
     }
