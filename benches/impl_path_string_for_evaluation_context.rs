@@ -247,6 +247,7 @@ fn request_context() -> RequestContext {
     };
     RequestContext {
         req_headers: HeaderMap::new(),
+        experimental_headers: HeaderMap::new(),
         server,
         upstream,
         http_data_loaders: Arc::new(vec![]),
