@@ -15,6 +15,7 @@ use crate::valid::{Valid, ValidationError, Validator};
 pub struct Server {
     pub enable_apollo_tracing: bool,
     pub enable_cache_control_header: bool,
+    pub enable_set_cookie_header: bool,
     pub enable_graphiql: bool,
     pub enable_introspection: bool,
     pub enable_query_validation: bool,
@@ -110,6 +111,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             .map(|(hostname, http, response_headers, script)| Server {
                 enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                 enable_cache_control_header: (config_server).enable_cache_control(),
+                enable_set_cookie_header: (config_server).enable_set_cookies(),
                 enable_graphiql: (config_server).enable_graphiql(),
                 enable_introspection: (config_server).enable_introspection(),
                 enable_query_validation: (config_server).enable_query_validation(),
@@ -160,7 +162,7 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
     }
 }
 
-fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<HeaderMap, String> {
+fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderMap, String> {
     Valid::from_iter(resp_headers.iter(), |(k, v)| {
         let name = Valid::from(
             HeaderName::from_bytes(k.as_bytes())
@@ -173,7 +175,8 @@ fn handle_response_headers(resp_headers: BTreeMap<String, String>) -> Valid<Head
         name.zip(value)
     })
     .map(|headers| headers.into_iter().collect::<HeaderMap>())
-    .trace("responseHeaders")
+    .trace("custom")
+    .trace("headers")
     .trace("@server")
     .trace("schema")
 }
