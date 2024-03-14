@@ -176,35 +176,6 @@ struct ResponseBody {
     errors: Option<serde_json::Value>,
 }
 
-async fn get_value_from_response(
-    resp: &mut Response<Body>,
-) -> Option<Result<serde_json::Value, ServerError>> {
-    match hyper::body::to_bytes(resp.body_mut()).await {
-        Ok(bytes) => match serde_json::from_slice::<ResponseBody>(&bytes) {
-            Ok(body) => {
-                if let Some(errors) = body.errors.clone() {
-                    return Some(Err(ServerError::new(errors.to_string(), None)));
-                }
-
-                if let serde_json::Value::Object(data) = body.data.clone().take() {
-                    let values: Vec<serde_json::Value> = data.values().cloned().collect();
-                    if let Some(value) = values.first() {
-                        return Some(Ok(value.clone()));
-                    }
-                }
-            }
-            Err(err) => {
-                tracing::error!("Failed to deserialize body: {}", err);
-            }
-        },
-        Err(err) => {
-            tracing::error!("Failed to convert response body into bytes: {}", err);
-        }
-    }
-
-    None
-}
-
 async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
@@ -219,26 +190,14 @@ async fn handle_rest_apis(
             .await;
         let cookie_headers = req_ctx.cookie_headers.clone();
         response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
-        let mut resp = response.to_response()?;
+
+        let mut resp = response.to_rest_response()?;
         update_response_headers(
             &mut resp,
             cookie_headers.map(|v| v.lock().unwrap().clone()),
             app_ctx.as_ref(),
         );
         update_experimental_headers(&mut resp, app_ctx.as_ref(), req_ctx);
-
-        if let Some(body) = get_value_from_response(&mut resp).await {
-            match body {
-                Ok(value) => {
-                    *resp.body_mut() = Body::from(value.to_string());
-                }
-                Err(err) => {
-                    *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-                    *resp.body_mut() = Body::from(err.to_string());
-                }
-            }
-        }
-
         return Ok(resp);
     }
 
@@ -314,51 +273,5 @@ mod test {
         assert_eq!(new_headers.len(), 2);
         assert_eq!(new_headers.get("x-foo").unwrap(), "bar");
         assert_eq!(new_headers.get("x-bar").unwrap(), "foo");
-    }
-    use hyper::{Body, Response};
-    use serde_json::json;
-
-    use super::*;
-
-    #[tokio::test]
-    async fn test_get_value_from_response_with_errors() {
-        let errors = json!(["error1", "error2"]);
-        let expected = ServerError::new(errors.to_string(), None);
-
-        let mut response = Response::new(Body::from(
-            json!({
-                "errors": errors
-            })
-            .to_string(),
-        ));
-
-        let body = get_value_from_response(&mut response).await.unwrap();
-
-        assert_eq!(body, Err(expected))
-    }
-
-    #[tokio::test]
-    async fn test_get_value_from_response_with_data() {
-        let expected = json!({
-            "value-a": "a",
-            "value-b": "b",
-            "value-c": "c"
-        });
-
-        let mut response = Response::new(Body::from(
-            json!({
-                "data": {
-                    "query": expected
-                }
-            })
-            .to_string(),
-        ));
-
-        let body = get_value_from_response(&mut response)
-            .await
-            .unwrap()
-            .unwrap();
-
-        assert_eq!(body, expected);
     }
 }

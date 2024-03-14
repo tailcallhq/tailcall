@@ -128,6 +128,23 @@ impl GraphQLResponse {
         Ok(response)
     }
 
+    /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
+    /// Differs as `to_response` by flattening the response's data
+    /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
+    pub fn to_rest_response(self) -> Result<Response<hyper::Body>> {
+        let value = serde_json::to_value(&self.0)?;
+        let mut response = self.to_response()?;
+
+        if let Some(serde_json::Value::Object(data)) = value.get("data") {
+            let values: Vec<serde_json::Value> = data.values().cloned().collect();
+            if let Some(value) = values.first() {
+                *response.body_mut() = Body::from(serde_json::to_string(value)?);
+            }
+        }
+
+        Ok(response)
+    }
+
     /// Sets the `cache_control` for a given `GraphQLResponse`.
     ///
     /// The function modifies the `GraphQLResponse` to set the `cache_control`
