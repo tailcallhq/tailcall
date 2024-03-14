@@ -173,6 +173,13 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                 "Failed to parse request: {}",
                 String::from_utf8(bytes.to_vec()).unwrap()
             );
+
+            let mut response = async_graphql::Response::default();
+            let server_error =
+                ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
+            response.errors = vec![server_error];
+
+            Ok(GraphQLResponse::from(response).to_response()?)
         }
     }
 }
@@ -218,6 +225,8 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
                         };
 
                     graphql_request::<T>(req, &app_ctx).await
+                } else {
+                    not_found()
                 }
             }
             _ => not_found(),
