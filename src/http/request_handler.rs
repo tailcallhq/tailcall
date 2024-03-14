@@ -178,20 +178,17 @@ struct ResponseBody {
 
 async fn get_value_from_response(resp: &mut Response<Body>) {
     if let Ok(bytes) = hyper::body::to_bytes(resp.body_mut()).await {
-        if let Ok(mut body) = serde_json::from_slice::<ResponseBody>(&bytes.to_vec()) {
+        if let Ok(mut body) = serde_json::from_slice::<ResponseBody>(&bytes) {
             if let Some(errors) = body.errors.clone() {
                 *resp.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
                 *resp.body_mut() = Body::from(errors.to_string());
             }
 
-            match body.data.take() {
-                serde_json::Value::Object(data) => {
-                    let values: Vec<serde_json::Value> = data.values().cloned().collect();
-                    if let Some(value) = values.first().clone() {
-                        *resp.body_mut() = Body::from(value.to_string());
-                    }
+            if let serde_json::Value::Object(data) = body.data.take() {
+                let values: Vec<serde_json::Value> = data.values().cloned().collect();
+                if let Some(value) = values.first() {
+                    *resp.body_mut() = Body::from(value.to_string());
                 }
-                _ => {}
             }
         }
     }
