@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::Schema;
 
-use super::{Blueprint, SchemaModifiers};
 use crate::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
+use crate::blueprint::{Blueprint, SchemaModifiers};
 use crate::http::RequestContext;
 use crate::valid::{Cause, Valid, Validator};
 

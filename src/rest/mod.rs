@@ -1,6 +1,7 @@
 mod directive;
 mod endpoint;
 mod endpoint_set;
+mod operation;
 mod partial_request;
 mod path;
 mod query_params;

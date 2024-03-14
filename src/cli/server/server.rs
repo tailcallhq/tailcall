@@ -7,14 +7,10 @@ use tokio::sync::oneshot::{self};
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
-use crate::app_context::AppContext;
-use crate::blueprint::{Blueprint, Http, OperationQuery};
+use crate::blueprint::{Blueprint, Http};
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
 use crate::config::ConfigModule;
-use crate::http::RequestContext;
-use crate::rest::EndpointSet;
-use crate::valid::Validator;
 
 pub struct Server {
     config_module: ConfigModule,
@@ -37,16 +33,13 @@ impl Server {
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
-        let server_config = Arc::new(ServerConfig::new(
-            blueprint.clone(),
-            self.config_module.extensions.endpoints.clone(),
-        ));
-
-        validate_operations_pvt(
-            server_config.app_ctx.as_ref(),
-            self.config_module.extensions.endpoints,
-        )
-        .await?;
+        let server_config = Arc::new(
+            ServerConfig::new(
+                blueprint.clone(),
+                self.config_module.extensions.endpoints.clone(),
+            )
+            .await?,
+        );
 
         init_opentelemetry(
             blueprint.opentelemetry.clone(),
@@ -73,22 +66,4 @@ impl Server {
 
         result
     }
-}
-
-async fn validate_operations_pvt(app_ctx: &AppContext, endpoint_set: EndpointSet) -> Result<()> {
-    let blueprint = &app_ctx.blueprint;
-    let req_ctx = RequestContext::from(app_ctx);
-    let req_ctx = Arc::new(req_ctx);
-
-    let mut operations = vec![];
-
-    for endpoint in endpoint_set {
-        let req = endpoint.clone().into_request();
-        let operation_qry = OperationQuery::new(req, String::new(), req_ctx.clone())?; // TODO fix trace
-        operations.push(operation_qry);
-    }
-    crate::blueprint::validate_operations(blueprint, operations)
-        .await
-        .to_result()?;
-    Ok(())
 }
