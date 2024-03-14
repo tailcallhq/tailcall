@@ -179,18 +179,26 @@ struct ResponseBody {
 async fn get_value_from_response(
     resp: &mut Response<Body>,
 ) -> Option<Result<serde_json::Value, ServerError>> {
-    if let Ok(bytes) = hyper::body::to_bytes(resp.body_mut()).await {
-        if let Ok(body) = serde_json::from_slice::<ResponseBody>(&bytes) {
-            if let Some(errors) = body.errors.clone() {
-                return Some(Err(ServerError::new(errors.to_string(), None)));
-            }
+    match hyper::body::to_bytes(resp.body_mut()).await {
+        Ok(bytes) => match serde_json::from_slice::<ResponseBody>(&bytes) {
+            Ok(body) => {
+                if let Some(errors) = body.errors.clone() {
+                    return Some(Err(ServerError::new(errors.to_string(), None)));
+                }
 
-            if let serde_json::Value::Object(data) = body.data.clone().take() {
-                let values: Vec<serde_json::Value> = data.values().cloned().collect();
-                if let Some(value) = values.first() {
-                    return Some(Ok(value.clone()));
+                if let serde_json::Value::Object(data) = body.data.clone().take() {
+                    let values: Vec<serde_json::Value> = data.values().cloned().collect();
+                    if let Some(value) = values.first() {
+                        return Some(Ok(value.clone()));
+                    }
                 }
             }
+            Err(err) => {
+                tracing::error!("Failed to deserialize body: {}", err);
+            }
+        },
+        Err(err) => {
+            tracing::error!("Failed to convert response body into bytes: {}", err);
         }
     }
 
