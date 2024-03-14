@@ -8,7 +8,6 @@ use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::app_context::AppContext;
-use crate::async_graphql_hyper::GraphQLRequestLike;
 use crate::blueprint::{Blueprint, Http, OperationQuery};
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
@@ -45,7 +44,7 @@ impl Server {
 
         validate_operations_pvt(
             server_config.app_ctx.as_ref(),
-            &self.config_module.extensions.endpoints,
+            self.config_module.extensions.endpoints,
         )
         .await?;
 
@@ -76,7 +75,7 @@ impl Server {
     }
 }
 
-async fn validate_operations_pvt(app_ctx: &AppContext, endpoint_set: &EndpointSet) -> Result<()> {
+async fn validate_operations_pvt(app_ctx: &AppContext, endpoint_set: EndpointSet) -> Result<()> {
     let blueprint = &app_ctx.blueprint;
     let req_ctx = RequestContext::from(app_ctx);
     let req_ctx = Arc::new(req_ctx);
@@ -84,8 +83,8 @@ async fn validate_operations_pvt(app_ctx: &AppContext, endpoint_set: &EndpointSe
     let mut operations = vec![];
 
     for endpoint in endpoint_set {
-        let req = endpoint.clone().into_request().data(req_ctx.clone());
-        let operation_qry = OperationQuery::new(req, String::new())?; // TODO fix trace
+        let req = endpoint.clone().into_request();
+        let operation_qry = OperationQuery::new(req, String::new(), req_ctx.clone())?; // TODO fix trace
         operations.push(operation_qry);
     }
     crate::blueprint::validate_operations(blueprint, operations)

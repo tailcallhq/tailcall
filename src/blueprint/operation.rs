@@ -1,9 +1,11 @@
 use std::fmt::Write;
+use std::sync::Arc;
 
 use async_graphql::dynamic::Schema;
 
 use super::{Blueprint, SchemaModifiers};
-use crate::async_graphql_hyper::GraphQLRequest;
+use crate::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
+use crate::http::RequestContext;
 use crate::valid::{Cause, Valid, Validator};
 
 #[derive(Debug)]
@@ -13,7 +15,12 @@ pub struct OperationQuery {
 }
 
 impl OperationQuery {
-    pub fn new(query: GraphQLRequest, trace: String) -> anyhow::Result<Self> {
+    pub fn new(
+        query: GraphQLRequest,
+        trace: String,
+        request_context: Arc<RequestContext>,
+    ) -> anyhow::Result<Self> {
+        let query = query.data(request_context);
         Ok(Self { query, file: trace })
     }
 
