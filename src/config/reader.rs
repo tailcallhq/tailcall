@@ -343,7 +343,13 @@ mod test_proto_config {
         let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
+
+        if cfg!(windows) {
+            proto_no_pkg.push("src\\grpc\\tests\\proto_no_pkg.graphql");
+        } else {
+            proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
+        }
+
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
         let validation = config_module
             .err()
@@ -352,15 +358,33 @@ mod test_proto_config {
         proto_no_pkg.pop();
         proto_no_pkg.push("proto");
         proto_no_pkg.push("news_no_pkg.proto");
-        let err = &validation.as_vec().first().unwrap().message;
+
+        if cfg!(windows) {
+            let err = &validation
+                .as_vec()
+                .first()
+                .unwrap()
+                .message
+                .replace('/', "\\\\");
+            assert_eq!(
+                &format!(
+                    "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
+                    proto_no_pkg.to_str()
+                ),
+                err
+            );
+        } else {
+            let err = &validation.as_vec().first().unwrap().message;
+            assert_eq!(
+                &format!(
+                    "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
+                    proto_no_pkg.to_str()
+                ),
+                err
+            );
+        }
+
         let trace = &validation.as_vec().first().unwrap().trace;
-        assert_eq!(
-            &format!(
-                "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
-                proto_no_pkg.to_str()
-            ),
-            err
-        );
 
         let expected_trace = ["schema", "link[0]"]
             .iter()
