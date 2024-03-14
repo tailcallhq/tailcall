@@ -83,11 +83,21 @@ jobs:
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
+      - name: Install Bencher CLI
+        uses: bencherdev/bencher@main
+
       - name: Run Benchmarks
         run: |
           cargo install cargo-criterion rust-script
           cargo criterion --message-format=json > benches/main_benchmarks.json
           ./scripts/json_to_md.rs benches/main_benchmarks.json > benches/main_benchmarks.md
+          bencher run \
+          --project tailcall \
+          --branch main \
+          --testbed benchmarking-runner \
+          --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --adapter rust_criterion \
+          --file benches/main_benchmarks.json
           cat benches/main_benchmarks.md
 
       - name: Cache Criterion Benchmarks Json
