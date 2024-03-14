@@ -307,9 +307,10 @@ mod test {
         assert_eq!(new_headers.get("x-foo").unwrap(), "bar");
         assert_eq!(new_headers.get("x-bar").unwrap(), "foo");
     }
-    use super::*;
     use hyper::{Body, Response};
     use serde_json::json;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_get_value_from_response_with_errors() {
