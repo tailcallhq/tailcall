@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
+use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
@@ -11,6 +12,7 @@ use super::telemetry::Telemetry;
 use super::GlobalTimeout;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
+use crate::schema_extension::SchemaExtension;
 
 /// Blueprint is an intermediary representation that allows us to generate
 /// graphQL APIs. It can only be generated from a valid Config.
@@ -172,15 +174,18 @@ pub struct UnionTypeDefinition {
 
 ///
 /// Controls the kind of blueprint that is generated.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Default, Setters)]
 pub struct SchemaModifiers {
     /// If true, the generated schema will not have any resolvers.
     pub no_resolver: bool,
+    /// List of extensions to add to the schema.
+    pub extensions: Arc<Vec<SchemaExtension>>,
 }
 
 impl SchemaModifiers {
-    pub fn no_resolver() -> Self {
-        Self { no_resolver: true }
+    pub fn with_no_resolver(mut self) -> Self {
+        self.no_resolver = true;
+        self
     }
 }
 
@@ -242,6 +247,10 @@ impl Blueprint {
 
         if !server.get_enable_introspection() || schema_modifiers.no_resolver {
             schema = schema.disable_introspection();
+        }
+
+        for extension in schema_modifiers.extensions.iter().cloned() {
+            schema = schema.extension(extension);
         }
 
         // We should safely assume the blueprint is correct and,

@@ -244,6 +244,7 @@ fn request_context() -> RequestContext {
         env: Arc::new(Env {}),
         file: Arc::new(File {}),
         cache: Arc::new(InMemoryCache::new()),
+        extensions: Arc::new(vec![]),
     };
     RequestContext {
         req_headers: HeaderMap::new(),
