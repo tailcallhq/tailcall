@@ -236,7 +236,16 @@ mod tests {
         let endpoints = Endpoint::try_new(MULTIPLE_TEST_QUERY).unwrap();
         assert_eq!(endpoints.len(), 2);
     }
+    #[test]
+    fn test_remove_rest_directives() {
+        let endpoint = Endpoint::try_new(TEST_QUERY).unwrap()[0].clone();
+        let doc = Endpoint::remove_rest_directives(endpoint.doc);
+        assert!(!format!("{:?}", doc).contains("rest"));
 
+        let endpoint = Endpoint::try_new(MULTIPLE_TEST_QUERY).unwrap()[0].clone();
+        let doc = Endpoint::remove_rest_directives(endpoint.doc);
+        assert!(!format!("{:?}", doc).contains("rest"));
+    }
     mod matches {
         use std::str::FromStr;
 

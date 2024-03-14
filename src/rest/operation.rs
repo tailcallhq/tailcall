@@ -11,39 +11,35 @@ use crate::valid::{Cause, Valid, Validator};
 #[derive(Debug)]
 pub struct OperationQuery {
     query: GraphQLRequest,
-    file: String,
 }
 
 impl OperationQuery {
     pub fn new(
         query: GraphQLRequest,
-        trace: String,
         request_context: Arc<RequestContext>,
     ) -> anyhow::Result<Self> {
         let query = query.data(request_context);
-        Ok(Self { query, file: trace })
+        Ok(Self { query })
     }
 
     async fn validate(self, schema: &Schema) -> Vec<Cause<String>> {
-        let file = self.file.clone();
         schema
             .execute(self.query.0)
             .await
             .errors
             .iter()
-            .map(|e| to_cause(file.as_str(), e))
+            .map(to_cause)
             .collect()
     }
 }
 
-fn to_cause(file: &str, err: &async_graphql::ServerError) -> Cause<String> {
+fn to_cause(err: &async_graphql::ServerError) -> Cause<String> {
     let mut trace = Vec::new();
 
     for loc in err.locations.iter() {
         let mut message = String::new();
-        message.write_str(file).unwrap();
         message
-            .write_str(format!(":{}:{}", loc.line, loc.column).as_str())
+            .write_str(format!("{}:{}", loc.line, loc.column).as_str())
             .unwrap();
 
         trace.push(message);

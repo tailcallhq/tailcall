@@ -14,14 +14,6 @@ pub struct EndpointSet {
     endpoints: Vec<Endpoint>,
 }
 
-impl Iterator for EndpointSet {
-    type Item = Endpoint;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.endpoints.pop()
-    }
-}
-
 pub struct EndpointSetIter<'a> {
     inner: std::slice::Iter<'a, Endpoint>,
 }
@@ -80,7 +72,7 @@ impl EndpointSet {
 
         for endpoint in self {
             let req = endpoint.clone().into_request();
-            let operation_qry = OperationQuery::new(req, String::new(), req_ctx.clone())?; // TODO fix trace
+            let operation_qry = OperationQuery::new(req, req_ctx.clone())?; // TODO fix trace
             operations.push(operation_qry);
         }
         super::operation::validate_operations(blueprint, operations)
