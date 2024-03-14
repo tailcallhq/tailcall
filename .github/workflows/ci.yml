@@ -88,14 +88,74 @@ jobs:
         run: npm test
 
   test:
-    name: Run Tests
-    runs-on: ubuntu-latest
+    name: Run Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          [
+            linux-x64-gnu,
+            linux-x64-musl,
+            linux-arm64-gnu,
+            linux-arm64-musl,
+            linux-ia32-gnu,
+            darwin-arm64,
+            darwin-x64,
+            win32-x64-msvc,
+            win32-x64-gnu,
+            win32-arm64-msvc,
+            win32-ia32-gnu,
+          ]
+        include:
+          - build: linux-x64-gnu
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+
+          - build: linux-x64-musl
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+          - build: linux-arm64-gnu
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+
+          - build: linux-arm64-musl
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+
+          - build: linux-ia32-gnu
+            os: ubuntu-latest
+            target: i686-unknown-linux-gnu
+
+          - build: darwin-arm64
+            os: macos-latest
+            target: aarch64-apple-darwin
+
+          - build: darwin-x64
+            os: macos-latest
+            target: x86_64-apple-darwin
+
+          - build: win32-x64-msvc
+            os: windows-latest
+
+          - build: win32-x64-gnu
+            os: windows-latest
+
+          - build: win32-arm64-msvc
+            os: windows-latest
+
+          - build: win32-ia32-gnu
+            os: ubuntu-latest
+            target: i686-pc-windows-gnu
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
 
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
