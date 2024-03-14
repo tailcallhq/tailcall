@@ -578,6 +578,11 @@ input Headers {
   """
   custom: [KeyValue]
   """
+  `experimental` allows the use of `X-*` experimental headers in the response. @default 
+  `[]`.
+  """
+  experimental: [String!]
+  """
   `setCookies` when enabled stores `set-cookie` headers and all the response will be 
   sent with the headers.
   """
