@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(headers: {experimental: ["x-tailcall", "x-experimental"]}) @upstream {
+schema @server(headers: {experimental: ["x-experimental", "x-tailcall"]}) @upstream {
   query: Query
 }
 

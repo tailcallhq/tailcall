@@ -30,7 +30,7 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
-    pub experimental_headers: Vec<String>,
+    pub experimental_headers: BTreeSet<String>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -73,7 +73,7 @@ impl Server {
     }
 
     pub fn get_experimental_headers(&self) -> BTreeSet<String> {
-        self.experimental_headers.clone().into_iter().collect()
+        self.experimental_headers.clone()
     }
 }
 

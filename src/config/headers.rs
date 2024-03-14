@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::config::KeyValue;
@@ -21,7 +23,7 @@ pub struct Headers {
     #[serde(default, skip_serializing_if = "is_default")]
     /// `experimental` allows the use of `X-*` experimental headers
     /// in the response. @default `[]`.
-    pub experimental: Option<Vec<String>>,
+    pub experimental: Option<BTreeSet<String>>,
 }
 
 impl Headers {

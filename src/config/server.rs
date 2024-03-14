@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -172,7 +172,7 @@ impl Server {
             })
     }
 
-    pub fn get_experimental_headers(&self) -> Vec<String> {
+    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
         self.headers
             .as_ref()
             .map(|h| h.experimental.clone().unwrap_or_default())
