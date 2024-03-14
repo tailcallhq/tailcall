@@ -244,11 +244,11 @@ dependencies = [
 [[package]]
 name = "async-graphql"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
- "async-graphql-value",
+ "async-graphql-value 7.0.2 (git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter)",
  "async-stream",
  "async-trait",
  "base64",
@@ -281,7 +281,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-derive"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -329,10 +329,21 @@ dependencies = [
 [[package]]
 name = "async-graphql-parser"
 version = "7.0.2"
-source = "git+https://github.com/tusharmath/async-graphql.git?branch=add-setter#bb4064a48aff9bf16c1641c67d8c7b8892d53f82"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
 dependencies = [
- "async-graphql-value",
+ "async-graphql-value 7.0.2 (git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter)",
  "pest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "async-graphql-value"
+version = "7.0.2"
+source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
+dependencies = [
+ "bytes",
+ "indexmap 2.2.5",
  "serde",
  "serde_json",
 ]
@@ -937,7 +948,7 @@ name = "cloudflare"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-graphql-value",
+ "async-graphql-value 7.0.2 (git+https://github.com/tusharmath/async-graphql.git?branch=add-setter)",
  "async-std",
  "async-trait",
  "console_error_panic_hook",
@@ -4922,7 +4933,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-graphql-extension-apollo-tracing",
- "async-graphql-value",
+ "async-graphql-value 7.0.2 (git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter)",
  "async-recursion",
  "async-std",
  "async-trait",
