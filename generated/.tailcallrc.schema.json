@@ -1223,6 +1223,17 @@
             "$ref": "#/definitions/KeyValue"
           }
         },
+        "experimental": {
+          "description": "`experimental` allows the use of `X-*` experimental headers in the response. @default `[]`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
         "setCookies": {
           "description": "`setCookies` when enabled stores `set-cookie` headers and all the response will be sent with the headers.",
           "type": [
