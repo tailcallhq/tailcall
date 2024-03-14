@@ -85,6 +85,38 @@
         }
       }
     },
+    "Apollo": {
+      "type": "object",
+      "required": [
+        "apiKey",
+        "graphRef"
+      ],
+      "properties": {
+        "apiKey": {
+          "description": "Setting `apiKey` for Apollo.",
+          "type": "string"
+        },
+        "graphRef": {
+          "description": "Setting `graphRef` for Apollo in the format <graphId>@<variant>.",
+          "type": "string"
+        },
+        "platform": {
+          "description": "Setting `platform` for Apollo.",
+          "default": "platform",
+          "type": "string"
+        },
+        "userVersion": {
+          "description": "Setting `userVersion` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        },
+        "version": {
+          "description": "Setting `version` for Apollo.",
+          "default": "1.0",
+          "type": "string"
+        }
+      }
+    },
     "Arg": {
       "type": "object",
       "required": [
@@ -1215,6 +1247,31 @@
             "boolean",
             "null"
           ]
+        },
+        "custom": {
+          "description": "`headers` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyValue"
+          }
+        },
+        "experimental": {
+          "description": "`experimental` allows the use of `X-*` experimental headers in the response. @default `[]`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "setCookies": {
+          "description": "`setCookies` when enabled stores `set-cookie` headers and all the response will be sent with the headers.",
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       }
     },
@@ -1588,13 +1645,6 @@
             "null"
           ]
         },
-        "responseHeaders": {
-          "description": "The `responseHeaders` are key-value pairs included in every server response. Useful for setting headers like `Access-Control-Allow-Origin` for cross-origin requests or additional headers for downstream services.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/KeyValue"
-          }
-        },
         "responseValidation": {
           "description": "`responseValidation` Tailcall automatically validates responses from upstream services using inferred schema. @default `false`.",
           "type": [
@@ -1709,6 +1759,18 @@
           "properties": {
             "prometheus": {
               "$ref": "#/definitions/PrometheusExporter"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "apollo"
+          ],
+          "properties": {
+            "apollo": {
+              "$ref": "#/definitions/Apollo"
             }
           },
           "additionalProperties": false
