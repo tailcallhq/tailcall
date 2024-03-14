@@ -94,6 +94,7 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
+        app.register_apollo_schema().await.unwrap();
 
         let req = Request::builder()
             .method("POST")

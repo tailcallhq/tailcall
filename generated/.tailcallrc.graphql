@@ -410,11 +410,11 @@ directive @upstream(
 
 input Apollo {
   """
-  Setting `api_key` for Apollo.
+  Setting `apiKey` for Apollo.
   """
   apiKey: String!
   """
-  Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
+  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
   """
   graphRef: String!
   """

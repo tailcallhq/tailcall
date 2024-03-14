@@ -93,11 +93,11 @@
       ],
       "properties": {
         "apiKey": {
-          "description": "Setting `api_key` for Apollo.",
+          "description": "Setting `apiKey` for Apollo.",
           "type": "string"
         },
         "graphRef": {
-          "description": "Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.",
+          "description": "Setting `graphRef` for Apollo in the format <graphId>@<variant>.",
           "type": "string"
         },
         "platform": {

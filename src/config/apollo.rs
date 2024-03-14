@@ -7,10 +7,10 @@ use crate::mustache::Mustache;
 #[serde(rename_all = "camelCase")]
 pub struct Apollo {
     ///
-    /// Setting `api_key` for Apollo.
+    /// Setting `apiKey` for Apollo.
     pub api_key: String,
     ///
-    /// Setting `graph_ref` for Apollo in the format <graph_id>@<variant>.
+    /// Setting `graphRef` for Apollo in the format <graphId>@<variant>.
     pub graph_ref: String,
     ///
     /// Setting `userVersion` for Apollo.

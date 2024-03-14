@@ -605,7 +605,7 @@ impl ExecutionSpec {
         config: &ConfigModule,
         env: HashMap<String, String>,
         http_client: Arc<MockHttpClient>,
-    ) -> anyhow::Result<Arc<AppContext>> {
+    ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
         let http = if let Some(script) = blueprint.server.script.clone() {
             javascript::init_http(http_client, script)
@@ -627,11 +627,11 @@ impl ExecutionSpec {
         // TODO: move inside tailcall core if possible
         init_metrics(&runtime).unwrap();
 
-        Ok(Arc::new(AppContext::new(
+        Arc::new(AppContext::new(
             blueprint,
             runtime,
             config.extensions.endpoints.clone(),
-        )))
+        ))
     }
 }
 
@@ -1012,7 +1012,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         for (i, assertion) in assert_spec.iter().enumerate() {
             opentelemetry.reset();
 
-            let response = run_assert(app_ctx.as_ref().unwrap().clone(), assertion)
+            let response = run_assert(app_ctx.clone(), assertion)
                 .await
                 .context(spec.path.to_str().unwrap().to_string())
                 .unwrap();
