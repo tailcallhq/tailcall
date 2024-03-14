@@ -195,7 +195,7 @@ async fn handle_rest_apis(
 #[instrument(skip_all, err, fields(method = % req.method(), url = % req.uri()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    app_ctx: Arc<AppContext>,
+    mut app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
     if req.uri().path().starts_with(API_URL_PREFIX) {
         return handle_rest_apis(req, app_ctx).await;
@@ -206,22 +206,18 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
         hyper::Method::POST => match req.uri().path() {
-            ENDPOINT => graphql_request::<T>(req, app_ctx.as_ref()).await,
-            SHOWCASE_ENDPOINT => {
+            ENDPOINT | SHOWCASE_ENDPOINT => {
                 if app_ctx.blueprint.server.enable_showcase {
-                    let app_ctx =
+                    app_ctx =
                         match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false)
                             .await?
                         {
-                            Ok(app_ctx) => app_ctx,
+                            Ok(app_ctx) => Arc::new(app_ctx),
                             Err(res) => return Ok(res),
                         };
-
-                    graphql_request::<T>(req, &app_ctx).await
-                } else {
-                    not_found()
                 }
-            }
+                graphql_request::<T>(req, app_ctx.as_ref()).await
+            },
             _ => not_found(),
         },
         hyper::Method::GET => {
