@@ -4,7 +4,7 @@ expression: opentelemetry.get_traces().unwrap()
 ---
 [
   {
-    "name": "IO(Http)"
+    "name": "Http"
   },
   {
     "name": "Cache"
@@ -13,9 +13,9 @@ expression: opentelemetry.get_traces().unwrap()
     "name": "fieldCache"
   },
   {
-    "name": "graphql_request"
+    "name": "graphQL"
   },
   {
-    "name": "handle_request"
+    "name": "request"
   }
 ]

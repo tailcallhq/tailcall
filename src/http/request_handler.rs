@@ -219,7 +219,7 @@ async fn handle_rest_apis(
             &request,
         );
         let span = tracing::info_span!(
-            "handle_rest_apis",
+            "REST",
             otel.name = format!("{} {}", request.method(), p_request.path.as_str()),
             { HTTP_REQUEST_METHOD } = %request.method(),
             { HTTP_ROUTE } = p_request.path.as_str()
