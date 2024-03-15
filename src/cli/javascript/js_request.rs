@@ -168,4 +168,25 @@ mod tests {
         let body_out = js_request.body;
         assert_eq!(body_out, None);
     }
+
+    #[test]
+    fn test_from_http_url_without_port() {
+        let uri = Uri::parse("http://example.com/path?query=value").unwrap();
+        assert_eq!(uri.scheme, Scheme::Http);
+        assert_eq!(uri.host.unwrap(), "example.com");
+        assert_eq!(uri.path, "/path");
+        assert_eq!(uri.query.len(), 1);
+        assert_eq!(uri.query.get("query").unwrap(), "value");
+        assert_eq!(uri.port, None);
+    }
+
+    #[test]
+    fn test_from_https_url_without_query() {
+        let uri = Uri::parse("https://example.com:8085/path").unwrap();
+        assert_eq!(uri.scheme, Scheme::Https);
+        assert_eq!(uri.host.unwrap(), "example.com");
+        assert_eq!(uri.path, "/path");
+        assert_eq!(uri.query.len(), 0);
+        assert_eq!(uri.port, Some(8085));
+    }
 }
