@@ -282,11 +282,6 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: build
           args: ${{matrix.features}} --release --target ${{ matrix.target }}
-    permissions:
-      contents: write
-      pull-requests: write
-    env:
-      GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
 
   # TODO: move to separate file to separate responsibilities
   release:
