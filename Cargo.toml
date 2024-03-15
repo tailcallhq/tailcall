@@ -29,7 +29,7 @@ opentelemetry-otlp = { version = "0.15.0", features = [
     # required to make grpc requests
     "tls-roots",
 ], optional = true }
-opentelemetry-system-metrics = { version = "0.1.7", optional = true }
+opentelemetry-system-metrics = { version = "0.1.8", optional = true }
 
 # dependencies safe for wasm:
 
