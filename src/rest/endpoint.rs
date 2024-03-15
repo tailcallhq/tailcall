@@ -2,18 +2,19 @@ use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{Directive, DocumentOperations, ExecutableDocument};
 use async_graphql::{Positioned, Variables};
-use async_graphql_value::Name;
+use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
 
 use super::directive::Rest;
 use super::partial_request::PartialRequest;
-use super::path::Path;
+use super::path::{Path, Segment};
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
 use super::Request;
 use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
+use crate::rest::typed_variables::{UrlParamType, N};
 
 /// An executable Http Endpoint created from a GraphQL query
 #[derive(Debug, Setters, Clone)]
@@ -77,9 +78,37 @@ impl Endpoint {
     }
 
     pub fn into_request(self) -> GraphQLRequest {
-        let mut req = async_graphql::Request::new("");
+        let variables = Self::get_default_variables(&self);
+        let mut req = async_graphql::Request::new("").variables(variables);
         req.set_parsed_query(Self::remove_rest_directives(self.doc));
         GraphQLRequest(req)
+    }
+
+    fn get_default_variables(endpoint: &Endpoint) -> Variables {
+        let mut variables = Variables::default();
+        for segment in endpoint.path.segments.iter() {
+            match segment {
+                Segment::Literal(_) => {}
+                Segment::Param(p) => {
+                    if !p.nullable() {
+                        let default_value = match p.ty() {
+                            UrlParamType::String => ConstValue::String(String::new()),
+                            UrlParamType::Number(n) => match n {
+                                N::Int => {
+                                    ConstValue::Number(async_graphql_value::Number::from(0u8))
+                                }
+                                N::Float => ConstValue::Number(
+                                    async_graphql_value::Number::from_f64(0.0f64).unwrap(),
+                                ),
+                            },
+                            UrlParamType::Boolean => ConstValue::Boolean(false),
+                        };
+                        variables.insert(Name::new(p.name()), default_value);
+                    }
+                }
+            }
+        }
+        variables
     }
 
     fn remove_rest_directives(mut doc: ExecutableDocument) -> ExecutableDocument {
