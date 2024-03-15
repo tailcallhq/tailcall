@@ -6067,16 +6067,18 @@ dependencies = [
 
 [[package]]
 name = "worker"
-version = "0.0.20"
+version = "0.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2094e2a6229b1d48bb45c6e559f0802e8bbfb1e45fc8ec6a95c7a3f507b060bd"
+checksum = "01e01575624501026eab70b650e742394801f13eeac45f51f27e3c6a335e4d84"
 dependencies = [
  "async-trait",
+ "bytes",
  "chrono",
  "chrono-tz",
  "futures-channel",
  "futures-util",
  "http 1.1.0",
+ "http-body 1.0.0",
  "js-sys",
  "matchit",
  "pin-project",
@@ -6112,9 +6114,9 @@ dependencies = [
 
 [[package]]
 name = "worker-macros"
-version = "0.0.12"
+version = "0.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0ad71b721e3c725cb753f72e57836fe55c151e8be7904db1cfb36ef29ae7e43"
+checksum = "ba51b04dab6538cd7a6b6e1eb0795e65b63138c2d3b73686bc10d57d7770d0ec"
 dependencies = [
  "async-trait",
  "proc-macro2",
@@ -6128,9 +6130,9 @@ dependencies = [
 
 [[package]]
 name = "worker-sys"
-version = "0.0.12"
+version = "0.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fc23dd63b589e7f03fa686bfb3606e6ddd5e57a9020d8a1de39a31cddde7fb9"
+checksum = "45f793beb4fd7038637cda24502769ae1d90a32b9cdb3b48ff73ce9cf007affe"
 dependencies = [
  "cfg-if",
  "js-sys",
