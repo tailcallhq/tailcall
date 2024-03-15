@@ -9,7 +9,7 @@ use super::{
     Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum List {
     Concat(Vec<Expression>),
 }
