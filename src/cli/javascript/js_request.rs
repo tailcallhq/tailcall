@@ -189,4 +189,33 @@ mod tests {
         assert_eq!(uri.query.len(), 0);
         assert_eq!(uri.port, Some(8085));
     }
+
+    #[test]
+    fn test_https_display_without_path_query_and_port() {
+        let uri = Uri {
+            path: "".to_string(),
+            query: Default::default(),
+            scheme: Scheme::Https,
+            host: Some("example.com".to_string()),
+            port: None,
+        };
+        let uri_formatted = format!("{}", uri);
+        assert_eq!(uri_formatted, "https://example.com");
+    }
+
+    #[test]
+    fn test_http_display_with_host_port_scheme_path_and_query() {
+        let uri = Uri {
+            path: "/path".to_string(),
+            query: [("param".to_string(), "value".to_string())]
+                .iter()
+                .cloned()
+                .collect(),
+            scheme: Scheme::Http,
+            host: Some("example.com".to_string()),
+            port: Some(8085),
+        };
+        let uri_formatted = format!("{}", uri);
+        assert_eq!(uri_formatted, "http://example.com::8085/path?param=value");
+    }
 }
