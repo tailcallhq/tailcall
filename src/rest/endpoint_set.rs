@@ -12,8 +12,8 @@ use crate::valid::Validator;
 /// Collection of endpoints
 #[derive(Default, Clone, Debug)]
 pub struct EndpointSet<Status> {
-    pub endpoints: Vec<Endpoint>,
-    pub marker: std::marker::PhantomData<Status>,
+    endpoints: Vec<Endpoint>,
+    marker: std::marker::PhantomData<Status>,
 }
 
 #[derive(Default, Clone, Debug)]
