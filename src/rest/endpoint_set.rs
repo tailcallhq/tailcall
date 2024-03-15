@@ -12,8 +12,8 @@ use crate::valid::Validator;
 /// Collection of endpoints
 #[derive(Default, Clone, Debug)]
 pub struct EndpointSet<Status> {
-    endpoints: Vec<Endpoint>,
-    marker: std::marker::PhantomData<Status>,
+    pub endpoints: Vec<Endpoint>,
+    pub marker: std::marker::PhantomData<Status>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -72,7 +72,7 @@ impl EndpointSet<Unchecked> {
 
         for endpoint in self.endpoints.iter() {
             let req = endpoint.clone().into_request();
-            let operation_qry = OperationQuery::new(req, req_ctx.clone())?; // TODO fix trace
+            let operation_qry = OperationQuery::new(req, req_ctx.clone())?;
             operations.push(operation_qry);
         }
         super::operation::validate_operations(blueprint, operations)

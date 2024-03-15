@@ -44,7 +44,7 @@ pub async fn run() -> Result<()> {
                     // check the endpoints' schema
                     let _ = config_module
                         .extensions
-                        .endpoints
+                        .endpoint_set
                         .into_checked(&blueprint, runtime)
                         .await?;
 

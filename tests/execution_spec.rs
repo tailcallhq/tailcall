@@ -28,6 +28,7 @@ use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
 use tailcall::print_schema::print_schema;
+use tailcall::rest::Checked;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 use tailcall::{EnvIO, FileIO, HttpIO};
@@ -627,13 +628,10 @@ impl ExecutionSpec {
         // TODO: move inside tailcall core if possible
         init_metrics(&runtime).unwrap();
 
-        let endpoints = config
-            .extensions
-            .endpoints
-            .clone()
-            .into_checked(&blueprint, runtime.clone())
-            .await
-            .unwrap();
+        let endpoints = tailcall::rest::EndpointSet {
+            endpoints: config.extensions.endpoint_set.endpoints.clone(),
+            marker: std::marker::PhantomData::<Checked>,
+        };
 
         Arc::new(AppContext::new(blueprint, runtime, endpoints))
     }

@@ -34,7 +34,11 @@ impl Server {
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
         let server_config = Arc::new(
-            ServerConfig::new(blueprint.clone(), self.config_module.extensions.endpoints).await?,
+            ServerConfig::new(
+                blueprint.clone(),
+                self.config_module.extensions.endpoint_set,
+            )
+            .await?,
         );
 
         init_opentelemetry(
