@@ -344,11 +344,10 @@ mod test_proto_config {
         let reader = ConfigReader::init(runtime);
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        if cfg!(windows) {
-            proto_no_pkg.push("src\\grpc\\tests\\proto_no_pkg.graphql");
-        } else {
-            proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
-        }
+        proto_no_pkg.push("src");
+        proto_no_pkg.push("grpc");
+        proto_no_pkg.push("tests");
+        proto_no_pkg.push("proto_no_pkg.graphql");
 
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
         let validation = config_module
