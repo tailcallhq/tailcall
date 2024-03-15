@@ -8,6 +8,7 @@ mod request_handler;
 mod request_template;
 mod response;
 pub mod showcase;
+mod telemetry;
 
 pub use cache::*;
 pub use data_loader::*;

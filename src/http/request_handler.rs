@@ -7,55 +7,23 @@ use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
 use hyper::header::CONTENT_TYPE;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
-use once_cell::sync::Lazy;
-use opentelemetry::metrics::Counter;
-use opentelemetry::KeyValue;
-use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE, URL_PATH};
+use opentelemetry::trace::SpanKind;
+use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 use tracing::Instrument;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use super::request_context::RequestContext;
+use super::{
+    request_context::RequestContext,
+    telemetry::{get_response_status_code, RequestCounter},
+};
 use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::blueprint::telemetry::{Telemetry, TelemetryExporter};
+use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 const API_URL_PREFIX: &str = "/api";
-
-static REQUEST_COUNTER: Lazy<Counter<u64>> = Lazy::new(|| {
-    let meter = opentelemetry::global::meter("http_request");
-
-    meter
-        .u64_counter("request.count")
-        .with_description("Incoming request hit count")
-        .init()
-});
-
-fn update_request_count(telemetry: &Telemetry, route: &str, req: &Request<Body>) {
-    if telemetry.export.is_none() {
-        return;
-    }
-
-    let observable_headers = &telemetry.request_headers;
-    let headers = req.headers();
-    let mut attributes = Vec::with_capacity(observable_headers.len() + 3);
-
-    attributes.push(KeyValue::new(URL_PATH, req.uri().path().to_string()));
-    attributes.push(KeyValue::new(HTTP_REQUEST_METHOD, req.method().to_string()));
-    attributes.push(KeyValue::new(HTTP_ROUTE, route.to_string()));
-
-    for name in observable_headers {
-        if let Some(value) = headers.get(name) {
-            attributes.push(KeyValue::new(
-                format!("http.request.header.{}", name),
-                format!("{:?}", value),
-            ));
-        }
-    }
-
-    REQUEST_COUNTER.add(1, &attributes);
-}
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
@@ -154,12 +122,13 @@ pub fn update_response_headers(
     }
 }
 
-#[tracing::instrument(skip_all, fields(otel.name = "graphQL"))]
+#[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
+    req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
-    update_request_count(&app_ctx.blueprint.telemetry, "/graphql", &req);
+    req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
@@ -209,18 +178,16 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
+    req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
-        update_request_count(
-            &app_ctx.blueprint.telemetry,
-            p_request.path.as_str(),
-            &request,
-        );
+        req_counter.set_http_route(p_request.path.as_str());
         let span = tracing::info_span!(
             "REST",
-            otel.name = format!("{} {}", request.method(), p_request.path.as_str()),
+            otel.name = format!("REST {} {}", request.method(), p_request.path.as_str()),
+            otel.kind = ?SpanKind::Server,
             { HTTP_REQUEST_METHOD } = %request.method(),
             { HTTP_ROUTE } = p_request.path.as_str()
         );
@@ -248,13 +215,13 @@ async fn handle_rest_apis(
     not_found()
 }
 
-#[tracing::instrument(skip_all, err, fields(otel.name = "request", url.path = %req.uri().path(), http.request.method = %req.method()))]
-pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
+async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
+    mut req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     if req.uri().path().starts_with(API_URL_PREFIX) {
-        return handle_rest_apis(req, app_ctx).await;
+        return handle_rest_apis(req, app_ctx, &mut req_counter).await;
     }
 
     match *req.method() {
@@ -262,7 +229,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
-            graphql_request::<T>(req, app_ctx.as_ref()).await
+            graphql_request::<T>(req, app_ctx.as_ref(), &mut req_counter).await
         }
         hyper::Method::POST
             if app_ctx.blueprint.server.enable_showcase
@@ -274,7 +241,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
                     Err(res) => return Ok(res),
                 };
 
-            graphql_request::<T>(req, &app_ctx).await
+            graphql_request::<T>(req, &app_ctx, &mut req_counter).await
         }
 
         hyper::Method::GET => {
@@ -294,6 +261,33 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         }
         _ => not_found(),
     }
+}
+
+#[tracing::instrument(
+    skip_all,
+    err,
+    fields(
+        otel.name = "request",
+        otel.kind = ?SpanKind::Server,
+        url.path = %req.uri().path(),
+        http.request.method = %req.method()
+    )
+)]
+pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Body>,
+    app_ctx: Arc<AppContext>,
+) -> Result<Response<Body>> {
+    let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
+
+    let response = handle_request_inner::<T>(req, app_ctx, &mut req_counter).await;
+
+    req_counter.update(&response);
+    if let Ok(response) = &response {
+        let status = get_response_status_code(response);
+        tracing::Span::current().set_attribute(status.key, status.value);
+    };
+
+    response
 }
 
 #[cfg(test)]
