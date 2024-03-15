@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
-use tokio::sync::broadcast;
+use tokio::sync::watch;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
 use crate::config::group_by::GroupBy;
@@ -16,7 +16,7 @@ use crate::grpc::data_loader::GrpcDataLoader;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
-use crate::http::{cache_policy, CacheValue, DataLoaderRequest, HttpDataLoader, Response};
+use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
 use crate::valid::Validator;
@@ -52,94 +52,89 @@ impl Eval for IO {
         _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         let cache_key = self.cache_key(ctx);
-        if let Some(cache_value) = ctx.req_ctx.cache.read().unwrap().get(&cache_key).cloned() {
-            return match cache_value {
-                CacheValue::Pending(rcv) => Box::pin(async move {
-                    let result = rcv.subscribe().recv().await?;
-                    if let Some(val) = ctx.req_ctx.cache.write().unwrap().get_mut(&cache_key) {
-                        *val = CacheValue::Ready(result.clone())
-                    }
-                    Ok(result)
-                }),
-                CacheValue::Ready(val) => Box::pin(async move { Ok(val) }),
-            };
+        if let Some(mut rcv) = ctx.req_ctx.cache.read().unwrap().get(&cache_key).cloned() {
+            return Box::pin(
+                async move { Ok(rcv.wait_for(Option::is_some).await?.clone().unwrap()) },
+            );
         }
 
-        let (snd, _) = broadcast::channel(100);
-        ctx.req_ctx
-            .cache
-            .write()
-            .unwrap()
-            .insert(cache_key, CacheValue::Pending(snd.clone()));
+        let (snd, rcv) = watch::channel(None);
+        ctx.req_ctx.cache.write().unwrap().insert(cache_key, rcv);
 
         Box::pin(async move {
-            let result = match self {
-                IO::Http { req_template, dl_id, .. } => {
-                    let req = req_template.to_request(ctx)?;
-                    let is_get = req.method() == reqwest::Method::GET;
-
-                    let res = if is_get && ctx.req_ctx.is_batching_enabled() {
-                        let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
-                            dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
-                        execute_request_with_dl(ctx, req, data_loader).await?
-                    } else {
-                        execute_raw_request(ctx, req).await?
-                    };
-
-                    if ctx.req_ctx.server.get_enable_http_validation() {
-                        req_template
-                            .endpoint
-                            .output
-                            .validate(&res.body)
-                            .to_result()
-                            .map_err(EvaluationError::from)?;
-                    }
-
-                    set_headers(ctx, &res);
-
-                    Ok(res.body)
-                }
-                IO::GraphQL { req_template, field_name, dl_id, .. } => {
-                    let req = req_template.to_request(ctx)?;
-
-                    let res = if ctx.req_ctx.upstream.batch.is_some()
-                        && matches!(req_template.operation_type, GraphQLOperationType::Query)
-                    {
-                        let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
-                            dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
-                        execute_request_with_dl(ctx, req, data_loader).await?
-                    } else {
-                        execute_raw_request(ctx, req).await?
-                    };
-
-                    set_headers(ctx, &res);
-                    parse_graphql_response(ctx, res, field_name)
-                }
-                IO::Grpc { req_template, dl_id, .. } => {
-                    let rendered = req_template.render(ctx)?;
-
-                    let res = if ctx.req_ctx.upstream.batch.is_some() &&
-                        // TODO: share check for operation_type for resolvers
-                        matches!(req_template.operation_type, GraphQLOperationType::Query)
-                    {
-                        let data_loader: Option<
-                            &DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>,
-                        > = dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
-                        execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
-                    } else {
-                        let req = rendered.to_request()?;
-                        execute_raw_grpc_request(ctx, req, &req_template.operation).await?
-                    };
-
-                    set_headers(ctx, &res);
-
-                    Ok(res.body)
-                }
-            }?;
-
-            snd.send(result.clone()).ok();
+            let result = eval_io(self, ctx, _conc).await?;
+            snd.send(Some(result.clone()))?;
             Ok(result)
         })
+    }
+}
+
+async fn eval_io<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
+    io: &'a IO,
+    ctx: &'a super::EvaluationContext<'a, Ctx>,
+    _conc: &'a super::Concurrent,
+) -> Result<ConstValue> {
+    match io {
+        IO::Http { req_template, dl_id, .. } => {
+            let req = req_template.to_request(ctx)?;
+            let is_get = req.method() == reqwest::Method::GET;
+
+            let res = if is_get && ctx.req_ctx.is_batching_enabled() {
+                let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
+                    dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
+                execute_request_with_dl(ctx, req, data_loader).await?
+            } else {
+                execute_raw_request(ctx, req).await?
+            };
+
+            if ctx.req_ctx.server.get_enable_http_validation() {
+                req_template
+                    .endpoint
+                    .output
+                    .validate(&res.body)
+                    .to_result()
+                    .map_err(EvaluationError::from)?;
+            }
+
+            set_headers(ctx, &res);
+
+            Ok(res.body)
+        }
+        IO::GraphQL { req_template, field_name, dl_id, .. } => {
+            let req = req_template.to_request(ctx)?;
+
+            let res = if ctx.req_ctx.upstream.batch.is_some()
+                && matches!(req_template.operation_type, GraphQLOperationType::Query)
+            {
+                let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
+                    dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
+                execute_request_with_dl(ctx, req, data_loader).await?
+            } else {
+                execute_raw_request(ctx, req).await?
+            };
+
+            set_headers(ctx, &res);
+            parse_graphql_response(ctx, res, field_name)
+        }
+        IO::Grpc { req_template, dl_id, .. } => {
+            let rendered = req_template.render(ctx)?;
+
+            let res = if ctx.req_ctx.upstream.batch.is_some() &&
+                // TODO: share check for operation_type for resolvers
+                matches!(req_template.operation_type, GraphQLOperationType::Query)
+            {
+                let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
+                    dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
+                execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
+            } else {
+                let req = rendered.to_request()?;
+                execute_raw_grpc_request(ctx, req, &req_template.operation).await?
+            };
+
+            set_headers(ctx, &res);
+
+            Ok(res.body)
+        }
     }
 }
 

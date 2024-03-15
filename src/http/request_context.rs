@@ -7,7 +7,7 @@ use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use tokio::sync::broadcast;
+use tokio::sync::watch;
 
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
@@ -30,13 +30,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: Arc<RwLock<HashMap<u64, CacheValue>>>,
-}
-
-#[derive(Clone)]
-pub enum CacheValue {
-    Pending(broadcast::Sender<ConstValue>),
-    Ready(ConstValue),
+    pub cache: Arc<RwLock<HashMap<u64, watch::Receiver<Option<ConstValue>>>>>,
 }
 
 impl RequestContext {
