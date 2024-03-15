@@ -177,17 +177,9 @@ impl Config {
         let schema = self.schema.merge_right(other.schema.clone());
         let upstream = self.upstream.merge_right(other.upstream.clone());
         let links = merge_links(self.links, other.links.clone());
-        let opentelemetry = self.telemetry.merge_right(other.telemetry.clone());
+        let telemetry = self.telemetry.merge_right(other.telemetry.clone());
 
-        Self {
-            server,
-            upstream,
-            types,
-            schema,
-            unions,
-            links,
-            telemetry: opentelemetry,
-        }
+        Self { server, upstream, types, schema, unions, links, telemetry }
     }
 }
 
