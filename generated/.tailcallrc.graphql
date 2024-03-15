@@ -414,6 +414,28 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
+input Apollo {
+  """
+  Setting `apiKey` for Apollo.
+  """
+  apiKey: String!
+  """
+  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
+  """
+  graphRef: String!
+  """
+  Setting `platform` for Apollo.
+  """
+  platform: String!
+  """
+  Setting `userVersion` for Apollo.
+  """
+  userVersion: String!
+  """
+  Setting `version` for Apollo.
+  """
+  version: String!
+}
 input Batch {
   delay: Int!
   headers: [String!]
@@ -583,6 +605,16 @@ input Headers {
   headers for downstream services.
   """
   custom: [KeyValue]
+  """
+  `experimental` allows the use of `X-*` experimental headers in the response. @default 
+  `[]`.
+  """
+  experimental: [String!]
+  """
+  `setCookies` when enabled stores `set-cookie` headers and all the response will be 
+  sent with the headers.
+  """
+  setCookies: Boolean
 }
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
@@ -735,6 +767,7 @@ input TelemetryExporter {
   stdout: StdoutExporter
   otlp: OtlpExporter
   prometheus: PrometheusExporter
+  apollo: Apollo
 }
 input Schema {
   Obj: JSON

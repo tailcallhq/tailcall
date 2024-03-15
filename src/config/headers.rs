@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::config::KeyValue;
@@ -17,11 +19,24 @@ pub struct Headers {
     /// response. Useful for setting headers like `Access-Control-Allow-Origin`
     /// for cross-origin requests or additional headers for downstream services.
     pub custom: Vec<KeyValue>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `experimental` allows the use of `X-*` experimental headers
+    /// in the response. @default `[]`.
+    pub experimental: Option<BTreeSet<String>>,
+
+    /// `setCookies` when enabled stores `set-cookie` headers
+    /// and all the response will be sent with the headers.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub set_cookies: Option<bool>,
 }
 
 impl Headers {
     pub fn enable_cache_control(&self) -> bool {
         self.cache_control.unwrap_or(false)
+    }
+    pub fn set_cookies(&self) -> bool {
+        self.set_cookies.unwrap_or_default()
     }
 }
 
