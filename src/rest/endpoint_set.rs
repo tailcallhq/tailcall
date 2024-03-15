@@ -21,26 +21,6 @@ pub struct Checked;
 #[derive(Default, Clone, Debug)]
 pub struct Unchecked;
 
-pub struct EndpointSetIter<'a> {
-    inner: std::slice::Iter<'a, Endpoint>,
-}
-
-impl<'a, A> IntoIterator for &'a EndpointSet<A> {
-    type Item = &'a Endpoint;
-    type IntoIter = EndpointSetIter<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        EndpointSetIter { inner: self.endpoints.iter() }
-    }
-}
-impl<'a> Iterator for EndpointSetIter<'a> {
-    type Item = &'a Endpoint;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
-}
-
 impl From<Endpoint> for EndpointSet<Unchecked> {
     fn from(endpoint: Endpoint) -> Self {
         let mut set = EndpointSet::default();
