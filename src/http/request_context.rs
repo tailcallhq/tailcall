@@ -1,11 +1,13 @@
+use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use tokio::sync::broadcast;
 
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
@@ -28,6 +30,13 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
+    pub cache: Arc<RwLock<HashMap<u64, CacheValue>>>,
+}
+
+#[derive(Clone)]
+pub enum CacheValue {
+    Pending(broadcast::Sender<ConstValue>),
+    Ready(ConstValue),
 }
 
 impl RequestContext {
@@ -148,13 +157,15 @@ impl From<&AppContext> for RequestContext {
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),
+            cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, Mutex};
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex, RwLock};
 
     use cache_control::Cachability;
     use hyper::HeaderMap;
@@ -182,6 +193,7 @@ mod test {
                 grpc_data_loaders: Arc::new(vec![]),
                 min_max_age: Arc::new(Mutex::new(None)),
                 cache_public: Arc::new(Mutex::new(None)),
+                cache: Arc::new(RwLock::new(HashMap::new())),
             }
         }
     }

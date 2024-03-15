@@ -5,6 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
+use tokio::sync::broadcast;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
 use crate::config::group_by::GroupBy;
@@ -15,7 +16,7 @@ use crate::grpc::data_loader::GrpcDataLoader;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
-use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::http::{cache_policy, CacheValue, DataLoaderRequest, HttpDataLoader, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
 use crate::valid::Validator;
@@ -50,8 +51,29 @@ impl Eval for IO {
         ctx: &'a super::EvaluationContext<'a, Ctx>,
         _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+        let cache_key = self.cache_key(ctx);
+        if let Some(cache_value) = ctx.req_ctx.cache.read().unwrap().get(&cache_key).cloned() {
+            return match cache_value {
+                CacheValue::Pending(rcv) => Box::pin(async move {
+                    let result = rcv.subscribe().recv().await?;
+                    if let Some(val) = ctx.req_ctx.cache.write().unwrap().get_mut(&cache_key) {
+                        *val = CacheValue::Ready(result.clone())
+                    }
+                    Ok(result)
+                }),
+                CacheValue::Ready(val) => Box::pin(async move { Ok(val) }),
+            };
+        }
+
+        let (snd, _) = broadcast::channel(100);
+        ctx.req_ctx
+            .cache
+            .write()
+            .unwrap()
+            .insert(cache_key, CacheValue::Pending(snd.clone()));
+
         Box::pin(async move {
-            match self {
+            let result = match self {
                 IO::Http { req_template, dl_id, .. } => {
                     let req = req_template.to_request(ctx)?;
                     let is_get = req.method() == reqwest::Method::GET;
@@ -97,8 +119,8 @@ impl Eval for IO {
                     let rendered = req_template.render(ctx)?;
 
                     let res = if ctx.req_ctx.upstream.batch.is_some() &&
-                    // TODO: share check for operation_type for resolvers
-                    matches!(req_template.operation_type, GraphQLOperationType::Query)
+                        // TODO: share check for operation_type for resolvers
+                        matches!(req_template.operation_type, GraphQLOperationType::Query)
                     {
                         let data_loader: Option<
                             &DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>,
@@ -113,7 +135,10 @@ impl Eval for IO {
 
                     Ok(res.body)
                 }
-            }
+            }?;
+
+            snd.send(result.clone()).ok();
+            Ok(result)
         })
     }
 }

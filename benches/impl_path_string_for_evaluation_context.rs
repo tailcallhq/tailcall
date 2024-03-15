@@ -1,6 +1,6 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::collections::{BTreeMap, HashMap};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
 
 use async_graphql::context::SelectionField;
@@ -258,6 +258,7 @@ fn request_context() -> RequestContext {
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
         runtime,
+        cache: Arc::new(RwLock::new(HashMap::new())),
     }
 }
 
