@@ -6,7 +6,7 @@ use async_graphql_value::ConstValue;
 
 use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum Logic {
     If {
         cond: Box<Expression>,

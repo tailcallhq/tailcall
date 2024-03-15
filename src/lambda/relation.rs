@@ -12,7 +12,7 @@ use super::{
 };
 use crate::helpers::value::HashableConstValue;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum Relation {
     Intersection(Vec<Expression>),
     Difference(Vec<Expression>, Vec<Expression>),

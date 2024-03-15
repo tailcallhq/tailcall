@@ -1,5 +1,5 @@
 use core::future::Future;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
 use anyhow::Result;
@@ -14,7 +14,7 @@ use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
 
-#[derive(Clone, Debug, strum_macros::Display)]
+#[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
     Literal(DynamicValue),
@@ -27,6 +27,24 @@ pub enum Expression {
     List(List),
     Math(Math),
     Concurrency(Concurrent, Box<Expression>),
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::Context(_) => write!(f, "Context"),
+            Expression::Literal(_) => write!(f, "Literal"),
+            Expression::EqualTo(_, _) => write!(f, "EqualTo"),
+            Expression::IO(io) => write!(f, "{io}"),
+            Expression::Cache(_) => write!(f, "Cache"),
+            Expression::Input(_, _) => write!(f, "Input"),
+            Expression::Logic(logic) => write!(f, "Logic({logic})"),
+            Expression::Relation(relation) => write!(f, "Relation({relation})"),
+            Expression::List(list) => write!(f, "List({list})"),
+            Expression::Math(math) => write!(f, "Math({math})"),
+            Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -94,7 +112,7 @@ impl Expression {
 }
 
 impl Eval for Expression {
-    #[tracing::instrument(skip_all, fields(name = %self), err)]
+    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,

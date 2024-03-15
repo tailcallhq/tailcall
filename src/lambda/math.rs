@@ -10,7 +10,7 @@ use super::{
 };
 use crate::json::JsonLike;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum Math {
     Mod(Box<Expression>, Box<Expression>),
     Add(Box<Expression>, Box<Expression>),
