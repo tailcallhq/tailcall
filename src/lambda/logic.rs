@@ -24,15 +24,16 @@ pub enum Logic {
 impl Eval for Logic {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Logic::Or(list) => {
-                    let future_iter = list
-                        .iter()
-                        .map(|expr| async move { expr.eval(ctx, conc).await });
+                    let future_iter = list.iter().map(|expr| {
+                        let ctx = ctx.clone();
+                        async move { expr.eval(ctx.clone(), conc).await }
+                    });
 
                     conc.fold(future_iter, false, |acc, val| Ok(acc || is_truthy(&val?)))
                         .await
@@ -40,14 +41,14 @@ impl Eval for Logic {
                 }
                 Logic::Cond(list) => {
                     for (cond, expr) in list.iter() {
-                        if is_truthy(&cond.eval(ctx, conc).await?) {
+                        if is_truthy(&cond.eval(ctx.clone(), conc).await?) {
                             return expr.eval(ctx, conc).await;
                         }
                     }
                     ConstValue::Null
                 }
                 Logic::DefaultTo(value, default) => {
-                    let result = value.eval(ctx, conc).await?;
+                    let result = value.eval(ctx.clone(), conc).await?;
                     if is_empty(&result) {
                         default.eval(ctx, conc).await?
                     } else {
@@ -58,16 +59,17 @@ impl Eval for Logic {
                 Logic::Not(expr) => (!is_truthy(&expr.eval(ctx, conc).await?)).into(),
 
                 Logic::And(list) => {
-                    let future_iter = list
-                        .iter()
-                        .map(|expr| async move { expr.eval(ctx, conc).await });
+                    let future_iter = list.iter().map(|expr| {
+                        let ctx = ctx.clone();
+                        async move { expr.eval(ctx, conc).await }
+                    });
 
                     conc.fold(future_iter, true, |acc, val| Ok(acc && is_truthy(&val?)))
                         .await
                         .map(ConstValue::from)?
                 }
                 Logic::If { cond, then, els } => {
-                    let cond = cond.eval(ctx, conc).await?;
+                    let cond = cond.eval(ctx.clone(), conc).await?;
                     if is_truthy(&cond) {
                         then.eval(ctx, conc).await?
                     } else {

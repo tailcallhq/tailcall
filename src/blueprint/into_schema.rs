@@ -8,7 +8,7 @@ use tracing::Instrument;
 
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
-use crate::lambda::{Concurrent, Eval, EvaluationContext};
+use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContext};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -49,9 +49,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                         match &field.resolver {
                             None => {
+                                let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                                 FieldFuture::from_value(
-                                    ctx.path_value(&[field_name]).map(|a| a.to_owned()),
+                                    ctx.path_value(&[field_name])
+                                        .map(|a| a.into_owned().to_owned()),
                                 )
                             }
                             Some(expr) => {
@@ -62,10 +64,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 let expr = expr.to_owned();
                                 FieldFuture::new(
                                     async move {
+                                        let ctx: ResolverContext = ctx.into();
                                         let ctx = EvaluationContext::new(req_ctx, &ctx);
 
                                         let const_value =
-                                            expr.eval(&ctx, &Concurrent::Sequential).await?;
+                                            expr.eval(ctx, &Concurrent::Sequential).await?;
 
                                         let p = match const_value {
                                             ConstValue::List(a) => FieldValue::list(a),

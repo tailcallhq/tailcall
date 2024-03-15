@@ -23,4 +23,4 @@ pub use list::*;
 pub use logic::*;
 pub use math::*;
 pub use relation::*;
-pub use resolver_context_like::{EmptyResolverContext, ResolverContextLike};
+pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};

@@ -33,13 +33,14 @@ pub enum Relation {
 impl Eval for Relation {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Relation::Intersection(exprs) => {
-                    let results = join_all(exprs.iter().map(|expr| expr.eval(ctx, conc))).await;
+                    let results =
+                        join_all(exprs.iter().map(|expr| expr.eval(ctx.clone(), conc))).await;
 
                     let mut results_iter = results.into_iter();
 
@@ -85,16 +86,16 @@ impl Eval for Relation {
                     .await?
                 }
                 Relation::Equals(lhs, rhs) => {
-                    (lhs.eval(ctx, conc).await? == rhs.eval(ctx, conc).await?).into()
+                    (lhs.eval(ctx.clone(), conc).await? == rhs.eval(ctx, conc).await?).into()
                 }
                 Relation::Gt(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     (compare(&lhs, &rhs) == Some(Ordering::Greater)).into()
                 }
                 Relation::Gte(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     matches!(
@@ -104,13 +105,13 @@ impl Eval for Relation {
                     .into()
                 }
                 Relation::Lt(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     (compare(&lhs, &rhs) == Some(Ordering::Less)).into()
                 }
                 Relation::Lte(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     matches!(
@@ -158,7 +159,7 @@ impl Eval for Relation {
                     })?
                 }
                 Relation::PathEq(lhs, path, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let lhs = get_path_for_const_value_owned(path, lhs)
                         .ok_or(anyhow::anyhow!("Could not find path: {path:?}"))?;
 
@@ -169,7 +170,7 @@ impl Eval for Relation {
                     (lhs == rhs).into()
                 }
                 Relation::PropEq(lhs, prop, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let lhs = get_path_for_const_value_owned(&[prop], lhs)
                         .ok_or(anyhow::anyhow!("Could not find path: {prop:?}"))?;
 
@@ -284,7 +285,7 @@ fn is_pair_comparable(lhs: &ConstValue, rhs: &ConstValue) -> bool {
 
 #[allow(clippy::too_many_arguments)]
 async fn set_operation<'a, 'b, Ctx: ResolverContextLike<'a> + Sync + Send, F>(
-    ctx: &'a EvaluationContext<'a, Ctx>,
+    ctx: EvaluationContext<'a, Ctx>,
     conc: &'a Concurrent,
     lhs: &'a [Expression],
     rhs: &'a [Expression],
@@ -294,8 +295,14 @@ where
     F: Fn(HashSet<HashableConstValue>, HashSet<HashableConstValue>) -> Vec<ConstValue>,
 {
     let (lhs, rhs) = futures_util::join!(
-        conc.foreach(lhs.iter().map(|e| e.eval(ctx, conc)), HashableConstValue),
-        conc.foreach(rhs.iter().map(|e| e.eval(ctx, conc)), HashableConstValue)
+        conc.foreach(
+            lhs.iter().map(|e| e.eval(ctx.clone(), conc)),
+            HashableConstValue
+        ),
+        conc.foreach(
+            rhs.iter().map(|e| e.eval(ctx.clone(), conc)),
+            HashableConstValue
+        )
     );
     Ok(operation(HashSet::from_iter(lhs?), HashSet::from_iter(rhs?)).into())
 }
