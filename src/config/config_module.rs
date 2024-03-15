@@ -7,7 +7,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::blueprint::GrpcMethod;
 use crate::config::Config;
-use crate::rest::EndpointSet;
+use crate::rest::{EndpointSet, Unchecked};
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default, Setters)]
@@ -47,7 +47,7 @@ pub struct Extensions {
     pub keys: Arc<Vec<PrivateKeyDer<'static>>>,
 
     /// Contains the endpoints
-    pub endpoints: EndpointSet,
+    pub endpoints: EndpointSet<Unchecked>,
 }
 
 impl Extensions {

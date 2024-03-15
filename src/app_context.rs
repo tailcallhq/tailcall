@@ -11,7 +11,7 @@ use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
-use crate::rest::EndpointSet;
+use crate::rest::{Checked, EndpointSet};
 use crate::runtime::TargetRuntime;
 
 pub struct AppContext {
@@ -21,27 +21,15 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-    pub endpoints: EndpointSet,
+    pub endpoints: EndpointSet<Checked>,
 }
 
 impl AppContext {
-    pub fn new(blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
-        Self::inner_new(blueprint, runtime, endpoints)
-    }
-
-    pub async fn new_with_validation(
-        blueprint: Blueprint,
+    pub fn new(
+        mut blueprint: Blueprint,
         runtime: TargetRuntime,
-        endpoints: EndpointSet,
-    ) -> anyhow::Result<Self> {
-        endpoints.validate(&blueprint, runtime.clone()).await?;
-        Ok(Self::inner_new(blueprint, runtime, endpoints))
-    }
-
-    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
-        self.schema.execute(request).await
-    }
-    fn inner_new(mut blueprint: Blueprint, runtime: TargetRuntime, endpoints: EndpointSet) -> Self {
+        endpoints: EndpointSet<Checked>,
+    ) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -131,5 +119,9 @@ impl AppContext {
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
         }
+    }
+
+    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
+        self.schema.execute(request).await
     }
 }

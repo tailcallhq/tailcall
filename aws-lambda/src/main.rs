@@ -38,10 +38,13 @@ async fn main() -> Result<(), Error> {
         .read("./config.graphql")
         .await?;
     let blueprint = Blueprint::try_from(&config)?;
+    let endpoints = config
+        .extensions
+        .endpoints
+        .into_checked(&blueprint, runtime.clone())
+        .await?;
 
-    let app_ctx = Arc::new(
-        AppContext::new_with_validation(blueprint, runtime, config.extensions.endpoints).await?,
-    );
+    let app_ctx = Arc::new(AppContext::new(blueprint, runtime, endpoints));
 
     run(service_fn(|event| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;

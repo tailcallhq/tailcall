@@ -61,12 +61,11 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    Ok(Ok(AppContext::new_with_validation(
+    Ok(Ok(AppContext::new(
         blueprint,
         runtime,
         EndpointSet::default(),
-    )
-    .await?))
+    )))
 }
 
 #[cfg(test)]
