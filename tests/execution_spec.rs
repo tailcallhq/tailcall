@@ -936,7 +936,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 let identity = config.to_sdl();
 
                 pretty_assertions::assert_eq!(
-                    content.as_ref(),
+                    content.replace("\r\n", "\n").as_ref(),
                     identity,
                     "Identity check failed for {:#?}",
                     spec.path,
