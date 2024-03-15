@@ -17,7 +17,7 @@ pub struct ServerConfig {
 
 impl ServerConfig {
     pub fn new(blueprint: Blueprint, endpoints: EndpointSet) -> Self {
-        let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
+        let mut rt = init(&blueprint);
 
         let mut extensions = vec![];
 

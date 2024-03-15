@@ -8,7 +8,7 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::{Blueprint, Upstream};
+use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
@@ -22,7 +22,7 @@ const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 pub async fn run() -> Result<()> {
     let cli = Cli::parse();
     update_checker::check_for_update().await;
-    let runtime = cli::runtime::init(&Upstream::default(), None);
+    let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {

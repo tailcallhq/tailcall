@@ -5,7 +5,7 @@ mod http;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use crate::blueprint::Upstream;
+use crate::blueprint::Blueprint;
 use crate::cache::InMemoryCache;
 use crate::runtime::TargetRuntime;
 use crate::{blueprint, EnvIO, FileIO, HttpIO};
@@ -34,25 +34,28 @@ fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> 
 }
 
 // Provides access to http in native rust environment
-fn init_http(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
-    let http_io = http::NativeHttp::init(upstream);
-    init_hook_http(Arc::new(http_io), script)
+fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+    let http_io = http::NativeHttp::init(&blueprint.upstream, &blueprint.telemetry);
+    init_hook_http(Arc::new(http_io), blueprint.server.script.clone())
 }
 
 // Provides access to http in native rust environment
-fn init_http2_only(upstream: &Upstream, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
-    let http_io = http::NativeHttp::init(&upstream.clone().http2_only(true));
-    init_hook_http(Arc::new(http_io), script)
+fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+    let http_io = http::NativeHttp::init(
+        &blueprint.upstream.clone().http2_only(true),
+        &blueprint.telemetry,
+    );
+    init_hook_http(Arc::new(http_io), blueprint.server.script.clone())
 }
 
 fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {
     InMemoryCache::new()
 }
 
-pub fn init(upstream: &Upstream, script: Option<blueprint::Script>) -> TargetRuntime {
+pub fn init(blueprint: &Blueprint) -> TargetRuntime {
     TargetRuntime {
-        http: init_http(upstream, script.clone()),
-        http2_only: init_http2_only(upstream, script),
+        http: init_http(blueprint),
+        http2_only: init_http2_only(blueprint),
         env: init_env(),
         file: init_file(),
         cache: Arc::new(init_in_memory_cache()),

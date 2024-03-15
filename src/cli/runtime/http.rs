@@ -3,17 +3,73 @@ use std::time::Duration;
 use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use hyper::body::Bytes;
+use once_cell::sync::Lazy;
+use opentelemetry::trace::SpanKind;
+use opentelemetry::{metrics::Counter, KeyValue};
+use opentelemetry_semantic_conventions::trace::{
+    HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, NETWORK_PROTOCOL_VERSION, URL_FULL,
+};
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
-use crate::blueprint::Upstream;
-use crate::http::Response;
+use crate::{
+    blueprint::{telemetry::Telemetry, Upstream},
+    http::Response,
+};
+
+static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
+    let meter = opentelemetry::global::meter("http_request");
+
+    meter
+        .u64_counter("http.client.request.count")
+        .with_description("Number of outgoing requests")
+        .init()
+});
+
+#[derive(Default)]
+struct RequestCounter {
+    attributes: Option<Vec<KeyValue>>,
+}
+
+impl RequestCounter {
+    fn new(enable_telemetry: bool, request: &reqwest::Request) -> Self {
+        if !enable_telemetry {
+            return Self::default();
+        }
+
+        let attributes = vec![
+            KeyValue::new(URL_FULL, request.url().to_string()),
+            KeyValue::new(HTTP_REQUEST_METHOD, request.method().to_string()),
+            KeyValue::new(NETWORK_PROTOCOL_VERSION, format!("{:?}", request.version())),
+        ];
+
+        Self { attributes: Some(attributes) }
+    }
+
+    fn update(&mut self, response: &reqwest_middleware::Result<reqwest::Response>) {
+        if let Some(ref mut attributes) = self.attributes {
+            attributes.push(get_response_status(response));
+
+            HTTP_CLIENT_REQUEST_COUNT.add(1, &attributes);
+        }
+    }
+}
+
+fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>) -> KeyValue {
+    let status_code = match response {
+        Ok(resp) => resp.status().as_u16(),
+        Err(err) => err.status().map(|code| code.as_u16()).unwrap_or(0),
+    };
+    KeyValue::new(HTTP_RESPONSE_STATUS_CODE, status_code as i64)
+}
 
 #[derive(Clone)]
 pub struct NativeHttp {
     client: ClientWithMiddleware,
     http2_only: bool,
+    enable_telemetry: bool,
 }
 
 impl Default for NativeHttp {
@@ -21,12 +77,13 @@ impl Default for NativeHttp {
         Self {
             client: ClientBuilder::new(Client::new()).build(),
             http2_only: false,
+            enable_telemetry: false,
         }
     }
 }
 
 impl NativeHttp {
-    pub fn init(upstream: &Upstream) -> Self {
+    pub fn init(upstream: &Upstream, telemetry: &Telemetry) -> Self {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -60,16 +117,33 @@ impl NativeHttp {
                 options: HttpCacheOptions::default(),
             }))
         }
-        Self { client: client.build(), http2_only: upstream.http2_only }
+        Self {
+            client: client.build(),
+            http2_only: upstream.http2_only,
+            enable_telemetry: telemetry.export.is_some(),
+        }
     }
 }
 
 #[async_trait::async_trait]
 impl HttpIO for NativeHttp {
+    #[tracing::instrument(
+        skip_all,
+        fields(
+            otel.name = "upstream_request",
+            otel.kind = ?SpanKind::Client,
+            url.full = %request.url(),
+            http.request.method = %request.method(),
+            network.protocol.version = ?request.version()
+        )
+    )]
     async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }
+
+        let mut req_counter = RequestCounter::new(self.enable_telemetry, &request);
+
         tracing::info!(
             "{} {} {:?}",
             request.method(),
@@ -79,6 +153,14 @@ impl HttpIO for NativeHttp {
         tracing::debug!("request: {:?}", request);
         let response = self.client.execute(request).await;
         tracing::debug!("response: {:?}", response);
+
+        req_counter.update(&response);
+
+        if self.enable_telemetry {
+            let status_code = get_response_status(&response);
+            tracing::Span::current().set_attribute(status_code.key, status_code.value);
+        }
+
         Ok(Response::from_reqwest(response?.error_for_status()?).await?)
     }
 }
@@ -103,7 +185,7 @@ mod tests {
             then.status(200).body("Alo");
         });
 
-        let native_http = NativeHttp::init(&Default::default());
+        let native_http = NativeHttp::init(&Default::default(), &Default::default());
         let port = server.port();
         // Build a GET request to the mock server
         let request_url = format!("http://localhost:{}/test", port);
