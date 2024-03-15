@@ -296,7 +296,7 @@ impl ConfigReader {
 
     fn update_opentelemetry(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
         let server = &mut config_module.config.server;
-        let opentelemetry = &mut config_module.config.opentelemetry;
+        let telemetry = &mut config_module.config.telemetry;
 
         let reader_ctx = ConfigReaderContext {
             env: self.runtime.env.clone(),
@@ -307,7 +307,7 @@ impl ConfigReader {
                 .collect(),
         };
 
-        opentelemetry.render_mustache(&reader_ctx)?;
+        telemetry.render_mustache(&reader_ctx)?;
 
         Ok(())
     }

@@ -24,7 +24,7 @@ impl ServerConfig {
 
         let mut extensions = vec![];
 
-        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.opentelemetry.export.as_ref() {
+        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
             let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
             extensions.push(SchemaExtension::new(ApolloTracing::new(
                 apollo.api_key.clone(),
