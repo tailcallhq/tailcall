@@ -35,7 +35,7 @@ impl Display for Expression {
             Expression::Context(_) => write!(f, "Context"),
             Expression::Literal(_) => write!(f, "Literal"),
             Expression::EqualTo(_, _) => write!(f, "EqualTo"),
-            Expression::IO(io) => write!(f, "IO({io})"),
+            Expression::IO(io) => write!(f, "{io}"),
             Expression::Cache(_) => write!(f, "Cache"),
             Expression::Input(_, _) => write!(f, "Input"),
             Expression::Logic(logic) => write!(f, "Logic({logic})"),

@@ -130,7 +130,7 @@ pub fn update_response_headers(resp: &mut hyper::Response<hyper::Body>, app_ctx:
     }
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, fields(otel.name = "graphQL"))]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
@@ -212,7 +212,7 @@ async fn handle_rest_apis(
     not_found()
 }
 
-#[tracing::instrument(skip_all, err, fields(url.path = %req.uri().path(), http.request.method = %req.method()))]
+#[tracing::instrument(skip_all, err, fields(otel.name = "request", url.path = %req.uri().path(), http.request.method = %req.method()))]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
