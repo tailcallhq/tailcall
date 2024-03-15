@@ -14,10 +14,8 @@ use serde::de::DeserializeOwned;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use super::{
-    request_context::RequestContext,
-    telemetry::{get_response_status_code, RequestCounter},
-};
+use super::request_context::RequestContext;
+use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
@@ -218,10 +216,10 @@ async fn handle_rest_apis(
 async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
-    mut req_counter: &mut RequestCounter,
+    req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     if req.uri().path().starts_with(API_URL_PREFIX) {
-        return handle_rest_apis(req, app_ctx, &mut req_counter).await;
+        return handle_rest_apis(req, app_ctx, req_counter).await;
     }
 
     match *req.method() {
@@ -229,7 +227,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
-            graphql_request::<T>(req, app_ctx.as_ref(), &mut req_counter).await
+            graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
         hyper::Method::POST
             if app_ctx.blueprint.server.enable_showcase
@@ -241,7 +239,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                     Err(res) => return Ok(res),
                 };
 
-            graphql_request::<T>(req, &app_ctx, &mut req_counter).await
+            graphql_request::<T>(req, &app_ctx, req_counter).await
         }
 
         hyper::Method::GET => {

@@ -64,8 +64,6 @@ impl RequestCounter {
     }
 }
 
-
-
 pub fn get_response_status_code(response: &Response<Body>) -> KeyValue {
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, response.status().as_u16() as i64)
 }

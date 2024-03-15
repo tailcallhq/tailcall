@@ -4,8 +4,9 @@ use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
+use opentelemetry::metrics::Counter;
 use opentelemetry::trace::SpanKind;
-use opentelemetry::{metrics::Counter, KeyValue};
+use opentelemetry::KeyValue;
 use opentelemetry_semantic_conventions::trace::{
     HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, NETWORK_PROTOCOL_VERSION, URL_FULL,
 };
@@ -14,10 +15,9 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
-use crate::{
-    blueprint::{telemetry::Telemetry, Upstream},
-    http::Response,
-};
+use crate::blueprint::telemetry::Telemetry;
+use crate::blueprint::Upstream;
+use crate::http::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -52,7 +52,7 @@ impl RequestCounter {
         if let Some(ref mut attributes) = self.attributes {
             attributes.push(get_response_status(response));
 
-            HTTP_CLIENT_REQUEST_COUNT.add(1, &attributes);
+            HTTP_CLIENT_REQUEST_COUNT.add(1, attributes);
         }
     }
 }
