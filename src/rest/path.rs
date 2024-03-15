@@ -21,10 +21,15 @@ impl Segment {
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Path {
-    pub segments: Vec<Segment>,
+    pattern: String,
+    pub(super) segments: Vec<Segment>,
 }
 
 impl Path {
+    pub fn as_str(&self) -> &str {
+        self.pattern.as_str()
+    }
+
     pub fn parse(q: &TypeMap, input: &str) -> anyhow::Result<Self> {
         let variables = q;
 
@@ -42,7 +47,7 @@ impl Path {
                 segments.push(Segment::lit(s));
             }
         }
-        Ok(Self { segments })
+        Ok(Self { segments, pattern: input.to_string() })
     }
 
     pub fn matches(&self, path: &str) -> Option<Variables> {

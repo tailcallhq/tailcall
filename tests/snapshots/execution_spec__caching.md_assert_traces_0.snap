@@ -4,15 +4,18 @@ expression: opentelemetry.get_traces().unwrap()
 ---
 [
   {
-    "name": "eval"
+    "name": "Http"
   },
   {
-    "name": "eval"
+    "name": "Cache"
   },
   {
-    "name": "field::resolver"
+    "name": "fieldCache"
   },
   {
-    "name": "handle_request"
+    "name": "graphQL"
+  },
+  {
+    "name": "request"
   }
 ]
