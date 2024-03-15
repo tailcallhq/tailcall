@@ -2,9 +2,7 @@
 
 ###### sdl error
 
-#### server:
-
-```graphql
+```graphql @server
 schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Config, src: "") @link(type: Config) {
   query: Query
 }

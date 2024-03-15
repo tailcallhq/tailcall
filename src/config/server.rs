@@ -1,7 +1,9 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+use super::{merge_headers, merge_key_value_vecs};
+use crate::config::headers::Headers;
 use crate::config::lint::Lint;
 use crate::config::KeyValue;
 use crate::is_default;
@@ -24,10 +26,10 @@ pub struct Server {
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `cacheControlHeader` sends `Cache-Control` headers in responses when
-    /// activated. The `max-age` value is the least of the values received from
-    /// upstream services. @default `false`.
-    pub cache_control_header: Option<bool>,
+    /// `headers` contains key-value pairs that are included as default headers
+    /// in server responses, allowing for consistent header management across
+    /// all responses.
+    pub headers: Option<Headers>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `globalResponseTimeout` sets the maximum query duration before
@@ -63,12 +65,6 @@ pub struct Server {
     /// preventing errors from invalid queries. Can be disabled for performance.
     /// @default `false`.
     pub query_validation: Option<bool>,
-
-    #[serde(skip_serializing_if = "is_default", default)]
-    /// The `responseHeaders` are key-value pairs included in every server
-    /// response. Useful for setting headers like `Access-Control-Allow-Origin`
-    /// for cross-origin requests or additional headers for downstream services.
-    pub response_headers: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `responseValidation` Tailcall automatically validates responses from
@@ -139,7 +135,16 @@ impl Server {
         self.response_validation.unwrap_or(false)
     }
     pub fn enable_cache_control(&self) -> bool {
-        self.cache_control_header.unwrap_or(false)
+        self.headers
+            .as_ref()
+            .map(|h| h.enable_cache_control())
+            .unwrap_or(false)
+    }
+    pub fn enable_set_cookies(&self) -> bool {
+        self.headers
+            .as_ref()
+            .map(|h| h.set_cookies())
+            .unwrap_or(false)
     }
     pub fn enable_introspection(&self) -> bool {
         self.introspection.unwrap_or(true)
@@ -166,12 +171,23 @@ impl Server {
             .collect()
     }
 
-    pub fn get_response_headers(&self) -> BTreeMap<String, String> {
-        self.response_headers
-            .clone()
-            .iter()
-            .map(|kv| (kv.key.clone(), kv.value.clone()))
-            .collect()
+    pub fn get_response_headers(&self) -> Vec<(String, String)> {
+        self.headers
+            .as_ref()
+            .map(|h| h.custom.clone())
+            .map_or(Vec::new(), |headers| {
+                headers
+                    .iter()
+                    .map(|kv| (kv.key.clone(), kv.value.clone()))
+                    .collect()
+            })
+    }
+
+    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
+        self.headers
+            .as_ref()
+            .map(|h| h.experimental.clone().unwrap_or_default())
+            .unwrap_or_default()
     }
 
     pub fn get_version(self) -> HttpVersion {
@@ -184,7 +200,7 @@ impl Server {
 
     pub fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
-        self.cache_control_header = other.cache_control_header.or(self.cache_control_header);
+        self.headers = merge_headers(self.headers, other.headers);
         self.graphiql = other.graphiql.or(self.graphiql);
         self.introspection = other.introspection.or(self.introspection);
         self.query_validation = other.query_validation.or(self.query_validation);
@@ -197,7 +213,7 @@ impl Server {
         self.workers = other.workers.or(self.workers);
         self.port = other.port.or(self.port);
         self.hostname = other.hostname.or(self.hostname);
-        self.vars = other.vars.iter().fold(self.vars, |mut acc, kv| {
+        self.vars = other.vars.iter().fold(self.vars.to_vec(), |mut acc, kv| {
             let position = acc.iter().position(|x| x.key == kv.key);
             if let Some(pos) = position {
                 acc[pos] = kv.clone();
@@ -206,19 +222,7 @@ impl Server {
             };
             acc
         });
-        self.response_headers =
-            other
-                .response_headers
-                .iter()
-                .fold(self.response_headers, |mut acc, kv| {
-                    let position = acc.iter().position(|x| x.key == kv.key);
-                    if let Some(pos) = position {
-                        acc[pos] = kv.clone();
-                    } else {
-                        acc.push(kv.clone());
-                    };
-                    acc
-                });
+        self.vars = merge_key_value_vecs(&self.vars, &other.vars);
         self.version = other.version.or(self.version);
         self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
         self.script = other.script.or(self.script);
