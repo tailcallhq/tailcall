@@ -43,7 +43,7 @@ pub struct OtlpExporter {
 
 impl MergeRight for OtlpExporter {
     fn merge_right(self, other: Self) -> Self {
-        let mut headers = self.headers.clone();
+        let mut headers = self.headers;
         headers.extend(other.headers.iter().cloned());
 
         Self { url: other.url, headers }
@@ -91,7 +91,7 @@ impl MergeRight for TelemetryExporter {
     fn merge_right(self, other: Self) -> Self {
         match (self, other) {
             (TelemetryExporter::Stdout(left), TelemetryExporter::Stdout(right)) => {
-                TelemetryExporter::Stdout(left.clone().merge_right(right))
+                TelemetryExporter::Stdout(left.merge_right(right))
             }
             (TelemetryExporter::Otlp(left), TelemetryExporter::Otlp(right)) => {
                 TelemetryExporter::Otlp(left.merge_right(right))

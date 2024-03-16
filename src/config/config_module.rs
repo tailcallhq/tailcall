@@ -69,13 +69,15 @@ impl MergeRight for Extensions {
     fn merge_right(mut self, mut other: Self) -> Self {
         self.grpc_file_descriptors = self
             .grpc_file_descriptors
-            .merge_right(other.grpc_file_descriptors.clone());
-        self.script = self.script.clone().merge_right(other.script.take());
-        self.cert = self.cert.merge_right(other.cert.clone());
-        if !other.keys.is_empty() {
-            self.keys = other.keys.clone();
-        }
-        self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set.clone());
+            .merge_right(other.grpc_file_descriptors);
+        self.script = self.script.merge_right(other.script.take());
+        self.cert = self.cert.merge_right(other.cert);
+        self.keys = if !other.keys.is_empty() {
+            other.keys
+        } else {
+            self.keys
+        };
+        self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set);
         self
     }
 }

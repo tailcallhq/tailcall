@@ -174,23 +174,20 @@ impl Config {
 
 impl MergeRight for Config {
     fn merge_right(self, other: Self) -> Self {
-        let server = self.server.merge_right(other.server.clone());
-        let types = merge_types(self.types, other.types.clone());
-        let unions = merge_unions(self.unions, other.unions.clone());
-        let schema = self.schema.merge_right(other.schema.clone());
-        let upstream = self.upstream.merge_right(other.upstream.clone());
-        let links = merge_links(self.links, other.links.clone());
-        let telemetry = self.telemetry.merge_right(other.telemetry.clone());
+        let server = self.server.merge_right(other.server);
+        let types = merge_types(self.types, other.types);
+        let unions = merge_unions(self.unions, other.unions);
+        let schema = self.schema.merge_right(other.schema);
+        let upstream = self.upstream.merge_right(other.upstream);
+        let links = merge_links(self.links, other.links);
+        let telemetry = self.telemetry.merge_right(other.telemetry);
 
         Self { server, upstream, types, schema, unions, links, telemetry }
     }
 }
 
 fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
-    let links = self_links.clone();
-    let other_links = other_links.clone();
-
-    links.merge_right(other_links)
+    self_links.merge_right(other_links)
 }
 
 ///
@@ -244,19 +241,16 @@ impl Type {
 
 impl MergeRight for Type {
     fn merge_right(mut self, other: Self) -> Self {
-        let fields = self.fields.clone().merge_right(other.fields.clone());
-        self.implements = self
-            .implements
-            .clone()
-            .merge_right(other.implements.clone());
+        let fields = self.fields.merge_right(other.fields);
+        self.implements = self.implements.merge_right(other.implements);
         if let Some(ref variants) = self.variants {
             if let Some(ref other) = other.variants {
                 self.variants = Some(variants.union(other).cloned().collect());
             }
         } else {
-            self.variants = other.variants.clone();
+            self.variants = other.variants;
         }
-        Self { fields, ..self.clone() }
+        Self { fields, ..self }
     }
 }
 
