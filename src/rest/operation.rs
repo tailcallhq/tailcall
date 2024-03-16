@@ -43,7 +43,9 @@ pub async fn validate_operations(
             if errors.is_empty() {
                 Valid::succeed(())
             } else {
-                Valid::<(), String>::from_vec_cause(errors.iter().map(|e|Cause::new(e.to_string())).collect())
+                Valid::<(), String>::from_vec_cause(
+                    errors.iter().map(|e| Cause::new(e.to_string())).collect(),
+                )
             }
         },
     )
