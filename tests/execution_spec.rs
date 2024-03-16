@@ -852,11 +852,12 @@ impl FileIO for MockFileSystem {
     }
 
     async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-        let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/execution/");
-        let path = path
-            .strip_prefix(&base.to_string_lossy().to_string())
-            .unwrap_or(path);
-
+        let base = PathBuf::from(path);
+        let path = base
+            .file_name()
+            .context("Invalid file path")?
+            .to_str()
+            .context("Invalid OsString")?;
         match self.spec.files.get(path) {
             Some(x) => Ok(x.to_owned()),
             None => Err(anyhow!("No such file or directory (os error 2)")),
