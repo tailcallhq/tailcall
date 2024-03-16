@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::KeyValue;
 use crate::config::{Apollo, ConfigReaderContext};
 use crate::helpers::headers::to_mustache_headers;
-use crate::is_default;
+use crate::{is_default, MergeRight};
 use crate::mustache::Mustache;
 use crate::valid::Validator;
 
@@ -25,8 +25,8 @@ pub struct StdoutExporter {
     pub pretty: bool,
 }
 
-impl StdoutExporter {
-    fn merge_right(&self, other: Self) -> Self {
+impl MergeRight for StdoutExporter {
+    fn merge_right(self, other: Self) -> Self {
         Self { pretty: other.pretty || self.pretty }
     }
 }
@@ -90,7 +90,7 @@ impl TelemetryExporter {
     fn merge_right(&self, other: Self) -> Self {
         match (self, other) {
             (TelemetryExporter::Stdout(left), TelemetryExporter::Stdout(right)) => {
-                TelemetryExporter::Stdout(left.merge_right(right))
+                TelemetryExporter::Stdout(left.clone().merge_right(right))
             }
             (TelemetryExporter::Otlp(left), TelemetryExporter::Otlp(right)) => {
                 TelemetryExporter::Otlp(left.merge_right(right))

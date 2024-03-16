@@ -16,7 +16,7 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::valid::{Valid, Validator};
-use crate::{is_default, scalar};
+use crate::{is_default, MergeRight, scalar};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -169,8 +169,10 @@ impl Config {
     pub fn contains(&self, name: &str) -> bool {
         self.types.contains_key(name) || self.unions.contains_key(name)
     }
+}
 
-    pub fn merge_right(self, other: &Self) -> Self {
+impl MergeRight for Config {
+    fn merge_right(self, other: Self) -> Self {
         let server = self.server.merge_right(other.server.clone());
         let types = merge_types(self.types, other.types.clone());
         let unions = merge_unions(self.unions, other.unions.clone());
@@ -239,7 +241,10 @@ impl Type {
         self.fields = graphql_fields;
         self
     }
-    pub fn merge_right(mut self, other: &Self) -> Self {
+}
+
+impl MergeRight for Type {
+    fn merge_right(mut self, other: Self) -> Self {
         let mut fields = self.fields.clone();
         fields.extend(other.fields.clone());
         self.implements.extend(other.implements.clone());
@@ -270,7 +275,7 @@ fn merge_types(
 ) -> BTreeMap<String, Type> {
     for (name, mut other_type) in other_types {
         if let Some(self_type) = self_types.remove(&name) {
-            other_type = self_type.merge_right(&other_type);
+            other_type = self_type.merge_right(other_type);
         }
 
         self_types.insert(name, other_type);
@@ -303,7 +308,7 @@ pub struct RootSchema {
     pub subscription: Option<String>,
 }
 
-impl RootSchema {
+impl MergeRight for RootSchema {
     // TODO: add unit-tests
     fn merge_right(self, other: Self) -> Self {
         Self {
@@ -524,8 +529,8 @@ pub struct Union {
     pub doc: Option<String>,
 }
 
-impl Union {
-    pub fn merge_right(mut self, other: Self) -> Self {
+impl MergeRight for Union {
+    fn merge_right(mut self, other: Self) -> Self {
         self.types.extend(other.types);
         self
     }

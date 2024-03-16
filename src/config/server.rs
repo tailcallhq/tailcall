@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
-use crate::is_default;
+use crate::{is_default, MergeRight};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -192,8 +192,9 @@ impl Server {
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
     }
-
-    pub fn merge_right(mut self, other: Self) -> Self {
+}
+impl MergeRight for Server {
+    fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
         self.headers = merge_headers(self.headers, other.headers);
         self.graphiql = other.graphiql.or(self.graphiql);

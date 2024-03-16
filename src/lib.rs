@@ -82,6 +82,10 @@ pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
 }
 
+trait MergeRight {
+    fn merge_right(self, other: Self) -> Self;
+}
+
 #[cfg(test)]
 pub mod tests {
     use std::collections::HashMap;

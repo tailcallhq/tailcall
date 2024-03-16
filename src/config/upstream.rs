@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::is_default;
+use crate::{is_default, MergeRight};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
@@ -163,9 +163,11 @@ impl Upstream {
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only.unwrap_or(false)
     }
+}
 
+impl MergeRight for Upstream {
     // TODO: add unit tests for merge
-    pub fn merge_right(mut self, other: Self) -> Self {
+    fn merge_right(mut self, other: Self) -> Self {
         self.allowed_headers = other.allowed_headers.map(|other| {
             if let Some(mut self_headers) = self.allowed_headers {
                 self_headers.extend(&mut other.iter().map(|s| s.to_owned()));
