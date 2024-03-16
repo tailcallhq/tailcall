@@ -1,7 +1,7 @@
 use std::any::Any;
 
 use anyhow::Result;
-use async_graphql::{BatchResponse, Executor};
+use async_graphql::{BatchResponse, Executor, Value};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
@@ -110,17 +110,11 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    fn build_response(&self, status: StatusCode) -> Result<Response<Body>> {
-        let response = Response::builder()
+    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+        let mut response = Response::builder()
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
-            .body(Body::from(serde_json::to_string(&self.0)?))?;
-
-        Ok(response)
-    }
-
-    pub fn to_response(self) -> Result<Response<hyper::Body>> {
-        let mut response = self.build_response(StatusCode::OK)?;
+            .body(body)?;
 
         if self.0.is_ok() {
             if let Some(cache_control) = self.0.cache_control().value() {
@@ -134,25 +128,50 @@ impl GraphQLResponse {
         Ok(response)
     }
 
+    fn default_body(&self) -> Result<Body> {
+        Ok(Body::from(serde_json::to_string(&self.0)?))
+    }
+
+    pub fn to_response(self) -> Result<Response<hyper::Body>> {
+        self.build_response(StatusCode::OK, self.default_body()?)
+    }
+
+    fn flatten_response(data: Value) -> Value {
+        if let Value::Object(map) = data.clone() {
+            if map.len() == 1 {
+                if let Some(value) = map.values().next() {
+                    return value.clone();
+                }
+            }
+        }
+        data
+    }
+
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
     pub fn to_rest_response(self) -> Result<Response<hyper::Body>> {
         if !self.0.is_ok() {
-            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR);
+            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
         }
 
-        let value = serde_json::to_value(&self.0)?;
-        let mut response = self.to_response()?;
+        match self.0 {
+            BatchResponse::Single(ref res) => {
+                let item = Self::flatten_response(res.data.clone());
+                let data = serde_json::to_string(&item)?;
 
-        if let Some(serde_json::Value::Object(data)) = value.get("data") {
-            let values: Vec<serde_json::Value> = data.values().cloned().collect();
-            if let Some(value) = values.first() {
-                *response.body_mut() = Body::from(serde_json::to_string(value)?);
+                return self.build_response(StatusCode::OK, Body::from(data));
+            }
+            BatchResponse::Batch(ref list) => {
+                let item = list
+                    .iter()
+                    .map(|res| Self::flatten_response(res.data.clone()))
+                    .collect::<Value>();
+                let data = serde_json::to_string(&item)?;
+
+                return self.build_response(StatusCode::OK, Body::from(data));
             }
         }
-
-        Ok(response)
     }
 
     /// Sets the `cache_control` for a given `GraphQLResponse`.
