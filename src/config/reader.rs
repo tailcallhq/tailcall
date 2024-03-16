@@ -15,6 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
+use crate::merge_right::MergeRight;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
@@ -114,16 +115,15 @@ impl ConfigReader {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                    config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
+                    config_module = config_module.merge_right(ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
                         config_module = config_module.merge_right(
-                            &self
-                                .ext_links(
-                                    ConfigModule::from(config),
-                                    Path::new(&config_link.src).parent(),
-                                )
-                                .await?,
+                            self.ext_links(
+                                ConfigModule::from(config),
+                                Path::new(&config_link.src).parent(),
+                            )
+                            .await?,
                         );
                     }
                 }
@@ -227,7 +227,7 @@ impl ConfigReader {
                 .await?;
 
             // Merge it with the original config set
-            config_module = config_module.merge_right(&new_config_module);
+            config_module = config_module.merge_right(new_config_module);
         }
 
         Ok(config_module)

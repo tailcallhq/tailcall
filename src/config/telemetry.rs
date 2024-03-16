@@ -5,6 +5,7 @@ use super::KeyValue;
 use crate::config::{Apollo, ConfigReaderContext};
 use crate::helpers::headers::to_mustache_headers;
 use crate::is_default;
+use crate::merge_right::MergeRight;
 use crate::mustache::Mustache;
 use crate::valid::Validator;
 
@@ -25,8 +26,8 @@ pub struct StdoutExporter {
     pub pretty: bool,
 }
 
-impl StdoutExporter {
-    fn merge_right(&self, other: Self) -> Self {
+impl MergeRight for StdoutExporter {
+    fn merge_right(self, other: Self) -> Self {
         Self { pretty: other.pretty || self.pretty }
     }
 }
@@ -40,9 +41,9 @@ pub struct OtlpExporter {
     pub headers: Vec<KeyValue>,
 }
 
-impl OtlpExporter {
-    fn merge_right(&self, other: Self) -> Self {
-        let mut headers = self.headers.clone();
+impl MergeRight for OtlpExporter {
+    fn merge_right(self, other: Self) -> Self {
+        let mut headers = self.headers;
         headers.extend(other.headers.iter().cloned());
 
         Self { url: other.url, headers }
@@ -86,8 +87,8 @@ pub enum TelemetryExporter {
     Apollo(Apollo),
 }
 
-impl TelemetryExporter {
-    fn merge_right(&self, other: Self) -> Self {
+impl MergeRight for TelemetryExporter {
+    fn merge_right(self, other: Self) -> Self {
         match (self, other) {
             (TelemetryExporter::Stdout(left), TelemetryExporter::Stdout(right)) => {
                 TelemetryExporter::Stdout(left.merge_right(right))
@@ -125,7 +126,7 @@ impl Telemetry {
             (None, None) => None,
             (None, Some(export)) => Some(export),
             (Some(export), None) => Some(export.clone()),
-            (Some(left), Some(right)) => Some(left.merge_right(right.clone())),
+            (Some(left), Some(right)) => Some(left.clone().merge_right(right.clone())),
         };
         self.request_headers.extend(other.request_headers);
 
