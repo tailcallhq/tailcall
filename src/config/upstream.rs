@@ -171,35 +171,43 @@ impl MergeRight for Upstream {
     fn merge_right(mut self, other: Self) -> Self {
         self.allowed_headers = other.allowed_headers.map(|other| {
             if let Some(mut self_headers) = self.allowed_headers {
-                self_headers.extend(&mut other.iter().map(|s| s.to_owned()));
+                self_headers = self_headers.merge_right(other);
                 self_headers
             } else {
                 other
             }
         });
-        self.base_url = other.base_url.or(self.base_url);
-        self.connect_timeout = other.connect_timeout.or(self.connect_timeout);
-        self.http_cache = other.http_cache.or(self.http_cache);
-        self.keep_alive_interval = other.keep_alive_interval.or(self.keep_alive_interval);
-        self.keep_alive_timeout = other.keep_alive_timeout.or(self.keep_alive_timeout);
-        self.keep_alive_while_idle = other.keep_alive_while_idle.or(self.keep_alive_while_idle);
-        self.pool_idle_timeout = other.pool_idle_timeout.or(self.pool_idle_timeout);
-        self.pool_max_idle_per_host = other.pool_max_idle_per_host.or(self.pool_max_idle_per_host);
-        self.proxy = other.proxy.or(self.proxy);
-        self.tcp_keep_alive = other.tcp_keep_alive.or(self.tcp_keep_alive);
-        self.timeout = other.timeout.or(self.timeout);
-        self.user_agent = other.user_agent.or(self.user_agent);
+        self.base_url = self.base_url.merge_right(other.base_url);
+        self.connect_timeout = self.connect_timeout.merge_right(other.connect_timeout);
+        self.http_cache = self.http_cache.merge_right(other.http_cache);
+        self.keep_alive_interval = self
+            .keep_alive_interval
+            .merge_right(other.keep_alive_interval);
+        self.keep_alive_timeout = self
+            .keep_alive_timeout
+            .merge_right(other.keep_alive_timeout);
+        self.keep_alive_while_idle = self
+            .keep_alive_while_idle
+            .merge_right(other.keep_alive_while_idle);
+        self.pool_idle_timeout = self.pool_idle_timeout.merge_right(other.pool_idle_timeout);
+        self.pool_max_idle_per_host = self
+            .pool_max_idle_per_host
+            .merge_right(other.pool_max_idle_per_host);
+        self.proxy = self.proxy.merge_right(other.proxy);
+        self.tcp_keep_alive = self.tcp_keep_alive.merge_right(other.tcp_keep_alive);
+        self.timeout = self.timeout.merge_right(other.timeout);
+        self.user_agent = self.user_agent.merge_right(other.user_agent);
 
         if let Some(other) = other.batch {
             let mut batch = self.batch.unwrap_or_default();
             batch.max_size = other.max_size;
             batch.delay = other.delay;
-            batch.headers.extend(other.headers);
+            batch.headers = batch.headers.merge_right(other.headers);
 
             self.batch = Some(batch);
         }
 
-        self.http2_only = other.http2_only.or(self.http2_only);
+        self.http2_only = self.http2_only.merge_right(other.http2_only);
         self
     }
 }

@@ -64,16 +64,18 @@ impl Extensions {
             .map(|a| &a.content)
     }
 }
+
 impl MergeRight for Extensions {
-    fn merge_right(mut self, other: Self) -> Self {
-        self.grpc_file_descriptors
-            .extend(other.grpc_file_descriptors.clone());
-        self.script = other.script.clone().or(self.script.take());
-        self.cert.extend(other.cert.clone());
+    fn merge_right(mut self, mut other: Self) -> Self {
+        self.grpc_file_descriptors = self
+            .grpc_file_descriptors
+            .merge_right(other.grpc_file_descriptors.clone());
+        self.script = self.script.clone().merge_right(other.script.take());
+        self.cert = self.cert.merge_right(other.cert.clone());
         if !other.keys.is_empty() {
             self.keys = other.keys.clone();
         }
-        self.endpoint_set.extend(other.endpoint_set.clone());
+        self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set.clone());
         self
     }
 }

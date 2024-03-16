@@ -187,12 +187,10 @@ impl MergeRight for Config {
 }
 
 fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
-    let mut links = self_links.clone();
+    let links = self_links.clone();
     let other_links = other_links.clone();
 
-    links.extend(other_links);
-
-    links
+    links.merge_right(other_links)
 }
 
 ///
@@ -246,9 +244,11 @@ impl Type {
 
 impl MergeRight for Type {
     fn merge_right(mut self, other: Self) -> Self {
-        let mut fields = self.fields.clone();
-        fields.extend(other.fields.clone());
-        self.implements.extend(other.implements.clone());
+        let fields = self.fields.clone().merge_right(other.fields.clone());
+        self.implements = self
+            .implements
+            .clone()
+            .merge_right(other.implements.clone());
         if let Some(ref variants) = self.variants {
             if let Some(ref other) = other.variants {
                 self.variants = Some(variants.union(other).cloned().collect());
@@ -313,9 +313,9 @@ impl MergeRight for RootSchema {
     // TODO: add unit-tests
     fn merge_right(self, other: Self) -> Self {
         Self {
-            query: other.query.or(self.query),
-            mutation: other.mutation.or(self.mutation),
-            subscription: other.subscription.or(self.subscription),
+            query: self.query.merge_right(other.query),
+            mutation: self.mutation.merge_right(other.mutation),
+            subscription: self.subscription.merge_right(other.subscription),
         }
     }
 }
@@ -532,7 +532,7 @@ pub struct Union {
 
 impl MergeRight for Union {
     fn merge_right(mut self, other: Self) -> Self {
-        self.types.extend(other.types);
+        self.types = self.types.merge_right(other.types);
         self
     }
 }
