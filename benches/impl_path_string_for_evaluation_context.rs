@@ -170,6 +170,7 @@ fn to_bench_id(input: &[&str]) -> BenchmarkId {
     BenchmarkId::new("input", input.join("."))
 }
 
+#[derive(Clone)]
 struct MockGraphqlContext;
 
 impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
