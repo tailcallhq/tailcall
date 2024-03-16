@@ -322,6 +322,12 @@ of their applications.
 """
 directive @telemetry(
   export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters 
+  Be careful about **leaking sensitive information** from requests when enabling the 
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
 ) on FIELD_DEFINITION
 
 """
@@ -751,6 +757,12 @@ of their applications.
 """
 input Telemetry {
   export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters 
+  Be careful about **leaking sensitive information** from requests when enabling the 
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
 }
 input TelemetryExporter {
   stdout: StdoutExporter

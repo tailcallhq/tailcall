@@ -8,7 +8,7 @@ expression: opentelemetry.get_metrics().await.unwrap()
       "name": "cache",
       "entries": [
         {
-          "name": "hit_rate"
+          "name": "cache.hit_rate"
         }
       ]
     },

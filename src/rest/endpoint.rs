@@ -98,7 +98,12 @@ impl Endpoint {
         variables = merge_variables(variables, path);
         variables = merge_variables(variables, query);
 
-        Some(PartialRequest { body: self.body.as_ref(), doc: &self.doc, variables })
+        Some(PartialRequest {
+            body: self.body.as_ref(),
+            doc: &self.doc,
+            variables,
+            path: &self.path,
+        })
     }
 }
 
@@ -133,7 +138,7 @@ mod tests {
           }
         "#;
 
-    const MULTIPLE_TEST_QUERY: &str = r#"        
+    const MULTIPLE_TEST_QUERY: &str = r#"
         query q1 ($a: Int)
           @rest(method: POST, path: "/foo/$a") {
             value
@@ -146,11 +151,6 @@ mod tests {
           }
         "#;
 
-    impl Path {
-        fn new(segments: Vec<Segment>) -> Self {
-            Self { segments }
-        }
-    }
     fn test_directive() -> Directive {
         async_graphql::parser::parse_query(TEST_QUERY)
             .unwrap()
@@ -187,11 +187,8 @@ mod tests {
         let endpoint = &Endpoint::try_new(TEST_QUERY).unwrap()[0];
         assert_eq!(endpoint.method, Method::POST);
         assert_eq!(
-            endpoint.path,
-            Path::new(vec![
-                Segment::lit("foo"),
-                Segment::param(TypedVariable::int("a")),
-            ])
+            endpoint.path.segments,
+            vec![Segment::lit("foo"), Segment::param(TypedVariable::int("a")),]
         );
         assert_eq!(
             endpoint.query_params,
