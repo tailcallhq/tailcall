@@ -77,8 +77,6 @@ type TypeCache @cache(maxAge: 1000) {
       query {
         fieldCache { id }
       }
-  assert_traces: true
-  assert_metrics: true
 
 - method: POST
   url: http://localhost:8080/graphql
