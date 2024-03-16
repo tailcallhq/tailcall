@@ -136,15 +136,11 @@ impl GraphQLResponse {
         self.build_response(StatusCode::OK, self.default_body()?)
     }
 
-    fn flatten_response(data: Value) -> Value {
-        if let Value::Object(map) = &data {
-            if map.len() == 1 {
-                if let Some(value) = map.values().next() {
-                    return value.to_owned();
-                }
-            }
+    fn flatten_response(data: &Value) -> &Value {
+        match data {
+            Value::Object(map) if map.len() == 1 => map.iter().next().unwrap().1,
+            data => data,
         }
-        data
     }
 
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
@@ -157,16 +153,16 @@ impl GraphQLResponse {
 
         match self.0 {
             BatchResponse::Single(ref res) => {
-                let item = Self::flatten_response(res.data.to_owned());
-                let data = serde_json::to_string(&item)?;
+                let item = Self::flatten_response(&res.data);
+                let data = serde_json::to_string(item)?;
 
                 self.build_response(StatusCode::OK, Body::from(data))
             }
             BatchResponse::Batch(ref list) => {
                 let item = list
                     .iter()
-                    .map(|res| Self::flatten_response(res.data.to_owned()))
-                    .collect::<Value>();
+                    .map(|res| Self::flatten_response(&res.data))
+                    .collect::<Vec<&Value>>();
                 let data = serde_json::to_string(&item)?;
 
                 self.build_response(StatusCode::OK, Body::from(data))
