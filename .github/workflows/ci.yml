@@ -5,8 +5,8 @@ on:
     branches:
       - main
   pull_request:
-    branches: [ main ]
-    types: [ opened, reopened, synchronize ]
+    branches: [main]
+    types: [opened, reopened, synchronize]
 permissions:
   contents: read
 
@@ -93,19 +93,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [
-          linux-x64-gnu,
-          linux-x64-musl,
-          linux-arm64-gnu,
-          linux-arm64-musl,
-          linux-ia32-gnu,
-          darwin-arm64,
-          darwin-x64,
-          win32-x64-msvc,
-          win32-x64-gnu,
-          win32-arm64-msvc,
-          win32-ia32-gnu,
-        ]
+        build:
+          [
+            linux-x64-gnu,
+            linux-x64-musl,
+            linux-arm64-gnu,
+            linux-arm64-musl,
+            linux-ia32-gnu,
+            darwin-arm64,
+            darwin-x64,
+            win32-x64-msvc,
+            win32-x64-gnu,
+            win32-arm64-msvc,
+            win32-ia32-gnu,
+          ]
         include:
           - build: linux-x64-gnu
             os: ubuntu-latest
@@ -222,7 +223,7 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [ test, draft_release, check_if_build, test_cf ]
+    needs: [test, draft_release, check_if_build, test_cf]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
@@ -394,7 +395,7 @@ jobs:
           overwrite: true
   release_lambda:
     name: Release (AWS Lambda)
-    needs: [ test, draft_release, check_if_build, test_cf ]
+    needs: [test, draft_release, check_if_build, test_cf]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ubuntu-latest
     permissions:
@@ -439,7 +440,7 @@ jobs:
   semantic_release:
     name: Semantic Release
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    needs: [ draft_release, release, release_lambda ]
+    needs: [draft_release, release, release_lambda]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -458,7 +459,7 @@ jobs:
 
   publish_npm_root:
     name: Publish NPM main package
-    needs: [ draft_release, release ]
+    needs: [draft_release, release]
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     steps:
@@ -496,7 +497,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}/tc-server
-    needs: [ draft_release, release ]
+    needs: [draft_release, release]
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
@@ -533,7 +534,7 @@ jobs:
 
   homebrew-release:
     name: Homebrew Release
-    needs: [ draft_release, release, semantic_release ]
+    needs: [draft_release, release, semantic_release]
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       contents: write
