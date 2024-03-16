@@ -6,7 +6,7 @@ use async_graphql::dynamic::Schema;
 use crate::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
 use crate::blueprint::{Blueprint, SchemaModifiers};
 use crate::http::RequestContext;
-use crate::valid::{Valid, Validator};
+use crate::valid::{Cause, Valid, Validator};
 
 #[derive(Debug)]
 pub struct OperationQuery {
@@ -43,7 +43,7 @@ pub async fn validate_operations(
             if errors.is_empty() {
                 Valid::succeed(())
             } else {
-                Valid::fail("Operation validation failed".to_string())
+                Valid::<(), String>::from_vec_cause(errors.iter().map(|e|Cause::new(e.to_string())).collect())
             }
         },
     )
