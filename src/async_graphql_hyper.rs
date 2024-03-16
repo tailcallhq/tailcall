@@ -210,11 +210,12 @@ impl GraphQLResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use async_graphql::{Name, Response, ServerError, Value};
     use hyper::StatusCode;
     use indexmap::IndexMap;
     use serde_json::json;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_to_rest_response_single() {
@@ -239,7 +240,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_to_rest_response_batch() {
-        let names = vec!["John", "Doe", "Jane"];
+        let names = ["John", "Doe", "Jane"];
 
         let list = names
             .iter()
@@ -273,7 +274,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_to_rest_response_with_error() {
-        let errors = vec!["Some error", "Another error"];
+        let errors = ["Some error", "Another error"];
         let mut response: Response = Default::default();
         response.errors = errors
             .iter()
