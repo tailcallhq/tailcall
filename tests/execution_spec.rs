@@ -935,9 +935,12 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
 
-                pretty_assertions::assert_eq!(
-                    content.as_ref(),
+                // \r is added automatically in windows, it's safe to replace it with \n
+                let content = content.replace("\r\n", "\n");
+
+                assert_eq!(
                     identity,
+                    content.as_ref(),
                     "Identity check failed for {:#?}",
                     spec.path,
                 );

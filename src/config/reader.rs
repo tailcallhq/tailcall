@@ -7,11 +7,11 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+use reqwest::Url;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
-use reqwest::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
@@ -49,7 +49,7 @@ impl ConfigReader {
                     .await?;
 
                 String::from_utf8(response.body.to_vec())?
-            }else {
+            } else {
                 // Is a file path
 
                 self.runtime.file.read(&file.to_string()).await?
