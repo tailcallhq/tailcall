@@ -17,6 +17,7 @@ use crate::print_schema;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
+const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
     let cli = Cli::parse();
@@ -73,8 +74,10 @@ pub async fn init(folder_path: &str) -> Result<()> {
     }
 
     let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
+    let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
 
     let file_path = Path::new(folder_path).join(FILE_NAME);
+    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
     let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
 
     let tailcall_exists = fs::metadata(&file_path).is_ok();
@@ -87,9 +90,11 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
         if confirm {
             fs::write(&file_path, tailcallrc.as_bytes())?;
+            fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
         }
     } else {
         fs::write(&file_path, tailcallrc.as_bytes())?;
+        fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
     }
 
     let yml_exists = fs::metadata(&yml_file_path).is_ok();

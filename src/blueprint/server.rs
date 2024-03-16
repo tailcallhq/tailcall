@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::net::{AddrParseError, IpAddr};
 use std::sync::Arc;
 use std::time::Duration;
@@ -15,6 +15,7 @@ use crate::valid::{Valid, ValidationError, Validator};
 pub struct Server {
     pub enable_apollo_tracing: bool,
     pub enable_cache_control_header: bool,
+    pub enable_set_cookie_header: bool,
     pub enable_graphiql: bool,
     pub enable_introspection: bool,
     pub enable_query_validation: bool,
@@ -30,6 +31,7 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
+    pub experimental_headers: BTreeSet<String>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -70,6 +72,10 @@ impl Server {
     pub fn get_enable_query_validation(&self) -> bool {
         self.enable_query_validation
     }
+
+    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
+        self.experimental_headers.clone()
+    }
 }
 
 impl TryFrom<crate::config::ConfigModule> for Server {
@@ -107,25 +113,32 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                 (config_server).get_response_headers(),
             ))
             .fuse(to_script(&config_module))
-            .map(|(hostname, http, response_headers, script)| Server {
-                enable_apollo_tracing: (config_server).enable_apollo_tracing(),
-                enable_cache_control_header: (config_server).enable_cache_control(),
-                enable_graphiql: (config_server).enable_graphiql(),
-                enable_introspection: (config_server).enable_introspection(),
-                enable_query_validation: (config_server).enable_query_validation(),
-                enable_response_validation: (config_server).enable_http_validation(),
-                enable_batch_requests: (config_server).enable_batch_requests(),
-                enable_showcase: (config_server).enable_showcase(),
-                global_response_timeout: (config_server).get_global_response_timeout(),
-                http,
-                worker: (config_server).get_workers(),
-                port: (config_server).get_port(),
-                hostname,
-                vars: (config_server).get_vars(),
-                pipeline_flush: (config_server).get_pipeline_flush(),
-                response_headers,
-                script,
-            })
+            .fuse(handle_experimental_headers(
+                (config_server).get_experimental_headers(),
+            ))
+            .map(
+                |(hostname, http, response_headers, script, experimental_headers)| Server {
+                    enable_apollo_tracing: (config_server).enable_apollo_tracing(),
+                    enable_cache_control_header: (config_server).enable_cache_control(),
+                    enable_set_cookie_header: (config_server).enable_set_cookies(),
+                    enable_graphiql: (config_server).enable_graphiql(),
+                    enable_introspection: (config_server).enable_introspection(),
+                    enable_query_validation: (config_server).enable_query_validation(),
+                    enable_response_validation: (config_server).enable_http_validation(),
+                    enable_batch_requests: (config_server).enable_batch_requests(),
+                    enable_showcase: (config_server).enable_showcase(),
+                    experimental_headers,
+                    global_response_timeout: (config_server).get_global_response_timeout(),
+                    http,
+                    worker: (config_server).get_workers(),
+                    port: (config_server).get_port(),
+                    hostname,
+                    vars: (config_server).get_vars(),
+                    pipeline_flush: (config_server).get_pipeline_flush(),
+                    response_headers,
+                    script,
+                },
+            )
             .to_result()
     }
 }
@@ -174,6 +187,27 @@ fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderM
     })
     .map(|headers| headers.into_iter().collect::<HeaderMap>())
     .trace("custom")
+    .trace("headers")
+    .trace("@server")
+    .trace("schema")
+}
+
+fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<BTreeSet<String>, String> {
+    Valid::from_iter(headers.iter(), |h| {
+        if !h.to_lowercase().starts_with("x-") {
+            Valid::fail(
+                format!(
+                    "Experimental headers must start with 'x-' or 'X-'. Got: '{}'",
+                    h
+                )
+                .to_string(),
+            )
+        } else {
+            Valid::succeed(h.clone())
+        }
+    })
+    .map_to(headers)
+    .trace("experimental")
     .trace("headers")
     .trace("@server")
     .trace("schema")

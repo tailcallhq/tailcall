@@ -21,7 +21,7 @@ use crate::lambda::EvaluationError;
 use crate::valid::Validator;
 use crate::{grpc, http};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {
     Http {
         req_template: http::RequestTemplate,
@@ -73,7 +73,7 @@ impl Eval for IO {
                             .map_err(EvaluationError::from)?;
                     }
 
-                    set_cache_control(ctx, &res);
+                    set_headers(ctx, &res);
 
                     Ok(res.body)
                 }
@@ -90,7 +90,7 @@ impl Eval for IO {
                         execute_raw_request(ctx, req).await?
                     };
 
-                    set_cache_control(ctx, &res);
+                    set_headers(ctx, &res);
                     parse_graphql_response(ctx, res, field_name)
                 }
                 IO::Grpc { req_template, dl_id, .. } => {
@@ -109,7 +109,7 @@ impl Eval for IO {
                         execute_raw_grpc_request(ctx, req, &req_template.operation).await?
                     };
 
-                    set_cache_control(ctx, &res);
+                    set_headers(ctx, &res);
 
                     Ok(res.body)
                 }
@@ -128,6 +128,14 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
     }
 }
 
+fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
+    ctx: &EvaluationContext<'ctx, Ctx>,
+    res: &Response<async_graphql::Value>,
+) {
+    set_cache_control(ctx, res);
+    set_cookie_headers(ctx, res);
+}
+
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
@@ -136,6 +144,15 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
         if let Some(policy) = cache_policy(res) {
             ctx.req_ctx.set_cache_control(policy);
         }
+    }
+}
+
+fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
+    ctx: &EvaluationContext<'ctx, Ctx>,
+    res: &Response<async_graphql::Value>,
+) {
+    if res.status.is_success() {
+        ctx.req_ctx.set_cookie_headers(&res.headers);
     }
 }
 

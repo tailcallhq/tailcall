@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -135,6 +135,12 @@ impl Server {
             .map(|h| h.enable_cache_control())
             .unwrap_or(false)
     }
+    pub fn enable_set_cookies(&self) -> bool {
+        self.headers
+            .as_ref()
+            .map(|h| h.set_cookies())
+            .unwrap_or(false)
+    }
     pub fn enable_introspection(&self) -> bool {
         self.introspection.unwrap_or(true)
     }
@@ -170,6 +176,13 @@ impl Server {
                     .map(|kv| (kv.key.clone(), kv.value.clone()))
                     .collect()
             })
+    }
+
+    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
+        self.headers
+            .as_ref()
+            .map(|h| h.experimental.clone().unwrap_or_default())
+            .unwrap_or_default()
     }
 
     pub fn get_version(self) -> HttpVersion {
