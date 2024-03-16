@@ -110,11 +110,17 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    pub fn to_response(self) -> Result<Response<hyper::Body>> {
-        let mut response = Response::builder()
-            .status(StatusCode::OK)
+    fn build_response(&self, status: StatusCode) -> Result<Response<Body>> {
+        let response = Response::builder()
+            .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
             .body(Body::from(serde_json::to_string(&self.0)?))?;
+
+        Ok(response)
+    }
+
+    pub fn to_response(self) -> Result<Response<hyper::Body>> {
+        let mut response = self.build_response(StatusCode::OK)?;
 
         if self.0.is_ok() {
             if let Some(cache_control) = self.0.cache_control().value() {
@@ -132,6 +138,10 @@ impl GraphQLResponse {
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
     pub fn to_rest_response(self) -> Result<Response<hyper::Body>> {
+        if !self.0.is_ok() {
+            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+
         let value = serde_json::to_value(&self.0)?;
         let mut response = self.to_response()?;
 
