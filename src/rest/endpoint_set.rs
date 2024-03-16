@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
@@ -59,20 +59,7 @@ impl EndpointSet<Unchecked> {
     ) -> anyhow::Result<EndpointSet<Checked>> {
         let mut operations = vec![];
 
-        let req_ctx = RequestContext {
-            server: Default::default(),
-            upstream: Default::default(),
-            req_headers: Default::default(),
-            experimental_headers: Default::default(),
-            cookie_headers: None,
-            http_data_loaders: Arc::new(vec![]),
-            gql_data_loaders: Arc::new(vec![]),
-            grpc_data_loaders: Arc::new(vec![]),
-            min_max_age: Arc::new(Mutex::new(None)),
-            cache_public: Arc::new(Mutex::new(None)),
-            runtime: target_runtime,
-            cache: AsyncCache::new(),
-        };
+        let req_ctx = RequestContext::new(target_runtime);
         let req_ctx = Arc::new(req_ctx);
 
         for endpoint in self.endpoints.iter() {
