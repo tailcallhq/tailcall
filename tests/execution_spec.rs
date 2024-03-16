@@ -27,6 +27,7 @@ use tailcall::cli::metrics::init_metrics;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::merge_right::MergeRight;
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
@@ -927,7 +928,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             )
         });
 
-        let config = Config::default().merge_right(&config);
+        let config = Config::default().merge_right(config);
 
         // TODO: we should probably figure out a way to do this for every test
         // but GraphQL identity checking is very hard, since a lot depends on the code
@@ -960,7 +961,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
     let merged = server
         .iter()
-        .fold(Config::default(), |acc, c| acc.merge_right(c))
+        .fold(Config::default(), |acc, c| acc.merge_right(c.clone()))
         .to_sdl();
 
     let snapshot_name = format!("{}_merged", spec.safe_name);

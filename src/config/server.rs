@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
-use crate::{is_default, MergeRight};
+use crate::is_default;
+use crate::merge_right::MergeRight;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]

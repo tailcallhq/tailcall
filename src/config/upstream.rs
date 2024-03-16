@@ -3,7 +3,8 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::{is_default, MergeRight};
+use crate::is_default;
+use crate::merge_right::MergeRight;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]

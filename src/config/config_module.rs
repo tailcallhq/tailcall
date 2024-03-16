@@ -7,7 +7,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::blueprint::GrpcMethod;
 use crate::config::Config;
-use crate::MergeRight;
+use crate::merge_right::MergeRight;
 use crate::rest::{EndpointSet, Unchecked};
 
 /// A wrapper on top of Config that contains all the resolved extensions.
@@ -52,7 +52,6 @@ pub struct Extensions {
 }
 
 impl Extensions {
-
     pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
         self.grpc_file_descriptors
             .iter()

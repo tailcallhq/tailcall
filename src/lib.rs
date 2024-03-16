@@ -19,6 +19,7 @@ pub mod helpers;
 pub mod http;
 pub mod json;
 pub mod lambda;
+pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
@@ -80,10 +81,6 @@ pub trait WorkerIO<In, Out>: Send + Sync + 'static {
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
-}
-
-trait MergeRight {
-    fn merge_right(self, other: Self) -> Self;
 }
 
 #[cfg(test)]
