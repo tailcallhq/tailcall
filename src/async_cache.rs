@@ -5,9 +5,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use futures_util::Future;
-
-type Sender<A> = tokio::sync::oneshot::Sender<A>;
-type Receiver<A> = tokio::sync::oneshot::Receiver<A>;
+use tokio::sync::oneshot::{Receiver};
 
 /// A simple async cache that uses a `HashMap` to store the values.
 pub struct AsyncCache<Key, Value> {
@@ -81,7 +79,7 @@ mod tests {
 
         for i in 0..100 {
             cache
-                .get_or_else(1, || Box::pin(async move { Ok(i.clone()) }))
+                .get_or_else(1, || Box::pin(async move { Ok(i) }))
                 .await
                 .unwrap();
         }
