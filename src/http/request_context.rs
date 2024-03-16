@@ -7,6 +7,7 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
+use crate::async_cache::AsyncCache;
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -28,6 +29,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
+    pub cache: AsyncCache<u64, ConstValue>,
 }
 
 impl RequestContext {
@@ -148,6 +150,7 @@ impl From<&AppContext> for RequestContext {
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),
+            cache: AsyncCache::new(),
         }
     }
 }
@@ -159,6 +162,7 @@ mod test {
     use cache_control::Cachability;
     use hyper::HeaderMap;
 
+    use crate::async_cache::AsyncCache;
     use crate::blueprint::{Server, Upstream};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;
@@ -182,6 +186,7 @@ mod test {
                 grpc_data_loaders: Arc::new(vec![]),
                 min_max_age: Arc::new(Mutex::new(None)),
                 cache_public: Arc::new(Mutex::new(None)),
+                cache: AsyncCache::new(),
             }
         }
     }

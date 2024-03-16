@@ -50,6 +50,22 @@ impl Eval for IO {
         ctx: super::EvaluationContext<'a, Ctx>,
         _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+        let key = self.cache_key(&ctx);
+        let response = ctx
+            .req_ctx
+            .cache
+            .get_or_eval(key, move || self.eval_inner(ctx, _conc));
+
+        Box::pin(response)
+    }
+}
+
+impl IO {
+    fn eval_inner<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
+        &'a self,
+        ctx: super::EvaluationContext<'a, Ctx>,
+        _conc: &'a super::Concurrent,
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 IO::Http { req_template, dl_id, .. } => {

@@ -2,6 +2,7 @@
 #![allow(clippy::mutable_key_type)]
 
 mod app_context;
+pub mod async_cache;
 pub mod async_graphql_hyper;
 pub mod blueprint;
 pub mod cache;
@@ -22,7 +23,7 @@ pub mod lambda;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
-pub mod rest;
+mod rest;
 pub mod runtime;
 pub mod scalar;
 mod schema_extension;

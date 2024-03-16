@@ -15,6 +15,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use tailcall::async_cache::AsyncCache;
 use tailcall::blueprint::{Server, Upstream};
 use tailcall::cache::InMemoryCache;
 use tailcall::http::{RequestContext, Response};
@@ -259,6 +260,7 @@ fn request_context() -> RequestContext {
         min_max_age: Arc::new(Mutex::new(None)),
         cache_public: Arc::new(Mutex::new(None)),
         runtime,
+        cache: AsyncCache::new(),
     }
 }
 

@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
 use super::Request;
+use crate::async_cache::AsyncCache;
 use crate::blueprint::Blueprint;
 use crate::http::RequestContext;
 use crate::rest::operation::OperationQuery;
@@ -70,6 +71,7 @@ impl EndpointSet<Unchecked> {
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
+            cache: AsyncCache::new(),
         };
         let req_ctx = Arc::new(req_ctx);
 
