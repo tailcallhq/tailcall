@@ -15,6 +15,7 @@ use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
+use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
 use crate::{is_default, scalar};
 
@@ -169,27 +170,24 @@ impl Config {
     pub fn contains(&self, name: &str) -> bool {
         self.types.contains_key(name) || self.unions.contains_key(name)
     }
+}
 
-    pub fn merge_right(self, other: &Self) -> Self {
-        let server = self.server.merge_right(other.server.clone());
-        let types = merge_types(self.types, other.types.clone());
-        let unions = merge_unions(self.unions, other.unions.clone());
-        let schema = self.schema.merge_right(other.schema.clone());
-        let upstream = self.upstream.merge_right(other.upstream.clone());
-        let links = merge_links(self.links, other.links.clone());
-        let telemetry = self.telemetry.merge_right(other.telemetry.clone());
+impl MergeRight for Config {
+    fn merge_right(self, other: Self) -> Self {
+        let server = self.server.merge_right(other.server);
+        let types = merge_types(self.types, other.types);
+        let unions = merge_unions(self.unions, other.unions);
+        let schema = self.schema.merge_right(other.schema);
+        let upstream = self.upstream.merge_right(other.upstream);
+        let links = merge_links(self.links, other.links);
+        let telemetry = self.telemetry.merge_right(other.telemetry);
 
         Self { server, upstream, types, schema, unions, links, telemetry }
     }
 }
 
 fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
-    let mut links = self_links.clone();
-    let other_links = other_links.clone();
-
-    links.extend(other_links);
-
-    links
+    self_links.merge_right(other_links)
 }
 
 ///
@@ -239,18 +237,20 @@ impl Type {
         self.fields = graphql_fields;
         self
     }
-    pub fn merge_right(mut self, other: &Self) -> Self {
-        let mut fields = self.fields.clone();
-        fields.extend(other.fields.clone());
-        self.implements.extend(other.implements.clone());
+}
+
+impl MergeRight for Type {
+    fn merge_right(mut self, other: Self) -> Self {
+        let fields = self.fields.merge_right(other.fields);
+        self.implements = self.implements.merge_right(other.implements);
         if let Some(ref variants) = self.variants {
             if let Some(ref other) = other.variants {
                 self.variants = Some(variants.union(other).cloned().collect());
             }
         } else {
-            self.variants = other.variants.clone();
+            self.variants = other.variants;
         }
-        Self { fields, ..self.clone() }
+        Self { fields, ..self }
     }
 }
 
@@ -270,7 +270,7 @@ fn merge_types(
 ) -> BTreeMap<String, Type> {
     for (name, mut other_type) in other_types {
         if let Some(self_type) = self_types.remove(&name) {
-            other_type = self_type.merge_right(&other_type);
+            other_type = self_type.merge_right(other_type);
         }
 
         self_types.insert(name, other_type);
@@ -303,13 +303,13 @@ pub struct RootSchema {
     pub subscription: Option<String>,
 }
 
-impl RootSchema {
+impl MergeRight for RootSchema {
     // TODO: add unit-tests
     fn merge_right(self, other: Self) -> Self {
         Self {
-            query: other.query.or(self.query),
-            mutation: other.mutation.or(self.mutation),
-            subscription: other.subscription.or(self.subscription),
+            query: self.query.merge_right(other.query),
+            mutation: self.mutation.merge_right(other.mutation),
+            subscription: self.subscription.merge_right(other.subscription),
         }
     }
 }
@@ -524,9 +524,9 @@ pub struct Union {
     pub doc: Option<String>,
 }
 
-impl Union {
-    pub fn merge_right(mut self, other: Self) -> Self {
-        self.types.extend(other.types);
+impl MergeRight for Union {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.types = self.types.merge_right(other.types);
         self
     }
 }

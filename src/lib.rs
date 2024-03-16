@@ -19,6 +19,7 @@ pub mod helpers;
 pub mod http;
 pub mod json;
 pub mod lambda;
+pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
