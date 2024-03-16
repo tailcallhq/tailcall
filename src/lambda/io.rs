@@ -51,12 +51,12 @@ impl Eval for IO {
         _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         let key = self.cache_key(&ctx);
-        let response = ctx
-            .req_ctx
-            .cache
-            .get_or_eval(key, move || self.eval_inner(ctx, _conc));
-
-        Box::pin(response)
+        Box::pin(async move {
+            ctx.req_ctx
+                .cache
+                .get_or_eval(key, move || self.eval_inner(ctx, _conc))
+                .await
+        })
     }
 }
 

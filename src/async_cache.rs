@@ -9,7 +9,13 @@ use tokio::sync::broadcast::Sender;
 
 /// A simple async cache that uses a `HashMap` to store the values.
 pub struct AsyncCache<Key, Value> {
-    cache: Arc<RwLock<HashMap<Key, (Arc<RwLock<Option<Value>>>, Sender<Value>)>>>,
+    cache: Arc<RwLock<HashMap<Key, CacheValue<Value>>>>,
+}
+
+#[derive(Clone)]
+pub enum CacheValue<Value> {
+    Pending(Sender<Value>),
+    Ready(Value),
 }
 
 impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> Default
@@ -25,55 +31,33 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> AsyncCache<Key,
         Self { cache: Arc::new(RwLock::new(HashMap::new())) }
     }
 
-    fn get_value(&self, key: &Key) -> Option<Value> {
-        let guard = self.cache.read().unwrap();
-        if let Some((value, _tx)) = guard.get(key) {
-            let value = value.read().unwrap().clone();
-            value
-        } else {
-            None
-        }
-    }
-
-    fn get_tx(&self, key: &Key) -> Option<Sender<Value>> {
-        let guard = self.cache.read().unwrap();
-        if let Some((_value, tx)) = guard.get(key) {
-            Some(tx.clone())
-        } else {
-            None
-        }
-    }
-
-    fn set_key(&self, key: Key) {
-        let (tx, _) = tokio::sync::broadcast::channel(100);
-        let last_value = Arc::new(RwLock::new(None));
-        let mut guard = self.cache.write().unwrap();
-        guard.insert(key, (last_value.clone(), tx));
-    }
-
-    fn set_value(&self, key: &Key, value: Value) {
-        let mut guard = self.cache.write().unwrap();
-        if let Some((guard, _)) = guard.get_mut(key) {
-            guard.write().unwrap().replace(value);
-        }
+    fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value>> {
+        self.cache.read().unwrap().get(key).cloned()
     }
 
     pub async fn get_or_eval<'a>(
-        &'a self,
+        &self,
         key: Key,
         or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = anyhow::Result<Value>> + 'a + Send>>
             + Send,
     ) -> anyhow::Result<Value> {
-        if let Some(value) = self.get_value(&key) {
-            Ok(value.clone())
-        } else if let Some(tx) = self.get_tx(&key) {
-            let value = tx.subscribe().recv().await?;
-            Ok(value.clone())
+        if let Some(cache_value) = self.get_cache_value(&key) {
+            Ok(match cache_value {
+                CacheValue::Pending(tx) => tx.subscribe().recv().await?,
+                CacheValue::Ready(value) => value,
+            })
         } else {
-            self.set_key(key.clone());
-
+            let (tx, _) = tokio::sync::broadcast::channel(100);
+            self.cache
+                .write()
+                .unwrap()
+                .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let value = or_else().await?;
-            self.set_value(&key, value.clone());
+            let mut guard = self.cache.write().unwrap();
+            if let Some(cache_value) = guard.get_mut(&key) {
+                *cache_value = CacheValue::Ready(value.clone())
+            }
+            tx.send(value.clone()).ok();
             Ok(value)
         }
     }
