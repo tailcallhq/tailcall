@@ -1,5 +1,3 @@
-mod expression_spec;
-
 use tailcall::{blueprint, EnvIO, FileIO, HttpIO};
 
 #[cfg(test)]
