@@ -586,6 +586,11 @@ impl ExecutionSpec {
                         ));
                     }
                 }
+                Node::Definition(d) => {
+                    if let Some(title) = &d.title {
+                        tracing::info!("Comment found in: {:?} with title: {}", path, title);
+                    }
+                }
                 _ => return Err(anyhow!("Unexpected node in {:?}: {:#?}", path, node)),
             }
         }
@@ -872,11 +877,12 @@ impl FileIO for MockFileSystem {
     }
 
     async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-        let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/execution/");
-        let path = path
-            .strip_prefix(&base.to_string_lossy().to_string())
-            .unwrap_or(path);
-
+        let base = PathBuf::from(path);
+        let path = base
+            .file_name()
+            .context("Invalid file path")?
+            .to_str()
+            .context("Invalid OsString")?;
         match self.spec.files.get(path) {
             Some(x) => Ok(x.to_owned()),
             None => Err(anyhow!("No such file or directory (os error 2)")),
@@ -955,9 +961,12 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             if matches!(source, Source::GraphQL) {
                 let identity = config.to_sdl();
 
-                pretty_assertions::assert_eq!(
-                    content.as_ref(),
+                // \r is added automatically in windows, it's safe to replace it with \n
+                let content = content.replace("\r\n", "\n");
+
+                assert_eq!(
                     identity,
+                    content.as_ref(),
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
