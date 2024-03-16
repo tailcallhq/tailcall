@@ -160,7 +160,7 @@ impl GraphQLResponse {
                 let item = Self::flatten_response(res.data.clone());
                 let data = serde_json::to_string(&item)?;
 
-                return self.build_response(StatusCode::OK, Body::from(data));
+                self.build_response(StatusCode::OK, Body::from(data))
             }
             BatchResponse::Batch(ref list) => {
                 let item = list
@@ -169,7 +169,7 @@ impl GraphQLResponse {
                     .collect::<Value>();
                 let data = serde_json::to_string(&item)?;
 
-                return self.build_response(StatusCode::OK, Body::from(data));
+                self.build_response(StatusCode::OK, Body::from(data))
             }
         }
     }
