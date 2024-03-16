@@ -2,14 +2,14 @@ use async_graphql::parser::types::{BaseType, Type};
 use async_graphql_value::ConstValue;
 
 #[derive(Clone, Debug, PartialEq)]
-enum UrlParamType {
+pub enum UrlParamType {
     String,
     Number(N),
     Boolean,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum N {
+pub enum N {
     Int,
     Float,
 }
@@ -73,6 +73,12 @@ impl TypedVariable {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+    pub fn nullable(&self) -> bool {
+        self.nullable
+    }
+    pub fn ty(&self) -> UrlParamType {
+        self.type_of.clone()
     }
 }
 
