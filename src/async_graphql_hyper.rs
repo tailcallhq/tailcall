@@ -1,7 +1,7 @@
 use std::any::Any;
 
 use anyhow::Result;
-use async_graphql::{BatchResponse, Executor};
+use async_graphql::{BatchResponse, Executor, Value};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
@@ -110,11 +110,11 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    pub fn to_response(self) -> Result<Response<hyper::Body>> {
+    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
         let mut response = Response::builder()
-            .status(StatusCode::OK)
+            .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
-            .body(Body::from(serde_json::to_string(&self.0)?))?;
+            .body(body)?;
 
         if self.0.is_ok() {
             if let Some(cache_control) = self.0.cache_control().value() {
@@ -126,6 +126,48 @@ impl GraphQLResponse {
         }
 
         Ok(response)
+    }
+
+    fn default_body(&self) -> Result<Body> {
+        Ok(Body::from(serde_json::to_string(&self.0)?))
+    }
+
+    pub fn to_response(self) -> Result<Response<hyper::Body>> {
+        self.build_response(StatusCode::OK, self.default_body()?)
+    }
+
+    fn flatten_response(data: &Value) -> &Value {
+        match data {
+            Value::Object(map) if map.len() == 1 => map.iter().next().unwrap().1,
+            data => data,
+        }
+    }
+
+    /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
+    /// Differs as `to_response` by flattening the response's data
+    /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
+    pub fn to_rest_response(self) -> Result<Response<hyper::Body>> {
+        if !self.0.is_ok() {
+            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
+        }
+
+        match self.0 {
+            BatchResponse::Single(ref res) => {
+                let item = Self::flatten_response(&res.data);
+                let data = serde_json::to_string(item)?;
+
+                self.build_response(StatusCode::OK, Body::from(data))
+            }
+            BatchResponse::Batch(ref list) => {
+                let item = list
+                    .iter()
+                    .map(|res| Self::flatten_response(&res.data))
+                    .collect::<Vec<&Value>>();
+                let data = serde_json::to_string(&item)?;
+
+                self.build_response(StatusCode::OK, Body::from(data))
+            }
+        }
     }
 
     /// Sets the `cache_control` for a given `GraphQLResponse`.
@@ -159,5 +201,102 @@ impl GraphQLResponse {
             }
         };
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use async_graphql::{Name, Response, ServerError, Value};
+    use hyper::StatusCode;
+    use indexmap::IndexMap;
+    use serde_json::json;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_to_rest_response_single() {
+        let name = "John";
+
+        let user = IndexMap::from([(Name::new("name"), Value::String(name.to_string()))]);
+        let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
+
+        let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
+        let rest_response = response.to_rest_response().unwrap();
+
+        assert_eq!(rest_response.status(), StatusCode::OK);
+        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(
+            hyper::body::to_bytes(rest_response.into_body())
+                .await
+                .unwrap()
+                .to_vec(),
+            json!({ "name": name }).to_string().as_bytes().to_vec()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_to_rest_response_batch() {
+        let names = ["John", "Doe", "Jane"];
+
+        let list = names
+            .iter()
+            .map(|name| {
+                let user = IndexMap::from([(Name::new("name"), Value::String(name.to_string()))]);
+                let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
+                Response::new(Value::Object(data))
+            })
+            .collect();
+
+        let response = GraphQLResponse(BatchResponse::Batch(list));
+        let rest_response = response.to_rest_response().unwrap();
+
+        assert_eq!(rest_response.status(), StatusCode::OK);
+        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(
+            hyper::body::to_bytes(rest_response.into_body())
+                .await
+                .unwrap()
+                .to_vec(),
+            json!([
+                { "name": names[0] },
+                { "name": names[1] },
+                { "name": names[2] }
+            ])
+            .to_string()
+            .as_bytes()
+            .to_vec()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_to_rest_response_with_error() {
+        let errors = ["Some error", "Another error"];
+        let mut response: Response = Default::default();
+        response.errors = errors
+            .iter()
+            .map(|error| ServerError::new(error.to_string(), None))
+            .collect();
+        let response = GraphQLResponse(BatchResponse::Single(response));
+        let rest_response = response.to_rest_response().unwrap();
+
+        assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(
+            hyper::body::to_bytes(rest_response.into_body())
+                .await
+                .unwrap()
+                .to_vec(),
+            json!({
+                "data": null,
+                "errors": errors.iter().map(|error| {
+                    json!({
+                        "message": error,
+                    })
+                }).collect::<Vec<_>>()
+            })
+            .to_string()
+            .as_bytes()
+            .to_vec()
+        );
     }
 }
