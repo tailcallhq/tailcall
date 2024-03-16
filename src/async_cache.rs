@@ -5,7 +5,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use futures_util::Future;
-use tokio::sync::oneshot::{Receiver};
+use tokio::sync::oneshot::Receiver;
 
 /// A simple async cache that uses a `HashMap` to store the values.
 pub struct AsyncCache<Key, Value> {
