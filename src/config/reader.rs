@@ -50,7 +50,7 @@ impl ConfigReader {
 
                 String::from_utf8(response.body.to_vec())?
             } else {
-                // Is a file path
+                // Is a file path on Windows
 
                 self.runtime.file.read(&file.to_string()).await?
             }
