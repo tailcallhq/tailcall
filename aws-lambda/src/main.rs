@@ -1,4 +1,3 @@
-use std::str::FromStr as _;
 use std::sync::Arc;
 
 use dotenvy::dotenv;
@@ -9,6 +8,7 @@ use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::http::{handle_request, AppContext};
+use tailcall::tracing::get_log_level;
 
 mod http;
 mod runtime;
@@ -17,16 +17,12 @@ mod runtime;
 async fn main() -> Result<(), Error> {
     let _ = dotenv();
 
-    let trace: tracing::Level = std::env::var("TC_LOG_LEVEL")
-        .ok()
-        .or_else(|| std::env::var("TAILCALL_LOG_LEVEL").ok())
-        .as_ref()
-        .and_then(|x| tracing::Level::from_str(x).ok())
+    let level: tracing::Level = get_log_level()
         // log everything by default since logs can be filtered by level in CloudWatch.
         .unwrap_or(tracing::Level::TRACE);
 
     tracing_subscriber::fmt()
-        .with_max_level(trace)
+        .with_max_level(level)
         // disable printing the name of the module in every log line.
         .with_target(false)
         // disabling time is handy because CloudWatch will add the ingestion time.

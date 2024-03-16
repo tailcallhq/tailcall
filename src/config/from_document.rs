@@ -45,16 +45,16 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
             .fuse(unions)
             .fuse(schema)
             .fuse(links(sd))
-            .fuse(opentelemetry(sd))
+            .fuse(telemetry(sd))
             .map(
-                |(server, upstream, types, unions, schema, links, opentelemetry)| Config {
+                |(server, upstream, types, unions, schema, links, telemetry)| Config {
                     server,
                     upstream,
                     types,
                     unions,
                     schema,
                     links,
-                    opentelemetry,
+                    telemetry,
                 },
             )
     })
@@ -117,7 +117,7 @@ fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
     process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
 }
 
-fn opentelemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
+fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
     process_schema_directives(
         schema_definition,
         config::telemetry::Telemetry::directive_name().as_str(),
