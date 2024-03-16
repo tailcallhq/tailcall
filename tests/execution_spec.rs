@@ -323,7 +323,9 @@ impl ExecutionSpec {
             .join(path)
             .canonicalize()?;
         let mut files = Vec::new();
-
+    
+        let mut tasks = Vec::new(); // Create a vector to store the tasks
+    
         for entry in fs::read_dir(&dir_path)? {
             let path = entry?.path();
             if path.is_dir() {
@@ -332,24 +334,38 @@ impl ExecutionSpec {
             if path.is_file() {
                 if let Some(ext) = path.extension().and_then(|x| x.to_str()) {
                     if ext == "md" {
-                        let contents = fs::read_to_string(&path)?;
-                        let spec: ExecutionSpec = Self::from_source(&path, contents)
-                            .await
-                            .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
-
-                        files.push(spec.path(path));
+                        // Spawn a new task to read each file concurrently
+                        let task: tokio::task::JoinHandle<Result<ExecutionSpec, anyhow::Error>> = tokio::spawn(async move {
+                            let contents = fs::read_to_string(&path)?;
+                            let spec: ExecutionSpec = Self::from_source(&path, contents)
+                                .await
+                                .map_err(|err| err.context(path.to_str().unwrap().to_string()))?;
+                            Ok(spec)
+                        });
+                        tasks.push(task);
                     }
                 }
             }
         }
-
+    
+        // Collect the results of all tasks
+        for task in tasks.into_iter() {
+            match task.await {
+                Ok(Ok(result)) => files.push(result), // Only push the ExecutionSpec if it's Ok
+                Ok(Err(err)) => return Err(err), // Return the inner error
+                Err(join_err) => return Err(join_err.into()), // Convert JoinError to anyhow::Error
+            }
+        }
+    
         assert!(
             !files.is_empty(),
             "No files found in {}",
             dir_path.to_str().unwrap_or_default()
         );
+    
         Ok(files)
     }
+    
 
     fn filter_specs(specs: Vec<ExecutionSpec>) -> Vec<ExecutionSpec> {
         let mut only_specs = Vec::new();
