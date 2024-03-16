@@ -282,7 +282,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
                 app_ctx.blueprint.telemetry.export.as_ref()
             {
                 if req.uri().path() == prometheus.path {
-                    return prometheus_metrics(&prometheus);
+                    return prometheus_metrics(prometheus);
                 }
             };
 
