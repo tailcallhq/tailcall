@@ -718,6 +718,17 @@ impl MockHttpClient {
     }
 }
 
+// On Unix, format is `tests/execution/graphql-dataloader-batch-keys.md`
+// But on Windows, this became \\\\?\\D:\\a\\tailcall\\tailcall\\tests\\execution\\graphql-dataloader-batch-keys.md
+// This function is to make the path consistent across platforms
+fn format_path(path: &str) -> String {
+    let path = path.replace("\\\\", "/");
+
+    let mut parts: Vec<&str> = path.split("/").collect();
+
+    parts.drain(0..3).collect::<Vec<&str>>().join("/")
+}
+
 fn string_to_bytes(input: &str) -> Vec<u8> {
     let mut bytes = Vec::new();
     let mut chars = input.chars().peekable();
@@ -797,7 +808,7 @@ impl HttpIO for MockHttpClient {
                 "No mock found for request: {:?} {} in {}",
                 req.method(),
                 req.url(),
-                self.spec_path
+                format_path(&self.spec_path)
             ))?;
 
         execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
