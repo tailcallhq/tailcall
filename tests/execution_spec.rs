@@ -1072,7 +1072,7 @@ async fn test() -> anyhow::Result<()> {
         .position(|arg| expected_arg.contains(&arg.as_str()))
         .unwrap_or(usize::MAX);
 
-    let spec = if index == usize::MAX {
+    let specs = if index == usize::MAX {
         let spec = ExecutionSpec::cargo_read("tests/execution").await?;
         ExecutionSpec::filter_specs(spec)
     } else {
@@ -1092,8 +1092,34 @@ async fn test() -> anyhow::Result<()> {
         vec
     };
 
-    for spec in spec.into_iter() {
-        assert_spec(spec, &opentelemetry).await;
+    // Collect results of async tasks
+    let mut results = vec![];
+    let opentelemetry_arc = Arc::new(opentelemetry);
+
+    for spec in specs {
+        let opentelemetry_clone = Arc::clone(&opentelemetry_arc);
+        let result = tokio::spawn(async move { assert_spec(spec, &opentelemetry_clone).await });
+        results.push(result);
+    }
+
+    // Await all tasks and handle failures
+    let mut errors = vec![];
+    for result in results.into_iter() {
+        if let Err(err) = result.await {
+            // If an error occurred, push it onto the errors vector
+            errors.push(err);
+        }
+    }
+
+    // Check if there were any errors and aggregate them
+    if !errors.is_empty() {
+        // Aggregate and display errors
+        let aggregated_error =
+            anyhow::format_err!("Multiple errors occurred during test execution:");
+        for error in errors {
+            eprintln!("{}", error);
+        }
+        return Err(aggregated_error);
     }
 
     Ok(())
