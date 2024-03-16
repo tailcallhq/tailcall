@@ -35,8 +35,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     });
 
     let opentelemetry = to_opentelemetry().transform::<Blueprint>(
-        |opentelemetry, blueprint| blueprint.opentelemetry(opentelemetry),
-        |blueprint| blueprint.opentelemetry,
+        |opentelemetry, blueprint| blueprint.telemetry(opentelemetry),
+        |blueprint| blueprint.telemetry,
     );
 
     server

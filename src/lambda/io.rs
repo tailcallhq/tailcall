@@ -22,7 +22,7 @@ use crate::lambda::EvaluationError;
 use crate::valid::Validator;
 use crate::{grpc, http};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {
     Http {
         req_template: http::RequestTemplate,

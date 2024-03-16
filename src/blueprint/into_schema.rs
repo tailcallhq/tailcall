@@ -56,8 +56,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                             }
                             Some(expr) => {
                                 let span = tracing::info_span!(
-                                    "field::resolver",
-                                    name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
+                                    "field_resolver",
+                                    otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
                                 );
                                 let expr = expr.to_owned();
                                 FieldFuture::new(
