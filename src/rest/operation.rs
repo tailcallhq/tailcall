@@ -1,12 +1,12 @@
-use std::fmt::Write;
 use std::sync::Arc;
 
+use anyhow::{anyhow, Error, Result};
 use async_graphql::dynamic::Schema;
 
 use crate::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
 use crate::blueprint::{Blueprint, SchemaModifiers};
 use crate::http::RequestContext;
-use crate::valid::{Cause, Valid, Validator};
+use crate::valid::{Valid, Validator};
 
 #[derive(Debug)]
 pub struct OperationQuery {
@@ -14,38 +14,20 @@ pub struct OperationQuery {
 }
 
 impl OperationQuery {
-    pub fn new(
-        query: GraphQLRequest,
-        request_context: Arc<RequestContext>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(query: GraphQLRequest, request_context: Arc<RequestContext>) -> Result<Self> {
         let query = query.data(request_context);
         Ok(Self { query })
     }
 
-    async fn validate(self, schema: &Schema) -> Vec<Cause<String>> {
+    async fn validate(self, schema: &Schema) -> Vec<Error> {
         schema
             .execute(self.query.0)
             .await
             .errors
             .iter()
-            .map(to_cause)
+            .map(|v| anyhow!("{}", v.message.clone()))
             .collect()
     }
-}
-
-fn to_cause(err: &async_graphql::ServerError) -> Cause<String> {
-    let mut trace = Vec::new();
-
-    for loc in err.locations.iter() {
-        let mut message = String::new();
-        message
-            .write_str(format!("{}:{}", loc.line, loc.column).as_str())
-            .unwrap();
-
-        trace.push(message);
-    }
-
-    Cause::new(err.message.clone()).trace(trace)
 }
 
 pub async fn validate_operations(
@@ -61,7 +43,7 @@ pub async fn validate_operations(
             if errors.is_empty() {
                 Valid::succeed(())
             } else {
-                Valid::<(), String>::from_vec_cause(errors.to_vec())
+                Valid::fail("Operation validation failed".to_string())
             }
         },
     )
