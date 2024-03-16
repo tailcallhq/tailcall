@@ -184,6 +184,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: Arc::new(vec![]),
         }
     }
 }
@@ -636,16 +637,21 @@ impl ExecutionSpec {
             file: Arc::new(MockFileSystem::new(self.clone())),
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: Arc::new(vec![]),
         };
 
         // TODO: move inside tailcall core if possible
         init_metrics(&runtime).unwrap();
 
-        Arc::new(AppContext::new(
-            blueprint,
-            runtime,
-            config.extensions.endpoints.clone(),
-        ))
+        let endpoints = config
+            .extensions
+            .endpoint_set
+            .clone()
+            .into_checked(&blueprint, runtime.clone())
+            .await
+            .unwrap();
+
+        Arc::new(AppContext::new(blueprint, runtime, endpoints))
     }
 }
 

@@ -47,6 +47,20 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo test
    ```
 
+## Telemetry
+
+Tailcall implements high observability standards that by following [OpenTelemetry](https://opentelemetry.io) specification. This implementation relies on the following crates:
+
+- [rust-opentelemetry](https://docs.rs/opentelemetry/latest/opentelemetry/index.html) and related crates to implement support for collecting and exporting data
+- [tracing](https://docs.rs/tracing/latest/tracing/index.html) and [tracing-opentelemetry](https://docs.rs/tracing-opentelemetry/latest/tracing_opentelemetry/index.html) to define logs and traces and thanks to integration with opentelemetry that data is automatically transferred to opentelemetry crates. Such a wrapper for telemetry allows to use well-defined library like tracing that works well for different cases and could be used as simple telemetry system for logging without involving opentelemetry if it's not required
+
+When implementing any functionality that requires observability consider the following points:
+
+- Add traces for significant amount of work that represents single operation. This will make it easier to investigate problems and slowdowns later.
+- For naming spans refer to the [opentelemetry specs](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#span) and make the name as specific as possible but without involving high cardinality for possible values.
+- Due to limitations of tracing libraries span names could only be defined as static strings. This could be solved by specifying an additional field with special name `otel.name` (for details refer `tracing-opentelemetry` docs).
+- The naming of the attributes should follow the opentelemetry's [semantic convention](https://opentelemetry.io/docs/concepts/semantic-conventions/). Existing constants can be obtained with the [opentelemetry_semantic_conventions](https://docs.rs/opentelemetry-semantic-conventions/latest/opentelemetry_semantic_conventions/index.html) crate.
+
 ## Benchmarks Comparison
 
 ### Criterion Benchmarks

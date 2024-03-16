@@ -2,6 +2,7 @@ use async_graphql::parser::types::ExecutableDocument;
 use async_graphql::{Name, Variables};
 use async_graphql_value::ConstValue;
 
+use super::path::Path;
 use super::Request;
 use crate::async_graphql_hyper::GraphQLRequest;
 
@@ -11,6 +12,7 @@ pub struct PartialRequest<'a> {
     pub body: Option<&'a String>,
     pub doc: &'a ExecutableDocument,
     pub variables: Variables,
+    pub path: &'a Path,
 }
 
 impl<'a> PartialRequest<'a> {

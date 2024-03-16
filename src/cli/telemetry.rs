@@ -26,7 +26,7 @@ use super::metrics::init_metrics;
 use crate::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::cli::CLIError;
 use crate::runtime::TargetRuntime;
-use crate::tracing::{default_tailcall_tracing, tailcall_filter_target};
+use crate::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
@@ -90,9 +90,13 @@ fn set_trace_provider(
             ))?,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
+        TelemetryExporter::Apollo(_) => return Ok(None),
     };
     let tracer = provider.tracer("tracing");
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let telemetry = tracing_opentelemetry::layer()
+        .with_location(false)
+        .with_threads(false)
+        .with_tracer(tracer);
 
     global::set_tracer_provider(provider);
 
@@ -129,6 +133,7 @@ fn set_logger_provider(
         ,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
+        TelemetryExporter::Apollo(_) => return Ok(None),
     };
 
     let otel_tracing_appender = OpenTelemetryTracingBridge::new(&provider);
@@ -172,6 +177,7 @@ fn set_meter_provider(exporter: &TelemetryExporter) -> MetricsResult<()> {
                 .with_reader(exporter)
                 .build()
         }
+        _ => return Ok(()),
     };
 
     global::set_meter_provider(provider);
@@ -199,7 +205,7 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     | global::Error::Metric(MetricsError::Other(_))
                     | global::Error::Log(LogError::Other(_)),
             ) {
-                tracing::subscriber::with_default(default_tailcall_tracing(), || {
+                tracing::subscriber::with_default(default_tracing_tailcall(), || {
                     let cli = crate::cli::CLIError::new("Open Telemetry Error")
                         .caused_by(vec![CLIError::new(error.to_string().as_str())])
                         .trace(vec!["schema".to_string(), "@telemetry".to_string()]);
@@ -213,7 +219,7 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
         set_meter_provider(export)?;
 
         let subscriber = tracing_subscriber::registry()
-            .with(trace_layer.with_filter(LevelFilter::INFO))
+            .with(trace_layer)
             .with(
                 log_layer.with_filter(dynamic_filter_fn(|_metatada, context| {
                     // ignore logs that are generated inside tracing::Span since they will be logged
@@ -222,13 +228,16 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     context.lookup_current().is_none()
                 })),
             )
-            .with(tailcall_filter_target());
+            .with(tailcall_filter_target())
+            .with(LevelFilter::from_level(
+                get_log_level().unwrap_or(tracing::Level::INFO),
+            ));
 
         init_metrics(runtime)?;
 
         set_tracing_subscriber(subscriber);
     } else {
-        set_tracing_subscriber(default_tailcall_tracing());
+        set_tracing_subscriber(default_tracing_tailcall());
     }
 
     Ok(())

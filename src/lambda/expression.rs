@@ -1,5 +1,5 @@
 use core::future::Future;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
 use anyhow::Result;
@@ -14,7 +14,7 @@ use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
 
-#[derive(Clone, Debug, strum_macros::Display)]
+#[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
     Literal(DynamicValue),
@@ -29,10 +29,36 @@ pub enum Expression {
     Concurrency(Concurrent, Box<Expression>),
 }
 
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::Context(_) => write!(f, "Context"),
+            Expression::Literal(_) => write!(f, "Literal"),
+            Expression::EqualTo(_, _) => write!(f, "EqualTo"),
+            Expression::IO(io) => write!(f, "{io}"),
+            Expression::Cache(_) => write!(f, "Cache"),
+            Expression::Input(_, _) => write!(f, "Input"),
+            Expression::Logic(logic) => write!(f, "Logic({logic})"),
+            Expression::Relation(relation) => write!(f, "Relation({relation})"),
+            Expression::List(list) => write!(f, "List({list})"),
+            Expression::Math(math) => write!(f, "Math({math})"),
+            Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Context {
     Value,
     Path(Vec<String>),
+    PushArgs {
+        expr: Box<Expression>,
+        and_then: Box<Expression>,
+    },
+    PushValue {
+        expr: Box<Expression>,
+        and_then: Box<Expression>,
+    },
 }
 
 #[derive(Debug, Error)]
@@ -79,13 +105,17 @@ impl Expression {
     pub fn in_sequence(self) -> Self {
         self.concurrency(Concurrent::Sequential)
     }
+
+    pub fn and_then(self, next: Self) -> Self {
+        Expression::Context(Context::PushValue { expr: Box::new(self), and_then: Box::new(next) })
+    }
 }
 
 impl Eval for Expression {
-    #[tracing::instrument(skip_all, fields(name = %self), err)]
+    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
@@ -97,8 +127,18 @@ impl Eval for Expression {
                     }
                     Context::Path(path) => Ok(ctx
                         .path_value(path)
-                        .cloned()
+                        .map(|a| a.into_owned())
                         .unwrap_or(async_graphql::Value::Null)),
+                    Context::PushArgs { expr, and_then } => {
+                        let args = expr.eval(ctx.clone(), conc).await?;
+                        let ctx = ctx.with_args(args).clone();
+                        and_then.eval(ctx, conc).await
+                    }
+                    Context::PushValue { expr, and_then } => {
+                        let value = expr.eval(ctx.clone(), conc).await?;
+                        let ctx = ctx.with_value(value);
+                        and_then.eval(ctx, conc).await
+                    }
                 },
                 Expression::Input(input, path) => {
                     let inp = &input.eval(ctx, conc).await?;
@@ -107,9 +147,9 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Literal(value) => value.render_value(ctx),
+                Expression::Literal(value) => value.render_value(&ctx),
                 Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
-                    left.eval(ctx, conc).await? == right.eval(ctx, conc).await?,
+                    left.eval(ctx.clone(), conc).await? == right.eval(ctx, conc).await?,
                 )),
                 Expression::IO(operation) => operation.eval(ctx, conc).await,
                 Expression::Cache(cached) => cached.eval(ctx, conc).await,

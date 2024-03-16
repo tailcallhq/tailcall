@@ -322,6 +322,12 @@ of their applications.
 """
 directive @telemetry(
   export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters 
+  Be careful about **leaking sensitive information** from requests when enabling the 
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
 ) on FIELD_DEFINITION
 
 """
@@ -408,6 +414,28 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
+input Apollo {
+  """
+  Setting `apiKey` for Apollo.
+  """
+  apiKey: String!
+  """
+  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
+  """
+  graphRef: String!
+  """
+  Setting `platform` for Apollo.
+  """
+  platform: String!
+  """
+  Setting `userVersion` for Apollo.
+  """
+  userVersion: String!
+  """
+  Setting `version` for Apollo.
+  """
+  version: String!
+}
 input Batch {
   delay: Int!
   headers: [String!]
@@ -578,6 +606,11 @@ input Headers {
   """
   custom: [KeyValue]
   """
+  `experimental` allows the use of `X-*` experimental headers in the response. @default 
+  `[]`.
+  """
+  experimental: [String!]
+  """
   `setCookies` when enabled stores `set-cookie` headers and all the response will be 
   sent with the headers.
   """
@@ -723,11 +756,18 @@ of their applications.
 """
 input Telemetry {
   export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters 
+  Be careful about **leaking sensitive information** from requests when enabling the 
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
 }
 input TelemetryExporter {
   stdout: StdoutExporter
   otlp: OtlpExporter
   prometheus: PrometheusExporter
+  apollo: Apollo
 }
 input Schema {
   Obj: JSON
