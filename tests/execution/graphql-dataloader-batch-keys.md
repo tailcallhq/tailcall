@@ -1,4 +1,4 @@
-# Graphql datasource
+# GraphQL datasource
 
 ##### skip
 
