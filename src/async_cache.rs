@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -6,14 +5,16 @@ use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
 use futures_util::Future;
-use tokio::sync::broadcast::{Receiver, Sender};
+use tokio::sync::broadcast::Sender;
 
 /// A simple async cache that uses a `HashMap` to store the values.
 pub struct AsyncCache<Key, Value> {
-    cache: Arc<RwLock<HashMap<Key, (Arc<RwLock<Option<Value>>>, Sender<Value>, Receiver<Value>)>>>,
+    cache: Arc<RwLock<HashMap<Key, (Arc<RwLock<Option<Value>>>, Sender<Value>)>>>,
 }
 
-impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> Default for AsyncCache<Key, Value> {
+impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> Default
+    for AsyncCache<Key, Value>
+{
     fn default() -> Self {
         Self::new()
     }
@@ -26,7 +27,7 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> AsyncCache<Key,
 
     fn get_value(&self, key: &Key) -> Option<Value> {
         let guard = self.cache.read().unwrap();
-        if let Some((value, _tx, _rx)) = guard.get(key) {
+        if let Some((value, _tx)) = guard.get(key) {
             let value = value.read().unwrap().clone();
             value
         } else {
@@ -36,7 +37,7 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> AsyncCache<Key,
 
     fn get_tx(&self, key: &Key) -> Option<Sender<Value>> {
         let guard = self.cache.read().unwrap();
-        if let Some((_value, tx, _rx)) = guard.get(key) {
+        if let Some((_value, tx)) = guard.get(key) {
             Some(tx.clone())
         } else {
             None
@@ -44,16 +45,16 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> AsyncCache<Key,
     }
 
     fn set_key(&self, key: Key) {
-        let (tx, rx) = tokio::sync::broadcast::channel(100);
+        let (tx, _) = tokio::sync::broadcast::channel(100);
         let last_value = Arc::new(RwLock::new(None));
         let mut guard = self.cache.write().unwrap();
-        guard.insert(key, (last_value.clone(), tx, rx));
+        guard.insert(key, (last_value.clone(), tx));
     }
 
     fn set_value(&self, key: &Key, value: Value) {
         let mut guard = self.cache.write().unwrap();
-        if let Some((last_value, _, _)) = guard.get_mut(key) {
-            last_value.write().unwrap().replace(value);
+        if let Some((guard, _)) = guard.get_mut(key) {
+            guard.write().unwrap().replace(value);
         }
     }
 
