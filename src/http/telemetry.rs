@@ -3,9 +3,11 @@ use hyper::{Body, Request, Response};
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
 use opentelemetry::KeyValue;
+use opentelemetry_http::HeaderExtractor;
 use opentelemetry_semantic_conventions::trace::{
     HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, URL_PATH,
 };
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::blueprint::telemetry::Telemetry;
 
@@ -66,4 +68,12 @@ impl RequestCounter {
 
 pub fn get_response_status_code(response: &Response<Body>) -> KeyValue {
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, response.status().as_u16() as i64)
+}
+
+pub fn propagate_context(req: &Request<Body>) {
+    let context = opentelemetry::global::get_text_map_propagator(|propagator| {
+        propagator.extract(&HeaderExtractor(req.headers()))
+    });
+
+    tracing::Span::current().set_parent(context);
 }
