@@ -570,6 +570,11 @@ impl ExecutionSpec {
                         ));
                     }
                 }
+                Node::Definition(d) => {
+                    if let Some(title) = &d.title {
+                        tracing::info!("Comment found in: {:?} with title: {}", path, title);
+                    }
+                }
                 _ => return Err(anyhow!("Unexpected node in {:?}: {:#?}", path, node)),
             }
         }
