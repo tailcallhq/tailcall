@@ -13,14 +13,6 @@ expression: opentelemetry.get_metrics().await.unwrap()
       ]
     },
     {
-      "name": "http_request",
-      "entries": [
-        {
-          "name": "http.server.request.count"
-        }
-      ]
-    },
-    {
       "name": "process-resources",
       "entries": [
         {
