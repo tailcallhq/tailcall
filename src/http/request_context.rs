@@ -175,7 +175,6 @@ impl From<&AppContext> for RequestContext {
 mod test {
     use cache_control::Cachability;
 
-    use crate::async_cache::AsyncCache;
     use crate::blueprint::{Server, Upstream};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;

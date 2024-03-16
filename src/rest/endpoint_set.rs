@@ -3,7 +3,6 @@ use std::sync::Arc;
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
 use super::Request;
-use crate::async_cache::AsyncCache;
 use crate::blueprint::Blueprint;
 use crate::http::RequestContext;
 use crate::rest::operation::OperationQuery;
