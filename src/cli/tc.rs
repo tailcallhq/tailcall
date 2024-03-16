@@ -41,15 +41,14 @@ pub async fn run() -> Result<()> {
 
             match blueprint {
                 Ok(blueprint) => {
-                    // check the endpoints' schema
+                    tracing::info!("Config {} ... ok", file_paths.join(", "));
+                    Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config);
+                    // Check the endpoints' schema
                     let _ = config_module
                         .extensions
                         .endpoint_set
                         .into_checked(&blueprint, runtime)
                         .await?;
-
-                    tracing::info!("Config {} ... ok", file_paths.join(", "));
-                    Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config);
                     if schema {
                         display_schema(&blueprint);
                     }

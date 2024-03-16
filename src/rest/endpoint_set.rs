@@ -16,8 +16,11 @@ pub struct EndpointSet<Status> {
     marker: std::marker::PhantomData<Status>,
 }
 
+/// Represents a validated set of endpoints
 #[derive(Default, Clone, Debug)]
 pub struct Checked;
+
+/// Represents a set of endpoints that haven't been validated yet.
 #[derive(Default, Clone, Debug)]
 pub struct Unchecked;
 
