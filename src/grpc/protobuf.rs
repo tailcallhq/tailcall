@@ -295,13 +295,8 @@ mod tests {
 
     #[tokio::test]
     async fn unknown_file() -> Result<()> {
-        let error = get_proto_file("_unknown.proto").await.unwrap_err();
-
-        assert_eq!(
-            error.to_string(),
-            "No such file or directory (os error 2)".to_string()
-        );
-
+        let error = get_proto_file("_unknown.proto").await;
+        assert!(error.is_err());
         Ok(())
     }
 

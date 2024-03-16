@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package nested0;
+
 import "src/grpc/tests/proto/greetings.proto";
 import "src/grpc/tests/proto/nested1.proto";
 import "src/grpc/tests/proto/news_no_pkg.proto";

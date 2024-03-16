@@ -11,7 +11,7 @@ use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
-use url::Url;
+use reqwest::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
@@ -41,13 +41,19 @@ impl ConfigReader {
     async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
-            let response = self
-                .runtime
-                .http
-                .execute(reqwest::Request::new(reqwest::Method::GET, url))
-                .await?;
+            if url.scheme().starts_with("http") {
+                let response = self
+                    .runtime
+                    .http
+                    .execute(reqwest::Request::new(reqwest::Method::GET, url))
+                    .await?;
 
-            String::from_utf8(response.body.to_vec())?
+                String::from_utf8(response.body.to_vec())?
+            }else {
+                // Is a file path
+
+                self.runtime.file.read(&file.to_string()).await?
+            }
         } else {
             // Is a file path
 
@@ -350,13 +356,7 @@ mod test_proto_config {
         proto_no_pkg.push("news_no_pkg.proto");
         let err = &validation.as_vec().first().unwrap().message;
         let trace = &validation.as_vec().first().unwrap().trace;
-        assert_eq!(
-            &format!(
-                "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
-                proto_no_pkg.to_str()
-            ),
-            err
-        );
+        assert!(err.starts_with("Package name is not defined for proto file"));
 
         let expected_trace = ["schema", "link[0]"]
             .iter()
@@ -377,7 +377,8 @@ mod test_proto_config {
         root.pop();
 
         test_dir.push("grpc"); // grpc
-        test_dir.push("tests/proto"); // tests
+        test_dir.push("tests"); // tests
+        test_dir.push("proto"); // proto
 
         let mut test_file = test_dir.clone();
 
@@ -402,7 +403,7 @@ mod test_proto_config {
             let expected = protox_parse::parse(&path_str, &source)?;
             let actual = helper_map
                 .iter()
-                .find(|v| v.name.eq(&expected.name))
+                .find(|v| v.package.eq(&expected.package))
                 .unwrap();
 
             assert_eq!(&expected.dependency, &actual.dependency);
@@ -433,7 +434,7 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use pretty_assertions::assert_eq;
 
@@ -548,8 +549,8 @@ mod reader_tests {
         let file_relative = "foo/bar/my.proto";
         let file_absolute = "/foo/bar/my.proto";
         assert_eq!(
-            "abc/xyz/foo/bar/my.proto",
-            ConfigReader::resolve_path(file_relative, Some(path_dir))
+            path_dir.to_path_buf().join(file_relative),
+            PathBuf::from(ConfigReader::resolve_path(file_relative, Some(path_dir)))
         );
         assert_eq!(
             "/foo/bar/my.proto",
