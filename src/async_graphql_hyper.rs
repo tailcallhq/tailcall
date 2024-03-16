@@ -137,10 +137,10 @@ impl GraphQLResponse {
     }
 
     fn flatten_response(data: Value) -> Value {
-        if let Value::Object(map) = data.clone() {
+        if let Value::Object(map) = &data {
             if map.len() == 1 {
                 if let Some(value) = map.values().next() {
-                    return value.clone();
+                    return value.to_owned();
                 }
             }
         }
@@ -157,7 +157,7 @@ impl GraphQLResponse {
 
         match self.0 {
             BatchResponse::Single(ref res) => {
-                let item = Self::flatten_response(res.data.clone());
+                let item = Self::flatten_response(res.data.to_owned());
                 let data = serde_json::to_string(&item)?;
 
                 self.build_response(StatusCode::OK, Body::from(data))
@@ -165,7 +165,7 @@ impl GraphQLResponse {
             BatchResponse::Batch(ref list) => {
                 let item = list
                     .iter()
-                    .map(|res| Self::flatten_response(res.data.clone()))
+                    .map(|res| Self::flatten_response(res.data.to_owned()))
                     .collect::<Value>();
                 let data = serde_json::to_string(&item)?;
 
