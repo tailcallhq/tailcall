@@ -421,15 +421,6 @@ impl ExecutionSpec {
                         if let Some(Node::Paragraph(_)) = children.peek() {
                             let _ = children.next();
                         }
-                    } else if heading.depth == 2 {
-                        if let Some(Node::Text(expect)) = heading.children.first() {
-                            sdl_error = expect
-                                .value
-                                .split(':')
-                                .last()
-                                .map(|v| v.contains("true"))
-                                .unwrap_or_default();
-                        }
                     } else if heading.depth == 5 {
                         // Parse annotation
                         if runner.is_none() {
@@ -577,6 +568,16 @@ impl ExecutionSpec {
                             path,
                             meta
                         ));
+                    }
+                }
+                Node::Paragraph(paragraph) => {
+                    if let Some(Node::Text(expect)) = paragraph.children.first() {
+                        sdl_error = expect
+                            .value
+                            .split(':')
+                            .last()
+                            .map(|v| v.contains("true"))
+                            .unwrap_or_default();
                     }
                 }
                 Node::ThematicBreak(_) => {

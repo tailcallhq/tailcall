@@ -2,7 +2,9 @@
 
 ---
 
-## expect_validation_error: true
+expect_validation_error: true
+
+---
 
 ```graphql @server
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
