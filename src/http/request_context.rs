@@ -31,6 +31,17 @@ pub struct RequestContext {
 }
 
 impl RequestContext {
+    pub fn new(target_runtime: TargetRuntime) -> RequestContext {
+        RequestContext {
+            http_data_loaders: Arc::new(vec![]),
+            gql_data_loaders: Arc::new(vec![]),
+            grpc_data_loaders: Arc::new(vec![]),
+            min_max_age: Arc::new(Mutex::new(None)),
+            cache_public: Arc::new(Mutex::new(None)),
+            runtime: target_runtime,
+            ..Default::default()
+        }
+    }
     fn set_min_max_age_conc(&self, min_max_age: i32) {
         *self.min_max_age.lock().unwrap() = Some(min_max_age);
     }
