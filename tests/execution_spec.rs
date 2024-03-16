@@ -1057,7 +1057,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
-    let opentelemetry = init_opentelemetry();
+    let opentelemetry = Arc::new(init_opentelemetry());
     // Explicitly only run one test if specified in command line args
     // This is used by test-convertor to auto-apply the snapshots of incompatible
     // fail-annotated http specs
@@ -1090,12 +1090,34 @@ async fn test() -> anyhow::Result<()> {
         vec
     };
 
+    let mut tasks = Vec::new();
     for spec in spec.into_iter() {
-        assert_spec(spec, &opentelemetry).await;
+        let opentelemetry = opentelemetry.clone();
+        let task = tokio::spawn(async move {
+            assert_spec(spec, &opentelemetry).await;
+        });
+        tasks.push(task);
+    }
+
+    // Collect and handle results of parallel tasks
+    let mut all_errors: Vec<anyhow::Error> = Vec::new();
+    for task in tasks.into_iter() {
+        if let Err(err) = task.await {
+            all_errors.push(err.into());
+        }
+    }
+
+    if !all_errors.is_empty() {
+        let mut error_messages = String::new();
+        for err in all_errors {
+            error_messages += &format!("Error: {}\n", err);
+        }
+        return Err(anyhow::anyhow!("Test failures:\n{}", error_messages));
     }
 
     Ok(())
 }
+
 
 async fn run_assert(
     app_ctx: Arc<AppContext>,
