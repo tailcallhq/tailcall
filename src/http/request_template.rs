@@ -178,6 +178,7 @@ impl RequestTemplate {
         })
     }
 
+    /// Creates a new RequestTemplate with the given form encoded URL
     pub fn form_encoded_url(url: &str) -> anyhow::Result<Self> {
         Ok(Self::new(url)?.encoding(Encoding::ApplicationXWwwFormUrlencoded))
     }
@@ -597,10 +598,10 @@ mod tests {
             let endpoint = crate::endpoint::Endpoint::new(
                 "http://localhost:3000/?a={{args.a}}&q=1".to_string(),
             )
-            .query(vec![
-                ("b".to_string(), "1".to_string()),
-                ("c".to_string(), "{{args.c}}".to_string()),
-            ]);
+                .query(vec![
+                    ("b".to_string(), "1".to_string()),
+                    ("c".to_string(), "{{args.c}}".to_string()),
+                ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
