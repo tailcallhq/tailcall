@@ -7,7 +7,7 @@ use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::runtime::init;
 use crate::http::AppContext;
-use crate::rest::EndpointSet;
+use crate::rest::{EndpointSet, Unchecked};
 use crate::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
@@ -16,12 +16,15 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn new(blueprint: Blueprint, endpoints: EndpointSet) -> Self {
+    pub async fn new(
+        blueprint: Blueprint,
+        endpoints: EndpointSet<Unchecked>,
+    ) -> anyhow::Result<Self> {
         let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
 
         let mut extensions = vec![];
 
-        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.opentelemetry.export.as_ref() {
+        if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
             let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
             extensions.push(SchemaExtension::new(ApolloTracing::new(
                 apollo.api_key.clone(),
@@ -33,8 +36,10 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let server_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
-        Self { app_ctx: server_context, blueprint }
+        let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;
+        let app_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
+
+        Ok(Self { app_ctx: app_context, blueprint })
     }
 
     pub fn addr(&self) -> SocketAddr {

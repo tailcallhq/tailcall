@@ -33,13 +33,18 @@ impl PathString for serde_json::Value {
     }
 }
 
-fn convert_value(value: &async_graphql::Value) -> Option<Cow<'_, str>> {
+fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     match value {
-        async_graphql::Value::String(s) => Some(Cow::Borrowed(s.as_str())),
-        async_graphql::Value::Number(n) => Some(Cow::Owned(n.to_string())),
-        async_graphql::Value::Boolean(b) => Some(Cow::Owned(b.to_string())),
-        async_graphql::Value::Object(map) => Some(json!(map).to_string().into()),
-        async_graphql::Value::List(list) => Some(json!(list).to_string().into()),
+        Cow::Owned(async_graphql::Value::String(s)) => Some(Cow::Owned(s)),
+        Cow::Owned(async_graphql::Value::Number(n)) => Some(Cow::Owned(n.to_string())),
+        Cow::Owned(async_graphql::Value::Boolean(b)) => Some(Cow::Owned(b.to_string())),
+        Cow::Owned(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
+        Cow::Owned(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
+        Cow::Borrowed(async_graphql::Value::String(s)) => Some(Cow::Borrowed(s.as_str())),
+        Cow::Borrowed(async_graphql::Value::Number(n)) => Some(Cow::Owned(n.to_string())),
+        Cow::Borrowed(async_graphql::Value::Boolean(b)) => Some(Cow::Owned(b.to_string())),
+        Cow::Borrowed(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
+        Cow::Borrowed(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
         _ => None,
     }
 }
@@ -62,9 +67,9 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
         }
 
         path.split_first()
-            .and_then(|(head, tail)| match head.as_ref() {
+            .and_then(move |(head, tail)| match head.as_ref() {
                 "value" => convert_value(ctx.path_value(tail)?),
-                "args" => convert_value(ctx.arg(tail)?),
+                "args" => convert_value(ctx.path_arg(tail)?),
                 "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
                 "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
                 "env" => ctx.env_var(tail[0].as_ref()).map(|v| v.into()),
@@ -84,7 +89,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
         path.split_first()
             .and_then(|(head, tail)| match head.as_ref() {
                 "value" => Some(ctx.path_value(tail)?.to_string()),
-                "args" => Some(ctx.arg(tail)?.to_string()),
+                "args" => Some(ctx.path_arg(tail)?.to_string()),
                 "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
                 "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
                 "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
@@ -184,6 +189,7 @@ mod tests {
             map
         });
 
+        #[derive(Clone)]
         struct MockGraphqlContext;
 
         impl<'a> ResolverContextLike<'a> for MockGraphqlContext {

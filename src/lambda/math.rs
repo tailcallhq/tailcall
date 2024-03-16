@@ -10,7 +10,7 @@ use super::{
 };
 use crate::json::JsonLike;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::Display)]
 pub enum Math {
     Mod(Box<Expression>, Box<Expression>),
     Add(Box<Expression>, Box<Expression>),
@@ -27,13 +27,13 @@ pub enum Math {
 impl Eval for Math {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Math::Mod(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     try_i64_operation(&lhs, &rhs, ops::Rem::rem)
@@ -41,7 +41,7 @@ impl Eval for Math {
                         .ok_or(EvaluationError::ExprEvalError("mod".into()))?
                 }
                 Math::Add(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     try_f64_operation(&lhs, &rhs, ops::Add::add)
@@ -60,7 +60,7 @@ impl Eval for Math {
                         .ok_or(EvaluationError::ExprEvalError("dec".into()))?
                 }
                 Math::Divide(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     try_f64_operation(&lhs, &rhs, ops::Div::div)
@@ -79,7 +79,7 @@ impl Eval for Math {
                         .ok_or(EvaluationError::ExprEvalError("dec".into()))?
                 }
                 Math::Multiply(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     try_f64_operation(&lhs, &rhs, ops::Mul::mul)
@@ -107,7 +107,7 @@ impl Eval for Math {
                     })?
                 }
                 Math::Subtract(lhs, rhs) => {
-                    let lhs = lhs.eval(ctx, conc).await?;
+                    let lhs = lhs.eval(ctx.clone(), conc).await?;
                     let rhs = rhs.eval(ctx, conc).await?;
 
                     try_f64_operation(&lhs, &rhs, ops::Sub::sub)
