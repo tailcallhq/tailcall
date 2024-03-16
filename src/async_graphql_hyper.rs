@@ -207,3 +207,99 @@ impl GraphQLResponse {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_graphql::{Name, Response, ServerError, Value};
+    use hyper::StatusCode;
+    use indexmap::IndexMap;
+    use serde_json::json;
+
+    #[tokio::test]
+    async fn test_to_rest_response_single() {
+        let name = "John";
+
+        let user = IndexMap::from([(Name::new("name"), Value::String(name.to_string()))]);
+        let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
+
+        let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
+        let rest_response = response.to_rest_response().unwrap();
+
+        assert_eq!(rest_response.status(), StatusCode::OK);
+        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(
+            hyper::body::to_bytes(rest_response.into_body())
+                .await
+                .unwrap()
+                .to_vec(),
+            json!({ "name": name }).to_string().as_bytes().to_vec()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_to_rest_response_batch() {
+        let names = vec!["John", "Doe", "Jane"];
+
+        let list = names
+            .iter()
+            .map(|name| {
+                let user = IndexMap::from([(Name::new("name"), Value::String(name.to_string()))]);
+                let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
+                Response::new(Value::Object(data))
+            })
+            .collect();
+
+        let response = GraphQLResponse(BatchResponse::Batch(list));
+        let rest_response = response.to_rest_response().unwrap();
+
+        assert_eq!(rest_response.status(), StatusCode::OK);
+        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(
+            hyper::body::to_bytes(rest_response.into_body())
+                .await
+                .unwrap()
+                .to_vec(),
+            json!([
+                { "name": names[0] },
+                { "name": names[1] },
+                { "name": names[2] }
+            ])
+            .to_string()
+            .as_bytes()
+            .to_vec()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_to_rest_response_with_error() {
+        let errors = vec!["Some error", "Another error"];
+        let mut response: Response = Default::default();
+        response.errors = errors
+            .iter()
+            .map(|error| ServerError::new(error.to_string(), None))
+            .collect();
+        let response = GraphQLResponse(BatchResponse::Single(response));
+        let rest_response = response.to_rest_response().unwrap();
+
+        assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(
+            hyper::body::to_bytes(rest_response.into_body())
+                .await
+                .unwrap()
+                .to_vec(),
+            json!({
+                "data": null,
+                "errors": errors.iter().map(|error| {
+                    json!({
+                        "message": error,
+                    })
+                }).collect::<Vec<_>>()
+            })
+            .to_string()
+            .as_bytes()
+            .to_vec()
+        );
+    }
+}
