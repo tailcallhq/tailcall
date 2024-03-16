@@ -17,25 +17,27 @@ pub enum List {
 impl Eval for List {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                List::Concat(list) => join_all(list.iter().map(|expr| expr.eval(ctx, conc)))
-                    .await
-                    .into_iter()
-                    .try_fold(async_graphql::Value::List(vec![]), |acc, result| {
-                        match (acc, result?) {
-                            (ConstValue::List(mut lhs), ConstValue::List(rhs)) => {
-                                lhs.extend(rhs);
-                                Ok(ConstValue::List(lhs))
+                List::Concat(list) => {
+                    join_all(list.iter().map(|expr| expr.eval(ctx.clone(), conc)))
+                        .await
+                        .into_iter()
+                        .try_fold(async_graphql::Value::List(vec![]), |acc, result| {
+                            match (acc, result?) {
+                                (ConstValue::List(mut lhs), ConstValue::List(rhs)) => {
+                                    lhs.extend(rhs);
+                                    Ok(ConstValue::List(lhs))
+                                }
+                                _ => Err(EvaluationError::ExprEvalError(
+                                    "element is not a list".into(),
+                                ))?,
                             }
-                            _ => Err(EvaluationError::ExprEvalError(
-                                "element is not a list".into(),
-                            ))?,
-                        }
-                    }),
+                        })
+                }
             }
         })
     }
@@ -48,11 +50,14 @@ where
 {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<C>> + 'a + Send>> {
         Box::pin(async move {
-            let future_iter = self.as_ref().iter().map(|expr| expr.eval(ctx, conc));
+            let future_iter = self
+                .as_ref()
+                .iter()
+                .map(|expr| expr.eval(ctx.clone(), conc));
             match *conc {
                 Concurrent::Parallel => join_all(future_iter)
                     .await
