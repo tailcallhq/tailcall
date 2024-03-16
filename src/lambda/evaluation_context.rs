@@ -1,42 +1,80 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 use std::time::Duration;
 
 use async_graphql::{SelectionField, ServerError, Value};
-use derive_setters::Setters;
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::http::RequestContext;
 
 // TODO: rename to ResolverContext
-#[derive(Clone, Setters)]
-#[setters(strip_option)]
+#[derive(Clone)]
 pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
+    // Context create for each GraphQL Request
     pub req_ctx: &'a RequestContext,
+
+    // Async GraphQL Context
+    // Contains current value and arguments
     pub graphql_ctx: &'a Ctx,
+
+    // Overridden Value for Async GraphQL Context
+    graphql_ctx_value: Option<Arc<Value>>,
+
+    // Overridden Arguments for Async GraphQL Context
+    graphql_ctx_args: Option<Arc<Value>>,
 
     // TODO: JS timeout should be read from server settings
     pub timeout: Duration,
 }
 
+impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
+    pub fn with_value(&self, value: Value) -> EvaluationContext<'a, A> {
+        let mut ctx = self.clone();
+        ctx.graphql_ctx_value = Some(Arc::new(value));
+        ctx
+    }
+
+    pub fn with_args(&self, args: Value) -> EvaluationContext<'a, A> {
+        let mut ctx = self.clone();
+        ctx.graphql_ctx_args = Some(Arc::new(args));
+        ctx
+    }
+}
+
 impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
-        Self { timeout: Duration::from_millis(5), req_ctx, graphql_ctx }
+        Self {
+            timeout: Duration::from_millis(5),
+            req_ctx,
+            graphql_ctx,
+            graphql_ctx_value: None,
+            graphql_ctx_args: None,
+        }
     }
 
     pub fn value(&self) -> Option<&Value> {
         self.graphql_ctx.value()
     }
 
-    pub fn arg<T: AsRef<str>>(&self, path: &[T]) -> Option<&'a Value> {
-        let arg = self.graphql_ctx.args()?.get(path[0].as_ref());
-
-        get_path_value(arg?, &path[1..])
+    pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
+        // TODO: add unit tests for this
+        if let Some(args) = self.graphql_ctx_args.as_ref() {
+            get_path_value(args.as_ref(), path).map(|a| Cow::Owned(a.clone()))
+        } else {
+            let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
+            get_path_value(arg, &path[1..]).map(Cow::Borrowed)
+        }
     }
 
-    pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<&'a Value> {
-        get_path_value(self.graphql_ctx.value()?, path)
+    pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
+        // TODO: add unit tests for this
+        if let Some(value) = self.graphql_ctx_value.as_ref() {
+            get_path_value(value.as_ref(), path).map(|a| Cow::Owned(a.clone()))
+        } else {
+            get_path_value(self.graphql_ctx.value()?, path).map(Cow::Borrowed)
+        }
     }
 
     pub fn headers(&self) -> &HeaderMap {

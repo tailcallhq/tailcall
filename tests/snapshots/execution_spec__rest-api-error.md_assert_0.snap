@@ -3,7 +3,7 @@ source: tests/execution_spec.rs
 expression: response
 ---
 {
-  "status": 200,
+  "status": 500,
   "headers": {
     "content-type": "application/json"
   },
@@ -11,12 +11,16 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-dataloader-batch-keys.md",
+        "message": "internal: non-null types require a return value",
         "locations": [
           {
-            "line": 1,
-            "column": 9
+            "line": 3,
+            "column": 5
           }
+        ],
+        "path": [
+          "user",
+          "id"
         ]
       }
     ]

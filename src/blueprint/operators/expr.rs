@@ -181,7 +181,7 @@ mod tests {
     use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContextLike};
     use crate::valid::Validator;
 
-    #[derive(Default)]
+    #[derive(Default, Clone)]
     struct Context<'a> {
         value: Option<&'a async_graphql_value::ConstValue>,
         args: Option<
@@ -228,7 +228,7 @@ mod tests {
             let req_ctx = RequestContext::default();
             let graphql_ctx = Context::default();
             let ctx = EvaluationContext::new(&req_ctx, &graphql_ctx);
-            let value = expression.eval(&ctx, &Concurrent::default()).await?;
+            let value = expression.eval(ctx, &Concurrent::default()).await?;
 
             Ok(serde_json::to_value(value)?)
         }

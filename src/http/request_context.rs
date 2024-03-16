@@ -31,6 +31,21 @@ pub struct RequestContext {
 }
 
 impl RequestContext {
+    pub fn new(target_runtime: TargetRuntime) -> RequestContext {
+        RequestContext {
+            server: Default::default(),
+            upstream: Default::default(),
+            req_headers: HeaderMap::new(),
+            experimental_headers: HeaderMap::new(),
+            cookie_headers: None,
+            http_data_loaders: Arc::new(vec![]),
+            gql_data_loaders: Arc::new(vec![]),
+            grpc_data_loaders: Arc::new(vec![]),
+            min_max_age: Arc::new(Mutex::new(None)),
+            cache_public: Arc::new(Mutex::new(None)),
+            runtime: target_runtime,
+        }
+    }
     fn set_min_max_age_conc(&self, min_max_age: i32) {
         *self.min_max_age.lock().unwrap() = Some(min_max_age);
     }
@@ -154,10 +169,7 @@ impl From<&AppContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, Mutex};
-
     use cache_control::Cachability;
-    use hyper::HeaderMap;
 
     use crate::blueprint::{Server, Upstream};
     use crate::config::{self, Batch};
@@ -170,19 +182,9 @@ mod test {
             let crate::config::Config { upstream, .. } = config_module.config.clone();
             let server = Server::try_from(config_module).unwrap();
             let upstream = Upstream::try_from(upstream).unwrap();
-            RequestContext {
-                req_headers: HeaderMap::new(),
-                experimental_headers: HeaderMap::new(),
-                cookie_headers: None,
-                server,
-                runtime: crate::runtime::test::init(None),
-                upstream,
-                http_data_loaders: Arc::new(vec![]),
-                gql_data_loaders: Arc::new(vec![]),
-                grpc_data_loaders: Arc::new(vec![]),
-                min_max_age: Arc::new(Mutex::new(None)),
-                cache_public: Arc::new(Mutex::new(None)),
-            }
+            RequestContext::new(crate::runtime::test::init(None))
+                .upstream(upstream)
+                .server(server)
         }
     }
 

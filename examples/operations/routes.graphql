@@ -14,9 +14,5 @@ query users @rest(method: GET, path: "/users") {
   users {
     id
     name
-    posts {
-      id
-      title
-    }
   }
 }
