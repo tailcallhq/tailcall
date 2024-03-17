@@ -1,7 +1,7 @@
 use async_graphql::Value;
 use pretty_assertions::assert_eq;
 use serde_json::json;
-use tailcall::blueprint::{Blueprint, DynamicValue, Upstream};
+use tailcall::blueprint::{Blueprint, DynamicValue};
 use tailcall::http::RequestContext;
 use tailcall::lambda::{Concurrent, EmptyResolverContext, Eval, EvaluationContext, Expression};
 use tailcall::mustache::Mustache;
