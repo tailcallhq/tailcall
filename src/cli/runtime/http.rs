@@ -174,7 +174,12 @@ impl HttpIO for NativeHttp {
             tracing::Span::current().set_attribute(status_code.key, status_code.value);
         }
 
-        Ok(Response::from_reqwest(response?.error_for_status()?).await?)
+        Ok(Response::from_reqwest(
+            response?
+                .error_for_status()
+                .map_err(|err| err.without_url())?,
+        )
+        .await?)
     }
 }
 
