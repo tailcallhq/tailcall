@@ -80,8 +80,22 @@ mod tests {
     }
 
     #[test]
+    fn test_rest_try_from_directive_with_invalid_method() {
+        let directive = Directive {
+            name: pos(Name::new("rest")),
+            arguments: vec![(
+                pos(Name::new("method")),
+                pos(Value::String("invalid".to_string())),
+            )],
+        };
+
+        let rest = Rest::try_from(&directive);
+
+        assert!(rest.is_err());
+    }
+
+    #[test]
     fn test_rest_try_from_directive() {
-        // let directive = Directive { name: pos(Name::new("rest")) };
         let query: [(Name, Value); 3] = [
             (Name::new("b"), Value::Variable(Name::new("b"))),
             (Name::new("c"), Value::Variable(Name::new("c"))),
