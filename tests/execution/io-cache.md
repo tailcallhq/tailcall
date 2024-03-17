@@ -1,4 +1,4 @@
-# Call operator with GraphQL datasource
+# Call operator with GraphQL data source
 
 ```graphql @server
 schema
@@ -29,7 +29,6 @@ type Post {
   body: String!
   user: User @call(query: "user", args: {id: "{{value.userId}}"})
 }
-```
 
 ```yml @mock
 - request:
