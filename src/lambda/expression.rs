@@ -109,6 +109,10 @@ impl Expression {
     pub fn and_then(self, next: Self) -> Self {
         Expression::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
     }
+
+    pub fn with_args(self, args: Expression) -> Self {
+        Expression::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+    }
 }
 
 impl Eval for Expression {

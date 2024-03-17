@@ -15,7 +15,7 @@ async fn eval(expr: &Expression) -> anyhow::Result<Value> {
 }
 
 #[tokio::test]
-async fn test_no_key() {
+async fn test_and_then() {
     let abcde = DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap();
     let expr = Expression::Literal(abcde)
         .and_then(Expression::Literal(DynamicValue::Mustache(
@@ -30,6 +30,23 @@ async fn test_no_key() {
         .and_then(Expression::Literal(DynamicValue::Mustache(
             Mustache::parse("{{args.d}}").unwrap(),
         )));
+
+    let actual = eval(&expr).await.unwrap();
+    let expected = Value::from_json(json!("e")).unwrap();
+
+    assert_eq!(actual, expected);
+}
+
+#[tokio::test]
+async fn test_with_args() {
+    let args = Expression::Literal(
+        DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap(),
+    );
+
+    let expr = Expression::Literal(DynamicValue::Mustache(
+        Mustache::parse("{{args.a.b.c.d}}").unwrap(),
+    ))
+    .with_args(args);
 
     let actual = eval(&expr).await.unwrap();
     let expected = Value::from_json(json!("e")).unwrap();
