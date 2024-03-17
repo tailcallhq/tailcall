@@ -126,17 +126,15 @@ mod tests {
         assert!(actual.is_err());
     }
 
-    // FIXME: this test is failing
-    // #[tokio::test]
-    // async fn test_with_multi_get_failure() {
-    //     let cache = AsyncCache::<i32, i32>::new();
-    //     let _ = cache
-    //         .get_or_eval(1, || Box::pin(async { Err(anyhow::anyhow!("error"))
-    // }))         .await;
+    #[tokio::test]
+    async fn test_with_multi_get_failure() {
+        let cache = AsyncCache::<i32, i32>::new();
+        let _ = cache
+            .get_or_eval(1, || Box::pin(async { Err(anyhow::anyhow!("error")) }))
+            .await;
 
-    //     let actual = cache.get_or_eval(1, || Box::pin(async { Ok(2)
-    // })).await;
+        let actual = cache.get_or_eval(1, || Box::pin(async { Ok(2) })).await;
 
-    //     assert!(actual.is_err());
-    // }
+        assert!(actual.is_err());
+    }
 }
