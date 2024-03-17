@@ -108,9 +108,7 @@ mod tests {
             arguments: vec![
                 (
                     pos(Name::new("method")),
-                    pos(Value::Enum(Name::new(
-                        method.clone().to_hyper().as_str().to_string(),
-                    ))),
+                    pos(Value::Enum(Name::new(method.clone().to_hyper().as_str()))),
                 ),
                 (pos(Name::new("path")), pos(Value::String(path.clone()))),
                 (
@@ -146,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_rest_try_from_directive() {
-        for method in vec![
+        for method in [
             Method::CONNECT,
             Method::DELETE,
             Method::GET,
