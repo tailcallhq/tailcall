@@ -1,4 +1,4 @@
-# Call operator with graphQL datasource
+# Call operator with GraphQL data source
 
 ```graphql @server
 schema
@@ -9,17 +9,11 @@ schema
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
 }
 
 type User {
   id: Int!
   name: String!
-  username: String!
-  email: String!
-  phone: String
-  website: String
 }
 
 type Post {
@@ -27,7 +21,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @call(query: "user", args: {id: "{{value.userId}}"})
+  user: User @http(path: "/users/{{value.userId}}")
 }
 ```
 
@@ -51,28 +45,26 @@ type Post {
       - id: 4
         title: d
         userId: 2
+      - id: 5
+        title: e
+        userId: 2
+      - id: 6
+        title: f
+        userId: 2
 - request:
-    method: POST
-    url: http://upstream/graphql
-    body: '{ "query": "query { user(id: 1) { name } }" }'
+    url: http://jsonplaceholder.typicode.com/users/1
   expected_hits: 1
   response:
     status: 200
     body:
-      data:
-        user:
-          name: Leanne Graham
+      name: Leanne Graham
 - request:
-    method: POST
-    url: http://upstream/graphql
-    body: '{ "query": "query { user(id: 2) { name } }" }'
+    url: http://jsonplaceholder.typicode.com/users/2
   expected_hits: 1
   response:
     status: 200
     body:
-      data:
-        user:
-          name: Ervin Howell
+      name: Ervin Howell
 ```
 
 ```yml @assert
