@@ -178,6 +178,7 @@ directive @http(
   `POST`, `PUT`, `DELETE` etc. @default `GET`.
   """
   method: Method
+  onRequest: String
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
@@ -711,6 +712,7 @@ input Http {
   `POST`, `PUT`, `DELETE` etc. @default `GET`.
   """
   method: Method
+  onRequest: String
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """

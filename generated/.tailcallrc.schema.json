@@ -1417,6 +1417,12 @@
             }
           ]
         },
+        "onRequest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "output": {
           "description": "Schema of the output of the API call. It is automatically inferred in most cases.",
           "anyOf": [

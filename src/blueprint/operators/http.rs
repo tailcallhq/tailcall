@@ -1,9 +1,14 @@
+use std::str::FromStr;
+
+use hyper::header::HeaderName;
+
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
 use crate::config::Field;
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, IO};
+use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 use crate::{config, helpers};
@@ -32,7 +37,28 @@ pub fn compile_http(
             "No base URL defined".to_string(),
         ))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
-        .and_then(|(base_url, headers)| {
+        .and_then(|(base_url, mut headers)| {
+            // insert the global onrequest handler name if defined in @upstream directive
+            if let Some(global_on_request) = &config_module.upstream.global_on_request {
+                headers.insert(
+                    headers.len(),
+                    (
+                        HeaderName::from_str("globalOnRequest").unwrap(),
+                        Mustache::parse(global_on_request).unwrap(),
+                    ),
+                );
+            }
+
+            // insert the onrequest handler name if defined in @http directive
+            if let Some(on_request) = &http.on_request {
+                headers.insert(
+                    headers.len(),
+                    (
+                        HeaderName::from_str("onRequest").unwrap(),
+                        Mustache::parse(on_request).unwrap(),
+                    ),
+                );
+            }
             let mut base_url = base_url.trim_end_matches('/').to_owned();
             base_url.push_str(http.path.clone().as_str());
 
