@@ -387,6 +387,7 @@ directive @upstream(
   the connection is idle.
   """
   keepAliveWhileIdle: Boolean
+  onRequest: String
   """
   The time in seconds that the connection pool will wait before closing idle connections.
   """

@@ -2060,6 +2060,12 @@
             "null"
           ]
         },
+        "onRequest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "poolIdleTimeout": {
           "description": "The time in seconds that the connection pool will wait before closing idle connections.",
           "type": [
