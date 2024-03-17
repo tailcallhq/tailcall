@@ -2,7 +2,7 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
@@ -12,6 +12,7 @@ use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContext
 use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
+use crate::lambda::object::Object;
 use crate::serde_value_ext::ValueExt;
 
 #[derive(Clone, Debug)]
@@ -27,6 +28,7 @@ pub enum Expression {
     List(List),
     Math(Math),
     Concurrency(Concurrent, Box<Expression>),
+    Object(Object),
 }
 
 impl Display for Expression {
@@ -43,6 +45,7 @@ impl Display for Expression {
             Expression::List(list) => write!(f, "List({list})"),
             Expression::Math(math) => write!(f, "Math({math})"),
             Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
+            Expression::Object(object) => write!(f, "Object({})", object),
         }
     }
 }
@@ -112,7 +115,7 @@ impl Expression {
 }
 
 impl Eval for Expression {
-    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
+    #[tracing::instrument(skip_all, fields(otel.name = % self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
@@ -157,6 +160,16 @@ impl Eval for Expression {
                 Expression::Logic(logic) => logic.eval(ctx, conc).await,
                 Expression::List(list) => list.eval(ctx, conc).await,
                 Expression::Math(math) => math.eval(ctx, conc).await,
+                Expression::Object(object) => {
+                    match object {
+                        Object::Path(path) => Ok(ctx
+                            .value()
+                            .ok_or(anyhow!("Expected a value for path: {}", object))?
+                            .get_path(path)
+                            .cloned()
+                            .ok_or(anyhow!("No such value exists"))?),
+                    }
+                }
             }
         })
     }

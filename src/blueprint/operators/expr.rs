@@ -54,6 +54,9 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     match expr {
         // Io Expr
         ExprBody::Http(http) => compile_http(config_module, field, &http),
+        ExprBody::Path(path) => {
+            Valid::succeed(Expression::Object(crate::lambda::Object::Path(path)))
+        }
         ExprBody::Grpc(grpc) => {
             let grpc = CompileGrpc {
                 config_module,

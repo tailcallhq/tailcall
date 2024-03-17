@@ -9,6 +9,7 @@ mod list;
 mod logic;
 mod math;
 mod modify;
+mod object;
 mod relation;
 mod resolver_context_like;
 
@@ -22,5 +23,6 @@ pub use io::*;
 pub use list::*;
 pub use logic::*;
 pub use math::*;
+pub use object::*;
 pub use relation::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};

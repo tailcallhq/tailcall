@@ -86,6 +86,9 @@ pub enum ExprBody {
     Max(Vec<ExprBody>),
     #[serde(rename = "min")]
     Min(Vec<ExprBody>),
+    #[serde(rename = "path")]
+    Path(Vec<String>),
+
     #[serde(rename = "pathEq")]
     PathEq(Box<ExprBody>, Vec<String>, Box<ExprBody>),
     #[serde(rename = "propEq")]
@@ -130,6 +133,7 @@ impl ExprBody {
             ExprBody::GraphQL(_) => true,
             ExprBody::Call(_) => true,
             ExprBody::Const(_) => false,
+            ExprBody::Path(_) => false,
             ExprBody::If(If { cond, on_true, on_false }) => {
                 cond.has_io() || on_true.has_io() || on_false.has_io()
             }
