@@ -133,4 +133,35 @@ mod tests {
 
         assert!(actual.is_err());
     }
+
+    #[tokio::test]
+    async fn test_concurrent_access() {
+        let cache = Arc::new(AsyncCache::<i32, i32, String>::new());
+        let key = 1;
+        let value = 42;
+        // Simulate concurrent access by spawning multiple tasks.
+        let handles: Vec<_> = (0..100)
+            .map(|_| {
+                let cache = cache.clone();
+                tokio::spawn(async move {
+                    cache
+                        .get_or_eval(key, || Box::pin(async { Ok(value) }))
+                        .await
+                })
+            })
+            .collect();
+
+        // Await all spawned tasks and collect their results.
+        let results: Vec<_> = futures_util::future::join_all(handles)
+            .await
+            .into_iter()
+            .map(|res| res.unwrap().unwrap()) // Unwrap the Result from the join, and the Result from get_or_eval
+            .collect();
+
+        // Check that all tasks received the correct value.
+        assert!(results.iter().all(|&v| v == value));
+
+        // Optionally, verify that the value was computed only once.
+        // This might require additional instrumentation in the cache or the computation function.
+    }
 }
