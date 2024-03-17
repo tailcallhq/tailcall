@@ -33,6 +33,7 @@ pub struct Proxy {
 /// upstream server connection. This includes settings like connection timeouts,
 /// keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
+    /// onRequest gives the ability to specify the global onRequest interception handler.
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
     pub global_on_request: Option<String>,
 
