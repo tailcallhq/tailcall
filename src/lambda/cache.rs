@@ -37,17 +37,17 @@ impl Cache {
 impl Eval for Cache {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             if let Expression::IO(io) = self.expr.deref() {
-                let key = io.cache_key(ctx);
+                let key = io.cache_key(&ctx);
 
                 if let Some(val) = ctx.req_ctx.runtime.cache.get(&key).await? {
                     Ok(val)
                 } else {
-                    let val = self.expr.eval(ctx, conc).await?;
+                    let val = self.expr.eval(ctx.clone(), conc).await?;
                     ctx.req_ctx
                         .runtime
                         .cache

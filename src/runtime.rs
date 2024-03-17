@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
+use crate::schema_extension::SchemaExtension;
 use crate::{Cache, EnvIO, FileIO, HttpIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
@@ -9,11 +10,28 @@ use crate::{Cache, EnvIO, FileIO, HttpIO};
 /// over the codebase.
 #[derive(Clone)]
 pub struct TargetRuntime {
+    /// HTTP client for making standard HTTP requests.
     pub http: Arc<dyn HttpIO>,
+    /// HTTP client optimized for HTTP/2 requests.
     pub http2_only: Arc<dyn HttpIO>,
+    /// Interface for accessing environment variables specific to the target
+    /// environment.
     pub env: Arc<dyn EnvIO>,
+    /// Interface for file operations, tailored to the target environment's
+    /// capabilities.
     pub file: Arc<dyn FileIO>,
+    /// Cache for storing and retrieving entity data, improving performance and
+    /// reducing external calls.
     pub cache: Arc<dyn Cache<Key = u64, Value = ConstValue>>,
+    /// A list of extensions that can be used to extend the runtime's
+    /// functionality or integrate additional features.
+    pub extensions: Arc<Vec<SchemaExtension>>,
+}
+
+impl TargetRuntime {
+    pub fn add_extensions(&mut self, extensions: Vec<SchemaExtension>) {
+        self.extensions = Arc::new(extensions);
+    }
 }
 
 #[cfg(test)]
@@ -90,7 +108,12 @@ pub mod test {
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
-            Response::from_reqwest(response?.error_for_status()?).await
+            Response::from_reqwest(
+                response?
+                    .error_for_status()
+                    .map_err(|err| err.without_url())?,
+            )
+            .await
         }
     }
 
@@ -165,6 +188,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: Arc::new(vec![]),
         }
     }
 }

@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::valid::ValidationError;
 
-#[derive(Debug, Error, Setters)]
+#[derive(Debug, Error, Setters, PartialEq, Clone)]
 pub struct CLIError {
     is_root: bool,
     #[setters(skip)]
@@ -153,6 +153,31 @@ impl From<rustls::Error> for CLIError {
         let message = error.to_string();
 
         cli_error.description(message)
+    }
+}
+
+impl From<anyhow::Error> for CLIError {
+    fn from(error: anyhow::Error) -> Self {
+        // Convert other errors to CLIError
+        let cli_error = match error.downcast::<CLIError>() {
+            Ok(cli_error) => cli_error,
+            Err(error) => {
+                // Convert other errors to CLIError
+                let cli_error = match error.downcast::<ValidationError<String>>() {
+                    Ok(validation_error) => CLIError::from(validation_error),
+                    Err(error) => {
+                        let sources = error
+                            .source()
+                            .map(|error| vec![CLIError::new(error.to_string().as_str())])
+                            .unwrap_or_default();
+
+                        CLIError::new(&error.to_string()).caused_by(sources)
+                    }
+                };
+                cli_error
+            }
+        };
+        cli_error
     }
 }
 
@@ -352,5 +377,41 @@ mod tests {
             .strip_margin();
 
         assert_eq!(error.to_string(), expected);
+    }
+
+    #[test]
+    fn test_cli_error_identity() {
+        let cli_error = CLIError::new("Server could not be started")
+            .description("The port is already in use".to_string())
+            .trace(vec!["@server".into(), "port".into()]);
+        let anyhow_error: anyhow::Error = cli_error.clone().into();
+
+        let actual = CLIError::from(anyhow_error);
+        let expected = cli_error;
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_validation_error_identity() {
+        let validation_error = ValidationError::from(
+            Cause::new("Test Error".to_string()).trace(vec!["Query".to_string()]),
+        );
+        let anyhow_error: anyhow::Error = validation_error.clone().into();
+
+        let actual = CLIError::from(anyhow_error);
+        let expected = CLIError::from(validation_error);
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_generic_error() {
+        let anyhow_error = anyhow::anyhow!("Some error msg");
+
+        let actual: CLIError = CLIError::from(anyhow_error);
+        let expected = CLIError::new("Some error msg");
+
+        assert_eq!(actual, expected);
     }
 }

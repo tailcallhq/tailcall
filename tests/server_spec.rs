@@ -74,7 +74,12 @@ pub mod test {
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
-            Response::from_reqwest(response?.error_for_status()?).await
+            Response::from_reqwest(
+                response?
+                    .error_for_status()
+                    .map_err(|err| err.without_url())?,
+            )
+            .await
         }
     }
 
@@ -149,6 +154,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: Arc::new(vec![]),
         }
     }
 }
@@ -177,6 +183,7 @@ mod server_spec {
 
         // required since our cert is self signed
         let client = Client::builder()
+            .use_rustls_tls()
             .danger_accept_invalid_certs(true)
             .build()
             .unwrap();

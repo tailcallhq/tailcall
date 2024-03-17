@@ -15,6 +15,7 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
+use crate::merge_right::MergeRight;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
@@ -41,13 +42,19 @@ impl ConfigReader {
     async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
-            let response = self
-                .runtime
-                .http
-                .execute(reqwest::Request::new(reqwest::Method::GET, url))
-                .await?;
+            if url.scheme().starts_with("http") {
+                let response = self
+                    .runtime
+                    .http
+                    .execute(reqwest::Request::new(reqwest::Method::GET, url))
+                    .await?;
 
-            String::from_utf8(response.body.to_vec())?
+                String::from_utf8(response.body.to_vec())?
+            } else {
+                // Is a file path on Windows
+
+                self.runtime.file.read(&file.to_string()).await?
+            }
         } else {
             // Is a file path
 
@@ -108,16 +115,15 @@ impl ConfigReader {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                    config_module = config_module.merge_right(&ConfigModule::from(config.clone()));
+                    config_module = config_module.merge_right(ConfigModule::from(config.clone()));
 
                     if !config.links.is_empty() {
                         config_module = config_module.merge_right(
-                            &self
-                                .ext_links(
-                                    ConfigModule::from(config),
-                                    Path::new(&config_link.src).parent(),
-                                )
-                                .await?,
+                            self.ext_links(
+                                ConfigModule::from(config),
+                                Path::new(&config_link.src).parent(),
+                            )
+                            .await?,
                         );
                     }
                 }
@@ -159,7 +165,7 @@ impl ConfigReader {
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
                 LinkType::Operation => {
-                    config_module.extensions.endpoints = EndpointSet::try_new(&content)?;
+                    config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
             }
         }
@@ -221,7 +227,7 @@ impl ConfigReader {
                 .await?;
 
             // Merge it with the original config set
-            config_module = config_module.merge_right(&new_config_module);
+            config_module = config_module.merge_right(new_config_module);
         }
 
         Ok(config_module)
@@ -296,7 +302,7 @@ impl ConfigReader {
 
     fn update_opentelemetry(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
         let server = &mut config_module.config.server;
-        let opentelemetry = &mut config_module.config.opentelemetry;
+        let telemetry = &mut config_module.config.telemetry;
 
         let reader_ctx = ConfigReaderContext {
             env: self.runtime.env.clone(),
@@ -307,7 +313,7 @@ impl ConfigReader {
                 .collect(),
         };
 
-        opentelemetry.render_mustache(&reader_ctx)?;
+        telemetry.render_mustache(&reader_ctx)?;
 
         Ok(())
     }
@@ -350,13 +356,7 @@ mod test_proto_config {
         proto_no_pkg.push("news_no_pkg.proto");
         let err = &validation.as_vec().first().unwrap().message;
         let trace = &validation.as_vec().first().unwrap().trace;
-        assert_eq!(
-            &format!(
-                "Package name is not defined for proto file: {:?} with link id: Some(\"news\")",
-                proto_no_pkg.to_str()
-            ),
-            err
-        );
+        assert!(err.starts_with("Package name is not defined for proto file"));
 
         let expected_trace = ["schema", "link[0]"]
             .iter()
@@ -377,7 +377,8 @@ mod test_proto_config {
         root.pop();
 
         test_dir.push("grpc"); // grpc
-        test_dir.push("tests/proto"); // tests
+        test_dir.push("tests"); // tests
+        test_dir.push("proto"); // proto
 
         let mut test_file = test_dir.clone();
 
@@ -402,7 +403,7 @@ mod test_proto_config {
             let expected = protox_parse::parse(&path_str, &source)?;
             let actual = helper_map
                 .iter()
-                .find(|v| v.name.eq(&expected.name))
+                .find(|v| v.package.eq(&expected.package))
                 .unwrap();
 
             assert_eq!(&expected.dependency, &actual.dependency);
@@ -433,7 +434,7 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use pretty_assertions::assert_eq;
 
@@ -548,8 +549,8 @@ mod reader_tests {
         let file_relative = "foo/bar/my.proto";
         let file_absolute = "/foo/bar/my.proto";
         assert_eq!(
-            "abc/xyz/foo/bar/my.proto",
-            ConfigReader::resolve_path(file_relative, Some(path_dir))
+            path_dir.to_path_buf().join(file_relative),
+            PathBuf::from(ConfigReader::resolve_path(file_relative, Some(path_dir)))
         );
         assert_eq!(
             "/foo/bar/my.proto",

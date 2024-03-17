@@ -1,0 +1,21 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "set-cookie": "user=1; user=2"
+  },
+  "body": {
+    "data": {
+      "u1": {
+        "name": "foo"
+      },
+      "u2": {
+        "name": "bar"
+      }
+    }
+  }
+}

@@ -1,17 +1,20 @@
 use std::collections::BTreeMap;
 
-use async_graphql::parser::types::{DocumentOperations, ExecutableDocument};
-use async_graphql::Variables;
+use async_graphql::parser::types::{Directive, DocumentOperations, ExecutableDocument};
+use async_graphql::{Positioned, Variables};
+use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
 
 use super::directive::Rest;
 use super::partial_request::PartialRequest;
-use super::path::Path;
+use super::path::{Path, Segment};
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
 use super::Request;
+use crate::async_graphql_hyper::GraphQLRequest;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
+use crate::rest::typed_variables::{UrlParamType, N};
 
 /// An executable Http Endpoint created from a GraphQL query
 #[derive(Debug, Setters, Clone)]
@@ -22,7 +25,7 @@ pub struct Endpoint {
     // Can use persisted queries for better performance
     query_params: QueryParams,
     body: Option<String>,
-    doc: ExecutableDocument,
+    pub doc: ExecutableDocument,
 }
 
 /// Creates a Rest instance from @rest directive
@@ -74,6 +77,59 @@ impl Endpoint {
         Ok(endpoints)
     }
 
+    pub fn into_request(self) -> GraphQLRequest {
+        let variables = Self::get_default_variables(&self);
+        let mut req = async_graphql::Request::new("").variables(variables);
+        req.set_parsed_query(Self::remove_rest_directives(self.doc));
+        GraphQLRequest(req)
+    }
+
+    fn get_default_variables(endpoint: &Endpoint) -> Variables {
+        let mut variables = Variables::default();
+        for segment in endpoint.path.segments.iter() {
+            match segment {
+                Segment::Literal(_) => {}
+                Segment::Param(p) => {
+                    if !p.nullable() {
+                        let default_value = match p.ty() {
+                            UrlParamType::String => ConstValue::String(String::new()),
+                            UrlParamType::Number(n) => match n {
+                                N::Int => {
+                                    ConstValue::Number(async_graphql_value::Number::from(0u8))
+                                }
+                                N::Float => ConstValue::Number(
+                                    async_graphql_value::Number::from_f64(0.0f64).unwrap(),
+                                ),
+                            },
+                            UrlParamType::Boolean => ConstValue::Boolean(false),
+                        };
+                        variables.insert(Name::new(p.name()), default_value);
+                    }
+                }
+            }
+        }
+        variables
+    }
+
+    fn remove_rest_directives(mut doc: ExecutableDocument) -> ExecutableDocument {
+        match &mut doc.operations {
+            DocumentOperations::Single(s) => {
+                Self::drop_rest_directive(&mut s.node.directives);
+            }
+            DocumentOperations::Multiple(m) => {
+                for s in m.values_mut() {
+                    Self::drop_rest_directive(&mut s.node.directives);
+                }
+            }
+        }
+        doc
+    }
+
+    fn drop_rest_directive(directives: &mut Vec<Positioned<Directive>>) {
+        let name = Name::new("rest");
+        directives.retain(|v| v.node.name.node != name)
+    }
+
     pub fn matches<'a>(&'a self, request: &Request) -> Option<PartialRequest<'a>> {
         let query_params = request
             .uri()
@@ -98,7 +154,12 @@ impl Endpoint {
         variables = merge_variables(variables, path);
         variables = merge_variables(variables, query);
 
-        Some(PartialRequest { body: self.body.as_ref(), doc: &self.doc, variables })
+        Some(PartialRequest {
+            body: self.body.as_ref(),
+            doc: &self.doc,
+            variables,
+            path: &self.path,
+        })
     }
 }
 
@@ -133,7 +194,7 @@ mod tests {
           }
         "#;
 
-    const MULTIPLE_TEST_QUERY: &str = r#"        
+    const MULTIPLE_TEST_QUERY: &str = r#"
         query q1 ($a: Int)
           @rest(method: POST, path: "/foo/$a") {
             value
@@ -146,11 +207,6 @@ mod tests {
           }
         "#;
 
-    impl Path {
-        fn new(segments: Vec<Segment>) -> Self {
-            Self { segments }
-        }
-    }
     fn test_directive() -> Directive {
         async_graphql::parser::parse_query(TEST_QUERY)
             .unwrap()
@@ -187,11 +243,8 @@ mod tests {
         let endpoint = &Endpoint::try_new(TEST_QUERY).unwrap()[0];
         assert_eq!(endpoint.method, Method::POST);
         assert_eq!(
-            endpoint.path,
-            Path::new(vec![
-                Segment::lit("foo"),
-                Segment::param(TypedVariable::int("a")),
-            ])
+            endpoint.path.segments,
+            vec![Segment::lit("foo"), Segment::param(TypedVariable::int("a")),]
         );
         assert_eq!(
             endpoint.query_params,
@@ -209,7 +262,16 @@ mod tests {
         let endpoints = Endpoint::try_new(MULTIPLE_TEST_QUERY).unwrap();
         assert_eq!(endpoints.len(), 2);
     }
+    #[test]
+    fn test_remove_rest_directives() {
+        let endpoint = Endpoint::try_new(TEST_QUERY).unwrap()[0].clone();
+        let doc = Endpoint::remove_rest_directives(endpoint.doc);
+        assert!(!format!("{:?}", doc).contains("rest"));
 
+        let endpoint = Endpoint::try_new(MULTIPLE_TEST_QUERY).unwrap()[0].clone();
+        let doc = Endpoint::remove_rest_directives(endpoint.doc);
+        assert!(!format!("{:?}", doc).contains("rest"));
+    }
     mod matches {
         use std::str::FromStr;
 

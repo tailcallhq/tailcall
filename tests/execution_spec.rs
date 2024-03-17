@@ -27,6 +27,7 @@ use tailcall::cli::metrics::init_metrics;
 use tailcall::config::reader::ConfigReader;
 use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext, Method, Response};
+use tailcall::merge_right::MergeRight;
 use tailcall::print_schema::print_schema;
 use tailcall::runtime::TargetRuntime;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
@@ -109,7 +110,12 @@ pub mod test {
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
-            Response::from_reqwest(response?.error_for_status()?).await
+            Response::from_reqwest(
+                response?
+                    .error_for_status()
+                    .map_err(|err| err.without_url())?,
+            )
+            .await
         }
     }
 
@@ -184,6 +190,7 @@ pub mod test {
             env: Arc::new(env),
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: Arc::new(vec![]),
         }
     }
 }
@@ -564,6 +571,11 @@ impl ExecutionSpec {
                         ));
                     }
                 }
+                Node::Definition(d) => {
+                    if let Some(title) = &d.title {
+                        tracing::info!("Comment found in: {:?} with title: {}", path, title);
+                    }
+                }
                 _ => return Err(anyhow!("Unexpected node in {:?}: {:#?}", path, node)),
             }
         }
@@ -614,16 +626,21 @@ impl ExecutionSpec {
             file: Arc::new(MockFileSystem::new(self.clone())),
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
+            extensions: Arc::new(vec![]),
         };
 
         // TODO: move inside tailcall core if possible
         init_metrics(&runtime).unwrap();
 
-        Arc::new(AppContext::new(
-            blueprint,
-            runtime,
-            config.extensions.endpoints.clone(),
-        ))
+        let endpoints = config
+            .extensions
+            .endpoint_set
+            .clone()
+            .into_checked(&blueprint, runtime.clone())
+            .await
+            .unwrap();
+
+        Arc::new(AppContext::new(blueprint, runtime, endpoints))
     }
 }
 
@@ -634,7 +651,7 @@ struct ExecutionMock {
 }
 
 impl ExecutionMock {
-    fn assert_hits(&self) {
+    fn assert_hits(&self, path: impl AsRef<Path>) {
         let url = &self.mock.request.0.url;
         let is_batch_graphql = url.path().starts_with("/graphql")
             && self
@@ -662,7 +679,8 @@ impl ExecutionMock {
         assert_eq!(
             expected_hits,
             actual_hits,
-            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times",
+            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times for file: {:?}",
+            path.as_ref()
         );
     }
 }
@@ -699,9 +717,9 @@ impl MockHttpClient {
         MockHttpClient { mocks, spec_path }
     }
 
-    fn assert_hits(&self) {
+    fn assert_hits(&self, path: impl AsRef<Path>) {
         for mock in &self.mocks {
-            mock.assert_hits();
+            mock.assert_hits(path.as_ref());
         }
     }
 }
@@ -844,11 +862,12 @@ impl FileIO for MockFileSystem {
     }
 
     async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-        let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/execution/");
-        let path = path
-            .strip_prefix(&base.to_string_lossy().to_string())
-            .unwrap_or(path);
-
+        let base = PathBuf::from(path);
+        let path = base
+            .file_name()
+            .context("Invalid file path")?
+            .to_str()
+            .context("Invalid OsString")?;
         match self.spec.files.get(path) {
             Some(x) => Ok(x.to_owned()),
             None => Err(anyhow!("No such file or directory (os error 2)")),
@@ -916,13 +935,16 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             )
         });
 
-        let config = Config::default().merge_right(&config);
+        let config = Config::default().merge_right(config);
 
         let identity = match source {
             Source::GraphQL => config.to_sdl(),
             Source::Json => config.to_json(true).expect("Failed to convert config to JSON"),
             Source::Yml => config.to_yaml().expect("Failed to convert config to YML"),
         };
+        
+        // \r is added automatically in windows, it's safe to replace it with \n
+        let content = content.replace("\r\n", "\n");
         
         pretty_assertions::assert_eq!(
             content.as_ref(),
@@ -938,7 +960,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
     let merged = server
         .iter()
-        .fold(Config::default(), |acc, c| acc.merge_right(c))
+        .fold(Config::default(), |acc, c| acc.merge_right(c.clone()))
         .to_sdl();
 
     let snapshot_name = format!("{}_merged", spec.safe_name);
@@ -1033,7 +1055,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             }
         }
 
-        mock_http_client.assert_hits();
+        mock_http_client.assert_hits(&spec.path);
     }
 
     tracing::info!("{} ... ok", spec.path.display());

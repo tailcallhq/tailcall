@@ -58,5 +58,6 @@ pub fn init_runtime() -> TargetRuntime {
         file: init_file(),
         env: init_env(),
         cache: init_cache(),
+        extensions: Arc::new(vec![]),
     }
 }

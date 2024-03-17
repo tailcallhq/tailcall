@@ -8,7 +8,7 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::{Blueprint, Upstream};
+use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
@@ -17,11 +17,12 @@ use crate::print_schema;
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
+const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
     let cli = Cli::parse();
     update_checker::check_for_update().await;
-    let runtime = cli::runtime::init(&Upstream::default(), None);
+    let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
@@ -42,6 +43,12 @@ pub async fn run() -> Result<()> {
                 Ok(blueprint) => {
                     tracing::info!("Config {} ... ok", file_paths.join(", "));
                     Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config);
+                    // Check the endpoints' schema
+                    let _ = config_module
+                        .extensions
+                        .endpoint_set
+                        .into_checked(&blueprint, runtime)
+                        .await?;
                     if schema {
                         display_schema(&blueprint);
                     }
@@ -73,8 +80,10 @@ pub async fn init(folder_path: &str) -> Result<()> {
     }
 
     let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
+    let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
 
     let file_path = Path::new(folder_path).join(FILE_NAME);
+    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
     let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
 
     let tailcall_exists = fs::metadata(&file_path).is_ok();
@@ -87,9 +96,11 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
         if confirm {
             fs::write(&file_path, tailcallrc.as_bytes())?;
+            fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
         }
     } else {
         fs::write(&file_path, tailcallrc.as_bytes())?;
+        fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
     }
 
     let yml_exists = fs::metadata(&yml_file_path).is_ok();

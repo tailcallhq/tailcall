@@ -64,6 +64,7 @@ static OBJECT_WHITELIST: &[&str] = &[
     "OtlpExporter",
     "PrometheusFormat",
     "PrometheusExporter",
+    "Apollo",
 ];
 
 #[derive(Clone, Copy)]

@@ -1,0 +1,22 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "x-experimental": "experimental-header",
+    "x-tailcall": "tailcall-header"
+  },
+  "body": {
+    "data": {
+      "users": [
+        {
+          "id": 1,
+          "name": "Leanne Graham"
+        }
+      ]
+    }
+  }
+}

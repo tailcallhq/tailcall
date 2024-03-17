@@ -52,7 +52,7 @@ type User {
     method: POST
     url: http://upstream/graphql
     body: '{ "query": "query { user(id: 1) { name } }" }'
-  expected_hits: 2
+  expected_hits: 1
   response:
     status: 200
     body:
@@ -63,7 +63,7 @@ type User {
     method: POST
     url: http://upstream/graphql
     body: '{ "query": "query { user(id: 2) { name } }" }'
-  expected_hits: 2
+  expected_hits: 1
   response:
     status: 200
     body:
