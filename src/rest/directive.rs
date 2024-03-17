@@ -59,9 +59,10 @@ impl TryFrom<&Directive> for Rest {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use async_graphql::{Name, Pos, Positioned};
     use indexmap::IndexMap;
+
+    use super::*;
 
     // Helper function to create Positioned<Value> easily
     fn pos<A>(a: A) -> Positioned<A> {
@@ -93,19 +94,19 @@ mod tests {
             arguments: vec![
                 (
                     pos(Name::new("method")),
-                    pos(Value::Enum(Name::new("POST")).into()),
+                    pos(Value::Enum(Name::new("POST"))),
                 ),
                 (
                     pos(Name::new("path")),
-                    pos(Value::String(path.clone()).into()),
+                    pos(Value::String(path.clone())),
                 ),
                 (
                     pos(Name::new("query")),
-                    pos(Value::Object(IndexMap::from(query.clone()).into()).into()),
+                    pos(Value::Object(IndexMap::from(query.clone()))),
                 ),
                 (
                     pos(Name::new("body")),
-                    pos(Value::Variable(Name::new(body)).into()),
+                    pos(Value::Variable(Name::new(body))),
                 ),
             ],
         };
