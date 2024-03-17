@@ -12,16 +12,11 @@ type Post {
 
 type Query {
   posts: [Post]
-  user(id: Int!): User
 }
 
 type User {
-  email: String!
   id: Int!
   name: String!
-  phone: String
-  username: String!
-  website: String
 }
 
 schema {
