@@ -130,6 +130,7 @@ impl NativeHttp {
 impl HttpIO for NativeHttp {
     #[tracing::instrument(
         skip_all,
+        err,
         fields(
             otel.name = "upstream_request",
             otel.kind = ?SpanKind::Client,
