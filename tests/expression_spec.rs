@@ -19,16 +19,16 @@ async fn test_no_key() {
     let abcde = DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap();
     let expr = Expression::Literal(abcde)
         .and_then(Expression::Literal(DynamicValue::Mustache(
-            Mustache::parse("{{value.a}}").unwrap(),
+            Mustache::parse("{{args.a}}").unwrap(),
         )))
         .and_then(Expression::Literal(DynamicValue::Mustache(
-            Mustache::parse("{{value.b}}").unwrap(),
+            Mustache::parse("{{args.b}}").unwrap(),
         )))
         .and_then(Expression::Literal(DynamicValue::Mustache(
-            Mustache::parse("{{value.c}}").unwrap(),
+            Mustache::parse("{{args.c}}").unwrap(),
         )))
         .and_then(Expression::Literal(DynamicValue::Mustache(
-            Mustache::parse("{{value.d}}").unwrap(),
+            Mustache::parse("{{args.d}}").unwrap(),
         )));
 
     let actual = eval(&expr).await.unwrap();
