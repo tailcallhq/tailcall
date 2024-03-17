@@ -94,8 +94,7 @@ mod tests {
         assert!(rest.is_err());
     }
 
-    #[test]
-    fn test_rest_try_from_directive() {
+    fn test_rest_try_from_directive_from_method(method: Method) {
         let query: [(Name, Value); 3] = [
             (Name::new("b"), Value::Variable(Name::new("b"))),
             (Name::new("c"), Value::Variable(Name::new("c"))),
@@ -103,12 +102,15 @@ mod tests {
         ];
         let path = "/foo/$a".to_string();
         let body = "v".to_string();
+
         let directive = Directive {
             name: pos(Name::new("rest")),
             arguments: vec![
                 (
                     pos(Name::new("method")),
-                    pos(Value::Enum(Name::new("POST"))),
+                    pos(Value::Enum(Name::new(
+                        method.clone().to_hyper().as_str().to_string(),
+                    ))),
                 ),
                 (pos(Name::new("path")), pos(Value::String(path.clone()))),
                 (
@@ -124,7 +126,7 @@ mod tests {
 
         let rest = Rest::try_from(&directive).unwrap();
         assert_eq!(rest.path, path);
-        assert_eq!(rest.method.unwrap(), Method::POST);
+        assert_eq!(rest.method.unwrap(), method);
         assert!(!rest.query.is_empty());
         assert_eq!(
             rest.query,
@@ -140,5 +142,22 @@ mod tests {
                 .collect()
         );
         assert_eq!(rest.body.unwrap(), "v");
+    }
+
+    #[test]
+    fn test_rest_try_from_directive() {
+        for method in vec![
+            Method::CONNECT,
+            Method::DELETE,
+            Method::GET,
+            Method::HEAD,
+            Method::OPTIONS,
+            Method::PATCH,
+            Method::POST,
+            Method::PUT,
+            Method::TRACE,
+        ] {
+            test_rest_try_from_directive_from_method(method);
+        }
     }
 }
