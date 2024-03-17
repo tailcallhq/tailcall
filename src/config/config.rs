@@ -544,7 +544,7 @@ impl MergeRight for Union {
 /// REST API. In this scenario, the GraphQL server will make a GET request to
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
-    #[serde(rename = "onRequest")]
+    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
     pub on_request: Option<String>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]

@@ -33,7 +33,7 @@ pub struct Proxy {
 /// upstream server connection. This includes settings like connection timeouts,
 /// keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
-    #[serde(rename = "onRequest")]
+    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
     pub global_on_request: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
