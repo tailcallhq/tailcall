@@ -96,10 +96,7 @@ mod tests {
                     pos(Name::new("method")),
                     pos(Value::Enum(Name::new("POST"))),
                 ),
-                (
-                    pos(Name::new("path")),
-                    pos(Value::String(path.clone())),
-                ),
+                (pos(Name::new("path")), pos(Value::String(path.clone()))),
                 (
                     pos(Name::new("query")),
                     pos(Value::Object(IndexMap::from(query.clone()))),
@@ -121,7 +118,7 @@ mod tests {
                 .iter()
                 .map(|(k, v)| {
                     let Value::Variable(v) = v.clone() else {
-                        assert!(matches!(v, Value::Variable(_)), "Expected Value::Variable, got {:?}", v);
+                        panic!("Expected Value::Variable, got {:?}", v);
                     };
 
                     (k.to_string(), v.to_string())
