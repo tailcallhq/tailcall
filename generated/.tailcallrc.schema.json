@@ -667,6 +667,21 @@
         {
           "type": "object",
           "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
             "pathEq"
           ],
           "properties": {

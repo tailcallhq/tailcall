@@ -493,6 +493,7 @@ input ExprBody {
   lte: [ExprBody]
   max: [ExprBody]
   min: [ExprBody]
+  path: [String!]
   pathEq: [ExprBody]
   propEq: [ExprBody]
   sortPath: [ExprBody]
