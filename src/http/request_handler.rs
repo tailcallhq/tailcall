@@ -198,7 +198,7 @@ async fn handle_rest_apis(
                 .await;
             let cookie_headers = req_ctx.cookie_headers.clone();
             response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
-            let mut resp = response.to_response()?;
+            let mut resp = response.to_rest_response()?;
             update_response_headers(
                 &mut resp,
                 cookie_headers.map(|v| v.lock().unwrap().clone()),
