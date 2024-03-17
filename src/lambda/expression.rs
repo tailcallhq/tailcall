@@ -2,7 +2,7 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
@@ -160,16 +160,15 @@ impl Eval for Expression {
                 Expression::Logic(logic) => logic.eval(ctx, conc).await,
                 Expression::List(list) => list.eval(ctx, conc).await,
                 Expression::Math(math) => math.eval(ctx, conc).await,
-                Expression::Object(object) => {
-                    match object {
-                        Object::Path(path) => Ok(ctx
-                            .value()
-                            .ok_or(anyhow!("Expected a value for path: {}", object))?
-                            .get_path(path)
-                            .cloned()
-                            .ok_or(anyhow!("No such value exists"))?),
-                    }
-                }
+                Expression::Object(object) => match object {
+                    Object::Path(path) => Ok(ctx
+                        .value()
+                        .cloned()
+                        .unwrap_or_default()
+                        .get_path(path)
+                        .cloned()
+                        .unwrap_or_default()),
+                },
             }
         })
     }
