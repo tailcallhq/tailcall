@@ -56,3 +56,77 @@ impl TryFrom<&Directive> for Rest {
         Ok(rest)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_graphql::{Name, Pos, Positioned};
+    use indexmap::IndexMap;
+
+    // Helper function to create Positioned<Value> easily
+    fn pos<A>(a: A) -> Positioned<A> {
+        Positioned::new(a, Pos::default())
+    }
+
+    #[test]
+    fn test_rest_try_from_empty_directive() {
+        let directive = Directive { name: pos(Name::new("rest")), arguments: vec![] };
+        let rest = Rest::try_from(&directive).unwrap();
+        assert_eq!(rest.path, "");
+        assert_eq!(rest.method, None);
+        assert!(rest.query.is_empty());
+        assert_eq!(rest.body, None);
+    }
+
+    #[test]
+    fn test_rest_try_from_directive() {
+        // let directive = Directive { name: pos(Name::new("rest")) };
+        let query: [(Name, Value); 3] = [
+            (Name::new("b"), Value::Variable(Name::new("b"))),
+            (Name::new("c"), Value::Variable(Name::new("c"))),
+            (Name::new("d"), Value::Variable(Name::new("d"))),
+        ];
+        let path = "/foo/$a".to_string();
+        let body = "v".to_string();
+        let directive = Directive {
+            name: pos(Name::new("rest")),
+            arguments: vec![
+                (
+                    pos(Name::new("method")),
+                    pos(Value::Enum(Name::new("POST")).into()),
+                ),
+                (
+                    pos(Name::new("path")),
+                    pos(Value::String(path.clone()).into()),
+                ),
+                (
+                    pos(Name::new("query")),
+                    pos(Value::Object(IndexMap::from(query.clone()).into()).into()),
+                ),
+                (
+                    pos(Name::new("body")),
+                    pos(Value::Variable(Name::new(body)).into()),
+                ),
+            ],
+        };
+
+        let rest = Rest::try_from(&directive).unwrap();
+        assert_eq!(rest.path, path);
+        assert_eq!(rest.method.unwrap(), Method::POST);
+        assert!(!rest.query.is_empty());
+        assert_eq!(
+            rest.query,
+            query
+                .iter()
+                .map(|(k, v)| {
+                    let Value::Variable(v) = v.clone() else {
+                        panic!("Expected Value::Variable, got {:?}", v);
+                    };
+
+                    (k.to_string(), v.to_string())
+                })
+                .collect()
+        );
+        assert_eq!(rest.body.unwrap(), "v");
+    }
+}
