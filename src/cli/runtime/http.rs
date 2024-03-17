@@ -128,6 +128,8 @@ impl NativeHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for NativeHttp {
+    #[allow(clippy::blocks_in_conditions)]
+    // because of the issue with tracing and clippy - https://github.com/rust-lang/rust-clippy/issues/12281
     #[tracing::instrument(
         skip_all,
         err,
