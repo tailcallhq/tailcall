@@ -14,8 +14,8 @@ pub struct AsyncCache<Key, Value> {
 
 #[derive(Clone)]
 pub enum CacheValue<Value> {
-    Pending(Sender<Value>),
-    Ready(Value),
+    Pending(Sender<Result<Value, String>>),
+    Ready(Result<Value, String>),
 }
 
 impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> Default
@@ -42,23 +42,28 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> AsyncCache<Key,
             + Send,
     ) -> anyhow::Result<Value> {
         if let Some(cache_value) = self.get_cache_value(&key) {
-            Ok(match cache_value {
+            match cache_value {
                 CacheValue::Pending(tx) => tx.subscribe().recv().await?,
                 CacheValue::Ready(value) => value,
-            })
+            }
+            .map_err(|err| anyhow::anyhow!(err))
         } else {
             let (tx, _) = tokio::sync::broadcast::channel(100);
             self.cache
                 .write()
                 .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
-            let value = or_else().await?;
+            let result = or_else().await;
+            let (cloned, original) = match result {
+                Ok(value) => (Ok(value.clone()), Ok(value)),
+                Err(err) => (Err(err.to_string()), Err(err)),
+            };
             let mut guard = self.cache.write().unwrap();
             if let Some(cache_value) = guard.get_mut(&key) {
-                *cache_value = CacheValue::Ready(value.clone())
+                *cache_value = CacheValue::Ready(cloned.clone())
             }
-            tx.send(value.clone()).ok();
-            Ok(value)
+            tx.send(cloned.clone()).ok();
+            original
         }
     }
 }
