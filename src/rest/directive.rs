@@ -131,8 +131,13 @@ mod tests {
             query
                 .iter()
                 .map(|(k, v)| {
+                    assert!(
+                        matches!(v, Value::Variable(_)),
+                        "Expected Value::Variable, got {:?}",
+                        v
+                    );
                     let Value::Variable(v) = v.clone() else {
-                        panic!("Expected Value::Variable, got {:?}", v);
+                        unreachable!("Value::Variable was asserted above");
                     };
 
                     (k.to_string(), v.to_string())
