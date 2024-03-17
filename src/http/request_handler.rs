@@ -181,13 +181,14 @@ async fn handle_rest_apis(
     *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
-        req_counter.set_http_route(p_request.path.as_str());
+        let http_route = format!("{API_URL_PREFIX}{}", p_request.path.as_str());
+        req_counter.set_http_route(&http_route);
         let span = tracing::info_span!(
             "REST",
             otel.name = format!("REST {} {}", request.method(), p_request.path.as_str()),
             otel.kind = ?SpanKind::Server,
             { HTTP_REQUEST_METHOD } = %request.method(),
-            { HTTP_ROUTE } = p_request.path.as_str()
+            { HTTP_ROUTE } = http_route
         );
         return async {
             let graphql_request = p_request.into_request(request).await?;
