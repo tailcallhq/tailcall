@@ -56,3 +56,67 @@ impl TryFrom<&Directive> for Rest {
         Ok(rest)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use async_graphql::parser::types::Directive;
+    use maplit::{btreemap, hashmap};
+    use pretty_assertions::assert_eq;
+
+    use super::*;
+
+    fn queries_map() -> HashMap<String, Rest> {
+        hashmap! {
+            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
+                @rest(method: POST, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
+                    value
+                }"#.to_string() => 
+            Rest::default()
+                .path("/foo/$a".to_string())
+                .method(Some(Method::POST))
+                .query(
+                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
+                )
+                .body(Some("v".to_string())),
+
+            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
+                @rest(method: DELETE, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() => 
+            Rest::default()
+                .path("/foo/$a".to_string())
+                .method(Some(Method::POST))
+                .query(
+                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
+                )
+                .body(Some("v".to_string())),
+        }
+    }
+
+    fn query_to_directive(query: &str) -> Directive {
+        async_graphql::parser::parse_query(query)
+            .unwrap()
+            .operations
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .node
+            .directives
+            .first()
+            .unwrap()
+            .node
+            .clone()
+    }
+
+    #[test]
+    fn test_directive_to_rest() {
+        for (query, expected_rest) in queries_map() {
+            let directive = query_to_directive(&query);
+            let actual = Rest::try_from(&directive).unwrap();
+            assert_eq!(actual, expected_rest);
+        }
+    }
+}
