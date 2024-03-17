@@ -122,13 +122,13 @@ impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
-        let blueprint = config_blueprint()
-            .try_fold(config_module, Blueprint::default())
-            .to_result()?;
-        let schema_builder = SchemaBuilder::from(&blueprint);
-        let _ = schema_builder
-            .finish()
-            .map_err(|e| ValidationError::new(e.to_string()))?;
-        Ok(blueprint)
+        config_blueprint()
+            .try_fold(config_module, Blueprint::default()).and_then(|blueprint| {
+            let schema_builder = SchemaBuilder::from(&blueprint);
+            match schema_builder.finish() {
+                Ok(_) => Valid::succeed(blueprint),
+                Err(e) => Valid::fail(e.to_string()),
+            }
+        }).to_result()
     }
 }
