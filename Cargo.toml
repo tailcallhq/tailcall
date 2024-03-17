@@ -67,7 +67,7 @@ clap = { version = "4.5.3", features = ["derive"] }
 colored = "2"
 regex = "1.10.3"
 reqwest-middleware = "0.2.5"
-async-trait = "0.1.77"
+async-trait = "0.1.78"
 serde_path_to_error = "0.1.16"
 cache_control = "0.2.0"
 nom = "7.1.3"
