@@ -545,6 +545,8 @@ impl MergeRight for Union {
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    /// onRequest field in @http directive gives the ability to specify the
+    /// request interception handler.
     pub on_request: Option<String>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]

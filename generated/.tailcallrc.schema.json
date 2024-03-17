@@ -1418,6 +1418,7 @@
           ]
         },
         "onRequest": {
+          "description": "onRequest field in @http directive gives the ability to specify the request interception handler.",
           "type": [
             "string",
             "null"
@@ -2061,6 +2062,7 @@
           ]
         },
         "onRequest": {
+          "description": "onRequest field gives the ability to specify the global request interception handler.",
           "type": [
             "string",
             "null"
