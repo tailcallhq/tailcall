@@ -19,7 +19,7 @@ impl TryFrom<&DynamicValue> for ConstValue {
         match value {
             DynamicValue::Value(v) => Ok(v.to_owned()),
             DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
-                "mustache cannot be converted to const value at compiletime"
+                "mustache cannot be converted to const value"
             )),
             DynamicValue::Object(obj) => {
                 let out: Result<IndexMap<Name, ConstValue>, anyhow::Error> = obj

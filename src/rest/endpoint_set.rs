@@ -5,6 +5,7 @@ use super::partial_request::PartialRequest;
 use super::Request;
 use crate::blueprint::Blueprint;
 use crate::http::RequestContext;
+use crate::merge_right::MergeRight;
 use crate::rest::operation::OperationQuery;
 use crate::runtime::TargetRuntime;
 use crate::valid::Validator;
@@ -73,6 +74,13 @@ impl EndpointSet<Unchecked> {
             marker: std::marker::PhantomData::<Checked>,
             endpoints: self.endpoints,
         })
+    }
+}
+
+impl MergeRight for EndpointSet<Unchecked> {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.extend(other);
+        self
     }
 }
 
