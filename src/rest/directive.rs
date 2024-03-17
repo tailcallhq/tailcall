@@ -77,6 +77,7 @@ mod tests {
         assert_eq!(rest.method, None);
         assert!(rest.query.is_empty());
         assert_eq!(rest.body, None);
+        assert_eq!(rest, Rest::default());
     }
 
     #[test]
@@ -100,51 +101,53 @@ mod tests {
             (Name::new("c"), Value::Variable(Name::new("c"))),
             (Name::new("d"), Value::Variable(Name::new("d"))),
         ];
-        let path = "/foo/$a".to_string();
-        let body = "v".to_string();
+
+        let expected = Rest::default()
+            .method(Some(method.clone()))
+            .body(Some("v".to_string()))
+            .path("/foo/$a".to_string())
+            .query(
+                query
+                    .iter()
+                    .map(|(k, v)| {
+                        assert!(
+                            matches!(v, Value::Variable(_)),
+                            "Expected Value::Variable, got {:?}",
+                            v
+                        );
+                        let Value::Variable(v) = v.clone() else {
+                            unreachable!("Value::Variable was asserted above");
+                        };
+
+                        (k.to_string(), v.to_string())
+                    })
+                    .collect(),
+            );
 
         let directive = Directive {
             name: pos(Name::new("rest")),
             arguments: vec![
                 (
                     pos(Name::new("method")),
-                    pos(Value::Enum(Name::new(method.clone().to_hyper().as_str()))),
+                    pos(Value::Enum(Name::new(method.to_hyper().as_str()))),
                 ),
-                (pos(Name::new("path")), pos(Value::String(path.clone()))),
+                (
+                    pos(Name::new("path")),
+                    pos(Value::String(expected.path.clone())),
+                ),
                 (
                     pos(Name::new("query")),
-                    pos(Value::Object(IndexMap::from(query.clone()))),
+                    pos(Value::Object(IndexMap::from(query))),
                 ),
                 (
                     pos(Name::new("body")),
-                    pos(Value::Variable(Name::new(body))),
+                    pos(Value::Variable(Name::new(expected.body.clone().unwrap()))),
                 ),
             ],
         };
 
         let rest = Rest::try_from(&directive).unwrap();
-        assert_eq!(rest.path, path);
-        assert_eq!(rest.method.unwrap(), method);
-        assert!(!rest.query.is_empty());
-        assert_eq!(
-            rest.query,
-            query
-                .iter()
-                .map(|(k, v)| {
-                    assert!(
-                        matches!(v, Value::Variable(_)),
-                        "Expected Value::Variable, got {:?}",
-                        v
-                    );
-                    let Value::Variable(v) = v.clone() else {
-                        unreachable!("Value::Variable was asserted above");
-                    };
-
-                    (k.to_string(), v.to_string())
-                })
-                .collect()
-        );
-        assert_eq!(rest.body.unwrap(), "v");
+        assert_eq!(rest, expected);
     }
 
     #[test]
