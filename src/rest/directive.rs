@@ -69,6 +69,7 @@ mod tests {
 
     fn queries_map() -> HashMap<String, Rest> {
         hashmap! {
+            // POST method
             r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
                 @rest(method: POST, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
                     value
@@ -81,17 +82,82 @@ mod tests {
                 )
                 .body(Some("v".to_string())),
 
+
+            // GET method
             r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
-                @rest(method: DELETE, path: "/foo/$a", body: $v) {
+                @rest(method: GET, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
                     value
                 }"#.to_string() => 
             Rest::default()
                 .path("/foo/$a".to_string())
-                .method(Some(Method::POST))
+                .method(Some(Method::GET))
+                .query(
+                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
+                ),
+
+            // PUT method
+            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
+                @rest(method: PUT, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
+                    value
+                }"#.to_string() =>
+            Rest::default()
+                .path("/foo/$a".to_string())
+                .method(Some(Method::PUT))
                 .query(
                     btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
                 )
                 .body(Some("v".to_string())),
+
+            // DELETE method
+            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float)
+                        @rest(method: DELETE, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
+                            value
+                        }"#.to_string() =>
+            Rest::default()
+                .path("/foo/$a".to_string())
+                .method(Some(Method::DELETE))
+                .query(
+                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
+                ),
+
+            // PATCH method
+            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
+                        @rest(method: PATCH, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
+                            value
+                        }"#.to_string() =>
+            Rest::default()
+                .path("/foo/$a".to_string())
+                .method(Some(Method::PATCH))
+                .query(
+                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
+                )
+                .body(Some("v".to_string())),
+
+
+            // HEAD method
+            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float)
+                        @rest(method: HEAD, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
+                            value
+                        }"#.to_string() =>
+            Rest::default()
+                .path("/foo/$a".to_string())
+                .method(Some(Method::HEAD))
+                .query(
+                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
+                ),
+
+            // OPTIONS method
+            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float)
+                @rest(method: OPTIONS, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
+                    value
+                }"#.to_string() =>
+            Rest::default()
+                .path("/foo/$a".to_string())
+                .method(Some(Method::OPTIONS))
+                .query(
+                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
+                ),
+
         }
     }
 
