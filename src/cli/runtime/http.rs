@@ -7,6 +7,7 @@ use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
 use opentelemetry::trace::SpanKind;
 use opentelemetry::KeyValue;
+use opentelemetry_http::HeaderInjector;
 use opentelemetry_semantic_conventions::trace::{
     HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, NETWORK_PROTOCOL_VERSION, URL_FULL,
 };
@@ -127,8 +128,11 @@ impl NativeHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for NativeHttp {
+    #[allow(clippy::blocks_in_conditions)]
+    // because of the issue with tracing and clippy - https://github.com/rust-lang/rust-clippy/issues/12281
     #[tracing::instrument(
         skip_all,
+        err,
         fields(
             otel.name = "upstream_request",
             otel.kind = ?SpanKind::Client,
@@ -143,6 +147,15 @@ impl HttpIO for NativeHttp {
         }
 
         let mut req_counter = RequestCounter::new(self.enable_telemetry, &request);
+
+        if self.enable_telemetry {
+            opentelemetry::global::get_text_map_propagator(|propagator| {
+                propagator.inject_context(
+                    &tracing::Span::current().context(),
+                    &mut HeaderInjector(request.headers_mut()),
+                );
+            });
+        }
 
         tracing::info!(
             "{} {} {:?}",

@@ -10,6 +10,7 @@ use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::{TonicExporterBuilder, WithExportConfig};
 use opentelemetry_sdk::logs::{Logger, LoggerProvider};
 use opentelemetry_sdk::metrics::{MeterProviderBuilder, PeriodicReader};
+use opentelemetry_sdk::propagation::TraceContextPropagator;
 use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::trace::{Tracer, TracerProvider};
 use opentelemetry_sdk::{runtime, Resource};
@@ -217,6 +218,8 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
         let trace_layer = set_trace_provider(export)?;
         let log_layer = set_logger_provider(export)?;
         set_meter_provider(export)?;
+
+        global::set_text_map_propagator(TraceContextPropagator::new());
 
         let subscriber = tracing_subscriber::registry()
             .with(trace_layer)
