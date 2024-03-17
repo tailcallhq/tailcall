@@ -3,22 +3,21 @@
 **This test had an assertion with a fail annotation that testconv cannot convert losslessly.** If you need the original responses, you can find it in git history. (For example, at commit [1c32ca9](https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da))
 
 ```graphql @server
-schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: true, batch: {delay: 1}) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(baseURL: "http://upstream/graphql", batch: {delay: 1, headers: [], maxSize: 100}, httpCache: true) {
   query: Query
 }
 
-type Query {
-  a: [A] @graphQL(name: "posts")
+type A {
+  b: B @graphQL(args: [{key: "id", value: "{{value.bid}}"}], batch: true, name: "b")
+  bid: Int!
+  c: C @graphQL(args: [{key: "id", value: "{{value.cid}}"}], batch: true, name: "c")
+  cid: Int!
+  id: Int!
 }
 
-type A {
+type B {
   id: Int!
-  bid: Int!
-  cid: Int!
-  b: B @graphQL(name: "b", args: [{key: "id", value: "{{value.bid}}"}], batch: true)
-  c: C @graphQL(name: "c", args: [{key: "id", value: "{{value.cid}}"}], batch: true)
+  y: String!
 }
 
 type C {
@@ -26,9 +25,8 @@ type C {
   x: String!
 }
 
-type B {
-  id: Int!
-  y: String!
+type Query {
+  a: [A] @graphQL(name: "posts")
 }
 ```
 

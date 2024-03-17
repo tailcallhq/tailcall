@@ -22,14 +22,14 @@
             }
           },
           "http": {
+            "baseURL": "http://jsonplaceholder.typicode.com",
             "path": "/users",
             "query": [
               {
                 "key": "id",
                 "value": "{{args.id}}"
               }
-            ],
-            "baseURL": "http://jsonplaceholder.typicode.com"
+            ]
           },
           "cache": null
         }

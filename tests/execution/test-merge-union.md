@@ -32,8 +32,8 @@ type Baz {
 }
 
 type Foo {
-  foo: String
   a: String
+  foo: String
 }
 
 type Query {

@@ -1,43 +1,26 @@
 # Batching inside nested @expr
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 10}) {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) {
   query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  user: User @expr(body: {if: {cond: {const: {data: true}}, else: {const: {data: {}}}, then: {http: {batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{value.userId}}"}]}}}})
+  userId: Int!
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
 }
 
-type Post {
-  id: Int
-  title: String
-  body: String
-  userId: Int!
-  user: User
-    @expr(
-      body: {
-        if: {
-          cond: {const: {data: true}}
-          then: {http: {path: "/users", query: [{key: "id", value: "{{value.userId}}"}], batchKey: ["id"]}}
-          else: {const: {data: {}}}
-        }
-      }
-    )
-}
-
 type User {
   id: Int
   name: String
-  values: [Value]
-    @expr(
-      body: {
-        concat: [
-          {http: {path: "/users-values-1", query: [{key: "id", value: "{{value.id}}"}], batchKey: ["id"]}}
-          {http: {path: "/users-values-2", query: [{key: "id", value: "{{value.id}}"}], batchKey: ["id"]}}
-        ]
-      }
-    )
+  values: [Value] @expr(body: {concat: [{http: {batchKey: ["id"], path: "/users-values-1", query: [{key: "id", value: "{{value.id}}"}]}}, {http: {batchKey: ["id"], path: "/users-values-2", query: [{key: "id", value: "{{value.id}}"}]}}]})
 }
 
 type Value {

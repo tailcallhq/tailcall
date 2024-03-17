@@ -1,17 +1,16 @@
 # With args
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
+}
+
+type Query {
+  user(id: Int!): [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{args.id}}"}])
 }
 
 type User {
   name: String
-}
-
-type Query {
-  user(id: Int!): [User]
-    @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 

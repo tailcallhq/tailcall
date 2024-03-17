@@ -1,26 +1,20 @@
 # Batching post
 
 ```graphql @server
-schema
-  @server(port: 8000, queryValidation: false)
-  @upstream(
-    httpCache: true
-    batch: {maxSize: 1000, delay: 1, headers: []}
-    baseURL: "http://jsonplaceholder.typicode.com"
-  ) {
+schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: true) {
   query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  user: User @http(path: "/users/{{value.userId}}")
+  userId: Int!
 }
 
 type Query {
   posts: [Post] @http(path: "/posts?id=1")
-}
-
-type Post {
-  id: Int
-  title: String
-  body: String
-  userId: Int!
-  user: User @http(path: "/users/{{value.userId}}")
 }
 
 type User {
