@@ -8,45 +8,45 @@ use futures_util::Future;
 use tokio::sync::broadcast::Sender;
 
 /// A simple async cache that uses a `HashMap` to store the values.
-pub struct AsyncCache<Key, Value> {
-    cache: Arc<RwLock<HashMap<Key, CacheValue<Value>>>>,
+pub struct AsyncCache<Key, Value, Error> {
+    cache: Arc<RwLock<HashMap<Key, CacheValue<Value, Error>>>>,
 }
 
 #[derive(Clone)]
-pub enum CacheValue<Value> {
-    Pending(Sender<Result<Value, String>>),
-    Ready(Result<Value, String>),
+pub enum CacheValue<Value, Error> {
+    Pending(Sender<Result<Value, Error>>),
+    Ready(Result<Value, Error>),
 }
 
-impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> Default
-    for AsyncCache<Key, Value>
+impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + Clone + Send>
+    Default for AsyncCache<Key, Value, Error>
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> AsyncCache<Key, Value> {
+impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + Clone + Send>
+    AsyncCache<Key, Value, Error>
+{
     pub fn new() -> Self {
         Self { cache: Arc::new(RwLock::new(HashMap::new())) }
     }
 
-    fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value>> {
+    fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value, Error>> {
         self.cache.read().unwrap().get(key).cloned()
     }
 
     pub async fn get_or_eval<'a>(
         &self,
         key: Key,
-        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = anyhow::Result<Value>> + 'a + Send>>
-            + Send,
-    ) -> anyhow::Result<Value> {
+        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
+    ) -> Result<Value, Error> {
         if let Some(cache_value) = self.get_cache_value(&key) {
             match cache_value {
-                CacheValue::Pending(tx) => tx.subscribe().recv().await?,
+                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
                 CacheValue::Ready(value) => value,
             }
-            .map_err(|err| anyhow::anyhow!(err))
         } else {
             let (tx, _) = tokio::sync::broadcast::channel(100);
             self.cache
@@ -54,16 +54,12 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send> AsyncCache<Key,
                 .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = or_else().await;
-            let (cloned, original) = match result {
-                Ok(value) => (Ok(value.clone()), Ok(value)),
-                Err(err) => (Err(err.to_string()), Err(err)),
-            };
             let mut guard = self.cache.write().unwrap();
             if let Some(cache_value) = guard.get_mut(&key) {
-                *cache_value = CacheValue::Ready(cloned.clone())
+                *cache_value = CacheValue::Ready(result.clone())
             }
-            tx.send(cloned.clone()).ok();
-            original
+            tx.send(result.clone()).ok();
+            result
         }
     }
 }
@@ -76,7 +72,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_key() {
-        let cache = AsyncCache::new();
+        let cache = AsyncCache::<i32, i32, String>::new();
         let actual = cache
             .get_or_eval(1, || Box::pin(async { Ok(1) }))
             .await
@@ -86,7 +82,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_key() {
-        let cache = AsyncCache::new();
+        let cache = AsyncCache::<i32, i32, String>::new();
         cache
             .get_or_eval(1, || Box::pin(async { Ok(1) }))
             .await
@@ -101,7 +97,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_multi_get() {
-        let cache = AsyncCache::new();
+        let cache = AsyncCache::<i32, i32, String>::new();
 
         for i in 0..100 {
             cache
@@ -119,18 +115,18 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_failure() {
-        let cache = AsyncCache::<i32, String>::new();
+        let cache = AsyncCache::<i32, String, String>::new();
         let actual = cache
-            .get_or_eval(1, || Box::pin(async { Err(anyhow::anyhow!("error")) }))
+            .get_or_eval(1, || Box::pin(async { Err("error".into()) }))
             .await;
         assert!(actual.is_err());
     }
 
     #[tokio::test]
     async fn test_with_multi_get_failure() {
-        let cache = AsyncCache::<i32, i32>::new();
+        let cache = AsyncCache::<i32, i32, String>::new();
         let _ = cache
-            .get_or_eval(1, || Box::pin(async { Err(anyhow::anyhow!("error")) }))
+            .get_or_eval(1, || Box::pin(async { Err("error".into()) }))
             .await;
 
         let actual = cache.get_or_eval(1, || Box::pin(async { Ok(2) })).await;

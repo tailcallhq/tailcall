@@ -29,7 +29,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<u64, ConstValue>,
+    pub cache: AsyncCache<u64, ConstValue, String>,
 }
 
 impl RequestContext {

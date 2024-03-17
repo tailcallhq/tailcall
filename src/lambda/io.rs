@@ -54,8 +54,15 @@ impl Eval for IO {
         Box::pin(async move {
             ctx.req_ctx
                 .cache
-                .get_or_eval(key, move || self.eval_inner(ctx, _conc))
+                .get_or_eval(key, move || {
+                    Box::pin(async {
+                        self.eval_inner(ctx, _conc)
+                            .await
+                            .map_err(|err| err.to_string())
+                    })
+                })
                 .await
+                .map_err(|err| anyhow::anyhow!(err))
         })
     }
 }
