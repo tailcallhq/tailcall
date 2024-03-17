@@ -121,7 +121,7 @@ mod tests {
                 .iter()
                 .map(|(k, v)| {
                     let Value::Variable(v) = v.clone() else {
-                        panic!("Expected Value::Variable, got {:?}", v);
+                        assert!(matches!(v, Value::Variable(_)), "Expected Value::Variable, got {:?}", v);
                     };
 
                     (k.to_string(), v.to_string())
