@@ -110,9 +110,9 @@ mod tests {
 
             // DELETE method
             r#"query ($a: Int, $b: String, $c: Boolean, $d: Float)
-                        @rest(method: DELETE, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
-                            value
-                        }"#.to_string() =>
+                @rest(method: DELETE, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
+                    value
+                }"#.to_string() =>
             Rest::default()
                 .path("/foo/$a".to_string())
                 .method(Some(Method::DELETE))
@@ -157,6 +157,8 @@ mod tests {
                 .query(
                     btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
                 ),
+
+
 
         }
     }
