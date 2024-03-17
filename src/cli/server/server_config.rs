@@ -20,7 +20,7 @@ impl ServerConfig {
         blueprint: Blueprint,
         endpoints: EndpointSet<Unchecked>,
     ) -> anyhow::Result<Self> {
-        let mut rt = init(&blueprint.upstream, blueprint.server.script.clone());
+        let mut rt = init(&blueprint);
 
         let mut extensions = vec![];
 
