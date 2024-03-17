@@ -29,6 +29,7 @@ type Post {
   body: String!
   user: User @call(query: "user", args: {id: "{{value.userId}}"})
 }
+```
 
 ```yml @mock
 - request:
