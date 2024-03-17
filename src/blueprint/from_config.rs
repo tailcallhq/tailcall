@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 
+use async_graphql::dynamic::SchemaBuilder;
+
 use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
@@ -121,8 +123,13 @@ impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
-        config_blueprint()
+        let blueprint = config_blueprint()
             .try_fold(config_module, Blueprint::default())
-            .to_result()
+            .to_result()?;
+        let schema_builder = SchemaBuilder::from(&blueprint);
+        let _ = schema_builder
+            .finish()
+            .map_err(|e| ValidationError::new(e.to_string()))?;
+        Ok(blueprint)
     }
 }
