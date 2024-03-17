@@ -162,6 +162,7 @@ mod tests {
         assert!(results.iter().all(|&v| v == value));
 
         // Optionally, verify that the value was computed only once.
-        // This might require additional instrumentation in the cache or the computation function.
+        // This might require additional instrumentation in the cache or the
+        // computation function.
     }
 }
