@@ -1,7 +1,13 @@
 # Batching group by
 
 ```graphql @server
-schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: true) {
+schema
+  @server(port: 8000, queryValidation: false)
+  @upstream(
+    baseURL: "http://jsonplaceholder.typicode.com"
+    batch: {delay: 1, headers: [], maxSize: 1000}
+    httpCache: true
+  ) {
   query: Query
 }
 
@@ -9,7 +15,8 @@ type Post {
   body: String
   id: Int
   title: String
-  user: User @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
+  user: User
+    @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
   userId: Int!
 }
 

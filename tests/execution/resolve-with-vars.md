@@ -6,7 +6,8 @@ schema @server(vars: [{key: "id", value: "1"}]) @upstream {
 }
 
 type Query {
-  user: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{vars.id}}"}])
+  user: [User]
+    @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{vars.id}}"}])
 }
 
 type User {
