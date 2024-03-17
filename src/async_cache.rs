@@ -2,14 +2,28 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex as StdMutex, RwLock};
+use std::task::{Context, Poll};
 
-use futures_util::Future;
+use futures_util::{Future, FutureExt};
 use tokio::sync::broadcast::Sender;
+use tokio::sync::Mutex;
 
 /// A simple async cache that uses a `HashMap` to store the values.
 pub struct AsyncCache<Key, Value, Error> {
     cache: Arc<RwLock<HashMap<Key, CacheValue<Value, Error>>>>,
+}
+
+#[derive(Clone)]
+pub struct AsyncCache1<'a, Key: Clone, Value: Clone, Error: Clone> {
+    cache: Arc<
+        StdMutex<
+            HashMap<
+                Key,
+                Arc<Mutex<Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>>>>,
+            >,
+        >,
+    >,
 }
 
 #[derive(Clone)]
@@ -60,6 +74,85 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
             }
             tx.send(result.clone()).ok();
             result
+        }
+    }
+}
+
+impl<
+        'a,
+        Key: Eq + Hash + Send + Clone + Debug + Unpin + 'a,
+        Value: Debug + Clone + Send + Unpin + 'a,
+        Error: Debug + Clone + Send + Unpin + 'a,
+    > Default for AsyncCache1<'a, Key, Value, Error> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<
+        'a,
+        Key: Eq + Hash + Send + Clone + Debug + Unpin + 'a,
+        Value: Debug + Clone + Send + Unpin + 'a,
+        Error: Debug + Clone + Send + Unpin + 'a,
+    > AsyncCache1<'a, Key, Value, Error>
+{
+    pub fn new() -> Self {
+        Self { cache: Arc::new(StdMutex::new(HashMap::new())) }
+    }
+
+    pub fn get_or_eval(
+        &self,
+        key: Key,
+        or_else: Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> {
+        let fut = if let Some(fut) = self.cache.lock().unwrap().get(&key).cloned() {
+            fut
+        } else {
+            let fut = Arc::new(Mutex::new(or_else));
+            self.cache.lock().unwrap().insert(key.clone(), fut.clone());
+            fut
+        };
+        Box::pin(GetOrEvalFuture { inner: GetOrEvalFutureInner::Pending { key, fut } })
+    }
+}
+
+pub struct GetOrEvalFuture<'a, Key, Value> {
+    inner: GetOrEvalFutureInner<'a, Key, Value>,
+}
+
+enum GetOrEvalFutureInner<'a, Key, Value> {
+    Pending {
+        key: Key,
+        fut: Arc<Mutex<Pin<Box<dyn Future<Output = Value> + 'a + Send>>>>,
+    },
+    Ready(Value),
+}
+
+impl<'a, Key: Clone + Unpin + Debug, Value: Clone + Unpin> Future
+    for GetOrEvalFuture<'a, Key, Value>
+{
+    type Output = Value;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        println!("Polling for key");
+        let fut = match &self.inner {
+            GetOrEvalFutureInner::Pending { key: _, fut } => fut.clone(),
+            GetOrEvalFutureInner::Ready(value) => return Poll::Ready(value.clone()),
+        };
+
+        let result = std::pin::pin!(fut.lock()).poll(cx).map(|mut guard| {
+            let result = std::pin::pin!(&mut *guard).poll(cx);
+            drop(guard);
+            result
+        });
+
+        match result {
+            Poll::Ready(Poll::Ready(value)) => {
+                self.get_mut().inner = GetOrEvalFutureInner::Ready(value.clone());
+                Poll::Ready(value.clone())
+            }
+            Poll::Ready(Poll::Pending) => Poll::Pending,
+            Poll::Pending => Poll::Pending,
         }
     }
 }

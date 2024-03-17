@@ -4,9 +4,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_graphql::{SelectionField, ServerError, Value};
+use async_graphql_value::ConstValue;
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
+use crate::async_cache::AsyncCache1;
 use crate::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -27,6 +29,8 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
 
     // TODO: JS timeout should be read from server settings
     pub timeout: Duration,
+
+    pub cache: AsyncCache1<'a, u64, ConstValue, String>,
 }
 
 impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
@@ -51,6 +55,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
+            cache: AsyncCache1::new(),
         }
     }
 

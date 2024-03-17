@@ -52,9 +52,9 @@ impl Eval for IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         let key = self.cache_key(&ctx);
         Box::pin(async move {
-            ctx.req_ctx
-                .cache
-                .get_or_eval(key, move || {
+            let cache = ctx.cache.clone();
+            cache
+                .get_or_eval(key, {
                     Box::pin(async {
                         self.eval_inner(ctx, _conc)
                             .await
