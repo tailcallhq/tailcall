@@ -52,6 +52,12 @@ fn compile(ctx: &CompilationContext, expr: ExprBody) -> Valid<Expression, String
     let field = ctx.config_field;
     let operation_type = ctx.operation_type;
     match expr {
+        ExprBody::Pipe(vec) => Valid::from_iter(vec.iter(), |expr| compile(ctx, expr.clone()))
+            .and_then(|vec| {
+                let option = vec.into_iter().reduce(|a, b| a.and_then(b));
+
+                Valid::from_option(option, "Pipe expressions must not be empty".to_string())
+            }),
         // Io Expr
         ExprBody::Http(http) => compile_http(config_module, field, &http),
         ExprBody::Grpc(grpc) => {

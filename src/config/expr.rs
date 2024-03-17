@@ -27,6 +27,10 @@ pub struct If {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub enum ExprBody {
+    /// Pipe the result of the first expression to the second
+    #[serde(rename = "pipe")]
+    Pipe(Vec<ExprBody>),
+
     /// Fetch a resources using the http operator
     #[serde(rename = "http")]
     Http(Http),
@@ -47,7 +51,6 @@ pub enum ExprBody {
     #[serde(rename = "const")]
     Const(Value),
     // Logic
-    /// Branch based on a condition
     #[serde(rename = "if")]
     If(If),
     #[serde(rename = "and")]
@@ -125,6 +128,7 @@ impl ExprBody {
     /// Performs a deep check on if the expression has any IO.
     pub fn has_io(&self) -> bool {
         match self {
+            ExprBody::Pipe(l) => l.iter().any(ExprBody::has_io),
             ExprBody::Http(_) => true,
             ExprBody::Grpc(_) => true,
             ExprBody::GraphQL(_) => true,

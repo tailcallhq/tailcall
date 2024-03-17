@@ -471,6 +471,7 @@ input Expr {
   body: ExprBody
 }
 input ExprBody {
+  pipe: [ExprBody]
   http: Http
   grpc: Grpc
   graphQL: GraphQL

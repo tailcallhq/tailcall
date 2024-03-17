@@ -280,6 +280,22 @@
     "ExprBody": {
       "oneOf": [
         {
+          "description": "Pipe the result of the first expression to the second",
+          "type": "object",
+          "required": [
+            "pipe"
+          ],
+          "properties": {
+            "pipe": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExprBody"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
           "description": "Fetch a resources using the http operator",
           "type": "object",
           "required": [
@@ -343,7 +359,6 @@
           "additionalProperties": false
         },
         {
-          "description": "Branch based on a condition",
           "type": "object",
           "required": [
             "if"
