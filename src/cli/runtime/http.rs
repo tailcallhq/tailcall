@@ -79,7 +79,12 @@ impl HttpIO for NativeHttp {
         tracing::debug!("request: {:?}", request);
         let response = self.client.execute(request).await;
         tracing::debug!("response: {:?}", response);
-        Ok(Response::from_reqwest(response?.error_for_status()?).await?)
+        Ok(Response::from_reqwest(
+            response?
+                .error_for_status()
+                .map_err(|err| err.without_url())?,
+        )
+        .await?)
     }
 }
 
