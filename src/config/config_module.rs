@@ -7,6 +7,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::blueprint::GrpcMethod;
 use crate::config::Config;
+use crate::merge_right::MergeRight;
 use crate::rest::{EndpointSet, Unchecked};
 
 /// A wrapper on top of Config that contains all the resolved extensions.
@@ -51,18 +52,6 @@ pub struct Extensions {
 }
 
 impl Extensions {
-    pub fn merge_right(mut self, other: &Extensions) -> Self {
-        self.grpc_file_descriptors
-            .extend(other.grpc_file_descriptors.clone());
-        self.script = other.script.clone().or(self.script.take());
-        self.cert.extend(other.cert.clone());
-        if !other.keys.is_empty() {
-            self.keys = other.keys.clone();
-        }
-        self.endpoint_set.extend(other.endpoint_set.clone());
-        self
-    }
-
     pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
         self.grpc_file_descriptors
             .iter()
@@ -76,10 +65,27 @@ impl Extensions {
     }
 }
 
-impl ConfigModule {
-    pub fn merge_right(mut self, other: &Self) -> Self {
-        self.config = self.config.merge_right(&other.config);
-        self.extensions = self.extensions.merge_right(&other.extensions);
+impl MergeRight for Extensions {
+    fn merge_right(mut self, mut other: Self) -> Self {
+        self.grpc_file_descriptors = self
+            .grpc_file_descriptors
+            .merge_right(other.grpc_file_descriptors);
+        self.script = self.script.merge_right(other.script.take());
+        self.cert = self.cert.merge_right(other.cert);
+        self.keys = if !other.keys.is_empty() {
+            other.keys
+        } else {
+            self.keys
+        };
+        self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set);
+        self
+    }
+}
+
+impl MergeRight for ConfigModule {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.config = self.config.merge_right(other.config);
+        self.extensions = self.extensions.merge_right(other.extensions);
         self
     }
 }
