@@ -1,4 +1,4 @@
-# Call operator with graphQL datasource
+# Call operator with GraphQL datasource
 
 ```graphql @server
 schema
