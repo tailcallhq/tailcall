@@ -93,7 +93,7 @@ impl Endpoint {
         });
         for endpoint in endpoints.iter() {
             tracing::info!(
-                "Endpoint added: {} {} ... ok",
+                "Endpoint added: {} /api{} ... ok",
                 endpoint.get_method(),
                 endpoint.get_endpoint_path().as_str()
             );
