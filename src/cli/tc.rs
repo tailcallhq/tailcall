@@ -27,6 +27,15 @@ pub async fn run() -> Result<()> {
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
+
+            for endpoint in config_module.extensions.endpoint_set.clone() {
+                tracing::info!(
+                    "Endpoint: {:?} {} ... ok",
+                    endpoint.get_method(),
+                    endpoint.get_endpoint_path().as_str()
+                );
+            }
+
             Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
             server.fork_start().await?;
