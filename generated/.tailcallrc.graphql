@@ -326,6 +326,12 @@ of their applications.
 """
 directive @telemetry(
   export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters 
+  Be careful about **leaking sensitive information** from requests when enabling the 
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
 ) on FIELD_DEFINITION
 
 """
@@ -761,6 +767,12 @@ of their applications.
 """
 input Telemetry {
   export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters 
+  Be careful about **leaking sensitive information** from requests when enabling the 
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
 }
 input TelemetryExporter {
   stdout: StdoutExporter
@@ -782,6 +794,10 @@ field whose value conforms to the standard internet email address format as spec
 """
 scalar Email
 """
+The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).
+"""
+scalar JSON
+"""
 A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
 """
 scalar PhoneNumber
@@ -789,5 +805,3 @@ scalar PhoneNumber
 A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
 """
 scalar Url
-scalar JSON
-

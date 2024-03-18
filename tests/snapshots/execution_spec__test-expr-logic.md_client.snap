@@ -2,6 +2,14 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   andFalse1: Boolean
   andFalse2: Boolean
@@ -31,6 +39,8 @@ type Query {
   orTrue2: Boolean
   orTrue3: Boolean
 }
+
+scalar Url
 
 schema {
   query: Query

@@ -178,6 +178,7 @@ impl RequestTemplate {
         })
     }
 
+    /// Creates a new RequestTemplate with the given form encoded URL
     pub fn form_encoded_url(url: &str) -> anyhow::Result<Self> {
         Ok(Self::new(url)?.encoding(Encoding::ApplicationXWwwFormUrlencoded))
     }

@@ -11,7 +11,7 @@ where
 {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: &'a EvaluationContext<'a, Ctx>,
+        ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<Output>> + 'a + Send>>
     where

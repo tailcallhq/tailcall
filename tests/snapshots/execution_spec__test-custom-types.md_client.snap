@@ -1,10 +1,18 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
 type Mut {
   insertPost(input: PostInput): Post
 }
+
+scalar PhoneNumber
 
 type Post {
   body: String
@@ -22,6 +30,8 @@ input PostInput {
 type Que {
   posts: [Post]
 }
+
+scalar Url
 
 schema {
   query: Que

@@ -7,13 +7,23 @@ type Bar {
   id: String!
 }
 
+scalar Date
+
+scalar Email
+
 type Foo {
   id: Int!
 }
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   bars: [Bar]
 }
+
+scalar Url
 
 schema {
   query: Query

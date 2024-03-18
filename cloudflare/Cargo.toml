@@ -10,11 +10,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hyper = { version = "0.14", default-features = false }
-worker = "0.0.20"
+worker = "0.0.21"
 tailcall = { path = "..", default-features = false }
 lazy_static = "1.4.0"
 anyhow = "1.0.81"
-async-trait = "0.1.77"
+async-trait = "0.1.78"
 reqwest = { version = "0.11", default-features = false }
 async-std = "1.12.0"
 tracing = "0.1.40"

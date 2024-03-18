@@ -2,6 +2,12 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
 type Mutation {
   attachPostToFirstUser(postId: Int!): User
   attachPostToUser(postId: Int!, userId: Int!): User
@@ -10,6 +16,8 @@ type Mutation {
   insertPostToFirstUser(input: PostInputWithoutUserId): Post
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
 }
+
+scalar PhoneNumber
 
 type Post {
   body: String
@@ -34,6 +42,8 @@ type Query {
   firstUser: User
   postFromUser(userId: Int!): Post
 }
+
+scalar Url
 
 type User {
   id: Int

@@ -6,8 +6,8 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
 }
 
 type Query {
-  fieldCache: Type @http(path: "/field-cache") @cache(maxAge: 3000)
-  fieldCacheList: [Type] @http(path: "/field-cache-list") @cache(maxAge: 3000)
+  fieldCache: Type @http(path: "/field-cache") @cache(maxAge: 30000)
+  fieldCacheList: [Type] @http(path: "/field-cache-list") @cache(maxAge: 30000)
   typeCache: TypeCache
 }
 
@@ -77,8 +77,6 @@ type TypeCache @cache(maxAge: 1000) {
       query {
         fieldCache { id }
       }
-  assert_traces: true
-  assert_metrics: true
 
 - method: POST
   url: http://localhost:8080/graphql

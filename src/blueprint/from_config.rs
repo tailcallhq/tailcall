@@ -123,7 +123,14 @@ impl TryFrom<&ConfigModule> for Blueprint {
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         let config_module = config_module.clone().lint_fix();
         config_blueprint()
-            .try_fold(&config_module, Blueprint::default())
+            .try_fold(config_module, Blueprint::default())
+            .and_then(|blueprint| {
+                let schema_builder = SchemaBuilder::from(&blueprint);
+                match schema_builder.finish() {
+                    Ok(_) => Valid::succeed(blueprint),
+                    Err(e) => Valid::fail(e.to_string()),
+                }
+            })
             .to_result()
     }
 }

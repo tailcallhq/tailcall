@@ -7,6 +7,7 @@ use crate::config::headers::Headers;
 use crate::config::lint::Lint;
 use crate::config::KeyValue;
 use crate::is_default;
+use crate::merge_right::MergeRight;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -197,22 +198,25 @@ impl Server {
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
     }
-
-    pub fn merge_right(mut self, other: Self) -> Self {
-        self.apollo_tracing = other.apollo_tracing.or(self.apollo_tracing);
+}
+impl MergeRight for Server {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.apollo_tracing = self.apollo_tracing.merge_right(other.apollo_tracing);
         self.headers = merge_headers(self.headers, other.headers);
-        self.graphiql = other.graphiql.or(self.graphiql);
-        self.introspection = other.introspection.or(self.introspection);
-        self.query_validation = other.query_validation.or(self.query_validation);
-        self.response_validation = other.response_validation.or(self.response_validation);
-        self.batch_requests = other.batch_requests.or(self.batch_requests);
-        self.global_response_timeout = other
+        self.graphiql = self.graphiql.merge_right(other.graphiql);
+        self.introspection = self.introspection.merge_right(other.introspection);
+        self.query_validation = self.query_validation.merge_right(other.query_validation);
+        self.response_validation = self
+            .response_validation
+            .merge_right(other.response_validation);
+        self.batch_requests = self.batch_requests.merge_right(other.batch_requests);
+        self.global_response_timeout = self
             .global_response_timeout
-            .or(self.global_response_timeout);
-        self.showcase = other.showcase.or(self.showcase);
-        self.workers = other.workers.or(self.workers);
-        self.port = other.port.or(self.port);
-        self.hostname = other.hostname.or(self.hostname);
+            .merge_right(other.global_response_timeout);
+        self.showcase = self.showcase.merge_right(other.showcase);
+        self.workers = self.workers.merge_right(other.workers);
+        self.port = self.port.merge_right(other.port);
+        self.hostname = self.hostname.merge_right(other.hostname);
         self.vars = other.vars.iter().fold(self.vars.to_vec(), |mut acc, kv| {
             let position = acc.iter().position(|x| x.key == kv.key);
             if let Some(pos) = position {
@@ -223,9 +227,9 @@ impl Server {
             acc
         });
         self.vars = merge_key_value_vecs(&self.vars, &other.vars);
-        self.version = other.version.or(self.version);
-        self.pipeline_flush = other.pipeline_flush.or(self.pipeline_flush);
-        self.script = other.script.or(self.script);
+        self.version = self.version.merge_right(other.version);
+        self.pipeline_flush = self.pipeline_flush.merge_right(other.pipeline_flush);
+        self.script = self.script.merge_right(other.script);
         self
     }
 }

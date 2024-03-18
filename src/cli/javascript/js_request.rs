@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::fmt::Display;
 
-use hyper::body::Bytes;
 use serde::{Deserialize, Serialize};
 
 use super::create_header_map;
@@ -14,7 +13,7 @@ pub struct JsRequest {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    body: Option<Bytes>,
+    body: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
@@ -138,7 +137,7 @@ mod tests {
             uri: Uri::parse("http://example.com/").unwrap(),
             method: "GET".to_string(),
             headers,
-            body: Some(Bytes::from(body)),
+            body: Some(body.to_string()),
         };
         let reqwest_request: reqwest::Request = js_request.try_into().unwrap();
         assert_eq!(reqwest_request.method(), reqwest::Method::GET);

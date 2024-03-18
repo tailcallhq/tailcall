@@ -10,14 +10,14 @@ use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
 use tailcall::scalar::CUSTOM_SCALARS;
-use tailcall::tracing::default_crate_tracing;
+use tailcall::tracing::default_tracing_for_name;
 use tailcall::{cli, config};
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
 #[tokio::main]
 async fn main() {
-    tracing::subscriber::set_global_default(default_crate_tracing("autogen")).unwrap();
+    tracing::subscriber::set_global_default(default_tracing_for_name("autogen")).unwrap();
     let args: Vec<String> = env::args().collect();
     let arg = args.get(1);
 
@@ -49,7 +49,7 @@ async fn main() {
 
 async fn mode_check() -> Result<()> {
     let json_schema = get_file_path();
-    let rt = cli::runtime::init(&Default::default(), None);
+    let rt = cli::runtime::init(&Default::default());
     let file_io = rt.file;
     let content = file_io
         .read(
@@ -75,7 +75,7 @@ async fn mode_fix() -> Result<()> {
 async fn update_json() -> Result<()> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
-    let rt = cli::runtime::init(&Default::default(), None);
+    let rt = cli::runtime::init(&Default::default());
     let file_io = rt.file;
     tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
