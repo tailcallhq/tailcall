@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream @link(src: "test1.js", type: Script) {
+  query: Query
+}
+
+type Query {
+  life: String @http(onRequest: "life", baseURL: "http://localhost:3000", path: "/life")
+}

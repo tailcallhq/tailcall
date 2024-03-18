@@ -36,7 +36,7 @@ type Query {
 ```yml @mock
 - request:
     method: GET
-    url: http://localhost:3000/bye
+    url: http://localhost:3000/hi
   response:
     status: 200
     body: hello world
