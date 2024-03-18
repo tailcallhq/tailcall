@@ -9,6 +9,7 @@ use tracing::Instrument;
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
 use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContext};
+use crate::scalar::{get_scalar, NON_PREMITIVE_SCALARS};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -152,6 +153,13 @@ impl From<&Blueprint> for SchemaBuilder {
         let query = blueprint.query();
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+
+        for k in NON_PREMITIVE_SCALARS.iter() {
+            let validator = get_scalar(k);
+            schema = schema.register(dynamic::Type::Scalar(
+                dynamic::Scalar::new(k.to_string()).validator(validator),
+            ));
+        }
 
         for def in blueprint.definitions.iter() {
             schema = schema.register(to_type(def));

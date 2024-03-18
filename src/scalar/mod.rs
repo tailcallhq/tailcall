@@ -32,10 +32,16 @@ lazy_static! {
     };
 }
 lazy_static! {
-    static ref SCALAR_TYPES: HashSet<&'static str> = {
+    pub static ref NON_PREMITIVE_SCALARS: HashSet<&'static str> = {
         let mut set = HashSet::new();
-        set.extend(["String", "Int", "Float", "Boolean", "ID", "JSON"]);
+        set.insert("JSON");
         set.extend(CUSTOM_SCALARS.keys().map(|k| k.as_str()));
+        set
+    };
+    pub static ref SCALAR_TYPES: HashSet<&'static str> = {
+        let mut set = HashSet::new();
+        set.extend(NON_PREMITIVE_SCALARS.iter().copied());
+        set.extend(["String", "Int", "Float", "ID"]);
         set
     };
 }
