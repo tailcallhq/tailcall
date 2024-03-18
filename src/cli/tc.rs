@@ -153,7 +153,6 @@ pub async fn init(folder_path: &str) -> Result<()> {
 }
 
 fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
-    Fmt::display(Fmt::heading(&"Endpoint Set:\n".to_string()));
     let mut endpoints = endpoint_set.get_endpoints().clone();
     endpoints.sort_by(|a, b| {
         let method_a = a.get_method();
@@ -175,7 +174,7 @@ fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
 }
 
 pub fn display_schema(blueprint: &Blueprint) {
-    Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
+    Fmt::display(Fmt::heading("GraphQL Schema:\n"));
     let sdl = blueprint.to_schema();
     Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
 }
