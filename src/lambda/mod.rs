@@ -16,7 +16,7 @@ pub use cache::*;
 pub use concurrent::*;
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
-pub(crate) use expression::*;
+pub use expression::*;
 pub use graphql_operation_context::GraphQLOperationContext;
 pub use io::*;
 pub use list::*;
