@@ -14,6 +14,7 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
 use crate::print_schema;
+use crate::rest::{EndpointSet, Unchecked};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -27,6 +28,7 @@ pub async fn run() -> Result<()> {
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
+            display_endpoints(&config_module.extensions.endpoint_set);
 
             Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
@@ -35,6 +37,7 @@ pub async fn run() -> Result<()> {
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             let config_module = (config_reader.read_all(&file_paths)).await?;
+            display_endpoints(&config_module.extensions.endpoint_set);
 
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
@@ -148,6 +151,16 @@ pub async fn init(folder_path: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn display_endpoints(endpoint_set: &EndpointSet<Unchecked>) {
+    for endpoint in endpoint_set {
+        tracing::info!(
+            "Endpoint added: {} /api{} ... ok",
+            endpoint.get_method(),
+            endpoint.get_endpoint_path().as_str()
+        );
+    }
 }
 
 pub fn display_schema(blueprint: &Blueprint) {

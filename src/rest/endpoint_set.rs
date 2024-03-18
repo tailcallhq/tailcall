@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use super::endpoint::Endpoint;
@@ -13,12 +14,12 @@ use crate::valid::Validator;
 /// Collection of endpoints
 #[derive(Default, Clone, Debug)]
 pub struct EndpointSet<Status> {
-    endpoints: Vec<Endpoint>,
+    endpoints: BTreeSet<Endpoint>,
     marker: std::marker::PhantomData<Status>,
 }
 
 pub struct EndpointSetIter<'a> {
-    inner: std::slice::Iter<'a, Endpoint>,
+    inner: std::collections::btree_set::Iter<'a, Endpoint>,
 }
 
 // Implement IntoIterator for a reference to EndpointSet
@@ -40,13 +41,6 @@ impl<'a> Iterator for EndpointSetIter<'a> {
     }
 }
 
-impl<Status> Iterator for EndpointSet<Status> {
-    type Item = Endpoint;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.endpoints.pop()
-    }
-}
-
 /// Represents a validated set of endpoints
 #[derive(Default, Clone, Debug)]
 pub struct Checked;
@@ -65,7 +59,7 @@ impl From<Endpoint> for EndpointSet<Unchecked> {
 
 impl EndpointSet<Unchecked> {
     pub fn add_endpoint(&mut self, endpoint: Endpoint) {
-        self.endpoints.push(endpoint);
+        self.endpoints.insert(endpoint);
     }
 
     pub fn try_new(operations: &str) -> anyhow::Result<EndpointSet<Unchecked>> {

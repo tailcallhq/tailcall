@@ -1,4 +1,5 @@
-use std::collections::BTreeMap;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::parser::types::{Directive, DocumentOperations, ExecutableDocument};
 use async_graphql::{Positioned, Variables};
@@ -28,6 +29,37 @@ pub struct Endpoint {
     pub doc: ExecutableDocument,
 }
 
+impl Eq for Endpoint {}
+
+impl PartialOrd for Endpoint {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq<Self> for Endpoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.method.eq(&other.method)
+            && self.path.eq(&other.path)
+            && self.body.eq(&other.body)
+            && self.query_params.eq(&other.query_params)
+    }
+}
+
+impl Ord for Endpoint {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let method_a = self.get_method();
+        let method_b = other.get_method();
+        if self.method.eq(&other.method) {
+            self.get_endpoint_path()
+                .as_str()
+                .cmp(other.get_endpoint_path().as_str())
+        } else {
+            method_a.to_string().cmp(&method_b.to_string())
+        }
+    }
+}
+
 /// Creates a Rest instance from @rest directive
 
 impl Endpoint {
@@ -37,9 +69,9 @@ impl Endpoint {
     pub fn get_endpoint_path(&self) -> Path {
         self.path.clone()
     }
-    pub fn try_new(operations: &str) -> anyhow::Result<Vec<Self>> {
+    pub fn try_new(operations: &str) -> anyhow::Result<BTreeSet<Self>> {
         let doc = async_graphql::parser::parse_query(operations)?;
-        let mut endpoints = Vec::new();
+        let mut endpoints = BTreeSet::new();
 
         for (_, op) in doc.operations.iter() {
             let type_map = TypeMap::new(
@@ -76,27 +108,8 @@ impl Endpoint {
                         fragments: doc.fragments.clone(),
                     },
                 };
-                endpoints.push(endpoint);
+                endpoints.insert(endpoint);
             }
-        }
-
-        endpoints.sort_by(|a, b| {
-            let method_a = a.get_method();
-            let method_b = b.get_method();
-            if a.method.eq(&b.method) {
-                a.get_endpoint_path()
-                    .as_str()
-                    .cmp(b.get_endpoint_path().as_str())
-            } else {
-                method_a.to_string().cmp(&method_b.to_string())
-            }
-        });
-        for endpoint in endpoints.iter() {
-            tracing::info!(
-                "Endpoint added: {} /api{} ... ok",
-                endpoint.get_method(),
-                endpoint.get_endpoint_path().as_str()
-            );
         }
 
         Ok(endpoints)
@@ -265,7 +278,8 @@ mod tests {
 
     #[test]
     fn test_endpoint() {
-        let endpoint = &Endpoint::try_new(TEST_QUERY).unwrap()[0];
+        let endpoint = &Endpoint::try_new(TEST_QUERY).unwrap();
+        let endpoint = endpoint.first().unwrap();
         assert_eq!(endpoint.method, Method::POST);
         assert_eq!(
             endpoint.path.segments,
@@ -289,11 +303,19 @@ mod tests {
     }
     #[test]
     fn test_remove_rest_directives() {
-        let endpoint = Endpoint::try_new(TEST_QUERY).unwrap()[0].clone();
+        let endpoint = Endpoint::try_new(TEST_QUERY)
+            .unwrap()
+            .first()
+            .unwrap()
+            .clone();
         let doc = Endpoint::remove_rest_directives(endpoint.doc);
         assert!(!format!("{:?}", doc).contains("rest"));
 
-        let endpoint = Endpoint::try_new(MULTIPLE_TEST_QUERY).unwrap()[0].clone();
+        let endpoint = Endpoint::try_new(MULTIPLE_TEST_QUERY)
+            .unwrap()
+            .first()
+            .unwrap()
+            .clone();
         let doc = Endpoint::remove_rest_directives(endpoint.doc);
         assert!(!format!("{:?}", doc).contains("rest"));
     }
@@ -318,7 +340,8 @@ mod tests {
         }
 
         fn test_matches(query: &str, method: Method, uri: &str) -> Option<Variables> {
-            let endpoint = &mut Endpoint::try_new(query).unwrap()[0];
+            let endpoint = &mut Endpoint::try_new(query).unwrap();
+            let endpoint = endpoint.first().unwrap();
             let request = test_request(method, uri).unwrap();
 
             endpoint.matches(&request).map(|req| req.variables)
