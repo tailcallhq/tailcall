@@ -27,6 +27,7 @@ pub enum TelemetryExporter {
 #[derive(Debug, Default, Clone)]
 pub struct Telemetry {
     pub export: Option<TelemetryExporter>,
+    pub request_headers: Vec<String>,
 }
 
 fn to_url(url: &str) -> Valid<Url, String> {
@@ -50,7 +51,7 @@ fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, String> {
 
 pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
     TryFoldConfig::<Telemetry>::new(|config, up| {
-        if let Some(export) = config.opentelemetry.export.as_ref() {
+        if let Some(export) = config.telemetry.export.as_ref() {
             let export = match export {
                 config::TelemetryExporter::Stdout(config) => {
                     Valid::succeed(TelemetryExporter::Stdout(config.clone()))
@@ -67,7 +68,10 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
             };
 
             export
-                .map(|export| Telemetry { export: Some(export) })
+                .map(|export| Telemetry {
+                    export: Some(export),
+                    request_headers: config.telemetry.request_headers.clone(),
+                })
                 .trace(config::Telemetry::trace_name().as_str())
         } else {
             Valid::succeed(up)

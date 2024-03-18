@@ -24,7 +24,7 @@ pub struct Blueprint {
     pub schema: SchemaDefinition,
     pub server: Server,
     pub upstream: Upstream,
-    pub opentelemetry: Telemetry,
+    pub telemetry: Telemetry,
 }
 
 #[derive(Clone, Debug)]

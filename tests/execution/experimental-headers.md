@@ -1,7 +1,7 @@
 # Experimental headers
 
 ```graphql @server
-schema @server(headers: {experimental: ["x-tailcall", "x-experimental"]}) {
+schema @server(headers: {experimental: ["x-tailcall", "X-experimental"]}) {
   query: Query
 }
 
@@ -20,7 +20,7 @@ type User {
     method: GET
     url: http://jsonplaceholder.typicode.com/users
     headers:
-      x-tailcall: "tailcall-header"
+      X-tailcall: "tailcall-header"
       x-experimental: "experimental-header"
       x-not-allowed: "not-allowed-header"
     body: null
@@ -35,7 +35,7 @@ type User {
 - method: POST
   url: http://localhost:8080/graphql
   headers:
-    x-tailcall: "tailcall-header"
+    X-tailcall: "tailcall-header"
     x-experimental: "experimental-header"
   body:
     query: query { users { id name } }
