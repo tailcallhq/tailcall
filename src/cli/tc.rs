@@ -13,7 +13,9 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
+use crate::http::API_URL_PREFIX;
 use crate::print_schema;
+use crate::rest::{EndpointSet, Unchecked};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -27,6 +29,7 @@ pub async fn run() -> Result<()> {
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
+            log_endpoint_set(&config_module.extensions.endpoint_set);
             Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
             server.fork_start().await?;
@@ -34,6 +37,7 @@ pub async fn run() -> Result<()> {
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             let config_module = (config_reader.read_all(&file_paths)).await?;
+            log_endpoint_set(&config_module.extensions.endpoint_set);
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
             }
@@ -146,6 +150,28 @@ pub async fn init(folder_path: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
+    Fmt::display(Fmt::heading(&"Endpoint Set:\n".to_string()));
+    let mut endpoints = endpoint_set.get_endpoints().clone();
+    endpoints.sort_by(|a, b| {
+        let method_a = a.get_method();
+        let method_b = b.get_method();
+        if method_a.eq(method_b) {
+            a.get_path().as_str().cmp(b.get_path().as_str())
+        } else {
+            method_a.to_string().cmp(&method_b.to_string())
+        }
+    });
+    for endpoint in endpoints {
+        tracing::info!(
+            "Endpoint: {} {}{} ... ok",
+            endpoint.get_method(),
+            API_URL_PREFIX,
+            endpoint.get_path().as_str()
+        );
+    }
 }
 
 pub fn display_schema(blueprint: &Blueprint) {
