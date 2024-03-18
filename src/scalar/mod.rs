@@ -1,10 +1,12 @@
 pub use date::*;
 pub use email::*;
+pub use json::*;
 pub use phone::*;
 pub use url::*;
 
 mod date;
 mod email;
+mod json;
 mod phone;
 mod url;
 
@@ -22,6 +24,7 @@ lazy_static! {
             Arc::new(PhoneNumber::default()),
             Arc::new(Date::default()),
             Arc::new(Url::default()),
+            Arc::new(JSON::default()),
         ];
         let mut hm = HashMap::new();
 
@@ -32,16 +35,10 @@ lazy_static! {
     };
 }
 lazy_static! {
-    pub static ref NON_PREMITIVE_SCALARS: HashSet<&'static str> = {
+    static ref SCALAR_TYPES: HashSet<&'static str> = {
         let mut set = HashSet::new();
-        set.insert("JSON");
+        set.extend(["String", "Int", "Float", "ID", "Boolean"]);
         set.extend(CUSTOM_SCALARS.keys().map(|k| k.as_str()));
-        set
-    };
-    pub static ref SCALAR_TYPES: HashSet<&'static str> = {
-        let mut set = HashSet::new();
-        set.extend(NON_PREMITIVE_SCALARS.iter().copied());
-        set.extend(["String", "Int", "Float", "ID"]);
         set
     };
 }

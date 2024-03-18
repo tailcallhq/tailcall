@@ -2,9 +2,17 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
 type Mutation {
   insertPost(input: PostInput!): Post
 }
+
+scalar PhoneNumber
 
 type Post {
   body: String
@@ -23,6 +31,8 @@ input PostInput {
 type Query {
   firstUser: User
 }
+
+scalar Url
 
 type User {
   id: Int

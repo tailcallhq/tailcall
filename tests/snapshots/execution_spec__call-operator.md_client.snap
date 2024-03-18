@@ -2,6 +2,12 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
 type News {
   body: String
   id: Int
@@ -12,6 +18,8 @@ type News {
 type NewsData {
   news: [News]!
 }
+
+scalar PhoneNumber
 
 type Post {
   body: String
@@ -44,6 +52,8 @@ type Query {
   userPosts(id: ID!): [Post]
   userWithPosts: UserWithPosts
 }
+
+scalar Url
 
 type User {
   email: String!

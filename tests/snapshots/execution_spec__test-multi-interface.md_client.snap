@@ -1,11 +1,15 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type B implements IA & IB {
   a: String
   b: String
 }
+
+scalar Date
+
+scalar Email
 
 interface IA {
   a: String
@@ -15,9 +19,15 @@ interface IB {
   b: String
 }
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   bar: B
 }
+
+scalar Url
 
 schema {
   query: Query
