@@ -80,6 +80,14 @@ impl Endpoint {
             }
         }
 
+        for endpoint in &endpoints {
+            tracing::info!(
+                "Endpoint added: {:?} {} ... ok",
+                endpoint.get_method(),
+                endpoint.get_endpoint_path().as_str()
+            );
+        }
+
         Ok(endpoints)
     }
 
