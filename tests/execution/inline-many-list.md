@@ -1,6 +1,8 @@
-# inline-many-list
+---
+check_identity: true
+---
 
-###### check identity
+# inline-many-list
 
 ```graphql @server
 schema @server @upstream {

@@ -429,12 +429,22 @@ impl ExecutionSpec {
                         }
                     } else if heading.depth == 2 {
                         if let Some(Node::Text(expect)) = heading.children.first() {
-                            sdl_error = expect
-                                .value
-                                .split(':')
-                                .last()
-                                .map(|v| v.contains("true"))
-                                .unwrap_or_default();
+                            let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
+                            match split[..] {
+                                [a, b] => {
+                                    check_identity =
+                                        a.contains("check_identity") && b.ends_with("true");
+                                    sdl_error = a.contains("expect_validation_error")
+                                        && b.ends_with("true");
+                                }
+                                _ => {
+                                    return Err(anyhow!(
+                                        "Unexpected header annotation {:?} in {:?}",
+                                        expect.value,
+                                        path,
+                                    ))
+                                }
+                            }
                         }
                     } else if heading.depth == 5 {
                         // Parse annotation
@@ -462,30 +472,6 @@ impl ExecutionSpec {
                             return Err(anyhow!(
                                 "Unexpected double-declaration of runner annotation in {:?}",
                                 path
-                            ));
-                        }
-                    } else if heading.depth == 6 {
-                        if let Some(Node::Text(text)) = heading.children.first() {
-                            match text.value.as_str() {
-                                "check identity" => {
-                                    check_identity = true;
-                                }
-                                "sdl error" => {
-                                    sdl_error = true;
-                                }
-                                _ => {
-                                    return Err(anyhow!(
-                                        "Unexpected flag {:?} in {:?}",
-                                        text.value,
-                                        path,
-                                    ));
-                                }
-                            };
-                        } else {
-                            return Err(anyhow!(
-                                "Unexpected content of level 6 heading in {:?}: {:#?}",
-                                path,
-                                heading
                             ));
                         }
                     } else if heading.depth == 4 {

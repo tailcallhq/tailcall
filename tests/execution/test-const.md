@@ -1,6 +1,8 @@
-# test-const
+---
+check_identity: true
+---
 
-###### check identity
+# test-const
 
 ```graphql @server
 schema @server @upstream {

@@ -1,6 +1,8 @@
-# test-http-tmpl
+---
+check_identity: true
+---
 
-###### check identity
+# test-http-tmpl
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

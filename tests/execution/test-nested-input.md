@@ -1,6 +1,8 @@
-# test-nested-input
+---
+check_identity: true
+---
 
-###### check identity
+# test-nested-input
 
 ```graphql @server
 schema @server @upstream {

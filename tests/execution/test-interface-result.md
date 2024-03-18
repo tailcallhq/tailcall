@@ -1,6 +1,8 @@
-# test-interface-result
+---
+check_identity: true
+---
 
-###### check identity
+# test-interface-result
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

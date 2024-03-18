@@ -1,6 +1,8 @@
-# test-expr-success
+---
+check_identity: true
+---
 
-###### check identity
+# test-expr-success
 
 ```protobuf @file:news.proto
 syntax = "proto3";
