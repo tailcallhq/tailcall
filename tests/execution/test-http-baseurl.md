@@ -1,6 +1,8 @@
-# test-http-baseurl
+---
+check_identity: true
+---
 
-###### check identity
+# test-http-baseurl
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://abc.com") {

@@ -1,7 +1,15 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Post {
   id: Int!
   user: User
@@ -11,6 +19,8 @@ type Post {
 type Query {
   post(id: Int!): Post
 }
+
+scalar Url
 
 type User {
   id: Int

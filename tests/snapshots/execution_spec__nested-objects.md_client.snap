@@ -7,14 +7,24 @@ type Address {
   street: String
 }
 
+scalar Date
+
+scalar Email
+
 type Geo {
   lat: String
   lng: String
 }
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   user: User
 }
+
+scalar Url
 
 type User {
   address: Address

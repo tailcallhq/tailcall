@@ -2,9 +2,19 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   foo: [User]
 }
+
+scalar Url
 
 type User {
   id: Int

@@ -1,6 +1,8 @@
-# test-cache
+---
+check_identity: true
+---
 
-###### check identity
+# test-cache
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

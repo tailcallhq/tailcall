@@ -1,6 +1,8 @@
-# test-missing-schema-query
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-missing-schema-query
 
 ```graphql @server
 schema {

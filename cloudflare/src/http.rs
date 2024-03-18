@@ -35,7 +35,11 @@ impl HttpIO for CloudflareHttp {
         let url = request.url().clone();
         // TODO: remove spawn local
         let res = spawn_local(async move {
-            let response = client.execute(request).await?.error_for_status()?;
+            let response = client
+                .execute(request)
+                .await?
+                .error_for_status()
+                .map_err(|err| err.without_url())?;
             Response::from_reqwest(response).await
         })
         .await?;

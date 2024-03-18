@@ -176,10 +176,23 @@ type Query {
 
 ### Instruction
 
-A level 6 heading (`######`), with the text being one of the following:
+A header (`---`), followed by an instruction:
 
-- `###### check identity` -- This instructs the runner to run identity checks on `server` blocks. While it would be good to run this on every test, the code of `server` blocks must be written with this instruction mind, therefore it is optional.
-- `###### sdl error` -- This instructs the runner to expect a failure when parsing the `server` block and to compare the result with an `errors` snapshot. This is used when testing for error handling.
+```md
+---
+expect_validation_error: true
+---
+```
+
+- This instructs the runner to expect a failure when parsing the `server` block and to compare the result with an `errors` snapshot. This is used when testing for error handling.
+
+```md
+---
+check_identity: true
+---
+```
+
+- This instructs the runner to run identity checks on `server` blocks. While it would be good to run this on every test, the code of `server` blocks must be written with this instruction mind, therefore it is optional.
 
 There must be exactly zero or one instruction in a test.
 

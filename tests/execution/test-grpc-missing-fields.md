@@ -1,6 +1,8 @@
-# test-grpc-missing-fields
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-grpc-missing-fields
 
 ```protobuf @file:news.proto
 syntax = "proto3";

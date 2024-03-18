@@ -1,6 +1,8 @@
-# Js Hello World
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# Js Hello World
 
 ```js @file:test1.js
 function onRequest(request) {}

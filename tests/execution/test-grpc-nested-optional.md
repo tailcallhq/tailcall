@@ -1,6 +1,8 @@
-# test-grpc-nested-optional
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-grpc-nested-optional
 
 ```protobuf @file:news.proto
 syntax = "proto3";
