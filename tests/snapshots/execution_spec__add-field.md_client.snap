@@ -6,13 +6,23 @@ type Address {
   geo: Geo
 }
 
+scalar Date
+
+scalar Email
+
 type Geo {
   lat: String
 }
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   user: User
 }
+
+scalar Url
 
 type User {
   address: Address

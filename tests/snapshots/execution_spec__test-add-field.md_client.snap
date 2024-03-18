@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type A {
   b: B
@@ -10,14 +10,24 @@ type B {
   c: String
 }
 
+scalar Date
+
+scalar Email
+
 type Foo {
   a: A
 }
+
+scalar JSON
+
+scalar PhoneNumber
 
 type Query {
   b: B
   foo: Foo
 }
+
+scalar Url
 
 schema {
   query: Query

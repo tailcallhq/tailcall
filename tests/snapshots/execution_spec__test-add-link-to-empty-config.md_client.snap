@@ -1,16 +1,26 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
 enum Foo {
   BAR
   BAZ
 }
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   foo: Foo
   hello: String
 }
+
+scalar Url
 
 schema {
   query: Query
