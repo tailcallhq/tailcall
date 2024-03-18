@@ -80,9 +80,20 @@ impl Endpoint {
             }
         }
 
+        endpoints.sort_by(|a, b| {
+            let method_a = a.get_method();
+            let method_b = b.get_method();
+            if a.method.eq(&b.method) {
+                a.get_endpoint_path()
+                    .as_str()
+                    .cmp(b.get_endpoint_path().as_str())
+            } else {
+                method_a.to_string().cmp(&method_b.to_string())
+            }
+        });
         for endpoint in endpoints.iter() {
             tracing::info!(
-                "Endpoint added: {:?} {} ... ok",
+                "Endpoint added: {} {} ... ok",
                 endpoint.get_method(),
                 endpoint.get_endpoint_path().as_str()
             );
