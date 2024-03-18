@@ -17,6 +17,13 @@ pub struct EndpointSet<Status> {
     marker: std::marker::PhantomData<Status>,
 }
 
+impl Iterator for EndpointSet<Unchecked> {
+    type Item = Endpoint;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.endpoints.pop()
+    }
+}
+
 /// Represents a validated set of endpoints
 #[derive(Default, Clone, Debug)]
 pub struct Checked;
