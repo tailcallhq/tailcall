@@ -39,7 +39,7 @@ pub fn compile_http(
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, mut headers)| {
             // insert the global onrequest handler name if defined in @upstream directive
-            if let Some(global_on_request) = &config_module.upstream.global_on_request {
+            if let Some(global_on_request) = &config_module.upstream.on_request {
                 headers.insert(
                     headers.len(),
                     (

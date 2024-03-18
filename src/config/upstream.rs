@@ -36,7 +36,7 @@ pub struct Upstream {
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
     /// onRequest field gives the ability to specify the global request
     /// interception handler.
-    pub global_on_request: Option<String>,
+    pub on_request: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
