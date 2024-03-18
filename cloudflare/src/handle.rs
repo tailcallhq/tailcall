@@ -6,6 +6,7 @@ use std::sync::{Arc, RwLock};
 use hyper::{Body, Method, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
+use tailcall::http::showcase::AppCtxError;
 use tailcall::http::{graphiql, handle_request, showcase, AppContext};
 
 use crate::http::{to_request, to_response};
@@ -69,7 +70,7 @@ async fn get_app_ctx(
     }
 
     let runtime = runtime::init(env)?;
-    match showcase::create_app_ctx::<GraphQLRequest>(req, runtime, true).await? {
+    match showcase::create_app_ctx::<GraphQLRequest>(req, runtime, true).await {
         Ok(app_ctx) => {
             let app_ctx: Arc<AppContext> = Arc::new(app_ctx);
             if let Some(file_path) = file_path {
@@ -78,7 +79,10 @@ async fn get_app_ctx(
             tracing::info!("Initialized new application context");
             Ok(Ok(app_ctx))
         }
-        Err(e) => Ok(Err(e)),
+        Err(AppCtxError::BuildError(res)) => return Ok(Err(res)),
+        Err(AppCtxError::ResponseError(err)) => {
+            return Err(err);
+        }
     }
 }
 

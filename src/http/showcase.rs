@@ -13,11 +13,20 @@ use crate::config::reader::ConfigReader;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 
+#[derive(Debug, thiserror::Error)]
+pub enum AppCtxError {
+    #[error("GraphQL response generation failed due to {0}")]
+    ResponseError(#[from] anyhow::Error),
+
+    #[error("App Context generation failed with body {0:?}")]
+    BuildError(Response<Body>),
+}
+
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,
     runtime: TargetRuntime,
     enable_fs: bool,
-) -> Result<Result<AppContext, Response<Body>>> {
+) -> Result<AppContext, AppCtxError> {
     let config_url = req
         .uri()
         .query()
@@ -30,14 +39,18 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("No Config URL specified", None);
         response.errors = vec![server_error];
-        return Ok(Err(GraphQLResponse::from(response).to_response()?));
+        return Err(AppCtxError::BuildError(
+            GraphQLResponse::from(response).to_response()?,
+        ));
     };
 
     if !enable_fs && Url::parse(&config_url).is_err() {
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("Invalid Config URL specified", None);
         response.errors = vec![server_error];
-        return Ok(Err(GraphQLResponse::from(response).to_response()?));
+        return Err(AppCtxError::BuildError(
+            GraphQLResponse::from(response).to_response()?,
+        ));
     }
 
     let reader = ConfigReader::init(runtime.clone());
@@ -47,7 +60,9 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("Failed to read config: {}", e), None);
             response.errors = vec![server_error];
-            return Ok(Err(GraphQLResponse::from(response).to_response()?));
+            return Err(AppCtxError::BuildError(
+                GraphQLResponse::from(response).to_response()?,
+            ));
         }
     };
 
@@ -57,15 +72,13 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("{}", e), None);
             response.errors = vec![server_error];
-            return Ok(Err(GraphQLResponse::from(response).to_response()?));
+            return Err(AppCtxError::BuildError(
+                GraphQLResponse::from(response).to_response()?,
+            ));
         }
     };
 
-    Ok(Ok(AppContext::new(
-        blueprint,
-        runtime,
-        EndpointSet::default(),
-    )))
+    Ok(AppContext::new(blueprint, runtime, EndpointSet::default()))
 }
 
 #[cfg(test)]
@@ -92,7 +105,6 @@ mod tests {
         let runtime = crate::runtime::test::init(None);
         let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
             .await
-            .unwrap()
             .unwrap();
 
         let req = Request::builder()

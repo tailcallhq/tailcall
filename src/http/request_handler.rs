@@ -17,6 +17,7 @@ use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::request_context::RequestContext;
+use super::showcase::AppCtxError;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
@@ -271,9 +272,12 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                 && req.uri().path() == "/showcase/graphql" =>
         {
             let app_ctx =
-                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
+                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await {
                     Ok(app_ctx) => app_ctx,
-                    Err(res) => return Ok(res),
+                    Err(AppCtxError::BuildError(res)) => return Ok(res),
+                    Err(AppCtxError::ResponseError(err)) => {
+                        return Err(err);
+                    }
                 };
 
             graphql_request::<T>(req, &app_ctx, req_counter).await
