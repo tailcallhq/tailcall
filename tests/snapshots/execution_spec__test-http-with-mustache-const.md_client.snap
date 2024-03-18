@@ -16,9 +16,19 @@ type D {
   e: Int
 }
 
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   a: A
 }
+
+scalar Url
 
 schema {
   query: Query

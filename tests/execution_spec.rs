@@ -110,7 +110,12 @@ pub mod test {
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
-            Response::from_reqwest(response?.error_for_status()?).await
+            Response::from_reqwest(
+                response?
+                    .error_for_status()
+                    .map_err(|err| err.without_url())?,
+            )
+            .await
         }
     }
 
@@ -652,7 +657,7 @@ struct ExecutionMock {
 }
 
 impl ExecutionMock {
-    fn assert_hits(&self) {
+    fn assert_hits(&self, path: impl AsRef<Path>) {
         let url = &self.mock.request.0.url;
         let is_batch_graphql = url.path().starts_with("/graphql")
             && self
@@ -680,7 +685,8 @@ impl ExecutionMock {
         assert_eq!(
             expected_hits,
             actual_hits,
-            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times",
+            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times for file: {:?}",
+            path.as_ref()
         );
     }
 }
@@ -717,9 +723,9 @@ impl MockHttpClient {
         MockHttpClient { mocks, spec_path }
     }
 
-    fn assert_hits(&self) {
+    fn assert_hits(&self, path: impl AsRef<Path>) {
         for mock in &self.mocks {
-            mock.assert_hits();
+            mock.assert_hits(path.as_ref());
         }
     }
 }
@@ -1065,7 +1071,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             }
         }
 
-        mock_http_client.assert_hits();
+        mock_http_client.assert_hits(&spec.path);
     }
 
     tracing::info!("{} ... ok", spec.path.display());
