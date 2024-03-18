@@ -64,6 +64,18 @@ mod tests {
 
     use super::*;
 
+    const METHODS: [Method; 9] = [
+        Method::GET,
+        Method::POST,
+        Method::PUT,
+        Method::PATCH,
+        Method::DELETE,
+        Method::HEAD,
+        Method::OPTIONS,
+        Method::CONNECT,
+        Method::TRACE,
+    ];
+
     // Helper function to create Positioned<Value> easily
     fn pos<A>(a: A) -> Positioned<A> {
         Positioned::new(a, Pos::default())
@@ -82,17 +94,30 @@ mod tests {
 
     #[test]
     fn test_rest_try_from_directive_with_invalid_method() {
+        let message = "invalid";
         let directive = Directive {
             name: pos(Name::new("rest")),
             arguments: vec![(
                 pos(Name::new("method")),
-                pos(Value::String("invalid".to_string())),
+                pos(Value::String(message.to_string())),
             )],
         };
 
         let rest = Rest::try_from(&directive);
 
         assert!(rest.is_err());
+        assert_eq!(
+            rest.unwrap_err().to_string(),
+            format!(
+                "unknown variant `\"{}\"`, expected one of {}",
+                message.to_uppercase(),
+                METHODS
+                    .iter()
+                    .map(|m| format!("`{}`", m.to_owned().to_hyper().as_str()))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        );
     }
 
     fn test_rest_try_from_directive_from_method(method: Method) {
@@ -152,18 +177,8 @@ mod tests {
 
     #[test]
     fn test_rest_try_from_directive() {
-        for method in [
-            Method::CONNECT,
-            Method::DELETE,
-            Method::GET,
-            Method::HEAD,
-            Method::OPTIONS,
-            Method::PATCH,
-            Method::POST,
-            Method::PUT,
-            Method::TRACE,
-        ] {
-            test_rest_try_from_directive_from_method(method);
+        for method in METHODS {
+            test_rest_try_from_directive_from_method(method.to_owned());
         }
     }
 }
