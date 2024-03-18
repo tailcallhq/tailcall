@@ -1,8 +1,8 @@
-# test-missing-schema-query
-
 ---
 expect_validation_error: true
 ---
+
+# test-missing-schema-query
 
 ```graphql @server
 schema {

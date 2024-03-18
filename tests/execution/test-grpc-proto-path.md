@@ -1,8 +1,8 @@
-# test-grpc-proto-path
-
 ---
 expect_validation_error: true
 ---
+
+# test-grpc-proto-path
 
 ```graphql @server
 schema @link(id: "news", src: "tailcall/src/grpcnews.proto", type: Protobuf) {

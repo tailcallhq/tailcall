@@ -1,8 +1,8 @@
-# test-expr-errors
-
 ---
 expect_validation_error: true
 ---
+
+# test-expr-errors
 
 ```graphql @server
 schema @server {

@@ -1,8 +1,8 @@
-# test-grpc-optional
-
 ---
 expect_validation_error: true
 ---
+
+# test-grpc-optional
 
 ```protobuf @file:news.proto
 syntax = "proto3";

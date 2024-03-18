@@ -1,8 +1,8 @@
-# test-duplicated-link
-
 ---
 expect_validation_error: true
 ---
+
+# test-duplicated-link
 
 ```graphql @file:jsonplaceholder.graphql
 schema

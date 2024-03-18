@@ -1,8 +1,8 @@
-# test-dbl-usage
-
 ---
 expect_validation_error: true
 ---
+
+# test-dbl-usage
 
 ```graphql @server
 schema {

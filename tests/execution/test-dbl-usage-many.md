@@ -1,8 +1,8 @@
-# test-dbl-usage-many
-
 ---
 expect_validation_error: true
 ---
+
+# test-dbl-usage-many
 
 ```graphql @server
 schema {

@@ -1,8 +1,8 @@
-# test-multiple-resolvable-directives-on-field
-
 ---
 expect_validation_error: true
 ---
+
+# test-multiple-resolvable-directives-on-field
 
 ```graphql @server
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {

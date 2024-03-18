@@ -1,8 +1,8 @@
-# test-groupby-without-batching
-
 ---
 expect_validation_error: true
 ---
+
+# test-groupby-without-batching
 
 ```graphql @server
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {

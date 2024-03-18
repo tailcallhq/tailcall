@@ -1,8 +1,8 @@
-# test-grpc-missing-fields
-
 ---
 expect_validation_error: true
 ---
+
+# test-grpc-missing-fields
 
 ```protobuf @file:news.proto
 syntax = "proto3";

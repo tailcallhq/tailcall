@@ -1,8 +1,8 @@
-# test-missing-mutation-resolver
-
 ---
 expect_validation_error: true
 ---
+
+# test-missing-mutation-resolver
 
 ```graphql @server
 schema {

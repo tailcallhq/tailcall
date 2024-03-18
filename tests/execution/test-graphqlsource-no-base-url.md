@@ -1,8 +1,8 @@
-# test-graphqlsource-no-base-url
-
 ---
 expect_validation_error: true
 ---
+
+# test-graphqlsource-no-base-url
 
 ```graphql @server
 schema {

@@ -1,8 +1,8 @@
-# test-http-with-add-field
-
 ---
 expect_validation_error: true
 ---
+
+# test-http-with-add-field
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {

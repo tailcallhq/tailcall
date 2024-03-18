@@ -1,8 +1,8 @@
-# test-lack-resolver
-
 ---
 expect_validation_error: true
 ---
+
+# test-lack-resolver
 
 ```graphql @server
 schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
