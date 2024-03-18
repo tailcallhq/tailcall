@@ -34,6 +34,10 @@ impl From<Endpoint> for EndpointSet<Unchecked> {
 }
 
 impl EndpointSet<Unchecked> {
+    pub fn get_endpoints(&self) -> &Vec<Endpoint> {
+        &self.endpoints
+    }
+
     pub fn add_endpoint(&mut self, endpoint: Endpoint) {
         self.endpoints.push(endpoint);
     }
