@@ -49,7 +49,7 @@ async fn main() {
 
 async fn mode_check() -> Result<()> {
     let json_schema = get_file_path();
-    let rt = cli::runtime::init(&Default::default(), None);
+    let rt = cli::runtime::init(&Default::default());
     let file_io = rt.file;
     let content = file_io
         .read(
@@ -75,7 +75,7 @@ async fn mode_fix() -> Result<()> {
 async fn update_json() -> Result<()> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
-    let rt = cli::runtime::init(&Default::default(), None);
+    let rt = cli::runtime::init(&Default::default());
     let file_io = rt.file;
     tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io

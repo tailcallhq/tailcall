@@ -7,6 +7,7 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
+use crate::async_cache::AsyncCache;
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -28,9 +29,26 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
+    pub cache: AsyncCache<u64, ConstValue, String>,
 }
 
 impl RequestContext {
+    pub fn new(target_runtime: TargetRuntime) -> RequestContext {
+        RequestContext {
+            server: Default::default(),
+            upstream: Default::default(),
+            req_headers: HeaderMap::new(),
+            experimental_headers: HeaderMap::new(),
+            cookie_headers: None,
+            http_data_loaders: Arc::new(vec![]),
+            gql_data_loaders: Arc::new(vec![]),
+            grpc_data_loaders: Arc::new(vec![]),
+            min_max_age: Arc::new(Mutex::new(None)),
+            cache_public: Arc::new(Mutex::new(None)),
+            runtime: target_runtime,
+            cache: AsyncCache::new(),
+        }
+    }
     fn set_min_max_age_conc(&self, min_max_age: i32) {
         *self.min_max_age.lock().unwrap() = Some(min_max_age);
     }
@@ -148,16 +166,14 @@ impl From<&AppContext> for RequestContext {
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),
+            cache: AsyncCache::new(),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, Mutex};
-
     use cache_control::Cachability;
-    use hyper::HeaderMap;
 
     use crate::blueprint::{Server, Upstream};
     use crate::config::{self, Batch};
@@ -170,19 +186,9 @@ mod test {
             let crate::config::Config { upstream, .. } = config_module.config.clone();
             let server = Server::try_from(config_module).unwrap();
             let upstream = Upstream::try_from(upstream).unwrap();
-            RequestContext {
-                req_headers: HeaderMap::new(),
-                experimental_headers: HeaderMap::new(),
-                cookie_headers: None,
-                server,
-                runtime: crate::runtime::test::init(None),
-                upstream,
-                http_data_loaders: Arc::new(vec![]),
-                gql_data_loaders: Arc::new(vec![]),
-                grpc_data_loaders: Arc::new(vec![]),
-                min_max_age: Arc::new(Mutex::new(None)),
-                cache_public: Arc::new(Mutex::new(None)),
-            }
+            RequestContext::new(crate::runtime::test::init(None))
+                .upstream(upstream)
+                .server(server)
         }
     }
 

@@ -1,10 +1,18 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
 type InPost {
   get: [Post]
 }
+
+scalar JSON
+
+scalar PhoneNumber
 
 type Post {
   id: Int!
@@ -14,6 +22,8 @@ type Post {
 type Query {
   posts: InPost
 }
+
+scalar Url
 
 schema {
   query: Query
