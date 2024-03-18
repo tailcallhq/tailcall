@@ -1,9 +1,7 @@
 # test-lack-resolver
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

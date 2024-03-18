@@ -1,9 +1,7 @@
 # test-invalid-query-in-http
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

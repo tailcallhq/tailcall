@@ -1,9 +1,7 @@
 # test-grpc-missing-fields
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```protobuf @file:news.proto

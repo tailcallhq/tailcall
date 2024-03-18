@@ -1,9 +1,7 @@
 # test-graphqlsource-no-base-url
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

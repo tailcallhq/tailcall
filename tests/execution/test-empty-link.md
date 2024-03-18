@@ -1,9 +1,7 @@
 # test-empty-link
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

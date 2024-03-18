@@ -1,9 +1,7 @@
 # test-missing-query-resolver
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

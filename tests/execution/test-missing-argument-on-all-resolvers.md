@@ -1,9 +1,7 @@
 # test-missing-argument-on-all-resolvers
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```protobuf @file:news.proto

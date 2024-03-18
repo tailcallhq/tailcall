@@ -1,9 +1,7 @@
 # test-grpc-service-method
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```protobuf @file:news.proto

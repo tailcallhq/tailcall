@@ -1,9 +1,7 @@
 # test-response-headers-multi
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

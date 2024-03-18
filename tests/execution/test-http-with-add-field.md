@@ -1,9 +1,7 @@
 # test-http-with-add-field
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

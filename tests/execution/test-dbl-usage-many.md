@@ -1,9 +1,7 @@
 # test-dbl-usage-many
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

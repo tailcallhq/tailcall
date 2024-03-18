@@ -1,9 +1,7 @@
 # undeclared-type
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

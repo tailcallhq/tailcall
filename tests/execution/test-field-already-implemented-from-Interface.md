@@ -1,9 +1,7 @@
 # test-field-already-implemented-from-Interface
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

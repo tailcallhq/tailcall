@@ -1,9 +1,7 @@
 # undeclared-type-no-base-url
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

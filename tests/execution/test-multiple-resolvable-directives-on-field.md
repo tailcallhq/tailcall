@@ -1,9 +1,7 @@
 # test-multiple-resolvable-directives-on-field
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

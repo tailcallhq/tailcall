@@ -1,9 +1,7 @@
 # test-batch-operator-post
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

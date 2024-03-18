@@ -1,9 +1,7 @@
 # Js Hello World
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```js @file:test1.js

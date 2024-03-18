@@ -1,9 +1,7 @@
 # test-groupby-without-batching
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

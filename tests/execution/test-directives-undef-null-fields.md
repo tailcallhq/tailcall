@@ -1,9 +1,7 @@
 # test-directives-undef-null-fields
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

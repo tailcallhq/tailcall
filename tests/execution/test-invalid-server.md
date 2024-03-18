@@ -1,9 +1,7 @@
 # test-invalid-server
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

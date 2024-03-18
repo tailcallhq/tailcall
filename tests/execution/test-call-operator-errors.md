@@ -1,9 +1,7 @@
 # test-call-operator
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server

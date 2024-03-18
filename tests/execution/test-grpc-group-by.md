@@ -1,9 +1,7 @@
 # test-grpc-group-by
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```protobuf @file:news.proto

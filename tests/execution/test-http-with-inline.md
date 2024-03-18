@@ -1,9 +1,7 @@
 # test-http-with-inline
 
 ---
-
 expect_validation_error: true
-
 ---
 
 ```graphql @server
