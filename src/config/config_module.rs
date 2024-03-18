@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -5,7 +6,7 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::blueprint::GrpcMethod;
+use crate::blueprint::Scope;
 use crate::config::Config;
 use crate::merge_right::MergeRight;
 use crate::rest::{EndpointSet, Unchecked};
@@ -36,7 +37,7 @@ impl<A> Deref for Content<A> {
 #[derive(Clone, Debug, Default)]
 pub struct Extensions {
     /// Contains the file descriptor sets resolved from the links
-    pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
+    pub grpc_file_descriptors_map: BTreeMap<Scope, Content<FileDescriptorSet>>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -52,24 +53,18 @@ pub struct Extensions {
 }
 
 impl Extensions {
-    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
-        self.grpc_file_descriptors
-            .iter()
-            .find(|content| {
-                content
-                    .file
-                    .iter()
-                    .any(|file| file.package == Some(grpc.package.to_owned()))
-            })
+    pub fn get_file_descriptor_set(&self, scope: &Scope) -> Option<&FileDescriptorSet> {
+        self.grpc_file_descriptors_map
+            .get(scope)
             .map(|a| &a.content)
     }
 }
 
 impl MergeRight for Extensions {
     fn merge_right(mut self, mut other: Self) -> Self {
-        self.grpc_file_descriptors = self
-            .grpc_file_descriptors
-            .merge_right(other.grpc_file_descriptors);
+        self.grpc_file_descriptors_map = self
+            .grpc_file_descriptors_map
+            .merge_right(other.grpc_file_descriptors_map);
         self.script = self.script.merge_right(other.script.take());
         self.cert = self.cert.merge_right(other.cert);
         self.keys = if !other.keys.is_empty() {

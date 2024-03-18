@@ -12,7 +12,7 @@ use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::grpc::protobuf::ProtobufOperation;
+use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation};
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
@@ -129,7 +129,13 @@ impl IO {
                         execute_grpc_request_with_dl(&ctx, rendered, data_loader).await?
                     } else {
                         let req = rendered.to_request()?;
-                        execute_raw_grpc_request(&ctx, req, &req_template.operation).await?
+                        execute_raw_grpc_request(
+                            &ctx,
+                            req,
+                            &req_template.operation,
+                            &req_template.status_details,
+                        )
+                        .await?
                     };
 
                     set_headers(&ctx, &res);
@@ -196,10 +202,13 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
+    status_details: &Option<ProtobufMessage>,
 ) -> Result<Response<async_graphql::Value>> {
-    Ok(execute_grpc_request(&ctx.req_ctx.runtime, operation, req)
-        .await
-        .map_err(|e| EvaluationError::IOException(e.to_string()))?)
+    Ok(
+        execute_grpc_request(&ctx.req_ctx.runtime, operation, status_details, req)
+            .await
+            .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+    )
 }
 
 async fn execute_grpc_request_with_dl<

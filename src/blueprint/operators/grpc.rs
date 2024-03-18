@@ -6,7 +6,7 @@ use prost_reflect::FieldDescriptor;
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, IO};
@@ -28,6 +28,36 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
         base_url.push_str(&method.name);
 
         helpers::url::to_url(&base_url)
+    })
+}
+
+fn to_status_details(
+    config_module: &ConfigModule,
+    grpc: &Grpc,
+) -> Valid<Option<ProtobufMessage>, String> {
+    let Some(error_message) = grpc.error_message.as_ref() else {
+        return Valid::succeed(None);
+    };
+    Valid::from(GrpcMessage::try_from(error_message.as_str())).and_then(|message| {
+        Valid::from_option(
+            config_module
+                .extensions
+                .get_file_descriptor_set(&message.scope),
+            format!("File descriptor not found for message: {}", error_message),
+        )
+        .and_then(|file_descriptor_set| {
+            Valid::from(
+                ProtobufSet::from_proto_file(file_descriptor_set)
+                    .map_err(|e| ValidationError::new(e.to_string())),
+            )
+            .and_then(|set| {
+                Valid::from(
+                    set.find_message(&message)
+                        .map_err(|e| ValidationError::new(e.to_string())),
+                )
+            })
+        })
+        .map(Some)
     })
 }
 
@@ -122,7 +152,15 @@ pub struct CompileGrpc<'a> {
     pub grpc: &'a Grpc,
     pub validate_with_schema: bool,
 }
+
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+pub enum Scope {
+    Default,
+    Named(String),
+}
+
 pub struct GrpcMethod {
+    pub scope: Scope,
     pub package: String,
     pub service: String,
     pub name: String,
@@ -141,8 +179,15 @@ impl TryFrom<&str> for GrpcMethod {
         let parts: Vec<&str> = value.rsplitn(3, '.').collect();
         match &parts[..] {
             &[name, service, id] => {
+                let id_parts: Vec<&str> = id.splitn(2, ':').collect();
+                let (scope, package) = match &id_parts[..] {
+                    [package] => (Scope::Default, package.to_string()),
+                    [scope, package] => (Scope::Named(scope.to_string()), package.to_string()),
+                    _ => (Scope::Default, String::new()),
+                };
                 let method = GrpcMethod {
-                    package: id.to_owned(),
+                    scope,
+                    package,
                     service: service.to_owned(),
                     name: name.to_owned(),
                 };
@@ -150,6 +195,42 @@ impl TryFrom<&str> for GrpcMethod {
             }
             _ => Err(ValidationError::new(format!(
                 "Invalid method format: {}. Expected format is <package>.<service>.<method>",
+                value
+            ))),
+        }
+    }
+}
+
+pub struct GrpcMessage {
+    pub scope: Scope,
+    pub package: String,
+    pub name: String,
+}
+
+impl Display for GrpcMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}", self.package, self.name)
+    }
+}
+
+impl TryFrom<&str> for GrpcMessage {
+    type Error = ValidationError<String>;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let parts: Vec<&str> = value.rsplitn(2, '.').collect();
+        match &parts[..] {
+            &[name, id] => {
+                let id_parts: Vec<&str> = id.splitn(2, ':').collect();
+                let (scope, package) = match &id_parts[..] {
+                    [package] => (Scope::Default, package.to_string()),
+                    [scope, package] => (Scope::Named(scope.to_string()), package.to_string()),
+                    _ => (Scope::Default, String::new()),
+                };
+                let method = GrpcMessage { scope, package, name: name.to_owned() };
+                Ok(method)
+            }
+            _ => Err(ValidationError::new(format!(
+                "Invalid message format: {}. Expected format is <package>.<message>",
                 value
             ))),
         }
@@ -166,16 +247,19 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
             Valid::from_option(
-                config_module.extensions.get_file_descriptor_set(&method),
+                config_module
+                    .extensions
+                    .get_file_descriptor_set(&method.scope),
                 format!("File descriptor not found for method: {}", grpc.method),
             )
             .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
             .fuse(to_url(grpc, &method, config_module))
             .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
             .fuse(helpers::body::to_body(grpc.body.as_deref()))
+            .fuse(to_status_details(config_module, grpc))
             .into()
         })
-        .and_then(|(operation, url, headers, body)| {
+        .and_then(|(operation, url, headers, body, status_details)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
@@ -186,15 +270,16 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
             } else {
                 Valid::succeed(())
             };
-            validation.map(|_| (url, headers, operation, body))
+            validation.map(|_| (url, headers, operation, body, status_details))
         })
-        .map(|(url, headers, operation, body)| {
+        .map(|(url, headers, operation, body, status_details)| {
             let req_template = RequestTemplate {
                 url,
                 headers,
                 operation,
                 body,
                 operation_type: operation_type.clone(),
+                status_details,
             };
             if !grpc.group_by.is_empty() {
                 Expression::IO(IO::Grpc {

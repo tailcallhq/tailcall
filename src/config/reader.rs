@@ -14,11 +14,11 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
+use crate::blueprint::Scope;
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
-use crate::valid::{Valid, Validator};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -130,26 +130,28 @@ impl ConfigReader {
                 LinkType::Protobuf => {
                     let parent_descriptor = self.read_proto(&source.path).await?;
 
-                    let id = Valid::from_option(
-                        parent_descriptor.package.clone(),
-                        format!(
-                            "Package name is not defined for proto file: {:?} with link id: {:?}",
-                            parent_descriptor.name, config_link.id
-                        ),
-                    )
-                    .trace(&format!("link[{}]", i))
-                    .trace("schema")
-                    .to_result()?;
-
                     let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
                     file_descriptor_set.file.append(&mut descriptors);
 
+                    let scope = match &config_link.id {
+                        Some(id) => Scope::Named(id.to_owned()),
+                        None => Scope::Default,
+                    };
+
                     config_module
                         .extensions
-                        .grpc_file_descriptors
-                        .push(Content { id: Some(id), content: file_descriptor_set });
+                        .grpc_file_descriptors_map
+                        .entry(scope)
+                        .and_modify(|c| {
+                            file_descriptor_set.file.append(&mut c.file.clone());
+                            *c = Content { id: c.id.clone(), content: file_descriptor_set.clone() };
+                        })
+                        .or_insert_with(|| Content {
+                            id: config_link.id.clone(),
+                            content: file_descriptor_set.clone(),
+                        });
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);

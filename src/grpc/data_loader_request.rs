@@ -61,7 +61,7 @@ mod tests {
     use url::Url;
 
     use super::DataLoaderRequest;
-    use crate::blueprint::GrpcMethod;
+    use crate::blueprint::{GrpcMethod, Scope};
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -81,6 +81,7 @@ mod tests {
             type_of: LinkType::Protobuf,
         }]);
         let method = GrpcMethod {
+            scope: Scope::Default,
             package: "greetings".to_string(),
             service: "Greeter".to_string(),
             name: "SayHello".to_string(),
@@ -98,7 +99,7 @@ mod tests {
         let protobuf_set = ProtobufSet::from_proto_file(
             config_module
                 .extensions
-                .get_file_descriptor_set(&method)
+                .get_file_descriptor_set(&method.scope)
                 .unwrap(),
         )
         .unwrap();

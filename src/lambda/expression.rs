@@ -63,7 +63,7 @@ pub enum Context {
 
 #[derive(Debug, Error)]
 pub enum EvaluationError {
-    #[error("IOException: {0}")]
+    #[error("{0}")]
     IOException(String),
 
     #[error("APIValidationError: {0:?}")]

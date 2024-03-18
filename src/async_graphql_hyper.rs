@@ -1,7 +1,8 @@
 use std::any::Any;
+use std::collections::BTreeMap;
 
 use anyhow::Result;
-use async_graphql::{BatchResponse, Executor, Value};
+use async_graphql::{BatchResponse, ErrorExtensionValues, Executor, ServerError, Value};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
@@ -129,7 +130,35 @@ impl GraphQLResponse {
     }
 
     fn default_body(&self) -> Result<Body> {
-        Ok(Body::from(serde_json::to_string(&self.0)?))
+        let mut json = serde_json::to_value(&self.0)?;
+
+        if json.get("errors").is_some() {
+            let errors: Vec<ServerError> = match &self.0 {
+                BatchResponse::Single(r) => vec![r],
+                BatchResponse::Batch(r) => r.iter().collect(),
+            }
+            .iter()
+            .flat_map(|r| &r.errors)
+            .map(|e| {
+                let mut error = e.clone();
+                if let Ok(map) = serde_json::from_str::<BTreeMap<String, Value>>(&e.message) {
+                    let extensions =
+                        map.into_iter()
+                            .fold(ErrorExtensionValues::default(), |mut acc, (k, v)| {
+                                acc.set(k, v);
+                                acc
+                            });
+                    error.extensions = Some(extensions);
+                }
+                error
+            })
+            .collect();
+            if let Some(obj) = json.as_object_mut() {
+                obj.insert("errors".to_string(), serde_json::to_value(errors)?);
+            }
+        }
+
+        Ok(Body::from(serde_json::to_string(&json)?))
     }
 
     pub fn to_response(self) -> Result<Response<hyper::Body>> {

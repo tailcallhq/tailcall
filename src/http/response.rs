@@ -1,8 +1,13 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use derive_setters::Setters;
 use hyper::body::Bytes;
+use serde_json::json;
 
-use crate::grpc::protobuf::ProtobufOperation;
+use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation};
+
+pub(crate) static GRPC_STATUS: &str = "grpc-status";
+pub(crate) static GRPC_MESSAGE: &str = "grpc-message";
+pub(crate) static GRPC_STATUS_DETAILS: &str = "grpc-status-details-bin";
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body: Default + Clone> {
@@ -45,6 +50,31 @@ impl Response<Bytes> {
         resp.status = self.status;
         resp.headers = self.headers;
         Ok(resp)
+    }
+
+    pub fn to_grpc_error(
+        self,
+        status_details: &Option<ProtobufMessage>,
+    ) -> Result<Response<async_graphql::Value>> {
+        let details = self
+            .headers
+            .get(GRPC_STATUS_DETAILS)
+            .and_then(|d| status_details.as_ref()?.decode(d.as_bytes()).ok());
+        let grpc_status = self
+            .headers
+            .get(GRPC_STATUS)
+            .map(|h| h.to_str().unwrap_or(""));
+        let grpc_message = self
+            .headers
+            .get(GRPC_MESSAGE)
+            .map(|h| h.to_str().unwrap_or(""));
+        let message = json!({
+            GRPC_STATUS: grpc_status,
+            GRPC_MESSAGE: grpc_message,
+            GRPC_STATUS_DETAILS: details,
+        });
+        let message = serde_json::to_string(&message).unwrap();
+        Err(anyhow!(message))
     }
 
     pub fn to_resp_string(self) -> Result<Response<String>> {

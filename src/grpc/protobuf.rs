@@ -2,6 +2,9 @@ use std::fmt::Debug;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
+use base64::prelude::BASE64_STANDARD_NO_PAD;
+use base64::Engine;
+use nom::AsBytes;
 use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::prost_types::FileDescriptorSet;
@@ -10,7 +13,7 @@ use prost_reflect::{
 };
 use serde_json::Deserializer;
 
-use crate::blueprint::GrpcMethod;
+use crate::blueprint::{GrpcMessage, GrpcMethod};
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);
@@ -92,6 +95,30 @@ impl ProtobufSet {
             })?;
 
         Ok(ProtobufService { service_descriptor })
+    }
+
+    pub fn find_message(&self, grpc_message: &GrpcMessage) -> Result<ProtobufMessage> {
+        let message_descriptor = self
+            .descriptor_pool
+            .get_message_by_name(format!("{}.{}", grpc_message.package, grpc_message.name).as_str())
+            .with_context(|| format!("Couldn't find definitions for message {}", grpc_message))?;
+        Ok(ProtobufMessage { message_descriptor })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProtobufMessage {
+    message_descriptor: MessageDescriptor,
+}
+
+impl ProtobufMessage {
+    pub fn decode(&self, bytes: &[u8]) -> Result<Value> {
+        let bytes = BASE64_STANDARD_NO_PAD.decode(bytes)?;
+        let message = DynamicMessage::decode(self.message_descriptor.clone(), bytes.as_bytes())?;
+
+        let json = serde_json::to_value(message)?;
+
+        Ok(async_graphql::Value::from_json(json)?)
     }
 }
 
@@ -211,7 +238,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::blueprint::GrpcMethod;
+    use crate::blueprint::{GrpcMethod, Scope};
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
 
@@ -249,7 +276,12 @@ mod tests {
             type_of: LinkType::Protobuf,
         }]);
 
-        let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
+        let method = GrpcMethod {
+            scope: Scope::Default,
+            package: id,
+            service: "a".to_owned(),
+            name: "b".to_owned(),
+        };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
@@ -259,7 +291,7 @@ mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor_set(&method)
+            .get_file_descriptor_set(&method.scope)
             .unwrap()
             .to_owned())
     }
