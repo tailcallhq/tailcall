@@ -4944,7 +4944,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-graphql-extension-apollo-tracing",
- "async-graphql-value 7.0.2",
+ "async-graphql-value 7.0.3",
  "async-recursion",
  "async-std",
  "async-trait",
