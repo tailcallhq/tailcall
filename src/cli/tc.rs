@@ -34,6 +34,13 @@ pub async fn run() -> Result<()> {
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             let config_module = (config_reader.read_all(&file_paths)).await?;
+            for endpoint in config_module.extensions.endpoint_set.clone() {
+                tracing::info!(
+                    "Endpoint: {:?} {} ... ok",
+                    endpoint.get_method(),
+                    endpoint.get_endpoint_path().as_str()
+                );
+            }
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
             }

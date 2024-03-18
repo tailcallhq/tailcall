@@ -34,7 +34,11 @@ impl Server {
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
         for endpoint in self.config_module.extensions.endpoint_set.clone() {
-            tracing::info!("Endpoint: {:?} {} ... ok", endpoint.get_method(), endpoint.get_endpoint_path().as_str());
+            tracing::info!(
+                "Endpoint: {:?} {} ... ok",
+                endpoint.get_method(),
+                endpoint.get_endpoint_path().as_str()
+            );
         }
         let server_config = Arc::new(
             ServerConfig::new(
