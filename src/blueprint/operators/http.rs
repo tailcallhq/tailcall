@@ -4,7 +4,7 @@ use hyper::header::HeaderName;
 
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::Field;
+use crate::config::{Field, Link, LinkType};
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, IO};
@@ -38,26 +38,34 @@ pub fn compile_http(
         ))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, mut headers)| {
-            // insert the global onrequest handler name if defined in @upstream directive
-            if let Some(global_on_request) = &config_module.upstream.on_request {
-                headers.insert(
-                    headers.len(),
-                    (
-                        HeaderName::from_str("globalOnRequest").unwrap(),
-                        Mustache::parse(global_on_request).unwrap(),
-                    ),
-                );
-            }
+            let script_links = &config_module
+                .links
+                .iter()
+                .filter(|l| l.type_of == LinkType::Script)
+                .collect::<Vec<&Link>>();
+            // only when we have one js script file linked via @link directive
+            if script_links.len() == 1 && script_links[0].src.ends_with(".js") {
+                // insert the global onrequest handler name if defined in @upstream directive
+                if let Some(global_on_request) = &config_module.upstream.on_request {
+                    headers.insert(
+                        headers.len(),
+                        (
+                            HeaderName::from_str("globalOnRequest").unwrap(),
+                            Mustache::parse(global_on_request).unwrap(),
+                        ),
+                    );
+                }
 
-            // insert the onrequest handler name if defined in @http directive
-            if let Some(on_request) = &http.on_request {
-                headers.insert(
-                    headers.len(),
-                    (
-                        HeaderName::from_str("onRequest").unwrap(),
-                        Mustache::parse(on_request).unwrap(),
-                    ),
-                );
+                // insert the onrequest handler name if defined in @http directive
+                if let Some(on_request) = &http.on_request {
+                    headers.insert(
+                        headers.len(),
+                        (
+                            HeaderName::from_str("onRequest").unwrap(),
+                            Mustache::parse(on_request).unwrap(),
+                        ),
+                    );
+                }
             }
             let mut base_url = base_url.trim_end_matches('/').to_owned();
             base_url.push_str(http.path.clone().as_str());
