@@ -62,106 +62,10 @@ mod tests {
     use std::collections::HashMap;
 
     use async_graphql::parser::types::Directive;
-    use maplit::{btreemap, hashmap};
+    use maplit::hashmap;
     use pretty_assertions::assert_eq;
 
     use super::*;
-
-    fn queries_map() -> HashMap<String, Rest> {
-        hashmap! {
-            // POST method
-            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
-                @rest(method: POST, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
-                    value
-                }"#.to_string() => 
-            Rest::default()
-                .path("/foo/$a".to_string())
-                .method(Some(Method::POST))
-                .query(
-                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
-                )
-                .body(Some("v".to_string())),
-
-
-            // GET method
-            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
-                @rest(method: GET, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
-                    value
-                }"#.to_string() => 
-            Rest::default()
-                .path("/foo/$a".to_string())
-                .method(Some(Method::GET))
-                .query(
-                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
-                ),
-
-            // PUT method
-            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
-                @rest(method: PUT, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
-                    value
-                }"#.to_string() =>
-            Rest::default()
-                .path("/foo/$a".to_string())
-                .method(Some(Method::PUT))
-                .query(
-                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
-                )
-                .body(Some("v".to_string())),
-
-            // DELETE method
-            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float)
-                @rest(method: DELETE, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
-                    value
-                }"#.to_string() =>
-            Rest::default()
-                .path("/foo/$a".to_string())
-                .method(Some(Method::DELETE))
-                .query(
-                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
-                ),
-
-            // PATCH method
-            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
-                        @rest(method: PATCH, path: "/foo/$a", query: {b: $b, c: $c, d: $d}, body: $v) {
-                            value
-                        }"#.to_string() =>
-            Rest::default()
-                .path("/foo/$a".to_string())
-                .method(Some(Method::PATCH))
-                .query(
-                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
-                )
-                .body(Some("v".to_string())),
-
-
-            // HEAD method
-            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float)
-                        @rest(method: HEAD, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
-                            value
-                        }"#.to_string() =>
-            Rest::default()
-                .path("/foo/$a".to_string())
-                .method(Some(Method::HEAD))
-                .query(
-                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
-                ),
-
-            // OPTIONS method
-            r#"query ($a: Int, $b: String, $c: Boolean, $d: Float)
-                @rest(method: OPTIONS, path: "/foo/$a", query: {b: $b, c: $c, d: $d}) {
-                    value
-                }"#.to_string() =>
-            Rest::default()
-                .path("/foo/$a".to_string())
-                .method(Some(Method::OPTIONS))
-                .query(
-                    btreemap! { "b".to_string() => "b".to_string(), "c".to_string() => "c".to_string(), "d".to_string() => "d".to_string() },
-                ),
-
-
-
-        }
-    }
 
     fn query_to_directive(query: &str) -> Directive {
         async_graphql::parser::parse_query(query)
@@ -179,9 +83,70 @@ mod tests {
             .clone()
     }
 
+    fn default_rest_with(path: &str, method: Method, body: &str) -> Rest {
+        Rest::default()
+            .path(path.to_string())
+            .method(Some(method))
+            .body(Some(body.to_string()))
+    }
+
+    fn valid_all_method_queries() -> HashMap<String, Rest> {
+        hashmap! {
+            // GET method
+            r#"query ($a: Int, $v: String)
+                @rest(method: GET, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() => 
+            default_rest_with("/foo/$a", Method::GET, "v"),
+
+            // POST method
+            r#"query ($a: Int, $v: String)
+                @rest(method: POST, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() => 
+            default_rest_with("/foo/$a", Method::POST, "v"),
+
+            // PUT method
+            r#"query ($a: Int, $v: String)
+                @rest(method: PUT, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::PUT, "v"),
+
+            // DELETE method
+            r#"query ($a: Int, $v: String)
+                @rest(method: DELETE, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::DELETE, "v"),
+
+            // PATCH method
+            r#"query ($a: Int, $v: String)
+                @rest(method: PATCH, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::PATCH, "v"),
+
+
+            // HEAD method
+            r#"query ($a: Int, $v: String)
+                @rest(method: HEAD, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::HEAD, "v"),
+
+            // OPTIONS method
+            r#"query ($a: Int, $v: String)
+                @rest(method: OPTIONS, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::OPTIONS, "v"),
+        }
+    }
+
     #[test]
-    fn test_directive_to_rest() {
-        for (query, expected_rest) in queries_map() {
+    fn test_directive_to_rest_methods() {
+        for (query, expected_rest) in valid_all_method_queries() {
             let directive = query_to_directive(&query);
             let actual = Rest::try_from(&directive).unwrap();
             assert_eq!(actual, expected_rest);
