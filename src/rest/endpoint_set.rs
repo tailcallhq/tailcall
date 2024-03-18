@@ -17,7 +17,30 @@ pub struct EndpointSet<Status> {
     marker: std::marker::PhantomData<Status>,
 }
 
-impl Iterator for EndpointSet<Unchecked> {
+pub struct EndpointSetIter<'a> {
+    inner: std::slice::Iter<'a, Endpoint>,
+}
+
+// Implement IntoIterator for a reference to EndpointSet
+impl<'a, Status> IntoIterator for &'a EndpointSet<Status> {
+    type Item = &'a Endpoint;
+    type IntoIter = EndpointSetIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        EndpointSetIter { inner: self.endpoints.iter() }
+    }
+}
+
+// Implement Iterator for EndpointSetIter to yield references to Endpoint.
+impl<'a> Iterator for EndpointSetIter<'a> {
+    type Item = &'a Endpoint;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next()
+    }
+}
+
+impl<Status> Iterator for EndpointSet<Status> {
     type Item = Endpoint;
     fn next(&mut self) -> Option<Self::Item> {
         self.endpoints.pop()

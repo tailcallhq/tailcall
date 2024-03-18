@@ -80,7 +80,7 @@ impl Endpoint {
             }
         }
 
-        for endpoint in &endpoints {
+        for endpoint in endpoints.iter() {
             tracing::info!(
                 "Endpoint added: {:?} {} ... ok",
                 endpoint.get_method(),
