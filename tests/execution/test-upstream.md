@@ -1,6 +1,8 @@
-# test-upstream
+---
+check_identity: true
+---
 
-###### check identity
+# test-upstream
 
 ```graphql @server
 schema @server @upstream(proxy: {url: "http://localhost:8085"}) {

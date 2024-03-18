@@ -1,6 +1,8 @@
-# test-http-headers
+---
+check_identity: true
+---
 
-###### check identity
+# test-http-headers
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://localhost:4000") {

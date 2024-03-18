@@ -1,6 +1,8 @@
-# omit-many
+---
+check_identity: true
+---
 
-###### check identity
+# omit-many
 
 ```graphql @server
 schema @server @upstream {

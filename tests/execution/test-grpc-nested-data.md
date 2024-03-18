@@ -1,6 +1,8 @@
-# test-grpc-nested-data
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-grpc-nested-data
 
 ```protobuf @file:news.proto
 syntax = "proto3";

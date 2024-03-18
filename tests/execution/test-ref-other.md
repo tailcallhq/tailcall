@@ -1,6 +1,8 @@
-# test-ref-other
+---
+check_identity: true
+---
 
-###### check identity
+# test-ref-other
 
 ```graphql @server
 schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {

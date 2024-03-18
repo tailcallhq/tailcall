@@ -1,6 +1,8 @@
-# test-experimental-headers-error
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-experimental-headers-error
 
 ```graphql @server
 schema @server(headers: {experimental: ["non-experimental", "foo", "bar", "tailcall"]}) {

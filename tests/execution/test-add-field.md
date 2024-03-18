@@ -1,6 +1,8 @@
-# test-add-field
+---
+check_identity: true
+---
 
-###### check identity
+# test-add-field
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

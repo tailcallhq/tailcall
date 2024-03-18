@@ -1,6 +1,8 @@
-# test-omit
+---
+check_identity: true
+---
 
-###### check identity
+# test-omit
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
