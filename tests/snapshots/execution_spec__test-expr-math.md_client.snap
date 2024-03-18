@@ -2,6 +2,14 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   add: Int
   dec: Int
@@ -14,6 +22,8 @@ type Query {
   subtract: Int
   sum: Int
 }
+
+scalar Url
 
 schema {
   query: Query

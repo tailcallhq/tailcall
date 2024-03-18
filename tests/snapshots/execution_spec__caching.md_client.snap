@@ -2,6 +2,14 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   fieldCache: Type
   fieldCacheList: [Type]
@@ -17,6 +25,8 @@ type TypeCache {
   b: Type
   list: [Type]
 }
+
+scalar Url
 
 schema {
   query: Query

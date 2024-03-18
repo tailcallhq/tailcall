@@ -1,10 +1,14 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type Bar {
   bar: String
 }
+
+scalar Date
+
+scalar Email
 
 type Foo {
   foo: String
@@ -12,9 +16,15 @@ type Foo {
 
 union FooBar = Bar | Foo
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   foo: FooBar
 }
+
+scalar Url
 
 schema {
   query: Query

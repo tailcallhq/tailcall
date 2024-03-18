@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 type Bar {
   """
@@ -9,12 +9,22 @@ type Bar {
   baz: String
 }
 
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   """
   This is test
   """
   foo: Bar
 }
+
+scalar Url
 
 schema {
   query: Query

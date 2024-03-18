@@ -1,7 +1,11 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
 type Foo {
   a: String
   b: String
@@ -10,9 +14,15 @@ type Foo {
   x: X
 }
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   user: Foo
 }
+
+scalar Url
 
 type X {
   a: String

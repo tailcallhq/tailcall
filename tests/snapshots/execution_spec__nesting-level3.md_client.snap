@@ -2,6 +2,14 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Post {
   body: String
   id: Int
@@ -17,6 +25,8 @@ type Query {
 type Todo {
   completed: Boolean
 }
+
+scalar Url
 
 type User {
   email: String!

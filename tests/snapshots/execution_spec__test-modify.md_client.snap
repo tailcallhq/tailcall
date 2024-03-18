@@ -1,14 +1,24 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
 input Foo {
   bar: String
 }
 
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   data(input: Foo): String
 }
+
+scalar Url
 
 schema {
   query: Query
