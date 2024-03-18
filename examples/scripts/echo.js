@@ -3,8 +3,3 @@ function onRequest({request}) {
 
   return {request}
 }
-function postsRequestHandler({request}) {
-  console.log(`postsRequestHandler : ${request.method} ${request.uri.path}`)
-
-  return {request}
-}
