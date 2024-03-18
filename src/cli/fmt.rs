@@ -5,7 +5,7 @@ use crate::config::Config;
 pub struct Fmt {}
 
 impl Fmt {
-    pub fn heading(heading: &String) -> String {
+    pub fn heading(heading: &str) -> String {
         format!("{}", heading.bold())
     }
 
