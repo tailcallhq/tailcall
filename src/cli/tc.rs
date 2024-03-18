@@ -13,6 +13,7 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
+use crate::http::API_URL_PREFIX;
 use crate::print_schema;
 use crate::rest::{EndpointSet, Unchecked};
 
@@ -156,8 +157,9 @@ pub async fn init(folder_path: &str) -> Result<()> {
 fn display_endpoints(endpoint_set: &EndpointSet<Unchecked>) {
     for endpoint in endpoint_set {
         tracing::info!(
-            "Endpoint added: {} /api{} ... ok",
+            "Endpoint: {} {}{} ... ok",
             endpoint.get_method(),
+            API_URL_PREFIX,
             endpoint.get_endpoint_path().as_str()
         );
     }
