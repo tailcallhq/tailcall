@@ -1,9 +1,7 @@
 # Call operator with graphQL datasource
 
 ```graphql @server
-schema
-  @server(graphiql: true, hostname: "0.0.0.0", port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
 
@@ -17,8 +15,7 @@ type Post {
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User
-    @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+  user(id: Int!): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
 }
 
 type User {

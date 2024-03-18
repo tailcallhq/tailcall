@@ -1,13 +1,7 @@
 # Batching default
 
 ```graphql @server
-schema
-  @server
-  @upstream(
-    baseURL: "http://jsonplaceholder.typicode.com"
-    batch: {delay: 10, headers: [], maxSize: 100}
-    httpCache: true
-  ) {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) {
   query: Query
 }
 
@@ -15,8 +9,7 @@ type Post {
   body: String
   id: Int
   title: String
-  user: User
-    @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
+  user: User @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
   userId: Int!
 }
 

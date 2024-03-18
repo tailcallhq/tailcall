@@ -28,7 +28,9 @@
           },
           "http": {
             "baseURL": "http://jsonplaceholder.typicode.com",
-            "batchKey": ["id"],
+            "batchKey": [
+              "id"
+            ],
             "path": "/users",
             "query": [
               {

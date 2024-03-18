@@ -8,13 +8,7 @@ schema @server @upstream(batch: {delay: 1, headers: [], maxSize: 100}) {
 type Post {
   id: Int
   title: String
-  user: User
-    @graphQL(
-      args: [{key: "id", value: "{{value.userId}}"}]
-      baseURL: "http://upstream/graphql"
-      batch: true
-      name: "user"
-    )
+  user: User @graphQL(args: [{key: "id", value: "{{value.userId}}"}], baseURL: "http://upstream/graphql", batch: true, name: "user")
   userId: Int
 }
 
