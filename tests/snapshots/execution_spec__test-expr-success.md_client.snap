@@ -1,7 +1,13 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
 type News {
   body: String
   id: Int
@@ -16,6 +22,8 @@ input NewsInput {
   title: String
 }
 
+scalar PhoneNumber
+
 type Post {
   content: String
   id: Int!
@@ -27,6 +35,8 @@ type Query {
   news(news: NewsInput!): News!
   post(id: Int!): Post
 }
+
+scalar Url
 
 schema {
   query: Query

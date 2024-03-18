@@ -2,6 +2,14 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Post {
   id: Int
   user: User
@@ -11,6 +19,8 @@ type Query {
   post(id: Int): Post
   user(id: Int): User
 }
+
+scalar Url
 
 type User {
   id: Int
