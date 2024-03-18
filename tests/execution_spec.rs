@@ -1012,7 +1012,6 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         let config = &server[0];
 
         // client: Check if client spec matches snapshot
-        println!("{:?}", spec.path);
         let client = print_schema((Blueprint::try_from(config).unwrap()).to_schema());
         let snapshot_name = format!("{}_client", spec.safe_name);
 
