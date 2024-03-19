@@ -3,23 +3,53 @@ use serde::{Deserialize, Serialize};
 
 use crate::http::Method;
 
+/// Struct to configure Cross-Origin Resource Sharing (CORS) for a server.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CorsParams {
+    /// Indicates whether the server allows credentials (e.g., cookies,
+    /// authorization headers) to be sent in cross-origin requests.
     #[serde(default)]
     pub allow_credentials: bool,
+
+    /// A list of allowed headers in cross-origin requests.
+    /// This can be used to specify custom headers that are allowed to be
+    /// included in cross-origin requests.
     #[serde(default)]
     pub allow_headers: Option<Vec<String>>,
+
+    /// A list of allowed HTTP methods in cross-origin requests.
+    /// These methods specify the actions that are permitted in cross-origin
+    /// requests.
     #[serde(default)]
     pub allow_methods: Option<Vec<Method>>,
+
+    /// A list of origins that are allowed to access the server's resources in
+    /// cross-origin requests. An origin can be a domain, a subdomain, or
+    /// even 'null' for local file schemes.
     #[serde(default)]
     pub allow_origins: Vec<String>,
+
+    /// Indicates whether requests from private network addresses are allowed in
+    /// cross-origin requests. Private network addresses typically include
+    /// IP addresses reserved for internal networks.
     #[serde(default)]
     pub allow_private_network: bool,
+
+    /// A list of headers that the server exposes to the browser in cross-origin
+    /// responses. Exposing certain headers allows the client-side code to
+    /// access them in the response.
     #[serde(default)]
     pub expose_headers: Vec<String>,
+
+    /// The maximum time (in seconds) that the client should cache preflight
+    /// OPTIONS requests in order to avoid sending excessive requests to the
+    /// server.
     #[serde(default)]
     pub max_age: Option<usize>,
+
+    /// A list of header names that indicate the values of which might cause the
+    /// server's response to vary, potentially affecting caching.
     #[serde(default = "preflight_request_headers")]
     pub vary: Vec<String>,
 }

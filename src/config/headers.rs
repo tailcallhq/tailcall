@@ -32,7 +32,7 @@ pub struct Headers {
     pub set_cookies: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `corsParams` allows configuring the server for CORS.
+    /// `corsParams` allows Cross-Origin Resource Sharing (CORS) for a server.
     pub cors_params: Option<CorsParams>,
 }
 
