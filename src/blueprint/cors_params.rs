@@ -9,8 +9,8 @@ use crate::config::cors_params::StringOrSequence;
 #[derive(Clone, Debug, Setters)]
 pub struct CorsParams {
     pub allow_credentials: bool,
-    pub allow_headers: ConstOrMirror,
-    pub allow_methods: ConstOrMirror,
+    pub allow_headers: Option<HeaderValue>,
+    pub allow_methods: Option<HeaderValue>,
     pub allow_origin: ConstOrList,
     pub allow_private_network: bool,
     pub expose_headers: Option<HeaderValue>,
@@ -69,34 +69,18 @@ impl CorsParams {
             .then_some((ALLOW_PRIVATE_NETWORK, TRUE))
     }
 
-    pub fn allow_methods_to_header(&self, parts: &Parts) -> Option<(HeaderName, HeaderValue)> {
+    pub fn allow_methods_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
         Some((
             header::ACCESS_CONTROL_ALLOW_METHODS,
-            self.const_or_mirror_to_header(&self.allow_methods, parts)?,
+            self.allow_methods.clone()?,
         ))
     }
 
-    pub fn allow_headers_to_header(&self, parts: &Parts) -> Option<(HeaderName, HeaderValue)> {
+    pub fn allow_headers_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
         Some((
             header::ACCESS_CONTROL_ALLOW_HEADERS,
-            self.const_or_mirror_to_header(&self.allow_headers, parts)?,
+            self.allow_headers.clone()?,
         ))
-    }
-
-    pub fn const_or_mirror_to_header(
-        &self,
-        const_or_mirror: &ConstOrMirror,
-        parts: &Parts,
-    ) -> Option<HeaderValue> {
-        let allow_methods = match &const_or_mirror {
-            ConstOrMirror::Const(v) => v.clone()?,
-            ConstOrMirror::MirrorRequest => parts
-                .headers
-                .get(header::ACCESS_CONTROL_REQUEST_METHOD)?
-                .clone(),
-        };
-
-        Some(allow_methods)
     }
 
     pub fn max_age_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
@@ -138,8 +122,8 @@ impl TryFrom<config::cors_params::CorsParams> for CorsParams {
     fn try_from(value: config::cors_params::CorsParams) -> anyhow::Result<Self> {
         Ok(CorsParams {
             allow_credentials: value.allow_credentials,
-            allow_headers: value.allow_headers.try_into()?,
-            allow_methods: value.allow_methods.try_into()?,
+            allow_headers: value.allow_headers.map(|val| val.try_into()).transpose()?,
+            allow_methods: value.allow_methods.map(|val| val.try_into()).transpose()?,
             allow_origin: value.allow_origin.try_into()?,
             allow_private_network: false,
             expose_headers: Some(value.expose_headers.try_into()?),
@@ -153,33 +137,12 @@ impl TryFrom<config::cors_params::CorsParams> for CorsParams {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum ConstOrMirror {
-    Const(Option<HeaderValue>),
-    MirrorRequest,
-}
-
 #[allow(clippy::declare_interior_mutable_const)]
 const WILDCARD: HeaderValue = HeaderValue::from_static("*");
 
-impl ConstOrMirror {
-    #[allow(clippy::borrow_interior_mutable_const)]
-    pub fn is_wildcard(&self) -> bool {
-        matches!(&self, Self::Const(Some(v)) if v == WILDCARD)
-    }
-}
-
-impl TryFrom<config::cors_params::ConstOrMirror> for ConstOrMirror {
-    type Error = anyhow::Error;
-
-    fn try_from(value: config::cors_params::ConstOrMirror) -> anyhow::Result<Self> {
-        Ok(match value {
-            config::cors_params::ConstOrMirror::Const(val) => {
-                ConstOrMirror::Const(val.map(|val| val.parse()).transpose()?)
-            }
-            config::cors_params::ConstOrMirror::MirrorRequest(_) => ConstOrMirror::MirrorRequest,
-        })
-    }
+#[allow(clippy::borrow_interior_mutable_const)]
+pub fn is_wildcard(header_value: &HeaderValue) -> bool {
+    header_value == WILDCARD
 }
 
 #[derive(Clone, Debug)]

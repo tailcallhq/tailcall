@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::cors_params::CorsParams;
 use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
@@ -95,11 +94,6 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `corsParams` sets the number of worker threads. @default the number of
-    /// system cores.
-    pub cors_params: Option<CorsParams>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -199,10 +193,6 @@ impl Server {
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
     }
-
-    pub fn get_cors_params(&self) -> Option<CorsParams> {
-        self.cors_params.clone()
-    }
 }
 impl MergeRight for Server {
     fn merge_right(mut self, other: Self) -> Self {
@@ -235,7 +225,6 @@ impl MergeRight for Server {
         self.version = self.version.merge_right(other.version);
         self.pipeline_flush = self.pipeline_flush.merge_right(other.pipeline_flush);
         self.script = self.script.merge_right(other.script);
-        self.cors_params = other.cors_params.or(self.cors_params);
         self
     }
 }

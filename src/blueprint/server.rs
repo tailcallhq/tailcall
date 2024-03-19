@@ -121,7 +121,9 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             .and_then(
                 |(hostname, http, response_headers, script, experimental_headers)| {
                     let cors_params = config_server
-                        .get_cors_params()
+                        .headers
+                        .as_ref()
+                        .and_then(|header| header.get_cors_params())
                         .map(|val| val.try_into())
                         .transpose();
 

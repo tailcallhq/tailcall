@@ -1,7 +1,6 @@
 use hyper::header;
 use hyper::http::HeaderValue;
 use serde::{Deserialize, Serialize};
-use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -9,9 +8,9 @@ pub struct CorsParams {
     #[serde(default)]
     pub allow_credentials: bool,
     #[serde(default)]
-    pub allow_headers: ConstOrMirror,
+    pub allow_headers: Option<StringOrSequence>,
     #[serde(default)]
-    pub allow_methods: ConstOrMirror,
+    pub allow_methods: Option<StringOrSequence>,
     #[serde(default)]
     pub allow_origin: StringOrSequence,
     #[serde(default)]
@@ -22,30 +21,6 @@ pub struct CorsParams {
     pub max_age: Option<usize>,
     #[serde(default = "preflight_request_headers")]
     pub vary: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(untagged)]
-pub enum ConstOrMirror {
-    MirrorRequest(MirrorRequest),
-    Const(Option<String>),
-}
-
-#[derive(
-    Serialize_unit_struct,
-    Deserialize_unit_struct,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-)]
-pub struct MirrorRequest;
-
-impl Default for ConstOrMirror {
-    fn default() -> Self {
-        Self::Const(None)
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -81,12 +56,12 @@ impl TryFrom<StringOrSequence> for HeaderValue {
     fn try_from(value: StringOrSequence) -> anyhow::Result<Self> {
         Ok(match value {
             StringOrSequence::String(string) => string.parse()?,
-            StringOrSequence::Sequence(sequence) => sequence[..].join(", ").parse()?,
+            StringOrSequence::Sequence(sequence) => sequence.join(", ").parse()?,
         })
     }
 }
 
-pub fn preflight_request_headers() -> Vec<String> {
+fn preflight_request_headers() -> Vec<String> {
     vec![
         header::ORIGIN.to_string(),
         header::ACCESS_CONTROL_REQUEST_METHOD.to_string(),

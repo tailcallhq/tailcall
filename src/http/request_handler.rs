@@ -20,7 +20,7 @@ use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
-use crate::blueprint::CorsParams;
+use crate::blueprint::{is_wildcard, CorsParams};
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 const API_URL_PREFIX: &str = "/api";
@@ -178,13 +178,21 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 fn ensure_usable_cors_rules(layer: &CorsParams) {
     if layer.allow_credentials {
         assert!(
-            !layer.allow_headers.is_wildcard(),
+            layer
+                .allow_headers
+                .as_ref()
+                .filter(|val| is_wildcard(val))
+                .is_none(),
             "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
              with `Access-Control-Allow-Headers: *`"
         );
 
         assert!(
-            !layer.allow_methods.is_wildcard(),
+            layer
+                .allow_methods
+                .as_ref()
+                .filter(|val| is_wildcard(val))
+                .is_none(),
             "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
              with `Access-Control-Allow-Methods: *`"
         );
@@ -207,6 +215,7 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     cors: &CorsParams,
     app_ctx: Arc<AppContext>,
+    request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     ensure_usable_cors_rules(cors);
     let (parts, body) = req.into_parts();
@@ -225,8 +234,8 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     // Return results immediately upon preflight request
     if parts.method == Method::OPTIONS {
         // These headers are applied only to preflight requests
-        headers.extend(cors.allow_methods_to_header(&parts));
-        headers.extend(cors.allow_headers_to_header(&parts));
+        headers.extend(cors.allow_methods_to_header());
+        headers.extend(cors.allow_headers_to_header());
         headers.extend(cors.max_age_to_header());
 
         let mut response = Response::new(Body::default());
@@ -238,7 +247,7 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
         headers.extend(cors.expose_headers_to_header());
 
         let req = Request::from_parts(parts, body);
-        let mut response = handle_request::<T>(req, app_ctx).await?;
+        let mut response = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
 
         let response_headers = response.headers_mut();
 
@@ -360,7 +369,11 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 
-    let response = handle_request_inner::<T>(req, app_ctx, &mut req_counter).await;
+    let response = if let Some(cors_params) = app_ctx.blueprint.server.cors_params.clone() {
+        handle_request_with_cors::<T>(req, &cors_params, app_ctx, &mut req_counter).await
+    } else {
+        handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
+    };
 
     req_counter.update(&response);
     if let Ok(response) = &response {

@@ -600,6 +600,10 @@ input Headers {
   """
   cacheControl: Boolean
   """
+  `corsParams` allows configuring the server for CORS.
+  """
+  corsParams: CorsParams
+  """
   `headers` are key-value pairs included in every server response. Useful for setting 
   headers like `Access-Control-Allow-Origin` for cross-origin requests or additional 
   headers for downstream services.

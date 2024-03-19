@@ -11,7 +11,7 @@ use tokio::sync::oneshot;
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::cli::CLIError;
-use crate::http::{handle_request, handle_request_with_cors};
+use crate::http::handle_request;
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
@@ -29,19 +29,7 @@ pub async fn start_http_2(
         let state = Arc::clone(&sc);
         async move {
             Ok::<_, anyhow::Error>(service_fn(move |req| {
-                let state = state.clone();
-                async move {
-                    if let Some(ref cors_params) = state.blueprint.server.cors_params {
-                        handle_request_with_cors::<GraphQLRequest>(
-                            req,
-                            cors_params,
-                            state.app_ctx.clone(),
-                        )
-                        .await
-                    } else {
-                        handle_request::<GraphQLRequest>(req, state.app_ctx.clone()).await
-                    }
-                }
+                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
             }))
         }
     });
@@ -50,19 +38,7 @@ pub async fn start_http_2(
         let state = Arc::clone(&sc);
         async move {
             Ok::<_, anyhow::Error>(service_fn(move |req| {
-                let state = state.clone();
-                async move {
-                    if let Some(ref cors_params) = state.blueprint.server.cors_params {
-                        handle_request_with_cors::<GraphQLBatchRequest>(
-                            req,
-                            cors_params,
-                            state.app_ctx.clone(),
-                        )
-                        .await
-                    } else {
-                        handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone()).await
-                    }
-                }
+                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
             }))
         }
     });
