@@ -2,13 +2,23 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
 type Mutation {
   createUser(user: UserInput!): User
 }
 
+scalar PhoneNumber
+
 type Query {
   users: [User]
 }
+
+scalar Url
 
 type User {
   id: Int

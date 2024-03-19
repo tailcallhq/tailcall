@@ -1,6 +1,8 @@
-# test-graphqlsource
+---
+check_identity: true
+---
 
-###### check identity
+# test-graphqlsource
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://localhost:8000/graphql") {

@@ -714,7 +714,5 @@ fn generate_rc_file(file: File) -> Result<()> {
     write_all_directives(&mut file, &mut written_directives, &mut extra_it)?;
     write_all_input_types(&mut file, extra_it)?;
 
-    writeln!(&mut file, "scalar JSON\n")?;
-
     Ok(())
 }

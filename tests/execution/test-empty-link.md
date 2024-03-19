@@ -1,6 +1,8 @@
-# test-empty-link
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-empty-link
 
 ```graphql @server
 schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Config, src: "") @link(type: Config) {

@@ -6,6 +6,8 @@ scalar Date
 
 scalar Email
 
+scalar JSON
+
 scalar PhoneNumber
 
 type Query {

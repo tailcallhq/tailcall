@@ -1,6 +1,8 @@
-# test-inline
+---
+check_identity: true
+---
 
-###### check identity
+# test-inline
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

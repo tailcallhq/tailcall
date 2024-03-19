@@ -1,6 +1,17 @@
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
+
 #[derive(
-    Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, schemars::JsonSchema,
+    Clone,
+    Debug,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    schemars::JsonSchema,
+    Display,
 )]
 pub enum Method {
     #[default]

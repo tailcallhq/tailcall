@@ -8,9 +8,19 @@ type Address {
   zipcode: String
 }
 
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   user: User
 }
+
+scalar Url
 
 type User {
   address: Address

@@ -1,6 +1,8 @@
-# test-all-blueprint-errors
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-all-blueprint-errors
 
 ```graphql @server
 schema @server {

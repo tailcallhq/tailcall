@@ -1,6 +1,8 @@
-# add-field-many
+---
+check_identity: true
+---
 
-###### check identity
+# add-field-many
 
 ```graphql @server
 schema @server @upstream {

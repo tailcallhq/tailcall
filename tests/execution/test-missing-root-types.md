@@ -1,6 +1,8 @@
-# test-missing-root-types
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-missing-root-types
 
 ```graphql @server
 schema {

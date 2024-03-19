@@ -1,6 +1,8 @@
-# test-grpc
+---
+check_identity: true
+---
 
-###### check identity
+# test-grpc
 
 ```protobuf @file:news.proto
 syntax = "proto3";

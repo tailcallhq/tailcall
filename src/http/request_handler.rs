@@ -23,7 +23,7 @@ use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::{is_wildcard, CorsParams};
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
-const API_URL_PREFIX: &str = "/api";
+pub const API_URL_PREFIX: &str = "/api";
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();

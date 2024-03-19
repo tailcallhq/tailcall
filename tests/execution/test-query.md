@@ -1,6 +1,8 @@
-# test-query
+---
+check_identity: true
+---
 
-###### check identity
+# test-query
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

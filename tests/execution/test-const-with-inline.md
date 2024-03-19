@@ -1,6 +1,8 @@
-# test-const-with-inline
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-const-with-inline
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
