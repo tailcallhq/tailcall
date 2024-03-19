@@ -18,6 +18,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::HttpIO;
 use crate::blueprint::telemetry::Telemetry;
 use crate::blueprint::Upstream;
+use crate::cli::CLIError;
 use crate::http::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
@@ -156,13 +157,9 @@ impl HttpIO for NativeHttp {
                 );
             });
         }
+        let url = request.url().as_str().to_string();
 
-        tracing::info!(
-            "{} {} {:?}",
-            request.method(),
-            request.url(),
-            request.version()
-        );
+        tracing::info!("{} {} {:?}", request.method(), url, request.version());
         tracing::debug!("request: {:?}", request);
         let response = self.client.execute(request).await;
         tracing::debug!("response: {:?}", response);
@@ -174,12 +171,14 @@ impl HttpIO for NativeHttp {
             tracing::Span::current().set_attribute(status_code.key, status_code.value);
         }
 
-        Ok(Response::from_reqwest(
-            response?
-                .error_for_status()
-                .map_err(|err| err.without_url())?,
+        Ok(
+            Response::from_reqwest(response?.error_for_status().map_err(|err| {
+                CLIError::new(format!("Failed to make request for the url: {}", url).as_str())
+                    .description(err.without_url().to_string())
+            })?)
+            .await
+            .map_err(|e| CLIError::new("Invalid response").description(e.to_string()))?,
         )
-        .await?)
     }
 }
 
