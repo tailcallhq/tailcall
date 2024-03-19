@@ -20,11 +20,11 @@ pub fn update_call(
 ) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, _), b_field| {
-            let Some(call) = &field.call else {
+            let Some(ref calls) = field.calls else {
                 return Valid::succeed(b_field);
             };
 
-            compile_call(field, config, call, operation_type)
+            compile_call(field, config, calls, operation_type)
                 .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
@@ -36,7 +36,33 @@ pub fn compile_call(
     call: &config::Call,
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
-    get_field_and_field_name(call, config_module).and_then(|(_field, field_name, args)| {
+    let mut resolvers: Vec<Valid<Expression, String>> = Vec::new();
+
+    for call in call.steps.iter() {
+        resolvers.push(compile_step(field, config_module, call, operation_type));
+    }
+
+    resolvers
+        .into_iter()
+        .reduce(|acc, cur| {
+            acc.map(|expr| {
+                if cur.is_succeed() {
+                    expr.and_then(cur.to_result().unwrap())
+                } else {
+                    expr
+                }
+            })
+        })
+        .unwrap()
+}
+
+fn compile_step(
+    field: &Field,
+    config_module: &ConfigModule,
+    step: &config::Step,
+    operation_type: &GraphQLOperationType,
+) -> Valid<Expression, String> {
+    get_field_and_field_name(step, config_module).and_then(|(_field, field_name, args)| {
         let empties: Vec<(&String, &config::Arg)> = _field
             .args
             .iter()
@@ -116,7 +142,7 @@ fn replace_string<'a>(args: &'a Iter<'a, String, Value>) -> impl Fn(String) -> S
     }
 }
 
-fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
+fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
     } else {
@@ -127,7 +153,7 @@ fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
 }
 
 fn get_field_and_field_name<'a>(
-    call: &'a config::Call,
+    call: &'a config::Step,
     config_module: &'a ConfigModule,
 ) -> Valid<(&'a Field, String, Iter<'a, String, Value>), String> {
     Valid::from_option(
