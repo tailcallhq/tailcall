@@ -11,7 +11,7 @@ pub struct CorsParams {
     pub allow_credentials: bool,
     pub allow_headers: Option<HeaderValue>,
     pub allow_methods: Option<HeaderValue>,
-    pub allow_origin: Vec<HeaderValue>,
+    pub allow_origins: Vec<HeaderValue>,
     pub allow_private_network: bool,
     pub expose_headers: Option<HeaderValue>,
     pub max_age: Option<HeaderValue>,
@@ -23,7 +23,7 @@ impl CorsParams {
         &self,
         origin: Option<&HeaderValue>,
     ) -> Option<(HeaderName, HeaderValue)> {
-        let allow_origin = origin.filter(|o| self.allow_origin.contains(o))?.clone();
+        let allow_origin = origin.filter(|o| self.allow_origins.contains(o))?.clone();
         Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin))
     }
 
@@ -112,11 +112,52 @@ impl CorsParams {
     }
 }
 
+fn ensure_usable_cors_rules(layer: &CorsParams) -> Result<(), ValidationError<String>> {
+    if layer.allow_credentials {
+        let allowing_all_headers = layer
+            .allow_headers
+            .as_ref()
+            .filter(|val| is_wildcard(val))
+            .is_some();
+
+        if allowing_all_headers {
+            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+                with `Access-Control-Allow-Headers: *`".into()))?
+        }
+
+        let allowing_all_methods = layer
+            .allow_methods
+            .as_ref()
+            .filter(|val| is_wildcard(val))
+            .is_some();
+
+        if allowing_all_methods {
+            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+                with `Access-Control-Allow-Methods: *`".into()))?
+        }
+
+        let allowing_all_origins = layer.allow_origins.iter().any(is_wildcard);
+
+        if allowing_all_origins {
+            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+             with `Access-Control-Allow-Origin: *`".into()))?
+        }
+
+        if layer.expose_headers_is_wildcard() {
+            Err(ValidationError::new("Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
+             with `Access-Control-Expose-Headers: *`".into()))?
+        }
+    }
+    Ok(())
+}
+
 impl TryFrom<config::cors_params::CorsParams> for CorsParams {
     type Error = ValidationError<String>;
 
     fn try_from(value: config::cors_params::CorsParams) -> Result<Self, ValidationError<String>> {
-        Ok(try_from_inner(value)?)
+        let cors_params = try_from_inner(value)?;
+        ensure_usable_cors_rules(&cors_params)?;
+        Ok(cors_params)
     }
 }
 
@@ -131,8 +172,8 @@ fn try_from_inner(value: config::cors_params::CorsParams) -> Result<CorsParams, 
             .allow_methods
             .map(|list| list.join(", ").parse())
             .transpose()?,
-        allow_origin: value
-            .allow_origin
+        allow_origins: value
+            .allow_origins
             .into_iter()
             .map(|val| Ok(val.parse()?))
             .collect::<anyhow::Result<_>>()?,

@@ -11,7 +11,7 @@ pub struct CorsParams {
     #[serde(default)]
     pub allow_methods: Option<Vec<String>>,
     #[serde(default)]
-    pub allow_origin: Vec<String>,
+    pub allow_origins: Vec<String>,
     #[serde(default)]
     pub allow_private_network: bool,
     #[serde(default)]

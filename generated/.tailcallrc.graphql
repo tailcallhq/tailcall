@@ -461,7 +461,7 @@ input CorsParams {
   allowCredentials: Boolean!
   allowHeaders: [String!]
   allowMethods: [String!]
-  allowOrigin: [String!]
+  allowOrigins: [String!]
   allowPrivateNetwork: Boolean!
   exposeHeaders: [String!]
   maxAge: Int

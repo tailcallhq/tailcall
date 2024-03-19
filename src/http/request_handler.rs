@@ -20,7 +20,6 @@ use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
-use crate::blueprint::{is_wildcard, CorsParams};
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 pub const API_URL_PREFIX: &str = "/api";
@@ -175,53 +174,13 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-fn ensure_usable_cors_rules(layer: &CorsParams) {
-    if layer.allow_credentials {
-        assert!(
-            layer
-                .allow_headers
-                .as_ref()
-                .filter(|val| is_wildcard(val))
-                .is_none(),
-            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-             with `Access-Control-Allow-Headers: *`"
-        );
-
-        assert!(
-            layer
-                .allow_methods
-                .as_ref()
-                .filter(|val| is_wildcard(val))
-                .is_none(),
-            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-             with `Access-Control-Allow-Methods: *`"
-        );
-
-        assert!(
-            layer
-                .allow_origin
-                .first()
-                .filter(|val| is_wildcard(val))
-                .is_none(),
-            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-             with `Access-Control-Allow-Origin: *`"
-        );
-
-        assert!(
-            !layer.expose_headers_is_wildcard(),
-            "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
-             with `Access-Control-Expose-Headers: *`"
-        );
-    }
-}
-
 pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    cors: &CorsParams,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
-    ensure_usable_cors_rules(cors);
+    // Safe to call `.unwrap()` because this method will only be called when `cors_params` is `Some`
+    let cors = app_ctx.blueprint.server.cors_params.as_ref().unwrap();
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
 
@@ -373,8 +332,8 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 
-    let response = if let Some(cors_params) = app_ctx.blueprint.server.cors_params.clone() {
-        handle_request_with_cors::<T>(req, &cors_params, app_ctx, &mut req_counter).await
+    let response = if app_ctx.blueprint.server.cors_params.is_some() {
+        handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
     } else {
         handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
     };

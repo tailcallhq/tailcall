@@ -31,7 +31,6 @@ type Query {
     headers:
       access-control-allow-origin: abc.com
       access-control-allow-method: "POST, OPTIONS"
-      access-control-allow-credentials: true
       access-control-expose-headers: "Authorization"
     query: "query { val }"
 ```

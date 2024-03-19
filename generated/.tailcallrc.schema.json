@@ -253,7 +253,7 @@
             "type": "string"
           }
         },
-        "allowOrigin": {
+        "allowOrigins": {
           "default": [],
           "type": "array",
           "items": {
