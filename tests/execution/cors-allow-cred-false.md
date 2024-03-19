@@ -11,7 +11,6 @@ schema
         allowMethods: ["POST", "OPTIONS"]
         allowOrigin: ["abc.com", "xyz.com"]
         allowPrivateNetwork: true
-        exposeHeaders: [""]
         maxAge: 23
       }
     }

@@ -9,7 +9,7 @@ schema
         allowCredentials: true
         allowMethods: ["OPTIONS", "POST", "GET"]
         allowOrigin: ["abc.com", "xyz.com"]
-        allowPrivateNetwork: true
+        allowPrivateNetwork: false
         exposeHeaders: [""]
         maxAge: 23
       }
@@ -29,7 +29,7 @@ type Query {
   url: http://localhost:8080/graphql
   body:
     headers:
-      access-control-allow-origin: abc.com
+      access-control-allow-origin: xyz.com
       access-control-allow-method: "OPTIONS, POST, GET"
       access-control-allow-credentials: true
     query: "query { val }"
