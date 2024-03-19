@@ -6,7 +6,7 @@ use hyper::http::request::Parts;
 use crate::config;
 use crate::valid::ValidationError;
 
-#[derive(Clone, Debug, Setters)]
+#[derive(Clone, Debug, Setters, Default)]
 pub struct CorsParams {
     pub allow_credentials: bool,
     pub allow_headers: Option<HeaderValue>,
@@ -203,4 +203,27 @@ const WILDCARD: HeaderValue = HeaderValue::from_static("*");
 #[allow(clippy::borrow_interior_mutable_const)]
 pub fn is_wildcard(header_value: &HeaderValue) -> bool {
     header_value == WILDCARD
+}
+
+#[cfg(test)]
+mod tests {
+    use hyper::header::HeaderValue;
+
+    use super::*;
+
+    #[test]
+    fn test_allow_origin_to_header() {
+        let cors_params = CorsParams {
+            allow_origins: vec![HeaderValue::from_static("https://example.com")],
+            ..std::default::Default::default()
+        };
+        let origin = Some(HeaderValue::from_static("https://example.com"));
+        assert_eq!(
+            cors_params.allow_origin_to_header(origin.as_ref()),
+            Some((
+                header::ACCESS_CONTROL_ALLOW_ORIGIN,
+                HeaderValue::from_static("https://example.com")
+            ))
+        );
+    }
 }
