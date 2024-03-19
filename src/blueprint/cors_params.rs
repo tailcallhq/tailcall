@@ -5,6 +5,7 @@ use hyper::http::request::Parts;
 
 use crate::config;
 use crate::config::cors_params::StringOrSequence;
+use crate::valid::ValidationError;
 
 #[derive(Clone, Debug, Setters)]
 pub struct CorsParams {
@@ -117,9 +118,9 @@ impl CorsParams {
 }
 
 impl TryFrom<config::cors_params::CorsParams> for CorsParams {
-    type Error = anyhow::Error;
+    type Error = ValidationError<String>;
 
-    fn try_from(value: config::cors_params::CorsParams) -> anyhow::Result<Self> {
+    fn try_from(value: config::cors_params::CorsParams) -> Result<Self, ValidationError<String>> {
         Ok(CorsParams {
             allow_credentials: value.allow_credentials,
             allow_headers: value.allow_headers.map(|val| val.try_into()).transpose()?,

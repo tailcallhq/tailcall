@@ -118,21 +118,17 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             .fuse(handle_experimental_headers(
                 (config_server).get_experimental_headers(),
             ))
-            .and_then(
-                |(hostname, http, response_headers, script, experimental_headers)| {
-                    let cors_params = config_server
-                        .headers
-                        .as_ref()
-                        .and_then(|header| header.get_cors_params())
-                        .map(|val| val.try_into())
-                        .transpose();
-
-                    let cors_params: Option<CorsParams> = match cors_params {
-                        Ok(val) => val,
-                        Err(e) => return Valid::fail(e.to_string()),
-                    };
-
-                    let server = Server {
+            .fuse(Valid::from(
+                (config_server)
+                    .headers
+                    .as_ref()
+                    .and_then(|header| header.get_cors_params())
+                    .map(|val| val.try_into())
+                    .transpose(),
+            ))
+            .map(
+                |(hostname, http, response_headers, script, experimental_headers, cors_params)| {
+                    Server {
                         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                         enable_cache_control_header: (config_server).enable_cache_control(),
                         enable_set_cookie_header: (config_server).enable_set_cookies(),
@@ -153,8 +149,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                         response_headers,
                         script,
                         cors_params,
-                    };
-                    Valid::succeed(server)
+                    }
                 },
             )
             .to_result()

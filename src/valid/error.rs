@@ -125,6 +125,12 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
     }
 }
 
+impl From<anyhow::Error> for ValidationError<String> {
+    fn from(error: anyhow::Error) -> Self {
+        ValidationError::new(format!("Validation failed because of {}", error))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;

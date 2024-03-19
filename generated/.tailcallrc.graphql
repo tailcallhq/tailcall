@@ -457,6 +457,16 @@ The `@const` operators allows us to embed a constant response for the schema.
 input Const {
   data: JSON
 }
+input CorsParams {
+  allowCredentials: Boolean!
+  allowHeaders: StringOrSequence
+  allowMethods: StringOrSequence
+  allowOrigin: StringOrSequence
+  allowPrivateNetwork: Boolean!
+  exposeHeaders: StringOrSequence
+  maxAge: Int
+  vary: [String!]
+}
 enum Encoding {
   ApplicationJson
   ApplicationXWwwFormUrlencoded
@@ -751,6 +761,8 @@ input StdoutExporter {
   Output to stdout in pretty human-readable format
   """
   pretty: Boolean!
+}
+input StringOrSequence {
 }
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
