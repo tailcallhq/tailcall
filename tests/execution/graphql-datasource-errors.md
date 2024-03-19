@@ -1,18 +1,17 @@
 # Graphql datasource
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
+}
+
+type Query {
+  user(id: Int): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
 }
 
 type User {
   id: Int
   name: String
-}
-
-type Query {
-  user(id: Int): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
 }
 ```
 

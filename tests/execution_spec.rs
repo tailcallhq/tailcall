@@ -320,7 +320,6 @@ struct ExecutionSpec {
     // Annotations for the runner
     runner: Option<Annotation>,
 
-    check_identity: bool,
     sdl_error: bool,
 }
 
@@ -398,7 +397,6 @@ impl ExecutionSpec {
         let mut files: BTreeMap<String, String> = BTreeMap::new();
         let mut assert: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
-        let mut check_identity = false;
         let mut sdl_error = false;
 
         while let Some(node) = children.next() {
@@ -432,8 +430,6 @@ impl ExecutionSpec {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
                                 [a, b] => {
-                                    check_identity =
-                                        a.contains("check_identity") && b.ends_with("true");
                                     sdl_error = a.contains("expect_validation_error")
                                         && b.ends_with("true");
                                 }
@@ -604,7 +600,6 @@ impl ExecutionSpec {
             files,
 
             runner,
-            check_identity,
             sdl_error,
         };
 
@@ -942,32 +937,21 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
         let config = Config::default().merge_right(config);
 
-        // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code
-        // style the re-serializing check gives us some of the advantages of the
-        // identity check too, but we are missing out on some by having it only
-        // enabled for either new tests that request it or old graphql_spec
-        // tests that were explicitly written with it in mind
-        if spec.check_identity {
-            if matches!(source, Source::GraphQL) {
-                let identity = config.to_sdl();
+        let identity = match source {
+            Source::GraphQL => config.to_sdl(),
+            Source::Json => config.to_json(true).expect("Failed to convert config to JSON"),
+            Source::Yml => config.to_yaml().expect("Failed to convert config to YML"),
+        };
+        
+        // \r is added automatically in windows, it's safe to replace it with \n
+        let content = content.replace("\r\n", "\n");
 
-                // \r is added automatically in windows, it's safe to replace it with \n
-                let content = content.replace("\r\n", "\n");
-
-                assert_eq!(
-                    identity,
-                    content.as_ref(),
-                    "Identity check failed for {:#?}",
-                    spec.path,
-                );
-            } else {
-                panic!(
-                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
-                    spec.path
-                );
-            }
-        }
+        pretty_assertions::assert_eq!(
+            content.as_ref(),
+            identity,
+            "Identity check failed for {:#?}",
+            spec.path,
+        );
 
         server.push(config);
     }

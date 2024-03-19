@@ -1,18 +1,14 @@
 # Test const with mustache
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
-}
-
-type Query {
-  a: A @http(baseURL: "http://localhost:3000", path: "/a")
 }
 
 type A {
   a: Int
-  d: D @modify(omit: true)
   bc: BC @const(data: {d: "{{value.d}}", f: "{{value.f}}"})
+  d: D @modify(omit: true)
 }
 
 type BC {
@@ -22,6 +18,10 @@ type BC {
 
 type D {
   e: Int
+}
+
+type Query {
+  a: A @http(baseURL: "http://localhost:3000", path: "/a")
 }
 ```
 

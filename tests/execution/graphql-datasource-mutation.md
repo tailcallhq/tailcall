@@ -1,29 +1,28 @@
 # Graphql datasource
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
   mutation: Mutation
 }
 
-type User {
-  id: Int
-  name: String
+input UserInput {
+  email: String!
+  name: String!
+  phone: String
+}
+
+type Mutation {
+  createUser(user: UserInput!): User @graphQL(args: [{key: "user", value: "{{args.user}}"}], baseURL: "http://upstream/graphql", name: "createUser")
 }
 
 type Query {
   users: [User] @graphQL(baseURL: "http://upstream/graphql", name: "users")
 }
 
-type Mutation {
-  createUser(user: UserInput!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "createUser", args: [{key: "user", value: "{{args.user}}"}])
-}
-
-type UserInput {
-  name: String!
-  email: String!
-  phone: String
+type User {
+  id: Int
+  name: String
 }
 ```
 

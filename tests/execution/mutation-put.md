@@ -7,8 +7,8 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
 }
 
 input PostInput {
-  id: Int
   body: String
+  id: Int
   title: String
   userId: Int
 }
@@ -25,7 +25,7 @@ type Post {
 }
 
 type Query {
-  firstUser: User @http(method: "GET", path: "/users/1")
+  firstUser: User @http(path: "/users/1")
 }
 
 type User {

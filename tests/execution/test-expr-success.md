@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-expr-success
 
 ```protobuf @file:news.proto
