@@ -597,7 +597,8 @@ pub struct Http {
 }
 
 ///
-/// Provides the ability to refer to multiple field resolvers in the Query or Mutation root.
+/// Provides the ability to refer to multiple fields in the Query or
+/// Mutation root.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Call {
     pub steps: Vec<Step>,

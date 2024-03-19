@@ -25,23 +25,10 @@ directive @cache(
 ) on OBJECT | FIELD_DEFINITION
 
 """
-Provides the ability to refer to a field defined in the root Query or Mutation.
+Provides the ability to refer to multiple fields in the Query or Mutation root.
 """
 directive @call(
-  """
-  The arguments of the field on the `Query` or `Mutation` type that you want to call. 
-  For instance `{id: "{{value.userId}}"}`.
-  """
-  args: JSON
-  """
-  The name of the field on the `Mutation` type that you want to call. For instance 
-  `createUser`.
-  """
-  mutation: String
-  """
-  The name of the field on the `Query` type that you want to call. For instance `user`.
-  """
-  query: String
+  steps: [Step]
 ) on FIELD_DEFINITION
 
 """
@@ -747,6 +734,23 @@ input StdoutExporter {
   Output to stdout in pretty human-readable format
   """
   pretty: Boolean!
+}
+"""
+Provides the ability to refer to a field defined in the root Query or Mutation.
+"""
+input Step {
+  """
+  The arguments that will override the actual arguments of the field.
+  """
+  args: JSON
+  """
+  The name of the field on the `Mutation` type that you want to call.
+  """
+  mutation: String
+  """
+  The name of the field on the `Query` type that you want to call.
+  """
+  query: String
 }
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
