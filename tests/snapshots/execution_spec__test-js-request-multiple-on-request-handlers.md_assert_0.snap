@@ -9,7 +9,8 @@ expression: response
   },
   "body": {
     "data": {
-      "life": "its a life."
+      "foo": "its intercepted foo",
+      "bar": "its intercepted bar"
     }
   }
 }

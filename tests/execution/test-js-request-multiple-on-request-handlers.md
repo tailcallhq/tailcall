@@ -1,35 +1,53 @@
 # Js Request - Multiple onRequest Handlers
 
+#### file:test1.js:
+
 ```js @file:test1.js
 function onRequest({request}) {
   return {request}
 }
-function life({request}) {
+function foo({request}) {
   return {
     response: {
       status: 200,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify("its a life."),
+      body: JSON.stringify("its intercepted foo"),
+    },
+  }
+}
+function bar({request}) {
+  return {
+    response: {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify("its intercepted bar"),
     },
   }
 }
 ```
 
+#### server:
+
 ```graphql @server
-schema @server @link(type: Script, src: "test1.js") {
+schema @server @upstream(baseURL: "http://localhost:3000", onRequest: "foo") @link(type: Script, src: "test1.js") {
   query: Query
 }
 
 type Query {
-  life: String @http(baseURL: "http://localhost:3000", path: "/life", onRequest: "life")
+  foo: String @http(baseURL: "http://localhost:3000", path: "/foo")
+  bar: String @http(baseURL: "http://localhost:3000", path: "/bar", onRequest: "bar")
 }
 ```
+
+#### assert:
 
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { life }
+    query: query { foo bar }
 ```

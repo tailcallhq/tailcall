@@ -170,6 +170,10 @@ impl Upstream {
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only.unwrap_or(false)
     }
+
+    pub fn get_on_request(&self) -> String {
+        self.on_request.clone().unwrap_or("".to_string())
+    }
 }
 
 impl MergeRight for Upstream {
@@ -183,6 +187,7 @@ impl MergeRight for Upstream {
                 other
             }
         });
+        self.on_request = self.on_request.merge_right(other.on_request);
         self.base_url = self.base_url.merge_right(other.base_url);
         self.connect_timeout = self.connect_timeout.merge_right(other.connect_timeout);
         self.http_cache = self.http_cache.merge_right(other.http_cache);
