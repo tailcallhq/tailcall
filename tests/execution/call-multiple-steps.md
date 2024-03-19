@@ -13,9 +13,9 @@ type Query {
   abc(input: JSON): JSON
     @call(
       steps: [
-        { query: "a", args: { input: "{{args.input}}" } }
-        { query: "b", args: { input: "{{args.input}}" } }
-        { query: "c", args: { input: "{{args.input}}" } }
+        {query: "a", args: {input: "{{args.input}}"}}
+        {query: "b", args: {input: "{{args.input}}"}}
+        {query: "c", args: {input: "{{args.input}}"}}
       ]
     )
 }
@@ -25,5 +25,5 @@ type Query {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: 'query { abc(input: { a: 1, b: 2, c: 3 }) }'
+    query: "query { abc(input: { a: 1, b: 2, c: 3 }) }"
 ```
