@@ -1,4 +1,4 @@
-# Cors allowCredentials vary
+# Cors allow cred vary
 
 ```graphql @server
 schema

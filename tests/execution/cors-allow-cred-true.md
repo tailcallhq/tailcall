@@ -1,4 +1,4 @@
-# CorsParams 1
+# Cors allow cred true
 
 ```graphql @server
 schema
@@ -29,7 +29,6 @@ type Query {
   url: http://localhost:8080/graphql
   body:
     headers:
-      access-control-allow-origin: xyz.com
       access-control-allow-method: "OPTIONS, POST, GET"
       access-control-allow-credentials: true
     query: "query { val }"
