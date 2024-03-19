@@ -52,9 +52,9 @@ These are usually only added to tests temporarily, so try not to commit tests wi
 
 ### Blocks
 
-Blocks are level 4 headings (`####`) followed by the block type, and a code block after them. Blocks supply the runner with data, and the runner determines what to do based on the available blocks.
+Blocks start with a code block indicated by three backticks and the block type directly after them, followed by the block identifier prefixed with `@`, then the code block contents. Blocks supply the runner with data, and the runner determines what to do based on the available blocks.
 
-#### `#### server:`
+#### `@server`
 
 A `server` block specifies a server SDL config. These are expected to be successfully parseable to have a passing test, unless the [`sdl error` instruction](#instruction) is specified, which requires the config parsing to throw an error. There must be at least one `server` block in a test.
 
@@ -62,14 +62,13 @@ Every test should have at least one `server` block. Some blocks (for example, `a
 
 The `merge` check is always performed using every defined server block.
 
-When the [`check identity` instruction](#instruction) is specified, the runner will attempt to perform an `identity` check, but since is a "dumb", plain-text check, it requires the `server` block's code to be written in a specific way.
+The runner will attempt to perform an `identity` check, but since is a "dumb", plain-text check, it requires the `server` block's code to be written in a specific way.
 
 Example:
 
 ````md
-#### server:
 
-```graphql
+```graphql @server
 schema {
   query: Query
 }
@@ -85,7 +84,7 @@ type Query {
 ```
 ````
 
-#### `#### mock:`
+#### `@ mock:`
 
 A `mock` block specifies mocked HTTP endpoints in `YAML`. This is very similar to the `mock` field in the [`http_spec`](#http_spec) syntax.
 
@@ -96,9 +95,8 @@ There may be at most one `mock` block in a test.
 Example:
 
 ````md
-#### mock:
 
-```graphql
+```graphql @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
@@ -110,7 +108,7 @@ Example:
 ```
 ````
 
-#### `#### env:`
+#### `@ env:`
 
 An `env` block specifies environment variables in `YAML` that the runner should use in the app context.
 This is very similar to the `env` field in the [`http_spec`](#http_spec) syntax.
@@ -120,14 +118,13 @@ There may be at most one `env` block in a test.
 Example:
 
 ````md
-#### env:
 
-```graphql
+```graphql @env
 TEST_ID: 1
 ```
 ````
 
-#### `#### assert:`
+#### `@ assert:`
 
 An `assert` block specifies HTTP requests that the runner should perform in `YAML`. This is very similar to the `assert` field in the [`http_spec`](#http_spec) syntax,
 but it only contains requests. The response for each request is stored in an `assert_{i}` snapshot.
@@ -137,9 +134,8 @@ There may be at most one `assert` block in a test.
 Example:
 
 ````md
-#### assert:
 
-```graphql
+```graphql @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -147,7 +143,7 @@ Example:
 ```
 ````
 
-#### `#### file:<filename>`
+#### `@ file:<filename>`
 
 A `file` block creates a file in the spec's virtual file system. The [`server` block](#server) will only be able to access files created in this way: the true filesystem is not available to it.
 
@@ -156,9 +152,8 @@ Every `file` block has the filename declared in the header. The language of the 
 Example:
 
 ````md
-#### file:enum.graphql
 
-```graphql
+```graphql @file:enum.graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -186,15 +181,6 @@ expect_validation_error: true
 
 - This instructs the runner to expect a failure when parsing the `server` block and to compare the result with an `errors` snapshot. This is used when testing for error handling.
 
-```md
----
-check_identity: true
----
-```
-
-- This instructs the runner to run identity checks on `server` blocks. While it would be good to run this on every test, the code of `server` blocks must be written with this instruction mind, therefore it is optional.
-
-There must be exactly zero or one instruction in a test.
 
 ## Test process
 
@@ -212,7 +198,7 @@ There must be exactly zero or one instruction in a test.
       1. Ends the test run, and starts evaluating the next test. (All other actions would require a parseable `server` schema.)
       1. The runner parses every `server` block.
    1. Parses the block and checks for errors.
-   1. If the test has a [`check identity` instruction](#instruction), the runner converts the parsed block to SDL again, and checks if the two strings are the same. If they're not, the runner throws an error.
+   1. The runner then performs an `identity_check`, during which it converts the parsed block to SDL again, and checks if the two strings are the same. If they're not, the runner throws an error.
    1. The runner performs a `merge` check:
       1. Attemps to merge all [`server` blocks](#server), resulting in a merged config. (If there is only one [`server` block](#server), the runner will merge it with the default config.)
       1. Compares the merged config to the `merged` snapshot.
