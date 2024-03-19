@@ -200,7 +200,7 @@ expect_validation_error: true
    1. Parses the block and checks for errors.
    1. The runner then performs an `identity_check`, during which it converts the parsed block to SDL again, and checks if the two strings are the same. If they're not, the runner throws an error.
    1. The runner performs a `merge` check:
-      1. Attemps to merge all [`server` blocks](#server), resulting in a merged config. (If there is only one [`server` block](#server), the runner will merge it with the default config.)
+      1. Attempts to merge all [`server` blocks](#server), resulting in a merged config. (If there is only one [`server` block](#server), the runner will merge it with the default config.)
       1. Compares the merged config to the `merged` snapshot.
       1. If the snapshot doesn't match the merged config, the runner generates a new snapshot and throws an error.
    1. If there is exactly one [`server` block](#server), the runner performs a `client` check:
