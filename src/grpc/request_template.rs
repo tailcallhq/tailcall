@@ -10,7 +10,7 @@ use url::Url;
 
 use super::request::create_grpc_request;
 use crate::config::GraphQLOperationType;
-use crate::grpc::protobuf::ProtobufOperation;
+use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation};
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
@@ -26,6 +26,7 @@ pub struct RequestTemplate {
     pub body: Option<Mustache>,
     pub operation: ProtobufOperation,
     pub operation_type: GraphQLOperationType,
+    pub status_details: Option<ProtobufMessage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -169,7 +170,7 @@ mod tests {
                 .await
                 .unwrap()
                 .extensions
-                .get_file_descriptor_set(&method)
+                .get_file_descriptor_set()
                 .unwrap(),
         )
         .unwrap();
@@ -213,6 +214,7 @@ mod tests {
                 Mustache::parse("value").unwrap(),
             )],
             operation: get_protobuf_op().await,
+            status_details: None,
             body: None,
             operation_type: GraphQLOperationType::Query,
         };
@@ -249,6 +251,7 @@ mod tests {
             operation: get_protobuf_op().await,
             body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
             operation_type: GraphQLOperationType::Query,
+            status_details: None,
         };
         let ctx = Context::default();
         let rendered = tmpl.render(&ctx).unwrap();
@@ -266,6 +269,7 @@ mod tests {
             operation: get_protobuf_op().await,
             body: Some(Mustache::parse(body_str).unwrap()),
             operation_type: GraphQLOperationType::Query,
+            status_details: None,
         }
     }
 

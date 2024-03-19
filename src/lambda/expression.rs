@@ -3,6 +3,7 @@ use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
 use anyhow::Result;
+use async_graphql::{ErrorExtensions, Value};
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
@@ -61,16 +62,43 @@ pub enum Context {
     },
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum EvaluationError {
     #[error("IOException: {0}")]
     IOException(String),
+
+    #[error("gRPC Error: status: {grpc_code}, description: `{grpc_description}`, message: `{grpc_status_message}`")]
+    GRPCError {
+        grpc_code: i32,
+        grpc_description: String,
+        grpc_status_message: String,
+        grpc_status_details: Value,
+    },
 
     #[error("APIValidationError: {0:?}")]
     APIValidationError(Vec<String>),
 
     #[error("ExprEvalError: {0:?}")]
     ExprEvalError(String),
+}
+
+impl ErrorExtensions for EvaluationError {
+    fn extend(&self) -> async_graphql::Error {
+        async_graphql::Error::new(format!("{}", self)).extend_with(|_err, e| {
+            if let EvaluationError::GRPCError {
+                grpc_code,
+                grpc_description,
+                grpc_status_message,
+                grpc_status_details,
+            } = self
+            {
+                e.set("grpc_code", *grpc_code);
+                e.set("grpc_description", grpc_description);
+                e.set("grpc_status_message", grpc_status_message);
+                e.set("grpc_status_details", grpc_status_details.clone());
+            }
+        })
+    }
 }
 
 impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {

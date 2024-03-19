@@ -84,6 +84,7 @@ impl AppContext {
                                     let data_loader = GrpcDataLoader {
                                         runtime: runtime.clone(),
                                         operation: req_template.operation.clone(),
+                                        status_details: req_template.status_details.clone(),
                                         group_by: group_by.clone(),
                                     };
                                     let data_loader = data_loader
