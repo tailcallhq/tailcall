@@ -161,21 +161,23 @@ impl TryFrom<config::cors_params::CorsParams> for CorsParams {
                 .allow_headers
                 .map(|list| list.join(", ").parse())
                 .transpose()?,
-            allow_methods: Some(value
-                .allow_methods
-                .map(|list| {
-                    list.iter()
-                        .fold(String::new(), |mut acc, method| {
-                            if acc.len() != 0 {
-                                acc.push_str(", ");
-                            }
-                            acc.push_str(&method.to_string());
-                            acc
-                        })
-                        .parse()
-                })
-                .transpose()?
-                .unwrap_or(WILDCARD)),
+            allow_methods: Some(
+                value
+                    .allow_methods
+                    .map(|list| {
+                        list.iter()
+                            .fold(String::new(), |mut acc, method| {
+                                if !acc.is_empty() {
+                                    acc.push_str(", ");
+                                }
+                                acc.push_str(&method.to_string());
+                                acc
+                            })
+                            .parse()
+                    })
+                    .transpose()?
+                    .unwrap_or(WILDCARD),
+            ),
             allow_origins: value
                 .allow_origins
                 .into_iter()
