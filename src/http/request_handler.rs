@@ -179,7 +179,8 @@ pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
-    // Safe to call `.unwrap()` because this method will only be called when `cors_params` is `Some`
+    // Safe to call `.unwrap()` because this method will only be called when
+    // `cors_params` is `Some`
     let cors = app_ctx.blueprint.server.cors_params.as_ref().unwrap();
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
