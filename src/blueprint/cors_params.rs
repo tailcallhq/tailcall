@@ -155,37 +155,44 @@ impl TryFrom<config::cors_params::CorsParams> for CorsParams {
     type Error = ValidationError<String>;
 
     fn try_from(value: config::cors_params::CorsParams) -> Result<Self, ValidationError<String>> {
-        let cors_params = try_from_inner(value)?;
+        let cors_params = CorsParams {
+            allow_credentials: value.allow_credentials,
+            allow_headers: value
+                .allow_headers
+                .map(|list| list.join(", ").parse())
+                .transpose()?,
+            allow_methods: Some(value
+                .allow_methods
+                .map(|list| {
+                    list.iter()
+                        .fold(String::new(), |mut acc, method| {
+                            if acc.len() != 0 {
+                                acc.push_str(", ");
+                            }
+                            acc.push_str(&method.to_string());
+                            acc
+                        })
+                        .parse()
+                })
+                .transpose()?
+                .unwrap_or(WILDCARD)),
+            allow_origins: value
+                .allow_origins
+                .into_iter()
+                .map(|val| Ok(val.parse()?))
+                .collect::<Result<_, ValidationError<String>>>()?,
+            allow_private_network: false,
+            expose_headers: Some(value.expose_headers.join(", ").parse()?),
+            max_age: value.max_age.map(|val| val.into()),
+            vary: value
+                .vary
+                .iter()
+                .map(|val| Ok(val.parse()?))
+                .collect::<Result<_, ValidationError<String>>>()?,
+        };
         ensure_usable_cors_rules(&cors_params)?;
         Ok(cors_params)
     }
-}
-
-fn try_from_inner(value: config::cors_params::CorsParams) -> Result<CorsParams, anyhow::Error> {
-    Ok(CorsParams {
-        allow_credentials: value.allow_credentials,
-        allow_headers: value
-            .allow_headers
-            .map(|list| list.join(", ").parse())
-            .transpose()?,
-        allow_methods: value
-            .allow_methods
-            .map(|list| list.join(", ").parse())
-            .transpose()?,
-        allow_origins: value
-            .allow_origins
-            .into_iter()
-            .map(|val| Ok(val.parse()?))
-            .collect::<anyhow::Result<_>>()?,
-        allow_private_network: false,
-        expose_headers: Some(value.expose_headers.join(", ").parse()?),
-        max_age: value.max_age.map(|val| val.into()),
-        vary: value
-            .vary
-            .iter()
-            .map(|val| Ok(val.parse()?))
-            .collect::<anyhow::Result<_>>()?,
-    })
 }
 
 #[allow(clippy::declare_interior_mutable_const)]

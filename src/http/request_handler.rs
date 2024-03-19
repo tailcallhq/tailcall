@@ -174,7 +174,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-pub async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
+async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,

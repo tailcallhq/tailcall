@@ -1,4 +1,4 @@
-# CorsParams 1
+# Cors allowCredentials vary
 
 ```graphql @server
 schema
@@ -7,8 +7,8 @@ schema
     headers: {
       corsParams: {
         allowCredentials: true
-        allowMethods: ["OPTIONS", "POST", "GET"]
-        allowOrigin: ["abc.com", "xyz.com"]
+        allowMethods: [OPTIONS, POST, GET]
+        allowOrigins: ["abc.com", "xyz.com"]
         allowPrivateNetwork: false
         exposeHeaders: [""]
         maxAge: 23

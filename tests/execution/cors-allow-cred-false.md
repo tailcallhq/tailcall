@@ -8,8 +8,8 @@ schema
       corsParams: {
         allowCredentials: false
         allowHeaders: ["Authorization"]
-        allowMethods: ["POST", "OPTIONS"]
-        allowOrigin: ["abc.com", "xyz.com"]
+        allowMethods: [POST, OPTIONS]
+        allowOrigins: ["abc.com", "xyz.com"]
         allowPrivateNetwork: true
         maxAge: 23
       }

@@ -250,7 +250,7 @@
             "null"
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/Method"
           }
         },
         "allowOrigins": {

@@ -460,7 +460,7 @@ input Const {
 input CorsParams {
   allowCredentials: Boolean!
   allowHeaders: [String!]
-  allowMethods: [String!]
+  allowMethods: [Method]
   allowOrigins: [String!]
   allowPrivateNetwork: Boolean!
   exposeHeaders: [String!]
