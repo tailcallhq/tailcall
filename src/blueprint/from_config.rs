@@ -86,11 +86,14 @@ where
     let type_of = field.name();
     let list = field.list();
     let required = field.non_null();
-    let type_ = config.find_type(type_of);
-    let schema = match type_ {
-        Some(type_) => {
+    let ty = config.find_type(type_of);
+    let schema = match ty {
+        Some(ty) => {
+            if let Some(variants) = ty.variants.clone() {
+                return JsonSchema::Enum(variants);
+            }
             let mut schema_fields = HashMap::new();
-            for (name, field) in type_.fields.iter() {
+            for (name, field) in ty.fields.iter() {
                 if field.script.is_none() && field.http.is_none() {
                     schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
                 }
