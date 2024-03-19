@@ -1,4 +1,4 @@
-# Caching
+# CorsParams 1
 
 ```graphql @server
 schema
@@ -6,13 +6,12 @@ schema
   @server(
     headers: {
       corsParams: {
-        allow_credentials: true
-        allow_headers: "*"
-        allow_methods: ["POST", "OPTIONS"]
-        allow_origin: ["abc.com", "xyz.com"]
-        allow_private_network: true
-        expose_headers: ""
-        max_age: 23
+        allowCredentials: true
+        allowMethods: ["OPTIONS", "POST", "GET"]
+        allowOrigin: ["abc.com", "xyz.com"]
+        allowPrivateNetwork: true
+        exposeHeaders: [""]
+        maxAge: 23
       }
     }
   ) {
@@ -26,12 +25,12 @@ type Query {
 
 ```yml @assert
 # the same request to validate caching
-- method: POST
+- method: OPTIONS
   url: http://localhost:8080/graphql
   body:
     headers:
       access-control-allow-origin: abc.com
-      access-control-allow-method: "POST, OPTIONS"
+      access-control-allow-method: "OPTIONS, POST, GET"
       access-control-allow-credentials: true
     query: "query { val }"
 ```

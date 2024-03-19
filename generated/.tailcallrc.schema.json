@@ -235,33 +235,30 @@
         },
         "allowHeaders": {
           "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringOrSequence"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         },
         "allowMethods": {
           "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StringOrSequence"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         },
         "allowOrigin": {
           "default": [],
-          "allOf": [
-            {
-              "$ref": "#/definitions/StringOrSequence"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "allowPrivateNetwork": {
           "default": false,
@@ -269,11 +266,10 @@
         },
         "exposeHeaders": {
           "default": [],
-          "allOf": [
-            {
-              "$ref": "#/definitions/StringOrSequence"
-            }
-          ]
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "maxAge": {
           "default": null,
@@ -1790,19 +1786,6 @@
           "type": "boolean"
         }
       }
-    },
-    "StringOrSequence": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      ]
     },
     "Telemetry": {
       "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",

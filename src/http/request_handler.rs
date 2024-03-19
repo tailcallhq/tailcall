@@ -198,7 +198,11 @@ fn ensure_usable_cors_rules(layer: &CorsParams) {
         );
 
         assert!(
-            !layer.allow_origin.is_wildcard(),
+            layer
+                .allow_origin
+                .first()
+                .filter(|val| is_wildcard(val))
+                .is_none(),
             "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` \
              with `Access-Control-Allow-Origin: *`"
         );

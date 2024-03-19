@@ -4,7 +4,6 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::http::request::Parts;
 
 use crate::config;
-use crate::config::cors_params::StringOrSequence;
 use crate::valid::ValidationError;
 
 #[derive(Clone, Debug, Setters)]
@@ -12,7 +11,7 @@ pub struct CorsParams {
     pub allow_credentials: bool,
     pub allow_headers: Option<HeaderValue>,
     pub allow_methods: Option<HeaderValue>,
-    pub allow_origin: ConstOrList,
+    pub allow_origin: Vec<HeaderValue>,
     pub allow_private_network: bool,
     pub expose_headers: Option<HeaderValue>,
     pub max_age: Option<HeaderValue>,
@@ -24,10 +23,7 @@ impl CorsParams {
         &self,
         origin: Option<&HeaderValue>,
     ) -> Option<(HeaderName, HeaderValue)> {
-        let allow_origin = match &self.allow_origin {
-            ConstOrList::Const(v) => v.clone(),
-            ConstOrList::List(l) => origin.filter(|o| l.contains(o))?.clone(),
-        };
+        let allow_origin = origin.filter(|o| self.allow_origin.contains(o))?.clone();
         Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin))
     }
 
@@ -106,8 +102,7 @@ impl CorsParams {
             res.extend_from_slice(val.as_bytes());
         }
 
-        let header_val = HeaderValue::from_bytes(&res)
-            .expect("comma-separated list of HeaderValues is always a valid HeaderValue");
+        let header_val = HeaderValue::from_bytes(&res).ok()?;
         Some((header::VARY, header_val))
     }
 
@@ -121,21 +116,35 @@ impl TryFrom<config::cors_params::CorsParams> for CorsParams {
     type Error = ValidationError<String>;
 
     fn try_from(value: config::cors_params::CorsParams) -> Result<Self, ValidationError<String>> {
-        Ok(CorsParams {
-            allow_credentials: value.allow_credentials,
-            allow_headers: value.allow_headers.map(|val| val.try_into()).transpose()?,
-            allow_methods: value.allow_methods.map(|val| val.try_into()).transpose()?,
-            allow_origin: value.allow_origin.try_into()?,
-            allow_private_network: false,
-            expose_headers: Some(value.expose_headers.try_into()?),
-            max_age: value.max_age.map(|val| val.into()),
-            vary: value
-                .vary
-                .iter()
-                .map(|val| Ok(val.parse()?))
-                .collect::<anyhow::Result<_>>()?,
-        })
+        Ok(try_from_inner(value)?)
     }
+}
+
+fn try_from_inner(value: config::cors_params::CorsParams) -> Result<CorsParams, anyhow::Error> {
+    Ok(CorsParams {
+        allow_credentials: value.allow_credentials,
+        allow_headers: value
+            .allow_headers
+            .map(|list| list.join(", ").parse())
+            .transpose()?,
+        allow_methods: value
+            .allow_methods
+            .map(|list| list.join(", ").parse())
+            .transpose()?,
+        allow_origin: value
+            .allow_origin
+            .into_iter()
+            .map(|val| Ok(val.parse()?))
+            .collect::<anyhow::Result<_>>()?,
+        allow_private_network: false,
+        expose_headers: Some(value.expose_headers.join(", ").parse()?),
+        max_age: value.max_age.map(|val| val.into()),
+        vary: value
+            .vary
+            .iter()
+            .map(|val| Ok(val.parse()?))
+            .collect::<anyhow::Result<_>>()?,
+    })
 }
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -144,33 +153,4 @@ const WILDCARD: HeaderValue = HeaderValue::from_static("*");
 #[allow(clippy::borrow_interior_mutable_const)]
 pub fn is_wildcard(header_value: &HeaderValue) -> bool {
     header_value == WILDCARD
-}
-
-#[derive(Clone, Debug)]
-pub enum ConstOrList {
-    Const(HeaderValue),
-    List(Vec<HeaderValue>),
-}
-
-impl ConstOrList {
-    #[allow(clippy::borrow_interior_mutable_const)]
-    pub fn is_wildcard(&self) -> bool {
-        matches!(&self, Self::Const(v) if v == WILDCARD)
-    }
-}
-
-impl TryFrom<StringOrSequence> for ConstOrList {
-    type Error = anyhow::Error;
-
-    fn try_from(value: StringOrSequence) -> anyhow::Result<Self> {
-        Ok(match value {
-            StringOrSequence::String(string) => Self::Const(string.parse()?),
-            StringOrSequence::Sequence(sequence) => Self::List(
-                sequence
-                    .into_iter()
-                    .map(|val| Ok(val.parse()?))
-                    .collect::<anyhow::Result<Vec<_>>>()?,
-            ),
-        })
-    }
 }

@@ -459,11 +459,11 @@ input Const {
 }
 input CorsParams {
   allowCredentials: Boolean!
-  allowHeaders: StringOrSequence
-  allowMethods: StringOrSequence
-  allowOrigin: StringOrSequence
+  allowHeaders: [String!]
+  allowMethods: [String!]
+  allowOrigin: [String!]
   allowPrivateNetwork: Boolean!
-  exposeHeaders: StringOrSequence
+  exposeHeaders: [String!]
   maxAge: Int
   vary: [String!]
 }
@@ -761,8 +761,6 @@ input StdoutExporter {
   Output to stdout in pretty human-readable format
   """
   pretty: Boolean!
-}
-input StringOrSequence {
 }
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
