@@ -1,0 +1,14 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  a(input: JSON): JSON @const(data: "{{args.input.a}}")
+  abc(input: JSON): JSON @call(steps: [{query: "a", args: {input: "{{args.input}}"}}, {query: "b", args: {input: "{{args.input}}"}}, {query: "c", args: {input: "{{args.input}}"}}])
+  b(input: JSON): JSON @const(data: "{{args.input.b}}")
+  c(input: JSON): JSON @const(data: "{{args.input.c}}")
+}

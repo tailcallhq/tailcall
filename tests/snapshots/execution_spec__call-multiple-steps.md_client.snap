@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  a(input: JSON): JSON
+  abc(input: JSON): JSON
+  b(input: JSON): JSON
+  c(input: JSON): JSON
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
