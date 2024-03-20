@@ -161,7 +161,7 @@ jobs:
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
-        uses: Wandalen/wretry.action@v1
+        uses: Wandalen/wretry.action@v2
         with:
           action: codecov/codecov-action@v4
           attempt_limit: 3
