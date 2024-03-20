@@ -458,7 +458,7 @@ input Const {
   data: JSON
 }
 """
-Struct to configure Cross-Origin Resource Sharing (CORS) for a server.
+Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 """
 input CorsParams {
   """

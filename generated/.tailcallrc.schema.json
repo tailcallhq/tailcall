@@ -227,7 +227,7 @@
       }
     },
     "CorsParams": {
-      "description": "Struct to configure Cross-Origin Resource Sharing (CORS) for a server.",
+      "description": "Type to configure Cross-Origin Resource Sharing (CORS) for a server.",
       "type": "object",
       "properties": {
         "allowCredentials": {
