@@ -1,5 +1,7 @@
 use std::collections::btree_map::Iter;
 
+use async_graphql::Name;
+use indexmap::IndexMap;
 use serde_json::Value;
 
 use crate::blueprint::*;
@@ -39,15 +41,29 @@ pub fn compile_call(
     let mut resolvers: Vec<Valid<Expression, String>> = Vec::new();
 
     for call in call.steps.iter() {
-        resolvers.push(compile_step(field, config_module, call, operation_type));
+        resolvers.push(
+            compile_step(field, config_module, call, operation_type).and_then(|expr| {
+                let mut map = IndexMap::new();
+                for (k, v) in &call.args {
+                    match DynamicValue::try_from(v) {
+                        Ok(value) => map.insert(Name::new(k.clone()), value),
+                        Err(e) => return Valid::fail(e.to_string()),
+                    };
+                }
+                let object = DynamicValue::Object(map);
+                let args_expr = Expression::Literal(object);
+
+                Valid::succeed(expr.with_args(args_expr))
+            }),
+        );
     }
 
     resolvers
         .into_iter()
         .reduce(|acc, cur| {
             acc.map(|expr| {
-                if cur.is_succeed() {
-                    expr.and_then(cur.to_result().unwrap())
+                if let Ok(cur) = cur.to_result() {
+                    expr.and_then(cur)
                 } else {
                     expr
                 }
