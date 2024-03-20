@@ -7,7 +7,8 @@ use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use crate::config::{Arg, Config, Field, Type};
+use crate::blueprint::GrpcMethod;
+use crate::config::{Arg, Config, Field, Grpc, Type};
 
 fn convert_ty(proto_ty: &str) -> String {
     let binding = proto_ty.to_lowercase();
@@ -101,13 +102,16 @@ fn append_service(
     map: &mut BTreeMap<String, Type>,
     services: Vec<ServiceDescriptorProto>,
     query: String,
+    package: String,
 ) {
     if services.is_empty() {
         return;
     }
+    let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
     let mut ty = Type::default();
 
     for service in services {
+        let service_name = service.name().to_string();
         for method in service.method {
             let mut cfg_field = Field::default();
             if let Some((k, v)) = get_arg(method.input_type()) {
@@ -117,8 +121,19 @@ fn append_service(
             let (output_ty, required) = get_output_ty(method.output_type());
             cfg_field.type_of = output_ty;
             cfg_field.required = required;
-            let name = method.name().to_case(Case::Camel);
-            ty.fields.insert(name, cfg_field);
+
+            grpc_method.service = service_name.clone();
+            grpc_method.name = method.name().to_string();
+
+            cfg_field.grpc = Some(Grpc {
+                base_url: None,
+                body: None,
+                group_by: vec![],
+                headers: vec![],
+                method: grpc_method.to_string(),
+            });
+            ty.fields
+                .insert(method.name().to_case(Case::Camel), cfg_field);
         }
     }
     map.insert(query, ty);
@@ -131,11 +146,14 @@ pub fn from_proto(
     let mut config = Config::default();
     let mut types = BTreeMap::new();
     let query = query.unwrap_or("Query".to_string());
+    config.schema.query = Some(query.clone());
 
     for file_descriptor in descriptor_set.file {
+        let pkg_name = file_descriptor.package().to_string();
+
         append_enums(&mut types, file_descriptor.enum_type);
         append_msg_type(&mut types, file_descriptor.message_type);
-        append_service(&mut types, file_descriptor.service, query.clone());
+        append_service(&mut types, file_descriptor.service, query.clone(), pkg_name);
     }
 
     config.types = types;
@@ -144,62 +162,35 @@ pub fn from_proto(
 }
 
 #[cfg(test)]
-mod test { // TODO add proper tests
+mod test {
+    use std::path::PathBuf;
+
     use prost_reflect::prost_types::FileDescriptorSet;
 
     use crate::config::from_proto::from_proto;
-
-    static FOO: &str = r#"
-    syntax = "proto3";
-
-        import "google/protobuf/empty.proto";
-
-        package news;
-
-        enum Status {
-          PUBLISHED = 0;
-          DRAFT = 1;
-        }
-
-
-        message News {
-          int32 id = 1;
-          string title = 2;
-          string body = 3;
-          string postImage = 4;
-          Status foo = 5;
-        }
-
-        service NewsService {
-          rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
-          rpc GetNews (NewsId) returns (News) {}
-          rpc GetMultipleNews (MultipleNewsId) returns (NewsList) {}
-          rpc DeleteNews (NewsId) returns (google.protobuf.Empty) {}
-          rpc EditNews (News) returns (News) {}
-          rpc AddNews (News) returns (News) {}
-        }
-
-        message NewsId {
-          int32 id = 1;
-        }
-
-        message MultipleNewsId {
-          repeated NewsId ids = 1;
-        }
-
-        message NewsList {
-          repeated News news = 1;
-        }
-    "#;
+    use crate::config::Config;
+    use crate::valid::Validator;
 
     #[test]
     fn test_from_proto() -> anyhow::Result<()> {
         let mut set = FileDescriptorSet::default();
-        let file_desc = protox_parse::parse("news.proto", FOO)?;
+        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        proto_no_pkg.push("src");
+        proto_no_pkg.push("grpc");
+        proto_no_pkg.push("tests");
+        proto_no_pkg.push("proto");
+        proto_no_pkg.push("news_enum.proto");
+
+        let file_desc = protox_parse::parse(
+            "news.proto",
+            std::fs::read_to_string(proto_no_pkg)?.as_str(),
+        )?;
         set.file.push(file_desc);
 
         let result = from_proto(set, None)?;
-        println!("{}", result.to_sdl());
+        let cfg = Config::from_sdl(result.to_sdl().as_str()).to_result()?;
+
+        assert_eq!(cfg, result);
         Ok(())
     }
 }
