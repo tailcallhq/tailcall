@@ -2,14 +2,12 @@ extern crate core;
 
 mod telemetry;
 
+use std::borrow::Cow;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Once};
-use std::{
-    borrow::Cow,
-    collections::{BTreeMap, HashMap},
-};
 use std::{fs, panic};
 
 use anyhow::{anyhow, Context};
@@ -51,8 +49,7 @@ pub mod test {
     use tailcall::runtime::TargetRuntime;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::MockHttpClient;
-    use crate::{blueprint, EnvIO, FileIO};
+    use crate::{blueprint, EnvIO, FileIO, MockHttpClient};
 
     #[derive(Clone)]
     struct TestFileIO {}

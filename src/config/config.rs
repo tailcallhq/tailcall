@@ -228,7 +228,6 @@ pub struct Type {
     pub cache: Option<Cache>,
     ///
     /// Marks field as protected by auth providers
-    ///
     #[serde(default)]
     pub protected: Option<Protected>,
 }
@@ -413,7 +412,6 @@ pub struct Field {
     pub cache: Option<Cache>,
     ///
     /// Marks field as protected by auth provider
-    ///
     #[serde(default)]
     pub protected: Option<Protected>,
 }

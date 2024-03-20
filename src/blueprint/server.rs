@@ -141,7 +141,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                     response_headers,
                     script,
                     auth,
-            },
+                },
             )
             .to_result()
     }

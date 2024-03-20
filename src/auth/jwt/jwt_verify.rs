@@ -94,7 +94,8 @@ pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool
 
         match aud {
             OneOrMany::One(aud) => audiences.contains(aud),
-            // if user token has list of aud, validate that at least one of them is inside validation set
+            // if user token has list of aud, validate that at least one of them is inside
+            // validation set
             OneOrMany::Vec(auds) => auds.iter().any(|aud| audiences.contains(aud)),
         }
     }

@@ -1461,6 +1461,83 @@
         }
       }
     },
+    "Jwks": {
+      "oneOf": [
+        {
+          "description": "JWKS data as a string or a template",
+          "type": "object",
+          "required": [
+            "data"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "JWKS data loaded from the remote server",
+          "type": "object",
+          "required": [
+            "remote"
+          ],
+          "properties": {
+            "remote": {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "maxAge": {
+                  "default": 300000,
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 1.0
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Jwt": {
+      "type": "object",
+      "required": [
+        "jwks"
+      ],
+      "properties": {
+        "audiences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "issuer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jwks": {
+          "description": "Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517). If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Jwks"
+            }
+          ]
+        },
+        "optionalKid": {
+          "description": "Specifies if the kid value inside request's JWT token is required to get validated with the JWKS",
+          "type": "boolean"
+        }
+      }
+    },
     "KeyValue": {
       "type": "object",
       "required": [
@@ -1509,7 +1586,8 @@
         "Script",
         "Cert",
         "Key",
-        "Operation"
+        "Operation",
+        "File"
       ]
     },
     "Method": {
@@ -1598,6 +1676,9 @@
         "text",
         "protobuf"
       ]
+    },
+    "Protected": {
+      "type": "object"
     },
     "Proxy": {
       "type": "object",

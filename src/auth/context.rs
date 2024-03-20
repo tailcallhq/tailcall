@@ -22,9 +22,10 @@ pub struct AuthContext {
 }
 
 impl GlobalAuthContext {
-    // TODO: it could be better to return async_graphql::Error to make it more graphql way
-    // with additional info. But this actually requires rewrites to expression to work with that type
-    // since otherwise any additional info will be lost during conversion to anyhow::Error
+    // TODO: it could be better to return async_graphql::Error to make it more
+    // graphql way with additional info. But this actually requires rewrites to
+    // expression to work with that type since otherwise any additional info
+    // will be lost during conversion to anyhow::Error
     async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
         let validations = join_all(
             self.providers

@@ -4,10 +4,9 @@ use std::num::NonZeroU64;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use super::ConfigReaderContext;
 use crate::is_default;
 use crate::mustache::Mustache;
-
-use super::ConfigReaderContext;
 
 mod default {
     pub mod jwt {
@@ -48,7 +47,8 @@ pub struct Jwt {
     pub issuer: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub audiences: HashSet<String>,
-    /// Specifies if the kid value inside request's JWT token is required to get validated with the JWKS
+    /// Specifies if the kid value inside request's JWT token is required to get
+    /// validated with the JWKS
     #[serde(default, skip_serializing_if = "is_default")]
     pub optional_kid: bool,
     /// Specifies JWKS data that is used for JWT validation.

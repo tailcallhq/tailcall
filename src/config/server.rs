@@ -2,9 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use super::{merge_headers, merge_key_value_vecs};
+use super::{merge_headers, merge_key_value_vecs, Auth};
 use crate::config::headers::Headers;
-use super::Auth;
 use crate::config::KeyValue;
 use crate::is_default;
 use crate::merge_right::MergeRight;
@@ -21,7 +20,8 @@ pub struct Server {
     pub apollo_tracing: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `auth` specified list of auth providers that could be used to verify access to protected fields (that marked with @protected)
+    /// `auth` specified list of auth providers that could be used to verify
+    /// access to protected fields (that marked with @protected)
     pub auth: Auth,
 
     #[serde(default, skip_serializing_if = "is_default")]
