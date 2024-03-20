@@ -183,13 +183,18 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
 ) -> Result<Response<async_graphql::Value>> {
-    ctx.req_ctx
+    let response = ctx
+        .req_ctx
         .runtime
         .http
         .execute(req)
         .await
         .map_err(|e| EvaluationError::IOException(e.to_string()))?
-        .to_json()
+        .to_json()?;
+
+    ctx.req_ctx.add_x_headers(&response.headers);
+
+    Ok(response)
 }
 
 async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
