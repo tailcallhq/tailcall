@@ -55,10 +55,10 @@ pub fn compile_call(
                 Valid::succeed(expr.with_args(args_expr))
             })
         })
-        .reduce(|acc, cur| {
-            acc.map(|expr| {
-                if let Ok(cur) = cur.to_result() {
-                    expr.and_then(cur)
+        .reduce(|expr, and_then| {
+            expr.map(|expr| {
+                if let Ok(and_then) = and_then.to_result() {
+                    expr.and_then(and_then)
                 } else {
                     expr
                 }
