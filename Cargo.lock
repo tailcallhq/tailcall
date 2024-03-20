@@ -4259,9 +4259,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.2"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfbdb5ddfafe3040e01fe9dced711e27b5336ac97d4a9b2089f0066a04b5846"
+checksum = "1b3818d6051afeb6f88412bc8693cf8219799b2f2c2365f15e7534f0e198a16c"
 dependencies = [
  "once_cell",
  "rustls-pki-types",
@@ -4996,7 +4996,7 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "resource",
- "rustls 0.23.2",
+ "rustls 0.23.3",
  "rustls-pemfile 1.0.4",
  "rustls-pki-types",
  "schemars",
