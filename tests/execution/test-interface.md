@@ -1,10 +1,10 @@
+---
+check_identity: true
+---
+
 # test-interface
 
-###### check identity
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }

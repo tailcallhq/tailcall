@@ -1,5 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 
+use async_graphql::dynamic::SchemaBuilder;
+
+use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
 use crate::blueprint::compress::compress;
 use crate::blueprint::*;
@@ -33,11 +36,17 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
         Valid::from(Links::try_from(config_module.links.clone())).map_to(blueprint)
     });
 
+    let opentelemetry = to_opentelemetry().transform::<Blueprint>(
+        |opentelemetry, blueprint| blueprint.telemetry(opentelemetry),
+        |blueprint| blueprint.telemetry,
+    );
+
     server
         .and(schema)
         .and(definitions)
         .and(upstream)
         .and(links)
+        .and(opentelemetry)
         .update(apply_batching)
         .update(compress)
 }
@@ -116,6 +125,13 @@ impl TryFrom<&ConfigModule> for Blueprint {
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()
             .try_fold(config_module, Blueprint::default())
+            .and_then(|blueprint| {
+                let schema_builder = SchemaBuilder::from(&blueprint);
+                match schema_builder.finish() {
+                    Ok(_) => Valid::succeed(blueprint),
+                    Err(e) => Valid::fail(e.to_string()),
+                }
+            })
             .to_result()
     }
 }

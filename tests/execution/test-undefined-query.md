@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-undefined-query
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }

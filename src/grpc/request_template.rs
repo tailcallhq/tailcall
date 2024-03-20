@@ -127,6 +127,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;
+    use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -139,6 +140,7 @@ mod tests {
 
         test_file.pop();
         test_file.push("tests");
+        test_file.push("proto");
         test_file.push("greetings.proto");
 
         let id = "greetings".to_string();
@@ -150,10 +152,12 @@ mod tests {
             src: test_file.to_str().unwrap().to_string(),
             type_of: LinkType::Protobuf,
         }]);
-        let grpc = Grpc {
-            method: format!("{}.{}.{}", id.clone(), "a", "b"),
-            ..Default::default()
+        let method = GrpcMethod {
+            package: id.to_string(),
+            service: "a".to_string(),
+            name: "b".to_string(),
         };
+        let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
@@ -165,14 +169,15 @@ mod tests {
                 .await
                 .unwrap()
                 .extensions
-                .get_file_descriptor(id.as_str())
+                .get_file_descriptor_set(&method)
                 .unwrap(),
         )
         .unwrap();
 
-        let service = protobuf_set.find_service("Greeter").unwrap();
+        let method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
+        let service = protobuf_set.find_service(&method).unwrap();
 
-        service.find_operation("SayHello").unwrap()
+        service.find_operation(&method).unwrap()
     }
 
     #[derive(Setters)]

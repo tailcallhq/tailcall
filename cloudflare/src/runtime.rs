@@ -31,13 +31,12 @@ pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
         .get("BUCKET")
         .ok_or(anyhow!("BUCKET var is not set"))?;
 
-    log::debug!("R2 Bucket ID: {}", bucket_id);
-
     Ok(TargetRuntime {
         http: http.clone(),
         http2_only: http.clone(),
         env: init_env(env.clone()),
         file: init_file(env.clone(), &bucket_id)?,
         cache: init_cache(env),
+        extensions: Arc::new(vec![]),
     })
 }

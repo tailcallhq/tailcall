@@ -5,13 +5,14 @@ use async_graphql::Response;
 
 use crate::auth::context::GlobalAuthContext;
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition};
+use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{DataLoaderRequest, HttpDataLoader};
 use crate::lambda::{DataLoaderId, Expression, IO};
+use crate::rest::{Checked, EndpointSet};
 use crate::runtime::TargetRuntime;
 
 pub struct AppContext {
@@ -21,12 +22,16 @@ pub struct AppContext {
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
 }
 
 impl AppContext {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(mut blueprint: Blueprint, runtime: TargetRuntime) -> Self {
+    pub fn new(
+        mut blueprint: Blueprint,
+        runtime: TargetRuntime,
+        endpoints: EndpointSet<Checked>,
+    ) -> Self {
         let mut http_data_loaders = vec![];
         let mut gql_data_loaders = vec![];
         let mut grpc_data_loaders = vec![];
@@ -104,7 +109,8 @@ impl AppContext {
             }
         }
 
-        let schema = blueprint.to_schema();
+        let schema = blueprint
+            .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
         let auth = blueprint.server.auth.clone();
         let auth_ctx = GlobalAuthContext::new(auth, &runtime);
 
@@ -115,6 +121,7 @@ impl AppContext {
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
+            endpoints,
             auth_ctx: Arc::new(auth_ctx),
         }
     }

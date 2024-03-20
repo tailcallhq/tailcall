@@ -228,15 +228,7 @@ fn print_directive(directive: &DirectiveDefinition) -> String {
     let args = directive
         .arguments
         .iter()
-        .map(|arg| {
-            let type_str = format!("{}", arg.node.ty.node);
-            if type_str.starts_with('[') || type_str.starts_with('{') {
-                let parts: Vec<&str> = type_str.split(',').collect();
-                format!("{}: {}", arg.node.name.node, parts.join(", "))
-            } else {
-                format!("{}: {}", arg.node.name.node, type_str)
-            }
-        })
+        .map(|arg| format!("{}: {}", arg.node.name.node, arg.node.ty.node))
         .collect::<Vec<String>>()
         .join(", ");
 

@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(allowedHeaders: ["X-bar", "x-foo"], baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Post {
+  id: Int
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+}

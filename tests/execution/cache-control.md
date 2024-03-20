@@ -1,11 +1,11 @@
 # Sending requests to verify Cache-Control behavior
 
-#### server:
-
-```json
+```json @server
 {
   "server": {
-    "cacheControlHeader": true
+    "headers": {
+      "cacheControl": true
+    }
   },
   "upstream": {},
   "schema": {
@@ -53,15 +53,14 @@
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1
     headers:
       test: test
     body: null
+  expected_hits: 3
   response:
     status: 200
     headers:
@@ -88,6 +87,7 @@
     headers:
       test: test
     body: null
+  expected_hits: 2
   response:
     status: 200
     headers:
@@ -101,6 +101,7 @@
     headers:
       test: test
     body: null
+  expected_hits: 2
   response:
     status: 200
     headers:
@@ -110,9 +111,7 @@
       name: barfoo
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-grpc-proto-path
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @link(id: "news", src: "tailcall/src/grpcnews.proto", type: Protobuf) {
   query: Query
 }

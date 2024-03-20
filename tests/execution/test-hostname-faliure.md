@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-hostname-faliure
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server(hostname: "abc") {
   query: Query
 }

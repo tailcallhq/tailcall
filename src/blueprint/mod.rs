@@ -2,22 +2,24 @@ mod auth;
 mod blueprint;
 mod compress;
 mod definitions;
+mod dynamic_value;
 mod from_config;
 mod into_schema;
 mod links;
 mod mustache;
-mod operation;
 mod operators;
 mod schema;
 mod server;
+pub mod telemetry;
 mod timeout;
 mod upstream;
+
 pub use auth::*;
 pub use blueprint::*;
 pub use definitions::*;
+pub use dynamic_value::*;
 pub use from_config::*;
 pub use links::*;
-pub use operation::*;
 pub use operators::*;
 pub use schema::*;
 pub use server::*;
@@ -96,8 +98,4 @@ where
     } else {
         Type::NamedType { name: name.to_string(), non_null }
     }
-}
-
-pub fn is_scalar(type_name: &str) -> bool {
-    ["String", "Int", "Float", "Boolean", "ID", "JSON"].contains(&type_name)
 }

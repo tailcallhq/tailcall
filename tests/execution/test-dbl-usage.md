@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-dbl-usage
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema {
   query: Query
 }

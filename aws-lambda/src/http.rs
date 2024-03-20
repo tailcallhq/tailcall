@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use hyper::body::Bytes;
+use lambda_http::RequestExt;
 use reqwest::Client;
 use tailcall::http::Response;
 use tailcall::HttpIO;
@@ -27,16 +28,19 @@ impl LambdaHttp {
 impl HttpIO for LambdaHttp {
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
         let req_str = format!("{} {}", request.method(), request.url());
-        let response = self.client.execute(request).await?.error_for_status()?;
+        let response = self
+            .client
+            .execute(request)
+            .await?
+            .error_for_status()
+            .map_err(|err| err.without_url())?;
         let res = Response::from_reqwest(response).await?;
         tracing::info!("{} {}", req_str, res.status.as_u16());
         Ok(res)
     }
 }
 
-pub fn to_request(
-    req: lambda_http::Request,
-) -> Result<hyper::Request<hyper::Body>, hyper::http::Error> {
+pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let method: hyper::Method = match req.method().to_owned() {
         lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
@@ -51,10 +55,23 @@ pub fn to_request(
         _ => unreachable!(),
     };
 
-    hyper::Request::builder()
+    // Re-construct real URL from parameters
+    let url = format!(
+        "{}://{}/{}",
+        req.uri().scheme_str().unwrap_or("http"),
+        req.uri()
+            .host()
+            .ok_or(anyhow::anyhow!("Invalid request host"))?,
+        req.path_parameters()
+            .all("proxy")
+            .unwrap_or(Vec::with_capacity(0))
+            .join("/")
+    );
+
+    Ok(hyper::Request::builder()
         .method(method)
-        .uri::<String>(req.uri().to_string())
-        .body(hyper::Body::from(req.body().to_vec()))
+        .uri(url)
+        .body(hyper::Body::from(req.body().to_vec()))?)
 }
 
 pub async fn to_response(

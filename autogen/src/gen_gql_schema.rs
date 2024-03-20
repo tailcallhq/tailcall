@@ -3,28 +3,41 @@ use std::fs::File;
 use std::io::Write;
 
 use anyhow::Result;
+use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
+use schemars::Map;
 use tailcall::config;
+use tailcall::scalar::CUSTOM_SCALARS;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-static DIRECTIVE_ALLOW_LIST: &[(&str, Entity, bool)] = &[
-    ("server", Entity::Schema, false),
-    ("link", Entity::Schema, true),
-    ("upstream", Entity::Schema, false),
-    ("http", Entity::FieldDefinition, false),
-    ("grpc", Entity::FieldDefinition, false),
-    ("addField", Entity::Object, true),
-    ("modify", Entity::FieldDefinition, false),
-    ("groupBy", Entity::FieldDefinition, false),
-    ("const", Entity::FieldDefinition, false),
-    ("graphQL", Entity::FieldDefinition, false),
-    ("cache", Entity::FieldDefinition, false),
-    ("expr", Entity::FieldDefinition, false),
-    ("js", Entity::FieldDefinition, false),
-    ("protected", Entity::ObjectOrFieldDefinition, false),
-];
+
+lazy_static! {
+    static ref DIRECTIVE_ALLOW_LIST: Vec<(&'static str, Vec<Entity>, bool)> = vec![
+        ("server", vec![Entity::Schema], false),
+        ("link", vec![Entity::Schema], true),
+        ("upstream", vec![Entity::Schema], false),
+        ("http", vec![Entity::FieldDefinition], false),
+        ("call", vec![Entity::FieldDefinition], false),
+        ("grpc", vec![Entity::FieldDefinition], false),
+        ("addField", vec![Entity::Object], true),
+        ("modify", vec![Entity::FieldDefinition], false),
+        ("telemetry", vec![Entity::FieldDefinition], false),
+        ("omit", vec![Entity::FieldDefinition], false),
+        ("groupBy", vec![Entity::FieldDefinition], false),
+        ("const", vec![Entity::FieldDefinition], false),
+        ("graphQL", vec![Entity::FieldDefinition], false),
+        (
+            "cache",
+            vec![Entity::Object, Entity::FieldDefinition],
+            false,
+        ),
+        ("expr", vec![Entity::FieldDefinition], false),
+        ("js", vec![Entity::FieldDefinition], false),
+    ];
+}
+
 static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "If",
@@ -44,6 +57,14 @@ static OBJECT_WHITELIST: &[&str] = &[
     "ExprBody",
     "JS",
     "Modify",
+    "Telemetry",
+    "TelemetryInner",
+    "TelemetryExporter",
+    "StdoutExporter",
+    "OtlpExporter",
+    "PrometheusFormat",
+    "PrometheusExporter",
+    "Apollo",
     "Auth",
     "AuthEntry",
     "AuthProvider",
@@ -57,11 +78,10 @@ enum Entity {
     Schema,
     Object,
     FieldDefinition,
-    ObjectOrFieldDefinition,
 }
 
-impl std::fmt::Debug for Entity {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl ToGraphql for Entity {
+    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
         match self {
             Entity::Schema => {
                 write!(f, "SCHEMA")
@@ -72,10 +92,27 @@ impl std::fmt::Debug for Entity {
             Entity::FieldDefinition => {
                 write!(f, "FIELD_DEFINITION")
             }
-            Entity::ObjectOrFieldDefinition => {
-                write!(f, "OBJECT | FIELD_DEFINITION")
-            }
         }
+    }
+}
+
+impl ToGraphql for Vec<Entity> {
+    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
+        let mut iter = self.iter();
+
+        let Some(first) = iter.next() else {
+            return Ok(());
+        };
+
+        write!(f, " on ")?;
+        first.to_graphql(f)?;
+
+        for entry in iter {
+            write!(f, " | ")?;
+            entry.to_graphql(f)?;
+        }
+
+        write!(f, "\n\n")
     }
 }
 
@@ -312,7 +349,7 @@ fn write_input_type(
     name: String,
     typ: SchemaObject,
     defs: &BTreeMap<String, Schema>,
-    scalars: &mut HashSet<String>,
+    scalar: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
     types_added: &mut HashSet<String>,
 ) -> std::io::Result<()> {
@@ -334,7 +371,7 @@ fn write_input_type(
     write_description(writer, description)?;
     if let Some(obj) = typ.object {
         if obj.properties.is_empty() {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -361,7 +398,7 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
         if list.is_empty() {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -383,7 +420,7 @@ fn write_input_type(
         writeln!(writer, "}}")?;
     } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
         if list.is_empty() {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
             return Ok(());
         }
         writeln!(writer, "input {name} {{")?;
@@ -401,7 +438,7 @@ fn write_input_type(
         if let Some(name) = item.into_object().reference {
             writeln!(writer, "{name}")?;
         } else {
-            scalars.insert(name.to_string());
+            scalar.insert(name.to_string());
         }
     }
 
@@ -425,10 +462,10 @@ fn write_property(
     Ok(())
 }
 
-fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, Entity, bool)> {
+fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, &'static Vec<Entity>, bool)> {
     for (nm, entity, is_repeatable) in DIRECTIVE_ALLOW_LIST.iter() {
         if name.to_lowercase() == nm.to_lowercase() {
-            return Some((*nm, *entity, *is_repeatable));
+            return Some((nm, entity, *is_repeatable));
         }
     }
     None
@@ -459,7 +496,7 @@ fn write_directive(
     written_directives: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    let (name, entity, is_repeatable) = match directive_allow_list_lookup(&name) {
+    let (name, entities, is_repeatable) = match directive_allow_list_lookup(&name) {
         Some(entity) => entity,
         None => return Ok(()),
     };
@@ -498,7 +535,7 @@ fn write_directive(
         write!(writer, " repeatable ")?;
     }
 
-    writeln!(writer, " on {entity:?}\n")?;
+    entities.to_graphql(writer)?;
     written_directives.insert(name.to_string());
 
     Ok(())
@@ -546,8 +583,6 @@ fn write_array_validation(
             extra_it,
         )?;
     } else {
-        println!("{name}: {arr_valid:?}");
-
         write!(writer, "JSON")?;
     }
     write!(writer, "]")
@@ -579,8 +614,35 @@ fn write_all_input_types(
 ) -> std::io::Result<()> {
     let schema = schemars::schema_for!(config::Config);
 
+    let scalar = CUSTOM_SCALARS
+        .iter()
+        .map(|(k, v)| (k.clone(), v.scalar()))
+        .collect::<Map<String, Schema>>();
+
+    let mut scalar_defs = BTreeMap::new();
+
+    for (name, obj) in scalar.iter() {
+        let scalar_definition = obj
+            .clone()
+            .into_object()
+            .object
+            .as_ref()
+            .and_then(|a| a.properties.get(name))
+            .and_then(|a| a.clone().into_object().metadata)
+            .and_then(|a| a.description);
+
+        if let Some(scalar_definition) = scalar_definition {
+            scalar_defs.insert(name.clone(), scalar_definition);
+        }
+    }
+
     let defs = schema.definitions;
-    let mut scalars = HashSet::new();
+
+    let mut scalar = scalar
+        .keys()
+        .map(|v| v.to_string())
+        .collect::<HashSet<String>>();
+
     let mut types_added = HashSet::new();
     for (name, input_type) in defs.iter() {
         let mut name = name.clone();
@@ -590,7 +652,7 @@ fn write_all_input_types(
             name,
             input_type.clone().into_object(),
             &defs,
-            &mut scalars,
+            &mut scalar,
             &mut extra_it,
             &mut types_added,
         )?;
@@ -607,7 +669,7 @@ fn write_all_input_types(
                         name,
                         schema.into_object(),
                         &defs,
-                        &mut scalars,
+                        &mut scalar,
                         &mut new_extra_it,
                         &mut types_added,
                     )?
@@ -619,8 +681,19 @@ fn write_all_input_types(
         }
     }
 
-    for name in scalars {
-        writeln!(writer, "scalar {name}")?;
+    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
+    scalar_vector.sort();
+
+    for name in scalar_vector {
+        if scalar_defs.contains_key(&name) {
+            let def = scalar_defs.get(&name).unwrap();
+            writeln!(writer, "\"\"\"")?;
+            writeln!(writer, "{def}")?;
+            writeln!(writer, "\"\"\"")?;
+            writeln!(writer, "scalar {name}")?;
+        } else {
+            writeln!(writer, "scalar {name}")?;
+        }
     }
 
     Ok(())
@@ -640,8 +713,6 @@ fn generate_rc_file(file: File) -> Result<()> {
 
     write_all_directives(&mut file, &mut written_directives, &mut extra_it)?;
     write_all_input_types(&mut file, extra_it)?;
-
-    writeln!(&mut file, "scalar JSON\n")?;
 
     Ok(())
 }

@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-directives-undef-null-fields
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
   query: Query
 }

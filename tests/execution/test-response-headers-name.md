@@ -1,11 +1,11 @@
+---
+expect_validation_error: true
+---
+
 # test-response-headers-name
 
-###### sdl error
-
-#### server:
-
-```graphql
-schema @server(responseHeaders: [{key: "🤣", value: "a"}]) {
+```graphql @server
+schema @server(headers: {custom: [{key: "🤣", value: "a"}]}) {
   query: Query
 }
 

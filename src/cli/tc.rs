@@ -1,82 +1,67 @@
+use std::fs;
 use std::path::Path;
-use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
-use env_logger::Env;
 use inquire::Confirm;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::blueprint::{validate_operations, Blueprint, OperationQuery, Upstream};
+use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
-use crate::config::Config;
+use crate::http::API_URL_PREFIX;
 use crate::print_schema;
-use crate::valid::Validator;
+use crate::rest::{EndpointSet, Unchecked};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
+const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
     let cli = Cli::parse();
-    logger_init();
     update_checker::check_for_update().await;
-    let runtime = cli::runtime::init(&Upstream::default(), None);
+    let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
-            log::info!("N + 1: {}", config_module.n_plus_one().len().to_string());
+            log_endpoint_set(&config_module.extensions.endpoint_set);
+            Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
             server.fork_start().await?;
             Ok(())
         }
-        Command::Check { file_paths, n_plus_one_queries, schema, operations } => {
+        Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             let config_module = (config_reader.read_all(&file_paths)).await?;
+            log_endpoint_set(&config_module.extensions.endpoint_set);
+            if let Some(format) = format {
+                Fmt::display(format.encode(&config_module)?);
+            }
             let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
             match blueprint {
                 Ok(blueprint) => {
-                    log::info!("{}", "Config successfully validated".to_string());
-                    display_config(&config_module, n_plus_one_queries);
+                    tracing::info!("Config {} ... ok", file_paths.join(", "));
+                    Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config);
+                    // Check the endpoints' schema
+                    let _ = config_module
+                        .extensions
+                        .endpoint_set
+                        .into_checked(&blueprint, runtime)
+                        .await?;
                     if schema {
                         display_schema(&blueprint);
                     }
-
-                    let ops: Vec<OperationQuery> =
-                        futures_util::future::join_all(operations.iter().map(|op| async {
-                            runtime
-                                .file
-                                .read(op)
-                                .await
-                                .map(|query| OperationQuery::new(query, op.clone()))
-                        }))
-                        .await
-                        .into_iter()
-                        .collect::<Result<Vec<_>>>()?;
-
-                    validate_operations(&blueprint, ops)
-                        .await
-                        .to_result()
-                        .map_err(|e| {
-                            CLIError::from(e)
-                                .message("Invalid Operation".to_string())
-                                .into()
-                        })
+                    Ok(())
                 }
                 Err(e) => Err(e.into()),
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Compose { file_paths, format } => {
-            let config = (config_reader.read_all(&file_paths).await)?;
-            Fmt::display(format.encode(&config)?);
-            Ok(())
-        }
     }
 }
 
@@ -99,8 +84,10 @@ pub async fn init(folder_path: &str) -> Result<()> {
     }
 
     let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
+    let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
 
     let file_path = Path::new(folder_path).join(FILE_NAME);
+    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
     let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
 
     let tailcall_exists = fs::metadata(&file_path).is_ok();
@@ -113,9 +100,11 @@ pub async fn init(folder_path: &str) -> Result<()> {
 
         if confirm {
             fs::write(&file_path, tailcallrc.as_bytes())?;
+            fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
         }
     } else {
         fs::write(&file_path, tailcallrc.as_bytes())?;
+        fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
     }
 
     let yml_exists = fs::metadata(&yml_file_path).is_ok();
@@ -163,30 +152,29 @@ pub async fn init(folder_path: &str) -> Result<()> {
     Ok(())
 }
 
+fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
+    let mut endpoints = endpoint_set.get_endpoints().clone();
+    endpoints.sort_by(|a, b| {
+        let method_a = a.get_method();
+        let method_b = b.get_method();
+        if method_a.eq(method_b) {
+            a.get_path().as_str().cmp(b.get_path().as_str())
+        } else {
+            method_a.to_string().cmp(&method_b.to_string())
+        }
+    });
+    for endpoint in endpoints {
+        tracing::info!(
+            "Endpoint: {} {}{} ... ok",
+            endpoint.get_method(),
+            API_URL_PREFIX,
+            endpoint.get_path().as_str()
+        );
+    }
+}
+
 pub fn display_schema(blueprint: &Blueprint) {
-    Fmt::display(Fmt::heading(&"GraphQL Schema:\n".to_string()));
+    Fmt::display(Fmt::heading("GraphQL Schema:\n"));
     let sdl = blueprint.to_schema();
     Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
-}
-
-fn display_config(config: &Config, n_plus_one_queries: bool) {
-    let seq = vec![Fmt::n_plus_one_data(n_plus_one_queries, config)];
-    Fmt::display(Fmt::table(seq));
-}
-
-// initialize logger
-fn logger_init() {
-    // set the log level
-    const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_LOG_LEVEL";
-    const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_LOG_LEVEL";
-
-    // Select which env variable to use for the log level filter. This is because filter_or doesn't allow picking between multiple env_var for the filter value
-    let filter_env_name = env::var(LONG_ENV_FILTER_VAR_NAME)
-        .map(|_| LONG_ENV_FILTER_VAR_NAME)
-        .unwrap_or_else(|_| SHORT_ENV_FILTER_VAR_NAME);
-
-    // use the log level from the env if there is one, otherwise use the default.
-    let env = Env::new().filter_or(filter_env_name, "info");
-
-    env_logger::Builder::from_env(env).init();
 }

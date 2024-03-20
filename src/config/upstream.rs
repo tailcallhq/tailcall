@@ -4,6 +4,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 use crate::is_default;
+use crate::merge_right::MergeRight;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
@@ -27,22 +28,34 @@ pub struct Proxy {
     Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
 )]
 #[serde(rename_all = "camelCase", default)]
-/// The `upstream` directive allows you to control various aspects of the upstream server connection. This includes settings like connection timeouts, keep-alive intervals, and more. If not specified, default values are used.
+/// The `upstream` directive allows you to control various aspects of the
+/// upstream server connection. This includes settings like connection timeouts,
+/// keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services. If not set, no headers are forwarded, enhancing security but possibly limiting data flow.
+    /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
+    /// upstream services. If not set, no headers are forwarded, enhancing
+    /// security but possibly limiting data flow.
     pub allowed_headers: Option<BTreeSet<String>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    /// This refers to the default base URL for your APIs. If it's not explicitly mentioned in the `@upstream` operator, then each [@http](#http) operator must specify its own `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results in a compilation error.
+    /// This refers to the default base URL for your APIs. If it's not
+    /// explicitly mentioned in the `@upstream` operator, then each
+    /// [@http](#http) operator must specify its own `baseURL`. If neither
+    /// `@upstream` nor [@http](#http) provides a `baseURL`, it results in a
+    /// compilation error.
     pub base_url: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// An object that specifies the batch settings, including `maxSize` (the maximum size of the batch), `delay` (the delay in milliseconds between each batch), and `headers` (an array of HTTP headers to be included in the batch).
+    /// An object that specifies the batch settings, including `maxSize` (the
+    /// maximum size of the batch), `delay` (the delay in milliseconds between
+    /// each batch), and `headers` (an array of HTTP headers to be included in
+    /// the batch).
     pub batch: Option<Batch>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The time in seconds that the connection will wait for a response before timing out.
+    /// The time in seconds that the connection will wait for a response before
+    /// timing out.
     pub connect_timeout: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -51,19 +64,25 @@ pub struct Upstream {
 
     #[setters(strip_option)]
     #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
-    /// The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.
+    /// The `http2Only` setting allows you to specify whether the client should
+    /// always issue HTTP2 requests, without checking if the server supports it
+    /// or not. By default it is set to `false` for all HTTP requests made by
+    /// the server, but is automatically set to true for GRPC.
     pub http2_only: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The time in seconds between each keep-alive message sent to maintain the connection.
+    /// The time in seconds between each keep-alive message sent to maintain the
+    /// connection.
     pub keep_alive_interval: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The time in seconds that the connection will wait for a keep-alive message before closing.
+    /// The time in seconds that the connection will wait for a keep-alive
+    /// message before closing.
     pub keep_alive_timeout: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// A boolean value that determines whether keep-alive messages should be sent while the connection is idle.
+    /// A boolean value that determines whether keep-alive messages should be
+    /// sent while the connection is idle.
     pub keep_alive_while_idle: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -71,23 +90,30 @@ pub struct Upstream {
     pub pool_max_idle_per_host: Option<usize>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The time in seconds that the connection pool will wait before closing idle connections.
+    /// The time in seconds that the connection pool will wait before closing
+    /// idle connections.
     pub pool_idle_timeout: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The `proxy` setting defines an intermediary server through which the upstream requests will be routed before reaching their intended endpoint. By specifying a proxy URL, you introduce an additional layer, enabling custom routing and security policies.
+    /// The `proxy` setting defines an intermediary server through which the
+    /// upstream requests will be routed before reaching their intended
+    /// endpoint. By specifying a proxy URL, you introduce an additional layer,
+    /// enabling custom routing and security policies.
     pub proxy: Option<Proxy>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The time in seconds between each TCP keep-alive message sent to maintain the connection.
+    /// The time in seconds between each TCP keep-alive message sent to maintain
+    /// the connection.
     pub tcp_keep_alive: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The maximum time in seconds that the connection will wait for a response.
+    /// The maximum time in seconds that the connection will wait for a
+    /// response.
     pub timeout: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The User-Agent header value to be used in HTTP requests. @default `Tailcall/1.0`
+    /// The User-Agent header value to be used in HTTP requests. @default
+    /// `Tailcall/1.0`
     pub user_agent: Option<String>,
 }
 
@@ -138,40 +164,50 @@ impl Upstream {
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only.unwrap_or(false)
     }
+}
 
+impl MergeRight for Upstream {
     // TODO: add unit tests for merge
-    pub fn merge_right(mut self, other: Self) -> Self {
+    fn merge_right(mut self, other: Self) -> Self {
         self.allowed_headers = other.allowed_headers.map(|other| {
             if let Some(mut self_headers) = self.allowed_headers {
-                self_headers.extend(&mut other.iter().map(|s| s.to_owned()));
+                self_headers = self_headers.merge_right(other);
                 self_headers
             } else {
                 other
             }
         });
-        self.base_url = other.base_url.or(self.base_url);
-        self.connect_timeout = other.connect_timeout.or(self.connect_timeout);
-        self.http_cache = other.http_cache.or(self.http_cache);
-        self.keep_alive_interval = other.keep_alive_interval.or(self.keep_alive_interval);
-        self.keep_alive_timeout = other.keep_alive_timeout.or(self.keep_alive_timeout);
-        self.keep_alive_while_idle = other.keep_alive_while_idle.or(self.keep_alive_while_idle);
-        self.pool_idle_timeout = other.pool_idle_timeout.or(self.pool_idle_timeout);
-        self.pool_max_idle_per_host = other.pool_max_idle_per_host.or(self.pool_max_idle_per_host);
-        self.proxy = other.proxy.or(self.proxy);
-        self.tcp_keep_alive = other.tcp_keep_alive.or(self.tcp_keep_alive);
-        self.timeout = other.timeout.or(self.timeout);
-        self.user_agent = other.user_agent.or(self.user_agent);
+        self.base_url = self.base_url.merge_right(other.base_url);
+        self.connect_timeout = self.connect_timeout.merge_right(other.connect_timeout);
+        self.http_cache = self.http_cache.merge_right(other.http_cache);
+        self.keep_alive_interval = self
+            .keep_alive_interval
+            .merge_right(other.keep_alive_interval);
+        self.keep_alive_timeout = self
+            .keep_alive_timeout
+            .merge_right(other.keep_alive_timeout);
+        self.keep_alive_while_idle = self
+            .keep_alive_while_idle
+            .merge_right(other.keep_alive_while_idle);
+        self.pool_idle_timeout = self.pool_idle_timeout.merge_right(other.pool_idle_timeout);
+        self.pool_max_idle_per_host = self
+            .pool_max_idle_per_host
+            .merge_right(other.pool_max_idle_per_host);
+        self.proxy = self.proxy.merge_right(other.proxy);
+        self.tcp_keep_alive = self.tcp_keep_alive.merge_right(other.tcp_keep_alive);
+        self.timeout = self.timeout.merge_right(other.timeout);
+        self.user_agent = self.user_agent.merge_right(other.user_agent);
 
         if let Some(other) = other.batch {
             let mut batch = self.batch.unwrap_or_default();
             batch.max_size = other.max_size;
             batch.delay = other.delay;
-            batch.headers.extend(other.headers);
+            batch.headers = batch.headers.merge_right(other.headers);
 
             self.batch = Some(batch);
         }
 
-        self.http2_only = other.http2_only.or(self.http2_only);
+        self.http2_only = self.http2_only.merge_right(other.http2_only);
         self
     }
 }

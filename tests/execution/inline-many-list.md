@@ -1,10 +1,10 @@
+---
+check_identity: true
+---
+
 # inline-many-list
 
-###### check identity
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream {
   query: Query
 }

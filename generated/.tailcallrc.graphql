@@ -1,5 +1,5 @@
 """
-The @addField operator simplifies data structures and queries by adding a field that 
+The @addField operator simplifies data structures and queries by adding a field that
 inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 """
 directive @addField(
@@ -18,10 +18,30 @@ The @cache operator enables caching for the query, field or type it is applied t
 """
 directive @cache(
   """
-  Specifies the duration, in milliseconds, of how long the value has to be stored in 
+  Specifies the duration, in milliseconds, of how long the value has to be stored in
   the cache.
   """
   maxAge: Int!
+) on OBJECT | FIELD_DEFINITION
+
+"""
+Provides the ability to refer to a field defined in the root Query or Mutation.
+"""
+directive @call(
+  """
+  The arguments of the field on the `Query` or `Mutation` type that you want to call.
+  For instance `{id: "{{value.userId}}"}`.
+  """
+  args: JSON
+  """
+  The name of the field on the `Mutation` type that you want to call. For instance
+  `createUser`.
+  """
+  mutation: String
+  """
+  The name of the field on the `Query` type that you want to call. For instance `user`.
+  """
+  query: String
 ) on FIELD_DEFINITION
 
 """
@@ -42,71 +62,71 @@ directive @expr(
 ) on FIELD_DEFINITION
 
 """
-The @graphQL operator allows to specify GraphQL API server request to fetch data 
+The @graphQL operator allows to specify GraphQL API server request to fetch data
 from.
 """
 directive @graphQL(
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
-  args: KeyValues
+  args: [KeyValue]
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
+  This refers to the base URL of the API. If not specified, the default base URL is
   the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
-  If the upstream GraphQL server supports request batching, you can specify the 'batch' 
-  argument to batch several requests into a single batch request.Make sure you have 
+  If the upstream GraphQL server supports request batching, you can specify the 'batch'
+  argument to batch several requests into a single batch request.Make sure you have
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
   batch: Boolean!
   """
-  The headers parameter allows you to customize the headers of the GraphQL request 
-  made by the `@graphQL` operator. It is used by specifying a key-value map of header 
+  The headers parameter allows you to customize the headers of the GraphQL request
+  made by the `@graphQL` operator. It is used by specifying a key-value map of header
   names and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
-  Specifies the root field on the upstream to request data from. This maps a field 
-  in your schema to a field in the upstream schema. When a query is received for this 
+  Specifies the root field on the upstream to request data from. This maps a field
+  in your schema to a field in the upstream schema. When a query is received for this
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
 ) on FIELD_DEFINITION
 
 """
-The @grpc operator indicates that a field or node is backed by a gRPC API.For instance, 
-if you add the @grpc operator to the `users` field of the Query type with a service 
-argument of `NewsService` and method argument of `GetAllNews`, it signifies that 
-the `users` field is backed by a gRPC API. The `service` argument specifies the name 
-of the gRPC service. The `method` argument specifies the name of the gRPC method. 
-In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint 
+The @grpc operator indicates that a field or node is backed by a gRPC API.For instance,
+if you add the @grpc operator to the `users` field of the Query type with a service
+argument of `NewsService` and method argument of `GetAllNews`, it signifies that
+the `users` field is backed by a gRPC API. The `service` argument specifies the name
+of the gRPC service. The `method` argument specifies the name of the gRPC method.
+In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint
 specified when the `users` field is queried.
 """
 directive @grpc(
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
+  This refers to the base URL of the API. If not specified, the default base URL is
   the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
-  This refers to the arguments of your gRPC call. You can pass it as a static object 
-  or use Mustache template for dynamic parameters. These parameters will be added in 
+  The key path in the response which should be used to group multiple requests. For
+  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
+  This refers to the arguments of your gRPC call. You can pass it as a static object
+  or use Mustache template for dynamic parameters. These parameters will be added in
   the body in `protobuf` format.
   """
   body: String
   """
-  The key path in the response which should be used to group multiple requests. For 
-  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
-  """
-  The `headers` parameter allows you to customize the headers of the HTTP request made 
-  by the `@grpc` operator. It is used by specifying a key-value map of header names 
+  The `headers` parameter allows you to customize the headers of the HTTP request made
+  by the `@grpc` operator. It is used by specifying a key-value map of header names
   and their values. Note: content-type is automatically set to application/grpc
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
@@ -114,47 +134,47 @@ directive @grpc(
 ) on FIELD_DEFINITION
 
 """
-The @http operator indicates that a field or node is backed by a REST API.For instance, 
-if you add the @http operator to the `users` field of the Query type with a path 
-argument of `"/users"`, it signifies that the `users` field is backed by a REST API. 
-The path argument specifies the path of the REST API. In this scenario, the GraphQL 
-server will make a GET request to the API endpoint specified when the `users` field 
+The @http operator indicates that a field or node is backed by a REST API.For instance,
+if you add the @http operator to the `users` field of the Query type with a path
+argument of `"/users"`, it signifies that the `users` field is backed by a REST API.
+The path argument specifies the path of the REST API. In this scenario, the GraphQL
+server will make a GET request to the API endpoint specified when the `users` field
 is queried.
 """
 directive @http(
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
+  This refers to the base URL of the API. If not specified, the default base URL is
   the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
-  The body of the API call. It's used for methods like POST or PUT that send data to 
-  the server. You can pass it as a static object or use a Mustache template to substitute 
+  The `batchKey` parameter groups multiple data requests into a single call. For more
+  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
+  The body of the API call. It's used for methods like POST or PUT that send data to
+  the server. You can pass it as a static object or use a Mustache template to substitute
   variables from the GraphQL variables.
   """
   body: String
   """
-  The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
+  The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson`
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   """
   encoding: Encoding
   """
-  The `groupBy` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
-  """
-  The `headers` parameter allows you to customize the headers of the HTTP request made 
-  by the `@http` operator. It is used by specifying a key-value map of header names 
+  The `headers` parameter allows you to customize the headers of the HTTP request made
+  by the `@http` operator. It is used by specifying a key-value map of header names
   and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
   input: Schema
   """
-  This refers to the HTTP method of the API call. Commonly used methods include `GET`, 
+  This refers to the HTTP method of the API call. Commonly used methods include `GET`,
   `POST`, `PUT`, `DELETE` etc. @default `GET`.
   """
   method: Method
@@ -163,17 +183,17 @@ directive @http(
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
-  dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For
+  dynamic segments in your API endpoint, use Mustache templates for variable substitution.
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
   path: String!
   """
-  This represents the query parameters of your API call. You can pass it as a static 
-  object or use Mustache template for dynamic parameters. These parameters will be 
+  This represents the query parameters of your API call. You can pass it as a static
+  object or use Mustache template for dynamic parameters. These parameters will be
   added to the URL.
   """
-  query: KeyValues
+  query: [KeyValue]
 ) on FIELD_DEFINITION
 
 directive @js(
@@ -181,7 +201,7 @@ directive @js(
 ) on FIELD_DEFINITION
 
 """
-The @link directive allows you to import external resources, such as configuration 
+The @link directive allows you to import external resources, such as configuration
 – which will be merged into the config importing it –, or a .proto file – which
  will be later used by `@grpc` directive –.
 """
@@ -191,7 +211,7 @@ directive @link(
   """
   id: String
   """
-  The source of the link. It can be a URL or a path to a file. If a path is provided, 
+  The source of the link. It can be a URL or a path to a file. If a path is provided,
   it is relative to the file that imports the link.
   """
   src: String!
@@ -203,55 +223,59 @@ directive @link(
 
 directive @modify(
   name: String
-  omit: Boolean!
+  omit: Boolean
 ) on FIELD_DEFINITION
+
+"""
+Used to omit a field from public consumption.
+"""
+directive @omit on FIELD_DEFINITION
 
 directive @protected on OBJECT | FIELD_DEFINITION
 
 """
-The `@server` directive, when applied at the schema level, offers a comprehensive 
-set of server configurations. It dictates how the server behaves and helps tune tailcall 
+The `@server` directive, when applied at the schema level, offers a comprehensive
+set of server configurations. It dictates how the server behaves and helps tune tailcall
 for various use-cases.
 """
 directive @server(
   """
-  `apolloTracing` exposes GraphQL query performance data, including execution time 
+  `apolloTracing` exposes GraphQL query performance data, including execution time
   of queries and individual resolvers.
   """
   apolloTracing: Boolean
   """
-  `auth` specified list of auth providers that could be used to verify access to protected 
+  `auth` specified list of auth providers that could be used to verify access to protected
   fields (that marked with @protected)
   """
   auth: Auth
   """
-  `batchRequests` combines multiple requests into one, improving performance but potentially 
+  `batchRequests` combines multiple requests into one, improving performance but potentially
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
   batchRequests: Boolean
   """
-  `cacheControlHeader` sends `Cache-Control` headers in responses when activated. The 
-  `max-age` value is the least of the values received from upstream services. @default 
-  `false`.
-  """
-  cacheControlHeader: Boolean
-  """
-  `globalResponseTimeout` sets the maximum query duration before termination, acting 
+  `globalResponseTimeout` sets the maximum query duration before termination, acting
   as a safeguard against long-running queries.
   """
   globalResponseTimeout: Int
   """
-  `graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for 
+  `graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for
   query development and testing. @default `false`.
   """
   graphiql: Boolean
+  """
+  `headers` contains key-value pairs that are included as default headers in server
+  responses, allowing for consistent header management across all responses.
+  """
+  headers: Headers
   """
   `hostname` sets the server hostname.
   """
   hostname: String
   """
-  `introspection` allows clients to fetch schema information directly, aiding tools 
-  and applications in understanding available types, fields, and operations. @default 
+  `introspection` allows clients to fetch schema information directly, aiding tools
+  and applications in understanding available types, fields, and operations. @default
   `true`.
   """
   introspection: Boolean
@@ -264,18 +288,12 @@ directive @server(
   """
   port: Int
   """
-  `queryValidation` checks incoming GraphQL queries against the schema, preventing 
+  `queryValidation` checks incoming GraphQL queries against the schema, preventing
   errors from invalid queries. Can be disabled for performance. @default `false`.
   """
   queryValidation: Boolean
   """
-  The `responseHeaders` are key-value pairs included in every server response. Useful 
-  for setting headers like `Access-Control-Allow-Origin` for cross-origin requests 
-  or additional headers for downstream services.
-  """
-  responseHeaders: KeyValues
-  """
-  `responseValidation` Tailcall automatically validates responses from upstream services 
+  `responseValidation` Tailcall automatically validates responses from upstream services
   using inferred schema. @default `false`.
   """
   responseValidation: Boolean
@@ -288,12 +306,12 @@ directive @server(
   """
   showcase: Boolean
   """
-  This configuration defines local variables for server operations. Useful for storing 
+  This configuration defines local variables for server operations. Useful for storing
   constant configurations, secrets, or shared information.
   """
-  vars: KeyValues
+  vars: [KeyValue]
   """
-  `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`. 
+  `version` sets the HTTP version for the server. Options are `HTTP1` and `HTTP2`.
   @default `HTTP1`.
   """
   version: HttpVersion
@@ -304,27 +322,43 @@ directive @server(
 ) on SCHEMA
 
 """
-The `upstream` directive allows you to control various aspects of the upstream server 
-connection. This includes settings like connection timeouts, keep-alive intervals, 
+The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing
+the observability of your GraphQL services powered by Tailcall.  By leveraging this
+directive, developers gain access to valuable insights into the performance and behavior
+of their applications.
+"""
+directive @telemetry(
+  export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters
+  Be careful about **leaking sensitive information** from requests when enabling the
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
+) on FIELD_DEFINITION
+
+"""
+The `upstream` directive allows you to control various aspects of the upstream server
+connection. This includes settings like connection timeouts, keep-alive intervals,
 and more. If not specified, default values are used.
 """
 directive @upstream(
   """
-  `allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services. 
-  If not set, no headers are forwarded, enhancing security but possibly limiting data 
+  `allowedHeaders` defines the HTTP headers allowed to be forwarded to upstream services.
+  If not set, no headers are forwarded, enhancing security but possibly limiting data
   flow.
   """
   allowedHeaders: [String!]
   """
-  This refers to the default base URL for your APIs. If it's not explicitly mentioned 
-  in the `@upstream` operator, then each [@http](#http) operator must specify its own 
-  `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results 
+  This refers to the default base URL for your APIs. If it's not explicitly mentioned
+  in the `@upstream` operator, then each [@http](#http) operator must specify its own
+  `baseURL`. If neither `@upstream` nor [@http](#http) provides a `baseURL`, it results
   in a compilation error.
   """
   baseURL: String
   """
-  An object that specifies the batch settings, including `maxSize` (the maximum size 
-  of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
+  An object that specifies the batch settings, including `maxSize` (the maximum size
+  of the batch), `delay` (the delay in milliseconds between each batch), and `headers`
   (an array of HTTP headers to be included in the batch).
   """
   batch: Batch
@@ -333,15 +367,15 @@ directive @upstream(
   """
   connectTimeout: Int
   """
-  The `http2Only` setting allows you to specify whether the client should always issue 
-  HTTP2 requests, without checking if the server supports it or not. By default it 
-  is set to `false` for all HTTP requests made by the server, but is automatically 
+  The `http2Only` setting allows you to specify whether the client should always issue
+  HTTP2 requests, without checking if the server supports it or not. By default it
+  is set to `false` for all HTTP requests made by the server, but is automatically
   set to true for GRPC.
   """
   http2Only: Boolean
   """
-  Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), 
-  to enhance performance by minimizing redundant data fetches. Defaults to `false` 
+  Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234),
+  to enhance performance by minimizing redundant data fetches. Defaults to `false`
   if unspecified.
   """
   httpCache: Boolean
@@ -350,12 +384,12 @@ directive @upstream(
   """
   keepAliveInterval: Int
   """
-  The time in seconds that the connection will wait for a keep-alive message before 
+  The time in seconds that the connection will wait for a keep-alive message before
   closing.
   """
   keepAliveTimeout: Int
   """
-  A boolean value that determines whether keep-alive messages should be sent while 
+  A boolean value that determines whether keep-alive messages should be sent while
   the connection is idle.
   """
   keepAliveWhileIdle: Boolean
@@ -368,8 +402,8 @@ directive @upstream(
   """
   poolMaxIdlePerHost: Int
   """
-  The `proxy` setting defines an intermediary server through which the upstream requests 
-  will be routed before reaching their intended endpoint. By specifying a proxy URL, 
+  The `proxy` setting defines an intermediary server through which the upstream requests
+  will be routed before reaching their intended endpoint. By specifying a proxy URL,
   you introduce an additional layer, enabling custom routing and security policies.
   """
   proxy: Proxy
@@ -387,6 +421,28 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
+input Apollo {
+  """
+  Setting `apiKey` for Apollo.
+  """
+  apiKey: String!
+  """
+  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
+  """
+  graphRef: String!
+  """
+  Setting `platform` for Apollo.
+  """
+  platform: String!
+  """
+  Setting `userVersion` for Apollo.
+  """
+  userVersion: String!
+  """
+  Setting `version` for Apollo.
+  """
+  version: String!
+}
 #/definitions/AuthEntry
 input AuthEntry {
   """
@@ -407,7 +463,7 @@ The @cache operator enables caching for the query, field or type it is applied t
 """
 input Cache {
   """
-  Specifies the duration, in milliseconds, of how long the value has to be stored in 
+  Specifies the duration, in milliseconds, of how long the value has to be stored in
   the cache.
   """
   maxAge: Int!
@@ -435,6 +491,7 @@ input ExprBody {
   http: Http
   grpc: Grpc
   graphQL: GraphQL
+  call: Call
   const: JSON
   if: ExprIf
   and: [ExprBody]
@@ -484,117 +541,140 @@ input ExprIf {
   then: ExprBody
 }
 """
-The @graphQL operator allows to specify GraphQL API server request to fetch data 
+The @graphQL operator allows to specify GraphQL API server request to fetch data
 from.
 """
 input GraphQL {
   """
   Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
   """
-  args: KeyValues
+  args: [KeyValue]
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
+  This refers to the base URL of the API. If not specified, the default base URL is
   the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
-  If the upstream GraphQL server supports request batching, you can specify the 'batch' 
-  argument to batch several requests into a single batch request.Make sure you have 
+  If the upstream GraphQL server supports request batching, you can specify the 'batch'
+  argument to batch several requests into a single batch request.Make sure you have
   also specified batch settings to the `@upstream` and to the `@graphQL` operator.
   """
   batch: Boolean!
   """
-  The headers parameter allows you to customize the headers of the GraphQL request 
-  made by the `@graphQL` operator. It is used by specifying a key-value map of header 
+  The headers parameter allows you to customize the headers of the GraphQL request
+  made by the `@graphQL` operator. It is used by specifying a key-value map of header
   names and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
-  Specifies the root field on the upstream to request data from. This maps a field 
-  in your schema to a field in the upstream schema. When a query is received for this 
+  Specifies the root field on the upstream to request data from. This maps a field
+  in your schema to a field in the upstream schema. When a query is received for this
   field, Tailcall requests data from the corresponding upstream field.
   """
   name: String!
 }
 """
-The @grpc operator indicates that a field or node is backed by a gRPC API.For instance, 
-if you add the @grpc operator to the `users` field of the Query type with a service 
-argument of `NewsService` and method argument of `GetAllNews`, it signifies that 
-the `users` field is backed by a gRPC API. The `service` argument specifies the name 
-of the gRPC service. The `method` argument specifies the name of the gRPC method. 
-In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint 
+The @grpc operator indicates that a field or node is backed by a gRPC API.For instance,
+if you add the @grpc operator to the `users` field of the Query type with a service
+argument of `NewsService` and method argument of `GetAllNews`, it signifies that
+the `users` field is backed by a gRPC API. The `service` argument specifies the name
+of the gRPC service. The `method` argument specifies the name of the gRPC method.
+In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint
 specified when the `users` field is queried.
 """
 input Grpc {
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
+  This refers to the base URL of the API. If not specified, the default base URL is
   the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
-  This refers to the arguments of your gRPC call. You can pass it as a static object 
-  or use Mustache template for dynamic parameters. These parameters will be added in 
+  The key path in the response which should be used to group multiple requests. For
+  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
+  This refers to the arguments of your gRPC call. You can pass it as a static object
+  or use Mustache template for dynamic parameters. These parameters will be added in
   the body in `protobuf` format.
   """
   body: String
   """
-  The key path in the response which should be used to group multiple requests. For 
-  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
-  """
-  The `headers` parameter allows you to customize the headers of the HTTP request made 
-  by the `@grpc` operator. It is used by specifying a key-value map of header names 
+  The `headers` parameter allows you to customize the headers of the HTTP request made
+  by the `@grpc` operator. It is used by specifying a key-value map of header names
   and their values. Note: content-type is automatically set to application/grpc
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   This refers to the gRPC method you're going to call. For instance `GetAllNews`.
   """
   method: String!
 }
+input Headers {
+  """
+  `cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age`
+  value is the least of the values received from upstream services. @default `false`.
+  """
+  cacheControl: Boolean
+  """
+  `headers` are key-value pairs included in every server response. Useful for setting
+  headers like `Access-Control-Allow-Origin` for cross-origin requests or additional
+  headers for downstream services.
+  """
+  custom: [KeyValue]
+  """
+  `experimental` allows the use of `X-*` experimental headers in the response. @default
+  `[]`.
+  """
+  experimental: [String!]
+  """
+  `setCookies` when enabled stores `set-cookie` headers and all the response will be
+  sent with the headers.
+  """
+  setCookies: Boolean
+}
 """
-The @http operator indicates that a field or node is backed by a REST API.For instance, 
-if you add the @http operator to the `users` field of the Query type with a path 
-argument of `"/users"`, it signifies that the `users` field is backed by a REST API. 
-The path argument specifies the path of the REST API. In this scenario, the GraphQL 
-server will make a GET request to the API endpoint specified when the `users` field 
+The @http operator indicates that a field or node is backed by a REST API.For instance,
+if you add the @http operator to the `users` field of the Query type with a path
+argument of `"/users"`, it signifies that the `users` field is backed by a REST API.
+The path argument specifies the path of the REST API. In this scenario, the GraphQL
+server will make a GET request to the API endpoint specified when the `users` field
 is queried.
 """
 input Http {
   """
-  This refers to the base URL of the API. If not specified, the default base URL is 
+  This refers to the base URL of the API. If not specified, the default base URL is
   the one specified in the `@upstream` operator.
   """
   baseURL: String
   """
-  The body of the API call. It's used for methods like POST or PUT that send data to 
-  the server. You can pass it as a static object or use a Mustache template to substitute 
+  The `batchKey` parameter groups multiple data requests into a single call. For more
+  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  """
+  batchKey: [String!]
+  """
+  The body of the API call. It's used for methods like POST or PUT that send data to
+  the server. You can pass it as a static object or use a Mustache template to substitute
   variables from the GraphQL variables.
   """
   body: String
   """
-  The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson` 
+  The `encoding` parameter specifies the encoding of the request body. It can be `ApplicationJson`
   or `ApplicationXWwwFormUrlEncoded`. @default `ApplicationJson`.
   """
   encoding: Encoding
   """
-  The `groupBy` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-  """
-  groupBy: [String!]
-  """
-  The `headers` parameter allows you to customize the headers of the HTTP request made 
-  by the `@http` operator. It is used by specifying a key-value map of header names 
+  The `headers` parameter allows you to customize the headers of the HTTP request made
+  by the `@http` operator. It is used by specifying a key-value map of header names
   and their values.
   """
-  headers: KeyValues
+  headers: [KeyValue]
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
   input: Schema
   """
-  This refers to the HTTP method of the API call. Commonly used methods include `GET`, 
+  This refers to the HTTP method of the API call. Commonly used methods include `GET`,
   `POST`, `PUT`, `DELETE` etc. @default `GET`.
   """
   method: Method
@@ -603,17 +683,17 @@ input Http {
   """
   output: Schema
   """
-  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
-  dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
+  This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For
+  dynamic segments in your API endpoint, use Mustache templates for variable substitution.
   For instance, to fetch a specific user, use `/users/{{args.id}}`.
   """
   path: String!
   """
-  This represents the query parameters of your API call. You can pass it as a static 
-  object or use Mustache template for dynamic parameters. These parameters will be 
+  This represents the query parameters of your API call. You can pass it as a static
+  object or use Mustache template for dynamic parameters. These parameters will be
   added to the URL.
   """
-  query: KeyValues
+  query: [KeyValue]
 }
 enum HttpVersion {
   HTTP1
@@ -621,6 +701,10 @@ enum HttpVersion {
 }
 input JS {
   script: String!
+}
+input KeyValue {
+  key: String!
+  value: String!
 }
 input Jwks {
   data: String!
@@ -630,12 +714,12 @@ input Jwt {
   audiences: [String!]
   issuer: String
   """
-  Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517). 
+  Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517).
   If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)
   """
   jwks: Jwks
   """
-  Specifies if the kid value inside request's JWT token is required to get validated 
+  Specifies if the kid value inside request's JWT token is required to get validated
   with the JWKS
   """
   optionalKid: Boolean!
@@ -646,6 +730,7 @@ enum LinkType {
   Script
   Cert
   Key
+  Operation
   File
 }
 enum Method {
@@ -661,13 +746,64 @@ enum Method {
 }
 input Modify {
   name: String
-  omit: Boolean!
+  omit: Boolean
+}
+"""
+Output the opentelemetry data to otlp collector
+"""
+input OtlpExporter {
+  headers: [KeyValue]
+  url: String!
+}
+"""
+Output the telemetry metrics data to prometheus server
+"""
+input PrometheusExporter {
+  format: PrometheusFormat
+  path: String!
+}
+"""
+Output format for prometheus data
+"""
+enum PrometheusFormat {
+  text
+  protobuf
 }
 input Proxy {
   url: String!
 }
 input ScriptOptions {
   timeout: Int
+}
+"""
+Output the opentelemetry data to the stdout. Mostly used for debug purposes
+"""
+input StdoutExporter {
+  """
+  Output to stdout in pretty human-readable format
+  """
+  pretty: Boolean!
+}
+"""
+The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing
+the observability of your GraphQL services powered by Tailcall.  By leveraging this
+directive, developers gain access to valuable insights into the performance and behavior
+of their applications.
+"""
+input Telemetry {
+  export: TelemetryExporter
+  """
+  The list of headers that will be sent as additional attributes to telemetry exporters
+  Be careful about **leaking sensitive information** from requests when enabling the
+  headers that may contain sensitive data
+  """
+  requestHeaders: [String!]
+}
+input TelemetryExporter {
+  stdout: StdoutExporter
+  otlp: OtlpExporter
+  prometheus: PrometheusExporter
+  apollo: Apollo
 }
 input Schema {
   Obj: JSON
@@ -679,5 +815,23 @@ input Remote {
   url: String!
 }
 scalar KeyValues
+"""
+A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
+"""
+scalar Date
+"""
+field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
+scalar Email
+"""
+The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).
+"""
 scalar JSON
-
+"""
+A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
+"""
+scalar PhoneNumber
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
+"""
+scalar Url

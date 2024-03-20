@@ -20,7 +20,7 @@ async fn fetch(
     match result {
         Ok(response) => Ok(response),
         Err(message) => {
-            log::error!("ServerError: {}", message.to_string());
+            tracing::error!("ServerError: {}", message.to_string());
             worker::Response::error(message.to_string(), 500).map_err(to_anyhow)
         }
     }
@@ -28,9 +28,18 @@ async fn fetch(
 
 #[worker::event(start)]
 fn start() {
-    // Initialize Logger
-    wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
     panic::set_hook(Box::new(console_error_panic_hook::hook));
+
+    tracing_subscriber::fmt()
+        .with_writer(
+            // To avoid trace events in the browser from showing their JS backtrace
+            tracing_subscriber_wasm::MakeConsoleWriter::default()
+                .map_trace_level_to(tracing::Level::INFO),
+        )
+        // For some reason, if we don't do this in the browser, we get
+        // a runtime error.
+        .without_time()
+        .init();
 }
 
 fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {

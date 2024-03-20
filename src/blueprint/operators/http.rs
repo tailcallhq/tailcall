@@ -40,7 +40,7 @@ pub fn compile_http(
                 .query
                 .clone()
                 .iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
+                .map(|key_value| (key_value.key.clone(), key_value.value.clone()))
                 .collect();
             let output_schema = to_json_schema_for_field(field, config_module);
             let input_schema = to_json_schema_for_args(&field.args, config_module);

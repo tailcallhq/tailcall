@@ -1,0 +1,25 @@
+query posts @rest(method: GET, path: "/posts") {
+  posts {
+    id
+    title
+    body
+    user {
+      id
+      name
+    }
+  }
+}
+
+query users @rest(method: GET, path: "/users") {
+  users {
+    id
+    name
+  }
+}
+
+query user($id: Int!) @rest(method: GET, path: "/user/$id") {
+  user(id: $id) {
+    id
+    name
+  }
+}

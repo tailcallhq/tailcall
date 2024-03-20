@@ -1,7 +1,15 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   u: U
 }
@@ -12,6 +20,8 @@ type U {
   d: String
   e: String
 }
+
+scalar Url
 
 schema {
   query: Query

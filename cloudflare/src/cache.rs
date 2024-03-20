@@ -58,4 +58,8 @@ impl Cache for CloudflareChronoCache {
         })
         .await
     }
+
+    fn hit_rate(&self) -> Option<f64> {
+        None
+    }
 }

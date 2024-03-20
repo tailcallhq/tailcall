@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-duplicated-link
 
-###### sdl error
-
-#### file:jsonplaceholder.graphql
-
-```graphql
+```graphql @file:jsonplaceholder.graphql
 schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
@@ -35,9 +35,7 @@ type Post {
 }
 ```
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder")
   @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")

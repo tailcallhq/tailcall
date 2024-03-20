@@ -1,4 +1,0 @@
-syntax = "proto3";
-
-import "src/grpc/tests/greetings.proto";
-import "src/grpc/tests/nested1.proto";

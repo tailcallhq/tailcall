@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 
 use async_graphql::context::SelectionField;
@@ -171,6 +171,7 @@ fn to_bench_id(input: &[&str]) -> BenchmarkId {
     BenchmarkId::new("input", input.join("."))
 }
 
+#[derive(Clone)]
 struct MockGraphqlContext;
 
 impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
@@ -244,20 +245,11 @@ fn request_context() -> RequestContext {
         env: Arc::new(Env {}),
         file: Arc::new(File {}),
         cache: Arc::new(InMemoryCache::new()),
+        extensions: Arc::new(vec![]),
     };
-    RequestContext {
-        req_headers: HeaderMap::new(),
-        allowed_headers: HeaderMap::new(),
-        server,
-        upstream,
-        http_data_loaders: Arc::new(vec![]),
-        gql_data_loaders: Arc::new(vec![]),
-        grpc_data_loaders: Arc::new(vec![]),
-        min_max_age: Arc::new(Mutex::new(None)),
-        cache_public: Arc::new(Mutex::new(None)),
-        runtime,
-        auth_ctx: AuthContext::default(),
-    }
+    RequestContext::new(runtime)
+        .server(server)
+        .upstream(upstream)
 }
 
 fn bench_main(c: &mut Criterion) {

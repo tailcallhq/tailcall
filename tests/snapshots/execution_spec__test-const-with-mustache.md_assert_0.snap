@@ -1,0 +1,29 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "a": {
+        "bc": {
+          "b": [
+            1,
+            2,
+            3
+          ],
+          "c": "test",
+          "d": 1,
+          "f": {
+            "e": 1
+          },
+          "g": true
+        }
+      }
+    }
+  }
+}

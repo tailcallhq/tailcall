@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-field-already-implemented-from-Interface
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema {
   query: Query
 }

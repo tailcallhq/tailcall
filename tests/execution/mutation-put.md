@@ -1,8 +1,6 @@
 # Mutation put
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
   mutation: Mutation
@@ -36,18 +34,7 @@ type User {
 }
 ```
 
-#### mock:
-
-```yml
-- request:
-    method: GET
-    url: http://jsonplaceholder.typicode.com/users/1
-    body: null
-  response:
-    status: 200
-    body:
-      id: 1
-      name: Leanne Graham
+```yml @mock
 - request:
     method: PUT
     url: http://jsonplaceholder.typicode.com/posts/100
@@ -58,9 +45,7 @@ type User {
       body: abc
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

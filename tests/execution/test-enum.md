@@ -1,10 +1,10 @@
+---
+check_identity: true
+---
+
 # test-enum
 
-###### check identity
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }

@@ -62,6 +62,10 @@ impl tailcall::Cache for Cache {
     async fn get<'a>(&'a self, _: &'a Self::Key) -> anyhow::Result<Option<Self::Value>> {
         unimplemented!("Not needed for this bench")
     }
+
+    fn hit_rate(&self) -> Option<f64> {
+        unimplemented!("Not needed for this bench")
+    }
 }
 
 fn benchmark_data_loader(c: &mut Criterion) {
@@ -76,6 +80,7 @@ fn benchmark_data_loader(c: &mut Criterion) {
                     env: Arc::new(Env {}),
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
+                    extensions: Arc::new(vec![]),
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
                 let loader = loader.to_data_loader(Batch::default().delay(1));

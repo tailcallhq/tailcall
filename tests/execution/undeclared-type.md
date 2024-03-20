@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # undeclared-type
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server {
   query: Query
 }

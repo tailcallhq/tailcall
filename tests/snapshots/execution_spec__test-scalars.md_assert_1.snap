@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "phone": "+1 (614) 1234567"
+    }
+  }
+}

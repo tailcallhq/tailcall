@@ -1,0 +1,15 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "date": "2023-03-08T12:45:26-05:00"
+    }
+  }
+}

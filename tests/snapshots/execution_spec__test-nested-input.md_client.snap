@@ -1,6 +1,6 @@
 ---
 source: tests/execution_spec.rs
-expression: merged
+expression: client
 ---
 input A {
   b: B
@@ -18,9 +18,19 @@ input D {
   e: Int
 }
 
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
 type Query {
   a(a: A!): X
 }
+
+scalar Url
 
 type X {
   a: String

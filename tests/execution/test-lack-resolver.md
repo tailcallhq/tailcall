@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-lack-resolver
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }

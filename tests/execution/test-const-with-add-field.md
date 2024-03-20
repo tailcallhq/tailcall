@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-const-with-add-field
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }

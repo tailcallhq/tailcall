@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-expr-if-errors
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server {
   query: Query
 }

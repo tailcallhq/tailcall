@@ -6,7 +6,10 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
+use crate::blueprint::GrpcMethod;
 use crate::config::Config;
+use crate::merge_right::MergeRight;
+use crate::rest::{EndpointSet, Unchecked};
 
 /// A wrapper on top of Config that contains all the resolved extensions.
 #[derive(Clone, Debug, Default, Setters)]
@@ -28,9 +31,9 @@ impl<A> Deref for Content<A> {
     }
 }
 
-/// Extensions are meta-information required before we can generate the blueprint.
-/// Typically, this information cannot be inferred without performing an IO operation, i.e.,
-/// reading a file, making an HTTP call, etc.
+/// Extensions are meta-information required before we can generate the
+/// blueprint. Typically, this information cannot be inferred without performing
+/// an IO operation, i.e., reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default)]
 pub struct Extensions {
     pub files: HashMap<String, String>,
@@ -46,32 +49,46 @@ pub struct Extensions {
 
     /// Contains the key used on HTTP2 with TLS
     pub keys: Arc<Vec<PrivateKeyDer<'static>>>,
+
+    /// Contains the endpoints
+    pub endpoint_set: EndpointSet<Unchecked>,
 }
 
 impl Extensions {
-    pub fn merge_right(mut self, other: &Extensions) -> Self {
-        self.grpc_file_descriptors
-            .extend(other.grpc_file_descriptors.clone());
-        self.script = other.script.clone().or(self.script.take());
-        self.cert.extend(other.cert.clone());
-        if !other.keys.is_empty() {
-            self.keys = other.keys.clone();
-        }
-        self
-    }
-
-    pub fn get_file_descriptor(&self, id: &str) -> Option<&FileDescriptorSet> {
+    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
         self.grpc_file_descriptors
             .iter()
-            .find(|content| content.id.as_deref() == Some(id))
-            .map(|content| content.deref())
+            .find(|content| {
+                content
+                    .file
+                    .iter()
+                    .any(|file| file.package == Some(grpc.package.to_owned()))
+            })
+            .map(|a| &a.content)
     }
 }
 
-impl ConfigModule {
-    pub fn merge_right(mut self, other: &Self) -> Self {
-        self.config = self.config.merge_right(&other.config);
-        self.extensions = self.extensions.merge_right(&other.extensions);
+impl MergeRight for Extensions {
+    fn merge_right(mut self, mut other: Self) -> Self {
+        self.grpc_file_descriptors = self
+            .grpc_file_descriptors
+            .merge_right(other.grpc_file_descriptors);
+        self.script = self.script.merge_right(other.script.take());
+        self.cert = self.cert.merge_right(other.cert);
+        self.keys = if !other.keys.is_empty() {
+            other.keys
+        } else {
+            self.keys
+        };
+        self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set);
+        self
+    }
+}
+
+impl MergeRight for ConfigModule {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.config = self.config.merge_right(other.config);
+        self.extensions = self.extensions.merge_right(other.extensions);
         self
     }
 }

@@ -29,7 +29,7 @@ types:
           query:
             - key: id
               value: "{{value.userId}}"
-          groupBy:
+          batchKey:
             - id
       userId:
         type: Int

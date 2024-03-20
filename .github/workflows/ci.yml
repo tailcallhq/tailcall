@@ -88,14 +88,74 @@ jobs:
         run: npm test
 
   test:
-    name: Run Tests
-    runs-on: ubuntu-latest
+    name: Run Tests on ${{ matrix.build }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          [
+            linux-x64-gnu,
+            linux-x64-musl,
+            linux-arm64-gnu,
+            linux-arm64-musl,
+            linux-ia32-gnu,
+            darwin-arm64,
+            darwin-x64,
+            win32-x64-msvc,
+            win32-x64-gnu,
+            win32-arm64-msvc,
+            win32-ia32-gnu,
+          ]
+        include:
+          - build: linux-x64-gnu
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+
+          - build: linux-x64-musl
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+          - build: linux-arm64-gnu
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+
+          - build: linux-arm64-musl
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+
+          - build: linux-ia32-gnu
+            os: ubuntu-latest
+            target: i686-unknown-linux-gnu
+
+          - build: darwin-arm64
+            os: macos-latest
+            target: aarch64-apple-darwin
+
+          - build: darwin-x64
+            os: macos-latest
+            target: x86_64-apple-darwin
+
+          - build: win32-x64-msvc
+            os: windows-latest
+
+          - build: win32-x64-gnu
+            os: windows-latest
+
+          - build: win32-arm64-msvc
+            os: windows-latest
+
+          - build: win32-ia32-gnu
+            os: ubuntu-latest
+            target: i686-pc-windows-gnu
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
 
       - name: Run Cargo Test
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
@@ -110,6 +170,28 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: lcov.info
             fail_ci_if_error: true
+
+  check-examples:
+    name: Check Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build Project
+        run: cargo build
+
+      - name: Check all examples
+        run: |
+          find ./examples -maxdepth 1 \( -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.graphql" -o -name "*.gql" \) -exec ./target/debug/tailcall check {} \;
 
   draft_release:
     name: Draft Release
@@ -415,6 +497,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}/tc-server
+      APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }} # Ensure APP_VERSION is set correctly
     needs: [draft_release, release]
     if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
@@ -439,6 +522,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.APP_VERSION }}
+            type=raw,value=latest,enable=${{ endsWith(env.APP_VERSION, '-SNAPSHOT') == false }}
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
       # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
       # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.

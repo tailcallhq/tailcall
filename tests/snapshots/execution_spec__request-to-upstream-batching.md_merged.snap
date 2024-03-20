@@ -7,7 +7,7 @@ schema @server(batchRequests: true) @upstream(batch: {delay: 1, headers: [], max
 }
 
 type Query {
-  user(id: Int!): User @http(baseURL: "http://jsonplaceholder.typicode.com", groupBy: ["id"], path: "/users", query: [{key: "id", value: "{{args.id}}"}])
+  user(id: Int!): User @http(baseURL: "http://jsonplaceholder.typicode.com", batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{args.id}}"}])
 }
 
 type User {

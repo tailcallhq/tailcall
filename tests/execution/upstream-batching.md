@@ -1,8 +1,6 @@
 # Sending requests to be batched by the upstream server
 
-#### server:
-
-```json
+```json @server
 {
   "server": {},
   "upstream": {
@@ -34,7 +32,7 @@
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com",
-            "groupBy": ["id"]
+            "batchKey": ["id"]
           },
           "cache": null
         }
@@ -58,9 +56,7 @@
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1&id=2
@@ -76,9 +72,7 @@
         name: bar
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

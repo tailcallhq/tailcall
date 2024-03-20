@@ -3,10 +3,13 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql_value::ConstValue;
+use futures_util::TryFutureExt;
+use tracing::Instrument;
 
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
-use crate::lambda::{Concurrent, Eval, EvaluationContext};
+use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContext};
+use crate::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -38,32 +41,49 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-                let mut dyn_schema_field = dynamic::Field::new(field_name, type_ref, move |ctx| {
-                    let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-                    let field_name = &field.name;
-                    match &field.resolver {
-                        None => {
-                            let ctx = EvaluationContext::new(req_ctx, &ctx);
-                            FieldFuture::from_value(
-                                ctx.path_value(&[field_name]).map(|a| a.to_owned()),
-                            )
-                        }
-                        Some(expr) => {
-                            let expr = expr.to_owned();
-                            FieldFuture::new(async move {
+                let mut dyn_schema_field = dynamic::Field::new(
+                    field_name,
+                    type_ref.clone(),
+                    move |ctx| {
+                        let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+                        let field_name = &field.name;
+
+                        match &field.resolver {
+                            None => {
+                                let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                FieldFuture::from_value(
+                                    ctx.path_value(&[field_name])
+                                        .map(|a| a.into_owned().to_owned()),
+                                )
+                            }
+                            Some(expr) => {
+                                let span = tracing::info_span!(
+                                    "field_resolver",
+                                    otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
+                                );
+                                let expr = expr.to_owned();
+                                FieldFuture::new(
+                                    async move {
+                                        let ctx: ResolverContext = ctx.into();
+                                        let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                                let const_value = expr.eval(&ctx, &Concurrent::Sequential).await?;
+                                        let const_value =
+                                            expr.eval(ctx, &Concurrent::Sequential).await?;
 
-                                let p = match const_value {
-                                    ConstValue::List(a) => FieldValue::list(a),
-                                    a => FieldValue::from(a),
-                                };
-                                Ok(Some(p))
-                            })
+                                        let p = match const_value {
+                                            ConstValue::List(a) => FieldValue::list(a),
+                                            a => FieldValue::from(a),
+                                        };
+                                        Ok(Some(p))
+                                    }
+                                    .instrument(span)
+                                    .inspect_err(|err| tracing::error!(?err)),
+                                )
+                            }
                         }
-                    }
-                });
+                    },
+                );
                 if let Some(description) = &field.description {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }
@@ -108,6 +128,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
             if let Some(description) = &def.description {
                 scalar = scalar.description(description);
             }
+            scalar = scalar.validator(def.validator);
             dynamic::Type::Scalar(scalar)
         }
         Definition::Enum(def) => {
@@ -132,6 +153,12 @@ impl From<&Blueprint> for SchemaBuilder {
         let query = blueprint.query();
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+
+        for (k, v) in CUSTOM_SCALARS.iter() {
+            schema = schema.register(dynamic::Type::Scalar(
+                dynamic::Scalar::new(k.clone()).validator(v.validate()),
+            ));
+        }
 
         for def in blueprint.definitions.iter() {
             schema = schema.register(to_type(def));

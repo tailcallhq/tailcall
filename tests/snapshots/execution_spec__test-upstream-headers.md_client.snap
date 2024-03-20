@@ -1,0 +1,25 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Post {
+  id: Int
+}
+
+type Query {
+  posts: [Post]
+}
+
+scalar Url
+
+schema {
+  query: Query
+}

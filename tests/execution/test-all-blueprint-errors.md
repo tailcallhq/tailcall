@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-all-blueprint-errors
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema @server {
   query: Query
   mutation: Mutation

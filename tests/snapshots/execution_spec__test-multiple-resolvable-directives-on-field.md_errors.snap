@@ -10,5 +10,13 @@ expression: errors
       "user1"
     ],
     "description": null
+  },
+  {
+    "message": "Multiple resolvers detected [@http, @call]",
+    "trace": [
+      "Query",
+      "user2"
+    ],
+    "description": null
   }
 ]

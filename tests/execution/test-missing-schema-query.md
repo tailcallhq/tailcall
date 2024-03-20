@@ -1,10 +1,10 @@
+---
+expect_validation_error: true
+---
+
 # test-missing-schema-query
 
-###### sdl error
-
-#### server:
-
-```graphql
+```graphql @server
 schema {
   mutation: Mutation
 }

@@ -1,8 +1,6 @@
 # Test inline index list
 
-#### server:
-
-```graphql
+```graphql @server
 schema {
   query: Query
 }
@@ -16,9 +14,7 @@ type Query @addField(name: "username", path: ["username", "0", "name"]) {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
@@ -30,9 +26,7 @@ type Query @addField(name: "username", path: ["username", "0", "name"]) {
         name: Leanne Graham
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

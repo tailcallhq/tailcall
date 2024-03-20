@@ -1,10 +1,10 @@
+---
+check_identity: true
+---
+
 # test-add-link-to-empty-config
 
-###### check identity
-
-#### file:link-const.graphql
-
-```graphql
+```graphql @file:link-const.graphql
 schema @server @upstream {
   query: Query
 }
@@ -14,9 +14,7 @@ type Query {
 }
 ```
 
-#### file:link-enum.graphql
-
-```graphql
+```graphql @file:link-enum.graphql
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -31,9 +29,7 @@ type Query {
 }
 ```
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server @upstream @link(src: "link-const.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }
