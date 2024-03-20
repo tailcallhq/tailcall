@@ -18,7 +18,7 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
 use crate::rest::EndpointSet;
-use crate::runtime::{TargetRuntime, TargetRuntimeContext};
+use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
@@ -244,21 +244,6 @@ impl ConfigReader {
         Ok(config_module)
     }
 
-    pub fn update_auth(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
-        let server = &mut config_module.config.server;
-        let runtime_ctx = TargetRuntimeContext {
-            runtime: &self.runtime,
-            vars: &server
-                .vars
-                .iter()
-                .map(|vars| (vars.key.clone(), vars.value.clone()))
-                .collect(),
-            files: &config_module.extensions.files,
-        };
-
-        server.auth.render_mustache(&runtime_ctx)
-    }
-
     /// Resolves all the links in a Config to create a ConfigModule
     pub async fn resolve(
         &self,
@@ -271,8 +256,22 @@ impl ConfigReader {
         // Extend it with the links
         let mut config_module = self.ext_links(config_module, parent_dir).await?;
 
-        self.update_opentelemetry(&mut config_module)?;
-        self.update_auth(&mut config_module)?;
+        let server = &mut config_module.config.server;
+        let reader_ctx = ConfigReaderContext {
+            env: self.runtime.env.clone(),
+            vars: &server
+                .vars
+                .iter()
+                .map(|vars| (vars.key.clone(), vars.value.clone()))
+                .collect(),
+            files: &config_module.extensions.files,
+        };
+
+        config_module
+            .config
+            .telemetry
+            .render_mustache(&reader_ctx)?;
+        server.auth.render_mustache(&reader_ctx)?;
 
         Ok(config_module)
     }
@@ -325,24 +324,6 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
-    }
-
-    fn update_opentelemetry(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
-        let server = &mut config_module.config.server;
-        let telemetry = &mut config_module.config.telemetry;
-
-        let reader_ctx = ConfigReaderContext {
-            env: self.runtime.env.clone(),
-            vars: &server
-                .vars
-                .iter()
-                .map(|vars| (vars.key.clone(), vars.value.clone()))
-                .collect(),
-        };
-
-        telemetry.render_mustache(&reader_ctx)?;
-
-        Ok(())
     }
 }
 

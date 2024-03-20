@@ -72,12 +72,13 @@ fn not_found() -> Result<Response<Body>> {
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
-    let req_headers = create_allowed_headers(req.headers(), &allowed);
+    let allowed_headers = create_allowed_headers(req.headers(), &allowed);
 
     let allowed = app_ctx.blueprint.server.get_experimental_headers();
     let experimental_headers = create_allowed_headers(req.headers(), &allowed);
     RequestContext::from(app_ctx)
-        .req_headers(req_headers)
+        .req_headers(req.headers().clone())
+        .allowed_headers(allowed_headers)
         .experimental_headers(experimental_headers)
 }
 

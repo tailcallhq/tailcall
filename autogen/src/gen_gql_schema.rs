@@ -80,6 +80,10 @@ enum Entity {
     FieldDefinition,
 }
 
+trait ToGraphql {
+    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()>;
+}
+
 impl ToGraphql for Entity {
     fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
         match self {

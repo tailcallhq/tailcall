@@ -96,8 +96,8 @@ pub mod tests {
     pub struct TestEnvIO(HashMap<String, String>);
 
     impl EnvIO for TestEnvIO {
-        fn get(&self, key: &str) -> Option<String> {
-            self.0.get(key).cloned()
+        fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+            self.0.get(key).map(Cow::from)
         }
     }
 

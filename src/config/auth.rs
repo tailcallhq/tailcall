@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::is_default;
 use crate::mustache::Mustache;
-use crate::runtime::TargetRuntimeContext;
+
+use super::ConfigReaderContext;
 
 mod default {
     pub mod jwt {
@@ -89,25 +90,25 @@ impl Auth {
         !self.0.is_empty()
     }
 
-    pub fn render_mustache(&mut self, runtime_ctx: &TargetRuntimeContext) -> Result<()> {
+    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<()> {
         for entry in self.0.iter_mut() {
             match &mut entry.provider {
                 AuthProvider::Jwt(jwt) => match &mut jwt.jwks {
                     Jwks::Data(ref mut jwks) => {
                         let tmpl = Mustache::parse(jwks)?;
 
-                        *jwks = tmpl.render(runtime_ctx);
+                        *jwks = tmpl.render(reader_ctx);
                     }
                     Jwks::Remote { ref mut url, .. } => {
                         let tmpl = Mustache::parse(url)?;
 
-                        *url = tmpl.render(runtime_ctx);
+                        *url = tmpl.render(reader_ctx);
                     }
                 },
                 AuthProvider::Basic(Basic { ref mut htpasswd }) => {
                     let tmpl = Mustache::parse(htpasswd)?;
 
-                    *htpasswd = tmpl.render(runtime_ctx);
+                    *htpasswd = tmpl.render(reader_ctx);
                 }
             }
         }

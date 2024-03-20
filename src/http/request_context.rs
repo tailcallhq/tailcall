@@ -21,6 +21,7 @@ use crate::runtime::TargetRuntime;
 pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
+    // all the headers from the request
     pub req_headers: HeaderMap,
     pub experimental_headers: HeaderMap,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
@@ -183,7 +184,6 @@ impl From<&AppContext> for RequestContext {
 mod test {
     use cache_control::Cachability;
 
-    use crate::auth::context::AuthContext;
     use crate::blueprint::{Server, Upstream};
     use crate::config::{self, Batch};
     use crate::http::RequestContext;

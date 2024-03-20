@@ -1,11 +1,8 @@
-use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
 use crate::schema_extension::SchemaExtension;
-use crate::path::PathString;
 use crate::{Cache, EnvIO, FileIO, HttpIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
@@ -34,28 +31,6 @@ pub struct TargetRuntime {
 impl TargetRuntime {
     pub fn add_extensions(&mut self, extensions: Vec<SchemaExtension>) {
         self.extensions = Arc::new(extensions);
-    }
-}
-
-pub struct TargetRuntimeContext<'a> {
-    pub runtime: &'a TargetRuntime,
-    pub vars: &'a BTreeMap<String, String>,
-    pub files: &'a HashMap<String, String>,
-}
-
-impl<'a> PathString for TargetRuntimeContext<'a> {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
-        if path.is_empty() {
-            return None;
-        }
-
-        path.split_first()
-            .and_then(|(head, tail)| match head.as_ref() {
-                "vars" => self.vars.get(tail[0].as_ref()).map(|v| v.into()),
-                "env" => self.runtime.env.get(tail[0].as_ref()),
-                "link" => self.files.get(tail[0].as_ref()).map(|v| v.into()),
-                _ => None,
-            })
     }
 }
 
