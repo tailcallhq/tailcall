@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::http::Method;
 
-/// Struct to configure Cross-Origin Resource Sharing (CORS) for a server.
+/// Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CorsParams {
