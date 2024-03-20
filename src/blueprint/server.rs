@@ -8,6 +8,7 @@ use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
+use crate::blueprint::Cors;
 use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -31,6 +32,7 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
+    pub cors: Option<Cors>,
     pub experimental_headers: BTreeSet<String>,
 }
 
@@ -116,8 +118,14 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             .fuse(handle_experimental_headers(
                 (config_server).get_experimental_headers(),
             ))
+            .fuse(validate_cors(
+                config_server
+                    .headers
+                    .as_ref()
+                    .and_then(|headers| headers.get_cors()),
+            ))
             .map(
-                |(hostname, http, response_headers, script, experimental_headers)| Server {
+                |(hostname, http, response_headers, script, experimental_headers, cors)| Server {
                     enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                     enable_cache_control_header: (config_server).enable_cache_control(),
                     enable_set_cookie_header: (config_server).enable_set_cookies(),
@@ -137,6 +145,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                     pipeline_flush: (config_server).get_pipeline_flush(),
                     response_headers,
                     script,
+                    cors,
                 },
             )
             .to_result()
@@ -158,6 +167,14 @@ fn to_script(config_module: &crate::config::ConfigModule) -> Valid<Option<Script
             }))
         },
     )
+}
+
+fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, String> {
+    Valid::from(cors.map(|cors| cors.try_into()).transpose())
+        .trace("cors")
+        .trace("headers")
+        .trace("@server")
+        .trace("schema")
 }
 
 fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {

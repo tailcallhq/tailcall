@@ -5,7 +5,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
-use hyper::header::CONTENT_TYPE;
+use hyper::header::{self, CONTENT_TYPE};
+use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
@@ -173,6 +174,59 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Body>,
+    app_ctx: Arc<AppContext>,
+    request_counter: &mut RequestCounter,
+) -> Result<Response<Body>> {
+    // Safe to call `.unwrap()` because this method will only be called when
+    // `cors` is `Some`
+    let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
+    let (parts, body) = req.into_parts();
+    let origin = parts.headers.get(&header::ORIGIN);
+
+    let mut headers = HeaderMap::new();
+
+    // These headers are applied to both preflight and subsequent regular CORS
+    // requests: https://fetch.spec.whatwg.org/#http-responses
+
+    headers.extend(cors.allow_origin_to_header(origin));
+    headers.extend(cors.allow_credentials_to_header());
+    headers.extend(cors.allow_private_network_to_header(&parts));
+    headers.extend(cors.vary_to_header());
+
+    // Return results immediately upon preflight request
+    if parts.method == Method::OPTIONS {
+        // These headers are applied only to preflight requests
+        headers.extend(cors.allow_methods_to_header());
+        headers.extend(cors.allow_headers_to_header());
+        headers.extend(cors.max_age_to_header());
+
+        let mut response = Response::new(Body::default());
+        std::mem::swap(response.headers_mut(), &mut headers);
+
+        Ok(response)
+    } else {
+        // This header is applied only to non-preflight requests
+        headers.extend(cors.expose_headers_to_header());
+
+        let req = Request::from_parts(parts, body);
+        let mut response = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
+
+        let response_headers = response.headers_mut();
+
+        // vary header can have multiple values, don't overwrite
+        // previously-set value(s).
+        if let Some(vary) = headers.remove(header::VARY) {
+            response_headers.append(header::VARY, vary);
+        }
+        // extend will overwrite previous headers of remaining names
+        response_headers.extend(headers.drain());
+
+        Ok(response)
+    }
+}
+
 async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
@@ -279,7 +333,11 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 
-    let response = handle_request_inner::<T>(req, app_ctx, &mut req_counter).await;
+    let response = if app_ctx.blueprint.server.cors.is_some() {
+        handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
+    } else {
+        handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
+    };
 
     req_counter.update(&response);
     if let Ok(response) = &response {
