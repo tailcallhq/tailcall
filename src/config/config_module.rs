@@ -5,7 +5,6 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::blueprint::GrpcMethod;
 use crate::config::Config;
 use crate::merge_right::MergeRight;
 use crate::rest::{EndpointSet, Unchecked};
@@ -52,16 +51,18 @@ pub struct Extensions {
 }
 
 impl Extensions {
-    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
-        self.grpc_file_descriptors
-            .iter()
-            .find(|content| {
-                content
-                    .file
-                    .iter()
-                    .any(|file| file.package == Some(grpc.package.to_owned()))
-            })
-            .map(|a| &a.content)
+    pub fn get_file_descriptor_set(&self) -> Option<FileDescriptorSet> {
+        if self.grpc_file_descriptors.is_empty() {
+            return None;
+        }
+
+        let mut result = FileDescriptorSet::default();
+
+        for descriptor_set in &self.grpc_file_descriptors {
+            result.file.extend(descriptor_set.file.iter().cloned());
+        }
+
+        Some(result)
     }
 }
 

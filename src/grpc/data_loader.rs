@@ -13,6 +13,7 @@ use super::request::execute_grpc_request;
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
+use crate::grpc::protobuf::ProtobufMessage;
 use crate::grpc::request::create_grpc_request;
 use crate::http::Response;
 use crate::json::JsonLike;
@@ -22,6 +23,7 @@ use crate::runtime::TargetRuntime;
 pub struct GrpcDataLoader {
     pub(crate) runtime: TargetRuntime,
     pub(crate) operation: ProtobufOperation,
+    pub(crate) status_details: Option<ProtobufMessage>,
     pub(crate) group_by: Option<GroupBy>,
 }
 
@@ -38,7 +40,10 @@ impl GrpcDataLoader {
     ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
-                Ok(req) => execute_grpc_request(&self.runtime, &self.operation, req).await,
+                Ok(req) => {
+                    execute_grpc_request(&self.runtime, &self.operation, &self.status_details, req)
+                        .await
+                }
                 Err(error) => Err(error),
             };
 
@@ -75,8 +80,13 @@ impl GrpcDataLoader {
             multiple_body,
         );
 
-        let response =
-            execute_grpc_request(&self.runtime, &self.operation, multiple_request).await?;
+        let response = execute_grpc_request(
+            &self.runtime,
+            &self.operation,
+            &self.status_details,
+            multiple_request,
+        )
+        .await?;
 
         let path = &group_by.path();
         let response_body = response.body.group_by(path);

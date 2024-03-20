@@ -1,8 +1,14 @@
 use anyhow::Result;
 use derive_setters::Setters;
 use hyper::body::Bytes;
+use tonic::Code;
 
-use crate::grpc::protobuf::ProtobufOperation;
+use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation};
+use crate::lambda::EvaluationError;
+
+pub(crate) static GRPC_STATUS: &str = "grpc-status";
+pub(crate) static GRPC_MESSAGE: &str = "grpc-message";
+pub(crate) static GRPC_STATUS_DETAILS: &str = "grpc-status-details-bin";
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body: Default + Clone> {
@@ -45,6 +51,39 @@ impl Response<Bytes> {
         resp.status = self.status;
         resp.headers = self.headers;
         Ok(resp)
+    }
+
+    pub fn get_header_value(&self, header_name: &str) -> Option<String> {
+        self.headers
+            .get(header_name)
+            .and_then(|header_value| header_value.to_str().ok())
+            .map(|s| s.to_string())
+    }
+
+    pub fn to_grpc_error(
+        self,
+        status_details: &Option<ProtobufMessage>,
+    ) -> Result<Response<async_graphql::Value>> {
+        let grpc_status = self.get_header_value(GRPC_STATUS);
+        let grpc_message = self.get_header_value(GRPC_MESSAGE);
+
+        let grpc_code = Code::from(
+            grpc_status
+                .and_then(|v| v.parse::<i32>().ok())
+                .unwrap_or(-1),
+        );
+
+        let details = self
+            .get_header_value(GRPC_STATUS_DETAILS)
+            .and_then(|d| status_details.as_ref()?.decode(d.as_bytes()).ok());
+
+        let error = EvaluationError::GRPCError {
+            grpc_code: grpc_code as i32,
+            grpc_description: grpc_code.description().to_string(),
+            grpc_status_message: grpc_message.unwrap_or_default(),
+            grpc_status_details: details.unwrap_or_default(),
+        };
+        Err(error.into())
     }
 
     pub fn to_resp_string(self) -> Result<Response<String>> {
