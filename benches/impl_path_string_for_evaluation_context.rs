@@ -253,7 +253,7 @@ fn request_context() -> RequestContext {
 }
 
 fn bench_main(c: &mut Criterion) {
-    let mut req_ctx = request_context().req_headers(TEST_HEADERS.clone());
+    let mut req_ctx = request_context().request_headers(TEST_HEADERS.clone());
 
     req_ctx.server.vars = TEST_VARS.clone();
     let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
