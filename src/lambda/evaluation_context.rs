@@ -78,7 +78,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn headers(&self) -> &HeaderMap {
-        &self.req_ctx.req_headers
+        &self.req_ctx.request_headers
     }
 
     pub fn header(&self, key: &str) -> Option<&str> {

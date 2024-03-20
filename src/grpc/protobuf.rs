@@ -228,7 +228,7 @@ impl ProtobufOperation {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     // TODO: Rewrite protobuf tests
     use std::path::PathBuf;
 
@@ -259,7 +259,7 @@ mod tests {
         test_file
     }
 
-    async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
+    pub async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
         let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
