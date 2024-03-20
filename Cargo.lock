@@ -243,8 +243,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "7.0.2"
-source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
+version = "7.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "261fa27d5bff5afdf7beff291b3bc73f99d1529804c70e51b0fbc51e70b1c6a9"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -280,8 +281,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "7.0.2"
-source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
+version = "7.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3188809947798ea6db736715a60cf645ba3b87ea031c710130e1476b48e45967"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -289,7 +291,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "strum 0.25.0",
+ "strum 0.26.2",
  "syn 2.0.52",
  "thiserror",
 ]
@@ -328,8 +330,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "7.0.2"
-source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
+version = "7.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4e65a0b83027f35b2a5d9728a098bc66ac394caa8191d2c65ed9eb2985cf3d8"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -339,8 +342,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-value"
-version = "7.0.2"
-source = "git+https://github.com/tailcallhq/async-graphql.git?branch=add-setter#b18d097ff3deb17d29e56376eb8e6081440624b0"
+version = "7.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68e40849c29a39012d38bff87bfed431f1ed6c53fbec493294c1045d61a7ae75"
 dependencies = [
  "bytes",
  "indexmap 2.2.5",
@@ -4796,6 +4800,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
 dependencies = [
  "strum_macros 0.25.3",
+]
+
+[[package]]
+name = "strum"
+version = "0.26.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d8cec3501a5194c432b2b7976db6b7d10ec95c253208b45f83f7136aa985e29"
+dependencies = [
+ "strum_macros 0.26.2",
 ]
 
 [[package]]
