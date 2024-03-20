@@ -7,7 +7,7 @@ use crate::config;
 use crate::valid::ValidationError;
 
 #[derive(Clone, Debug, Setters, Default)]
-pub struct CorsParams {
+pub struct Cors {
     pub allow_credentials: bool,
     pub allow_headers: Option<HeaderValue>,
     pub allow_methods: Option<HeaderValue>,
@@ -18,7 +18,7 @@ pub struct CorsParams {
     pub vary: Vec<HeaderValue>,
 }
 
-impl CorsParams {
+impl Cors {
     pub fn allow_origin_to_header(
         &self,
         origin: Option<&HeaderValue>,
@@ -116,7 +116,7 @@ impl CorsParams {
     }
 }
 
-fn ensure_usable_cors_rules(layer: &CorsParams) -> Result<(), ValidationError<String>> {
+fn ensure_usable_cors_rules(layer: &Cors) -> Result<(), ValidationError<String>> {
     if layer.allow_credentials {
         let allowing_all_headers = layer
             .allow_headers
@@ -155,11 +155,11 @@ fn ensure_usable_cors_rules(layer: &CorsParams) -> Result<(), ValidationError<St
     Ok(())
 }
 
-impl TryFrom<config::cors_params::CorsParams> for CorsParams {
+impl TryFrom<config::cors::Cors> for Cors {
     type Error = ValidationError<String>;
 
-    fn try_from(value: config::cors_params::CorsParams) -> Result<Self, ValidationError<String>> {
-        let cors_params = CorsParams {
+    fn try_from(value: config::cors::Cors) -> Result<Self, ValidationError<String>> {
+        let cors = Cors {
             allow_credentials: value.allow_credentials,
             allow_headers: (!value.allow_headers.is_empty())
                 .then_some(value.allow_headers.join(", ").parse()?),
@@ -190,8 +190,8 @@ impl TryFrom<config::cors_params::CorsParams> for CorsParams {
                 .map(|val| Ok(val.parse()?))
                 .collect::<Result<_, ValidationError<String>>>()?,
         };
-        ensure_usable_cors_rules(&cors_params)?;
-        Ok(cors_params)
+        ensure_usable_cors_rules(&cors)?;
+        Ok(cors)
     }
 }
 
@@ -211,13 +211,13 @@ mod tests {
 
     #[test]
     fn test_allow_origin_to_header() {
-        let cors_params = CorsParams {
+        let cors = Cors {
             allow_origins: vec![HeaderValue::from_static("https://example.com")],
             ..std::default::Default::default()
         };
         let origin = Some(HeaderValue::from_static("https://example.com"));
         assert_eq!(
-            cors_params.allow_origin_to_header(origin.as_ref()),
+            cors.allow_origin_to_header(origin.as_ref()),
             Some((
                 header::ACCESS_CONTROL_ALLOW_ORIGIN,
                 HeaderValue::from_static("https://example.com")

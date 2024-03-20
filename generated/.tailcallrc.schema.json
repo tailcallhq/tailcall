@@ -226,7 +226,7 @@
         "data": true
       }
     },
-    "CorsParams": {
+    "Cors": {
       "description": "Type to configure Cross-Origin Resource Sharing (CORS) for a server.",
       "type": "object",
       "properties": {
@@ -1311,11 +1311,11 @@
             "null"
           ]
         },
-        "corsParams": {
-          "description": "`corsParams` allows Cross-Origin Resource Sharing (CORS) for a server.",
+        "cors": {
+          "description": "`cors` allows Cross-Origin Resource Sharing (CORS) for a server.",
           "anyOf": [
             {
-              "$ref": "#/definitions/CorsParams"
+              "$ref": "#/definitions/Cors"
             },
             {
               "type": "null"

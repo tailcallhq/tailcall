@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::cors_params::CorsParams;
+use crate::config::cors::Cors;
 use crate::config::KeyValue;
 use crate::is_default;
 
@@ -32,8 +32,8 @@ pub struct Headers {
     pub set_cookies: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `corsParams` allows Cross-Origin Resource Sharing (CORS) for a server.
-    pub cors_params: Option<CorsParams>,
+    /// `cors` allows Cross-Origin Resource Sharing (CORS) for a server.
+    pub cors: Option<Cors>,
 }
 
 impl Headers {
@@ -43,8 +43,8 @@ impl Headers {
     pub fn set_cookies(&self) -> bool {
         self.set_cookies.unwrap_or_default()
     }
-    pub fn get_cors_params(&self) -> Option<CorsParams> {
-        self.cors_params.clone()
+    pub fn get_cors(&self) -> Option<Cors> {
+        self.cors.clone()
     }
 }
 
@@ -55,7 +55,7 @@ pub fn merge_headers(current: Option<Headers>, other: Option<Headers>) -> Option
         if let Some(mut self_headers) = current.clone() {
             self_headers.cache_control = other_headers.cache_control.or(self_headers.cache_control);
             self_headers.custom.extend(other_headers.custom);
-            self_headers.cors_params = other_headers.cors_params.or(self_headers.cors_params);
+            self_headers.cors = other_headers.cors.or(self_headers.cors);
 
             headers = Some(self_headers);
         } else {

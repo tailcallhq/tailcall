@@ -460,7 +460,7 @@ input Const {
 """
 Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 """
-input CorsParams {
+input Cors {
   """
   Indicates whether the server allows credentials (e.g., cookies, authorization headers) 
   to be sent in cross-origin requests.
@@ -646,9 +646,9 @@ input Headers {
   """
   cacheControl: Boolean
   """
-  `corsParams` allows Cross-Origin Resource Sharing (CORS) for a server.
+  `cors` allows Cross-Origin Resource Sharing (CORS) for a server.
   """
-  corsParams: CorsParams
+  cors: Cors
   """
   `headers` are key-value pairs included in every server response. Useful for setting 
   headers like `Access-Control-Allow-Origin` for cross-origin requests or additional 

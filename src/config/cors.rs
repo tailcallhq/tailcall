@@ -7,7 +7,7 @@ use crate::is_default;
 /// Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CorsParams {
+pub struct Cors {
     /// Indicates whether the server allows credentials (e.g., cookies,
     /// authorization headers) to be sent in cross-origin requests.
     #[serde(default, skip_serializing_if = "is_default")]

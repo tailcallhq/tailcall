@@ -5,7 +5,7 @@ schema
   @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000})
   @server(
     headers: {
-      corsParams: {
+      cors: {
         allowCredentials: true
         allowMethods: [OPTIONS, POST, GET]
         allowOrigins: ["abc.com", "xyz.com"]

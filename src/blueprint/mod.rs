@@ -1,6 +1,6 @@
 mod blueprint;
 mod compress;
-mod cors_params;
+mod cors;
 mod definitions;
 mod dynamic_value;
 mod from_config;
@@ -15,7 +15,7 @@ mod timeout;
 mod upstream;
 
 pub use blueprint::*;
-pub use cors_params::*;
+pub use cors::*;
 pub use definitions::*;
 pub use dynamic_value::*;
 pub use from_config::*;

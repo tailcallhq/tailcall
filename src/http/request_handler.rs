@@ -180,8 +180,8 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     // Safe to call `.unwrap()` because this method will only be called when
-    // `cors_params` is `Some`
-    let cors = app_ctx.blueprint.server.cors_params.as_ref().unwrap();
+    // `cors` is `Some`
+    let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
 
@@ -333,7 +333,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 
-    let response = if app_ctx.blueprint.server.cors_params.is_some() {
+    let response = if app_ctx.blueprint.server.cors.is_some() {
         handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
     } else {
         handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
