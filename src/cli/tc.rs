@@ -3,9 +3,9 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
+use dotenvy::dotenv;
 use inquire::Confirm;
 use stripmargin::StripMargin;
-use dotenvy::dotenv;
 
 use super::command::{Cli, Command};
 use super::update_checker;
