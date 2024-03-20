@@ -17,6 +17,7 @@ message News {
     Status foo = 5;
 }
 
+// my awesome doc for service
 service NewsService {
     rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
     rpc GetNews (NewsId) returns (News) {}
