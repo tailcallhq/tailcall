@@ -232,34 +232,24 @@
       "properties": {
         "allowCredentials": {
           "description": "Indicates whether the server allows credentials (e.g., cookies, authorization headers) to be sent in cross-origin requests.",
-          "default": false,
           "type": "boolean"
         },
         "allowHeaders": {
           "description": "A list of allowed headers in cross-origin requests. This can be used to specify custom headers that are allowed to be included in cross-origin requests.",
-          "default": null,
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": "array",
           "items": {
             "type": "string"
           }
         },
         "allowMethods": {
           "description": "A list of allowed HTTP methods in cross-origin requests. These methods specify the actions that are permitted in cross-origin requests.",
-          "default": null,
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": "array",
           "items": {
             "$ref": "#/definitions/Method"
           }
         },
         "allowOrigins": {
           "description": "A list of origins that are allowed to access the server's resources in cross-origin requests. An origin can be a domain, a subdomain, or even 'null' for local file schemes.",
-          "default": [],
           "type": "array",
           "items": {
             "type": "string"
@@ -267,12 +257,10 @@
         },
         "allowPrivateNetwork": {
           "description": "Indicates whether requests from private network addresses are allowed in cross-origin requests. Private network addresses typically include IP addresses reserved for internal networks.",
-          "default": false,
           "type": "boolean"
         },
         "exposeHeaders": {
           "description": "A list of headers that the server exposes to the browser in cross-origin responses. Exposing certain headers allows the client-side code to access them in the response.",
-          "default": [],
           "type": "array",
           "items": {
             "type": "string"
@@ -280,7 +268,6 @@
         },
         "maxAge": {
           "description": "The maximum time (in seconds) that the client should cache preflight OPTIONS requests in order to avoid sending excessive requests to the server.",
-          "default": null,
           "type": [
             "integer",
             "null"
