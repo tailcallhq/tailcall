@@ -83,7 +83,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Apollo": {
       "type": "object",
@@ -189,7 +190,8 @@
           "format": "uint64",
           "minimum": 1.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Call": {
       "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
@@ -214,7 +216,8 @@
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
@@ -224,7 +227,8 @@
       ],
       "properties": {
         "data": true
-      }
+      },
+      "additionalProperties": false
     },
     "Date": {
       "title": "Date",
@@ -1195,7 +1199,8 @@
           "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Grpc": {
       "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
@@ -1236,7 +1241,8 @@
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Headers": {
       "type": "object",
@@ -1359,7 +1365,8 @@
             "$ref": "#/definitions/KeyValue"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "HttpVersion": {
       "type": "string",
@@ -1430,7 +1437,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "LinkType": {
       "type": "string",
@@ -1472,11 +1480,13 @@
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Omit": {
       "description": "Used to omit a field from public consumption.",
-      "type": "object"
+      "type": "object",
+      "additionalProperties": false
     },
     "OtlpExporter": {
       "description": "Output the opentelemetry data to otlp collector",
@@ -1710,7 +1720,8 @@
           "format": "uint",
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "StdoutExporter": {
       "description": "Output the opentelemetry data to the stdout. Mostly used for debug purposes",
@@ -1743,7 +1754,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TelemetryExporter": {
       "oneOf": [
@@ -2022,7 +2034,8 @@
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Url": {
       "title": "Url",
