@@ -20,8 +20,8 @@ use crate::runtime::TargetRuntime;
 pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
-    pub req_headers: HeaderMap,
-    pub experimental_headers: HeaderMap,
+    pub request_headers: HeaderMap,
+    pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -37,8 +37,8 @@ impl RequestContext {
         RequestContext {
             server: Default::default(),
             upstream: Default::default(),
-            req_headers: HeaderMap::new(),
-            experimental_headers: HeaderMap::new(),
+            request_headers: HeaderMap::new(),
+            x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers: None,
             http_data_loaders: Arc::new(vec![]),
             gql_data_loaders: Arc::new(vec![]),
@@ -145,6 +145,33 @@ impl RequestContext {
     pub fn is_batching_enabled(&self) -> bool {
         self.upstream.is_batching_enabled()
     }
+
+    /// Checks if experimental headers is enabled
+    pub fn has_experimental_headers(&self) -> bool {
+        !self.server.experimental_headers.is_empty()
+    }
+
+    /// Inserts the experimental headers into the x_response_headers map
+    pub fn add_x_headers(&self, headers: &HeaderMap) {
+        if self.has_experimental_headers() {
+            let mut x_response_headers = self.x_response_headers.lock().unwrap();
+            for name in &self.server.experimental_headers {
+                if let Some(value) = headers.get(name) {
+                    x_response_headers.insert(name, value.clone());
+                }
+            }
+        }
+    }
+
+    /// Modifies existing headers to include the experimental headers
+    pub fn extend_x_headers(&self, headers: &mut HeaderMap) {
+        if self.has_experimental_headers() {
+            let x_response_headers = &self.x_response_headers.lock().unwrap();
+            for (header, value) in x_response_headers.iter() {
+                headers.insert(header, value.clone());
+            }
+        }
+    }
 }
 
 impl From<&AppContext> for RequestContext {
@@ -157,8 +184,8 @@ impl From<&AppContext> for RequestContext {
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
-            req_headers: HeaderMap::new(),
-            experimental_headers: HeaderMap::new(),
+            request_headers: HeaderMap::new(),
+            x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
