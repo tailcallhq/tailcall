@@ -106,8 +106,8 @@ pub fn update_response_headers(
 
     // Insert Cookie Headers
     if let Some(ref cookie_headers) = req_ctx.cookie_headers {
-        let cookie_headers = cookie_headers.lock().unwrap().deref();
-        resp.headers_mut().extend(cookie_headers.clone());
+        let cookie_headers = cookie_headers.lock().unwrap();
+        resp.headers_mut().extend(cookie_headers.deref().clone());
     }
 
     // Insert Experimental Headers
