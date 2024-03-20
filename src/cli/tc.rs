@@ -5,6 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use inquire::Confirm;
 use stripmargin::StripMargin;
+use dotenvy::dotenv;
 
 use super::command::{Cli, Command};
 use super::update_checker;
@@ -22,6 +23,7 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
+    let _ = dotenv();
     let cli = Cli::parse();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Blueprint::default());
