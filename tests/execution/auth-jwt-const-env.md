@@ -1,8 +1,6 @@
 # Auth with JWT loaded from const env
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server(port: 8000, graphiql: true, auth: [{jwt: {jwks: {data: "{{env.JWKS}}"}}, id: "jwt"}]) {
   query: Query
 }
@@ -25,9 +23,7 @@ type ProtectedType @protected {
 }
 ```
 
-#### env:
-
-```yml
+```yml @env
 JWKS: |
   {
     "keys": [
@@ -43,9 +39,7 @@ JWKS: |
   }
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

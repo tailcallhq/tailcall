@@ -1,8 +1,6 @@
 # Auth with BasicAuth loaded from const env
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @server(port: 8000, graphiql: true, auth: [{id: "basic", basic: {htpasswd: "{{link.htpasswd}}"}}])
   @link(id: "htpasswd", type: File, src: ".htpasswd") {
@@ -27,17 +25,13 @@ type ProtectedType @protected {
 }
 ```
 
-#### file:.htpasswd
-
-```
+```text @file:.htpasswd
 testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
 testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
 testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

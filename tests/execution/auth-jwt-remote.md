@@ -1,8 +1,6 @@
 # Auth with JWT loaded from remote
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @server(port: 8000, graphiql: true, auth: [{id: "jwt", jwt: {jwks: {remote: {url: "http://localhost:3000/jwks"}}}}]) {
   query: Query
@@ -26,13 +24,13 @@ type ProtectedType @protected {
 }
 ```
 
-#### mock:
-
-```yml
+```yml @mock
 - request:
     method: GET
     url: http://localhost:3000/jwks
     body: null
+    headers:
+      accept: application/json
   response:
     status: 200
     body:
@@ -45,9 +43,7 @@ type ProtectedType @protected {
           e: AQAB
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

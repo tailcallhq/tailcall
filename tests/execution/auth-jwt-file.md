@@ -1,8 +1,6 @@
 # Auth with JWT loaded from const
 
-#### server:
-
-```graphql
+```graphql @server
 schema
   @server(port: 8000, graphiql: true, auth: [{jwt: {jwks: {data: "{{link.jwks}}"}}, id: "jwt"}])
   @link(id: "jwks", type: File, src: "jwks.json") {
@@ -27,9 +25,7 @@ type ProtectedType @protected {
 }
 ```
 
-#### file:jwks.json
-
-```json
+```json @file:jwks.json
 {
   "keys": [
     {
@@ -44,9 +40,7 @@ type ProtectedType @protected {
 }
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

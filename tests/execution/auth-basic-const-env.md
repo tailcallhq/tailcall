@@ -1,8 +1,6 @@
 # Auth with BasicAuth loaded from const env
 
-#### server:
-
-```graphql
+```graphql @server
 schema @server(port: 8000, graphiql: true, auth: [{id: "basic", basic: {htpasswd: "{{env.HTPASSWD_CONTENT}}"}}]) {
   query: Query
 }
@@ -25,18 +23,14 @@ type ProtectedType @protected {
 }
 ```
 
-#### env:
-
-```yml
+```yml @env
 HTPASSWD_CONTENT: |
   testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
   testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
   testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 ```
 
-#### assert:
-
-```yml
+```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:

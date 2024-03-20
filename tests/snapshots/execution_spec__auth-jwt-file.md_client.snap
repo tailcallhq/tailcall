@@ -2,10 +2,18 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+scalar Date
+
+scalar Email
+
+scalar JSON
+
 type Nested {
   name: String!
   protected: String!
 }
+
+scalar PhoneNumber
 
 type ProtectedType {
   name: String!
@@ -18,6 +26,8 @@ type Query {
   protectedType: ProtectedType
   scalar: String!
 }
+
+scalar Url
 
 schema {
   query: Query
