@@ -1,5 +1,6 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::net::{AddrParseError, IpAddr};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -33,7 +34,7 @@ pub struct Server {
     pub pipeline_flush: bool,
     pub script: Option<Script>,
     pub cors: Option<Cors>,
-    pub experimental_headers: BTreeSet<String>,
+    pub experimental_headers: HashSet<HeaderName>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -75,7 +76,7 @@ impl Server {
         self.enable_query_validation
     }
 
-    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
+    pub fn get_experimental_headers(&self) -> HashSet<HeaderName> {
         self.experimental_headers.clone()
     }
 }
@@ -209,7 +210,7 @@ fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderM
     .trace("schema")
 }
 
-fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<BTreeSet<String>, String> {
+fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<HashSet<HeaderName>, String> {
     Valid::from_iter(headers.iter(), |h| {
         if !h.to_lowercase().starts_with("x-") {
             Valid::fail(
@@ -220,10 +221,10 @@ fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<BTreeSet<Stri
                 .to_string(),
             )
         } else {
-            Valid::succeed(h.clone())
+            Valid::from(HeaderName::from_str(h).map_err(|e| ValidationError::new(e.to_string())))
         }
     })
-    .map_to(headers)
+    .map(HashSet::from_iter)
     .trace("experimental")
     .trace("headers")
     .trace("@server")
