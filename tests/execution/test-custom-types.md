@@ -1,6 +1,8 @@
-# test-custom-types
+---
+check_identity: true
+---
 
-###### check identity
+# test-custom-types
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {

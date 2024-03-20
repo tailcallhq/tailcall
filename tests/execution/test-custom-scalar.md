@@ -1,6 +1,8 @@
-# test-custom-scalar
+---
+check_identity: true
+---
 
-###### check identity
+# test-custom-scalar
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

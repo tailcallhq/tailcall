@@ -1,6 +1,8 @@
-# test-grpc-service
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-grpc-service
 
 ```protobuf @file:news.proto
 syntax = "proto3";
