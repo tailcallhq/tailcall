@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -75,11 +76,8 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     let allowed = upstream.allowed_headers;
     let req_headers = create_allowed_headers(req.headers(), &allowed);
 
-    let allowed = app_ctx.blueprint.server.get_experimental_headers();
-    let experimental_headers = create_allowed_headers(req.headers(), &allowed);
-    RequestContext::from(app_ctx)
-        .req_headers(req_headers)
-        .experimental_headers(experimental_headers)
+    let _allowed = app_ctx.blueprint.server.get_experimental_headers();
+    RequestContext::from(app_ctx).request_headers(req_headers)
 }
 
 fn update_cache_control_header(
@@ -95,30 +93,25 @@ fn update_cache_control_header(
     response
 }
 
-fn update_experimental_headers(
-    response: &mut hyper::Response<hyper::Body>,
-    app_ctx: &AppContext,
-    req_ctx: Arc<RequestContext>,
-) {
-    if !app_ctx.blueprint.server.experimental_headers.is_empty() {
-        response
-            .headers_mut()
-            .extend(req_ctx.experimental_headers.clone());
-    }
-}
-
 pub fn update_response_headers(
     resp: &mut hyper::Response<hyper::Body>,
-    cookie_headers: Option<HeaderMap>,
+    req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
+        // Add static response headers
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
     }
-    if let Some(cookie_headers) = cookie_headers {
-        resp.headers_mut().extend(cookie_headers);
+
+    // Insert Cookie Headers
+    if let Some(ref cookie_headers) = req_ctx.cookie_headers {
+        let cookie_headers = cookie_headers.lock().unwrap();
+        resp.headers_mut().extend(cookie_headers.deref().clone());
     }
+
+    // Insert Experimental Headers
+    req_ctx.extend_x_headers(resp.headers_mut());
 }
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
@@ -134,15 +127,10 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-            let cookie_headers = req_ctx.cookie_headers.clone();
+
             response = update_cache_control_header(response, app_ctx, req_ctx.clone());
             let mut resp = response.to_response()?;
-            update_response_headers(
-                &mut resp,
-                cookie_headers.map(|v| v.lock().unwrap().clone()),
-                app_ctx,
-            );
-            update_experimental_headers(&mut resp, app_ctx, req_ctx);
+            update_response_headers(&mut resp, &req_ctx, app_ctx);
             Ok(resp)
         }
         Err(err) => {
@@ -250,15 +238,9 @@ async fn handle_rest_apis(
                 .data(req_ctx.clone())
                 .execute(&app_ctx.schema)
                 .await;
-            let cookie_headers = req_ctx.cookie_headers.clone();
             response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
             let mut resp = response.to_rest_response()?;
-            update_response_headers(
-                &mut resp,
-                cookie_headers.map(|v| v.lock().unwrap().clone()),
-                app_ctx.as_ref(),
-            );
-            update_experimental_headers(&mut resp, app_ctx.as_ref(), req_ctx);
+            update_response_headers(&mut resp, &req_ctx, &app_ctx);
             Ok(resp)
         }
         .instrument(span)
