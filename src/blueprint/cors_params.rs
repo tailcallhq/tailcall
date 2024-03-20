@@ -23,8 +23,12 @@ impl CorsParams {
         &self,
         origin: Option<&HeaderValue>,
     ) -> Option<(HeaderName, HeaderValue)> {
-        let allow_origin = origin.filter(|o| self.allow_origins.contains(o))?.clone();
-        Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin))
+        if self.allow_origins.iter().any(is_wildcard) {
+            Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, origin.cloned()?))
+        } else {
+            let allow_origin = origin.filter(|o| self.allow_origins.contains(o))?.clone();
+            Some((header::ACCESS_CONTROL_ALLOW_ORIGIN, allow_origin))
+        }
     }
 
     pub fn allow_credentials_to_header(&self) -> Option<(HeaderName, HeaderValue)> {
