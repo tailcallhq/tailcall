@@ -9,6 +9,7 @@ use crate::is_default;
 use crate::merge_right::MergeRight;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The `@server` directive, when applied at the schema level, offers a
 /// comprehensive set of server configurations. It dictates how the server
