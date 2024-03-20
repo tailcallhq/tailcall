@@ -20,7 +20,7 @@ pub fn update_call(
 ) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, _), b_field| {
-            let Some(ref calls) = field.calls else {
+            let Some(ref calls) = field.call else {
                 return Valid::succeed(b_field);
             };
 

@@ -313,7 +313,7 @@ where
                     graphql,
                     expr,
                     cache,
-                    calls: call,
+                    call,
                 }
             },
         )

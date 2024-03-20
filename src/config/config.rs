@@ -373,8 +373,8 @@ pub struct Field {
 
     ///
     /// Inserts a call resolver for the field.
-    #[serde(rename = "call", default, skip_serializing_if = "is_default")]
-    pub calls: Option<Call>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub call: Option<Call>,
 
     ///
     /// Inserts a GRPC resolver for the field.
@@ -413,7 +413,7 @@ impl Field {
             || self.graphql.is_some()
             || self.grpc.is_some()
             || self.expr.is_some()
-            || self.calls.is_some()
+            || self.call.is_some()
     }
 
     /// Returns a list of resolvable directives for the field.
@@ -434,7 +434,7 @@ impl Field {
         if self.grpc.is_some() {
             directives.push(Grpc::trace_name());
         }
-        if self.calls.is_some() {
+        if self.call.is_some() {
             directives.push(Call::trace_name());
         }
         directives
