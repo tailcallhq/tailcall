@@ -38,13 +38,12 @@ pub fn compile_call(
     call: &config::Call,
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
-    let mut resolvers: Vec<Valid<Expression, String>> = Vec::new();
-
-    for call in call.steps.iter() {
-        resolvers.push(
-            compile_step(field, config_module, call, operation_type).and_then(|expr| {
+    call.steps
+        .iter()
+        .map(|step| {
+            compile_step(field, config_module, step, operation_type).and_then(|expr| {
                 let mut map = IndexMap::new();
-                for (k, v) in &call.args {
+                for (k, v) in &step.args {
                     match DynamicValue::try_from(v) {
                         Ok(value) => map.insert(Name::new(k.clone()), value),
                         Err(e) => return Valid::fail(e.to_string()),
@@ -54,12 +53,8 @@ pub fn compile_call(
                 let args_expr = Expression::Literal(object);
 
                 Valid::succeed(expr.with_args(args_expr))
-            }),
-        );
-    }
-
-    resolvers
-        .into_iter()
+            })
+        })
         .reduce(|acc, cur| {
             acc.map(|expr| {
                 if let Ok(cur) = cur.to_result() {
