@@ -1,5 +1,6 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::net::{AddrParseError, IpAddr};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -9,6 +10,7 @@ use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use super::Auth;
+use crate::blueprint::Cors;
 use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -32,7 +34,8 @@ pub struct Server {
     pub http: Http,
     pub pipeline_flush: bool,
     pub script: Option<Script>,
-    pub experimental_headers: BTreeSet<String>,
+    pub cors: Option<Cors>,
+    pub experimental_headers: HashSet<HeaderName>,
     pub auth: Auth,
 }
 
@@ -75,7 +78,7 @@ impl Server {
         self.enable_query_validation
     }
 
-    pub fn get_experimental_headers(&self) -> BTreeSet<String> {
+    pub fn get_experimental_headers(&self) -> HashSet<HeaderName> {
         self.experimental_headers.clone()
     }
 }
@@ -118,9 +121,15 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             .fuse(handle_experimental_headers(
                 (config_server).get_experimental_headers(),
             ))
+            .fuse(validate_cors(
+                config_server
+                    .headers
+                    .as_ref()
+                    .and_then(|headers| headers.get_cors()),
+            ))
             .fuse(Auth::make(&config_server.auth))
             .map(
-                |(hostname, http, response_headers, script, experimental_headers, auth)| Server {
+                |(hostname, http, response_headers, script, experimental_headers, cors, auth)| Server {
                     enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                     enable_cache_control_header: (config_server).enable_cache_control(),
                     enable_set_cookie_header: (config_server).enable_set_cookies(),
@@ -140,6 +149,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                     pipeline_flush: (config_server).get_pipeline_flush(),
                     response_headers,
                     script,
+                    cors,
                     auth,
                 },
             )
@@ -162,6 +172,14 @@ fn to_script(config_module: &crate::config::ConfigModule) -> Valid<Option<Script
             }))
         },
     )
+}
+
+fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, String> {
+    Valid::from(cors.map(|cors| cors.try_into()).transpose())
+        .trace("cors")
+        .trace("headers")
+        .trace("@server")
+        .trace("schema")
 }
 
 fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
@@ -196,7 +214,7 @@ fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderM
     .trace("schema")
 }
 
-fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<BTreeSet<String>, String> {
+fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<HashSet<HeaderName>, String> {
     Valid::from_iter(headers.iter(), |h| {
         if !h.to_lowercase().starts_with("x-") {
             Valid::fail(
@@ -207,10 +225,10 @@ fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<BTreeSet<Stri
                 .to_string(),
             )
         } else {
-            Valid::succeed(h.clone())
+            Valid::from(HeaderName::from_str(h).map_err(|e| ValidationError::new(e.to_string())))
         }
     })
-    .map_to(headers)
+    .map(HashSet::from_iter)
     .trace("experimental")
     .trace("headers")
     .trace("@server")

@@ -981,7 +981,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 body: serde_json::from_slice(
                     &hyper::body::to_bytes(response.into_body()).await.unwrap(),
                 )
-                .unwrap(),
+                .unwrap_or(serde_json::Value::Null),
                 text_body: None,
             };
 

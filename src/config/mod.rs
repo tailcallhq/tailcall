@@ -15,6 +15,7 @@ mod apollo;
 mod auth;
 mod config;
 mod config_module;
+pub mod cors;
 mod expr;
 mod from_document;
 pub mod group_by;
