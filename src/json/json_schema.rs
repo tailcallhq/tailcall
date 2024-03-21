@@ -211,7 +211,7 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
             Kind::String => JsonSchema::Str,
             Kind::Bytes => JsonSchema::Str,
             Kind::Message(msg) => JsonSchema::try_from(&msg)?,
-            Kind::Enum(enm) =>  JsonSchema::try_from(&enm)?,
+            Kind::Enum(enm) => JsonSchema::try_from(&enm)?,
         };
         let field_schema = if value
             .cardinality()

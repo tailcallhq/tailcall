@@ -91,7 +91,7 @@ where
         Some(type_) => {
             if let Some(variants) = type_.variants.clone() {
                 JsonSchema::Enum(variants)
-            }else {
+            } else {
                 let mut schema_fields = HashMap::new();
                 for (name, field) in type_.fields.iter() {
                     if field.script.is_none() && field.http.is_none() {
