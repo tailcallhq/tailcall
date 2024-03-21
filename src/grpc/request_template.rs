@@ -14,8 +14,8 @@ use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
+use crate::lens::LensPath;
 use crate::mustache::Mustache;
-use crate::path::LensPath;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -192,7 +192,7 @@ mod tests {
         }
     }
 
-    impl crate::path::LensPath for Context {
+    impl crate::lens::LensPath for Context {
         fn get_path_as_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.get_path_as_string(parts)
         }

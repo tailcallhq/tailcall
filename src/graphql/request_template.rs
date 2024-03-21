@@ -12,8 +12,8 @@ use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::http::Method::POST;
 use crate::lambda::{CacheKey, GraphQLOperationContext};
+use crate::lens::PathGraphql;
 use crate::mustache::Mustache;
-use crate::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -149,7 +149,7 @@ mod tests {
     use crate::has_headers::HasHeaders;
     use crate::json::JsonLike;
     use crate::lambda::{CacheKey, GraphQLOperationContext};
-    use crate::path::PathGraphql;
+    use crate::lens::PathGraphql;
 
     struct Context {
         pub value: Value,

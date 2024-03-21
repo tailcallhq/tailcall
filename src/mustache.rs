@@ -6,7 +6,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
-use crate::path::{LensPath, PathGraphql};
+use crate::lens::{LensPath, PathGraphql};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
@@ -345,8 +345,8 @@ mod tests {
 
         use serde_json::json;
 
+        use crate::lens::LensPath;
         use crate::mustache::{Mustache, Segment};
-        use crate::path::LensPath;
 
         #[test]
         fn test_query_params_template() {
@@ -452,8 +452,8 @@ mod tests {
     }
 
     mod render_graphql {
+        use crate::lens::PathGraphql;
         use crate::mustache::{Mustache, Segment};
-        use crate::path::PathGraphql;
 
         #[test]
         fn test_render_mixed() {

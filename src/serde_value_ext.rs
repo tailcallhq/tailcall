@@ -5,7 +5,7 @@ use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 
 use crate::blueprint::DynamicValue;
-use crate::path::LensPath;
+use crate::lens::LensPath;
 
 pub trait ValueExt {
     fn render_value(&self, ctx: &impl LensPath) -> Result<GraphQLValue>;

@@ -115,7 +115,7 @@ mod tests {
 
         use crate::http::RequestContext;
         use crate::lambda::{EvaluationContext, ResolverContextLike};
-        use crate::path::{LensPath, PathGraphql};
+        use crate::lens::{LensPath, PathGraphql};
         use crate::EnvIO;
 
         struct Env {

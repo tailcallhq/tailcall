@@ -19,7 +19,7 @@ use tailcall::blueprint::{Server, Upstream};
 use tailcall::cache::InMemoryCache;
 use tailcall::http::{RequestContext, Response};
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path::LensPath;
+use tailcall::lens::LensPath;
 use tailcall::runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 

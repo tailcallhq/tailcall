@@ -12,8 +12,8 @@ use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
+use crate::lens::LensPath;
 use crate::mustache::Mustache;
-use crate::path::LensPath;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -267,8 +267,8 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::has_headers::HasHeaders;
+    use crate::lens::LensPath;
     use crate::mustache::Mustache;
-    use crate::path::LensPath;
 
     #[derive(Setters)]
     struct Context {
@@ -282,7 +282,7 @@ mod tests {
         }
     }
 
-    impl crate::path::LensPath for Context {
+    impl crate::lens::LensPath for Context {
         fn get_path_as_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.get_path_as_string(parts)
         }

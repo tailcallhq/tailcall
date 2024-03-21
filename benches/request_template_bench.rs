@@ -7,7 +7,7 @@ use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
 use tailcall::http::RequestTemplate;
-use tailcall::path::LensPath;
+use tailcall::lens::LensPath;
 
 #[derive(Setters)]
 struct Context {
