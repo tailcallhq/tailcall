@@ -54,7 +54,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId(http_data_loaders.len())),
-                                        http_filter: http_filter.clone()
+                                        http_filter: http_filter.clone(),
                                     }));
 
                                     http_data_loaders.push(data_loader);

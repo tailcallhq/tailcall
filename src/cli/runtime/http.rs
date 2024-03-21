@@ -18,7 +18,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::HttpIO;
 use crate::blueprint::telemetry::Telemetry;
 use crate::blueprint::Upstream;
-use crate::http::Response;
+use crate::http::{self, Response};
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -141,7 +141,11 @@ impl HttpIO for NativeHttp {
             network.protocol.version = ?request.version()
         )
     )]
-    async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
+    async fn execute(
+        &self,
+        mut request: reqwest::Request,
+        _http_filter: Option<http::HttpFilter>,
+    ) -> Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }
@@ -210,7 +214,7 @@ mod tests {
         let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
 
         // Execute the request
-        let result = native_http.execute(request).await;
+        let result = native_http.execute(request, None).await;
 
         // Assert the response is as expected
         assert!(result.is_ok());

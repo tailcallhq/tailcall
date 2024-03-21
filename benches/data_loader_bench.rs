@@ -10,7 +10,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
+use tailcall::http::{self, DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 
@@ -22,7 +22,11 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-    async fn execute(&self, _req: Request) -> anyhow::Result<Response<Bytes>> {
+    async fn execute(
+        &self,
+        _req: Request,
+        _http_filter: Option<http::HttpFilter>,
+    ) -> anyhow::Result<Response<Bytes>> {
         Ok(Response::empty())
     }
 }

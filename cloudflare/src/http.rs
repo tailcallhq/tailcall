@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
 use hyper::body::Bytes;
 use reqwest::Client;
-use tailcall::http::Response;
+use tailcall::http::{self, Response};
 use tailcall::HttpIO;
 
 use crate::to_anyhow;
@@ -29,7 +29,11 @@ impl CloudflareHttp {
 impl HttpIO for CloudflareHttp {
     // HttpClientOptions are ignored in Cloudflare
     // This is because there is little control over the underlying HTTP client
-    async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+    async fn execute(
+        &self,
+        request: reqwest::Request,
+        _http_filter: Option<http::HttpFilter>,
+    ) -> Result<Response<Bytes>> {
         let client = self.client.clone();
         let method = request.method().clone();
         let url = request.url().clone();

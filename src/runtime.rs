@@ -50,7 +50,7 @@ pub mod test {
     use crate::blueprint::Upstream;
     use crate::cache::InMemoryCache;
     use crate::cli::javascript;
-    use crate::http::Response;
+    use crate::http::{self, Response};
     use crate::runtime::TargetRuntime;
     use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
@@ -106,7 +106,11 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        async fn execute(
+            &self,
+            request: reqwest::Request,
+            _http_filter: Option<http::HttpFilter>,
+        ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?

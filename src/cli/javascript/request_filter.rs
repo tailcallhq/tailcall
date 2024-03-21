@@ -4,7 +4,7 @@ use hyper::body::Bytes;
 use serde::{Deserialize, Serialize};
 
 use super::{JsRequest, JsResponse};
-use crate::http::Response;
+use crate::http::{self, Response};
 use crate::{HttpIO, WorkerIO};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -34,16 +34,25 @@ impl RequestFilter {
     }
 
     #[async_recursion::async_recursion]
-    async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+    async fn on_request(
+        &self,
+        mut request: reqwest::Request,
+        http_filter: Option<http::HttpFilter>,
+    ) -> anyhow::Result<Response<Bytes>> {
+        // by default
+        let mut on_request = "onRequest".to_string();
 
+        if let Some(value) = http_filter {
+            on_request = value.on_request;
+        }
 
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        let command = self.worker.call(on_request_handler, event).await?;
+        let command = self.worker.call(on_request, event).await?;
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {
-                    let response = self.client.execute(js_request.try_into()?).await?;
+                    let response = self.client.execute(js_request.try_into()?, None).await?;
                     Ok(response)
                 }
                 Command::Response(js_response) => {
@@ -54,13 +63,13 @@ impl RequestFilter {
                         request
                             .url_mut()
                             .set_path(js_response.headers["location"].as_str());
-                        self.on_request(request).await
+                        self.on_request(request, None).await
                     } else {
                         Ok(js_response.try_into()?)
                     }
                 }
             },
-            None => self.client.execute(request).await,
+            None => self.client.execute(request, None).await,
         }
     }
 }
@@ -70,7 +79,8 @@ impl HttpIO for RequestFilter {
     async fn execute(
         &self,
         request: reqwest::Request,
+        http_filter: Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.on_request(request).await
+        self.on_request(request, http_filter).await
     }
 }

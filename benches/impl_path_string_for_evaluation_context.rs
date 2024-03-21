@@ -17,7 +17,7 @@ use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::blueprint::{Server, Upstream};
 use tailcall::cache::InMemoryCache;
-use tailcall::http::{RequestContext, Response};
+use tailcall::http::{self, RequestContext, Response};
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::path::PathString;
 use tailcall::runtime::TargetRuntime;
@@ -69,7 +69,11 @@ impl Http {
 
 #[async_trait]
 impl HttpIO for Http {
-    async fn execute(&self, mut request: Request) -> anyhow::Result<Response<Bytes>> {
+    async fn execute(
+        &self,
+        mut request: Request,
+        _http_filter: Option<http::HttpFilter>,
+    ) -> anyhow::Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }

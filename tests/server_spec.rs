@@ -13,7 +13,7 @@ pub mod test {
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cache::InMemoryCache;
     use tailcall::cli::javascript;
-    use tailcall::http::Response;
+    use tailcall::http::{self, Response};
     use tailcall::runtime::TargetRuntime;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -72,7 +72,11 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        async fn execute(
+            &self,
+            request: reqwest::Request,
+            _http_filter: Option<http::HttpFilter>,
+        ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?

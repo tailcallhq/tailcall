@@ -27,7 +27,7 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-        http_filter: http::HttpFilter
+        http_filter: Option<http::HttpFilter>,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -76,7 +76,7 @@ impl IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                IO::Http { req_template, dl_id, .. } => {
+                IO::Http { req_template, dl_id, http_filter, .. } => {
                     let req = req_template.to_request(&ctx)?;
                     let is_get = req.method() == reqwest::Method::GET;
 
@@ -85,7 +85,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req).await?
+                        execute_raw_request(&ctx, req, http_filter.clone()).await?
                     };
 
                     if ctx.req_ctx.server.get_enable_http_validation() {
@@ -111,7 +111,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req).await?
+                        execute_raw_request(&ctx, req, None).await?
                     };
 
                     set_headers(&ctx, &res);
@@ -191,12 +191,13 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
+    http_filter: Option<http::HttpFilter>,
 ) -> Result<Response<async_graphql::Value>> {
     let response = ctx
         .req_ctx
         .runtime
         .http
-        .execute(req)
+        .execute(req, http_filter)
         .await
         .map_err(|e| EvaluationError::IOException(e.to_string()))?
         .to_json()?;
