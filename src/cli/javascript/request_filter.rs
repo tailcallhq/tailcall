@@ -35,20 +35,7 @@ impl RequestFilter {
 
     #[async_recursion::async_recursion]
     async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        // by default
-        let mut on_request_handler = "onRequest".to_string();
 
-        // if globally set in @upstream directive.
-        if let Some(value) = request.headers_mut().remove("globalOnRequest") {
-            let value_str = value.to_str().unwrap_or_default();
-            on_request_handler = value_str.to_string();
-        }
-
-        // if set in @http directive
-        if let Some(value) = request.headers_mut().remove("onRequest") {
-            let value_str = value.to_str().unwrap_or_default();
-            on_request_handler = value_str.to_string();
-        }
 
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);

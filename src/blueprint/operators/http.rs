@@ -2,11 +2,11 @@ use std::str::FromStr;
 
 use hyper::header::HeaderName;
 
-use crate::blueprint::*;
+use crate::{blueprint::*, http};
 use crate::config::group_by::GroupBy;
 use crate::config::{Field, Link, LinkType};
 use crate::endpoint::Endpoint;
-use crate::http::{Method, RequestTemplate};
+use crate::http::{ Method, RequestTemplate};
 use crate::lambda::{Expression, IO};
 use crate::mustache::Mustache;
 use crate::try_fold::TryFold;
@@ -38,6 +38,10 @@ pub fn compile_http(
         ))
         .zip(helpers::headers::to_mustache_headers(&http.headers))
         .and_then(|(base_url, mut headers)| {
+
+            // by default
+            let mut on_request = "onRequest".to_string();
+            
             let script_links = &config_module
                 .links
                 .iter()
@@ -47,24 +51,12 @@ pub fn compile_http(
             if script_links.len() == 1 && script_links[0].src.ends_with(".js") {
                 // insert the global onrequest handler name if defined in @upstream directive
                 if let Some(global_on_request) = &config_module.upstream.on_request {
-                    headers.insert(
-                        headers.len(),
-                        (
-                            HeaderName::from_str("globalOnRequest").unwrap(),
-                            Mustache::parse(global_on_request).unwrap(),
-                        ),
-                    );
+                    on_request = global_on_request.to_string();
                 }
 
                 // insert the onrequest handler name if defined in @http directive
-                if let Some(on_request) = &http.on_request {
-                    headers.insert(
-                        headers.len(),
-                        (
-                            HeaderName::from_str("onRequest").unwrap(),
-                            Mustache::parse(on_request).unwrap(),
-                        ),
-                    );
+                if let Some(local_on_request) = &http.on_request {
+                    on_request = local_on_request.to_string();
                 }
             }
             let mut base_url = base_url.trim_end_matches('/').to_owned();

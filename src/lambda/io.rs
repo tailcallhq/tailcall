@@ -27,6 +27,7 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        http_filter: http::HttpFilter
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
