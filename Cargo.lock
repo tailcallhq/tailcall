@@ -4954,6 +4954,7 @@ dependencies = [
  "criterion",
  "deno_core",
  "derive_setters",
+ "dotenvy",
  "exitcode",
  "fnv",
  "futures-channel",
