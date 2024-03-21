@@ -129,28 +129,30 @@ impl TryFrom<crate::config::ConfigModule> for Server {
             ))
             .fuse(Auth::make(&config_server.auth))
             .map(
-                |(hostname, http, response_headers, script, experimental_headers, cors, auth)| Server {
-                    enable_apollo_tracing: (config_server).enable_apollo_tracing(),
-                    enable_cache_control_header: (config_server).enable_cache_control(),
-                    enable_set_cookie_header: (config_server).enable_set_cookies(),
-                    enable_graphiql: (config_server).enable_graphiql(),
-                    enable_introspection: (config_server).enable_introspection(),
-                    enable_query_validation: (config_server).enable_query_validation(),
-                    enable_response_validation: (config_server).enable_http_validation(),
-                    enable_batch_requests: (config_server).enable_batch_requests(),
-                    enable_showcase: (config_server).enable_showcase(),
-                    experimental_headers,
-                    global_response_timeout: (config_server).get_global_response_timeout(),
-                    http,
-                    worker: (config_server).get_workers(),
-                    port: (config_server).get_port(),
-                    hostname,
-                    vars: (config_server).get_vars(),
-                    pipeline_flush: (config_server).get_pipeline_flush(),
-                    response_headers,
-                    script,
-                    cors,
-                    auth,
+                |(hostname, http, response_headers, script, experimental_headers, cors, auth)| {
+                    Server {
+                        enable_apollo_tracing: (config_server).enable_apollo_tracing(),
+                        enable_cache_control_header: (config_server).enable_cache_control(),
+                        enable_set_cookie_header: (config_server).enable_set_cookies(),
+                        enable_graphiql: (config_server).enable_graphiql(),
+                        enable_introspection: (config_server).enable_introspection(),
+                        enable_query_validation: (config_server).enable_query_validation(),
+                        enable_response_validation: (config_server).enable_http_validation(),
+                        enable_batch_requests: (config_server).enable_batch_requests(),
+                        enable_showcase: (config_server).enable_showcase(),
+                        experimental_headers,
+                        global_response_timeout: (config_server).get_global_response_timeout(),
+                        http,
+                        worker: (config_server).get_workers(),
+                        port: (config_server).get_port(),
+                        hostname,
+                        vars: (config_server).get_vars(),
+                        pipeline_flush: (config_server).get_pipeline_flush(),
+                        response_headers,
+                        script,
+                        cors,
+                        auth,
+                    }
                 },
             )
             .to_result()

@@ -77,7 +77,8 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     let allowed_headers = create_allowed_headers(req.headers(), &allowed);
 
     let _allowed = app_ctx.blueprint.server.get_experimental_headers();
-    RequestContext::from(app_ctx).request_headers(req.headers().clone())
+    RequestContext::from(app_ctx)
+        .request_headers(req.headers().clone())
         .allowed_headers(allowed_headers)
 }
 
