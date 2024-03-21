@@ -3,6 +3,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
+use dotenvy::dotenv;
 use inquire::Confirm;
 use stripmargin::StripMargin;
 
@@ -22,6 +23,9 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
+    if let Err(e) = dotenv() {
+        tracing::warn!("Failed to load .env file: {}", e);
+    }
     let cli = Cli::parse();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Blueprint::default());
