@@ -89,13 +89,17 @@ where
     let type_ = config.find_type(type_of);
     let schema = match type_ {
         Some(type_) => {
-            let mut schema_fields = HashMap::new();
-            for (name, field) in type_.fields.iter() {
-                if field.script.is_none() && field.http.is_none() {
-                    schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
+            if let Some(variants) = type_.variants.clone() {
+                JsonSchema::Enum(variants)
+            }else {
+                let mut schema_fields = HashMap::new();
+                for (name, field) in type_.fields.iter() {
+                    if field.script.is_none() && field.http.is_none() {
+                        schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
+                    }
                 }
+                JsonSchema::Obj(schema_fields)
             }
-            JsonSchema::Obj(schema_fields)
         }
         None => match type_of {
             "String" => JsonSchema::Str {},
