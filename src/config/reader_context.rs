@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::path::PathString;
+use crate::path::LensPath;
 use crate::EnvIO;
 
 pub struct ConfigReaderContext<'a> {
@@ -10,8 +10,8 @@ pub struct ConfigReaderContext<'a> {
     pub vars: &'a BTreeMap<String, String>,
 }
 
-impl<'a> PathString for ConfigReaderContext<'a> {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+impl<'a> LensPath for ConfigReaderContext<'a> {
+    fn get_path_as_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         if path.is_empty() {
             return None;
         }
@@ -41,15 +41,18 @@ mod tests {
         };
 
         assert_eq!(
-            reader_context.path_string(&["env", "ENV_1"]),
+            reader_context.get_path_as_string(&["env", "ENV_1"]),
             Some("ENV_VAL".into())
         );
-        assert_eq!(reader_context.path_string(&["env", "ENV_5"]), None);
+        assert_eq!(reader_context.get_path_as_string(&["env", "ENV_5"]), None);
         assert_eq!(
-            reader_context.path_string(&["vars", "VAR_1"]),
+            reader_context.get_path_as_string(&["vars", "VAR_1"]),
             Some("VAR_VAL".into())
         );
-        assert_eq!(reader_context.path_string(&["vars", "VAR_6"]), None);
-        assert_eq!(reader_context.path_string(&["unknown", "unknown"]), None);
+        assert_eq!(reader_context.get_path_as_string(&["vars", "VAR_6"]), None);
+        assert_eq!(
+            reader_context.get_path_as_string(&["unknown", "unknown"]),
+            None
+        );
     }
 }

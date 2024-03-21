@@ -13,7 +13,7 @@ use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::path::PathString;
+use crate::path::LensPath;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -33,7 +33,7 @@ pub struct RequestTemplate {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: LensPath>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
@@ -81,7 +81,7 @@ impl RequestTemplate {
     }
 
     /// Creates a HeaderMap for the context
-    fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: LensPath>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         for (k, v) in &self.headers {
@@ -94,7 +94,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathString + HasHeaders>(
+    pub fn to_request<C: LensPath + HasHeaders>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -109,7 +109,7 @@ impl RequestTemplate {
     }
 
     /// Sets the body for the request
-    fn set_body<C: PathString + HasHeaders>(
+    fn set_body<C: LensPath + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -136,7 +136,7 @@ impl RequestTemplate {
     }
 
     /// Sets the headers for the request
-    fn set_headers<C: PathString + HasHeaders>(
+    fn set_headers<C: LensPath + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -224,7 +224,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
     }
 }
 
-impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: LensPath + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let state = &mut hasher;
@@ -268,7 +268,7 @@ mod tests {
     use super::RequestTemplate;
     use crate::has_headers::HasHeaders;
     use crate::mustache::Mustache;
-    use crate::path::PathString;
+    use crate::path::LensPath;
 
     #[derive(Setters)]
     struct Context {
@@ -282,9 +282,9 @@ mod tests {
         }
     }
 
-    impl crate::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-            self.value.path_string(parts)
+    impl crate::path::LensPath for Context {
+        fn get_path_as_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+            self.value.get_path_as_string(parts)
         }
     }
 
@@ -295,7 +295,7 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: LensPath + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()

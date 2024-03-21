@@ -5,14 +5,14 @@ use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 
 use crate::blueprint::DynamicValue;
-use crate::path::PathString;
+use crate::path::LensPath;
 
 pub trait ValueExt {
-    fn render_value(&self, ctx: &impl PathString) -> Result<GraphQLValue>;
+    fn render_value(&self, ctx: &impl LensPath) -> Result<GraphQLValue>;
 }
 
 impl ValueExt for DynamicValue {
-    fn render_value<'a>(&self, ctx: &'a impl PathString) -> Result<GraphQLValue> {
+    fn render_value<'a>(&self, ctx: &'a impl LensPath) -> Result<GraphQLValue> {
         match self {
             DynamicValue::Value(value) => Ok(value.to_owned()),
             DynamicValue::Mustache(m) => {

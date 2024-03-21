@@ -13,8 +13,8 @@ use crate::lambda::{EvaluationContext, ResolverContextLike};
 /// The PathString trait provides a method for accessing values from a JSON-like
 /// structure. The returned value is encoded as a plain string.
 /// This is typically used in evaluating mustache templates.
-pub trait PathString {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
+pub trait LensPath {
+    fn get_path_as_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
 }
 
 ///
@@ -24,8 +24,8 @@ pub trait PathGraphql {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String>;
 }
 
-impl PathString for serde_json::Value {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+impl LensPath for serde_json::Value {
+    fn get_path_as_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         self.get_path(path).map(|a| match a {
             serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
             _ => Cow::Owned(a.to_string()),
@@ -49,8 +49,8 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+impl<'a, Ctx: ResolverContextLike<'a>> LensPath for EvaluationContext<'a, Ctx> {
+    fn get_path_as_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         let ctx = self;
 
         if path.is_empty() {
@@ -115,7 +115,7 @@ mod tests {
 
         use crate::http::RequestContext;
         use crate::lambda::{EvaluationContext, ResolverContextLike};
-        use crate::path::{PathGraphql, PathString};
+        use crate::path::{LensPath, PathGraphql};
         use crate::EnvIO;
 
         struct Env {
@@ -224,25 +224,28 @@ mod tests {
         fn path_to_string() {
             // value
             assert_eq!(
-                EVAL_CTX.path_string(&["value", "bool"]),
+                EVAL_CTX.get_path_as_string(&["value", "bool"]),
                 Some(Cow::Borrowed("true"))
             );
             assert_eq!(
-                EVAL_CTX.path_string(&["value", "number"]),
+                EVAL_CTX.get_path_as_string(&["value", "number"]),
                 Some(Cow::Borrowed("2"))
             );
             assert_eq!(
-                EVAL_CTX.path_string(&["value", "str"]),
+                EVAL_CTX.get_path_as_string(&["value", "str"]),
                 Some(Cow::Borrowed("str-test"))
             );
             assert_eq!(
-                EVAL_CTX.path_string(&["value", "nested"]),
+                EVAL_CTX.get_path_as_string(&["value", "nested"]),
                 Some(Cow::Borrowed("{\"existing\":\"nested-test\"}"))
             );
-            assert_eq!(EVAL_CTX.path_string(&["value", "missing"]), None);
-            assert_eq!(EVAL_CTX.path_string(&["value", "nested", "missing"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["value", "missing"]), None);
             assert_eq!(
-                EVAL_CTX.path_string(&["value"]),
+                EVAL_CTX.get_path_as_string(&["value", "nested", "missing"]),
+                None
+            );
+            assert_eq!(
+                EVAL_CTX.get_path_as_string(&["value"]),
                 Some(Cow::Borrowed(
                     r#"{"bool":true,"nested":{"existing":"nested-test"},"number":2,"str":"str-test"}"#
                 ))
@@ -250,17 +253,20 @@ mod tests {
 
             // args
             assert_eq!(
-                EVAL_CTX.path_string(&["args", "root"]),
+                EVAL_CTX.get_path_as_string(&["args", "root"]),
                 Some(Cow::Borrowed("root-test"))
             );
             assert_eq!(
-                EVAL_CTX.path_string(&["args", "nested"]),
+                EVAL_CTX.get_path_as_string(&["args", "nested"]),
                 Some(Cow::Borrowed("{\"existing\":\"nested-test\"}"))
             );
-            assert_eq!(EVAL_CTX.path_string(&["args", "missing"]), None);
-            assert_eq!(EVAL_CTX.path_string(&["args", "nested", "missing"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["args", "missing"]), None);
             assert_eq!(
-                EVAL_CTX.path_string(&["args"]),
+                EVAL_CTX.get_path_as_string(&["args", "nested", "missing"]),
+                None
+            );
+            assert_eq!(
+                EVAL_CTX.get_path_as_string(&["args"]),
                 Some(Cow::Borrowed(
                     r#"{"nested":{"existing":"nested-test"},"root":"root-test"}"#
                 ))
@@ -268,33 +274,33 @@ mod tests {
 
             // headers
             assert_eq!(
-                EVAL_CTX.path_string(&["headers", "x-existing"]),
+                EVAL_CTX.get_path_as_string(&["headers", "x-existing"]),
                 Some(Cow::Borrowed("header"))
             );
-            assert_eq!(EVAL_CTX.path_string(&["headers", "x-missing"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["headers", "x-missing"]), None);
 
             // vars
             assert_eq!(
-                EVAL_CTX.path_string(&["vars", "existing"]),
+                EVAL_CTX.get_path_as_string(&["vars", "existing"]),
                 Some(Cow::Borrowed("var"))
             );
-            assert_eq!(EVAL_CTX.path_string(&["vars", "missing"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["vars", "missing"]), None);
             assert_eq!(
-                EVAL_CTX.path_string(&["vars"]),
+                EVAL_CTX.get_path_as_string(&["vars"]),
                 Some(Cow::Borrowed(r#"{"existing":"var"}"#))
             );
 
             // envs
             assert_eq!(
-                EVAL_CTX.path_string(&["env", "existing"]),
+                EVAL_CTX.get_path_as_string(&["env", "existing"]),
                 Some(Cow::Borrowed("env"))
             );
-            assert_eq!(EVAL_CTX.path_string(&["env", "x-missing"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["env", "x-missing"]), None);
 
             // other value types
-            assert_eq!(EVAL_CTX.path_string(&["foo", "key"]), None);
-            assert_eq!(EVAL_CTX.path_string(&["bar", "key"]), None);
-            assert_eq!(EVAL_CTX.path_string(&["baz", "key"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["foo", "key"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["bar", "key"]), None);
+            assert_eq!(EVAL_CTX.get_path_as_string(&["baz", "key"]), None);
         }
 
         #[test]

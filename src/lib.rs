@@ -20,7 +20,6 @@ pub mod helpers;
 pub mod http;
 pub mod json;
 pub mod lambda;
-mod lens;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;

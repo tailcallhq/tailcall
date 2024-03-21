@@ -15,7 +15,7 @@ use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::path::PathString;
+use crate::path::LensPath;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -44,13 +44,13 @@ impl Hash for RenderedRequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url> {
+    fn create_url<C: LensPath>(&self, ctx: &C) -> Result<Url> {
         let url = url::Url::parse(self.url.render(ctx).as_str())?;
 
         Ok(url)
     }
 
-    fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: LensPath>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         header_map.insert(CONTENT_TYPE, GRPC_MIME_TYPE.to_owned());
@@ -64,14 +64,14 @@ impl RequestTemplate {
         header_map
     }
 
-    pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
+    pub fn render<C: LensPath + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
         let url = self.create_url(ctx)?;
         let headers = self.render_headers(ctx);
         let body = self.render_body(ctx);
         Ok(RenderedRequestTemplate { url, headers, body, operation: self.operation.clone() })
     }
 
-    fn render_body<C: PathString + HasHeaders>(&self, ctx: &C) -> String {
+    fn render_body<C: LensPath + HasHeaders>(&self, ctx: &C) -> String {
         if let Some(body) = &self.body {
             body.render(ctx)
         } else {
@@ -79,7 +79,7 @@ impl RequestTemplate {
         }
     }
 
-    fn render_headers<C: PathString + HasHeaders>(&self, ctx: &C) -> HeaderMap {
+    fn render_headers<C: LensPath + HasHeaders>(&self, ctx: &C) -> HeaderMap {
         let mut req_headers = HeaderMap::new();
 
         let headers = self.create_headers(ctx);
@@ -106,7 +106,7 @@ impl RenderedRequestTemplate {
     }
 }
 
-impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: LensPath + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let rendered_req = self.render(ctx).unwrap();
@@ -192,9 +192,9 @@ mod tests {
         }
     }
 
-    impl crate::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-            self.value.path_string(parts)
+    impl crate::path::LensPath for Context {
+        fn get_path_as_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+            self.value.get_path_as_string(parts)
         }
     }
 

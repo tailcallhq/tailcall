@@ -6,7 +6,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
-use crate::path::{PathGraphql, PathString};
+use crate::path::{LensPath, PathGraphql};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
@@ -46,14 +46,14 @@ impl Mustache {
         }
     }
 
-    pub fn render(&self, value: &impl PathString) -> String {
+    pub fn render(&self, value: &impl LensPath) -> String {
         match self {
             Mustache(segments) => segments
                 .iter()
                 .map(|segment| match segment {
                     Segment::Literal(text) => text.clone(),
                     Segment::Expression(parts) => value
-                        .path_string(parts)
+                        .get_path_as_string(parts)
                         .map(|a| a.to_string())
                         .unwrap_or_default(),
                 })
@@ -346,7 +346,7 @@ mod tests {
         use serde_json::json;
 
         use crate::mustache::{Mustache, Segment};
-        use crate::path::PathString;
+        use crate::path::LensPath;
 
         #[test]
         fn test_query_params_template() {
@@ -361,8 +361,8 @@ mod tests {
         fn test_render_mixed() {
             struct DummyPath;
 
-            impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+            impl LensPath for DummyPath {
+                fn get_path_as_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
                     let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo", "bar"] {
@@ -393,8 +393,8 @@ mod tests {
         fn test_render_with_missing_path() {
             struct DummyPath;
 
-            impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(&self, _: &[T]) -> Option<Cow<'_, str>> {
+            impl LensPath for DummyPath {
+                fn get_path_as_string<T: AsRef<str>>(&self, _: &[T]) -> Option<Cow<'_, str>> {
                     None
                 }
             }
@@ -429,8 +429,8 @@ mod tests {
         fn test_render_preserves_spaces() {
             struct DummyPath;
 
-            impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+            impl LensPath for DummyPath {
+                fn get_path_as_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
                     let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo"] {

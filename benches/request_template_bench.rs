@@ -7,7 +7,7 @@ use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
 use tailcall::http::RequestTemplate;
-use tailcall::path::PathString;
+use tailcall::path::LensPath;
 
 #[derive(Setters)]
 struct Context {
@@ -20,9 +20,9 @@ impl Default for Context {
         Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
 }
-impl PathString for Context {
-    fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-        self.value.path_string(parts)
+impl LensPath for Context {
+    fn get_path_as_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+        self.value.get_path_as_string(parts)
     }
 }
 impl HasHeaders for Context {
