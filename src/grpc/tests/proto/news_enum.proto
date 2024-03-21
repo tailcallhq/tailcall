@@ -7,7 +7,6 @@ package news;
 enum Status {
     PUBLISHED = 0;
     DRAFT = 1;
-    ND = 2;
 }
 
 message News {
