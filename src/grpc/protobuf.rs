@@ -6,7 +6,8 @@ use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::{
-    DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, ServiceDescriptor,
+    DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, SerializeOptions,
+    ServiceDescriptor,
 };
 use serde_json::Deserializer;
 
@@ -194,9 +195,14 @@ impl ProtobufOperation {
                 )
             })?;
 
-        let json = serde_json::to_value(message)?;
+        let mut ser = serde_json::Serializer::new(vec![]);
+        message.serialize_with_options(
+            &mut ser,
+            &SerializeOptions::new().skip_default_fields(false),
+        )?;
+        let json = serde_json::from_slice::<Value>(ser.into_inner().as_ref())?;
 
-        Ok(async_graphql::Value::from_json(json)?)
+        Ok(json)
     }
 }
 
