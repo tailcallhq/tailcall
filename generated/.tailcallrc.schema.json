@@ -206,8 +206,7 @@
             "$ref": "#/definitions/Step"
           }
         }
-      },
-      "additionalProperties": false
+      }
     },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
