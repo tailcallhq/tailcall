@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use convert_case::{Case, Casing};
 use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
@@ -158,7 +159,10 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
         for field in fields {
             let field_schema = JsonSchema::try_from(&field)?;
 
-            map.insert(field.name().to_string(), field_schema);
+            // the snake_case for field names is automatically converted to camelCase
+            // by prost on serde serialize/deserealize and in graphql type name should be in
+            // camelCase as well, so convert field.name to camelCase here
+            map.insert(field.name().to_case(Case::Camel), field_schema);
         }
 
         Ok(JsonSchema::Obj(map))
@@ -210,9 +214,14 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use async_graphql::Name;
     use indexmap::IndexMap;
 
+    use crate::blueprint::GrpcMethod;
+    use crate::grpc::protobuf::tests::get_proto_file;
+    use crate::grpc::protobuf::ProtobufSet;
     use crate::json::JsonSchema;
     use crate::valid::{Valid, Validator};
 
@@ -273,5 +282,31 @@ mod tests {
 
         let result = schema.validate(&value);
         assert_eq!(result, Valid::succeed(()));
+    }
+
+    #[tokio::test]
+    async fn test_from_protobuf_conversion() -> anyhow::Result<()> {
+        let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
+
+        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        let schema = JsonSchema::try_from(&operation.output_type)?;
+
+        assert_eq!(
+            schema,
+            JsonSchema::Obj(HashMap::from_iter([
+                (
+                    "postImage".to_owned(),
+                    JsonSchema::Opt(JsonSchema::Str.into())
+                ),
+                ("title".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+                ("id".to_owned(), JsonSchema::Opt(JsonSchema::Num.into())),
+                ("body".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+            ]))
+        );
+
+        Ok(())
     }
 }

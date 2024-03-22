@@ -258,6 +258,7 @@ impl MergeRight for Type {
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Cache {
     /// Specifies the duration, in milliseconds, of how long the value has to be
     /// stored in the cache.
@@ -315,6 +316,7 @@ impl MergeRight for RootSchema {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
 pub struct Omit {}
 
@@ -490,6 +492,7 @@ pub struct JS {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
     pub name: Option<String>,
@@ -532,6 +535,7 @@ impl MergeRight for Union {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
 /// For instance, if you add the @http operator to the `users` field of the
@@ -624,6 +628,7 @@ pub struct Step {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
 ///
 /// For instance, if you add the @grpc operator to the `users` field of the
@@ -658,6 +663,7 @@ pub struct Grpc {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.
 pub struct GraphQL {
@@ -710,6 +716,7 @@ impl Display for GraphQLOperationType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The `@const` operators allows us to embed a constant response for the
 /// schema.
 pub struct Const {
@@ -717,6 +724,7 @@ pub struct Const {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
     /// Name of the new field to be added

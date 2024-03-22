@@ -157,6 +157,7 @@ fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 ) {
     set_cache_control(ctx, res);
     set_cookie_headers(ctx, res);
+    set_experimental_headers(ctx, res);
 }
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
@@ -168,6 +169,13 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
             ctx.req_ctx.set_cache_control(policy);
         }
     }
+}
+
+fn set_experimental_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
+    ctx: &EvaluationContext<'ctx, Ctx>,
+    res: &Response<async_graphql::Value>,
+) {
+    ctx.req_ctx.add_x_headers(&res.headers);
 }
 
 fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
@@ -183,13 +191,16 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
 ) -> Result<Response<async_graphql::Value>> {
-    ctx.req_ctx
+    let response = ctx
+        .req_ctx
         .runtime
         .http
         .execute(req)
         .await
         .map_err(|e| EvaluationError::IOException(e.to_string()))?
-        .to_json()
+        .to_json()?;
+
+    Ok(response)
 }
 
 async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
