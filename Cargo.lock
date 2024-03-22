@@ -1278,9 +1278,9 @@ dependencies = [
 
 [[package]]
 name = "deno_core"
-version = "0.271.0"
+version = "0.272.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c999770ea2ea763217d895d4fd1cafba26c11ae7b9956af320458926d4c6d9b"
+checksum = "07093891f2af763023614cfe2d1ce5f9ce5a7920c4fcf2f00911bd0d93083523"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1309,9 +1309,9 @@ dependencies = [
 
 [[package]]
 name = "deno_ops"
-version = "0.147.0"
+version = "0.148.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4963845d907652a03c88288899d3f93bc937e8eed02dd17e7b05f10555446c6"
+checksum = "5bc73fc07ad26e71715d5a726d1dd228587c0d121a591b1931a0fcf958a2ec3b"
 dependencies = [
  "proc-macro-rules",
  "proc-macro2",
@@ -1998,6 +1998,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "gzip-header"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95cc527b92e6029a62960ad99aa8a6660faa4555fe5f731aab13aa6a921795a2"
+dependencies = [
+ "crc32fast",
+]
+
+[[package]]
 name = "h2"
 version = "0.3.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2437,9 +2446,9 @@ dependencies = [
 
 [[package]]
 name = "inquire"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3bc24f3f114e409501843dda15ef84dccd13404a364101b5b7ca94f5e756513"
+checksum = "0fca231a35040487041f975afae9272ecd3701cc95a5efbbda36c6ecc22a269c"
 dependencies = [
  "bitflags 2.4.2",
  "crossterm",
@@ -4581,9 +4590,9 @@ dependencies = [
 
 [[package]]
 name = "serde_v8"
-version = "0.180.0"
+version = "0.181.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8322bba103f9b7fa9fc3a45ed97a616efa17b719d20a595b071cd115698f0fa1"
+checksum = "fd25bb66a20a1a405fb3733aaaf8a8a77a14fd55c8f5fd9db2a2e95bbd7eeab9"
 dependencies = [
  "bytes",
  "num-bigint",
@@ -5606,12 +5615,15 @@ dependencies = [
 
 [[package]]
 name = "v8"
-version = "0.87.0"
+version = "0.89.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6023bbed5bd147a6e2173b4fc24a028fd2a413032ccee19e737e4972eb4249d"
+checksum = "fe2197fbef82c98f7953d13568a961d4e1c663793b5caf3c74455a13918cdf33"
 dependencies = [
  "bitflags 2.4.2",
  "fslock",
+ "gzip-header",
+ "home",
+ "miniz_oxide",
  "once_cell",
  "which 5.0.0",
 ]
