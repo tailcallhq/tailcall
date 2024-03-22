@@ -66,18 +66,18 @@ fn compile_step(
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
     get_field_and_field_name(step, config_module).and_then(|(_field, field_name, args)| {
-        let empties: Vec<(&String, &config::Arg)> = _field
+        let empties: Vec<&String> = _field
             .args
-            .iter()
-            .filter(|(k, _)| !args.clone().any(|(k1, _)| k1.eq(*k)))
+            .keys()
+            .filter(|k| !args.clone().any(|(k1, _)| k1.eq(*k)))
             .collect();
 
         if empties.len().gt(&0) {
             return Valid::fail(format!(
                 "no argument {} found",
                 empties
-                    .iter()
-                    .map(|(k, _)| format!("'{}'", k))
+                    .into_iter()
+                    .map(|k| format!("'{}'", k))
                     .collect::<Vec<String>>()
                     .join(", ")
             ))
