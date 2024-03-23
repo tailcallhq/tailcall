@@ -162,13 +162,9 @@ pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: Option<String>
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-
-    use prost_reflect::prost_types::FileDescriptorSet;
-
     use crate::config::from_proto::from_proto;
-    use crate::config::Config;
-    use crate::valid::Validator;
+    use prost_reflect::prost_types::FileDescriptorSet;
+    use std::path::PathBuf;
 
     #[test]
     fn test_from_proto() -> anyhow::Result<()> {
@@ -196,10 +192,9 @@ mod test {
         set.file.push(file_desc);
         set.file.push(file_desc1);
 
-        let result = from_proto(vec![set], None);
-        let cfg = Config::from_sdl(result.to_sdl().as_str()).to_result()?;
+        let result = from_proto(vec![set], None).to_sdl();
 
-        assert_eq!(cfg, result);
+        insta::assert_snapshot!(result);
         Ok(())
     }
 }
