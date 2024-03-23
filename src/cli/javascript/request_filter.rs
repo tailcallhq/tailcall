@@ -39,16 +39,16 @@ impl RequestFilter {
         mut request: reqwest::Request,
         http_filter: Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<Bytes>> {
-        // by default
-        let mut on_request = "onRequest".to_string();
-
-        if let Some(value) = http_filter {
-            on_request = value.on_request;
-        }
 
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        let command = self.worker.call(on_request, event).await?;
+        
+        let mut command = None;
+        if let Some(value1) = http_filter {
+            if let Some(value2) = value1.on_request {
+                command = self.worker.call(value2, event).await?;
+            }
+        }
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {

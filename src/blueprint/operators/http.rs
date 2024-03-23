@@ -1,6 +1,6 @@
 use crate::blueprint::*;
 use crate::config::group_by::GroupBy;
-use crate::config::{Field, Link, LinkType};
+use crate::config::Field;
 use crate::endpoint::Endpoint;
 use crate::http::{Method, RequestTemplate};
 use crate::lambda::{Expression, IO};
@@ -59,27 +59,12 @@ pub fn compile_http(
             .into()
         })
         .map(|req_template| {
-            // by default
-            let mut on_request = "onRequest".to_string();
+            // marge http and upstream on_request
+            let on_request = http
+                .on_request
+                .clone()
+                .or_else(|| config_module.upstream.on_request.clone());
 
-            let script_links = &config_module
-                .links
-                .iter()
-                .filter(|l| l.type_of == LinkType::Script)
-                .collect::<Vec<&Link>>();
-
-            // only when we have one js script file linked via @link directive
-            if script_links.len() == 1 && script_links[0].src.ends_with(".js") {
-                // insert the global onrequest handler name if defined in @upstream directive
-                if let Some(global_on_request) = &config_module.upstream.on_request {
-                    on_request = global_on_request.to_string();
-                }
-
-                // insert the onrequest handler name if defined in @http directive
-                if let Some(local_on_request) = &http.on_request {
-                    on_request = local_on_request.to_string();
-                }
-            }
             if !http.group_by.is_empty() && http.method == Method::GET {
                 Expression::IO(IO::Http {
                     req_template,

@@ -171,8 +171,8 @@ impl Upstream {
         self.http2_only.unwrap_or(false)
     }
 
-    pub fn get_on_request(&self) -> String {
-        self.on_request.clone().unwrap_or("".to_string())
+    pub fn get_on_request(&self) -> Option<String> {
+        Some(self.on_request.clone().unwrap_or("".to_string()))
     }
 }
 

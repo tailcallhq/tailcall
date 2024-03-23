@@ -27,7 +27,7 @@ pub struct Upstream {
     pub http_cache: bool,
     pub batch: Option<Batch>,
     pub http2_only: bool,
-    pub on_request: String,
+    pub on_request: Option<String>,
 }
 
 impl Upstream {

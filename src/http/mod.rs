@@ -25,5 +25,5 @@ pub use crate::app_context::AppContext;
 /// User can configure the filter/interceptor
 /// for the http requests.
 pub struct HttpFilter {
-    pub on_request: String,
+    pub on_request: Option<String>,
 }
