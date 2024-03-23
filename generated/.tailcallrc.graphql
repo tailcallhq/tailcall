@@ -28,6 +28,10 @@ directive @cache(
 Provides the ability to refer to multiple fields in the Query or Mutation root.
 """
 directive @call(
+  """
+  Steps are composed together to form a call. If you have multiple steps, the output 
+  of the previous step is passed as input to the next step.
+  """
   steps: [Step]
 ) on FIELD_DEFINITION
 

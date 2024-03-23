@@ -605,6 +605,9 @@ pub struct Http {
 /// Mutation root.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Call {
+    /// Steps are composed together to form a call.
+    /// If you have multiple steps, the output of the previous step is passed as
+    /// input to the next step.
     pub steps: Vec<Step>,
 }
 

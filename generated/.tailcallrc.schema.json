@@ -201,6 +201,7 @@
       ],
       "properties": {
         "steps": {
+          "description": "Steps are composed together to form a call. If you have multiple steps, the output of the previous step is passed as input to the next step.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Step"
