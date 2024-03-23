@@ -13,8 +13,8 @@ scalar PhoneNumber
 type Query {
   a(input: JSON): JSON
   abc(input: JSON): JSON
-  b(input: JSON): JSON
-  c(input: JSON): JSON
+  b: JSON
+  c: JSON
 }
 
 scalar Url

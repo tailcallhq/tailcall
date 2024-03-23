@@ -1,4 +1,5 @@
-# Call multiple steps
+# Call multiple steps piping
+
 
 ```graphql @server
 schema {
@@ -7,15 +8,15 @@ schema {
 
 type Query {
   a(input: JSON): JSON @const(data: "{{args.input.a}}")
-  b(input: JSON): JSON @const(data: "{{args.input.b}}")
-  c(input: JSON): JSON @const(data: "{{args.input.c}}")
+  b: JSON @const(data: "{{args.b}}")
+  c: JSON @const(data: "{{args.c}}")
 
   abc(input: JSON): JSON
     @call(
       steps: [
         {query: "a", args: {input: "{{args.input}}"}}
-        {query: "b", args: {input: "{{args.input}}"}}
-        {query: "c", args: {input: "{{args.input}}"}}
+        {query: "b"}
+        {query: "c"}
       ]
     )
 }
@@ -25,5 +26,5 @@ type Query {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: "query { abc(input: { a: 1, b: 2, c: 3 }) }"
+    query: "query { abc(input: { a: { b: { c: 3 } }})}"
 ```
