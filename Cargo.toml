@@ -204,3 +204,7 @@ harness = false
 [[bench]]
 name = "impl_path_string_for_evaluation_context"
 harness = false
+
+[[bench]]
+name = "protobuf_convert_output"
+harness = false
