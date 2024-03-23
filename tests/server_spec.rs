@@ -72,10 +72,10 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(
+        async fn execute_with(
             &self,
             request: reqwest::Request,
-            _http_filter: Option<http::HttpFilter>,
+            _: Option<http::HttpFilter>,
         ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(

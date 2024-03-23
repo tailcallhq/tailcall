@@ -26,10 +26,10 @@ impl LambdaHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for LambdaHttp {
-    async fn execute(
+    async fn execute_with(
         &self,
         request: reqwest::Request,
-        _http_filter: Option<http::HttpFilter>,
+        _: Option<http::HttpFilter>,
     ) -> Result<Response<Bytes>> {
         let req_str = format!("{} {}", request.method(), request.url());
         let response = self

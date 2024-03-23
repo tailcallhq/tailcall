@@ -52,7 +52,7 @@ impl RequestFilter {
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {
-                    let response = self.client.execute(js_request.try_into()?, None).await?;
+                    let response = self.client.execute(js_request.try_into()?).await?;
                     Ok(response)
                 }
                 Command::Response(js_response) => {
@@ -69,14 +69,14 @@ impl RequestFilter {
                     }
                 }
             },
-            None => self.client.execute(request, None).await,
+            None => self.client.execute(request).await,
         }
     }
 }
 
 #[async_trait::async_trait]
 impl HttpIO for RequestFilter {
-    async fn execute(
+    async fn execute_with(
         &self,
         request: reqwest::Request,
         http_filter: Option<http::HttpFilter>,

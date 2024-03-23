@@ -108,10 +108,10 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(
+        async fn execute_with(
             &self,
             request: reqwest::Request,
-            _http_filter: Option<http::HttpFilter>,
+            _: Option<http::HttpFilter>,
         ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
@@ -764,10 +764,10 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-    async fn execute(
+    async fn execute_with(
         &self,
         req: reqwest::Request,
-        _http_filter: Option<http::HttpFilter>,
+        _: Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<Bytes>> {
         // Determine if the request is a GRPC request based on PORT
         let is_grpc = req.url().as_str().contains("50051");

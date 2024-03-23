@@ -46,7 +46,7 @@ impl ConfigReader {
                 let response = self
                     .runtime
                     .http
-                    .execute(reqwest::Request::new(reqwest::Method::GET, url), None)
+                    .execute(reqwest::Request::new(reqwest::Method::GET, url))
                     .await?;
 
                 String::from_utf8(response.body.to_vec())?

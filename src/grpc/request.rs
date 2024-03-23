@@ -20,7 +20,7 @@ pub async fn execute_grpc_request(
     operation: &ProtobufOperation,
     request: Request,
 ) -> Result<Response<async_graphql::Value>> {
-    let response = runtime.http2_only.execute(request, None).await?;
+    let response = runtime.http2_only.execute(request).await?;
 
     if response.status.is_success() {
         return response.to_grpc_value(operation);

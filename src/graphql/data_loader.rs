@@ -40,17 +40,12 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if self.batch {
             let batched_req = create_batched_request(keys);
-            let result = self
-                .runtime
-                .http
-                .execute(batched_req, None)
-                .await?
-                .to_json();
+            let result = self.runtime.http.execute(batched_req).await?.to_json();
             let hashmap = extract_responses(result, keys);
             Ok(hashmap)
         } else {
             let results = keys.iter().map(|key| async {
-                let result = self.runtime.http.execute(key.to_request(), None).await;
+                let result = self.runtime.http.execute(key.to_request()).await;
                 (key.clone(), result)
             });
             let results = join_all(results).await;

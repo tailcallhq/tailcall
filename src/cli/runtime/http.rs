@@ -141,10 +141,10 @@ impl HttpIO for NativeHttp {
             network.protocol.version = ?request.version()
         )
     )]
-    async fn execute(
+    async fn execute_with(
         &self,
         mut request: reqwest::Request,
-        _http_filter: Option<http::HttpFilter>,
+        _: Option<http::HttpFilter>,
     ) -> Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
@@ -214,7 +214,7 @@ mod tests {
         let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
 
         // Execute the request
-        let result = native_http.execute(request, None).await;
+        let result = native_http.execute(request).await;
 
         // Assert the response is as expected
         assert!(result.is_ok());

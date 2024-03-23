@@ -69,10 +69,10 @@ impl Http {
 
 #[async_trait]
 impl HttpIO for Http {
-    async fn execute(
+    async fn execute_with(
         &self,
         mut request: Request,
-        _http_filter: Option<http::HttpFilter>,
+        _: Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
