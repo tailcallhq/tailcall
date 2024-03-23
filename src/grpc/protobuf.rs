@@ -221,7 +221,6 @@ impl ProtobufOperation {
         let mut ser = serde_json::Serializer::new(vec![]);
         message.serialize_with_options(&mut ser, &self.serialize_options)?;
         let json = serde_json::from_slice::<Value>(ser.into_inner().as_ref())?;
-
         Ok(json)
     }
 }

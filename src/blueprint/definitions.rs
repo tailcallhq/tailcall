@@ -330,11 +330,6 @@ pub fn fix_dangling_resolvers<'a>(
         move |(config, field, _, name), mut b_field| {
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
-                && !config
-                    .types
-                    .get(&field.type_of)
-                    .map_or(false, |v| v.variants.is_some())
-            // Enum should not have a resolver.
             {
                 b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
