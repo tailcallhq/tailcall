@@ -139,18 +139,20 @@ fn append_service(
     map.insert(query, ty);
 }
 
-pub fn from_proto(descriptor_set: FileDescriptorSet, query: Option<String>) -> Config {
+pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: Option<String>) -> Config {
     let mut config = Config::default();
     let mut types = BTreeMap::new();
     let query = query.unwrap_or("Query".to_string());
     config.schema.query = Some(query.clone());
 
-    for file_descriptor in descriptor_set.file {
-        let pkg_name = file_descriptor.package().to_string();
+    for descriptor_set in descriptor_sets {
+        for file_descriptor in descriptor_set.file {
+            let pkg_name = file_descriptor.package().to_string();
 
-        append_enums(&mut types, file_descriptor.enum_type);
-        append_msg_type(&mut types, file_descriptor.message_type);
-        append_service(&mut types, file_descriptor.service, query.clone(), pkg_name);
+            append_enums(&mut types, file_descriptor.enum_type);
+            append_msg_type(&mut types, file_descriptor.message_type);
+            append_service(&mut types, file_descriptor.service, query.clone(), pkg_name);
+        }
     }
 
     config.types = types;
@@ -184,7 +186,7 @@ mod test {
         )?;
         set.file.push(file_desc);
 
-        let result = from_proto(set, None);
+        let result = from_proto(vec![set], None);
         let cfg = Config::from_sdl(result.to_sdl().as_str()).to_result()?;
 
         assert_eq!(cfg, result);
