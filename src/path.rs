@@ -83,7 +83,6 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
         let ctx = self;
 
         if path.len() < 2 {
-            println!("path len is less than 2");
             return None;
         }
 
