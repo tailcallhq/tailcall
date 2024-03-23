@@ -261,8 +261,8 @@ impl ConfigReader {
 
         while let Some(file) = queue.pop_front() {
             for import in file.dependency.iter() {
-                let proto = self.read_proto(import).await?;
                 if descriptors.get(import).is_none() {
+                    let proto = self.read_proto(import).await?;
                     queue.push_back(proto.clone());
                     descriptors.insert(import.clone(), proto);
                 }

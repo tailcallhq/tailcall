@@ -108,7 +108,7 @@ fn append_service(
         return;
     }
     let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-    let mut ty = Type::default();
+    let mut ty = map.get(&query).cloned().unwrap_or_default();
 
     for service in services {
         let service_name = service.name().to_string();
@@ -173,18 +173,28 @@ mod test {
     #[test]
     fn test_from_proto() -> anyhow::Result<()> {
         let mut set = FileDescriptorSet::default();
-        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        proto_no_pkg.push("src");
-        proto_no_pkg.push("grpc");
-        proto_no_pkg.push("tests");
-        proto_no_pkg.push("proto");
-        proto_no_pkg.push("news_enum.proto");
+        let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        proto_path.push("src");
+        proto_path.push("grpc");
+        proto_path.push("tests");
+        proto_path.push("proto");
 
-        let file_desc = protox_parse::parse(
-            "news.proto",
-            std::fs::read_to_string(proto_no_pkg)?.as_str(),
+        let mut news_enum = proto_path.clone();
+        news_enum.push("news_enum.proto");
+
+        let mut greetings = proto_path;
+        greetings.push("greetings.proto");
+
+        let file_desc =
+            protox_parse::parse("news.proto", std::fs::read_to_string(news_enum)?.as_str())?;
+
+        let file_desc1 = protox_parse::parse(
+            "greetings.proto",
+            std::fs::read_to_string(greetings)?.as_str(),
         )?;
+
         set.file.push(file_desc);
+        set.file.push(file_desc1);
 
         let result = from_proto(vec![set], None);
         let cfg = Config::from_sdl(result.to_sdl().as_str()).to_result()?;
