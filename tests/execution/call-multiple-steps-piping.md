@@ -28,8 +28,7 @@ type Query {
   abc(input: JSON): JSON
     @call(
       steps: [
-        {query: "wrap_input", args: {input: "{{args.input}}"}}
-        {query: "a"}
+        {query: "a", args: {input: "{{args.input}}"}}
         {query: "wrap_args"}
         {query: "b"}
         {query: "wrap_args"}
