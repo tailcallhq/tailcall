@@ -58,6 +58,14 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         self.graphql_ctx.value()
     }
 
+    pub fn get_args(&self) -> Option<Value> {
+        if let Some(args) = self.graphql_ctx_args.as_ref() {
+            Some(args.as_ref().clone())
+        } else {
+            self.graphql_ctx.args().cloned().map(|args| args.into())
+        }
+    }
+
     pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
         // TODO: add unit tests for this
         if let Some(args) = self.graphql_ctx_args.as_ref() {
