@@ -1,9 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tailcall::blueprint::GrpcMethod;
-use tailcall::grpc::protobuf::{ProtobufSet};
+use tailcall::grpc::protobuf::ProtobufSet;
 
-const PROTO_FILE_PATH: &'static str = "src/grpc/tests/proto/greetings.proto";
-const SERVICE_NAME: &'static str = "greetings.Greeter.SayHello";
+const PROTO_FILE_PATH: &str = "src/grpc/tests/proto/greetings.proto";
+const SERVICE_NAME: &str = "greetings.Greeter.SayHello";
 
 fn benchmark_convert_output(c: &mut Criterion) {
     let file_descriptor_set = protox::compile([PROTO_FILE_PATH], ["."]).unwrap();
