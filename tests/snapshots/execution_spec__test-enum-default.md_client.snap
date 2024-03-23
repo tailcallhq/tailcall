@@ -6,17 +6,27 @@ scalar Date
 
 scalar Email
 
-enum Foo {
-  BAR
-  BAZ
+scalar JSON
+
+type News {
+  foo: Status
+  id: Int
 }
 
-scalar JSON
+type NewsData {
+  news: [News]!
+}
 
 scalar PhoneNumber
 
 type Query {
-  foo(val: String!): Foo
+  news: NewsData!
+}
+
+enum Status {
+  DRAFT
+  ND
+  PUBLISHED
 }
 
 scalar Url
