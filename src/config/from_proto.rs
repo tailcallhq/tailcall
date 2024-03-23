@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use convert_case::{Case, Casing};
+use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
@@ -140,10 +141,10 @@ fn append_service(
     map.insert(query, ty);
 }
 
-pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: Option<String>) -> Config {
+pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, gen: ProtoGenerator) -> Config {
     let mut config = Config::default();
     let mut types = BTreeMap::new();
-    let query = query.unwrap_or("Query".to_string());
+    let query = gen.query;
     config.schema.query = Some(query.clone());
 
     for descriptor_set in descriptor_sets {
@@ -161,11 +162,31 @@ pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: Option<String>
     config
 }
 
+// FIXME: @ssddOnTop move it to it's own file.
+#[derive(Setters)]
+pub struct ProtoGenerator {
+    query: String,
+    mutation: String,
+    is_mutation: Box<dyn Fn(String) -> bool>,
+}
+
+impl Default for ProtoGenerator {
+    fn default() -> Self {
+        Self {
+            query: Default::default(),
+            mutation: Default::default(),
+            is_mutation: Box::new(|_| false),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::config::from_proto::from_proto;
-    use prost_reflect::prost_types::FileDescriptorSet;
     use std::path::PathBuf;
+
+    use prost_reflect::prost_types::FileDescriptorSet;
+
+    use crate::config::from_proto::{from_proto, ProtoGenerator};
 
     #[test]
     fn test_from_proto() -> anyhow::Result<()> {
@@ -182,18 +203,17 @@ mod test {
         let mut greetings = proto_path;
         greetings.push("greetings.proto");
 
-        let file_desc =
-            protox_parse::parse("news.proto", std::fs::read_to_string(news_enum)?.as_str())?;
+        let news = protox_parse::parse("news.proto", std::fs::read_to_string(news_enum)?.as_str())?;
 
-        let file_desc1 = protox_parse::parse(
+        let greetings = protox_parse::parse(
             "greetings.proto",
             std::fs::read_to_string(greetings)?.as_str(),
         )?;
 
-        set.file.push(file_desc);
-        set.file.push(file_desc1);
+        set.file.push(news);
+        set.file.push(greetings);
 
-        let result = from_proto(vec![set], None).to_sdl();
+        let result = from_proto(vec![set], ProtoGenerator::default()).to_sdl();
 
         insta::assert_snapshot!(result);
         Ok(())
