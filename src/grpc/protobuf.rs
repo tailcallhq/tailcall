@@ -112,19 +112,42 @@ impl ProtobufService {
         let input_type = method.input();
         let output_type = method.output();
 
-        Ok(ProtobufOperation { method, input_type, output_type })
+        Ok(ProtobufOperation::new(method, input_type, output_type))
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct ProtobufOperation {
     method: MethodDescriptor,
     pub input_type: MessageDescriptor,
     pub output_type: MessageDescriptor,
+    serialize_options: SerializeOptions,
+}
+
+impl Eq for ProtobufOperation {}
+
+impl PartialEq for ProtobufOperation {
+    fn eq(&self, other: &Self) -> bool {
+        self.method.eq(&other.method)
+            && self.input_type.eq(&other.input_type)
+            && self.output_type.eq(&other.output_type)
+    }
 }
 
 // TODO: support compression
 impl ProtobufOperation {
+    pub fn new(
+        method: MethodDescriptor,
+        input_type: MessageDescriptor,
+        output_type: MessageDescriptor,
+    ) -> Self {
+        Self {
+            method,
+            input_type,
+            output_type,
+            serialize_options: SerializeOptions::default().skip_default_fields(false),
+        }
+    }
     pub fn name(&self) -> &str {
         self.method.name()
     }
@@ -196,10 +219,7 @@ impl ProtobufOperation {
             })?;
 
         let mut ser = serde_json::Serializer::new(vec![]);
-        message.serialize_with_options(
-            &mut ser,
-            &SerializeOptions::new().skip_default_fields(false),
-        )?;
+        message.serialize_with_options(&mut ser, &self.serialize_options)?;
         let json = serde_json::from_slice::<Value>(ser.into_inner().as_ref())?;
 
         Ok(json)
