@@ -1,7 +1,5 @@
 #![allow(dead_code)] // TODO check what to do..
 
-use std::collections::BTreeMap;
-
 use convert_case::{Case, Casing};
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
@@ -100,13 +98,13 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>) {
 }
 
 fn generate_ty(
-    map: &mut BTreeMap<String, Type>,
-    services: &[ServiceDescriptorProto],
+    config: &mut Config,
+    services: Vec<ServiceDescriptorProto>,
     package: String,
     key: &str,
 ) -> Type {
     let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-    let mut ty = map.get(key).cloned().unwrap_or_default();
+    let mut ty = config.types.get(key).cloned().unwrap_or_default();
 
     for service in services {
         let service_name = service.name().to_string();
@@ -139,43 +137,52 @@ fn generate_ty(
 
 fn append_query_service(
     config: &mut Config,
-    services: &[ServiceDescriptorProto],
+    mut services: Vec<ServiceDescriptorProto>,
     gen: &ProtoGeneratorConfig,
     package: String,
 ) {
-    let query = gen.query();
+    let query = gen.get_query();
 
-    if services.is_empty()
-        || !services
-            .iter()
-            .any(|x| !gen.is_mutation(x.name().to_string()))
-    {
+    if services.is_empty() {
         return;
-    } else {
-        config.schema.query = Some(query.to_string());
     }
-    let ty = generate_ty(&mut config.types, services, package, query);
-    config.types.insert(query.to_string(), ty);
+
+    for service in services.iter_mut() {
+        service
+            .method
+            .retain(|v| !gen.is_mutation(v.name().to_string()));
+    }
+
+    let ty = generate_ty(config, services, package, query);
+
+    if ty.ne(&Type::default()) {
+        config.schema.query = Some(query.to_string());
+        config.types.insert(query.to_string(), ty);
+    }
 }
 
 fn append_mutation_service(
     config: &mut Config,
-    services: &[ServiceDescriptorProto],
+    mut services: Vec<ServiceDescriptorProto>,
     gen: &ProtoGeneratorConfig,
     package: String,
 ) {
-    let mutation = gen.mutation();
-    if services.is_empty()
-        || !services
-            .iter()
-            .any(|x| gen.is_mutation(x.name().to_string()))
-    {
+    let mutation = gen.get_mutation();
+    if services.is_empty() {
         return;
-    } else {
-        config.schema.mutation = Some(mutation.to_string());
     }
-    let ty = generate_ty(&mut config.types, services, package, mutation);
-    config.types.insert(mutation.to_string(), ty);
+
+    for service in services.iter_mut() {
+        service
+            .method
+            .retain(|v| gen.is_mutation(v.name().to_string()));
+    }
+
+    let ty = generate_ty(config, services, package, mutation);
+    if ty.ne(&Type::default()) {
+        config.schema.mutation = Some(mutation.to_string());
+        config.types.insert(mutation.to_string(), ty);
+    }
 }
 
 pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, gen: ProtoGeneratorConfig) -> Config {
@@ -189,11 +196,11 @@ pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, gen: ProtoGeneratorCo
             append_msg_type(&mut config, file_descriptor.message_type);
             append_query_service(
                 &mut config,
-                &file_descriptor.service,
+                file_descriptor.service.clone(),
                 &gen,
                 pkg_name.clone(),
             );
-            append_mutation_service(&mut config, &file_descriptor.service, &gen, pkg_name);
+            append_mutation_service(&mut config, file_descriptor.service, &gen, pkg_name);
         }
     }
 
@@ -234,7 +241,13 @@ mod test {
         set.file.push(news.clone());
         set.file.push(greetings.clone());
 
-        let result = from_proto(vec![set], ProtoGeneratorConfig::default()).to_sdl();
+        let fxn = |x: String| !x.starts_with("Get");
+
+        let result = from_proto(
+            vec![set],
+            ProtoGeneratorConfig::new(None, None, Box::new(fxn)),
+        )
+        .to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -244,7 +257,11 @@ mod test {
         set.file.push(news);
         set1.file.push(greetings);
 
-        let result_sets = from_proto(vec![set, set1], ProtoGeneratorConfig::default()).to_sdl();
+        let result_sets = from_proto(
+            vec![set, set1],
+            ProtoGeneratorConfig::new(None, None, Box::new(fxn)),
+        )
+        .to_sdl();
 
         assert_eq!(result, result_sets);
 

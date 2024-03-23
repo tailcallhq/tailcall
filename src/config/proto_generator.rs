@@ -1,28 +1,33 @@
-use std::sync::Arc;
+use derive_setters::Setters;
 
+#[derive(Setters)]
 pub struct ProtoGeneratorConfig {
     query: String,
     mutation: String,
-    is_mutation: Arc<dyn Fn(String) -> bool>,
+    is_mutation_fxn: Box<dyn Fn(String) -> bool>,
 }
 
 impl ProtoGeneratorConfig {
-    pub fn new(query: Option<String>, mutation: Option<String>) -> Self {
+    pub fn new(
+        query: Option<String>,
+        mutation: Option<String>,
+        is_mutation_fxn: Box<dyn Fn(String) -> bool>,
+    ) -> Self {
         Self {
             query: query.unwrap_or("Query".to_string()),
             mutation: mutation.unwrap_or("Mutation".to_string()),
-            is_mutation: Arc::new(|_| false),
+            is_mutation_fxn,
         }
     }
 
     pub fn is_mutation(&self, name: String) -> bool {
-        (self.is_mutation)(name)
+        (self.is_mutation_fxn)(name)
     }
-    pub fn query(&self) -> &str {
+    pub fn get_query(&self) -> &str {
         self.query.as_str()
     }
 
-    pub fn mutation(&self) -> &str {
+    pub fn get_mutation(&self) -> &str {
         self.mutation.as_str()
     }
 }
@@ -32,7 +37,7 @@ impl Default for ProtoGeneratorConfig {
         Self {
             query: "Query".to_string(),
             mutation: "Mutation".to_string(),
-            is_mutation: Arc::new(|_| false),
+            is_mutation_fxn: Box::new(|_| false),
         }
     }
 }

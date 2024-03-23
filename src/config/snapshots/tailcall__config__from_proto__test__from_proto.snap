@@ -4,6 +4,7 @@ expression: result
 ---
 schema @server @upstream {
   query: Query
+  mutation: Mutation
 }
 
 input Author {
@@ -41,16 +42,19 @@ type HelloReply {
   message: String
 }
 
+type Mutation {
+  addNews(news: News!): News! @grpc(method: "news.NewsService.AddNews")
+  deleteNews(newsId: NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
+  editNews(news: News!): News! @grpc(method: "news.NewsService.EditNews")
+  sayHello(helloRequest: HelloRequest!): HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+}
+
 type NewsList {
   news: [News]
 }
 
 type Query {
-  addNews(news: News!): News! @grpc(method: "news.NewsService.AddNews")
-  deleteNews(newsId: NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
-  editNews(news: News!): News! @grpc(method: "news.NewsService.EditNews")
   getAllNews: NewsList! @grpc(method: "news.NewsService.GetAllNews")
   getMultipleNews(multipleNewsId: MultipleNewsId!): NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
   getNews(newsId: NewsId!): News! @grpc(method: "news.NewsService.GetNews")
-  sayHello(helloRequest: HelloRequest!): HelloReply! @grpc(method: "greetings.Greeter.SayHello")
 }
