@@ -1,6 +1,8 @@
-# test-missing-query-resolver
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-missing-query-resolver
 
 ```graphql @server
 schema {

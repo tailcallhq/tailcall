@@ -1,6 +1,8 @@
-# undeclared-type
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# undeclared-type
 
 ```graphql @server
 schema @server {

@@ -105,6 +105,7 @@ impl MergeRight for TelemetryExporter {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The @telemetry directive facilitates seamless integration with
 /// OpenTelemetry, enhancing the observability of your GraphQL services powered

@@ -1,6 +1,8 @@
-# test-server-vars
+---
+check_identity: true
+---
 
-###### check identity
+# test-server-vars
 
 ```graphql @server
 schema @server(vars: [{key: "foo", value: "bar"}]) @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

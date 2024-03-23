@@ -1,6 +1,8 @@
-# test-call-operator
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-call-operator
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://localhost:3000") {

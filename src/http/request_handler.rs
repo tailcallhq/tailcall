@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
-use hyper::header::CONTENT_TYPE;
+use hyper::header::{self, CONTENT_TYPE};
+use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
@@ -21,7 +23,7 @@ use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
-const API_URL_PREFIX: &str = "/api";
+pub const API_URL_PREFIX: &str = "/api";
 
 pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
     let query = req.uri().query();
@@ -74,11 +76,8 @@ fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestC
     let allowed = upstream.allowed_headers;
     let req_headers = create_allowed_headers(req.headers(), &allowed);
 
-    let allowed = app_ctx.blueprint.server.get_experimental_headers();
-    let experimental_headers = create_allowed_headers(req.headers(), &allowed);
-    RequestContext::from(app_ctx)
-        .req_headers(req_headers)
-        .experimental_headers(experimental_headers)
+    let _allowed = app_ctx.blueprint.server.get_experimental_headers();
+    RequestContext::from(app_ctx).request_headers(req_headers)
 }
 
 fn update_cache_control_header(
@@ -94,30 +93,25 @@ fn update_cache_control_header(
     response
 }
 
-fn update_experimental_headers(
-    response: &mut hyper::Response<hyper::Body>,
-    app_ctx: &AppContext,
-    req_ctx: Arc<RequestContext>,
-) {
-    if !app_ctx.blueprint.server.experimental_headers.is_empty() {
-        response
-            .headers_mut()
-            .extend(req_ctx.experimental_headers.clone());
-    }
-}
-
 pub fn update_response_headers(
     resp: &mut hyper::Response<hyper::Body>,
-    cookie_headers: Option<HeaderMap>,
+    req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
+        // Add static response headers
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
     }
-    if let Some(cookie_headers) = cookie_headers {
-        resp.headers_mut().extend(cookie_headers);
+
+    // Insert Cookie Headers
+    if let Some(ref cookie_headers) = req_ctx.cookie_headers {
+        let cookie_headers = cookie_headers.lock().unwrap();
+        resp.headers_mut().extend(cookie_headers.deref().clone());
     }
+
+    // Insert Experimental Headers
+    req_ctx.extend_x_headers(resp.headers_mut());
 }
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
@@ -133,15 +127,10 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-            let cookie_headers = req_ctx.cookie_headers.clone();
+
             response = update_cache_control_header(response, app_ctx, req_ctx.clone());
             let mut resp = response.to_response()?;
-            update_response_headers(
-                &mut resp,
-                cookie_headers.map(|v| v.lock().unwrap().clone()),
-                app_ctx,
-            );
-            update_experimental_headers(&mut resp, app_ctx, req_ctx);
+            update_response_headers(&mut resp, &req_ctx, app_ctx);
             Ok(resp)
         }
         Err(err) => {
@@ -173,6 +162,59 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
+async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Body>,
+    app_ctx: Arc<AppContext>,
+    request_counter: &mut RequestCounter,
+) -> Result<Response<Body>> {
+    // Safe to call `.unwrap()` because this method will only be called when
+    // `cors` is `Some`
+    let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
+    let (parts, body) = req.into_parts();
+    let origin = parts.headers.get(&header::ORIGIN);
+
+    let mut headers = HeaderMap::new();
+
+    // These headers are applied to both preflight and subsequent regular CORS
+    // requests: https://fetch.spec.whatwg.org/#http-responses
+
+    headers.extend(cors.allow_origin_to_header(origin));
+    headers.extend(cors.allow_credentials_to_header());
+    headers.extend(cors.allow_private_network_to_header(&parts));
+    headers.extend(cors.vary_to_header());
+
+    // Return results immediately upon preflight request
+    if parts.method == Method::OPTIONS {
+        // These headers are applied only to preflight requests
+        headers.extend(cors.allow_methods_to_header());
+        headers.extend(cors.allow_headers_to_header());
+        headers.extend(cors.max_age_to_header());
+
+        let mut response = Response::new(Body::default());
+        std::mem::swap(response.headers_mut(), &mut headers);
+
+        Ok(response)
+    } else {
+        // This header is applied only to non-preflight requests
+        headers.extend(cors.expose_headers_to_header());
+
+        let req = Request::from_parts(parts, body);
+        let mut response = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
+
+        let response_headers = response.headers_mut();
+
+        // vary header can have multiple values, don't overwrite
+        // previously-set value(s).
+        if let Some(vary) = headers.remove(header::VARY) {
+            response_headers.append(header::VARY, vary);
+        }
+        // extend will overwrite previous headers of remaining names
+        response_headers.extend(headers.drain());
+
+        Ok(response)
+    }
+}
+
 async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
@@ -196,15 +238,9 @@ async fn handle_rest_apis(
                 .data(req_ctx.clone())
                 .execute(&app_ctx.schema)
                 .await;
-            let cookie_headers = req_ctx.cookie_headers.clone();
             response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
             let mut resp = response.to_rest_response()?;
-            update_response_headers(
-                &mut resp,
-                cookie_headers.map(|v| v.lock().unwrap().clone()),
-                app_ctx.as_ref(),
-            );
-            update_experimental_headers(&mut resp, app_ctx.as_ref(), req_ctx);
+            update_response_headers(&mut resp, &req_ctx, &app_ctx);
             Ok(resp)
         }
         .instrument(span)
@@ -279,7 +315,11 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 
-    let response = handle_request_inner::<T>(req, app_ctx, &mut req_counter).await;
+    let response = if app_ctx.blueprint.server.cors.is_some() {
+        handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
+    } else {
+        handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
+    };
 
     req_counter.update(&response);
     if let Ok(response) = &response {

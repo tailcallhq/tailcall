@@ -1,6 +1,8 @@
-# test-grpc-group-by
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-grpc-group-by
 
 ```protobuf @file:news.proto
 syntax = "proto3";

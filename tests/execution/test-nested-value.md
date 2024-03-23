@@ -1,6 +1,8 @@
-# test-nested-value
+---
+check_identity: true
+---
 
-###### check identity
+# test-nested-value
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
