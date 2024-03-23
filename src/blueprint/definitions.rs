@@ -332,8 +332,7 @@ pub fn update_nested_resolvers<'a>(
                 && !config
                     .types
                     .get(&field.type_of)
-                    .map(|v| v.variants.is_some())
-                    .unwrap_or_default()
+                    .map_or(false, |v| v.variants.is_some())
             // Enum should not have a resolver.
             {
                 b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
