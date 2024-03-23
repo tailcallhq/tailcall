@@ -54,8 +54,14 @@ fn compile_step(
     get_field_and_field_name(step, config_module).and_then(|(_field, field_name, args)| {
         let empties: Vec<&String> = _field
             .args
-            .keys()
-            .filter(|k| !args.clone().any(|(k1, _)| k1.eq(*k)))
+            .iter()
+            .filter_map(|(k, arg)| {
+                if arg.required && !args.clone().any(|(k1, _)| k1.eq(k)) {
+                    Some(k)
+                } else {
+                    None
+                }
+            })
             .collect();
 
         if empties.len().gt(&0) {
