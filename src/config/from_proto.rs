@@ -83,6 +83,7 @@ fn append_msg_type(map: &mut BTreeMap<String, Type>, messages: Vec<DescriptorPro
 
             let label = field.label().as_str_name().to_lowercase();
             cfg_field.list = label.contains("repeated");
+            cfg_field.required = label.contains("required");
 
             if field.r#type.is_some() {
                 // for non-primitive types
