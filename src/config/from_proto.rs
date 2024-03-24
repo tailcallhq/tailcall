@@ -1,7 +1,8 @@
 #![allow(dead_code)] // TODO check what to do..
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
+use anyhow::anyhow;
 use convert_case::{Case, Casing};
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
@@ -10,41 +11,85 @@ use prost_reflect::prost_types::{
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, ProtoGeneratorConfig, Type};
 
+#[derive(PartialEq, Eq)]
+pub enum Options {
+    // TODO rename
+    AppendPkgId(String),
+    FailIfCollide,
+    Merge,
+}
+
 enum DescriptorType {
     Enum,
     Message,
     Method,
 }
 
-#[derive(Default)]
 struct Helper {
     map: HashMap<String, String>,
     package: String,
+    options: Options,
 }
 
 impl Helper {
-    fn contains(&self, name: &str) -> bool {
-        self.map
-            .get(&format!("{}.{}", self.package, name))
-            .is_some()
+    fn with_options(options: Options) -> Self {
+        Self { map: Default::default(), package: "".to_string(), options }
     }
-    fn insert(&mut self, name: &str, ty: DescriptorType) {
-        let value = match ty {
-            DescriptorType::Enum => format!("{}{}", name, self.package.to_case(Case::Upper)),
-            DescriptorType::Message => {
-                format!("{}{}", name, self.package.to_case(Case::UpperCamel))
+    fn contains(&self, name: &str) -> bool {
+        self.get(name).is_some()
+    }
+    fn get_value(&self, name: &str, ty: DescriptorType) -> String {
+        match self.options {
+            Options::AppendPkgId(ref separator) => match ty {
+                DescriptorType::Enum => {
+                    format!("{}{separator}{}", name, self.package.to_case(Case::Upper))
+                }
+                DescriptorType::Message => {
+                    format!(
+                        "{}{separator}{}",
+                        name,
+                        self.package.to_case(Case::UpperCamel)
+                    )
+                }
+                DescriptorType::Method => format!(
+                    "{}{separator}{}",
+                    name.to_case(Case::Camel),
+                    self.package.to_case(Case::UpperCamel)
+                ),
+            },
+            _ => match ty {
+                DescriptorType::Enum => name.to_string(),
+                DescriptorType::Message => name.to_string(),
+                DescriptorType::Method => name.to_case(Case::Camel),
+            },
+        }
+    }
+    fn insert(&mut self, name: &str, ty: DescriptorType) -> anyhow::Result<()> {
+        if Options::FailIfCollide == self.options {
+            if self
+                .map
+                .keys()
+                .any(|v| v.split('.').last().map(|c| c.eq(name)).unwrap_or_default())
+            {
+                return Err(anyhow!("Duplicate keys found for: {}", name));
+            } else {
+                self.map.insert(name.to_string(), self.get_value(name, ty));
             }
-            DescriptorType::Method => format!(
-                "{}{}",
-                name.to_case(Case::Camel),
-                self.package.to_case(Case::UpperCamel)
-            ),
-        };
-
-        self.map.insert(format!("{}.{}", self.package, name), value);
+        } else if Options::Merge == self.options {
+            self.map.insert(name.to_string(), self.get_value(name, ty));
+        } else {
+            self.map.insert(
+                format!("{}.{}", self.package, name),
+                self.get_value(name, ty),
+            );
+        }
+        Ok(())
     }
     fn get(&self, name: &str) -> Option<String> {
-        self.map.get(&format!("{}.{}", self.package, name)).cloned()
+        match self.options {
+            Options::AppendPkgId(_) => self.map.get(&format!("{}.{}", self.package, name)).cloned(),
+            _ => self.map.get(name).cloned(),
+        }
     }
 }
 
@@ -94,45 +139,61 @@ fn get_arg(input_ty: &str, helper: &mut Helper) -> Option<(String, Arg)> {
     }
 }
 
-fn append_enums(map: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &mut Helper) {
+fn append_enums(
+    map: &mut Config,
+    enums: Vec<EnumDescriptorProto>,
+    helper: &mut Helper,
+) -> anyhow::Result<()> {
     for enum_ in enums {
         let enum_name = enum_.name();
 
-        let check_if_contains = helper.contains(enum_.name());
-        if check_if_contains {
-            continue;
-        } else {
-            helper.insert(enum_name, DescriptorType::Enum);
-        }
+        helper.insert(enum_name, DescriptorType::Enum)?;
 
-        let ty = Type {
-            variants: Some(enum_.value.iter().map(|v| v.name().to_string()).collect()),
-            ..Default::default()
-        };
+        let mut ty = map
+            .types
+            .get(&helper.get(enum_name).unwrap())
+            .cloned()
+            .unwrap_or_default();
+        let mut variants = enum_
+            .value
+            .iter()
+            .map(|v| v.name().to_string())
+            .collect::<BTreeSet<String>>();
+        if let Some(vars) = ty.variants {
+            variants.extend(vars);
+        }
+        ty.variants = Some(variants);
+
         map.types.insert(helper.get(enum_name).unwrap(), ty); // it should be
                                                               // safe to call
                                                               // unwrap here
     }
+    Ok(())
 }
 
-fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: &mut Helper) {
+fn append_msg_type(
+    config: &mut Config,
+    messages: Vec<DescriptorProto>,
+    helper: &mut Helper,
+) -> anyhow::Result<()> {
     if messages.is_empty() {
-        return;
+        return Ok(());
     }
     for message in messages {
         let msg_name = message.name().to_string();
 
-        let check_if_contains = helper.contains(&msg_name);
-        if check_if_contains {
-            continue;
-        } else {
-            helper.insert(&msg_name, DescriptorType::Message);
-        }
+        helper.insert(&msg_name, DescriptorType::Message)?;
 
-        append_enums(config, message.enum_type, helper);
-        append_msg_type(config, message.nested_type, helper);
+        append_enums(config, message.enum_type, helper)?;
+        append_msg_type(config, message.nested_type, helper)?;
 
-        let mut ty = Type::default();
+        let mut ty = config
+            .types
+            .get(&helper.get(&msg_name).unwrap())
+            .cloned()
+            .unwrap_or_default(); // it should be
+                                  // safe to call
+                                  // unwrap here
 
         for field in message.field {
             let field_name = field.name().to_string();
@@ -157,6 +218,7 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: 
                                                                  // safe to call
                                                                  // unwrap here
     }
+    Ok(())
 }
 
 fn generate_ty(
@@ -164,7 +226,7 @@ fn generate_ty(
     services: Vec<ServiceDescriptorProto>,
     helper: &mut Helper,
     key: &str,
-) -> Type {
+) -> anyhow::Result<Type> {
     let package = helper.package.clone();
     let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
     let mut ty = config.types.get(key).cloned().unwrap_or_default();
@@ -174,11 +236,7 @@ fn generate_ty(
         for method in &service.method {
             let method_name = method.name();
 
-            if helper.contains(method_name) {
-                continue;
-            } else {
-                helper.insert(method_name, DescriptorType::Method);
-            }
+            helper.insert(method_name, DescriptorType::Method)?;
 
             let mut cfg_field = Field::default();
             if let Some((k, v)) = get_arg(method.input_type(), helper) {
@@ -203,7 +261,7 @@ fn generate_ty(
                 .insert(helper.get(method_name).unwrap(), cfg_field);
         }
     }
-    ty
+    Ok(ty)
 }
 
 fn append_query_service(
@@ -211,23 +269,24 @@ fn append_query_service(
     mut services: Vec<ServiceDescriptorProto>,
     gen: &ProtoGeneratorConfig,
     helper: &mut Helper,
-) {
+) -> anyhow::Result<()> {
     let query = gen.get_query();
 
     if services.is_empty() {
-        return;
+        return Ok(());
     }
 
     for service in services.iter_mut() {
         service.method.retain(|v| !gen.is_mutation(v.name()));
     }
 
-    let ty = generate_ty(config, services, helper, query);
+    let ty = generate_ty(config, services, helper, query)?;
 
     if ty.ne(&Type::default()) {
         config.schema.query = Some(query.to_string());
         config.types.insert(query.to_string(), ty);
     }
+    Ok(())
 }
 
 fn append_mutation_service(
@@ -235,44 +294,49 @@ fn append_mutation_service(
     mut services: Vec<ServiceDescriptorProto>,
     gen: &ProtoGeneratorConfig,
     helper: &mut Helper,
-) {
+) -> anyhow::Result<()> {
     let mutation = gen.get_mutation();
     if services.is_empty() {
-        return;
+        return Ok(());
     }
 
     for service in services.iter_mut() {
         service.method.retain(|v| gen.is_mutation(v.name()));
     }
 
-    let ty = generate_ty(config, services, helper, mutation);
+    let ty = generate_ty(config, services, helper, mutation)?;
     if ty.ne(&Type::default()) {
         config.schema.mutation = Some(mutation.to_string());
         config.types.insert(mutation.to_string(), ty);
     }
+    Ok(())
 }
 
-pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, gen: ProtoGeneratorConfig) -> Config {
+pub fn from_proto(
+    descriptor_sets: Vec<FileDescriptorSet>,
+    gen: ProtoGeneratorConfig,
+    options: Options,
+) -> anyhow::Result<Config> {
     let mut config = Config::default();
-    let mut helper = Helper::default();
+    let mut helper = Helper::with_options(options);
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
             helper.package = file_descriptor.package().to_string();
 
-            append_enums(&mut config, file_descriptor.enum_type, &mut helper);
-            append_msg_type(&mut config, file_descriptor.message_type, &mut helper);
+            append_enums(&mut config, file_descriptor.enum_type, &mut helper)?;
+            append_msg_type(&mut config, file_descriptor.message_type, &mut helper)?;
             append_query_service(
                 &mut config,
                 file_descriptor.service.clone(),
                 &gen,
                 &mut helper,
-            );
-            append_mutation_service(&mut config, file_descriptor.service, &gen, &mut helper);
+            )?;
+            append_mutation_service(&mut config, file_descriptor.service, &gen, &mut helper)?;
         }
     }
 
-    config
+    Ok(config)
 }
 
 #[cfg(test)]
@@ -281,7 +345,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::config::from_proto::from_proto;
+    use crate::config::from_proto::{from_proto, Options};
     use crate::config::ProtoGeneratorConfig;
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
@@ -327,7 +391,12 @@ mod test {
         set.file.push(greetings.clone());
         set.file.push(greetings_dup_methods.clone());
 
-        let result = from_proto(vec![set], get_generator_cfg()).to_sdl();
+        let result = from_proto(
+            vec![set],
+            get_generator_cfg(),
+            Options::AppendPkgId("_".to_string()),
+        )?
+        .to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -339,10 +408,50 @@ mod test {
         set1.file.push(greetings);
         set2.file.push(greetings_dup_methods);
 
-        let result_sets = from_proto(vec![set, set1, set2], get_generator_cfg()).to_sdl();
+        let result_sets = from_proto(
+            vec![set, set1, set2],
+            get_generator_cfg(),
+            Options::AppendPkgId("_".to_string()),
+        )?
+        .to_sdl();
 
         assert_eq!(result, result_sets);
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_merge() -> anyhow::Result<()> {
+        let mut set = FileDescriptorSet::default();
+
+        let news = get_proto_file_descriptor("news_enum.proto")?;
+        let greetings = get_proto_file_descriptor("greetings.proto")?;
+        let greetings_dup_methods = get_proto_file_descriptor("greetings_dup_methods.proto")?;
+
+        set.file.push(news.clone());
+        set.file.push(greetings.clone());
+        set.file.push(greetings_dup_methods.clone());
+
+        let result = from_proto(vec![set], get_generator_cfg(), Options::Merge)?.to_sdl();
+
+        insta::assert_snapshot!(result);
+        Ok(())
+    }
+
+    #[test]
+    fn test_fail_if_collide() -> anyhow::Result<()> {
+        let mut set = FileDescriptorSet::default();
+
+        let news = get_proto_file_descriptor("news_enum.proto")?;
+        let greetings = get_proto_file_descriptor("greetings.proto")?;
+        let greetings_dup_methods = get_proto_file_descriptor("greetings_dup_methods.proto")?;
+
+        set.file.push(news.clone());
+        set.file.push(greetings.clone());
+        set.file.push(greetings_dup_methods.clone());
+
+        let result = from_proto(vec![set], get_generator_cfg(), Options::FailIfCollide);
+        assert!(result.is_err());
         Ok(())
     }
 
@@ -358,7 +467,7 @@ mod test {
         let req_proto = get_proto_file_descriptor("required_fields.proto")?;
         set.file.push(req_proto);
 
-        let cfg = from_proto(vec![set], get_generator_cfg()).to_sdl();
+        let cfg = from_proto(vec![set], get_generator_cfg(), Options::FailIfCollide)?.to_sdl();
         insta::assert_snapshot!(cfg);
 
         Ok(())

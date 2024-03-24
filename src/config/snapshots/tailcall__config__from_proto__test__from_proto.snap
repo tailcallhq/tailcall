@@ -7,63 +7,63 @@ schema @server @upstream {
   mutation: Mutation
 }
 
-input AuthorNews {
+input Author_News {
   email: String
   name: String
 }
 
-input HelloRequestGreetings {
+input HelloRequest_Greetings {
   name: String
 }
 
-input HelloRequestGreetingsDup {
+input HelloRequest_GreetingsDup {
   name: String
 }
 
-input MultipleNewsIdNews {
-  ids: [NewsIdNews]
+input MultipleNewsId_News {
+  ids: [NewsId_News]
 }
 
-input NewsIdNews {
+input NewsId_News {
   id: Int
 }
 
-input NewsNews {
-  author: AuthorNews
+input News_News {
+  author: Author_News
   body: String
-  foo: StatusNEWS
+  foo: Status_NEWS
   id: Int
   postImage: String
   title: String
 }
 
-enum StatusNEWS {
+enum Status_NEWS {
   DRAFT
   PUBLISHED
 }
 
-type HelloReplyGreetings {
+type HelloReply_Greetings {
   message: String
 }
 
-type HelloReplyGreetingsDup {
+type HelloReply_GreetingsDup {
   message: String
 }
 
 type Mutation {
-  addNewsNews(news: NewsNews!): NewsNews! @grpc(method: "news.NewsService.AddNews")
-  deleteNewsNews(newsId: NewsIdNews!): String @grpc(method: "news.NewsService.DeleteNews")
-  editNewsNews(news: NewsNews!): NewsNews! @grpc(method: "news.NewsService.EditNews")
-  sayHelloGreetings(helloRequest: HelloRequestGreetings!): HelloReplyGreetings! @grpc(method: "greetings.Greeter.SayHello")
-  sayHelloGreetingsDup(helloRequest: HelloRequestGreetingsDup!): HelloReplyGreetingsDup! @grpc(method: "greetings_dup.Greeter.SayHello")
+  addNews_News(news: News_News!): News_News! @grpc(method: "news.NewsService.AddNews")
+  deleteNews_News(newsId: NewsId_News!): String @grpc(method: "news.NewsService.DeleteNews")
+  editNews_News(news: News_News!): News_News! @grpc(method: "news.NewsService.EditNews")
+  sayHello_Greetings(helloRequest: HelloRequest_Greetings!): HelloReply_Greetings! @grpc(method: "greetings.Greeter.SayHello")
+  sayHello_GreetingsDup(helloRequest: HelloRequest_GreetingsDup!): HelloReply_GreetingsDup! @grpc(method: "greetings_dup.Greeter.SayHello")
 }
 
-type NewsListNews {
-  news: [NewsNews]
+type NewsList_News {
+  news: [News_News]
 }
 
 type Query {
-  getAllNewsNews: NewsListNews! @grpc(method: "news.NewsService.GetAllNews")
-  getMultipleNewsNews(multipleNewsId: MultipleNewsIdNews!): NewsListNews! @grpc(method: "news.NewsService.GetMultipleNews")
-  getNewsNews(newsId: NewsIdNews!): NewsNews! @grpc(method: "news.NewsService.GetNews")
+  getAllNews_News: NewsList_News! @grpc(method: "news.NewsService.GetAllNews")
+  getMultipleNews_News(multipleNewsId: MultipleNewsId_News!): NewsList_News! @grpc(method: "news.NewsService.GetMultipleNews")
+  getNews_News(newsId: NewsId_News!): News_News! @grpc(method: "news.NewsService.GetNews")
 }
