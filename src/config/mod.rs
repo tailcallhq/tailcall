@@ -28,3 +28,4 @@ mod server;
 mod source;
 mod telemetry;
 mod upstream;
+mod generator;
