@@ -60,7 +60,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
         if path.len() == 1 {
             return match path[0].as_ref() {
                 "value" => convert_value(ctx.path_value(&[] as &[T])?),
-                "args" => Some(json!(ctx.get_args()?).to_string().into()),
+                "args" => Some(json!(ctx.path_arg::<&str>(&[])?).to_string().into()),
                 "vars" => Some(json!(ctx.vars()).to_string().into()),
                 _ => None,
             };

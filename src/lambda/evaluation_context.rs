@@ -58,18 +58,14 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         self.graphql_ctx.value()
     }
 
-    pub fn get_args(&self) -> Option<Value> {
-        if let Some(args) = self.graphql_ctx_args.as_ref() {
-            Some(args.as_ref().clone())
-        } else {
-            self.graphql_ctx.args().cloned().map(|args| args.into())
-        }
-    }
-
     pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
         // TODO: add unit tests for this
         if let Some(args) = self.graphql_ctx_args.as_ref() {
             get_path_value(args.as_ref(), path).map(|a| Cow::Owned(a.clone()))
+        } else if path.is_empty() {
+            self.graphql_ctx
+                .args()
+                .map(|a| Cow::Owned(Value::Object(a.clone())))
         } else {
             let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
             get_path_value(arg, &path[1..]).map(Cow::Borrowed)
