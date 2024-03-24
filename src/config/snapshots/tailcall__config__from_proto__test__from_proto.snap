@@ -7,58 +7,63 @@ schema @server @upstream {
   mutation: Mutation
 }
 
-input Author {
+input AuthorNews {
   email: String
   name: String
 }
 
-input HelloRequest {
+input HelloRequestGreetings {
   name: String
 }
 
-input MultipleNewsId {
-  ids: [NewsId]
+input HelloRequestGreetingsDup {
+  name: String
 }
 
-input News {
-  author: Author
+input MultipleNewsIdNews {
+  ids: [NewsIdNews]
+}
+
+input NewsIdNews {
+  id: Int
+}
+
+input NewsNews {
+  author: AuthorNews
   body: String
-  foo: Status
+  foo: StatusNEWS
   id: Int
   postImage: String
   title: String
 }
 
-input NewsId {
-  id: Int
-}
-
-enum Status {
+enum StatusNEWS {
   DRAFT
   PUBLISHED
 }
 
-type HelloReply {
+type HelloReplyGreetings {
+  message: String
+}
+
+type HelloReplyGreetingsDup {
   message: String
 }
 
 type Mutation {
-  addNews(news: News!): News! @grpc(method: "news.NewsService.AddNews")
-  deleteNews(newsId: NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
-  editNews(news: News!): News! @grpc(method: "news.NewsService.EditNews")
-  sayHello(helloRequest: HelloRequest!): HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+  addNewsNews(news: NewsNews!): NewsNews! @grpc(method: "news.NewsService.AddNews")
+  deleteNewsNews(newsId: NewsIdNews!): String @grpc(method: "news.NewsService.DeleteNews")
+  editNewsNews(news: NewsNews!): NewsNews! @grpc(method: "news.NewsService.EditNews")
+  sayHelloGreetings(helloRequest: HelloRequestGreetings!): HelloReplyGreetings! @grpc(method: "greetings.Greeter.SayHello")
+  sayHelloGreetingsDup(helloRequest: HelloRequestGreetingsDup!): HelloReplyGreetingsDup! @grpc(method: "greetings_dup.Greeter.SayHello")
 }
 
-type NewsList {
-  news: [News]
-}
-
-type NewsNested1 {
-  id: Int
+type NewsListNews {
+  news: [NewsNews]
 }
 
 type Query {
-  getAllNews: NewsList! @grpc(method: "news.NewsService.GetAllNews")
-  getMultipleNews(multipleNewsId: MultipleNewsId!): NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
-  getNews(newsId: NewsId!): News! @grpc(method: "news.NewsService.GetNews")
+  getAllNewsNews: NewsListNews! @grpc(method: "news.NewsService.GetAllNews")
+  getMultipleNewsNews(multipleNewsId: MultipleNewsIdNews!): NewsListNews! @grpc(method: "news.NewsService.GetMultipleNews")
+  getNewsNews(newsId: NewsIdNews!): NewsNews! @grpc(method: "news.NewsService.GetNews")
 }

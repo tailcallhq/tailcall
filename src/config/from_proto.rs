@@ -10,31 +10,41 @@ use prost_reflect::prost_types::{
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, ProtoGeneratorConfig, Type};
 
+enum DescriptorType {
+    Enum,
+    Message,
+    Method,
+}
+
 #[derive(Default)]
 struct Helper {
-    map_with_pkg: HashMap<String, bool>,
-    map_names: HashMap<String, bool>,
+    map: HashMap<String, String>,
     package: String,
 }
 
 impl Helper {
-    fn contains(&self, name: &str) -> u8 {
-        if self
-            .map_with_pkg
+    fn contains(&self, name: &str) -> bool {
+        self.map
             .get(&format!("{}.{}", self.package, name))
             .is_some()
-        {
-            2 // same field iterated again, need to skip that
-        } else if self.map_names.get(name).is_some() {
-            1 // same field name, different pkg
-        } else {
-            0 // new field to be inserted
-        }
     }
-    fn insert(&mut self, name: &str) {
-        self.map_with_pkg
-            .insert(format!("{}.{}", self.package, name), true);
-        self.map_names.insert(name.to_string(), true);
+    fn insert(&mut self, name: &str, ty: DescriptorType) {
+        let value = match ty {
+            DescriptorType::Enum => format!("{}{}", name, self.package.to_case(Case::Upper)),
+            DescriptorType::Message => {
+                format!("{}{}", name, self.package.to_case(Case::UpperCamel))
+            }
+            DescriptorType::Method => format!(
+                "{}{}",
+                name.to_case(Case::Camel),
+                self.package.to_case(Case::UpperCamel)
+            ),
+        };
+
+        self.map.insert(format!("{}.{}", self.package, name), value);
+    }
+    fn get(&self, name: &str) -> Option<String> {
+        self.map.get(&format!("{}.{}", self.package, name)).cloned()
     }
 }
 
@@ -63,13 +73,13 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
     }
 }
 
-fn get_arg(input_ty: &str) -> Option<(String, Arg)> {
+fn get_arg(input_ty: &str, helper: &mut Helper) -> Option<(String, Arg)> {
     match input_ty {
         "google.protobuf.Empty" | "" => None,
         any => {
             let key = convert_ty(any).to_case(Case::Camel);
             let val = Arg {
-                type_of: any.to_string(),
+                type_of: helper.get(any).unwrap_or(any.to_string()),
                 list: false,
                 required: true,
                 /* Setting it not null by default. There's no way to infer this
@@ -86,21 +96,22 @@ fn get_arg(input_ty: &str) -> Option<(String, Arg)> {
 
 fn append_enums(map: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &mut Helper) {
     for enum_ in enums {
+        let enum_name = enum_.name();
+
         let check_if_contains = helper.contains(enum_.name());
-        if check_if_contains == 2 {
+        if check_if_contains {
             continue;
+        } else {
+            helper.insert(enum_name, DescriptorType::Enum);
         }
+
         let ty = Type {
             variants: Some(enum_.value.iter().map(|v| v.name().to_string()).collect()),
             ..Default::default()
         };
-        let enum_name = if check_if_contains == 1 {
-            format!("{}_{}", enum_.name(), helper.package.to_uppercase())
-        } else {
-            enum_.name().to_string()
-        };
-        helper.insert(&enum_name);
-        map.types.insert(enum_name, ty);
+        map.types.insert(helper.get(enum_name).unwrap(), ty); // it should be
+                                                              // safe to call
+                                                              // unwrap here
     }
 }
 
@@ -112,8 +123,10 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: 
         let msg_name = message.name().to_string();
 
         let check_if_contains = helper.contains(&msg_name);
-        if check_if_contains == 2 {
+        if check_if_contains {
             continue;
+        } else {
+            helper.insert(&msg_name, DescriptorType::Message);
         }
 
         append_enums(config, message.enum_type, helper);
@@ -130,22 +143,19 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: 
             cfg_field.required = label.contains("required");
 
             if field.r#type.is_some() {
-                // for non-primitive types
                 let type_of = convert_ty(field.r#type().as_str_name());
                 cfg_field.type_of = type_of.to_string();
             } else {
-                cfg_field.type_of = convert_ty(field.type_name());
+                // for non-primitive types
+                let type_of = convert_ty(field.type_name());
+                cfg_field.type_of = helper.get(&type_of).unwrap_or(type_of);
             }
 
             ty.fields.insert(field_name, cfg_field);
         }
-        let msg_name = if check_if_contains == 1 {
-            format!("{}{}", msg_name, helper.package.to_case(Case::UpperCamel))
-        } else {
-            msg_name
-        };
-        helper.insert(&msg_name);
-        config.types.insert(msg_name, ty);
+        config.types.insert(helper.get(&msg_name).unwrap(), ty); // it should be
+                                                                 // safe to call
+                                                                 // unwrap here
     }
 }
 
@@ -162,17 +172,25 @@ fn generate_ty(
     for service in services {
         let service_name = service.name().to_string();
         for method in &service.method {
+            let method_name = method.name();
+
+            if helper.contains(method_name) {
+                continue;
+            } else {
+                helper.insert(method_name, DescriptorType::Method);
+            }
+
             let mut cfg_field = Field::default();
-            if let Some((k, v)) = get_arg(method.input_type()) {
+            if let Some((k, v)) = get_arg(method.input_type(), helper) {
                 cfg_field.args.insert(k, v);
             }
 
             let (output_ty, required) = get_output_ty(method.output_type());
-            cfg_field.type_of = output_ty;
+            cfg_field.type_of = helper.get(&output_ty).unwrap_or(output_ty.clone());
             cfg_field.required = required;
 
             grpc_method.service = service_name.clone();
-            grpc_method.name = method.name().to_string();
+            grpc_method.name = method_name.to_string();
 
             cfg_field.grpc = Some(Grpc {
                 base_url: None,
@@ -182,7 +200,7 @@ fn generate_ty(
                 method: grpc_method.to_string(),
             });
             ty.fields
-                .insert(method.name().to_case(Case::Camel), cfg_field);
+                .insert(helper.get(method_name).unwrap(), cfg_field);
         }
     }
     ty
@@ -297,16 +315,17 @@ mod test {
         // test for enum
         // test for repeated fields
         // test for a type used as both input and output
+        // test for two types having same name in different packages
 
         let mut set = FileDescriptorSet::default();
 
         let news = get_proto_file_descriptor("news_enum.proto")?;
         let greetings = get_proto_file_descriptor("greetings.proto")?;
-        let nested1 = get_proto_file_descriptor("nested1.proto")?;
+        let greetings_dup_methods = get_proto_file_descriptor("greetings_dup_methods.proto")?;
 
         set.file.push(news.clone());
         set.file.push(greetings.clone());
-        set.file.push(nested1.clone());
+        set.file.push(greetings_dup_methods.clone());
 
         let result = from_proto(vec![set], get_generator_cfg()).to_sdl();
 
@@ -318,7 +337,7 @@ mod test {
         let mut set2 = FileDescriptorSet::default();
         set.file.push(news);
         set1.file.push(greetings);
-        set2.file.push(nested1);
+        set2.file.push(greetings_dup_methods);
 
         let result_sets = from_proto(vec![set, set1, set2], get_generator_cfg()).to_sdl();
 
