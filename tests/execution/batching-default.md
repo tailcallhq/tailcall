@@ -1,7 +1,7 @@
 # Batching default
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 10, maxSize: 100}, httpCache: true) {
   query: Query
 }
 

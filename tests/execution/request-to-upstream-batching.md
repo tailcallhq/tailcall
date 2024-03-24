@@ -8,7 +8,6 @@
   "upstream": {
     "batch": {
       "delay": 1,
-      "headers": [],
       "maxSize": 100
     }
   },

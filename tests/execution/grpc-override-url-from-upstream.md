@@ -37,7 +37,7 @@ message NewsList {
 ```
 
 ```graphql @server
-schema @server(graphiql: true, port: 8000) @upstream(baseURL: "http://not-a-valid-grpc-url.com", batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server(graphiql: true, port: 8000) @upstream(baseURL: "http://not-a-valid-grpc-url.com", batch: {delay: 10, maxSize: 100}, httpCache: true) @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 

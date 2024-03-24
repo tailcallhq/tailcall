@@ -7,7 +7,6 @@
     "baseURL": "http://jsonplaceholder.typicode.com",
     "batch": {
       "delay": 0,
-      "headers": [],
       "maxSize": 100
     },
     "httpCache": true

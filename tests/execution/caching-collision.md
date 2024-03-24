@@ -1,7 +1,7 @@
 # Caching Collision
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 

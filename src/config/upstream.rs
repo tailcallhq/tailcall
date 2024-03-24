@@ -10,7 +10,10 @@ use crate::merge_right::MergeRight;
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
     pub delay: usize,
+
+    #[serde(skip_serializing_if = "is_default")]
     pub headers: BTreeSet<String>,
+    
     pub max_size: usize,
 }
 impl Default for Batch {
