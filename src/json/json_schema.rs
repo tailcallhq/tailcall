@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use convert_case::{Case, Casing};
-use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
+use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
 use crate::valid::{Valid, Validator};
@@ -12,6 +12,7 @@ pub enum JsonSchema {
     Obj(HashMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
+    Enum(BTreeSet<String>),
     Str,
     Num,
     Bool,
@@ -85,6 +86,7 @@ impl JsonSchema {
                 async_graphql::Value::Null => Valid::succeed(()),
                 _ => schema.validate(value),
             },
+            JsonSchema::Enum(_) => Valid::succeed(()),
         }
     }
 
@@ -132,6 +134,13 @@ impl JsonSchema {
                     return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
                 }
             }
+            JsonSchema::Enum(a) => {
+                if let JsonSchema::Enum(b) = other {
+                    if a.ne(b) {
+                        return Valid::fail("expected Enum type".to_string()).trace(name);
+                    }
+                }
+            }
         }
         Valid::succeed(())
     }
@@ -169,6 +178,18 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
     }
 }
 
+impl TryFrom<&EnumDescriptor> for JsonSchema {
+    type Error = crate::valid::ValidationError<String>;
+
+    fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
+        let mut set = BTreeSet::new();
+        for value in value.values() {
+            set.insert(value.name().to_string());
+        }
+        Ok(JsonSchema::Enum(set))
+    }
+}
+
 impl TryFrom<&FieldDescriptor> for JsonSchema {
     type Error = crate::valid::ValidationError<String>;
 
@@ -190,9 +211,7 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
             Kind::String => JsonSchema::Str,
             Kind::Bytes => JsonSchema::Str,
             Kind::Message(msg) => JsonSchema::try_from(&msg)?,
-            Kind::Enum(_) => {
-                todo!("Enum")
-            }
+            Kind::Enum(enm) => JsonSchema::try_from(&enm)?,
         };
         let field_schema = if value
             .cardinality()
