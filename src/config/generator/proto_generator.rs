@@ -54,15 +54,15 @@ pub enum Options {
 
 pub struct ProtoGeneratorFxn {
     is_mutation: Box<dyn Fn(&str) -> bool>,
-    format_enum: Box<dyn Fn(&str) -> String>,
-    format_ty: Box<dyn Fn(&str) -> String>,
+    format_enum: Box<dyn Fn(Vec<String>) -> BTreeMap<String, String>>,
+    format_ty: Box<dyn Fn(Vec<String>) -> BTreeMap<String,String>>,
 }
 
 impl ProtoGeneratorFxn {
     pub fn new(
         is_mutation: Box<dyn Fn(&str) -> bool>,
-        format_enum: Box<dyn Fn(&str) -> String>,
-        format_ty: Box<dyn Fn(&str) -> String>,
+        format_enum: Box<dyn Fn(Vec<String>) ->  BTreeMap<String,String>>,
+        format_ty: Box<dyn Fn(Vec<String>) ->  BTreeMap<String,String>>,
     ) -> Self {
         Self {
             is_mutation,
@@ -74,10 +74,15 @@ impl ProtoGeneratorFxn {
 
 impl Default for ProtoGeneratorFxn {
     fn default() -> Self {
+        let fmt = |x: Vec<String>| {
+            let mut map = BTreeMap::new();
+            x.into_iter().for_each(|v| { map.insert(v.clone(), v); });
+            map
+        };
         Self {
             is_mutation: Box::new(|_| false),
-            format_enum: Box::new(|s| s.to_string()),
-            format_ty: Box::new(|s| s.to_string()),
+            format_enum: Box::new(fmt),
+            format_ty: Box::new(fmt),
         }
     }
 }

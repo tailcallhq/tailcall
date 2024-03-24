@@ -321,6 +321,7 @@ pub fn prebuild_config(
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeMap;
     use std::path::PathBuf;
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -343,7 +344,11 @@ mod test {
 
     fn get_generator_cfg() -> ProtoGeneratorConfig {
         let is_mut = |x: &str| !x.starts_with("Get");
-        let fmt = |x: &str| x.to_string();
+        let fmt = |x: Vec<String>| {
+            let mut map = BTreeMap::new();
+            x.into_iter().for_each(|v| { map.insert(v.clone(), v); });
+            map
+        };
         ProtoGeneratorConfig::new(
             Some("Query".to_string()),
             Some("Mutation".to_string()),
