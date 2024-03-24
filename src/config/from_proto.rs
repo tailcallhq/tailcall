@@ -35,9 +35,7 @@ impl Helper {
     fn with_options(options: Options) -> Self {
         Self { map: Default::default(), package: "".to_string(), options }
     }
-    fn contains(&self, name: &str) -> bool {
-        self.get(name).is_some()
-    }
+
     fn get_value(&self, name: &str, ty: DescriptorType) -> String {
         match self.options {
             Options::AppendPkgId(ref separator) => match ty {
