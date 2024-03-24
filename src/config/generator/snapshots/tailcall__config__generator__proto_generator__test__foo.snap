@@ -1,0 +1,69 @@
+---
+source: src/config/generator/proto_generator.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+input author_news {
+  email: String
+  name: String
+}
+
+input hello_request_greetings {
+  name: String
+}
+
+input hello_request_greetings_dup {
+  name: String
+}
+
+input multiple_news_id_news {
+  ids: [news_id_news]
+}
+
+input news_id_news {
+  id: Int
+}
+
+input news_news {
+  author: author_news
+  body: String
+  foo: status_news
+  id: Int
+  postImage: String
+  title: String
+}
+
+enum status_news {
+  DRAFT
+  PUBLISHED
+}
+
+type Mutation {
+  addNews_news(news: news_news!): news_news! @grpc(method: "news.NewsService.AddNews")
+  deleteNews_news(newsId: news_id_news!): String @grpc(method: "news.NewsService.DeleteNews")
+  editNews_news(news: news_news!): news_news! @grpc(method: "news.NewsService.EditNews")
+  sayHello_greetings(helloRequest: hello_request_greetings!): hello_reply_greetings! @grpc(method: "greetings.Greeter.SayHello")
+  sayHello_greetings_dup(helloRequest: hello_request_greetings_dup!): hello_reply_greetings_dup! @grpc(method: "greetings_dup.Greeter.SayHello")
+}
+
+type Query {
+  getAllNews_news: news_list_news! @grpc(method: "news.NewsService.GetAllNews")
+  getMultipleNews_news(multipleNewsId: multiple_news_id_news!): news_list_news! @grpc(method: "news.NewsService.GetMultipleNews")
+  getNews_news(newsId: news_id_news!): news_news! @grpc(method: "news.NewsService.GetNews")
+}
+
+type hello_reply_greetings {
+  message: String
+}
+
+type hello_reply_greetings_dup {
+  message: String
+}
+
+type news_list_news {
+  news: [news_news]
+}

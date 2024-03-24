@@ -1,0 +1,69 @@
+---
+source: src/config/generator/from_proto.rs
+expression: result
+---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+input Author_News {
+  email: String
+  name: String
+}
+
+input HelloRequest_Greetings {
+  name: String
+}
+
+input HelloRequest_GreetingsDup {
+  name: String
+}
+
+input MultipleNewsId_News {
+  ids: [NewsId_News]
+}
+
+input NewsId_News {
+  id: Int
+}
+
+input News_News {
+  author: Author_News
+  body: String
+  foo: Status_NEWS
+  id: Int
+  postImage: String
+  title: String
+}
+
+enum Status_NEWS {
+  DRAFT
+  PUBLISHED
+}
+
+type HelloReply_Greetings {
+  message: String
+}
+
+type HelloReply_GreetingsDup {
+  message: String
+}
+
+type Mutation {
+  addNews_News(news: News_News!): News_News! @grpc(method: "news.NewsService.AddNews")
+  deleteNews_News(newsId: NewsId_News!): String @grpc(method: "news.NewsService.DeleteNews")
+  editNews_News(news: News_News!): News_News! @grpc(method: "news.NewsService.EditNews")
+  sayHello_Greetings(helloRequest: HelloRequest_Greetings!): HelloReply_Greetings! @grpc(method: "greetings.Greeter.SayHello")
+  sayHello_GreetingsDup(helloRequest: HelloRequest_GreetingsDup!): HelloReply_GreetingsDup! @grpc(method: "greetings_dup.Greeter.SayHello")
+}
+
+type NewsList_News {
+  news: [News_News]
+}
+
+type Query {
+  getAllNews_News: NewsList_News! @grpc(method: "news.NewsService.GetAllNews")
+  getMultipleNews_News(multipleNewsId: MultipleNewsId_News!): NewsList_News! @grpc(method: "news.NewsService.GetMultipleNews")
+  getNews_News(newsId: NewsId_News!): News_News! @grpc(method: "news.NewsService.GetNews")
+}

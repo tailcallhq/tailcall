@@ -1,0 +1,60 @@
+---
+source: src/config/generator/from_proto.rs
+expression: result
+---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+input Author {
+  email: String
+  name: String
+}
+
+input HelloRequest {
+  name: String
+}
+
+input MultipleNewsId {
+  ids: [NewsId]
+}
+
+input News {
+  author: Author
+  body: String
+  foo: Status
+  id: Int
+  postImage: String
+  title: String
+}
+
+input NewsId {
+  id: Int
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+}
+
+type HelloReply {
+  message: String
+}
+
+type Mutation {
+  addNews(news: News!): News! @grpc(method: "news.NewsService.AddNews")
+  deleteNews(newsId: NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
+  editNews(news: News!): News! @grpc(method: "news.NewsService.EditNews")
+  sayHello(helloRequest: HelloRequest!): HelloReply! @grpc(method: "greetings_dup.Greeter.SayHello")
+}
+
+type NewsList {
+  news: [News]
+}
+
+type Query {
+  getAllNews: NewsList! @grpc(method: "news.NewsService.GetAllNews")
+  getMultipleNews(multipleNewsId: MultipleNewsId!): NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
+  getNews(newsId: NewsId!): News! @grpc(method: "news.NewsService.GetNews")
+}

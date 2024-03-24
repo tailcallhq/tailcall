@@ -1,0 +1,18 @@
+---
+source: src/config/generator/from_proto.rs
+expression: cfg
+---
+schema @server @upstream {
+}
+
+type Person {
+  email: String
+  id: Int!
+  name: String!
+  phone: [PhoneNumber]
+}
+
+type PhoneNumber {
+  number: String!
+  type: String
+}
