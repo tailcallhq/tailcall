@@ -1,20 +1,7 @@
 # Cors allow cred true
 
 ```graphql @server
-schema
-  @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000})
-  @server(
-    headers: {
-      cors: {
-        allowCredentials: true
-        allowMethods: [OPTIONS, POST, GET]
-        allowOrigins: ["abc.com", "xyz.com"]
-        allowPrivateNetwork: false
-        exposeHeaders: [""]
-        maxAge: 23
-      }
-    }
-  ) {
+schema @server(headers: {cors: {allowCredentials: true, allowMethods: ["OPTIONS", "POST", "GET"], allowOrigins: ["abc.com", "xyz.com"], exposeHeaders: [""], maxAge: 23, vary: ["origin", "access-control-request-method", "access-control-request-headers"]}}) @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 
