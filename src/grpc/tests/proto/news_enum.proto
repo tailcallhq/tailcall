@@ -22,7 +22,6 @@ message News {
     Author author = 6;
 }
 
-// my awesome doc for service
 service NewsService {
     rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
     rpc GetNews (NewsId) returns (News) {}

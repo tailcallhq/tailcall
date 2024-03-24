@@ -4,14 +4,14 @@ use derive_setters::Setters;
 pub struct ProtoGeneratorConfig {
     query: String,
     mutation: String,
-    is_mutation_fxn: Box<dyn Fn(String) -> bool>,
+    is_mutation_fxn: Box<dyn Fn(&str) -> bool>,
 }
 
 impl ProtoGeneratorConfig {
     pub fn new(
         query: Option<String>,
         mutation: Option<String>,
-        is_mutation_fxn: Box<dyn Fn(String) -> bool>,
+        is_mutation_fxn: Box<dyn Fn(&str) -> bool>,
     ) -> Self {
         Self {
             query: query.unwrap_or("Query".to_string()),
@@ -20,7 +20,7 @@ impl ProtoGeneratorConfig {
         }
     }
 
-    pub fn is_mutation(&self, name: String) -> bool {
+    pub fn is_mutation(&self, name: &str) -> bool {
         (self.is_mutation_fxn)(name)
     }
     pub fn get_query(&self) -> &str {

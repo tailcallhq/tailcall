@@ -148,9 +148,7 @@ fn append_query_service(
     }
 
     for service in services.iter_mut() {
-        service
-            .method
-            .retain(|v| !gen.is_mutation(v.name().to_string()));
+        service.method.retain(|v| !gen.is_mutation(v.name()));
     }
 
     let ty = generate_ty(config, services, package, query);
@@ -173,9 +171,7 @@ fn append_mutation_service(
     }
 
     for service in services.iter_mut() {
-        service
-            .method
-            .retain(|v| gen.is_mutation(v.name().to_string()));
+        service.method.retain(|v| gen.is_mutation(v.name()));
     }
 
     let ty = generate_ty(config, services, package, mutation);
@@ -230,8 +226,12 @@ mod test {
     }
 
     fn get_generator_cfg() -> ProtoGeneratorConfig {
-        let fxn = |x: String| !x.starts_with("Get");
-        ProtoGeneratorConfig::new(None, None, Box::new(fxn))
+        let fxn = |x: &str| !x.starts_with("Get");
+        ProtoGeneratorConfig::new(
+            Some("Query".to_string()),
+            Some("Mutation".to_string()),
+            Box::new(fxn),
+        )
     }
 
     #[test]
