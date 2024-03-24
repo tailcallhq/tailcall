@@ -115,16 +115,15 @@ fn compile_step(
         }
         .and_then(|expr| {
             if step.args.is_empty() {
-                return Valid::succeed(expr);
+                Valid::succeed(expr)
+            } else {
+                let args = Valid::from(
+                    DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
+                        .map_err(|e| ValidationError::new(e.to_string())),
+                )
+                .map(Expression::Literal);
+                args.map(|args| args.and_then(expr))
             }
-            Valid::from(
-                DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
-                    .map_err(|e| ValidationError::new(e.to_string())),
-            )
-            .map(|object| {
-                let args_expr = Expression::Literal(object);
-                expr.with_args(args_expr)
-            })
         })
     })
 }
