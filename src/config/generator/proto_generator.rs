@@ -11,7 +11,7 @@ use strum_macros::Display;
 use crate::config::generator::from_proto::prebuild_config;
 use crate::config::{Config, Type};
 
-pub type FieldHolder = Vec<(String, String)>;
+pub type FieldHolder = Vec<(String, String)>; // used for holding (Package ID, Type/Enum name)
 
 pub(super) static DEFAULT_SPECTATOR: &str = "_";
 
