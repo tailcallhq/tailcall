@@ -1,7 +1,5 @@
 use std::collections::btree_map::Iter;
 
-use async_graphql::Name;
-use indexmap::IndexMap;
 use serde_json::Value;
 
 use crate::blueprint::*;
@@ -10,7 +8,7 @@ use crate::config::{Field, GraphQLOperationType, KeyValue};
 use crate::lambda::Expression;
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, Validator};
+use crate::valid::{Valid, ValidationError, Validator};
 
 fn find_value<'a>(args: &'a Iter<'a, String, Value>, key: &'a String) -> Option<&'a Value> {
     args.clone()
@@ -117,18 +115,14 @@ fn compile_step(
             if step.args.is_empty() {
                 return Valid::succeed(expr);
             }
-
-            let mut map = IndexMap::new();
-            for (k, v) in &step.args {
-                match DynamicValue::try_from(v) {
-                    Ok(value) => map.insert(Name::new(k.clone()), value),
-                    Err(e) => return Valid::fail(e.to_string()),
-                };
-            }
-            let object = DynamicValue::Object(map);
-            let args_expr = Expression::Literal(object);
-
-            Valid::succeed(expr.with_args(args_expr))
+            Valid::from(
+                DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
+                    .map_err(|e| ValidationError::new(e.to_string())),
+            )
+            .map(|object| {
+                let args_expr = Expression::Literal(object);
+                expr.with_args(args_expr)
+            })
         })
     })
 }
