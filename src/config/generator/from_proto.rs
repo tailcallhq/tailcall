@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO check what to do..
-
 use std::collections::{BTreeSet, HashMap};
 
 use anyhow::anyhow;
@@ -9,8 +7,10 @@ use prost_reflect::prost_types::{
 };
 
 use crate::blueprint::GrpcMethod;
+use crate::config::generator::proto_generator::{
+    ConfigWrapper, DescriptorType, Options, ProtoGeneratorConfig,
+};
 use crate::config::{Arg, Field, Grpc, Type};
-use crate::config::generator::proto_generator::{ConfigWrapper, DescriptorType, Options, ProtoGeneratorConfig};
 
 struct Helper {
     map: HashMap<String, String>,
@@ -30,11 +30,7 @@ impl Helper {
                     format!("{}_{}", name, self.package.to_case(Case::Upper))
                 }
                 DescriptorType::Message => {
-                    format!(
-                        "{}_{}",
-                        name,
-                        self.package.to_case(Case::UpperCamel)
-                    )
+                    format!("{}_{}", name, self.package.to_case(Case::UpperCamel))
                 }
                 DescriptorType::Method => format!(
                     "{}_{}",
@@ -88,7 +84,7 @@ fn convert_ty(proto_ty: &str) -> String {
         "string" | "bytes" => "String",
         x => x,
     }
-        .to_string()
+    .to_string()
 }
 
 fn get_output_ty(output_ty: &str) -> (String, bool) {
@@ -96,7 +92,7 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
     match output_ty {
         "google.protobuf.Empty" => {
             ("String".to_string(), false) // If it's no response is expected, we
-            // return a nullable string type
+                                          // return a nullable string type
         }
         any => (any.to_string(), true), /* Setting it not null by default. There's no way to
                                          * infer this from proto file */
@@ -147,7 +143,8 @@ fn append_enums(
         }
         ty.variants = Some(variants);
 
-        config_wrapper.insert_ty(helper.get(enum_name).unwrap(), ty, enum_ty.to_string()); // it should be
+        config_wrapper.insert_ty(helper.get(enum_name).unwrap(), ty, enum_ty.to_string());
+        // it should be
         // safe to call
         // unwrap here
     }
@@ -172,8 +169,8 @@ fn append_msg_type(
         append_msg_type(config_wrapper, message.nested_type, helper)?;
 
         let mut ty = config_wrapper.get_ty(&helper.get(&msg_name).unwrap()); // it should be
-        // safe to call
-        // unwrap here
+                                                                             // safe to call
+                                                                             // unwrap here
 
         for field in message.field {
             let field_name = field.name().to_string();
@@ -194,7 +191,8 @@ fn append_msg_type(
 
             ty.fields.insert(field_name, cfg_field);
         }
-        config_wrapper.insert_ty(helper.get(&msg_name).unwrap(), ty, msg_ty.to_string()); // it should be
+        config_wrapper.insert_ty(helper.get(&msg_name).unwrap(), ty, msg_ty.to_string());
+        // it should be
         // safe to call
         // unwrap here
     }
@@ -309,10 +307,10 @@ pub fn prebuild_config(
             append_query_service(
                 &mut config,
                 file_descriptor.service.clone(),
-                &gen,
+                gen,
                 &mut helper,
             )?;
-            append_mutation_service(&mut config, file_descriptor.service, &gen, &mut helper)?;
+            append_mutation_service(&mut config, file_descriptor.service, gen, &mut helper)?;
         }
     }
 
@@ -321,13 +319,15 @@ pub fn prebuild_config(
 
 #[cfg(test)]
 mod test {
-    use std::collections::BTreeMap;
+
     use std::path::PathBuf;
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::config::generator::from_proto::prebuild_config;
-    use crate::config::generator::proto_generator::{Options, ProtoGeneratorConfig, ProtoGeneratorFxn};
+    use crate::config::generator::proto_generator::{
+        Options, ProtoGeneratorConfig, ProtoGeneratorFxn,
+    };
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -337,22 +337,18 @@ mod test {
         proto_path.push("proto");
         proto_path.push(name);
         Ok(protox_parse::parse(
-            "news.proto",
+            name,
             std::fs::read_to_string(proto_path)?.as_str(),
         )?)
     }
 
     fn get_generator_cfg() -> ProtoGeneratorConfig {
         let is_mut = |x: &str| !x.starts_with("Get");
-        let fmt = |x: Vec<String>| {
-            let mut map = BTreeMap::new();
-            x.into_iter().for_each(|v| { map.insert(v.clone(), v); });
-            map
-        };
+        let fmt = |x: Vec<String>| x;
         ProtoGeneratorConfig::new(
             Some("Query".to_string()),
             Some("Mutation".to_string()),
-            ProtoGeneratorFxn::new(Box::new(is_mut),Box::new(fmt),Box::new(fmt)),
+            ProtoGeneratorFxn::new(Box::new(is_mut), Box::new(fmt), Box::new(fmt)),
         )
     }
 
@@ -377,12 +373,8 @@ mod test {
         set.file.push(greetings.clone());
         set.file.push(greetings_dup_methods.clone());
 
-        let result = prebuild_config(
-            vec![set],
-            &get_generator_cfg(),
-            Options::AppendPkgId,
-        )?
-            .to_sdl();
+        let result =
+            prebuild_config(vec![set], &get_generator_cfg(), Options::AppendPkgId)?.to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -399,7 +391,7 @@ mod test {
             &get_generator_cfg(),
             Options::AppendPkgId,
         )?
-            .to_sdl();
+        .to_sdl();
 
         assert_eq!(result, result_sets);
 
@@ -453,7 +445,8 @@ mod test {
         let req_proto = get_proto_file_descriptor("required_fields.proto")?;
         set.file.push(req_proto);
 
-        let cfg = prebuild_config(vec![set], &get_generator_cfg(), Options::FailIfCollide)?.to_sdl();
+        let cfg =
+            prebuild_config(vec![set], &get_generator_cfg(), Options::FailIfCollide)?.to_sdl();
         insta::assert_snapshot!(cfg);
 
         Ok(())

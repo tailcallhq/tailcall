@@ -1,17 +1,20 @@
+#![allow(dead_code)] // TODO check what to do..
+
 use std::collections::BTreeMap;
 use std::ops::Deref;
+
+use anyhow::anyhow;
 use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use strum_macros::Display;
 
-use crate::config::{Config, Type};
 use crate::config::generator::from_proto::prebuild_config;
-
+use crate::config::{Config, Type};
 
 #[derive(Default)]
 pub struct ConfigWrapper {
     pub config: Config,
-    pub types: BTreeMap<String, Vec<String>>
+    pub types: BTreeMap<String, Vec<String>>,
 }
 
 impl ConfigWrapper {
@@ -54,31 +57,23 @@ pub enum Options {
 
 pub struct ProtoGeneratorFxn {
     is_mutation: Box<dyn Fn(&str) -> bool>,
-    format_enum: Box<dyn Fn(Vec<String>) -> BTreeMap<String, String>>,
-    format_ty: Box<dyn Fn(Vec<String>) -> BTreeMap<String,String>>,
+    format_enum: Box<dyn Fn(Vec<String>) -> Vec<String>>,
+    format_ty: Box<dyn Fn(Vec<String>) -> Vec<String>>,
 }
 
 impl ProtoGeneratorFxn {
     pub fn new(
         is_mutation: Box<dyn Fn(&str) -> bool>,
-        format_enum: Box<dyn Fn(Vec<String>) ->  BTreeMap<String,String>>,
-        format_ty: Box<dyn Fn(Vec<String>) ->  BTreeMap<String,String>>,
+        format_enum: Box<dyn Fn(Vec<String>) -> Vec<String>>,
+        format_ty: Box<dyn Fn(Vec<String>) -> Vec<String>>,
     ) -> Self {
-        Self {
-            is_mutation,
-            format_enum,
-            format_ty,
-        }
+        Self { is_mutation, format_enum, format_ty }
     }
 }
 
 impl Default for ProtoGeneratorFxn {
     fn default() -> Self {
-        let fmt = |x: Vec<String>| {
-            let mut map = BTreeMap::new();
-            x.into_iter().for_each(|v| { map.insert(v.clone(), v); });
-            map
-        };
+        let fmt = |x: Vec<String>| x;
         Self {
             is_mutation: Box::new(|_| false),
             format_enum: Box::new(fmt),
@@ -131,6 +126,7 @@ impl Default for ProtoGeneratorConfig {
         }
     }
 }
+
 struct ProtoGenerator {
     generator_config: ProtoGeneratorConfig,
 }
@@ -141,17 +137,147 @@ impl ProtoGenerator {
     }
 
     pub fn generate(&self, descriptor_sets: Vec<FileDescriptorSet>) -> anyhow::Result<Config> {
-        let mut config = Config::default();
-        let pre_built_wrapper = prebuild_config(descriptor_sets, &self.generator_config, self.generator_config.option)?;
-        config.schema = pre_built_wrapper.config.schema;
+        let mut pre_built_wrapper = prebuild_config(
+            descriptor_sets,
+            &self.generator_config,
+            self.generator_config.option,
+        )?;
 
-        match self.generator_config.option {
-            Options::AppendPkgId => {
+        if self.generator_config.option == Options::AppendPkgId {
+            let original_enums = pre_built_wrapper
+                .types
+                .get(&DescriptorType::Enum.to_string())
+                .unwrap()
+                .clone();
+            let original_messages = pre_built_wrapper
+                .types
+                .get(&DescriptorType::Message.to_string())
+                .unwrap()
+                .clone();
 
+            let updated_enums = (self.generator_config.generator_fxn.format_enum)(
+                pre_built_wrapper
+                    .types
+                    .get(&DescriptorType::Enum.to_string())
+                    .unwrap()
+                    .clone(),
+            );
+            let updated_messages = (self.generator_config.generator_fxn.format_ty)(
+                pre_built_wrapper
+                    .types
+                    .get(&DescriptorType::Message.to_string())
+                    .unwrap()
+                    .clone(),
+            );
+            if original_enums.len() != updated_enums.len()
+                || original_messages.len() != updated_messages.len()
+            {
+                return Err(anyhow!("Invalid length of enums or messages expected:\nEnums: {} got {}\nMessages: {} got {}", original_enums.len(), updated_enums.len(), original_messages.len(), updated_messages.len()));
             }
-            _ => (),
+            let mut updated_enums_map = BTreeMap::new();
+            let mut updated_messages_map = BTreeMap::new();
+
+            original_messages
+                .into_iter()
+                .zip(updated_messages)
+                .for_each(|(k, v)| {
+                    updated_messages_map.insert(k, v);
+                });
+
+            original_enums
+                .into_iter()
+                .zip(updated_enums)
+                .for_each(|(k, v)| {
+                    updated_enums_map.insert(k, v);
+                });
+
+            update_stuff(&mut pre_built_wrapper.config, updated_enums_map);
+            update_stuff(&mut pre_built_wrapper.config, updated_messages_map);
         }
 
-        Ok(config)
+        Ok(pre_built_wrapper.config)
+    }
+}
+
+fn update_stuff(cfg: &mut Config, updated_stuff: BTreeMap<String, String>) {
+    let mut new_types = BTreeMap::new();
+    for (k, v) in cfg.types.iter_mut() {
+        let k = if let Some(new_enum) = updated_stuff.get(k) {
+            new_enum.clone()
+        } else {
+            k.clone()
+        };
+
+        for (_, field) in v.fields.iter_mut() {
+            if let Some(new_stuff) = updated_stuff.get(&field.type_of) {
+                field.type_of = new_stuff.clone();
+            }
+
+            for (_, arg) in field.args.iter_mut() {
+                if let Some(new_stuff) = updated_stuff.get(&arg.type_of) {
+                    arg.type_of = new_stuff.clone();
+                }
+            }
+        }
+        new_types.insert(k, v.clone());
+    }
+    cfg.types = new_types;
+}
+
+#[cfg(test)]
+mod test {
+    use std::path::PathBuf;
+
+    use convert_case::{Case, Casing};
+    use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
+
+    use crate::config::generator::proto_generator::{
+        ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn,
+    };
+
+    fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
+        let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        proto_path.push("src");
+        proto_path.push("grpc");
+        proto_path.push("tests");
+        proto_path.push("proto");
+        proto_path.push(name);
+        Ok(protox_parse::parse(
+            name,
+            std::fs::read_to_string(proto_path)?.as_str(),
+        )?)
+    }
+
+    fn get_generator() -> ProtoGenerator {
+        let is_mut = |x: &str| !x.starts_with("Get");
+        let fmt = |x: Vec<String>| {
+            x.into_iter()
+                .map(|v| v.to_case(Case::Snake).to_lowercase())
+                .collect()
+        };
+        ProtoGenerator::new(ProtoGeneratorConfig::new(
+            Some("Query".to_string()),
+            Some("Mutation".to_string()),
+            ProtoGeneratorFxn::new(Box::new(is_mut), Box::new(fmt), Box::new(fmt)),
+        ))
+    }
+
+    #[test]
+    fn foo() -> anyhow::Result<()> {
+        let gen = get_generator();
+
+        let mut set = FileDescriptorSet::default();
+
+        let news = get_proto_file_descriptor("news_enum.proto")?;
+        let greetings = get_proto_file_descriptor("greetings.proto")?;
+        let greetings_dup_methods = get_proto_file_descriptor("greetings_dup_methods.proto")?;
+
+        set.file.push(news.clone());
+        set.file.push(greetings.clone());
+        set.file.push(greetings_dup_methods.clone());
+
+        let config = gen.generate(vec![set])?;
+        insta::assert_snapshot!(config.to_sdl());
+        Ok(())
     }
 }
