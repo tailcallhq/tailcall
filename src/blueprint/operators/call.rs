@@ -36,11 +36,13 @@ pub fn compile_call(
     call: &config::Call,
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
-    call.steps
-        .iter()
-        .map(|step| compile_step(field, config_module, step, operation_type))
-        .reduce(|expr, next| expr.and_then(|expr| next.map(|next| expr.and_then(next))))
-        .expect("Failed to compose call steps")
+    Valid::from_iter(call.steps.iter(), |step| {
+        compile_step(field, config_module, step, operation_type)
+    })
+    .and_then(|steps| {
+        let option = steps.into_iter().reduce(|expr, next| expr.and_then(next));
+        Valid::from_option(option, "Steps can't be empty".to_string())
+    })
 }
 
 fn compile_step(
