@@ -8,7 +8,7 @@ use prost_reflect::prost_types::{
 
 use crate::blueprint::GrpcMethod;
 use crate::config::generator::proto_generator::{
-    ConfigWrapper, DescriptorType, Options, ProtoGeneratorConfig,
+    ConfigWrapper, DescriptorType, Options, ProtoGeneratorConfig, DEFAULT_SPECTATOR,
 };
 use crate::config::{Arg, Field, Grpc, Type};
 
@@ -27,15 +27,16 @@ impl Helper {
         match self.options {
             Options::AppendPkgId => match ty {
                 DescriptorType::Enum => {
-                    format!("{}_{}", name, self.package.to_case(Case::Upper))
+                    format!("{}{}{}", name, DEFAULT_SPECTATOR, self.package)
                 }
                 DescriptorType::Message => {
-                    format!("{}_{}", name, self.package.to_case(Case::UpperCamel))
+                    format!("{}{}{}", name, DEFAULT_SPECTATOR, self.package)
                 }
                 DescriptorType::Method => format!(
-                    "{}_{}",
+                    "{}{}{}",
                     name.to_case(Case::Camel),
-                    self.package.to_case(Case::UpperCamel)
+                    DEFAULT_SPECTATOR,
+                    self.package
                 ),
             },
             _ => match ty {
@@ -191,6 +192,7 @@ fn append_msg_type(
 
             ty.fields.insert(field_name, cfg_field);
         }
+
         config_wrapper.insert_ty(helper.get(&msg_name).unwrap(), ty, msg_ty.to_string());
         // it should be
         // safe to call
@@ -344,11 +346,10 @@ mod test {
 
     fn get_generator_cfg() -> ProtoGeneratorConfig {
         let is_mut = |x: &str| !x.starts_with("Get");
-        let fmt = |x: Vec<String>| x;
         ProtoGeneratorConfig::new(
             Some("Query".to_string()),
             Some("Mutation".to_string()),
-            ProtoGeneratorFxn::new(Box::new(is_mut), Box::new(fmt), Box::new(fmt)),
+            ProtoGeneratorFxn { is_mutation: Box::new(is_mut), ..Default::default() },
         )
     }
 

@@ -11,18 +11,28 @@ use strum_macros::Display;
 use crate::config::generator::from_proto::prebuild_config;
 use crate::config::{Config, Type};
 
+pub type FieldHolder = Vec<(String, String)>;
+
+pub(super) static DEFAULT_SPECTATOR: &str = "_";
+
 #[derive(Default)]
 pub struct ConfigWrapper {
     pub config: Config,
-    pub types: BTreeMap<String, Vec<String>>,
+    pub types: BTreeMap<String, FieldHolder>,
 }
 
 impl ConfigWrapper {
     pub fn insert_ty(&mut self, key: String, val: Type, ty: String) {
-        if let Some(val) = self.types.get_mut(&ty) {
-            val.push(key.clone());
+        let split = key.rsplitn(2, DEFAULT_SPECTATOR).collect::<Vec<&str>>();
+        if let [name, pkg_id] = &split[..] {
+            if let Some(val) = self.types.get_mut(&ty) {
+                val.push((pkg_id.to_string(), name.to_string()));
+            } else {
+                self.types
+                    .insert(ty, vec![(pkg_id.to_string(), name.to_string())]);
+            }
         } else {
-            self.types.insert(ty, vec![key.clone()]);
+            self.types.insert(ty, vec![(key.clone(), key.clone())]);
         }
 
         self.config.types.insert(key, val);
@@ -56,16 +66,16 @@ pub enum Options {
 }
 
 pub struct ProtoGeneratorFxn {
-    is_mutation: Box<dyn Fn(&str) -> bool>,
-    format_enum: Box<dyn Fn(Vec<String>) -> Vec<String>>,
-    format_ty: Box<dyn Fn(Vec<String>) -> Vec<String>>,
+    pub is_mutation: Box<dyn Fn(&str) -> bool>,
+    pub format_enum: Box<dyn Fn(FieldHolder) -> Vec<String>>,
+    pub format_ty: Box<dyn Fn(FieldHolder) -> Vec<String>>,
 }
 
 impl ProtoGeneratorFxn {
     pub fn new(
         is_mutation: Box<dyn Fn(&str) -> bool>,
-        format_enum: Box<dyn Fn(Vec<String>) -> Vec<String>>,
-        format_ty: Box<dyn Fn(Vec<String>) -> Vec<String>>,
+        format_enum: Box<dyn Fn(FieldHolder) -> Vec<String>>,
+        format_ty: Box<dyn Fn(FieldHolder) -> Vec<String>>,
     ) -> Self {
         Self { is_mutation, format_enum, format_ty }
     }
@@ -73,7 +83,7 @@ impl ProtoGeneratorFxn {
 
 impl Default for ProtoGeneratorFxn {
     fn default() -> Self {
-        let fmt = |x: Vec<String>| x;
+        let fmt = |x: FieldHolder| x.into_iter().map(|x| x.0).collect();
         Self {
             is_mutation: Box::new(|_| false),
             format_enum: Box::new(fmt),
@@ -179,6 +189,7 @@ impl ProtoGenerator {
 
             original_messages
                 .into_iter()
+                .map(|v| format!("{}{}{}", v.0, DEFAULT_SPECTATOR, v.1))
                 .zip(updated_messages)
                 .for_each(|(k, v)| {
                     updated_messages_map.insert(k, v);
@@ -186,6 +197,7 @@ impl ProtoGenerator {
 
             original_enums
                 .into_iter()
+                .map(|v| format!("{}{}{}", v.0, DEFAULT_SPECTATOR, v.1))
                 .zip(updated_enums)
                 .for_each(|(k, v)| {
                     updated_enums_map.insert(k, v);
@@ -232,7 +244,7 @@ mod test {
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::config::generator::proto_generator::{
-        ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn,
+        FieldHolder, ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn, DEFAULT_SPECTATOR,
     };
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
@@ -250,9 +262,13 @@ mod test {
 
     fn get_generator() -> ProtoGenerator {
         let is_mut = |x: &str| !x.starts_with("Get");
-        let fmt = |x: Vec<String>| {
+        let fmt = |x: FieldHolder| {
             x.into_iter()
-                .map(|v| v.to_case(Case::Snake).to_lowercase())
+                .map(|v| {
+                    format!("{}{}{}", v.0, DEFAULT_SPECTATOR, v.1)
+                        .to_case(Case::Snake)
+                        .to_lowercase()
+                })
                 .collect()
         };
         ProtoGenerator::new(ProtoGeneratorConfig::new(
