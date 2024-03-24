@@ -14,8 +14,8 @@ impl ProtoGeneratorConfig {
         is_mutation_fxn: Box<dyn Fn(&str) -> bool>,
     ) -> Self {
         Self {
-            query: query.unwrap_or("Query".to_string()),
-            mutation: mutation.unwrap_or("Mutation".to_string()),
+            query: query.unwrap_or_else(|| "Query".to_string()),
+            mutation: mutation.unwrap_or_else(|| "Mutation".to_string()),
             is_mutation_fxn,
         }
     }

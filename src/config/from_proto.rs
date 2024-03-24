@@ -1,5 +1,7 @@
 #![allow(dead_code)] // TODO check what to do..
 
+use std::collections::HashMap;
+
 use convert_case::{Case, Casing};
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
@@ -7,6 +9,34 @@ use prost_reflect::prost_types::{
 
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, ProtoGeneratorConfig, Type};
+
+#[derive(Default)]
+struct Helper {
+    map_with_pkg: HashMap<String, bool>,
+    map_names: HashMap<String, bool>,
+    package: String,
+}
+
+impl Helper {
+    fn contains(&self, name: &str) -> u8 {
+        if self
+            .map_with_pkg
+            .get(&format!("{}.{}", self.package, name))
+            .is_some()
+        {
+            2 // same field iterated again, need to skip that
+        } else if self.map_names.get(name).is_some() {
+            1 // same field name, different pkg
+        } else {
+            0 // new field to be inserted
+        }
+    }
+    fn insert(&mut self, name: &str) {
+        self.map_with_pkg
+            .insert(format!("{}.{}", self.package, name), true);
+        self.map_names.insert(name.to_string(), true);
+    }
+}
 
 fn convert_ty(proto_ty: &str) -> String {
     let binding = proto_ty.to_lowercase();
@@ -54,24 +84,40 @@ fn get_arg(input_ty: &str) -> Option<(String, Arg)> {
     }
 }
 
-fn append_enums(map: &mut Config, enums: Vec<EnumDescriptorProto>) {
+fn append_enums(map: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &mut Helper) {
     for enum_ in enums {
+        let check_if_contains = helper.contains(enum_.name());
+        if check_if_contains == 2 {
+            continue;
+        }
         let ty = Type {
             variants: Some(enum_.value.iter().map(|v| v.name().to_string()).collect()),
             ..Default::default()
         };
-        map.types.insert(enum_.name().to_string(), ty);
+        let enum_name = if check_if_contains == 1 {
+            format!("{}_{}", enum_.name(), helper.package.to_uppercase())
+        } else {
+            enum_.name().to_string()
+        };
+        helper.insert(&enum_name);
+        map.types.insert(enum_name, ty);
     }
 }
 
-fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>) {
+fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: &mut Helper) {
     if messages.is_empty() {
         return;
     }
     for message in messages {
         let msg_name = message.name().to_string();
-        append_enums(config, message.enum_type);
-        append_msg_type(config, message.nested_type);
+
+        let check_if_contains = helper.contains(&msg_name);
+        if check_if_contains == 2 {
+            continue;
+        }
+
+        append_enums(config, message.enum_type, helper);
+        append_msg_type(config, message.nested_type, helper);
 
         let mut ty = Type::default();
 
@@ -93,6 +139,12 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>) {
 
             ty.fields.insert(field_name, cfg_field);
         }
+        let msg_name = if check_if_contains == 1 {
+            format!("{}{}", msg_name, helper.package.to_case(Case::UpperCamel))
+        } else {
+            msg_name
+        };
+        helper.insert(&msg_name);
         config.types.insert(msg_name, ty);
     }
 }
@@ -100,9 +152,10 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>) {
 fn generate_ty(
     config: &mut Config,
     services: Vec<ServiceDescriptorProto>,
-    package: String,
+    helper: &mut Helper,
     key: &str,
 ) -> Type {
+    let package = helper.package.clone();
     let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
     let mut ty = config.types.get(key).cloned().unwrap_or_default();
 
@@ -139,7 +192,7 @@ fn append_query_service(
     config: &mut Config,
     mut services: Vec<ServiceDescriptorProto>,
     gen: &ProtoGeneratorConfig,
-    package: String,
+    helper: &mut Helper,
 ) {
     let query = gen.get_query();
 
@@ -151,7 +204,7 @@ fn append_query_service(
         service.method.retain(|v| !gen.is_mutation(v.name()));
     }
 
-    let ty = generate_ty(config, services, package, query);
+    let ty = generate_ty(config, services, helper, query);
 
     if ty.ne(&Type::default()) {
         config.schema.query = Some(query.to_string());
@@ -163,7 +216,7 @@ fn append_mutation_service(
     config: &mut Config,
     mut services: Vec<ServiceDescriptorProto>,
     gen: &ProtoGeneratorConfig,
-    package: String,
+    helper: &mut Helper,
 ) {
     let mutation = gen.get_mutation();
     if services.is_empty() {
@@ -174,7 +227,7 @@ fn append_mutation_service(
         service.method.retain(|v| gen.is_mutation(v.name()));
     }
 
-    let ty = generate_ty(config, services, package, mutation);
+    let ty = generate_ty(config, services, helper, mutation);
     if ty.ne(&Type::default()) {
         config.schema.mutation = Some(mutation.to_string());
         config.types.insert(mutation.to_string(), ty);
@@ -183,20 +236,21 @@ fn append_mutation_service(
 
 pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, gen: ProtoGeneratorConfig) -> Config {
     let mut config = Config::default();
+    let mut helper = Helper::default();
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
-            let pkg_name = file_descriptor.package().to_string();
+            helper.package = file_descriptor.package().to_string();
 
-            append_enums(&mut config, file_descriptor.enum_type);
-            append_msg_type(&mut config, file_descriptor.message_type);
+            append_enums(&mut config, file_descriptor.enum_type, &mut helper);
+            append_msg_type(&mut config, file_descriptor.message_type, &mut helper);
             append_query_service(
                 &mut config,
                 file_descriptor.service.clone(),
                 &gen,
-                pkg_name.clone(),
+                &mut helper,
             );
-            append_mutation_service(&mut config, file_descriptor.service, &gen, pkg_name);
+            append_mutation_service(&mut config, file_descriptor.service, &gen, &mut helper);
         }
     }
 
@@ -248,9 +302,11 @@ mod test {
 
         let news = get_proto_file_descriptor("news_enum.proto")?;
         let greetings = get_proto_file_descriptor("greetings.proto")?;
+        let nested1 = get_proto_file_descriptor("nested1.proto")?;
 
         set.file.push(news.clone());
         set.file.push(greetings.clone());
+        set.file.push(nested1.clone());
 
         let result = from_proto(vec![set], get_generator_cfg()).to_sdl();
 
@@ -259,8 +315,10 @@ mod test {
         // test for 2 different sets
         let mut set = FileDescriptorSet::default();
         let mut set1 = FileDescriptorSet::default();
+        let mut set2 = FileDescriptorSet::default();
         set.file.push(news);
         set1.file.push(greetings);
+        set2.file.push(nested1);
 
         let result_sets = from_proto(vec![set, set1], get_generator_cfg()).to_sdl();
 

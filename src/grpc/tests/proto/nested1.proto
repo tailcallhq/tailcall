@@ -4,3 +4,9 @@ package nested1;
 
 import "src/grpc/tests/proto/news.proto";
 import "src/grpc/tests/proto/cycle.proto";
+import "src/grpc/tests/proto/required_fields.proto";
+
+// different pkg, same name
+message News {
+  int32 id = 1;
+}

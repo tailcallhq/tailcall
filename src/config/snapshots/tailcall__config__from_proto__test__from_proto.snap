@@ -53,6 +53,10 @@ type NewsList {
   news: [News]
 }
 
+type NewsNested1 {
+  id: Int
+}
+
 type Query {
   getAllNews: NewsList! @grpc(method: "news.NewsService.GetAllNews")
   getMultipleNews(multipleNewsId: MultipleNewsId!): NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
