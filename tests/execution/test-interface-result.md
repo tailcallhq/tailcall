@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-interface-result
 
 ```graphql @server

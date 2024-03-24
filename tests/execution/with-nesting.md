@@ -5,25 +5,25 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
 type Query {
   user: User @http(path: "/users/1")
 }
 
 type User {
+  email: String!
   id: Int!
   name: String!
-  username: String!
-  email: String!
   phone: String
-  website: String
   posts: [Post] @http(path: "/users/{{value.id}}/posts")
-}
-
-type Post {
-  id: Int
-  title: String
-  userId: Int
-  body: String
+  username: String!
+  website: String
 }
 ```
 

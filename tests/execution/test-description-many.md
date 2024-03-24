@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-description-many
 
 ```graphql @server

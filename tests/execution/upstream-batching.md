@@ -5,9 +5,8 @@
   "server": {},
   "upstream": {
     "batch": {
-      "maxSize": 100,
       "delay": 1,
-      "headers": []
+      "maxSize": 100
     }
   },
   "schema": {
@@ -24,15 +23,17 @@
             }
           },
           "http": {
+            "baseURL": "http://jsonplaceholder.typicode.com",
+            "batchKey": [
+              "id"
+            ],
             "path": "/users",
             "query": [
               {
                 "key": "id",
                 "value": "{{args.id}}"
               }
-            ],
-            "baseURL": "http://jsonplaceholder.typicode.com",
-            "batchKey": ["id"]
+            ]
           },
           "cache": null
         }

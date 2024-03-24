@@ -13,8 +13,8 @@
         "firstUser": {
           "type": "User",
           "http": {
-            "path": "/users/1",
-            "baseURL": "http://jsonplaceholder.typicode.com"
+            "baseURL": "http://jsonplaceholder.typicode.com",
+            "path": "/users/1"
           },
           "cache": null
         }

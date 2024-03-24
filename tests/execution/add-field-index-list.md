@@ -1,16 +1,16 @@
 # Sending field index list
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
+}
+
+type Query @addField(name: "username", path: ["users", "0", "name"]) {
+  users: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
 }
 
 type User {
   name: String
-}
-
-type Query @addField(name: "username", path: ["users", "0", "name"]) {
-  users: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 

@@ -24,7 +24,7 @@ type Post {
 }
 
 type Query {
-  firstUser: User @http(method: "GET", path: "/users/1")
+  firstUser: User @http(path: "/users/1")
 }
 
 type User {

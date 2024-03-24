@@ -1,17 +1,17 @@
 # Showcase GraphQL Request
 
 ```graphql @server
-schema @server(showcase: true) {
+schema @server(showcase: true) @upstream {
   query: Query
+}
+
+type Query {
+  not_user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
 }
 
 type User {
   not_id: Int
   not_name: String
-}
-
-type Query {
-  not_user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 

@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # omit-many
 
 ```graphql @server

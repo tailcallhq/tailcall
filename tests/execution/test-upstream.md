@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-upstream
 
 ```graphql @server

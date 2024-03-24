@@ -1,7 +1,7 @@
 # expr concat
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
 }
 

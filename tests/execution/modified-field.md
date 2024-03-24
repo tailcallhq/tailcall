@@ -1,16 +1,16 @@
 # Modified field
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
+}
+
+type Query {
+  user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
 }
 
 type User {
   name: String @modify(name: "fullname")
-}
-
-type Query {
-  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 

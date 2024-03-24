@@ -1,17 +1,13 @@
 # Add field with composition
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
 }
 
-type User {
-  address: Address
-}
-
 type Address {
-  street: String
   geo: Geo
+  street: String
 }
 
 type Geo {
@@ -19,10 +15,12 @@ type Geo {
   lng: String
 }
 
-type Query
-  @addField(name: "lat", path: ["user", "address", "geo", "lat"])
-  @addField(name: "lng", path: ["user", "address", "geo", "lng"]) {
-  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+type Query @addField(name: "lat", path: ["user", "address", "geo", "lat"]) @addField(name: "lng", path: ["user", "address", "geo", "lng"]) {
+  user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+}
+
+type User {
+  address: Address
 }
 ```
 

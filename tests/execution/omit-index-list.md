@@ -1,16 +1,16 @@
 # Test inline index list
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
+}
+
+type Query @addField(name: "username", path: ["username", "0", "name"]) {
+  username: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users") @modify(omit: true)
 }
 
 type User {
   name: String
-}
-
-type Query @addField(name: "username", path: ["username", "0", "name"]) {
-  username: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com") @modify(omit: true)
 }
 ```
 

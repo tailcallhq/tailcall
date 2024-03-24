@@ -1,18 +1,17 @@
 # Resolve with vars
 
 ```graphql @server
-schema @server(vars: [{key: "id", value: "1"}]) {
+schema @server(vars: [{key: "id", value: "1"}]) @upstream {
   query: Query
 }
 
-type User {
-  name: String
-  id: Int
+type Query {
+  user: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{vars.id}}"}])
 }
 
-type Query {
-  user: [User]
-    @http(path: "/users", query: [{key: "id", value: "{{vars.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
+type User {
+  id: Int
+  name: String
 }
 ```
 

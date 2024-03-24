@@ -1,14 +1,16 @@
 # test-upstream-headers
 
 ```graphql @server
-schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", allowedHeaders: ["x-foo", "X-bar"]) {
+schema @server @upstream(allowedHeaders: ["X-bar", "x-foo"], baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
-type Query {
-  posts: [Post] @http(path: "/posts")
-}
+
 type Post {
   id: Int
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
 }
 ```
 

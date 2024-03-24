@@ -1,33 +1,30 @@
 # Call operator with graphQL datasource
 
 ```graphql @server
-schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
+}
+
+type Post {
+  body: String!
+  id: Int!
+  title: String!
+  user: User @call(query: "user", args: {id: "{{value.userId}}"})
+  userId: Int!
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
+  user(id: Int!): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
 }
 
 type User {
+  email: String!
   id: Int!
   name: String!
-  username: String!
-  email: String!
   phone: String
+  username: String!
   website: String
-}
-
-type Post {
-  id: Int!
-  userId: Int!
-  title: String!
-  body: String!
-  user: User @call(query: "user", args: {id: "{{value.userId}}"})
 }
 ```
 

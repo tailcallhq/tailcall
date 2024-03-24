@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-nested-link
 
 ```graphql @file:link-enum.graphql

@@ -1,11 +1,7 @@
----
-check_identity: true
----
-
 # test-batching-group-by
 
 ```graphql @server
-schema @server(port: 4000) @upstream(baseURL: "http://abc.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @server(port: 4000) @upstream(baseURL: "http://abc.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 

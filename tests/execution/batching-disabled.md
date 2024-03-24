@@ -5,12 +5,11 @@
   "server": {},
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
-    "httpCache": true,
     "batch": {
-      "maxSize": 100,
       "delay": 0,
-      "headers": []
-    }
+      "maxSize": 100
+    },
+    "httpCache": true
   },
   "schema": {
     "query": "Query"

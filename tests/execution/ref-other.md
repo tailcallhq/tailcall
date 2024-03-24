@@ -5,17 +5,17 @@ schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
 
+type Query {
+  firstUser: User1
+}
+
 type User {
-  name: String
   id: Int
+  name: String
 }
 
 type User1 {
   user1: User @http(path: "/users/1")
-}
-
-type Query {
-  firstUser: User1
 }
 ```
 

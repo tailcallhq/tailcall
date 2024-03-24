@@ -1,13 +1,12 @@
 # Nullable arg query
 
 ```graphql @server
-schema {
+schema @server @upstream {
   query: Query
 }
 
 type Query {
-  users(id: ID): [User]
-    @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
+  users(id: ID): [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{args.id}}"}])
 }
 
 type User {

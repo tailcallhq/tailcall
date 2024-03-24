@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-add-field-list
 
 ```graphql @server

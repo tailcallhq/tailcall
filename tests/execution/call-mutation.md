@@ -19,17 +19,12 @@ input PostInputWithoutUserId {
 }
 
 type Mutation {
-  attachPostToFirstUser(postId: Int!): User
-    @call(mutation: "attachPostToUser", args: {postId: "{{args.postId}}", userId: 1})
-  attachPostToUser(userId: Int!, postId: Int!): User
-    @http(body: "{\"postId\":{{args.postId}}}", method: "PATCH", path: "/users/{{args.userId}}")
+  attachPostToFirstUser(postId: Int!): User @call(mutation: "attachPostToUser", args: {postId: "{{args.postId}}", userId: 1})
+  attachPostToUser(postId: Int!, userId: Int!): User @http(body: "{\"postId\":{{args.postId}}}", method: "PATCH", path: "/users/{{args.userId}}")
+  insertMockedPost: Post @call(mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}})
   insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
-  insertPostToFirstUser(input: PostInputWithoutUserId): Post
-    @call(mutation: "insertPostToUser", args: {input: "{{args.input}}", userId: 1})
-  insertMockedPost: Post
-    @call(mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}})
-  insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
-    @http(body: "{{args.input}}", method: "POST", path: "/users/{{args.userId}}/posts")
+  insertPostToFirstUser(input: PostInputWithoutUserId): Post @call(mutation: "insertPostToUser", args: {input: "{{args.input}}", userId: 1})
+  insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post @http(body: "{{args.input}}", method: "POST", path: "/users/{{args.userId}}/posts")
 }
 
 type Post {
@@ -40,7 +35,7 @@ type Post {
 }
 
 type Query {
-  firstUser: User @http(method: "GET", path: "/users/1")
+  firstUser: User @http(path: "/users/1")
   postFromUser(userId: Int!): Post @http(path: "/posts?userId={{args.userId}}")
 }
 
