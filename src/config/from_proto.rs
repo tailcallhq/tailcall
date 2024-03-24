@@ -211,43 +211,48 @@ pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, gen: ProtoGeneratorCo
 mod test {
     use std::path::PathBuf;
 
-    use prost_reflect::prost_types::FileDescriptorSet;
+    use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::config::from_proto::from_proto;
     use crate::config::ProtoGeneratorConfig;
 
-    #[test]
-    fn test_from_proto() -> anyhow::Result<()> {
-        let mut set = FileDescriptorSet::default();
+    fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_path.push("src");
         proto_path.push("grpc");
         proto_path.push("tests");
         proto_path.push("proto");
+        proto_path.push(name);
+        Ok(protox_parse::parse(
+            "news.proto",
+            std::fs::read_to_string(proto_path)?.as_str(),
+        )?)
+    }
 
-        let mut news_enum = proto_path.clone();
-        news_enum.push("news_enum.proto");
+    fn get_generator_cfg() -> ProtoGeneratorConfig {
+        let fxn = |x: String| !x.starts_with("Get");
+        ProtoGeneratorConfig::new(None, None, Box::new(fxn))
+    }
 
-        let mut greetings = proto_path;
-        greetings.push("greetings.proto");
+    #[test]
+    fn test_from_proto() -> anyhow::Result<()> {
+        // news_enum.proto covers:
+        // test for mutation
+        // test for empty objects
+        // test for optional type
+        // test for enum
+        // test for repeated fields
+        // test for a type used as both input and output
 
-        let news = protox_parse::parse("news.proto", std::fs::read_to_string(news_enum)?.as_str())?;
+        let mut set = FileDescriptorSet::default();
 
-        let greetings = protox_parse::parse(
-            "greetings.proto",
-            std::fs::read_to_string(greetings)?.as_str(),
-        )?;
+        let news = get_proto_file_descriptor("news_enum.proto")?;
+        let greetings = get_proto_file_descriptor("greetings.proto")?;
 
         set.file.push(news.clone());
         set.file.push(greetings.clone());
 
-        let fxn = |x: String| !x.starts_with("Get");
-
-        let result = from_proto(
-            vec![set],
-            ProtoGeneratorConfig::new(None, None, Box::new(fxn)),
-        )
-        .to_sdl();
+        let result = from_proto(vec![set], get_generator_cfg()).to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -257,13 +262,27 @@ mod test {
         set.file.push(news);
         set1.file.push(greetings);
 
-        let result_sets = from_proto(
-            vec![set, set1],
-            ProtoGeneratorConfig::new(None, None, Box::new(fxn)),
-        )
-        .to_sdl();
+        let result_sets = from_proto(vec![set, set1], get_generator_cfg()).to_sdl();
 
         assert_eq!(result, result_sets);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_required_types() -> anyhow::Result<()> {
+        // required fields are deprecated in proto3 (https://protobuf.dev/programming-guides/dos-donts/#add-required)
+        // this example uses proto2 to test the same.
+        // for proto3 it's guaranteed to have a default value (https://protobuf.dev/programming-guides/proto3/#default)
+        // and our implementation (https://github.com/tailcallhq/tailcall/pull/1537) supports default values by default.
+        // so we do not need to explicitly mark fields as required.
+
+        let mut set = FileDescriptorSet::default();
+        let req_proto = get_proto_file_descriptor("required_fields.proto")?;
+        set.file.push(req_proto);
+
+        let cfg = from_proto(vec![set], get_generator_cfg()).to_sdl();
+        insta::assert_snapshot!(cfg);
 
         Ok(())
     }
