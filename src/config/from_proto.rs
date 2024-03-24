@@ -320,7 +320,7 @@ mod test {
         set1.file.push(greetings);
         set2.file.push(nested1);
 
-        let result_sets = from_proto(vec![set, set1], get_generator_cfg()).to_sdl();
+        let result_sets = from_proto(vec![set, set1, set2], get_generator_cfg()).to_sdl();
 
         assert_eq!(result, result_sets);
 
