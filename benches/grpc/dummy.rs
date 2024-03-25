@@ -1,8 +1,8 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Nums {
+pub struct Dummy {
     #[prost(int32, repeated, tag = "1")]
-    pub nums: ::prost::alloc::vec::Vec<i32>,
+    pub ints: ::prost::alloc::vec::Vec<i32>,
     #[prost(bool, repeated, tag = "2")]
     pub flags: ::prost::alloc::vec::Vec<bool>,
     #[prost(string, repeated, tag = "3")]
@@ -11,15 +11,15 @@ pub struct Nums {
     pub floats: ::prost::alloc::vec::Vec<f32>,
 }
 /// Generated client implementations.
-pub mod nums_service_client {
+pub mod dummy_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct NumsServiceClient<T> {
+    pub struct DummyServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl NumsServiceClient<tonic::transport::Channel> {
+    impl DummyServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -30,7 +30,7 @@ pub mod nums_service_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> NumsServiceClient<T>
+    impl<T> DummyServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -48,7 +48,7 @@ pub mod nums_service_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> NumsServiceClient<InterceptedService<T, F>>
+        ) -> DummyServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -62,7 +62,7 @@ pub mod nums_service_client {
                 http::Request<tonic::body::BoxBody>,
             >>::Error: Into<StdError> + Send + Sync,
         {
-            NumsServiceClient::new(InterceptedService::new(inner, interceptor))
+            DummyServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -95,10 +95,10 @@ pub mod nums_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn get_nums(
+        pub async fn get_dummy(
             &mut self,
-            request: impl tonic::IntoRequest<super::Nums>,
-        ) -> std::result::Result<tonic::Response<super::Nums>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::Dummy>,
+        ) -> std::result::Result<tonic::Response<super::Dummy>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -109,27 +109,30 @@ pub mod nums_service_client {
                     )
                 })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/nums.NumsService/GetNums");
+            let path = http::uri::PathAndQuery::from_static(
+                "/dummy.DummyService/GetDummy",
+            );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new("nums.NumsService", "GetNums"));
+            req.extensions_mut()
+                .insert(GrpcMethod::new("dummy.DummyService", "GetDummy"));
             self.inner.unary(req, path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod nums_service_server {
+pub mod dummy_service_server {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with NumsServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with DummyServiceServer.
     #[async_trait]
-    pub trait NumsService: Send + Sync + 'static {
-        async fn get_nums(
+    pub trait DummyService: Send + Sync + 'static {
+        async fn get_dummy(
             &self,
-            request: tonic::Request<super::Nums>,
-        ) -> std::result::Result<tonic::Response<super::Nums>, tonic::Status>;
+            request: tonic::Request<super::Dummy>,
+        ) -> std::result::Result<tonic::Response<super::Dummy>, tonic::Status>;
     }
     #[derive(Debug)]
-    pub struct NumsServiceServer<T: NumsService> {
+    pub struct DummyServiceServer<T: DummyService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
@@ -137,7 +140,7 @@ pub mod nums_service_server {
         max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
-    impl<T: NumsService> NumsServiceServer<T> {
+    impl<T: DummyService> DummyServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -189,9 +192,9 @@ pub mod nums_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for NumsServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for DummyServiceServer<T>
     where
-        T: NumsService,
+        T: DummyService,
         B: Body + Send + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -207,23 +210,23 @@ pub mod nums_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/nums.NumsService/GetNums" => {
+                "/dummy.DummyService/GetDummy" => {
                     #[allow(non_camel_case_types)]
-                    struct GetNumsSvc<T: NumsService>(pub Arc<T>);
-                    impl<T: NumsService> tonic::server::UnaryService<super::Nums>
-                    for GetNumsSvc<T> {
-                        type Response = super::Nums;
+                    struct GetDummySvc<T: DummyService>(pub Arc<T>);
+                    impl<T: DummyService> tonic::server::UnaryService<super::Dummy>
+                    for GetDummySvc<T> {
+                        type Response = super::Dummy;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::Nums>,
+                            request: tonic::Request<super::Dummy>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as NumsService>::get_nums(&inner, request).await
+                                <T as DummyService>::get_dummy(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -235,7 +238,7 @@ pub mod nums_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = GetNumsSvc(inner);
+                        let method = GetDummySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -266,7 +269,7 @@ pub mod nums_service_server {
             }
         }
     }
-    impl<T: NumsService> Clone for NumsServiceServer<T> {
+    impl<T: DummyService> Clone for DummyServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -278,7 +281,7 @@ pub mod nums_service_server {
             }
         }
     }
-    impl<T: NumsService> Clone for _Inner<T> {
+    impl<T: DummyService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(Arc::clone(&self.0))
         }
@@ -288,7 +291,7 @@ pub mod nums_service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: NumsService> tonic::server::NamedService for NumsServiceServer<T> {
-        const NAME: &'static str = "nums.NumsService";
+    impl<T: DummyService> tonic::server::NamedService for DummyServiceServer<T> {
+        const NAME: &'static str = "dummy.DummyService";
     }
 }

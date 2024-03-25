@@ -6,13 +6,16 @@ use rand::random;
 use tailcall::blueprint::GrpcMethod;
 use tailcall::grpc::protobuf::ProtobufSet;
 
-pub mod nums {
-    include!(concat!(env!("CARGO_MANIFEST_DIR"), "/benches/grpc/nums.rs"));
+pub mod dummy {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/benches/grpc/dummy.rs"
+    ));
 }
 
 const OUT_DIR: &str = "benches/grpc";
-const PROTO_FILE: &str = "nums.proto";
-const SERVICE_NAME: &str = "nums.NumsService.GetNums";
+const PROTO_FILE: &str = "dummy.proto";
+const SERVICE_NAME: &str = "dummy.DummyService.GetDummy";
 
 #[allow(dead_code)]
 fn build(proto_file_path: impl AsRef<Path>) -> anyhow::Result<()> {
@@ -31,8 +34,8 @@ fn benchmark_convert_output(c: &mut Criterion) {
     let service = protobuf_set.find_service(&method).unwrap();
     let protobuf_operation = service.find_operation(&method).unwrap();
     let mut msg: Vec<u8> = vec![0, 0, 0, 0, 14];
-    nums::Nums {
-        nums: (0..1000).map(|_| random()).collect(),
+    dummy::Dummy {
+        ints: (0..1000).map(|_| random()).collect(),
         flags: (0..1000).map(|_| random()).collect(),
         names: (0..1000)
             .map(|_| (0..100).map(|_| random::<char>()).collect())
