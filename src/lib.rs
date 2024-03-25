@@ -22,7 +22,6 @@ pub mod json;
 pub mod lambda;
 pub mod merge_right;
 pub mod mustache;
-pub mod path;
 pub mod path_value;
 pub mod print_schema;
 mod rest;

@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -19,7 +18,7 @@ use tailcall::blueprint::{Server, Upstream};
 use tailcall::cache::InMemoryCache;
 use tailcall::http::{RequestContext, Response};
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path::PathString;
+use tailcall::path_value::PathValue;
 use tailcall::runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 
@@ -193,41 +192,47 @@ impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
 fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
     // value
     assert_eq!(
-        eval_ctx.path_string(&["value", "root"]),
-        Some(Cow::Borrowed("root-test"))
+        eval_ctx.get_path_value(&["value", "root"]),
+        Some("root-test".into())
     );
     assert_eq!(
-        eval_ctx.path_string(&["value", "nested", "existing"]),
-        Some(Cow::Borrowed("nested-test"))
+        eval_ctx.get_path_value(&["value", "nested", "existing"]),
+        Some("nested-test".into())
     );
-    assert_eq!(eval_ctx.path_string(&["value", "missing"]), None);
-    assert_eq!(eval_ctx.path_string(&["value", "nested", "missing"]), None);
+    assert_eq!(eval_ctx.get_path_value(&["value", "missing"]), None);
+    assert_eq!(
+        eval_ctx.get_path_value(&["value", "nested", "missing"]),
+        None
+    );
 
     // args
     assert_eq!(
-        eval_ctx.path_string(&["args", "root"]),
-        Some(Cow::Borrowed("root-test"))
+        eval_ctx.get_path_value(&["args", "root"]),
+        Some("root-test".into())
     );
     assert_eq!(
-        eval_ctx.path_string(&["args", "nested", "existing"]),
-        Some(Cow::Borrowed("nested-test"))
+        eval_ctx.get_path_value(&["args", "nested", "existing"]),
+        Some("nested-test".into())
     );
-    assert_eq!(eval_ctx.path_string(&["args", "missing"]), None);
-    assert_eq!(eval_ctx.path_string(&["args", "nested", "missing"]), None);
+    assert_eq!(eval_ctx.get_path_value(&["args", "missing"]), None);
+    assert_eq!(
+        eval_ctx.get_path_value(&["args", "nested", "missing"]),
+        None
+    );
 
     // headers
     assert_eq!(
-        eval_ctx.path_string(&["headers", "x-existing"]),
-        Some(Cow::Borrowed("header"))
+        eval_ctx.get_path_value(&["headers", "x-existing"]),
+        Some("header".into())
     );
-    assert_eq!(eval_ctx.path_string(&["headers", "x-missing"]), None);
+    assert_eq!(eval_ctx.get_path_value(&["headers", "x-missing"]), None);
 
     // vars
     assert_eq!(
-        eval_ctx.path_string(&["vars", "existing"]),
-        Some(Cow::Borrowed("var"))
+        eval_ctx.get_path_value(&["vars", "existing"]),
+        Some("var".into())
     );
-    assert_eq!(eval_ctx.path_string(&["vars", "missing"]), None);
+    assert_eq!(eval_ctx.get_path_value(&["vars", "missing"]), None);
 }
 
 fn request_context() -> RequestContext {
@@ -268,7 +273,7 @@ fn bench_main(c: &mut Criterion) {
 
     for input in all_inputs {
         c.bench_with_input(to_bench_id(input), input, |b, input| {
-            b.iter(|| eval_ctx.path_string(input));
+            b.iter(|| eval_ctx.get_path_value(input));
         });
     }
 }

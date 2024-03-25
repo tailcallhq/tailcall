@@ -7,15 +7,13 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
+use crate::config::{GraphQLOperationType, KeyValue};
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::http::Method::POST;
 use crate::lambda::{CacheKey, GraphQLOperationContext};
 use crate::mustache::Mustache;
-use crate::{
-    config::{GraphQLOperationType, KeyValue},
-    path_value::PathValue,
-};
+use crate::path_value::PathValue;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]

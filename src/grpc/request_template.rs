@@ -9,12 +9,13 @@ use reqwest::header::HeaderValue;
 use url::Url;
 
 use super::request::create_grpc_request;
+use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::{config::GraphQLOperationType, path_value::PathValue};
+use crate::path_value::PathValue;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -132,12 +133,13 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;
+    use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
-    use crate::{blueprint::GrpcMethod, path_value::PathValue};
+    use crate::path_value::PathValue;
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

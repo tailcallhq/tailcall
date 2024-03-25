@@ -66,7 +66,7 @@ impl Mustache {
         let segments = &self.0;
 
         if let [Segment::Expression(path)] = &segments[..] {
-            value.get_path_value(&path)
+            value.get_path_value(path)
         } else {
             let s: String = segments
                 .iter()
@@ -364,10 +364,8 @@ mod tests {
     mod render {
         use serde_json::json;
 
-        use crate::{
-            mustache::{Mustache, Segment},
-            path_value::PathValue,
-        };
+        use crate::mustache::{Mustache, Segment};
+        use crate::path_value::PathValue;
 
         #[test]
         fn test_query_params_template() {
@@ -485,10 +483,8 @@ mod tests {
     }
 
     mod render_graphql {
-        use crate::{
-            mustache::{Mustache, Segment},
-            path_value::PathValue,
-        };
+        use crate::mustache::{Mustache, Segment};
+        use crate::path_value::PathValue;
 
         #[test]
         fn test_render_mixed() {

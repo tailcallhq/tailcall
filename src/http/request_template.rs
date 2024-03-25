@@ -8,12 +8,13 @@ use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
 
+use crate::config::Encoding;
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::{config::Encoding, path_value::PathValue};
+use crate::path_value::PathValue;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -269,8 +270,9 @@ mod tests {
     use serde_json::json;
 
     use super::RequestTemplate;
+    use crate::has_headers::HasHeaders;
     use crate::mustache::Mustache;
-    use crate::{has_headers::HasHeaders, path_value::PathValue};
+    use crate::path_value::PathValue;
 
     #[derive(Setters)]
     struct Context {

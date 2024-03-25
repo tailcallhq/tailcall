@@ -1,8 +1,7 @@
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::path::PathString;
+use crate::path_value::PathValue;
 use crate::EnvIO;
 
 pub struct ConfigReaderContext<'a> {
@@ -10,16 +9,15 @@ pub struct ConfigReaderContext<'a> {
     pub vars: &'a BTreeMap<String, String>,
 }
 
-impl<'a> PathString for ConfigReaderContext<'a> {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
-        if path.is_empty() {
-            return None;
-        }
-
+impl<'a> PathValue for ConfigReaderContext<'a> {
+    fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+    where
+        Path: AsRef<str>,
+    {
         path.split_first()
             .and_then(|(head, tail)| match head.as_ref() {
-                "vars" => self.vars.get(tail[0].as_ref()).map(|v| v.into()),
-                "env" => self.env.get(tail[0].as_ref()).map(|v| v.into()),
+                "vars" => self.vars.get_path_value(tail),
+                "env" => self.env.get_path_value(tail),
                 _ => None,
             })
     }
@@ -31,7 +29,7 @@ mod tests {
     use crate::tests::TestEnvIO;
 
     #[test]
-    fn path_string() {
+    fn path_value() {
         let reader_context = ConfigReaderContext {
             env: Arc::new(TestEnvIO::from_iter([(
                 "ENV_1".to_owned(),
@@ -41,15 +39,15 @@ mod tests {
         };
 
         assert_eq!(
-            reader_context.path_string(&["env", "ENV_1"]),
+            reader_context.get_path_value(&["env", "ENV_1"]),
             Some("ENV_VAL".into())
         );
-        assert_eq!(reader_context.path_string(&["env", "ENV_5"]), None);
+        assert_eq!(reader_context.get_path_value(&["env", "ENV_5"]), None);
         assert_eq!(
-            reader_context.path_string(&["vars", "VAR_1"]),
+            reader_context.get_path_value(&["vars", "VAR_1"]),
             Some("VAR_VAL".into())
         );
-        assert_eq!(reader_context.path_string(&["vars", "VAR_6"]), None);
-        assert_eq!(reader_context.path_string(&["unknown", "unknown"]), None);
+        assert_eq!(reader_context.get_path_value(&["vars", "VAR_6"]), None);
+        assert_eq!(reader_context.get_path_value(&["unknown", "unknown"]), None);
     }
 }
