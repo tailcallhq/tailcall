@@ -24,7 +24,6 @@ fn build(proto_file_path: impl AsRef<Path>) -> anyhow::Result<()> {
 
 fn benchmark_convert_output(c: &mut Criterion) {
     let proto_file_path = Path::new(OUT_DIR).join(PROTO_FILE);
-    build(&proto_file_path).unwrap();
     let file_descriptor_set = protox::compile([proto_file_path], ["."]).unwrap();
     let protobuf_set = ProtobufSet::from_proto_file(&file_descriptor_set).unwrap();
     let method = GrpcMethod::try_from(SERVICE_NAME).unwrap();
