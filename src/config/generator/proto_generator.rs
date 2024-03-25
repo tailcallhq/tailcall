@@ -272,7 +272,7 @@ mod test {
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::config::generator::proto_generator::{
-        FieldHolder, ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn, DEFAULT_SPECTATOR,
+        FieldHolder, ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn,
     };
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
@@ -293,15 +293,8 @@ mod test {
         let fmt = |x: Vec<FieldHolder>| {
             x.into_iter()
                 .map(|mut v| {
-                    let updated_name = format!(
-                        "{}{}{}",
-                        v.get_name(),
-                        DEFAULT_SPECTATOR,
-                        v.get_package_id()
-                    )
-                    .to_case(Case::Snake);
+                    let updated_name = v.get_default_name().to_case(Case::Snake);
                     v.insert_updated_name(updated_name);
-
                     v
                 })
                 .collect()
