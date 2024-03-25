@@ -11,14 +11,39 @@ use strum_macros::Display;
 use crate::config::generator::from_proto::prebuild_config;
 use crate::config::{Config, Type};
 
-pub type FieldHolder = Vec<(String, String)>; // used for holding (Package ID, Type/Enum name)
+#[derive(Clone)]
+pub struct FieldHolder {
+    package_id: String,
+    name: String,
+    updated_name: Option<String>,
+}
+
+impl FieldHolder {
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+    pub fn get_package_id(&self) -> String {
+        self.package_id.clone()
+    }
+    pub fn insert_updated_name(&mut self, updated_name: String) {
+        self.updated_name = Some(updated_name);
+    }
+    pub fn get_default_name(&self) -> String {
+        format!("{}{}{}", self.name, DEFAULT_SPECTATOR, self.package_id)
+    }
+    pub fn get_updated_name(&self) -> String {
+        self.updated_name
+            .clone()
+            .unwrap_or_else(|| self.get_default_name())
+    }
+}
 
 pub(super) static DEFAULT_SPECTATOR: &str = "_";
 
 #[derive(Default)]
 pub struct ConfigWrapper {
     pub config: Config,
-    pub types: BTreeMap<String, FieldHolder>,
+    pub types: BTreeMap<String, Vec<FieldHolder>>,
 }
 
 impl ConfigWrapper {
@@ -26,13 +51,30 @@ impl ConfigWrapper {
         let split = key.rsplitn(2, DEFAULT_SPECTATOR).collect::<Vec<&str>>();
         if let [name, pkg_id] = &split[..] {
             if let Some(val) = self.types.get_mut(&ty) {
-                val.push((pkg_id.to_string(), name.to_string()));
+                val.push(FieldHolder {
+                    package_id: pkg_id.to_string(),
+                    name: name.to_string(),
+                    updated_name: None,
+                });
             } else {
-                self.types
-                    .insert(ty, vec![(pkg_id.to_string(), name.to_string())]);
+                self.types.insert(
+                    ty,
+                    vec![FieldHolder {
+                        package_id: pkg_id.to_string(),
+                        name: name.to_string(),
+                        updated_name: None,
+                    }],
+                );
             }
         } else {
-            self.types.insert(ty, vec![(key.clone(), key.clone())]);
+            self.types.insert(
+                ty,
+                vec![FieldHolder {
+                    package_id: key.clone(),
+                    name: key.clone(),
+                    updated_name: None,
+                }],
+            );
         }
 
         self.config.types.insert(key, val);
@@ -67,15 +109,15 @@ pub enum Options {
 
 pub struct ProtoGeneratorFxn {
     pub is_mutation: Box<dyn Fn(&str) -> bool>,
-    pub format_enum: Box<dyn Fn(FieldHolder) -> Vec<String>>,
-    pub format_ty: Box<dyn Fn(FieldHolder) -> Vec<String>>,
+    pub format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    pub format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
 }
 
 impl ProtoGeneratorFxn {
     pub fn new(
         is_mutation: Box<dyn Fn(&str) -> bool>,
-        format_enum: Box<dyn Fn(FieldHolder) -> Vec<String>>,
-        format_ty: Box<dyn Fn(FieldHolder) -> Vec<String>>,
+        format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+        format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
     ) -> Self {
         Self { is_mutation, format_enum, format_ty }
     }
@@ -83,7 +125,7 @@ impl ProtoGeneratorFxn {
 
 impl Default for ProtoGeneratorFxn {
     fn default() -> Self {
-        let fmt = |x: FieldHolder| x.into_iter().map(|x| x.0).collect();
+        let fmt = |x: Vec<FieldHolder>| x;
         Self {
             is_mutation: Box::new(|_| false),
             format_enum: Box::new(fmt),
@@ -165,43 +207,29 @@ impl ProtoGenerator {
                 .unwrap()
                 .clone();
 
-            let updated_enums = (self.generator_config.generator_fxn.format_enum)(
-                pre_built_wrapper
-                    .types
-                    .get(&DescriptorType::Enum.to_string())
-                    .unwrap()
-                    .clone(),
-            );
-            let updated_messages = (self.generator_config.generator_fxn.format_ty)(
-                pre_built_wrapper
-                    .types
-                    .get(&DescriptorType::Message.to_string())
-                    .unwrap()
-                    .clone(),
-            );
-            if original_enums.len() != updated_enums.len()
-                || original_messages.len() != updated_messages.len()
+            let original_enums_len = original_enums.len();
+            let original_messages_len = original_messages.len();
+
+            let updated_enums = (self.generator_config.generator_fxn.format_enum)(original_enums);
+            let updated_messages =
+                (self.generator_config.generator_fxn.format_ty)(original_messages);
+
+            if original_enums_len != updated_enums.len()
+                || original_messages_len != updated_messages.len()
             {
-                return Err(anyhow!("Invalid length of enums or messages expected:\nEnums: {} got {}\nMessages: {} got {}", original_enums.len(), updated_enums.len(), original_messages.len(), updated_messages.len()));
+                return Err(anyhow!("Invalid length of enums or messages expected:\nEnums: {} got {}\nMessages: {} got {}", original_enums_len, updated_enums.len(), original_messages_len, updated_messages.len()));
             }
+
             let mut updated_enums_map = BTreeMap::new();
             let mut updated_messages_map = BTreeMap::new();
 
-            original_messages
-                .into_iter()
-                .map(|v| format!("{}{}{}", v.0, DEFAULT_SPECTATOR, v.1))
-                .zip(updated_messages)
-                .for_each(|(k, v)| {
-                    updated_messages_map.insert(k, v);
-                });
+            updated_enums.into_iter().for_each(|v| {
+                updated_enums_map.insert(v.get_default_name(), v.get_updated_name());
+            });
 
-            original_enums
-                .into_iter()
-                .map(|v| format!("{}{}{}", v.0, DEFAULT_SPECTATOR, v.1))
-                .zip(updated_enums)
-                .for_each(|(k, v)| {
-                    updated_enums_map.insert(k, v);
-                });
+            updated_messages.into_iter().for_each(|v| {
+                updated_messages_map.insert(v.get_default_name(), v.get_updated_name());
+            });
 
             update_stuff(&mut pre_built_wrapper.config, updated_enums_map);
             update_stuff(&mut pre_built_wrapper.config, updated_messages_map);
@@ -262,12 +290,19 @@ mod test {
 
     fn get_generator() -> ProtoGenerator {
         let is_mut = |x: &str| !x.starts_with("Get");
-        let fmt = |x: FieldHolder| {
+        let fmt = |x: Vec<FieldHolder>| {
             x.into_iter()
-                .map(|v| {
-                    format!("{}{}{}", v.0, DEFAULT_SPECTATOR, v.1)
-                        .to_case(Case::Snake)
-                        .to_lowercase()
+                .map(|mut v| {
+                    let updated_name = format!(
+                        "{}{}{}",
+                        v.get_name(),
+                        DEFAULT_SPECTATOR,
+                        v.get_package_id()
+                    )
+                    .to_case(Case::Snake);
+                    v.insert_updated_name(updated_name);
+
+                    v
                 })
                 .collect()
         };
