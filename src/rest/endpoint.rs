@@ -31,6 +31,13 @@ pub struct Endpoint {
 /// Creates a Rest instance from @rest directive
 
 impl Endpoint {
+    pub fn get_method(&self) -> &Method {
+        &self.method
+    }
+
+    pub fn get_path(&self) -> &Path {
+        &self.path
+    }
     pub fn try_new(operations: &str) -> anyhow::Result<Vec<Self>> {
         let doc = async_graphql::parser::parse_query(operations)?;
         let mut endpoints = Vec::new();

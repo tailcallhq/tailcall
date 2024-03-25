@@ -1,6 +1,8 @@
-# test-call-operator
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-call-operator
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://localhost:3000") {
@@ -21,10 +23,10 @@ type User {
 
 type Post {
   userId: Int!
-  withoutResolver: User @call(query: "userWithoutResolver", args: {id: "{{value.userId}}"})
-  withoutOperator: User @call(args: {id: "{{value.userId}}"})
-  urlMismatchHttp: User @call(query: "user")
-  argumentMismatchGraphQL: User @call(query: "userWithGraphQLResolver")
-  headersMismatchGraphQL: User @call(query: "userWithGraphQLResolver")
+  withoutResolver: User @call(steps: [{query: "userWithoutResolver", args: {id: "{{value.userId}}"}}])
+  withoutOperator: User @call(steps: [{args: {id: "{{value.userId}}"}}])
+  urlMismatchHttp: User @call(steps: [{query: "user"}])
+  argumentMismatchGraphQL: User @call(steps: [{query: "userWithGraphQLResolver"}])
+  headersMismatchGraphQL: User @call(steps: [{query: "userWithGraphQLResolver"}])
 }
 ```

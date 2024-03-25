@@ -1,6 +1,8 @@
-# test-field-already-implemented-from-Interface
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-field-already-implemented-from-Interface
 
 ```graphql @server
 schema {

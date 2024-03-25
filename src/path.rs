@@ -60,7 +60,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
         if path.len() == 1 {
             return match path[0].as_ref() {
                 "value" => convert_value(ctx.path_value(&[] as &[T])?),
-                "args" => Some(json!(ctx.graphql_ctx.args()?).to_string().into()),
+                "args" => Some(json!(ctx.path_arg::<&str>(&[])?).to_string().into()),
                 "vars" => Some(json!(ctx.vars()).to_string().into()),
                 _ => None,
             };
@@ -209,7 +209,7 @@ mod tests {
         }
 
         static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
-            let mut req_ctx = RequestContext::default().req_headers(TEST_HEADERS.clone());
+            let mut req_ctx = RequestContext::default().request_headers(TEST_HEADERS.clone());
 
             req_ctx.server.vars = TEST_VARS.clone();
             req_ctx.runtime.env = Arc::new(Env::init(TEST_ENV_VARS.clone()));

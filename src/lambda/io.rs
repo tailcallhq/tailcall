@@ -52,7 +52,7 @@ impl Eval for IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         let key = self.cache_key(&ctx);
         Box::pin(async move {
-            ctx.req_ctx
+            ctx.request_ctx
                 .cache
                 .get_or_eval(key, move || {
                     Box::pin(async {
@@ -79,15 +79,15 @@ impl IO {
                     let req = req_template.to_request(&ctx)?;
                     let is_get = req.method() == reqwest::Method::GET;
 
-                    let res = if is_get && ctx.req_ctx.is_batching_enabled() {
+                    let res = if is_get && ctx.request_ctx.is_batching_enabled() {
                         let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
-                            dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
+                            dl_id.and_then(|index| ctx.request_ctx.http_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
                         execute_raw_request(&ctx, req).await?
                     };
 
-                    if ctx.req_ctx.server.get_enable_http_validation() {
+                    if ctx.request_ctx.server.get_enable_http_validation() {
                         req_template
                             .endpoint
                             .output
@@ -103,11 +103,11 @@ impl IO {
                 IO::GraphQL { req_template, field_name, dl_id, .. } => {
                     let req = req_template.to_request(&ctx)?;
 
-                    let res = if ctx.req_ctx.upstream.batch.is_some()
+                    let res = if ctx.request_ctx.upstream.batch.is_some()
                         && matches!(req_template.operation_type, GraphQLOperationType::Query)
                     {
                         let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
-                            dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
+                            dl_id.and_then(|index| ctx.request_ctx.gql_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
                         execute_raw_request(&ctx, req).await?
@@ -119,13 +119,13 @@ impl IO {
                 IO::Grpc { req_template, dl_id, .. } => {
                     let rendered = req_template.render(&ctx)?;
 
-                    let res = if ctx.req_ctx.upstream.batch.is_some() &&
+                    let res = if ctx.request_ctx.upstream.batch.is_some() &&
                     // TODO: share check for operation_type for resolvers
                     matches!(req_template.operation_type, GraphQLOperationType::Query)
                     {
                         let data_loader: Option<
                             &DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>,
-                        > = dl_id.and_then(|index| ctx.req_ctx.grpc_data_loaders.get(index.0));
+                        > = dl_id.and_then(|index| ctx.request_ctx.grpc_data_loaders.get(index.0));
                         execute_grpc_request_with_dl(&ctx, rendered, data_loader).await?
                     } else {
                         let req = rendered.to_request()?;
@@ -157,17 +157,25 @@ fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 ) {
     set_cache_control(ctx, res);
     set_cookie_headers(ctx, res);
+    set_experimental_headers(ctx, res);
 }
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
-    if ctx.req_ctx.server.get_enable_cache_control() && res.status.is_success() {
+    if ctx.request_ctx.server.get_enable_cache_control() && res.status.is_success() {
         if let Some(policy) = cache_policy(res) {
-            ctx.req_ctx.set_cache_control(policy);
+            ctx.request_ctx.set_cache_control(policy);
         }
     }
+}
+
+fn set_experimental_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
+    ctx: &EvaluationContext<'ctx, Ctx>,
+    res: &Response<async_graphql::Value>,
+) {
+    ctx.request_ctx.add_x_headers(&res.headers);
 }
 
 fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
@@ -175,7 +183,7 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     res: &Response<async_graphql::Value>,
 ) {
     if res.status.is_success() {
-        ctx.req_ctx.set_cookie_headers(&res.headers);
+        ctx.request_ctx.set_cookie_headers(&res.headers);
     }
 }
 
@@ -183,13 +191,16 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
 ) -> Result<Response<async_graphql::Value>> {
-    ctx.req_ctx
+    let response = ctx
+        .request_ctx
         .runtime
         .http
         .execute(req)
         .await
         .map_err(|e| EvaluationError::IOException(e.to_string()))?
-        .to_json()
+        .to_json()?;
+
+    Ok(response)
 }
 
 async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
@@ -197,9 +208,11 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     req: Request,
     operation: &ProtobufOperation,
 ) -> Result<Response<async_graphql::Value>> {
-    Ok(execute_grpc_request(&ctx.req_ctx.runtime, operation, req)
-        .await
-        .map_err(|e| EvaluationError::IOException(e.to_string()))?)
+    Ok(
+        execute_grpc_request(&ctx.request_ctx.runtime, operation, req)
+            .await
+            .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+    )
 }
 
 async fn execute_grpc_request_with_dl<
@@ -216,7 +229,7 @@ async fn execute_grpc_request_with_dl<
     data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
 ) -> Result<Response<async_graphql::Value>> {
     let headers = ctx
-        .req_ctx
+        .request_ctx
         .upstream
         .batch
         .clone()
@@ -242,7 +255,7 @@ async fn execute_request_with_dl<
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
 ) -> Result<Response<async_graphql::Value>> {
     let headers = ctx
-        .req_ctx
+        .request_ctx
         .upstream
         .batch
         .clone()

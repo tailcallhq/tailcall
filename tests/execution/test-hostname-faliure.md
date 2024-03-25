@@ -1,6 +1,8 @@
-# test-hostname-faliure
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-hostname-faliure
 
 ```graphql @server
 schema @server(hostname: "abc") {

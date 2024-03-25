@@ -83,7 +83,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Apollo": {
       "type": "object",
@@ -189,30 +190,22 @@
           "format": "uint64",
           "minimum": 1.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Call": {
-      "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
+      "description": "Provides the ability to refer to multiple fields in the Query or Mutation root.",
       "type": "object",
+      "required": [
+        "steps"
+      ],
       "properties": {
-        "args": {
-          "description": "The arguments of the field on the `Query` or `Mutation` type that you want to call. For instance `{id: \"{{value.userId}}\"}`.",
-          "type": "object",
-          "additionalProperties": true
-        },
-        "mutation": {
-          "description": "The name of the field on the `Mutation` type that you want to call. For instance `createUser`.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "query": {
-          "description": "The name of the field on the `Query` type that you want to call. For instance `user`.",
-          "type": [
-            "string",
-            "null"
-          ]
+        "steps": {
+          "description": "Steps are composed together to form a call. If you have multiple steps, the output of the previous step is passed as input to the next step.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Step"
+          }
         }
       }
     },
@@ -224,6 +217,70 @@
       ],
       "properties": {
         "data": true
+      },
+      "additionalProperties": false
+    },
+    "Cors": {
+      "description": "Type to configure Cross-Origin Resource Sharing (CORS) for a server.",
+      "type": "object",
+      "properties": {
+        "allowCredentials": {
+          "description": "Indicates whether the server allows credentials (e.g., cookies, authorization headers) to be sent in cross-origin requests.",
+          "type": "boolean"
+        },
+        "allowHeaders": {
+          "description": "A list of allowed headers in cross-origin requests. This can be used to specify custom headers that are allowed to be included in cross-origin requests.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowMethods": {
+          "description": "A list of allowed HTTP methods in cross-origin requests. These methods specify the actions that are permitted in cross-origin requests.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Method"
+          }
+        },
+        "allowOrigins": {
+          "description": "A list of origins that are allowed to access the server's resources in cross-origin requests. An origin can be a domain, a subdomain, or even 'null' for local file schemes.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowPrivateNetwork": {
+          "description": "Indicates whether requests from private network addresses are allowed in cross-origin requests. Private network addresses typically include IP addresses reserved for internal networks.",
+          "type": "boolean"
+        },
+        "exposeHeaders": {
+          "description": "A list of headers that the server exposes to the browser in cross-origin responses. Exposing certain headers allows the client-side code to access them in the response.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxAge": {
+          "description": "The maximum time (in seconds) that the client should cache preflight OPTIONS requests in order to avoid sending excessive requests to the server.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "vary": {
+          "description": "A list of header names that indicate the values of which might cause the server's response to vary, potentially affecting caching.",
+          "default": [
+            "origin",
+            "access-control-request-method",
+            "access-control-request-headers"
+          ],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "Date": {
@@ -1195,7 +1252,8 @@
           "description": "Specifies the root field on the upstream to request data from. This maps a field in your schema to a field in the upstream schema. When a query is received for this field, Tailcall requests data from the corresponding upstream field.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Grpc": {
       "description": "The @grpc operator indicates that a field or node is backed by a gRPC API.\n\nFor instance, if you add the @grpc operator to the `users` field of the Query type with a service argument of `NewsService` and method argument of `GetAllNews`, it signifies that the `users` field is backed by a gRPC API. The `service` argument specifies the name of the gRPC service. The `method` argument specifies the name of the gRPC method. In this scenario, the GraphQL server will make a gRPC request to the gRPC endpoint specified when the `users` field is queried.",
@@ -1236,7 +1294,8 @@
           "description": "This refers to the gRPC method you're going to call. For instance `GetAllNews`.",
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Headers": {
       "type": "object",
@@ -1246,6 +1305,17 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "cors": {
+          "description": "`cors` allows Cross-Origin Resource Sharing (CORS) for a server.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Cors"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "custom": {
@@ -1359,7 +1429,8 @@
             "$ref": "#/definitions/KeyValue"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "HttpVersion": {
       "type": "string",
@@ -1430,7 +1501,8 @@
             }
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "LinkType": {
       "type": "string",
@@ -1473,11 +1545,13 @@
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Omit": {
       "description": "Used to omit a field from public consumption.",
-      "type": "object"
+      "type": "object",
+      "additionalProperties": false
     },
     "OtlpExporter": {
       "description": "Output the opentelemetry data to otlp collector",
@@ -1711,7 +1785,8 @@
           "format": "uint",
           "minimum": 0.0
         }
-      }
+      },
+      "additionalProperties": false
     },
     "StdoutExporter": {
       "description": "Output the opentelemetry data to the stdout. Mostly used for debug purposes",
@@ -1720,6 +1795,31 @@
         "pretty": {
           "description": "Output to stdout in pretty human-readable format",
           "type": "boolean"
+        }
+      }
+    },
+    "Step": {
+      "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
+      "type": "object",
+      "properties": {
+        "args": {
+          "description": "The arguments that will override the actual arguments of the field.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "mutation": {
+          "description": "The name of the field on the `Mutation` type that you want to call.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "query": {
+          "description": "The name of the field on the `Query` type that you want to call.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
@@ -1744,7 +1844,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "TelemetryExporter": {
       "oneOf": [
@@ -2023,7 +2124,8 @@
             "null"
           ]
         }
-      }
+      },
+      "additionalProperties": false
     },
     "Url": {
       "title": "Url",
@@ -2083,6 +2185,22 @@
           "properties": {
             "Opt": {
               "$ref": "#/definitions/schema"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Enum"
+          ],
+          "properties": {
+            "Enum": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
             }
           },
           "additionalProperties": false

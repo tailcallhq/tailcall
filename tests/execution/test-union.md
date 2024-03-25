@@ -1,6 +1,8 @@
-# test-union
+---
+check_identity: true
+---
 
-###### check identity
+# test-union
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {

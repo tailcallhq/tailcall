@@ -1,6 +1,8 @@
-# test-grpc-invalid-proto-id
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-grpc-invalid-proto-id
 
 ```graphql @server
 schema {

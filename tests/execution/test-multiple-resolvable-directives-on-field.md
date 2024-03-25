@@ -1,6 +1,8 @@
-# test-multiple-resolvable-directives-on-field
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-multiple-resolvable-directives-on-field
 
 ```graphql @server
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
@@ -14,6 +16,6 @@ type User {
 
 type Query {
   user1: User @const(data: {name: "John"}) @http(path: "/users/1")
-  user2: User @http(path: "/users/2") @call(query: "something")
+  user2: User @http(path: "/users/2") @call(steps: [{query: "something"}])
 }
 ```

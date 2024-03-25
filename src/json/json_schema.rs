@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
-use prost_reflect::{FieldDescriptor, Kind, MessageDescriptor};
+use convert_case::{Case, Casing};
+use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
 use crate::valid::{Valid, Validator};
@@ -11,6 +12,7 @@ pub enum JsonSchema {
     Obj(HashMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
+    Enum(BTreeSet<String>),
     Str,
     Num,
     Bool,
@@ -84,6 +86,7 @@ impl JsonSchema {
                 async_graphql::Value::Null => Valid::succeed(()),
                 _ => schema.validate(value),
             },
+            JsonSchema::Enum(_) => Valid::succeed(()),
         }
     }
 
@@ -131,6 +134,13 @@ impl JsonSchema {
                     return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
                 }
             }
+            JsonSchema::Enum(a) => {
+                if let JsonSchema::Enum(b) = other {
+                    if a.ne(b) {
+                        return Valid::fail("expected Enum type".to_string()).trace(name);
+                    }
+                }
+            }
         }
         Valid::succeed(())
     }
@@ -158,10 +168,25 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
         for field in fields {
             let field_schema = JsonSchema::try_from(&field)?;
 
-            map.insert(field.name().to_string(), field_schema);
+            // the snake_case for field names is automatically converted to camelCase
+            // by prost on serde serialize/deserealize and in graphql type name should be in
+            // camelCase as well, so convert field.name to camelCase here
+            map.insert(field.name().to_case(Case::Camel), field_schema);
         }
 
         Ok(JsonSchema::Obj(map))
+    }
+}
+
+impl TryFrom<&EnumDescriptor> for JsonSchema {
+    type Error = crate::valid::ValidationError<String>;
+
+    fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
+        let mut set = BTreeSet::new();
+        for value in value.values() {
+            set.insert(value.name().to_string());
+        }
+        Ok(JsonSchema::Enum(set))
     }
 }
 
@@ -186,9 +211,7 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
             Kind::String => JsonSchema::Str,
             Kind::Bytes => JsonSchema::Str,
             Kind::Message(msg) => JsonSchema::try_from(&msg)?,
-            Kind::Enum(_) => {
-                todo!("Enum")
-            }
+            Kind::Enum(enm) => JsonSchema::try_from(&enm)?,
         };
         let field_schema = if value
             .cardinality()
@@ -210,9 +233,14 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use async_graphql::Name;
     use indexmap::IndexMap;
 
+    use crate::blueprint::GrpcMethod;
+    use crate::grpc::protobuf::tests::get_proto_file;
+    use crate::grpc::protobuf::ProtobufSet;
     use crate::json::JsonSchema;
     use crate::valid::{Valid, Validator};
 
@@ -273,5 +301,31 @@ mod tests {
 
         let result = schema.validate(&value);
         assert_eq!(result, Valid::succeed(()));
+    }
+
+    #[tokio::test]
+    async fn test_from_protobuf_conversion() -> anyhow::Result<()> {
+        let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
+
+        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        let schema = JsonSchema::try_from(&operation.output_type)?;
+
+        assert_eq!(
+            schema,
+            JsonSchema::Obj(HashMap::from_iter([
+                (
+                    "postImage".to_owned(),
+                    JsonSchema::Opt(JsonSchema::Str.into())
+                ),
+                ("title".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+                ("id".to_owned(), JsonSchema::Opt(JsonSchema::Num.into())),
+                ("body".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+            ]))
+        );
+
+        Ok(())
     }
 }

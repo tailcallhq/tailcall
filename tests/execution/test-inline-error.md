@@ -1,6 +1,8 @@
-# test-inline-error
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-inline-error
 
 ```graphql @server
 schema {

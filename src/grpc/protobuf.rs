@@ -5,7 +5,8 @@ use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::{
-    DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, ServiceDescriptor,
+    DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, SerializeOptions,
+    ServiceDescriptor,
 };
 use serde_json::Deserializer;
 
@@ -110,19 +111,42 @@ impl ProtobufService {
         let input_type = method.input();
         let output_type = method.output();
 
-        Ok(ProtobufOperation { method, input_type, output_type })
+        Ok(ProtobufOperation::new(method, input_type, output_type))
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct ProtobufOperation {
     method: MethodDescriptor,
     pub input_type: MessageDescriptor,
     pub output_type: MessageDescriptor,
+    serialize_options: SerializeOptions,
+}
+
+impl Eq for ProtobufOperation {}
+
+impl PartialEq for ProtobufOperation {
+    fn eq(&self, other: &Self) -> bool {
+        self.method.eq(&other.method)
+            && self.input_type.eq(&other.input_type)
+            && self.output_type.eq(&other.output_type)
+    }
 }
 
 // TODO: support compression
 impl ProtobufOperation {
+    pub fn new(
+        method: MethodDescriptor,
+        input_type: MessageDescriptor,
+        output_type: MessageDescriptor,
+    ) -> Self {
+        Self {
+            method,
+            input_type,
+            output_type,
+            serialize_options: SerializeOptions::default().skip_default_fields(false),
+        }
+    }
     pub fn name(&self) -> &str {
         self.method.name()
     }
@@ -193,14 +217,15 @@ impl ProtobufOperation {
                 )
             })?;
 
-        let json = serde_json::to_value(message)?;
-
-        Ok(serde_json::from_value(json)?)
+        let mut ser = serde_json::Serializer::new(vec![]);
+        message.serialize_with_options(&mut ser, &self.serialize_options)?;
+        let json = serde_json::from_slice::<async_graphql::Value>(ser.into_inner().as_ref())?;
+        Ok(json)
     }
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     // TODO: Rewrite protobuf tests
     use std::path::PathBuf;
 
@@ -231,7 +256,7 @@ mod tests {
         test_file
     }
 
-    async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
+    pub async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
         let runtime = crate::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 

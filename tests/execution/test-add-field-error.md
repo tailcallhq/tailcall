@@ -1,6 +1,8 @@
-# test-add-field-error
+---
+expect_validation_error: true
+---
 
-###### sdl error
+# test-add-field-error
 
 ```graphql @server
 schema {
