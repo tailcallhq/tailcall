@@ -219,7 +219,7 @@ impl ProtobufOperation {
 
         let mut ser = serde_json::Serializer::new(vec![]);
         message.serialize_with_options(&mut ser, &self.serialize_options)?;
-        let json = serde_json::from_slice::<async_graphql::Value>(ser.into_inner().as_ref())?;
+        let json = serde_json::from_slice::<async_raphql::Value>(ser.into_inner().as_ref())?;
         Ok(json)
     }
 }
