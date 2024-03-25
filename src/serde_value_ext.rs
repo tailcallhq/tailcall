@@ -4,26 +4,17 @@ use anyhow::Result;
 use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 
-use crate::blueprint::DynamicValue;
-use crate::path::PathString;
+use crate::{blueprint::DynamicValue, path_value::PathValue};
 
 pub trait ValueExt {
-    fn render_value(&self, ctx: &impl PathString) -> Result<GraphQLValue>;
+    fn render_value(&self, ctx: &impl PathValue) -> Result<GraphQLValue>;
 }
 
 impl ValueExt for DynamicValue {
-    fn render_value<'a>(&self, ctx: &'a impl PathString) -> Result<GraphQLValue> {
+    fn render_value<'a>(&self, ctx: &'a impl PathValue) -> Result<GraphQLValue> {
         match self {
             DynamicValue::Value(value) => Ok(value.to_owned()),
-            DynamicValue::Mustache(m) => {
-                let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
-
-                serde_json::from_str::<GraphQLValue>(rendered.as_ref())
-                    // parsing can fail when Mustache::render returns bare string and since
-                    // that string is not wrapped with quotes serde_json will fail to parse it
-                    // but, we can just use that string as is
-                    .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
-            }
+            DynamicValue::Mustache(m) => Ok(m.render(ctx).unwrap_or_default()),
             DynamicValue::Object(obj) => {
                 let out: Result<IndexMap<_, _>> = obj
                     .iter()

@@ -1,13 +1,10 @@
-use std::borrow::Cow;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use serde_json::json;
-use tailcall::endpoint::Endpoint;
+use tailcall::{endpoint::Endpoint, path_value::PathValue};
 use tailcall::has_headers::HasHeaders;
 use tailcall::http::RequestTemplate;
-use tailcall::path::PathString;
 
 #[derive(Setters)]
 struct Context {
@@ -20,9 +17,11 @@ impl Default for Context {
         Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
 }
-impl PathString for Context {
-    fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-        self.value.path_string(parts)
+impl PathValue for Context {
+    fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+    where
+        Path: AsRef<str> {
+        self.value.get_path_value(path)
     }
 }
 impl HasHeaders for Context {

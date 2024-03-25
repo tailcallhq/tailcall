@@ -6,7 +6,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
-use crate::path::{PathGraphql, PathString};
+use crate::path_value::PathValue;
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
@@ -21,6 +21,22 @@ impl From<Vec<Segment>> for Mustache {
     fn from(segments: Vec<Segment>) -> Self {
         Mustache(segments)
     }
+}
+
+fn value_to_json_string(value: Option<async_graphql::Value>) -> Option<String> {
+    value.and_then(|value| match value {
+        async_graphql::Value::String(s) => Some(s),
+        async_graphql::Value::Object(v) => serde_json::to_value(v).map(|v| v.to_string()).ok(),
+        async_graphql::Value::List(v) => serde_json::to_value(v).map(|v| v.to_string()).ok(),
+        _ => Some(value.to_string()),
+    })
+}
+
+fn value_to_graphql_string(value: Option<async_graphql::Value>) -> Option<String> {
+    value.map(|value| match value {
+        async_graphql::Value::String(s) => format!(r#""{s}""#),
+        _ => value.to_string(),
+    })
 }
 
 impl Mustache {
@@ -46,31 +62,36 @@ impl Mustache {
         }
     }
 
-    pub fn render(&self, value: &impl PathString) -> String {
-        match self {
-            Mustache(segments) => segments
+    pub fn render(&self, value: &impl PathValue) -> Option<async_graphql::Value> {
+        let segments = &self.0;
+
+        if let [Segment::Expression(path)] = &segments[..] {
+            value.get_path_value(&path)
+        } else {
+            let s: String = segments
                 .iter()
                 .map(|segment| match segment {
                     Segment::Literal(text) => text.clone(),
-                    Segment::Expression(parts) => value
-                        .path_string(parts)
-                        .map(|a| a.to_string())
-                        .unwrap_or_default(),
+                    Segment::Expression(path) => {
+                        value_to_json_string(value.get_path_value(path)).unwrap_or_default()
+                    }
                 })
-                .collect(),
+                .collect();
+
+            Some(async_graphql::Value::String(s))
         }
     }
 
-    pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
-        match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.to_string(),
-                    Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
-                })
-                .collect(),
-        }
+    pub fn render_string(&self, value: &impl PathValue) -> Option<String> {
+        let value = self.render(value);
+
+        value_to_json_string(value)
+    }
+
+    pub fn render_graphql(&self, value: &impl PathValue) -> Option<String> {
+        let value = self.render(value);
+
+        value_to_graphql_string(value)
     }
 
     pub fn get_segments(&self) -> Vec<&Segment> {
@@ -341,34 +362,37 @@ mod tests {
     }
 
     mod render {
-        use std::borrow::Cow;
-
         use serde_json::json;
 
-        use crate::mustache::{Mustache, Segment};
-        use crate::path::PathString;
+        use crate::{
+            mustache::{Mustache, Segment},
+            path_value::PathValue,
+        };
 
         #[test]
         fn test_query_params_template() {
             let s = r"/v1/templates?project-id={{value.projectId}}";
             let mustache: Mustache = Mustache::parse(s).unwrap();
-            let ctx = json!(json!({"value": {"projectId": "123"}}));
-            let result = mustache.render(&ctx);
-            assert_eq!(result, "/v1/templates?project-id=123");
+            let ctx = json!({"value": {"projectId": "123"}});
+            let result = mustache.render_string(&ctx);
+            assert_eq!(result.unwrap(), "/v1/templates?project-id=123");
         }
 
         #[test]
         fn test_render_mixed() {
             struct DummyPath;
 
-            impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-                    let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
+            impl PathValue for DummyPath {
+                fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+                where
+                    Path: AsRef<str>,
+                {
+                    let parts: Vec<&str> = path.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo", "bar"] {
-                        Some(Cow::Borrowed("FOOBAR"))
+                        Some("FOOBAR".into())
                     } else if parts == ["baz", "qux"] {
-                        Some(Cow::Borrowed("BAZQUX"))
+                        Some("BAZQUX".into())
                     } else {
                         None
                     }
@@ -384,7 +408,7 @@ mod tests {
             ]);
 
             assert_eq!(
-                mustache.render(&DummyPath),
+                mustache.render_string(&DummyPath).unwrap(),
                 "prefix FOOBAR middle BAZQUX suffix"
             );
         }
@@ -393,8 +417,11 @@ mod tests {
         fn test_render_with_missing_path() {
             struct DummyPath;
 
-            impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(&self, _: &[T]) -> Option<Cow<'_, str>> {
+            impl PathValue for DummyPath {
+                fn get_path_value<Path>(&self, _path: &[Path]) -> Option<async_graphql::Value>
+                where
+                    Path: AsRef<str>,
+                {
                     None
                 }
             }
@@ -405,7 +432,10 @@ mod tests {
                 Segment::Literal(" suffix".to_string()),
             ]);
 
-            assert_eq!(mustache.render(&DummyPath), "prefix  suffix");
+            assert_eq!(
+                mustache.render_string(&DummyPath).unwrap(),
+                "prefix  suffix"
+            );
         }
 
         #[test]
@@ -413,28 +443,31 @@ mod tests {
             let mustache =
                 Mustache::parse(r#"{registered: "{{foo}}", display: "{{bar}}"}"#).unwrap();
             let ctx = json!({"foo": "baz", "bar": "qux"});
-            let result = mustache.render(&ctx);
-            assert_eq!(result, r#"{registered: "baz", display: "qux"}"#);
+            let result = mustache.render_string(&ctx);
+            assert_eq!(result.unwrap(), r#"{registered: "baz", display: "qux"}"#);
         }
 
         #[test]
         fn test_json_like_static() {
             let mustache = Mustache::parse(r#"{registered: "foo", display: "bar"}"#).unwrap();
             let ctx = json!({}); // Context is not used in this case
-            let result = mustache.render(&ctx);
-            assert_eq!(result, r#"{registered: "foo", display: "bar"}"#);
+            let result = mustache.render_string(&ctx);
+            assert_eq!(result.unwrap(), r#"{registered: "foo", display: "bar"}"#);
         }
 
         #[test]
         fn test_render_preserves_spaces() {
             struct DummyPath;
 
-            impl PathString for DummyPath {
-                fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-                    let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
+            impl PathValue for DummyPath {
+                fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+                where
+                    Path: AsRef<str>,
+                {
+                    let parts: Vec<&str> = path.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo"] {
-                        Some(Cow::Borrowed("bar"))
+                        Some("bar".into())
                     } else {
                         None
                     }
@@ -447,26 +480,31 @@ mod tests {
                 Segment::Literal("    ".to_string()),
             ]);
 
-            assert_eq!(mustache.render(&DummyPath).as_str(), "    bar    ");
+            assert_eq!(mustache.render_string(&DummyPath).unwrap(), "    bar    ");
         }
     }
 
     mod render_graphql {
-        use crate::mustache::{Mustache, Segment};
-        use crate::path::PathGraphql;
+        use crate::{
+            mustache::{Mustache, Segment},
+            path_value::PathValue,
+        };
 
         #[test]
         fn test_render_mixed() {
             struct DummyPath;
 
-            impl PathGraphql for DummyPath {
-                fn path_graphql<T: AsRef<str>>(&self, parts: &[T]) -> Option<String> {
-                    let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
+            impl PathValue for DummyPath {
+                fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+                where
+                    Path: AsRef<str>,
+                {
+                    let parts: Vec<&str> = path.iter().map(AsRef::as_ref).collect();
 
                     if parts == ["foo", "bar"] {
-                        Some("FOOBAR".to_owned())
+                        Some("FOOBAR".into())
                     } else if parts == ["baz", "qux"] {
-                        Some("BAZQUX".to_owned())
+                        Some("BAZQUX".into())
                     } else {
                         None
                     }
@@ -482,8 +520,8 @@ mod tests {
             ]);
 
             assert_eq!(
-                mustache.render_graphql(&DummyPath),
-                "prefix FOOBAR middle BAZQUX suffix"
+                mustache.render_graphql(&DummyPath).unwrap(),
+                "\"prefix FOOBAR middle BAZQUX suffix\""
             );
         }
 
@@ -491,8 +529,11 @@ mod tests {
         fn test_render_with_missing_path() {
             struct DummyPath;
 
-            impl PathGraphql for DummyPath {
-                fn path_graphql<T: AsRef<str>>(&self, _: &[T]) -> Option<String> {
+            impl PathValue for DummyPath {
+                fn get_path_value<Path>(&self, _path: &[Path]) -> Option<async_graphql::Value>
+                where
+                    Path: AsRef<str>,
+                {
                     None
                 }
             }
@@ -503,7 +544,10 @@ mod tests {
                 Segment::Literal(" suffix".to_string()),
             ]);
 
-            assert_eq!(mustache.render_graphql(&DummyPath), "prefix  suffix");
+            assert_eq!(
+                mustache.render_graphql(&DummyPath).unwrap(),
+                "\"prefix  suffix\""
+            );
         }
     }
 }

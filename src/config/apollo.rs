@@ -1,3 +1,4 @@
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 use crate::config::ConfigReaderContext;
@@ -43,19 +44,29 @@ impl Apollo {
         let Apollo { api_key, graph_ref, user_version, platform, version } = self;
 
         let api_key_tmpl = Mustache::parse(api_key)?;
-        *api_key = api_key_tmpl.render(reader_ctx);
+        *api_key = api_key_tmpl
+            .render_string(reader_ctx)
+            .context("apiKey is not defined")?;
 
         let graph_ref_tmpl = Mustache::parse(graph_ref)?;
-        *graph_ref = graph_ref_tmpl.render(reader_ctx);
+        *graph_ref = graph_ref_tmpl
+            .render_string(reader_ctx)
+            .context("graphRef is not defined")?;
 
         let user_version_tmpl = Mustache::parse(user_version)?;
-        *user_version = user_version_tmpl.render(reader_ctx);
+        if let Some(rendered) = user_version_tmpl.render_string(reader_ctx) {
+            *user_version = rendered;
+        }
 
         let platform_tmpl = Mustache::parse(platform)?;
-        *platform = platform_tmpl.render(reader_ctx);
+        if let Some(rendered) = platform_tmpl.render_string(reader_ctx) {
+            *platform = rendered;
+        }
 
         let version_tmpl = Mustache::parse(version)?;
-        *version = version_tmpl.render(reader_ctx);
+        if let Some(rendered) = version_tmpl.render_string(reader_ctx) {
+            *version = rendered;
+        }
 
         Ok(())
     }

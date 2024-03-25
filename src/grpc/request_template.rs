@@ -1,7 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
@@ -9,13 +9,12 @@ use reqwest::header::HeaderValue;
 use url::Url;
 
 use super::request::create_grpc_request;
-use crate::config::GraphQLOperationType;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::path::PathString;
+use crate::{config::GraphQLOperationType, path_value::PathValue};
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -44,19 +43,26 @@ impl Hash for RenderedRequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url> {
-        let url = url::Url::parse(self.url.render(ctx).as_str())?;
+    fn create_url<C: PathValue>(&self, ctx: &C) -> Result<Url> {
+        let url = url::Url::parse(
+            self.url
+                .render_string(ctx)
+                .context("url is not defined")?
+                .as_str(),
+        )?;
 
         Ok(url)
     }
 
-    fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: PathValue>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         header_map.insert(CONTENT_TYPE, GRPC_MIME_TYPE.to_owned());
 
         for (k, v) in &self.headers {
-            if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+            if let Ok(header_value) =
+                HeaderValue::from_str(&v.render_string(ctx).unwrap_or_default())
+            {
                 header_map.insert(k, header_value);
             }
         }
@@ -64,22 +70,22 @@ impl RequestTemplate {
         header_map
     }
 
-    pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
+    pub fn render<C: PathValue + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
         let url = self.create_url(ctx)?;
         let headers = self.render_headers(ctx);
         let body = self.render_body(ctx);
         Ok(RenderedRequestTemplate { url, headers, body, operation: self.operation.clone() })
     }
 
-    fn render_body<C: PathString + HasHeaders>(&self, ctx: &C) -> String {
+    fn render_body<C: PathValue + HasHeaders>(&self, ctx: &C) -> String {
         if let Some(body) = &self.body {
-            body.render(ctx)
+            body.render_string(ctx).unwrap_or_default()
         } else {
             "{}".to_owned()
         }
     }
 
-    fn render_headers<C: PathString + HasHeaders>(&self, ctx: &C) -> HeaderMap {
+    fn render_headers<C: PathValue + HasHeaders>(&self, ctx: &C) -> HeaderMap {
         let mut req_headers = HeaderMap::new();
 
         let headers = self.create_headers(ctx);
@@ -106,7 +112,7 @@ impl RenderedRequestTemplate {
     }
 }
 
-impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathValue + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let rendered_req = self.render(ctx).unwrap();
@@ -117,7 +123,6 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
     use std::collections::HashSet;
     use std::path::PathBuf;
 
@@ -127,12 +132,12 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::RequestTemplate;
-    use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
+    use crate::{blueprint::GrpcMethod, path_value::PathValue};
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -192,9 +197,12 @@ mod tests {
         }
     }
 
-    impl crate::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-            self.value.path_string(parts)
+    impl PathValue for Context {
+        fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+        where
+            Path: AsRef<str>,
+        {
+            self.value.get_path_value(path)
         }
     }
 

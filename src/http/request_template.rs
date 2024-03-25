@@ -2,18 +2,18 @@ use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+use anyhow::Context;
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
 
-use crate::config::Encoding;
 use crate::endpoint::Endpoint;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::path::PathString;
+use crate::{config::Encoding, path_value::PathValue};
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -33,18 +33,19 @@ pub struct RequestTemplate {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
-        let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
+    fn create_url<C: PathValue>(&self, ctx: &C) -> anyhow::Result<Url> {
+        let mut url = url::Url::parse(
+            self.root_url
+                .render_string(ctx)
+                .context("url is not defined")?
+                .as_str(),
+        )?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
         let extra_qp = self.query.iter().filter_map(|(k, v)| {
-            let value = v.render(ctx);
-            if value.is_empty() {
-                None
-            } else {
-                Some((Cow::Borrowed(k.as_str()), Cow::Owned(value)))
-            }
+            v.render_string(ctx)
+                .map(|v| (Cow::Borrowed(k.as_str()), Cow::Owned(v)))
         });
 
         let base_qp = url
@@ -81,11 +82,13 @@ impl RequestTemplate {
     }
 
     /// Creates a HeaderMap for the context
-    fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: PathValue>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         for (k, v) in &self.headers {
-            if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
+            if let Ok(header_value) =
+                HeaderValue::from_str(&v.render_string(ctx).unwrap_or_default())
+            {
                 header_map.insert(k, header_value);
             }
         }
@@ -94,7 +97,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathString + HasHeaders>(
+    pub fn to_request<C: PathValue + HasHeaders>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -109,7 +112,7 @@ impl RequestTemplate {
     }
 
     /// Sets the body for the request
-    fn set_body<C: PathString + HasHeaders>(
+    fn set_body<C: PathValue + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -117,12 +120,13 @@ impl RequestTemplate {
         if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
-                    req.body_mut().replace(body_path.render(ctx).into());
+                    req.body_mut()
+                        .replace(body_path.render_string(ctx).unwrap_or_default().into());
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
                     // We first encode everything to string and then back to form-urlencoded
-                    let body: String = body_path.render(ctx);
+                    let body = body_path.render_string(ctx).unwrap_or_default();
                     let form_data = match serde_json::from_str::<serde_json::Value>(&body) {
                         Ok(deserialized_data) => serde_urlencoded::to_string(deserialized_data)?,
                         Err(_) => body,
@@ -136,7 +140,7 @@ impl RequestTemplate {
     }
 
     /// Sets the headers for the request
-    fn set_headers<C: PathString + HasHeaders>(
+    fn set_headers<C: PathValue + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -224,7 +228,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
     }
 }
 
-impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathValue + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let state = &mut hasher;
@@ -234,8 +238,9 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
         let mut headers = vec![];
         for (name, mustache) in self.headers.iter() {
             name.hash(state);
-            mustache.render(ctx).hash(state);
-            headers.push((name.to_string(), mustache.render(ctx)));
+            let value = mustache.render_string(ctx);
+            value.hash(state);
+            headers.push((name.to_string(), value.unwrap_or_default()));
         }
 
         for (name, value) in ctx.headers().iter() {
@@ -245,7 +250,7 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
         }
 
         if let Some(body) = self.body_path.as_ref() {
-            body.render(ctx).hash(state)
+            body.render_string(ctx).hash(state)
         }
 
         let url = self.create_url(ctx).unwrap();
@@ -257,8 +262,6 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
-
     use derive_setters::Setters;
     use hyper::header::HeaderName;
     use hyper::HeaderMap;
@@ -266,9 +269,8 @@ mod tests {
     use serde_json::json;
 
     use super::RequestTemplate;
-    use crate::has_headers::HasHeaders;
     use crate::mustache::Mustache;
-    use crate::path::PathString;
+    use crate::{has_headers::HasHeaders, path_value::PathValue};
 
     #[derive(Setters)]
     struct Context {
@@ -282,9 +284,12 @@ mod tests {
         }
     }
 
-    impl crate::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-            self.value.path_string(parts)
+    impl PathValue for Context {
+        fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+        where
+            Path: AsRef<str>,
+        {
+            self.value.get_path_value(path)
         }
     }
 
@@ -295,7 +300,7 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: PathValue + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()
