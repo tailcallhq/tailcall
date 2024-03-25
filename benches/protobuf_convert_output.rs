@@ -14,6 +14,7 @@ const OUT_DIR: &str = "benches/grpc";
 const PROTO_FILE: &str = "nums.proto";
 const SERVICE_NAME: &str = "nums.NumsService.GetNums";
 
+#[allow(dead_code)]
 fn build(proto_file_path: impl AsRef<Path>) -> anyhow::Result<()> {
     std::env::set_var("OUT_DIR", OUT_DIR);
 
