@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use async_graphql::{SelectionField, ServerError, Value};
 use reqwest::header::HeaderMap;
@@ -13,20 +12,17 @@ use crate::http::RequestContext;
 #[derive(Clone)]
 pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
     // Context create for each GraphQL Request
-    pub req_ctx: &'a RequestContext,
+    pub request_ctx: &'a RequestContext,
 
     // Async GraphQL Context
     // Contains current value and arguments
-    pub graphql_ctx: &'a Ctx,
+    graphql_ctx: &'a Ctx,
 
     // Overridden Value for Async GraphQL Context
     graphql_ctx_value: Option<Arc<Value>>,
 
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
-
-    // TODO: JS timeout should be read from server settings
-    pub timeout: Duration,
 }
 
 impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
@@ -46,8 +42,7 @@ impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
 impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
         Self {
-            timeout: Duration::from_millis(5),
-            req_ctx,
+            request_ctx: req_ctx,
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
@@ -62,6 +57,10 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         // TODO: add unit tests for this
         if let Some(args) = self.graphql_ctx_args.as_ref() {
             get_path_value(args.as_ref(), path).map(|a| Cow::Owned(a.clone()))
+        } else if path.is_empty() {
+            self.graphql_ctx
+                .args()
+                .map(|a| Cow::Owned(Value::Object(a.clone())))
         } else {
             let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
             get_path_value(arg, &path[1..]).map(Cow::Borrowed)
@@ -78,7 +77,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn headers(&self) -> &HeaderMap {
-        &self.req_ctx.request_headers
+        &self.request_ctx.request_headers
     }
 
     pub fn header(&self, key: &str) -> Option<&str> {
@@ -88,17 +87,17 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn env_var(&self, key: &str) -> Option<String> {
-        self.req_ctx.runtime.env.get(key)
+        self.request_ctx.runtime.env.get(key)
     }
 
     pub fn var(&self, key: &str) -> Option<&str> {
-        let vars = &self.req_ctx.server.vars;
+        let vars = &self.request_ctx.server.vars;
 
         vars.get(key).map(|v| v.as_str())
     }
 
     pub fn vars(&self) -> &BTreeMap<String, String> {
-        &self.req_ctx.server.vars
+        &self.request_ctx.server.vars
     }
 
     pub fn add_error(&self, error: ServerError) {
