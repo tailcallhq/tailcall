@@ -16,15 +16,8 @@ pub mod dummy {
 const OUT_DIR: &str = "benches/grpc";
 const PROTO_FILE: &str = "dummy.proto";
 const SERVICE_NAME: &str = "dummy.DummyService.GetDummy";
-
-#[allow(dead_code)]
-fn build(proto_file_path: impl AsRef<Path>) -> anyhow::Result<()> {
-    std::env::set_var("OUT_DIR", OUT_DIR);
-
-    tonic_build::configure().compile(&[proto_file_path], &["proto"])?;
-
-    Ok(())
-}
+const N: usize = 1000;
+const M: usize = 100;
 
 fn benchmark_convert_output(c: &mut Criterion) {
     let proto_file_path = Path::new(OUT_DIR).join(PROTO_FILE);
@@ -35,12 +28,12 @@ fn benchmark_convert_output(c: &mut Criterion) {
     let protobuf_operation = service.find_operation(&method).unwrap();
     let mut msg: Vec<u8> = vec![0, 0, 0, 0, 14];
     dummy::Dummy {
-        ints: (0..1000).map(|_| random()).collect(),
-        flags: (0..1000).map(|_| random()).collect(),
-        names: (0..1000)
-            .map(|_| (0..100).map(|_| random::<char>()).collect())
+        ints: (0..N).map(|_| random()).collect(),
+        flags: (0..N).map(|_| random()).collect(),
+        names: (0..N)
+            .map(|_| (0..M).map(|_| random::<char>()).collect())
             .collect(),
-        floats: (0..1000).map(|_| random()).collect(),
+        floats: (0..N).map(|_| random()).collect(),
     }
     .encode(&mut msg)
     .unwrap();
