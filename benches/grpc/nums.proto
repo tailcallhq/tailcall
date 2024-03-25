@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package nums;
+
+message Nums {
+    repeated int32 nums = 1;
+    repeated bool flags = 2;
+    repeated string names = 3;
+    repeated float floats = 4;
+}
+
+service NumsService {
+    rpc GetNums(Nums) returns (Nums) {}
+}
