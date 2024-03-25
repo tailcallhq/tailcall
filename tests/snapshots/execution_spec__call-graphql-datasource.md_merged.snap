@@ -10,7 +10,7 @@ type Post {
   body: String!
   id: Int!
   title: String!
-  user: User @call(query: "user", args: {id: "{{value.userId}}"})
+  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
   userId: Int!
 }
 
