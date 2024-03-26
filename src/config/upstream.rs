@@ -172,7 +172,7 @@ impl Upstream {
     }
 
     pub fn get_on_request(&self) -> Option<String> {
-        Some(self.on_request.clone().unwrap_or("".to_string()))
+        self.on_request.clone()
     }
 }
 

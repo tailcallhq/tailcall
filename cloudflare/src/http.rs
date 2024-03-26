@@ -29,10 +29,10 @@ impl CloudflareHttp {
 impl HttpIO for CloudflareHttp {
     // HttpClientOptions are ignored in Cloudflare
     // This is because there is little control over the underlying HTTP client
-    async fn execute_with(
-        &self,
+    async fn execute_with<'a>(
+        &'a self,
         request: reqwest::Request,
-        _: Option<http::HttpFilter>,
+        _: &'a Option<http::HttpFilter>,
     ) -> Result<Response<Bytes>> {
         let client = self.client.clone();
         let method = request.method().clone();

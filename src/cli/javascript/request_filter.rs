@@ -37,16 +37,15 @@ impl RequestFilter {
     async fn on_request(
         &self,
         mut request: reqwest::Request,
-        http_filter: Option<http::HttpFilter>,
+        http_filter: &Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<Bytes>> {
-
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        
+
         let mut command = None;
-        if let Some(value1) = http_filter {
-            if let Some(value2) = value1.on_request {
-                command = self.worker.call(value2, event).await?;
+        if let Some(value) = http_filter {
+            if let Some(ref value) = value.on_request {
+                command = self.worker.call(value.clone(), event).await?;
             }
         }
         match command {
@@ -63,7 +62,7 @@ impl RequestFilter {
                         request
                             .url_mut()
                             .set_path(js_response.headers["location"].as_str());
-                        self.on_request(request, None).await
+                        self.on_request(request, &None).await
                     } else {
                         Ok(js_response.try_into()?)
                     }
@@ -76,10 +75,10 @@ impl RequestFilter {
 
 #[async_trait::async_trait]
 impl HttpIO for RequestFilter {
-    async fn execute_with(
-        &self,
+    async fn execute_with<'a>(
+        &'a self,
         request: reqwest::Request,
-        http_filter: Option<http::HttpFilter>,
+        http_filter: &'a Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
         self.on_request(request, http_filter).await
     }

@@ -22,10 +22,10 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-    async fn execute_with(
-        &self,
+    async fn execute_with<'a>(
+        &'a self,
         _: Request,
-        _: Option<http::HttpFilter>,
+        _: &'a Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<Bytes>> {
         Ok(Response::empty())
     }

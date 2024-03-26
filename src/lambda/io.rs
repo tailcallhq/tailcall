@@ -87,7 +87,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req, http_filter.clone()).await?
+                        execute_raw_request(&ctx, req, http_filter).await?
                     };
 
                     if ctx.req_ctx.server.get_enable_http_validation() {
@@ -113,7 +113,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req, None).await?
+                        execute_raw_request(&ctx, req, &None).await?
                     };
 
                     set_headers(&ctx, &res);
@@ -193,7 +193,7 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
-    http_filter: Option<http::HttpFilter>,
+    http_filter: &Option<http::HttpFilter>,
 ) -> Result<Response<async_graphql::Value>> {
     let response = ctx
         .req_ctx
