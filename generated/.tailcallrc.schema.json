@@ -194,30 +194,20 @@
       "additionalProperties": false
     },
     "Call": {
-      "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
+      "description": "Provides the ability to refer to multiple fields in the Query or Mutation root.",
       "type": "object",
+      "required": [
+        "steps"
+      ],
       "properties": {
-        "args": {
-          "description": "The arguments of the field on the `Query` or `Mutation` type that you want to call. For instance `{id: \"{{value.userId}}\"}`.",
-          "type": "object",
-          "additionalProperties": true
-        },
-        "mutation": {
-          "description": "The name of the field on the `Mutation` type that you want to call. For instance `createUser`.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "query": {
-          "description": "The name of the field on the `Query` type that you want to call. For instance `user`.",
-          "type": [
-            "string",
-            "null"
-          ]
+        "steps": {
+          "description": "Steps are composed together to form a call. If you have multiple steps, the output of the previous step is passed as input to the next step.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Step"
+          }
         }
-      },
-      "additionalProperties": false
+      }
     },
     "Const": {
       "description": "The `@const` operators allows us to embed a constant response for the schema.",
@@ -1804,6 +1794,31 @@
         "pretty": {
           "description": "Output to stdout in pretty human-readable format",
           "type": "boolean"
+        }
+      }
+    },
+    "Step": {
+      "description": "Provides the ability to refer to a field defined in the root Query or Mutation.",
+      "type": "object",
+      "properties": {
+        "args": {
+          "description": "The arguments that will override the actual arguments of the field.",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "mutation": {
+          "description": "The name of the field on the `Mutation` type that you want to call.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "query": {
+          "description": "The name of the field on the `Query` type that you want to call.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

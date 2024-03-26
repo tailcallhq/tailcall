@@ -8,7 +8,7 @@ use crate::config::{Field, GraphQLOperationType, KeyValue};
 use crate::lambda::Expression;
 use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, Validator};
+use crate::valid::{Valid, ValidationError, Validator};
 
 fn find_value<'a>(args: &'a Iter<'a, String, Value>, key: &'a String) -> Option<&'a Value> {
     args.clone()
@@ -20,11 +20,11 @@ pub fn update_call(
 ) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, _), b_field| {
-            let Some(call) = &field.call else {
+            let Some(ref calls) = field.call else {
                 return Valid::succeed(b_field);
             };
 
-            compile_call(field, config, call, operation_type)
+            compile_call(field, config, calls, operation_type)
                 .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
@@ -36,19 +36,40 @@ pub fn compile_call(
     call: &config::Call,
     operation_type: &GraphQLOperationType,
 ) -> Valid<Expression, String> {
-    get_field_and_field_name(call, config_module).and_then(|(_field, field_name, args)| {
-        let empties: Vec<(&String, &config::Arg)> = _field
+    Valid::from_iter(call.steps.iter(), |step| {
+        compile_step(field, config_module, step, operation_type)
+    })
+    .and_then(|steps| {
+        let option = steps.into_iter().reduce(|expr, next| expr.and_then(next));
+        Valid::from_option(option, "Steps can't be empty".to_string())
+    })
+}
+
+fn compile_step(
+    field: &Field,
+    config_module: &ConfigModule,
+    step: &config::Step,
+    operation_type: &GraphQLOperationType,
+) -> Valid<Expression, String> {
+    get_field_and_field_name(step, config_module).and_then(|(_field, field_name, args)| {
+        let empties: Vec<&String> = _field
             .args
             .iter()
-            .filter(|(k, _)| !args.clone().any(|(k1, _)| k1.eq(*k)))
+            .filter_map(|(k, arg)| {
+                if arg.required && !args.clone().any(|(k1, _)| k1.eq(k)) {
+                    Some(k)
+                } else {
+                    None
+                }
+            })
             .collect();
 
         if empties.len().gt(&0) {
             return Valid::fail(format!(
                 "no argument {} found",
                 empties
-                    .iter()
-                    .map(|(k, _)| format!("'{}'", k))
+                    .into_iter()
+                    .map(|k| format!("'{}'", k))
                     .collect::<Vec<String>>()
                     .join(", ")
             ))
@@ -92,6 +113,18 @@ pub fn compile_call(
         } else {
             Valid::fail(format!("{} field has no resolver", field_name))
         }
+        .and_then(|expr| {
+            if step.args.is_empty() {
+                Valid::succeed(expr)
+            } else {
+                let args = Valid::from(
+                    DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
+                        .map_err(|e| ValidationError::new(e.to_string())),
+                )
+                .map(Expression::Literal);
+                args.map(|args| args.and_then(expr))
+            }
+        })
     })
 }
 
@@ -116,7 +149,7 @@ fn replace_string<'a>(args: &'a Iter<'a, String, Value>) -> impl Fn(String) -> S
     }
 }
 
-fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
+fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
     } else {
@@ -127,7 +160,7 @@ fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
 }
 
 fn get_field_and_field_name<'a>(
-    call: &'a config::Call,
+    call: &'a config::Step,
     config_module: &'a ConfigModule,
 ) -> Valid<(&'a Field, String, Iter<'a, String, Value>), String> {
     Valid::from_option(

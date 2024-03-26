@@ -601,23 +601,30 @@ pub struct Http {
 }
 
 ///
+/// Provides the ability to refer to multiple fields in the Query or
+/// Mutation root.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+pub struct Call {
+    /// Steps are composed together to form a call.
+    /// If you have multiple steps, the output of the previous step is passed as
+    /// input to the next step.
+    pub steps: Vec<Step>,
+}
+
+///
 /// Provides the ability to refer to a field defined in the root Query or
 /// Mutation.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Call {
+pub struct Step {
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Query` type that you want to call. For
-    /// instance `user`.
+    /// The name of the field on the `Query` type that you want to call.
     pub query: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Mutation` type that you want to call. For
-    /// instance `createUser`.
+    /// The name of the field on the `Mutation` type that you want to call.
     pub mutation: Option<String>,
 
-    /// The arguments of the field on the `Query` or `Mutation` type that you
-    /// want to call. For instance `{id: "{{value.userId}}"}`.
+    /// The arguments that will override the actual arguments of the field.
     #[serde(default, skip_serializing_if = "is_default")]
     pub args: BTreeMap<String, Value>,
 }

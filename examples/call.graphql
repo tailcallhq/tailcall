@@ -11,12 +11,12 @@ type Post {
 
 type Query {
   user(id: Int!): User @http(path: "/users/{{args.id}}")
-  firstUser: User @call(query: "user", args: {id: 1})
+  firstUser: User @call(steps: [{query: "user", args: {id: 1}}])
   postFromUser(userId: Int!): [Post] @http(path: "/posts?userId={{args.userId}}")
 }
 
 type User {
   id: Int
   name: String
-  posts: [Post] @call(query: "postFromUser", args: {userId: "{{value.id}}"})
+  posts: [Post] @call(steps: [{query: "postFromUser", args: {userId: "{{value.id}}"}}])
 }
