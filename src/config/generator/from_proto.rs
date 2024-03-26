@@ -25,14 +25,14 @@ impl Helper {
 
     fn get_value(&self, name: &str, ty: DescriptorType) -> String {
         match self.options {
-            Options::AppendPkgId => match ty {
+            Options::Interactive => match ty {
                 DescriptorType::Enum => {
                     format!("{}{}{}", name, DEFAULT_SPECTATOR, self.package)
                 }
                 DescriptorType::Message => {
                     format!("{}{}{}", name, DEFAULT_SPECTATOR, self.package)
                 }
-                DescriptorType::Method => format!(
+                DescriptorType::Query(_) | DescriptorType::Mutation(_) => format!(
                     "{}{}{}",
                     name.to_case(Case::Camel),
                     DEFAULT_SPECTATOR,
@@ -42,7 +42,7 @@ impl Helper {
             _ => match ty {
                 DescriptorType::Enum => name.to_string(),
                 DescriptorType::Message => name.to_string(),
-                DescriptorType::Method => name.to_case(Case::Camel),
+                DescriptorType::Query(_) | DescriptorType::Mutation(_) => name.to_case(Case::Camel),
             },
         }
     }
@@ -69,7 +69,7 @@ impl Helper {
     }
     fn get(&self, name: &str) -> Option<String> {
         match self.options {
-            Options::AppendPkgId => self.map.get(&format!("{}.{}", self.package, name)).cloned(),
+            Options::Interactive => self.map.get(&format!("{}.{}", self.package, name)).cloned(),
             _ => self.map.get(name).cloned(),
         }
     }
@@ -130,7 +130,7 @@ fn append_enums(
         let enum_name = enum_.name();
 
         let enum_ty = DescriptorType::Enum;
-        helper.insert(enum_name, enum_ty)?;
+        helper.insert(enum_name, enum_ty.clone())?;
 
         let mut ty = config_wrapper.get_ty(&helper.get(enum_name).unwrap());
 
@@ -144,7 +144,12 @@ fn append_enums(
         }
         ty.variants = Some(variants);
 
-        config_wrapper.insert_ty(helper.get(enum_name).unwrap(), ty, enum_ty.to_string());
+        config_wrapper.insert_ty(
+            helper.get(enum_name).unwrap(),
+            ty,
+            enum_ty.to_string(),
+            enum_ty,
+        );
         // it should be
         // safe to call
         // unwrap here
@@ -164,7 +169,7 @@ fn append_msg_type(
         let msg_name = message.name().to_string();
 
         let msg_ty = DescriptorType::Message;
-        helper.insert(&msg_name, msg_ty)?;
+        helper.insert(&msg_name, msg_ty.clone())?;
 
         append_enums(config_wrapper, message.enum_type, helper)?;
         append_msg_type(config_wrapper, message.nested_type, helper)?;
@@ -193,7 +198,12 @@ fn append_msg_type(
             ty.fields.insert(field_name, cfg_field);
         }
 
-        config_wrapper.insert_ty(helper.get(&msg_name).unwrap(), ty, msg_ty.to_string());
+        config_wrapper.insert_ty(
+            helper.get(&msg_name).unwrap(),
+            ty,
+            msg_ty.to_string(),
+            msg_ty,
+        );
         // it should be
         // safe to call
         // unwrap here
@@ -205,8 +215,14 @@ fn generate_ty(
     config_wrapper: &mut ConfigWrapper,
     services: Vec<ServiceDescriptorProto>,
     helper: &mut Helper,
-    key: &str,
+    descriptor_ty: DescriptorType,
 ) -> anyhow::Result<Type> {
+    let key = match &descriptor_ty {
+        DescriptorType::Query(k) => k.as_str(),
+        DescriptorType::Mutation(k) => k.as_str(),
+        _ => "Invalid key",
+    };
+
     let package = helper.package.clone();
     let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
     let mut ty = config_wrapper.get_ty(key);
@@ -216,7 +232,7 @@ fn generate_ty(
         for method in &service.method {
             let method_name = method.name();
 
-            helper.insert(method_name, DescriptorType::Method)?;
+            helper.insert(method_name, descriptor_ty.clone())?;
 
             let mut cfg_field = Field::default();
             if let Some((k, v)) = get_arg(method.input_type(), helper) {
@@ -260,11 +276,12 @@ fn append_query_service(
         service.method.retain(|v| !gen.is_mutation(v.name()));
     }
 
-    let ty = generate_ty(config_wrapper, services, helper, query)?;
+    let qry_ty = DescriptorType::Query(query.to_string());
+    let ty = generate_ty(config_wrapper, services, helper, qry_ty.clone())?;
 
     if ty.ne(&Type::default()) {
         config_wrapper.config.schema.query = Some(query.to_string());
-        config_wrapper.insert_ty(query.to_string(), ty, query.to_string());
+        config_wrapper.insert_ty(query.to_string(), ty, query.to_string(), qry_ty);
     }
     Ok(())
 }
@@ -284,10 +301,11 @@ fn append_mutation_service(
         service.method.retain(|v| gen.is_mutation(v.name()));
     }
 
-    let ty = generate_ty(config_wrapper, services, helper, mutation)?;
+    let mutation_ty = DescriptorType::Mutation(mutation.to_string());
+    let ty = generate_ty(config_wrapper, services, helper, mutation_ty.clone())?;
     if ty.ne(&Type::default()) {
         config_wrapper.config.schema.mutation = Some(mutation.to_string());
-        config_wrapper.insert_ty(mutation.to_string(), ty, mutation.to_string());
+        config_wrapper.insert_ty(mutation.to_string(), ty, mutation.to_string(), mutation_ty);
     }
     Ok(())
 }
@@ -375,7 +393,7 @@ mod test {
         set.file.push(greetings_dup_methods.clone());
 
         let result =
-            prebuild_config(vec![set], &get_generator_cfg(), Options::AppendPkgId)?.to_sdl();
+            prebuild_config(vec![set], &get_generator_cfg(), Options::Interactive)?.to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -390,7 +408,7 @@ mod test {
         let result_sets = prebuild_config(
             vec![set, set1, set2],
             &get_generator_cfg(),
-            Options::AppendPkgId,
+            Options::Interactive,
         )?
         .to_sdl();
 

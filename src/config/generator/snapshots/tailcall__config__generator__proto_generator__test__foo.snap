@@ -51,11 +51,11 @@ type HelloReply_greetings_dup {
 }
 
 type Mutation {
-  addNews_news(news: News_news!): News_news! @grpc(method: "news.NewsService.AddNews")
-  deleteNews_news(newsId: NewsId_news!): String @grpc(method: "news.NewsService.DeleteNews")
-  editNews_news(news: News_news!): News_news! @grpc(method: "news.NewsService.EditNews")
-  sayHello_greetings(helloRequest: HelloRequest_greetings!): HelloReply_greetings! @grpc(method: "greetings.Greeter.SayHello")
-  sayHello_greetings_dup(helloRequest: HelloRequest_greetings_dup!): HelloReply_greetings_dup! @grpc(method: "greetings_dup.Greeter.SayHello")
+  add-news-news_mymut(news: News_news!): News_news! @grpc(method: "news.NewsService.AddNews")
+  delete-news-news_mymut(newsId: NewsId_news!): String @grpc(method: "news.NewsService.DeleteNews")
+  edit-news-news_mymut(news: News_news!): News_news! @grpc(method: "news.NewsService.EditNews")
+  say-hello-greetings-dup_mymut(helloRequest: HelloRequest_greetings_dup!): HelloReply_greetings_dup! @grpc(method: "greetings_dup.Greeter.SayHello")
+  say-hello-greetings_mymut(helloRequest: HelloRequest_greetings!): HelloReply_greetings! @grpc(method: "greetings.Greeter.SayHello")
 }
 
 type NewsList_news {
@@ -63,7 +63,7 @@ type NewsList_news {
 }
 
 type Query {
-  getAllNews_news: NewsList_news! @grpc(method: "news.NewsService.GetAllNews")
-  getMultipleNews_news(multipleNewsId: MultipleNewsId_news!): NewsList_news! @grpc(method: "news.NewsService.GetMultipleNews")
-  getNews_news(newsId: NewsId_news!): News_news! @grpc(method: "news.NewsService.GetNews")
+  gEtAlLNEwSNEwS_myqry: NewsList_news! @grpc(method: "news.NewsService.GetAllNews")
+  gEtMuLtIpLeNeWsNeWs_myqry(multipleNewsId: MultipleNewsId_news!): NewsList_news! @grpc(method: "news.NewsService.GetMultipleNews")
+  gEtNeWsNeWs_myqry(newsId: NewsId_news!): News_news! @grpc(method: "news.NewsService.GetNews")
 }

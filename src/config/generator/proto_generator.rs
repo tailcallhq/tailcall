@@ -11,9 +11,45 @@ use strum_macros::Display;
 use crate::config::generator::from_proto::prebuild_config;
 use crate::config::{Config, Type};
 
+pub(super) static DEFAULT_SPECTATOR: &str = "_";
+pub(super) static FIELD_TY: &str = "field_ty_unique_id";
+pub(super) static ARG_TY: &str = "arg_ty_unique_id";
+
+/// Enum to represent the type of the descriptor
+#[derive(Display, Clone)]
+pub enum DescriptorType {
+    Enum,
+    Message,
+    Query(String),
+    Mutation(String),
+}
+
+/// Options to be used while generating the proto
+/// Interactive: Allows manual handling of collisions
+/// FailIfCollide: Fails if there is a collision
+/// Merge: Merges the types in case of collision
+#[derive(PartialEq, Eq, Copy, Clone)]
+pub enum Options {
+    // TODO rename
+    Interactive,
+    FailIfCollide,
+    Merge,
+}
+
+/// Contains package id and name in case of message or enum
+/// And name of the field with optional args in case of query or mutation
 #[derive(Clone)]
 pub struct FieldHolder {
+    descriptor_type: DescriptorType,
     package_id: String,
+    name: String,
+    updated_name: Option<String>,
+    args: Vec<ArgsHolder>,
+}
+
+/// Contains name of the field and updated name of the field
+#[derive(Clone)]
+pub struct ArgsHolder {
     name: String,
     updated_name: Option<String>,
 }
@@ -31,9 +67,9 @@ impl FieldHolder {
     pub fn get_default_name(&self) -> String {
         let pkg_id = self.get_package_id();
         let name = self.get_name();
-        if pkg_id.is_empty() {
+        if pkg_id.eq(FIELD_TY) || pkg_id.eq(ARG_TY) {
             name
-        }else {
+        } else {
             format!("{}{}{}", name, DEFAULT_SPECTATOR, pkg_id)
         }
     }
@@ -44,8 +80,17 @@ impl FieldHolder {
     }
 }
 
-pub(super) static DEFAULT_SPECTATOR: &str = "_";
+impl ArgsHolder {
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+    pub fn get_updated_name(&self) -> String {
+        self.updated_name.clone().unwrap_or_else(|| self.get_name())
+    }
+}
 
+/// Wrapper used for pre-building config to flatten the types
+/// and store the types in a map
 #[derive(Default)]
 pub struct ConfigWrapper {
     pub config: Config,
@@ -53,34 +98,70 @@ pub struct ConfigWrapper {
 }
 
 impl ConfigWrapper {
-    pub fn insert_ty(&mut self, key: String, val: Type, ty: String) {
+    #[allow(clippy::too_many_arguments)]
+    pub fn insert_ty(
+        &mut self,
+        key: String,
+        val: Type,
+        ty: String,
+        descriptor_type: DescriptorType,
+    ) {
         let split = key.rsplitn(2, DEFAULT_SPECTATOR).collect::<Vec<&str>>();
         if let [name, pkg_id] = &split[..] {
+            // is message or enum
             if let Some(val) = self.types.get_mut(&ty) {
                 val.push(FieldHolder {
+                    descriptor_type,
                     package_id: pkg_id.to_string(),
                     name: name.to_string(),
                     updated_name: None,
+                    args: vec![],
                 });
             } else {
                 self.types.insert(
                     ty,
                     vec![FieldHolder {
+                        descriptor_type,
                         package_id: pkg_id.to_string(),
                         name: name.to_string(),
                         updated_name: None,
+                        args: vec![],
                     }],
                 );
             }
         } else {
-            self.types.insert(
-                ty,
-                vec![FieldHolder {
-                    package_id: String::new(),
-                    name: key.clone(),
-                    updated_name: None,
-                }],
-            );
+            // is query or mutation
+            if let Some(vec) = self.types.get_mut(&ty) {
+                for (k, field) in &val.fields {
+                    let mut args = vec![];
+                    for arg_k in field.args.keys() {
+                        args.push(ArgsHolder { name: arg_k.clone(), updated_name: None });
+                    }
+                    vec.push(FieldHolder {
+                        descriptor_type: descriptor_type.clone(),
+                        package_id: FIELD_TY.to_string(),
+                        name: k.clone(),
+                        updated_name: None,
+                        args,
+                    });
+                }
+            } else {
+                let mut vec = vec![];
+                for (k, field) in &val.fields {
+                    let mut args = vec![];
+                    for arg_k in field.args.keys() {
+                        args.push(ArgsHolder { name: arg_k.clone(), updated_name: None });
+                    }
+                    vec.push(FieldHolder {
+                        descriptor_type: descriptor_type.clone(),
+                        package_id: FIELD_TY.to_string(),
+                        name: k.clone(),
+                        updated_name: None,
+                        args,
+                    });
+                }
+                self.types.insert(ty, vec);
+            }
         }
 
         self.config.types.insert(key, val);
@@ -98,21 +179,8 @@ impl Deref for ConfigWrapper {
     }
 }
 
-#[derive(Display, Clone, Copy)]
-pub enum DescriptorType {
-    Enum,
-    Message,
-    Method,
-}
-
-#[derive(PartialEq, Eq, Copy, Clone)]
-pub enum Options {
-    // TODO rename
-    AppendPkgId,
-    FailIfCollide,
-    Merge,
-}
-
+/// Contains the functions to be used for interactively generating the config
+#[derive(Setters)]
 pub struct ProtoGeneratorFxn {
     pub is_mutation: Box<dyn Fn(&str) -> bool>,
     pub format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
@@ -122,6 +190,7 @@ pub struct ProtoGeneratorFxn {
 }
 
 impl ProtoGeneratorFxn {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         is_mutation: Box<dyn Fn(&str) -> bool>,
         format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
@@ -129,7 +198,13 @@ impl ProtoGeneratorFxn {
         format_query: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
         format_mutation: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
     ) -> Self {
-        Self { is_mutation, format_enum, format_ty, format_query, format_mutation }
+        Self {
+            is_mutation,
+            format_enum,
+            format_ty,
+            format_query,
+            format_mutation,
+        }
     }
 }
 
@@ -146,6 +221,7 @@ impl Default for ProtoGeneratorFxn {
     }
 }
 
+/// Contains the configuration for the config generator
 #[derive(Setters)]
 pub struct ProtoGeneratorConfig {
     query: String,
@@ -164,7 +240,7 @@ impl ProtoGeneratorConfig {
             query: query.unwrap_or_else(|| "Query".to_string()),
             mutation: mutation.unwrap_or_else(|| "Mutation".to_string()),
             generator_fxn,
-            option: Options::AppendPkgId,
+            option: Options::Interactive,
         }
     }
 
@@ -186,12 +262,13 @@ impl Default for ProtoGeneratorConfig {
             query: "Query".to_string(),
             mutation: "Mutation".to_string(),
             generator_fxn: ProtoGeneratorFxn::default(),
-            option: Options::AppendPkgId,
+            option: Options::Interactive,
         }
     }
 }
 
-struct ProtoGenerator {
+/// ProtoGenerator to generate the config from the proto files
+pub struct ProtoGenerator {
     generator_config: ProtoGeneratorConfig,
 }
 
@@ -207,7 +284,7 @@ impl ProtoGenerator {
             self.generator_config.option,
         )?;
 
-        if self.generator_config.option == Options::AppendPkgId {
+        if self.generator_config.option == Options::Interactive {
             let original_enums = pre_built_wrapper
                 .types
                 .get(&DescriptorType::Enum.to_string())
@@ -232,11 +309,7 @@ impl ProtoGenerator {
             )?;
 
             if let Some(qry) = &pre_built_wrapper.schema.query {
-                let original_qry = pre_built_wrapper
-                    .types
-                    .get(qry)
-                    .unwrap()
-                    .clone();
+                let original_qry = pre_built_wrapper.types.get(qry).unwrap().clone();
 
                 let updated_qry_map = get_updated_map(
                     original_qry,
@@ -249,11 +322,7 @@ impl ProtoGenerator {
             }
 
             if let Some(mutation) = &pre_built_wrapper.schema.mutation {
-                let original_mutation = pre_built_wrapper
-                    .types
-                    .get(mutation)
-                    .unwrap()
-                    .clone();
+                let original_mutation = pre_built_wrapper.types.get(mutation).unwrap().clone();
                 let updated_mutation_map = get_updated_map(
                     original_mutation,
                     &self.generator_config.generator_fxn.format_mutation,
@@ -272,30 +341,57 @@ impl ProtoGenerator {
     }
 }
 
-fn get_updated_map(
-    original: Vec<FieldHolder>,
-    func: &Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-    ty: String,
-) -> anyhow::Result<BTreeMap<String, String>> {
-    let original_len = original.len();
-    let mut map = BTreeMap::new();
-    let updated = func(original);
-    if original_len != updated.len() {
-        return Err(anyhow!("Invalid length of {} expected length: {} found {}",ty, original_len, updated.len()));
-    }
-    updated.into_iter().for_each(|v| {
-        map.insert(v.get_default_name(), v.get_updated_name());
-    });
-    Ok(map)
+struct UpdateMapHolder {
+    ty_field: BTreeMap<String, String>,
+    args: BTreeMap<String, String>,
 }
 
-fn update_qry_mut(cfg: &mut Config, updated_stuff: BTreeMap<String, String>, ty: &String) {
+fn get_updated_map(
+    original: Vec<FieldHolder>,
+    func: &dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>,
+    ty: String,
+) -> anyhow::Result<UpdateMapHolder> {
+    let original_len = original.len();
+    let mut updated_fields_map = BTreeMap::new();
+    let mut updated_args_map = BTreeMap::new();
+    let updated = func(original);
+    if original_len != updated.len() {
+        return Err(anyhow!(
+            "Invalid length of {} expected length: {} found {}",
+            ty,
+            original_len,
+            updated.len()
+        ));
+    }
+    updated.into_iter().for_each(|v| {
+        updated_fields_map.insert(v.get_default_name(), v.get_updated_name());
+        v.args.into_iter().for_each(|arg| {
+            updated_args_map.insert(arg.get_name(), arg.get_updated_name());
+        });
+    });
+    Ok(UpdateMapHolder { ty_field: updated_fields_map, args: updated_args_map })
+}
+
+fn update_qry_mut(cfg: &mut Config, updated_stuff: UpdateMapHolder, ty: &String) {
+    let update_ty_fields = updated_stuff.ty_field;
+    let update_args = updated_stuff.args;
+
     if let Some(v) = cfg.types.get_mut(ty) {
         let mut fields = BTreeMap::new();
-        for (k,v) in v.fields.iter() {
-            let k = if let Some(k) = updated_stuff.get(k) {
+        for (k, v) in v.fields.iter_mut() {
+            let mut args = BTreeMap::new();
+            for (arg_k, v) in v.args.iter() {
+                let arg_k = if let Some(arg_k) = update_args.get(arg_k) {
+                    arg_k.clone()
+                } else {
+                    arg_k.clone()
+                };
+                args.insert(arg_k, v.clone());
+            }
+            v.args = args;
+            let k = if let Some(k) = update_ty_fields.get(k) {
                 k.clone()
-            }else {
+            } else {
                 k.clone()
             };
             fields.insert(k, v.clone());
@@ -304,22 +400,23 @@ fn update_qry_mut(cfg: &mut Config, updated_stuff: BTreeMap<String, String>, ty:
     }
 }
 
-fn update_type_fields(cfg: &mut Config, updated_stuff: BTreeMap<String, String>) {
+fn update_type_fields(cfg: &mut Config, updated_stuff: UpdateMapHolder) {
+    let updated_ty_fields = updated_stuff.ty_field;
     let mut new_types = BTreeMap::new();
     for (k, v) in cfg.types.iter_mut() {
-        let k = if let Some(new_enum) = updated_stuff.get(k) {
+        let k = if let Some(new_enum) = updated_ty_fields.get(k) {
             new_enum.clone()
         } else {
             k.clone()
         };
 
         for (_, field) in v.fields.iter_mut() {
-            if let Some(new_stuff) = updated_stuff.get(&field.type_of) {
+            if let Some(new_stuff) = updated_ty_fields.get(&field.type_of) {
                 field.type_of = new_stuff.clone();
             }
 
             for (_, arg) in field.args.iter_mut() {
-                if let Some(new_stuff) = updated_stuff.get(&arg.type_of) {
+                if let Some(new_stuff) = updated_ty_fields.get(&arg.type_of) {
                     arg.type_of = new_stuff.clone();
                 }
             }
@@ -337,7 +434,7 @@ mod test {
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::config::generator::proto_generator::{
-        FieldHolder, ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn,
+        DescriptorType, FieldHolder, ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn,
     };
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
@@ -365,18 +462,46 @@ mod test {
                 .collect()
         };
         let fmt_qey_mut = |mut x: Vec<FieldHolder>| {
-            x.iter_mut()
-                .for_each(|v| {
-                    let updated_name = v.get_default_name().to_case(Case::Snake);
-                    v.insert_updated_name(format!("{}_myqry_or_mut", updated_name));
-                });
+            x.iter_mut().for_each(|v| {
+                // update query/mutation
+                match v.descriptor_type {
+                    DescriptorType::Query(_) => {
+                        let updated_name = v
+                            .get_default_name()
+                            .to_case(Case::Alternating)
+                            .to_case(Case::Camel);
+                        v.insert_updated_name(format!("{}_myqry", updated_name));
+                        v.args.iter_mut().for_each(|arg| {
+                            let updated_name =
+                                arg.get_name().to_case(Case::Lower).to_case(Case::Camel);
+                            arg.updated_name = Some(updated_name);
+                        });
+                    }
+                    DescriptorType::Mutation(_) => {
+                        let updated_name = v.get_default_name().to_case(Case::Kebab);
+                        v.insert_updated_name(format!("{}_mymut", updated_name));
+                        v.args.iter_mut().for_each(|arg| {
+                            let updated_name =
+                                arg.get_name().to_case(Case::Upper).to_case(Case::Camel);
+                            arg.updated_name = Some(updated_name);
+                        });
+                    }
+                    _ => (),
+                }
+            });
             x
         };
 
         ProtoGenerator::new(ProtoGeneratorConfig::new(
             Some("Query".to_string()),
             Some("Mutation".to_string()),
-            ProtoGeneratorFxn::new(Box::new(is_mut), Box::new(fmt), Box::new(fmt), Box::new(fmt_qey_mut), Box::new(fmt_qey_mut)),
+            ProtoGeneratorFxn::new(
+                Box::new(is_mut),
+                Box::new(fmt),
+                Box::new(fmt),
+                Box::new(fmt_qey_mut),
+                Box::new(fmt_qey_mut),
+            ),
         ))
     }
 
