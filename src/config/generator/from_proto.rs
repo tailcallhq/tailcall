@@ -310,7 +310,7 @@ fn append_mutation_service(
     Ok(())
 }
 
-pub fn prebuild_config(
+pub(super) fn prebuild_config(
     descriptor_sets: Vec<FileDescriptorSet>,
     gen: &ProtoGeneratorConfig,
     options: Options,

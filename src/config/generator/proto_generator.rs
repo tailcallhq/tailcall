@@ -36,237 +36,6 @@ pub enum Options {
     Merge,
 }
 
-/// Contains package id and name in case of message or enum
-/// And name of the field with optional args in case of query or mutation
-#[derive(Clone)]
-pub struct FieldHolder {
-    descriptor_type: DescriptorType,
-    package_id: String,
-    name: String,
-    updated_name: Option<String>,
-    args: Vec<ArgsHolder>,
-}
-
-/// Contains name of the field and updated name of the field
-#[derive(Clone)]
-pub struct ArgsHolder {
-    name: String,
-    updated_name: Option<String>,
-}
-
-impl FieldHolder {
-    pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-    pub fn get_package_id(&self) -> String {
-        self.package_id.clone()
-    }
-    pub fn insert_updated_name(&mut self, updated_name: String) {
-        self.updated_name = Some(updated_name);
-    }
-    pub fn get_default_name(&self) -> String {
-        let pkg_id = self.get_package_id();
-        let name = self.get_name();
-        if pkg_id.eq(FIELD_TY) || pkg_id.eq(ARG_TY) {
-            name
-        } else {
-            format!("{}{}{}", name, DEFAULT_SPECTATOR, pkg_id)
-        }
-    }
-    pub fn get_updated_name(&self) -> String {
-        self.updated_name
-            .clone()
-            .unwrap_or_else(|| self.get_default_name())
-    }
-}
-
-impl ArgsHolder {
-    pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-    pub fn get_updated_name(&self) -> String {
-        self.updated_name.clone().unwrap_or_else(|| self.get_name())
-    }
-}
-
-/// Wrapper used for pre-building config to flatten the types
-/// and store the types in a map
-#[derive(Default)]
-pub struct ConfigWrapper {
-    pub config: Config,
-    pub types: BTreeMap<String, Vec<FieldHolder>>,
-}
-
-impl ConfigWrapper {
-    #[allow(clippy::too_many_arguments)]
-    pub fn insert_ty(
-        &mut self,
-        key: String,
-        val: Type,
-        ty: String,
-        descriptor_type: DescriptorType,
-    ) {
-        let split = key.rsplitn(2, DEFAULT_SPECTATOR).collect::<Vec<&str>>();
-        if let [name, pkg_id] = &split[..] {
-            // is message or enum
-            if let Some(val) = self.types.get_mut(&ty) {
-                val.push(FieldHolder {
-                    descriptor_type,
-                    package_id: pkg_id.to_string(),
-                    name: name.to_string(),
-                    updated_name: None,
-                    args: vec![],
-                });
-            } else {
-                self.types.insert(
-                    ty,
-                    vec![FieldHolder {
-                        descriptor_type,
-                        package_id: pkg_id.to_string(),
-                        name: name.to_string(),
-                        updated_name: None,
-                        args: vec![],
-                    }],
-                );
-            }
-        } else {
-            // is query or mutation
-            if let Some(vec) = self.types.get_mut(&ty) {
-                for (k, field) in &val.fields {
-                    let mut args = vec![];
-                    for arg_k in field.args.keys() {
-                        args.push(ArgsHolder { name: arg_k.clone(), updated_name: None });
-                    }
-                    vec.push(FieldHolder {
-                        descriptor_type: descriptor_type.clone(),
-                        package_id: FIELD_TY.to_string(),
-                        name: k.clone(),
-                        updated_name: None,
-                        args,
-                    });
-                }
-            } else {
-                let mut vec = vec![];
-                for (k, field) in &val.fields {
-                    let mut args = vec![];
-                    for arg_k in field.args.keys() {
-                        args.push(ArgsHolder { name: arg_k.clone(), updated_name: None });
-                    }
-                    vec.push(FieldHolder {
-                        descriptor_type: descriptor_type.clone(),
-                        package_id: FIELD_TY.to_string(),
-                        name: k.clone(),
-                        updated_name: None,
-                        args,
-                    });
-                }
-                self.types.insert(ty, vec);
-            }
-        }
-
-        self.config.types.insert(key, val);
-    }
-    pub fn get_ty(&self, key: &str) -> Type {
-        self.config.types.get(key).cloned().unwrap_or_default()
-    }
-}
-
-impl Deref for ConfigWrapper {
-    type Target = Config;
-
-    fn deref(&self) -> &Self::Target {
-        &self.config
-    }
-}
-
-/// Contains the functions to be used for interactively generating the config
-#[derive(Setters)]
-pub struct ProtoGeneratorFxn {
-    pub is_mutation: Box<dyn Fn(&str) -> bool>,
-    pub format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-    pub format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-    pub format_query: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-    pub format_mutation: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-}
-
-impl ProtoGeneratorFxn {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        is_mutation: Box<dyn Fn(&str) -> bool>,
-        format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-        format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-        format_query: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-        format_mutation: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
-    ) -> Self {
-        Self {
-            is_mutation,
-            format_enum,
-            format_ty,
-            format_query,
-            format_mutation,
-        }
-    }
-}
-
-impl Default for ProtoGeneratorFxn {
-    fn default() -> Self {
-        let fmt = |x: Vec<FieldHolder>| x;
-        Self {
-            is_mutation: Box::new(|_| false),
-            format_enum: Box::new(fmt),
-            format_ty: Box::new(fmt),
-            format_query: Box::new(fmt),
-            format_mutation: Box::new(fmt),
-        }
-    }
-}
-
-/// Contains the configuration for the config generator
-#[derive(Setters)]
-pub struct ProtoGeneratorConfig {
-    query: String,
-    mutation: String,
-    generator_fxn: ProtoGeneratorFxn,
-    option: Options,
-}
-
-impl ProtoGeneratorConfig {
-    pub fn new(
-        query: Option<String>,
-        mutation: Option<String>,
-        generator_fxn: ProtoGeneratorFxn,
-    ) -> Self {
-        Self {
-            query: query.unwrap_or_else(|| "Query".to_string()),
-            mutation: mutation.unwrap_or_else(|| "Mutation".to_string()),
-            generator_fxn,
-            option: Options::Interactive,
-        }
-    }
-
-    pub fn is_mutation(&self, name: &str) -> bool {
-        (self.generator_fxn.is_mutation)(name)
-    }
-    pub fn get_query(&self) -> &str {
-        self.query.as_str()
-    }
-
-    pub fn get_mutation(&self) -> &str {
-        self.mutation.as_str()
-    }
-}
-
-impl Default for ProtoGeneratorConfig {
-    fn default() -> Self {
-        Self {
-            query: "Query".to_string(),
-            mutation: "Mutation".to_string(),
-            generator_fxn: ProtoGeneratorFxn::default(),
-            option: Options::Interactive,
-        }
-    }
-}
-
 /// ProtoGenerator to generate the config from the proto files
 pub struct ProtoGenerator {
     generator_config: ProtoGeneratorConfig,
@@ -338,6 +107,255 @@ impl ProtoGenerator {
         }
 
         Ok(pre_built_wrapper.config)
+    }
+}
+
+/// Contains the configuration for the config generator
+#[derive(Setters)]
+pub struct ProtoGeneratorConfig {
+    query: String,
+    mutation: String,
+    generator_fxn: ProtoGeneratorFxn,
+    option: Options,
+}
+
+impl ProtoGeneratorConfig {
+    pub fn new(
+        query: Option<String>,
+        mutation: Option<String>,
+        generator_fxn: ProtoGeneratorFxn,
+    ) -> Self {
+        Self {
+            query: query.unwrap_or_else(|| "Query".to_string()),
+            mutation: mutation.unwrap_or_else(|| "Mutation".to_string()),
+            generator_fxn,
+            option: Options::Interactive,
+        }
+    }
+
+    pub fn is_mutation(&self, name: &str) -> bool {
+        (self.generator_fxn.is_mutation)(name)
+    }
+    pub fn get_query(&self) -> &str {
+        self.query.as_str()
+    }
+
+    pub fn get_mutation(&self) -> &str {
+        self.mutation.as_str()
+    }
+}
+
+impl Default for ProtoGeneratorConfig {
+    fn default() -> Self {
+        Self {
+            query: "Query".to_string(),
+            mutation: "Mutation".to_string(),
+            generator_fxn: ProtoGeneratorFxn::default(),
+            option: Options::Interactive,
+        }
+    }
+}
+
+/// Contains the functions to be used for interactively generating the config
+#[derive(Setters)]
+pub struct ProtoGeneratorFxn {
+    pub is_mutation: Box<dyn Fn(&str) -> bool>,
+    pub format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    pub format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    pub format_query: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    pub format_mutation: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+}
+
+impl ProtoGeneratorFxn {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        is_mutation: Box<dyn Fn(&str) -> bool>,
+        format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+        format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+        format_query: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+        format_mutation: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    ) -> Self {
+        Self {
+            is_mutation,
+            format_enum,
+            format_ty,
+            format_query,
+            format_mutation,
+        }
+    }
+}
+
+impl Default for ProtoGeneratorFxn {
+    fn default() -> Self {
+        let fmt = |x: Vec<FieldHolder>| x;
+        Self {
+            is_mutation: Box::new(|_| false),
+            format_enum: Box::new(fmt),
+            format_ty: Box::new(fmt),
+            format_query: Box::new(fmt),
+            format_mutation: Box::new(fmt),
+        }
+    }
+}
+
+/// Contains package id and name in case of message or enum
+/// And name of the field with optional args in case of query or mutation
+#[derive(Clone)]
+pub struct FieldHolder {
+    descriptor_type: DescriptorType,
+    package_id: String,
+    name: String,
+    updated_name: Option<String>,
+    args: Vec<ArgsHolder>,
+}
+
+/// Contains name of the field and updated name of the field
+#[derive(Clone)]
+pub struct ArgsHolder {
+    name: String,
+    updated_name: Option<String>,
+}
+
+impl FieldHolder {
+    /// returns the original name in proto file
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+    /// returns the package id of the respective proto file
+    pub fn get_package_id(&self) -> String {
+        self.package_id.clone()
+    }
+    /// inserts new name for the field
+    pub fn insert_updated_name(&mut self, updated_name: String) {
+        self.updated_name = Some(updated_name);
+    }
+    /// used to get the default name of the field
+    /// used to store original name of field,
+    /// or in case there is no updated name
+    pub fn get_default_name(&self) -> String {
+        let pkg_id = self.get_package_id();
+        let name = self.get_name();
+        if pkg_id.eq(FIELD_TY) || pkg_id.eq(ARG_TY) {
+            name
+        } else {
+            format!("{}{}{}", name, DEFAULT_SPECTATOR, pkg_id)
+        }
+    }
+
+    /// returns updated name if present else returns default name
+    pub fn get_updated_name(&self) -> String {
+        self.updated_name
+            .clone()
+            .unwrap_or_else(|| self.get_default_name())
+    }
+}
+
+impl ArgsHolder {
+    /// returns the original name or arg in proto file
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    /// returns updated name if present else returns original name
+    pub fn get_updated_name(&self) -> String {
+        self.updated_name.clone().unwrap_or_else(|| self.get_name())
+    }
+
+    /// inserts new name for the arg
+    pub fn insert_updated_name(&mut self, name: String) {
+        self.updated_name = Some(name);
+    }
+}
+
+// internal
+
+/// Wrapper used for pre-building config to flatten the types
+/// and store the types in a map
+#[derive(Default)]
+pub(super) struct ConfigWrapper {
+    pub(super) config: Config,
+    pub(super) types: BTreeMap<String, Vec<FieldHolder>>,
+}
+
+impl ConfigWrapper {
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn insert_ty(
+        &mut self,
+        key: String,
+        val: Type,
+        ty: String,
+        descriptor_type: DescriptorType,
+    ) {
+        let split = key.rsplitn(2, DEFAULT_SPECTATOR).collect::<Vec<&str>>();
+        if let [name, pkg_id] = &split[..] {
+            // is message or enum
+            if let Some(val) = self.types.get_mut(&ty) {
+                val.push(FieldHolder {
+                    descriptor_type,
+                    package_id: pkg_id.to_string(),
+                    name: name.to_string(),
+                    updated_name: None,
+                    args: vec![],
+                });
+            } else {
+                self.types.insert(
+                    ty,
+                    vec![FieldHolder {
+                        descriptor_type,
+                        package_id: pkg_id.to_string(),
+                        name: name.to_string(),
+                        updated_name: None,
+                        args: vec![],
+                    }],
+                );
+            }
+        } else {
+            // is query or mutation
+            if let Some(vec) = self.types.get_mut(&ty) {
+                for (k, field) in &val.fields {
+                    let mut args = vec![];
+                    for arg_k in field.args.keys() {
+                        args.push(ArgsHolder { name: arg_k.clone(), updated_name: None });
+                    }
+                    vec.push(FieldHolder {
+                        descriptor_type: descriptor_type.clone(),
+                        package_id: FIELD_TY.to_string(),
+                        name: k.clone(),
+                        updated_name: None,
+                        args,
+                    });
+                }
+            } else {
+                let mut vec = vec![];
+                for (k, field) in &val.fields {
+                    let mut args = vec![];
+                    for arg_k in field.args.keys() {
+                        args.push(ArgsHolder { name: arg_k.clone(), updated_name: None });
+                    }
+                    vec.push(FieldHolder {
+                        descriptor_type: descriptor_type.clone(),
+                        package_id: FIELD_TY.to_string(),
+                        name: k.clone(),
+                        updated_name: None,
+                        args,
+                    });
+                }
+                self.types.insert(ty, vec);
+            }
+        }
+
+        self.config.types.insert(key, val);
+    }
+    pub(super) fn get_ty(&self, key: &str) -> Type {
+        self.config.types.get(key).cloned().unwrap_or_default()
+    }
+}
+
+impl Deref for ConfigWrapper {
+    type Target = Config;
+
+    fn deref(&self) -> &Self::Target {
+        &self.config
     }
 }
 
@@ -474,7 +492,7 @@ mod test {
                         v.args.iter_mut().for_each(|arg| {
                             let updated_name =
                                 arg.get_name().to_case(Case::Lower).to_case(Case::Camel);
-                            arg.updated_name = Some(updated_name);
+                            arg.insert_updated_name(updated_name);
                         });
                     }
                     DescriptorType::Mutation(_) => {
@@ -483,7 +501,7 @@ mod test {
                         v.args.iter_mut().for_each(|arg| {
                             let updated_name =
                                 arg.get_name().to_case(Case::Upper).to_case(Case::Camel);
-                            arg.updated_name = Some(updated_name);
+                            arg.insert_updated_name(updated_name);
                         });
                     }
                     _ => (),

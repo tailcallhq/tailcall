@@ -1,2 +1,2 @@
-pub mod from_proto;
-mod proto_generator;
+mod from_proto;
+pub mod proto_generator;
