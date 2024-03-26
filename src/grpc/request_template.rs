@@ -15,7 +15,7 @@ use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::path_value::PathValue;
+use crate::path_resolver::PathResolver;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -44,7 +44,7 @@ impl Hash for RenderedRequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_url<C: PathValue>(&self, ctx: &C) -> Result<Url> {
+    fn create_url<C: PathResolver>(&self, ctx: &C) -> Result<Url> {
         let url = url::Url::parse(
             self.url
                 .render_string(ctx)
@@ -55,7 +55,7 @@ impl RequestTemplate {
         Ok(url)
     }
 
-    fn create_headers<C: PathValue>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: PathResolver>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         header_map.insert(CONTENT_TYPE, GRPC_MIME_TYPE.to_owned());
@@ -71,14 +71,14 @@ impl RequestTemplate {
         header_map
     }
 
-    pub fn render<C: PathValue + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
+    pub fn render<C: PathResolver + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
         let url = self.create_url(ctx)?;
         let headers = self.render_headers(ctx);
         let body = self.render_body(ctx);
         Ok(RenderedRequestTemplate { url, headers, body, operation: self.operation.clone() })
     }
 
-    fn render_body<C: PathValue + HasHeaders>(&self, ctx: &C) -> String {
+    fn render_body<C: PathResolver + HasHeaders>(&self, ctx: &C) -> String {
         if let Some(body) = &self.body {
             body.render_string(ctx).unwrap_or_default()
         } else {
@@ -86,7 +86,7 @@ impl RequestTemplate {
         }
     }
 
-    fn render_headers<C: PathValue + HasHeaders>(&self, ctx: &C) -> HeaderMap {
+    fn render_headers<C: PathResolver + HasHeaders>(&self, ctx: &C) -> HeaderMap {
         let mut req_headers = HeaderMap::new();
 
         let headers = self.create_headers(ctx);
@@ -113,7 +113,7 @@ impl RenderedRequestTemplate {
     }
 }
 
-impl<Ctx: PathValue + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathResolver + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let rendered_req = self.render(ctx).unwrap();
@@ -139,7 +139,7 @@ mod tests {
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
-    use crate::path_value::PathValue;
+    use crate::path_resolver::PathResolver;
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -199,7 +199,7 @@ mod tests {
         }
     }
 
-    impl PathValue for Context {
+    impl PathResolver for Context {
         fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
         where
             Path: AsRef<str>,

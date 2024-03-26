@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::path_value::PathValue;
+use crate::path_resolver::PathResolver;
 use crate::EnvIO;
 
 pub struct ConfigReaderContext<'a> {
@@ -9,7 +9,7 @@ pub struct ConfigReaderContext<'a> {
     pub vars: &'a BTreeMap<String, String>,
 }
 
-impl<'a> PathValue for ConfigReaderContext<'a> {
+impl<'a> PathResolver for ConfigReaderContext<'a> {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,

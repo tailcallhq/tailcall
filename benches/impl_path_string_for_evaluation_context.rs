@@ -18,7 +18,7 @@ use tailcall::blueprint::{Server, Upstream};
 use tailcall::cache::InMemoryCache;
 use tailcall::http::{RequestContext, Response};
 use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path_value::PathValue;
+use tailcall::path_resolver::PathResolver;
 use tailcall::runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 

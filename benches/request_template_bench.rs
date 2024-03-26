@@ -5,7 +5,7 @@ use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
 use tailcall::http::RequestTemplate;
-use tailcall::path_value::PathValue;
+use tailcall::path_resolver::PathResolver;
 
 #[derive(Setters)]
 struct Context {
@@ -18,7 +18,7 @@ impl Default for Context {
         Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
 }
-impl PathValue for Context {
+impl PathResolver for Context {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,

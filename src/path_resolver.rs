@@ -6,13 +6,15 @@ use indexmap::IndexMap;
 use crate::json::JsonLike;
 use crate::EnvIO;
 
-pub trait PathValue {
+pub trait PathResolver {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>;
+
+    fn get_path_string<'a, Path>(&'a self, path: &[Path]) -> Option<Cow<'a, String>>
 }
 
-impl PathValue for async_graphql::Value {
+impl PathResolver for async_graphql::Value {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,
@@ -21,7 +23,7 @@ impl PathValue for async_graphql::Value {
     }
 }
 
-impl PathValue for serde_json::Value {
+impl PathResolver for serde_json::Value {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,
@@ -31,7 +33,7 @@ impl PathValue for serde_json::Value {
     }
 }
 
-impl PathValue for BTreeMap<String, String> {
+impl PathResolver for BTreeMap<String, String> {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,
@@ -47,7 +49,7 @@ impl PathValue for BTreeMap<String, String> {
     }
 }
 
-impl PathValue for IndexMap<async_graphql::Name, async_graphql::Value> {
+impl PathResolver for IndexMap<async_graphql::Name, async_graphql::Value> {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,
@@ -61,7 +63,7 @@ impl PathValue for IndexMap<async_graphql::Name, async_graphql::Value> {
     }
 }
 
-impl<Env: EnvIO + ?Sized> PathValue for Env {
+impl<Env: EnvIO + ?Sized> PathResolver for Env {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,
@@ -75,7 +77,7 @@ impl<Env: EnvIO + ?Sized> PathValue for Env {
     }
 }
 
-impl PathValue for HeaderMap {
+impl PathResolver for HeaderMap {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,

@@ -7,7 +7,7 @@ use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::http::RequestContext;
-use crate::path_value::PathValue;
+use crate::path_resolver::PathResolver;
 
 // TODO: rename to ResolverContext
 #[derive(Clone)]
@@ -158,7 +158,7 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
     Cow::Owned(format!("({})", args))
 }
 
-impl<'ctx, Ctx: ResolverContextLike<'ctx>> PathValue for EvaluationContext<'ctx, Ctx> {
+impl<'ctx, Ctx: ResolverContextLike<'ctx>> PathResolver for EvaluationContext<'ctx, Ctx> {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>,
@@ -190,7 +190,7 @@ mod tests {
 
         use crate::http::RequestContext;
         use crate::lambda::{EvaluationContext, ResolverContextLike};
-        use crate::path_value::PathValue;
+        use crate::path_resolver::PathResolver;
         use crate::EnvIO;
 
         struct Env {

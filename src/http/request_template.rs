@@ -14,7 +14,7 @@ use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
 use crate::mustache::Mustache;
-use crate::path_value::PathValue;
+use crate::path_resolver::PathResolver;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -34,7 +34,7 @@ pub struct RequestTemplate {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathValue>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: PathResolver>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(
             self.root_url
                 .render_string(ctx)
@@ -83,7 +83,7 @@ impl RequestTemplate {
     }
 
     /// Creates a HeaderMap for the context
-    fn create_headers<C: PathValue>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: PathResolver>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         for (k, v) in &self.headers {
@@ -98,7 +98,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathValue + HasHeaders>(
+    pub fn to_request<C: PathResolver + HasHeaders>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -113,7 +113,7 @@ impl RequestTemplate {
     }
 
     /// Sets the body for the request
-    fn set_body<C: PathValue + HasHeaders>(
+    fn set_body<C: PathResolver + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -141,7 +141,7 @@ impl RequestTemplate {
     }
 
     /// Sets the headers for the request
-    fn set_headers<C: PathValue + HasHeaders>(
+    fn set_headers<C: PathResolver + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -229,7 +229,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
     }
 }
 
-impl<Ctx: PathValue + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathResolver + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let state = &mut hasher;
@@ -272,7 +272,7 @@ mod tests {
     use super::RequestTemplate;
     use crate::has_headers::HasHeaders;
     use crate::mustache::Mustache;
-    use crate::path_value::PathValue;
+    use crate::path_resolver::PathResolver;
 
     #[derive(Setters)]
     struct Context {
@@ -286,7 +286,7 @@ mod tests {
         }
     }
 
-    impl PathValue for Context {
+    impl PathResolver for Context {
         fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
         where
             Path: AsRef<str>,
@@ -302,7 +302,7 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathValue + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: PathResolver + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()

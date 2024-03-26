@@ -6,7 +6,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
-use crate::path_value::PathValue;
+use crate::path_resolver::PathResolver;
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
@@ -62,7 +62,7 @@ impl Mustache {
         }
     }
 
-    pub fn render(&self, value: &impl PathValue) -> Option<async_graphql::Value> {
+    pub fn render(&self, value: &impl PathResolver) -> Option<async_graphql::Value> {
         let segments = &self.0;
 
         if let [Segment::Expression(path)] = &segments[..] {
@@ -82,13 +82,13 @@ impl Mustache {
         }
     }
 
-    pub fn render_string(&self, value: &impl PathValue) -> Option<String> {
+    pub fn render_string(&self, value: &impl PathResolver) -> Option<String> {
         let value = self.render(value);
 
         value_to_json_string(value)
     }
 
-    pub fn render_graphql(&self, value: &impl PathValue) -> Option<String> {
+    pub fn render_graphql(&self, value: &impl PathResolver) -> Option<String> {
         let value = self.render(value);
 
         value_to_graphql_string(value)
@@ -365,7 +365,7 @@ mod tests {
         use serde_json::json;
 
         use crate::mustache::{Mustache, Segment};
-        use crate::path_value::PathValue;
+        use crate::path_resolver::PathResolver;
 
         #[test]
         fn test_query_params_template() {
@@ -380,7 +380,7 @@ mod tests {
         fn test_render_mixed() {
             struct DummyPath;
 
-            impl PathValue for DummyPath {
+            impl PathResolver for DummyPath {
                 fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
                 where
                     Path: AsRef<str>,
@@ -415,7 +415,7 @@ mod tests {
         fn test_render_with_missing_path() {
             struct DummyPath;
 
-            impl PathValue for DummyPath {
+            impl PathResolver for DummyPath {
                 fn get_path_value<Path>(&self, _path: &[Path]) -> Option<async_graphql::Value>
                 where
                     Path: AsRef<str>,
@@ -457,7 +457,7 @@ mod tests {
         fn test_render_preserves_spaces() {
             struct DummyPath;
 
-            impl PathValue for DummyPath {
+            impl PathResolver for DummyPath {
                 fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
                 where
                     Path: AsRef<str>,
@@ -484,13 +484,13 @@ mod tests {
 
     mod render_graphql {
         use crate::mustache::{Mustache, Segment};
-        use crate::path_value::PathValue;
+        use crate::path_resolver::PathResolver;
 
         #[test]
         fn test_render_mixed() {
             struct DummyPath;
 
-            impl PathValue for DummyPath {
+            impl PathResolver for DummyPath {
                 fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
                 where
                     Path: AsRef<str>,
@@ -525,7 +525,7 @@ mod tests {
         fn test_render_with_missing_path() {
             struct DummyPath;
 
-            impl PathValue for DummyPath {
+            impl PathResolver for DummyPath {
                 fn get_path_value<Path>(&self, _path: &[Path]) -> Option<async_graphql::Value>
                 where
                     Path: AsRef<str>,
