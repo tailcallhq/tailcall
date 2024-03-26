@@ -29,5 +29,28 @@ fn benchmark_batched_body(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, benchmark_batched_body);
+fn benchmark_group_by(c: &mut Criterion) {
+    c.bench_function("group_by", |b| {
+        b.iter(|| {
+            let input = json!({
+                "data": [
+                    {"type": "A", "value": {"id": "1"}},
+                    {"type": "B", "value": {"id": "2"}},
+                    {"type": "A", "value": {"id": "3"}},
+                    {"type": "A", "value": {"id": "4"}},
+                    {"type": "B", "value": {"id": "5"}}
+                ]
+            });
+
+            let binding = ["data".into(), "type".into()];
+            let gathered = tailcall::json::gather_path_matches(&input, &binding, vec![]);
+
+            let grouped = black_box(tailcall::json::group_by_key(gathered));
+
+            serde_json::to_value(grouped).unwrap();
+        })
+    });
+}
+
+criterion_group!(benches, benchmark_batched_body, benchmark_group_by);
 criterion_main!(benches);
