@@ -45,9 +45,7 @@ fn benchmark_group_by(c: &mut Criterion) {
             let binding = ["data".into(), "type".into()];
             let gathered = tailcall::json::gather_path_matches(&input, &binding, vec![]);
 
-            let grouped = black_box(tailcall::json::group_by_key(gathered));
-
-            serde_json::to_value(grouped).unwrap();
+            black_box(serde_json::to_value(tailcall::json::group_by_key(gathered)).unwrap());
         })
     });
 }
