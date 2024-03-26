@@ -15,7 +15,7 @@ impl super::Scalar for Url {
     /// Function used to validate the date
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Ok(date_str) = value.clone().as_str_ok() {
+            if let Some(date_str) = value.clone().as_str_ok() {
                 return url::Url::parse(date_str).is_ok();
             }
             false

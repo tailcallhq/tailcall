@@ -4,16 +4,16 @@ use async_graphql_value::ConstValue;
 
 pub trait JsonLike {
     type Output;
-    type Error;
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, Self::Error>;
-    fn as_str_ok(&self) -> Result<&str, Self::Error>;
-    fn as_string_ok(&self) -> Result<&String, Self::Error>;
-    fn as_i64_ok(&self) -> Result<i64, Self::Error>;
-    fn as_u64_ok(&self) -> Result<u64, Self::Error>;
-    fn as_f64_ok(&self) -> Result<f64, Self::Error>;
-    fn as_bool_ok(&self) -> Result<bool, Self::Error>;
-    fn as_null_ok(&self) -> Result<(), Self::Error>;
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, Self::Error>;
+    fn as_array_ok(&self) -> Option<&Vec<Self::Output>>;
+    fn as_str_ok(&self) -> Option<&str>;
+    fn as_string_ok(&self) -> Option<&String>;
+    fn as_i64_ok(&self) -> Option<i64>;
+    fn as_u64_ok(&self) -> Option<u64>;
+    fn as_f64_ok(&self) -> Option<f64>;
+    fn as_bool_ok(&self) -> Option<bool>;
+    fn as_null_ok(&self) -> Option<()>;
+
+    // FIXME: rename to get_path_value
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output>;
     fn get_key(&self, path: &str) -> Option<&Self::Output>;
     fn from_output(value: &Self::Output) -> &Self;
@@ -22,34 +22,26 @@ pub trait JsonLike {
 
 impl JsonLike for serde_json::Value {
     type Output = serde_json::Value;
-    type Error = &'static str;
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, Self::Error> {
-        self.as_array().ok_or("expected array")
+    fn as_array_ok(&self) -> Option<&Vec<Self::Output>> {
+        self.as_array()
     }
-    fn as_str_ok(&self) -> Result<&str, Self::Error> {
-        self.as_str().ok_or("expected str")
+    fn as_str_ok(&self) -> Option<&str> {
+        self.as_str()
     }
-    fn as_i64_ok(&self) -> Result<i64, Self::Error> {
-        self.as_i64().ok_or("expected i64")
+    fn as_i64_ok(&self) -> Option<i64> {
+        self.as_i64()
     }
-    fn as_u64_ok(&self) -> Result<u64, Self::Error> {
-        self.as_u64().ok_or("expected u64")
+    fn as_u64_ok(&self) -> Option<u64> {
+        self.as_u64()
     }
-    fn as_f64_ok(&self) -> Result<f64, Self::Error> {
-        self.as_f64().ok_or("expected f64")
+    fn as_f64_ok(&self) -> Option<f64> {
+        self.as_f64()
     }
-    fn as_bool_ok(&self) -> Result<bool, Self::Error> {
-        self.as_bool().ok_or("expected bool")
+    fn as_bool_ok(&self) -> Option<bool> {
+        self.as_bool()
     }
-    fn as_null_ok(&self) -> Result<(), Self::Error> {
-        self.as_null().ok_or("expected null")
-    }
-
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, Self::Error> {
-        match self {
-            serde_json::Value::Null => Ok(None),
-            _ => Ok(Some(self)),
-        }
+    fn as_null_ok(&self) -> Option<()> {
+        self.as_null()
     }
 
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
@@ -78,10 +70,10 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn as_string_ok(&self) -> Result<&String, Self::Error> {
+    fn as_string_ok(&self) -> Option<&String> {
         match self {
-            serde_json::Value::String(s) => Ok(s),
-            _ => Err("expected string"),
+            serde_json::Value::String(s) => Some(s),
+            _ => None,
         }
     }
 
@@ -93,61 +85,53 @@ impl JsonLike for serde_json::Value {
 
 impl JsonLike for async_graphql::Value {
     type Output = async_graphql::Value;
-    type Error = &'static str;
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, Self::Error> {
+    fn as_array_ok(&self) -> Option<&Vec<Self::Output>> {
         match self {
-            ConstValue::List(seq) => Ok(seq),
-            _ => Err("array"),
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
         }
     }
 
-    fn as_str_ok(&self) -> Result<&str, Self::Error> {
+    fn as_str_ok(&self) -> Option<&str> {
         match self {
-            ConstValue::String(s) => Ok(s),
-            _ => Err("str"),
+            ConstValue::String(s) => Some(s),
+            _ => None,
         }
     }
 
-    fn as_i64_ok(&self) -> Result<i64, Self::Error> {
+    fn as_i64_ok(&self) -> Option<i64> {
         match self {
-            ConstValue::Number(n) => n.as_i64().ok_or("expected i64"),
-            _ => Err("i64"),
+            ConstValue::Number(n) => n.as_i64(),
+            _ => None,
         }
     }
 
-    fn as_u64_ok(&self) -> Result<u64, Self::Error> {
+    fn as_u64_ok(&self) -> Option<u64> {
         match self {
-            ConstValue::Number(n) => n.as_u64().ok_or("expected u64"),
-            _ => Err("u64"),
+            ConstValue::Number(n) => n.as_u64(),
+            _ => None,
         }
     }
 
-    fn as_f64_ok(&self) -> Result<f64, Self::Error> {
+    fn as_f64_ok(&self) -> Option<f64> {
         match self {
-            ConstValue::Number(n) => n.as_f64().ok_or("expected f64"),
-            _ => Err("f64"),
+            ConstValue::Number(n) => n.as_f64(),
+            _ => None,
         }
     }
 
-    fn as_bool_ok(&self) -> Result<bool, Self::Error> {
+    fn as_bool_ok(&self) -> Option<bool> {
         match self {
-            ConstValue::Boolean(b) => Ok(*b),
-            _ => Err("bool"),
+            ConstValue::Boolean(b) => Some(*b),
+            _ => None,
         }
     }
 
-    fn as_null_ok(&self) -> Result<(), Self::Error> {
+    fn as_null_ok(&self) -> Option<()> {
         match self {
-            ConstValue::Null => Ok(()),
-            _ => Err("null"),
-        }
-    }
-
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, Self::Error> {
-        match self {
-            ConstValue::Null => Ok(None),
-            _ => Ok(Some(self)),
+            ConstValue::Null => Some(()),
+            _ => None,
         }
     }
 
@@ -176,10 +160,10 @@ impl JsonLike for async_graphql::Value {
             _ => None,
         }
     }
-    fn as_string_ok(&self) -> Result<&String, Self::Error> {
+    fn as_string_ok(&self) -> Option<&String> {
         match self {
-            ConstValue::String(s) => Ok(s),
-            _ => Err("expected string"),
+            ConstValue::String(s) => Some(s),
+            _ => None,
         }
     }
 
@@ -196,7 +180,7 @@ pub fn gather_path_matches<'a, J: JsonLike>(
     path: &'a [String],
     mut vector: Vec<(&'a J, &'a J)>,
 ) -> Vec<(&'a J, &'a J)> {
-    if let Ok(root) = root.as_array_ok() {
+    if let Some(root) = root.as_array_ok() {
         for value in root {
             vector = gather_path_matches(J::from_output(value), path, vector);
         }
@@ -220,9 +204,9 @@ fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Ve
         let key_str = key
             .as_string_ok()
             .cloned()
-            .or_else(|_| key.as_f64_ok().map(|a| a.to_string()));
+            .or_else(|| key.as_f64_ok().map(|a| a.to_string()));
 
-        if let Ok(key) = key_str {
+        if let Some(key) = key_str {
             if let Some(values) = map.get_mut(&key) {
                 values.push(value);
             } else {
