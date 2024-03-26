@@ -6,12 +6,12 @@ use indexmap::IndexMap;
 use crate::json::JsonLike;
 use crate::EnvIO;
 
+/// Provides helper methods on top of existing values to very efficiently get a
+/// value at a path.
 pub trait PathResolver {
     fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
     where
         Path: AsRef<str>;
-
-    fn get_path_string<'a, Path>(&'a self, path: &[Path]) -> Option<Cow<'a, String>>
 }
 
 impl PathResolver for async_graphql::Value {
