@@ -38,6 +38,7 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 use http::Response;
+use path_resolver::PathResolver;
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<String>;
@@ -82,6 +83,20 @@ pub trait WorkerIO<In, Out>: Send + Sync + 'static {
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
     *val == T::default()
+}
+
+impl<Env: EnvIO + ?Sized> PathResolver for Env {
+    fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+    where
+        Path: AsRef<str>,
+    {
+        match &path {
+            // TODO: no way to express all the envs with current trait, but do we even need this?
+            [] => None,
+            [key] => self.get(key.as_ref()).map(|v| v.into()),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
