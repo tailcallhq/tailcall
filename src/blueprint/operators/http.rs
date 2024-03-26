@@ -70,14 +70,14 @@ pub fn compile_http(
                     req_template,
                     group_by: Some(GroupBy::new(http.group_by.clone())),
                     dl_id: None,
-                    http_filter: Some(http::HttpFilter { on_request }),
+                    http_filter: http::HttpFilter { on_request },
                 })
             } else {
                 Expression::IO(IO::Http {
                     req_template,
                     group_by: None,
                     dl_id: None,
-                    http_filter: Some(http::HttpFilter { on_request }),
+                    http_filter: http::HttpFilter { on_request },
                 })
             }
         })

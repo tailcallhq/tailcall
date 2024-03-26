@@ -48,7 +48,7 @@ pub trait HttpIO: Sync + Send + 'static {
     async fn execute_with<'a>(
         &'a self,
         request: reqwest::Request,
-        http_filter: &'a http::HttpFilter,
+        http_filter: &'a Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<hyper::body::Bytes>>;
 
     async fn execute(
