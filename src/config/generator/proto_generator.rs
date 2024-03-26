@@ -29,7 +29,13 @@ impl FieldHolder {
         self.updated_name = Some(updated_name);
     }
     pub fn get_default_name(&self) -> String {
-        format!("{}{}{}", self.name, DEFAULT_SPECTATOR, self.package_id)
+        let pkg_id = self.get_package_id();
+        let name = self.get_name();
+        if pkg_id.is_empty() {
+            name
+        }else {
+            format!("{}{}{}", name, DEFAULT_SPECTATOR, pkg_id)
+        }
     }
     pub fn get_updated_name(&self) -> String {
         self.updated_name
@@ -70,7 +76,7 @@ impl ConfigWrapper {
             self.types.insert(
                 ty,
                 vec![FieldHolder {
-                    package_id: key.clone(),
+                    package_id: String::new(),
                     name: key.clone(),
                     updated_name: None,
                 }],
@@ -111,6 +117,8 @@ pub struct ProtoGeneratorFxn {
     pub is_mutation: Box<dyn Fn(&str) -> bool>,
     pub format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
     pub format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    pub format_query: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    pub format_mutation: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
 }
 
 impl ProtoGeneratorFxn {
@@ -118,8 +126,10 @@ impl ProtoGeneratorFxn {
         is_mutation: Box<dyn Fn(&str) -> bool>,
         format_enum: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
         format_ty: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+        format_query: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+        format_mutation: Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
     ) -> Self {
-        Self { is_mutation, format_enum, format_ty }
+        Self { is_mutation, format_enum, format_ty, format_query, format_mutation }
     }
 }
 
@@ -130,6 +140,8 @@ impl Default for ProtoGeneratorFxn {
             is_mutation: Box::new(|_| false),
             format_enum: Box::new(fmt),
             format_ty: Box::new(fmt),
+            format_query: Box::new(fmt),
+            format_mutation: Box::new(fmt),
         }
     }
 }
@@ -207,39 +219,92 @@ impl ProtoGenerator {
                 .unwrap()
                 .clone();
 
-            let original_enums_len = original_enums.len();
-            let original_messages_len = original_messages.len();
+            let updated_enums_map = get_updated_map(
+                original_enums,
+                &self.generator_config.generator_fxn.format_enum,
+                DescriptorType::Enum.to_string(),
+            )?;
 
-            let updated_enums = (self.generator_config.generator_fxn.format_enum)(original_enums);
-            let updated_messages =
-                (self.generator_config.generator_fxn.format_ty)(original_messages);
+            let updated_messages_map = get_updated_map(
+                original_messages,
+                &self.generator_config.generator_fxn.format_ty,
+                DescriptorType::Message.to_string(),
+            )?;
 
-            if original_enums_len != updated_enums.len()
-                || original_messages_len != updated_messages.len()
-            {
-                return Err(anyhow!("Invalid length of enums or messages expected:\nEnums: {} got {}\nMessages: {} got {}", original_enums_len, updated_enums.len(), original_messages_len, updated_messages.len()));
+            if let Some(qry) = &pre_built_wrapper.schema.query {
+                let original_qry = pre_built_wrapper
+                    .types
+                    .get(qry)
+                    .unwrap()
+                    .clone();
+
+                let updated_qry_map = get_updated_map(
+                    original_qry,
+                    &self.generator_config.generator_fxn.format_query,
+                    qry.clone(),
+                )?;
+                let mut cfg_clone = pre_built_wrapper.config.clone();
+                update_qry_mut(&mut cfg_clone, updated_qry_map, qry);
+                pre_built_wrapper.config = cfg_clone;
             }
 
-            let mut updated_enums_map = BTreeMap::new();
-            let mut updated_messages_map = BTreeMap::new();
+            if let Some(mutation) = &pre_built_wrapper.schema.mutation {
+                let original_mutation = pre_built_wrapper
+                    .types
+                    .get(mutation)
+                    .unwrap()
+                    .clone();
+                let updated_mutation_map = get_updated_map(
+                    original_mutation,
+                    &self.generator_config.generator_fxn.format_mutation,
+                    mutation.clone(),
+                )?;
+                let mut cfg_clone = pre_built_wrapper.config.clone();
+                update_qry_mut(&mut cfg_clone, updated_mutation_map, mutation);
+                pre_built_wrapper.config = cfg_clone;
+            }
 
-            updated_enums.into_iter().for_each(|v| {
-                updated_enums_map.insert(v.get_default_name(), v.get_updated_name());
-            });
-
-            updated_messages.into_iter().for_each(|v| {
-                updated_messages_map.insert(v.get_default_name(), v.get_updated_name());
-            });
-
-            update_stuff(&mut pre_built_wrapper.config, updated_enums_map);
-            update_stuff(&mut pre_built_wrapper.config, updated_messages_map);
+            update_type_fields(&mut pre_built_wrapper.config, updated_enums_map);
+            update_type_fields(&mut pre_built_wrapper.config, updated_messages_map);
         }
 
         Ok(pre_built_wrapper.config)
     }
 }
 
-fn update_stuff(cfg: &mut Config, updated_stuff: BTreeMap<String, String>) {
+fn get_updated_map(
+    original: Vec<FieldHolder>,
+    func: &Box<dyn Fn(Vec<FieldHolder>) -> Vec<FieldHolder>>,
+    ty: String,
+) -> anyhow::Result<BTreeMap<String, String>> {
+    let original_len = original.len();
+    let mut map = BTreeMap::new();
+    let updated = func(original);
+    if original_len != updated.len() {
+        return Err(anyhow!("Invalid length of {} expected length: {} found {}",ty, original_len, updated.len()));
+    }
+    updated.into_iter().for_each(|v| {
+        map.insert(v.get_default_name(), v.get_updated_name());
+    });
+    Ok(map)
+}
+
+fn update_qry_mut(cfg: &mut Config, updated_stuff: BTreeMap<String, String>, ty: &String) {
+    if let Some(v) = cfg.types.get_mut(ty) {
+        let mut fields = BTreeMap::new();
+        for (k,v) in v.fields.iter() {
+            let k = if let Some(k) = updated_stuff.get(k) {
+                k.clone()
+            }else {
+                k.clone()
+            };
+            fields.insert(k, v.clone());
+        }
+        v.fields = fields;
+    }
+}
+
+fn update_type_fields(cfg: &mut Config, updated_stuff: BTreeMap<String, String>) {
     let mut new_types = BTreeMap::new();
     for (k, v) in cfg.types.iter_mut() {
         let k = if let Some(new_enum) = updated_stuff.get(k) {
@@ -299,10 +364,19 @@ mod test {
                 })
                 .collect()
         };
+        let fmt_qey_mut = |mut x: Vec<FieldHolder>| {
+            x.iter_mut()
+                .for_each(|v| {
+                    let updated_name = v.get_default_name().to_case(Case::Snake);
+                    v.insert_updated_name(format!("{}_myqry_or_mut", updated_name));
+                });
+            x
+        };
+
         ProtoGenerator::new(ProtoGeneratorConfig::new(
             Some("Query".to_string()),
             Some("Mutation".to_string()),
-            ProtoGeneratorFxn::new(Box::new(is_mut), Box::new(fmt), Box::new(fmt)),
+            ProtoGeneratorFxn::new(Box::new(is_mut), Box::new(fmt), Box::new(fmt), Box::new(fmt_qey_mut), Box::new(fmt_qey_mut)),
         ))
     }
 
