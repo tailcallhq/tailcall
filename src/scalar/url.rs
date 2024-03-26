@@ -2,8 +2,6 @@ use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 
-use crate::json::JsonLike;
-
 #[derive(JsonSchema, Default)]
 pub struct Url {
     #[serde(rename = "Url")]
@@ -15,7 +13,7 @@ impl super::Scalar for Url {
     /// Function used to validate the date
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Ok(date_str) = value.clone().as_str_ok() {
+            if let ConstValue::String(date_str) = value {
                 return url::Url::parse(date_str).is_ok();
             }
             false
