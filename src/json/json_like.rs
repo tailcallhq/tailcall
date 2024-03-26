@@ -210,7 +210,7 @@ pub fn gather_path_matches<'a, J: JsonLike>(
     vector
 }
 
-pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
+fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
     let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
         // Need to handle number and string keys
@@ -235,9 +235,7 @@ mod tests {
 
     use pretty_assertions::assert_eq;
     use serde_json::json;
-
-    use crate::json::group_by_key;
-    use crate::json::json_like::gather_path_matches;
+    use super::*;
 
     #[test]
     fn test_gather_path_matches() {
