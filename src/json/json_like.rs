@@ -13,9 +13,24 @@ pub trait JsonLike {
 
     // FIXME: rename to get_path_value
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output>;
-    fn get_key(&self, path: &str) -> Option<&Self::Output>;
+
+    // Convertors
     fn from_output(value: &Self::Output) -> &Self;
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>;
+    fn to_output(value: &Self) -> &Self::Output;
+
+    // Default implementations
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>
+    where
+        Self: Sized,
+        Self::Output: JsonLike,
+    {
+        let src = gather_path_matches(self, path, vec![]);
+        group_by_key(src)
+    }
+
+    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+        self.get_path(&[path])
+    }
 }
 
 // Highly micro-optimized and benchmarked version of get_path_all
@@ -23,8 +38,8 @@ pub trait JsonLike {
 pub fn gather_path_matches<'a, J: JsonLike>(
     root: &'a J,
     path: &'a [String],
-    mut vector: Vec<(&'a J, &'a J)>,
-) -> Vec<(&'a J, &'a J)> {
+    mut vector: Vec<(&'a J::Output, &'a J::Output)>,
+) -> Vec<(&'a J::Output, &'a J::Output)> {
     if let Some(root) = root.as_array_ok() {
         for value in root {
             vector = gather_path_matches(J::from_output(value), path, vector);
@@ -32,7 +47,7 @@ pub fn gather_path_matches<'a, J: JsonLike>(
     } else if let Some((key, tail)) = path.split_first() {
         if let Some(value) = root.get_key(key) {
             if tail.is_empty() {
-                vector.push((J::from_output(value), root));
+                vector.push((value, J::to_output(root)));
             } else {
                 vector = gather_path_matches(J::from_output(value), tail, vector);
             }

@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use super::{gather_path_matches, group_by_key, JsonLike};
+use super::*;
 
 impl JsonLike for serde_json::Value {
     type Output = serde_json::Value;
@@ -45,13 +43,6 @@ impl JsonLike for serde_json::Value {
         value
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self::Output> {
-        match self {
-            serde_json::Value::Object(map) => map.get(path),
-            _ => None,
-        }
-    }
-
     fn as_string_ok(&self) -> Option<&String> {
         match self {
             serde_json::Value::String(s) => Some(s),
@@ -59,9 +50,8 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
-        let src = gather_path_matches(self, path, vec![]);
-        group_by_key(src)
+    fn to_output(value: &Self) -> &Self::Output {
+        value
     }
 }
 

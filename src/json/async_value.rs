@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use async_graphql_value::ConstValue;
 
 use super::*;
@@ -75,12 +73,6 @@ impl JsonLike for async_graphql::Value {
         value
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self::Output> {
-        match self {
-            ConstValue::Object(map) => map.get(&async_graphql::Name::new(path)),
-            _ => None,
-        }
-    }
     fn as_string_ok(&self) -> Option<&String> {
         match self {
             ConstValue::String(s) => Some(s),
@@ -88,8 +80,7 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
-        let src = gather_path_matches(self, path, vec![]);
-        group_by_key(src)
+    fn to_output(value: &Self) -> &Self::Output {
+        value
     }
 }
