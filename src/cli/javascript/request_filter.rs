@@ -45,8 +45,8 @@ impl RequestFilter {
         let mut command = None;
         if let Some(value) = http_filter {
             if let Some(ref value) = value.on_request {
-            command = self.worker.call(value.clone(), event).await?;
-}
+                command = self.worker.call(value.clone(), event).await?;
+            }
         }
         match command {
             Some(command) => match command {
@@ -80,19 +80,16 @@ impl HttpIO for RequestFilter {
         request: reqwest::Request,
         http_filter: &'a Option<http::HttpFilter>,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-
         if let Some(value) = http_filter {
-            if value.on_request != None {
-                self.on_request(request, &http_filter).await
-            }
-            else{
-                tracing::info!("No onRequest interception handler defined.");
+            if value.on_request.is_some() {
+                self.on_request(request, http_filter).await
+            } else {
+                tracing::info!("\nNo onRequest interception handler defined.");
                 self.client.execute(request).await
             }
-        }
-        else {
+        } else {
             tracing::info!("\nNo onRequest interception handler defined.");
             self.client.execute(request).await
-        }        
-}
+        }
+    }
 }
