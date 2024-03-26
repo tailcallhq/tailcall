@@ -69,18 +69,10 @@ impl JsonLike for async_graphql::Value {
         Some(val)
     }
 
-    fn from_output(value: &Self::Output) -> &Self {
-        value
-    }
-
     fn as_string_ok(&self) -> Option<&String> {
         match self {
             ConstValue::String(s) => Some(s),
             _ => None,
         }
-    }
-
-    fn to_output(value: &Self) -> &Self::Output {
-        value
     }
 }
