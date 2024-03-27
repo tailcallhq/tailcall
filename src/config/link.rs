@@ -13,6 +13,7 @@ pub enum LinkType {
     Cert,
     Key,
     Operation,
+    GrpcReflection,
 }
 
 impl Display for LinkType {
@@ -24,6 +25,7 @@ impl Display for LinkType {
             LinkType::Cert => "Cert",
             LinkType::Key => "Key",
             LinkType::Operation => "Operation",
+            LinkType::GrpcReflection => "GrpcReflection",
         })
     }
 }

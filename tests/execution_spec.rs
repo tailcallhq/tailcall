@@ -1080,6 +1080,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
     let opentelemetry = init_opentelemetry();
+
     // Explicitly only run one test if specified in command line args
     // This is used by test-convertor to auto-apply the snapshots of incompatible
     // fail-annotated http specs

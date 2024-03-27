@@ -1512,7 +1512,8 @@
         "Script",
         "Cert",
         "Key",
-        "Operation"
+        "Operation",
+        "GrpcReflection"
       ]
     },
     "Method": {
