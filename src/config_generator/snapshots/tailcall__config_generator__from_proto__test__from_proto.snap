@@ -3,7 +3,7 @@ source: src/config_generator/from_proto.rs
 expression: result
 ---
 schema @server @upstream {
-  query: Query
+  query: Queryx
 }
 
 input GREETINGS_DUP_HelloRequest @tag(name: "greetings_dup.HelloRequest")  {
@@ -53,7 +53,7 @@ type NEWS_NewsList @tag(name: "news.NewsList") {
   news: [NEWS_News]
 }
 
-type Query {
+type Queryx {
   greetings_dup_sayHello(helloRequest: GREETINGS_DUP_HelloRequest!): GREETINGS_DUP_HelloReply! @grpc(method: "greetings_dup.Greeter.SayHello")
   greetings_sayHello(helloRequest: GREETINGS_HelloRequest!): GREETINGS_HelloReply! @grpc(method: "greetings.Greeter.SayHello")
   news_addNews(news: NEWS_News!): NEWS_News! @grpc(method: "news.NewsService.AddNews")

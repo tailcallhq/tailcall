@@ -14,21 +14,6 @@ use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 
 pub(super) static DEFAULT_SPECTATOR: &str = "_";
 
-/// Contains the configuration for the config generator
-pub struct ProtoGeneratorConfig {
-    query: String,
-}
-
-impl ProtoGeneratorConfig {
-    pub fn new(query: Option<String>) -> Self {
-        Self { query: query.unwrap_or_else(|| "Query".to_string()) }
-    }
-
-    pub fn get_query(&self) -> &str {
-        self.query.as_str()
-    }
-}
-
 /// Enum to represent the type of the descriptor
 #[derive(Display, Clone)]
 pub enum DescriptorType {
@@ -247,30 +232,29 @@ fn generate_ty(
 fn append_query_service(
     config: &mut Config,
     services: Vec<ServiceDescriptorProto>,
-    gen: &ProtoGeneratorConfig,
+    query: &str,
     helper: &mut Helper,
 ) -> anyhow::Result<()> {
     if services.is_empty() {
         return Ok(());
     }
 
-    let query = gen.get_query();
-
     let ty = generate_ty(config, services, helper, query)?;
 
     if ty.ne(&Type::default()) {
-        config.schema.query = Some(query.to_string());
-        config.types.insert(query.to_string(), ty);
+        config.schema.query = Some(query.to_owned());
+        config.types.insert(query.to_owned(), ty);
     }
     Ok(())
 }
 
 pub fn build_config(
     descriptor_sets: Vec<FileDescriptorSet>,
-    gen: &ProtoGeneratorConfig,
+    query: Option<String>,
 ) -> anyhow::Result<Config> {
     let mut config = Config::default();
     let mut helper = Helper::default();
+    let query = query.unwrap_or_else(|| "Query".to_string());
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
@@ -281,7 +265,7 @@ pub fn build_config(
             append_query_service(
                 &mut config,
                 file_descriptor.service.clone(),
-                gen,
+                &query,
                 &mut helper,
             )?;
         }
@@ -297,7 +281,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::config_generator::from_proto::{build_config, ProtoGeneratorConfig};
+    use crate::config_generator::from_proto::build_config;
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -310,10 +294,6 @@ mod test {
             name,
             std::fs::read_to_string(proto_path)?.as_str(),
         )?)
-    }
-
-    fn get_generator_cfg() -> ProtoGeneratorConfig {
-        ProtoGeneratorConfig::new(Some("Query".to_string()))
     }
 
     #[test]
@@ -337,7 +317,7 @@ mod test {
         set.file.push(greetings.clone());
         set.file.push(greetings_dup_methods.clone());
 
-        let result = build_config(vec![set], &get_generator_cfg())?.to_sdl();
+        let result = build_config(vec![set], Some("Queryx".to_string()))?.to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -349,9 +329,9 @@ mod test {
         set1.file.push(greetings);
         set2.file.push(greetings_dup_methods);
 
-        let result_sets = build_config(vec![set, set1, set2], &get_generator_cfg())?.to_sdl();
+        let result_sets = build_config(vec![set, set1, set2], Some("Queryx".to_string()))?.to_sdl();
 
-        assert_eq!(result, result_sets);
+        pretty_assertions::assert_eq!(result, result_sets);
 
         Ok(())
     }
@@ -368,7 +348,7 @@ mod test {
         let req_proto = get_proto_file_descriptor("required_fields.proto")?;
         set.file.push(req_proto);
 
-        let cfg = build_config(vec![set], &get_generator_cfg())?.to_sdl();
+        let cfg = build_config(vec![set], None)?.to_sdl();
         insta::assert_snapshot!(cfg);
 
         Ok(())
