@@ -8,8 +8,8 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use strum_macros::Display;
 
-use crate::generator::from_proto::prebuild_config;
 use crate::config::{Config, Type};
+use crate::generator::from_proto::prebuild_config;
 
 pub(super) static DEFAULT_SPECTATOR: &str = "_";
 pub(super) static FIELD_TY: &str = "field_ty_unique_id";

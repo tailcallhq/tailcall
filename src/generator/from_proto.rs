@@ -7,10 +7,10 @@ use prost_reflect::prost_types::{
 };
 
 use crate::blueprint::GrpcMethod;
+use crate::config::{Arg, Field, Grpc, Type};
 use crate::generator::proto_generator::{
     ConfigWrapper, DescriptorType, Options, ProtoGeneratorConfig, DEFAULT_SPECTATOR,
 };
-use crate::config::{Arg, Field, Grpc, Type};
 
 struct Helper {
     map: HashMap<String, String>,
@@ -345,9 +345,7 @@ mod test {
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::generator::from_proto::prebuild_config;
-    use crate::generator::proto_generator::{
-        Options, ProtoGeneratorConfig, ProtoGeneratorFxn,
-    };
+    use crate::generator::proto_generator::{Options, ProtoGeneratorConfig, ProtoGeneratorFxn};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
