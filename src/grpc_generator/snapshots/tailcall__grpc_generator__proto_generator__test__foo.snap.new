@@ -1,5 +1,6 @@
 ---
-source: src/generator/proto_generator.rs
+source: src/grpc_generator/proto_generator.rs
+assertion_line: 541
 expression: config.to_sdl()
 ---
 schema @server @upstream {

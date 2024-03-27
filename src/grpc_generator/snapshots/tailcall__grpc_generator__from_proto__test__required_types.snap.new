@@ -1,5 +1,6 @@
 ---
-source: src/generator/from_proto.rs
+source: src/grpc_generator/from_proto.rs
+assertion_line: 469
 expression: cfg
 ---
 schema @server @upstream {

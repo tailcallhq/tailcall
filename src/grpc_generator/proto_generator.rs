@@ -9,7 +9,7 @@ use prost_reflect::prost_types::FileDescriptorSet;
 use strum_macros::Display;
 
 use crate::config::{Config, Type};
-use crate::generator::from_proto::prebuild_config;
+use crate::grpc_generator::from_proto::prebuild_config;
 
 pub(super) static DEFAULT_SPECTATOR: &str = "_";
 pub(super) static FIELD_TY: &str = "field_ty_unique_id";
@@ -451,7 +451,7 @@ mod test {
     use convert_case::{Case, Casing};
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::generator::proto_generator::{
+    use crate::grpc_generator::proto_generator::{
         DescriptorType, FieldHolder, ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn,
     };
 
