@@ -68,6 +68,10 @@ impl Extensions {
             })
             .map(|a| &a.content)
     }
+
+    pub fn has_auth(&self) -> bool {
+        !self.htpasswd.is_empty() || !self.jwks.is_empty()
+    }
 }
 
 impl MergeRight for Extensions {

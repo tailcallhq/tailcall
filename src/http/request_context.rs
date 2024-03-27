@@ -21,8 +21,6 @@ use crate::runtime::TargetRuntime;
 pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
-    // all the headers from the request
-    pub request_headers: HeaderMap,
     pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     // request headers from client that will be sent to upstream
@@ -42,7 +40,6 @@ impl RequestContext {
         RequestContext {
             server: Default::default(),
             upstream: Default::default(),
-            request_headers: HeaderMap::new(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers: None,
             http_data_loaders: Arc::new(vec![]),
@@ -191,7 +188,6 @@ impl From<&AppContext> for RequestContext {
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
-            request_headers: HeaderMap::new(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
             allowed_headers: HeaderMap::new(),
@@ -219,9 +215,8 @@ mod test {
         fn default() -> Self {
             let config_module = crate::config::ConfigModule::default();
 
-            let crate::config::Config { upstream, .. } = config_module.config.clone();
+            let upstream = Upstream::try_from(&config_module).unwrap();
             let server = Server::try_from(config_module).unwrap();
-            let upstream = Upstream::try_from(upstream).unwrap();
             RequestContext::new(crate::runtime::test::init(None))
                 .upstream(upstream)
                 .server(server)
@@ -269,8 +264,8 @@ mod test {
     fn test_is_batching_enabled_default() {
         // create ctx with default batch
         let config_module = config::ConfigModule::default();
-        let server = Server::try_from(config_module.clone()).unwrap();
-        let mut upstream = Upstream::try_from(config_module.upstream.clone()).unwrap();
+        let mut upstream = Upstream::try_from(&config_module).unwrap();
+        let server = Server::try_from(config_module).unwrap();
         upstream.batch = Some(Batch::default());
         let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 

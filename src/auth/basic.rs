@@ -15,7 +15,7 @@ pub struct BasicVerifier {
 impl Verify for BasicVerifier {
     /// Verify the request context against the basic auth provider.
     async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
-        let header = req_ctx.request_headers.typed_get::<Authorization<Basic>>();
+        let header = req_ctx.allowed_headers.typed_get::<Authorization<Basic>>();
 
         let Some(header) = header else {
             return Err(Error::Missing);
@@ -52,7 +52,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
         let mut req_context = RequestContext::default();
 
         req_context
-            .request_headers
+            .allowed_headers
             .typed_insert(Authorization::basic(username, password));
 
         req_context
