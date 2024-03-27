@@ -393,13 +393,13 @@ fn to_fields(
         }
 
         update_args()
-            .and(update_http().trace(config::Http::trace_name().as_str()))
+            .and(update_http())
             .and(update_grpc(&operation_type))
-            .and(update_const_field().trace(config::Const::trace_name().as_str()))
-            .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
-            .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
-            .and(update_modify().trace(config::Modify::trace_name().as_str()))
-            .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
+            .and(update_const_field())
+            .and(update_graphql(&operation_type))
+            .and(update_expr(&operation_type))
+            .and(update_modify())
+            .and(update_call(&operation_type))
             .and(fix_dangling_resolvers())
             .and(update_cache_resolvers())
             .try_fold(
