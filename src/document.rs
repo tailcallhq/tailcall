@@ -84,9 +84,23 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             )
         }
         TypeKind::InputObject(input) => {
+            let directives = if !type_def.directives.is_empty() {
+                format!(
+                    "{} ",
+                    type_def
+                        .directives
+                        .iter()
+                        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                )
+            } else {
+                String::new()
+            };
             format!(
-                "input {} {{\n{}\n}}\n",
+                "input {} {} {{\n{}\n}}\n",
                 type_def.name.node,
+                directives,
                 input
                     .fields
                     .iter()
