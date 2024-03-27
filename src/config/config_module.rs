@@ -88,6 +88,10 @@ impl MergeRight for ConfigModule {
         self.extensions = self.extensions.merge_right(other.extensions);
         self
     }
+    pub fn lint_fix(self) -> Self {
+        let config = self.config.lint_fix();
+        Self { config, ..self }
+    }
 }
 
 impl Deref for ConfigModule {

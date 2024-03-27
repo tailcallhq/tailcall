@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
+use crate::config::lint::Lint;
 use crate::config::KeyValue;
 use crate::is_default;
 use crate::merge_right::MergeRight;
@@ -95,6 +96,10 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    /// `lint` allows users to automatically apply lint fixes
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub lint: Option<Lint>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

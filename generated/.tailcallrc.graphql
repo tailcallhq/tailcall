@@ -264,6 +264,10 @@ directive @server(
   """
   introspection: Boolean
   """
+  `lint` allows users to automatically apply lint fixes
+  """
+  lint: Lint
+  """
   `pipelineFlush` allows to control flushing behavior of the server pipeline.
   """
   pipelineFlush: Boolean
@@ -737,6 +741,13 @@ enum LinkType {
   Cert
   Key
   Operation
+}
+input Lint {
+  autoFix: Boolean
+  enum: Boolean
+  enumValue: Boolean
+  field: Boolean
+  type: Boolean
 }
 enum Method {
   GET
