@@ -306,6 +306,16 @@ directive @server(
 ) on SCHEMA
 
 """
+Contains source information for the type.
+"""
+directive @tag(
+  """
+  Contains source name for the type.
+  """
+  name: String!
+) on FIELD_DEFINITION
+
+"""
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
 the observability of your GraphQL services powered by Tailcall.  By leveraging this 
 directive, developers gain access to valuable insights into the performance and behavior 
