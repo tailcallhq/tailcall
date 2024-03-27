@@ -37,7 +37,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
-use http::Response;
+use http::{HttpFilter, Response};
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<String>;
@@ -48,14 +48,14 @@ pub trait HttpIO: Sync + Send + 'static {
     async fn execute_with<'a>(
         &'a self,
         request: reqwest::Request,
-        http_filter: &'a Option<http::HttpFilter>,
+        http_filter: &'a http::HttpFilter,
     ) -> anyhow::Result<Response<hyper::body::Bytes>>;
 
     async fn execute(
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.execute_with(request, &None).await
+        self.execute_with(request, &HttpFilter::default()).await
     }
 }
 

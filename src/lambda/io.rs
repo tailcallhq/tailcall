@@ -15,7 +15,7 @@ use crate::grpc::data_loader::GrpcDataLoader;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
-use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, HttpFilter, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
 use crate::valid::Validator;
@@ -87,7 +87,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.req_ctx.http_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req, &Some(http_filter.clone())).await?
+                        execute_raw_request(&ctx, req, http_filter).await?
                     };
 
                     if ctx.req_ctx.server.get_enable_http_validation() {
@@ -113,7 +113,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.req_ctx.gql_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req, &None).await?
+                        execute_raw_request(&ctx, req, &HttpFilter::default()).await?
                     };
 
                     set_headers(&ctx, &res);
@@ -193,7 +193,7 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
-    http_filter: &Option<http::HttpFilter>,
+    http_filter: &http::HttpFilter,
 ) -> Result<Response<async_graphql::Value>> {
     let response = ctx
         .req_ctx

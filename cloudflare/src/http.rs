@@ -32,7 +32,7 @@ impl HttpIO for CloudflareHttp {
     async fn execute_with<'a>(
         &'a self,
         request: reqwest::Request,
-        _: &'a Option<http::HttpFilter>,
+        _: &'a http::HttpFilter,
     ) -> Result<Response<Bytes>> {
         let client = self.client.clone();
         let method = request.method().clone();

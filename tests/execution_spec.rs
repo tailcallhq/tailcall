@@ -111,7 +111,7 @@ pub mod test {
         async fn execute_with<'a>(
             &'a self,
             request: reqwest::Request,
-            _: &'a Option<http::HttpFilter>,
+            _: &'a http::HttpFilter,
         ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
@@ -767,7 +767,7 @@ impl HttpIO for MockHttpClient {
     async fn execute_with<'a>(
         &'a self,
         req: reqwest::Request,
-        _: &'a Option<http::HttpFilter>,
+        _: &'a http::HttpFilter,
     ) -> anyhow::Result<Response<Bytes>> {
         // Determine if the request is a GRPC request based on PORT
         let is_grpc = req.url().as_str().contains("50051");

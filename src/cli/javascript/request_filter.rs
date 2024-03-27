@@ -4,7 +4,7 @@ use hyper::body::Bytes;
 use serde::{Deserialize, Serialize};
 
 use super::{JsRequest, JsResponse};
-use crate::http::{self, Response};
+use crate::http::{self, HttpFilter, Response};
 use crate::{HttpIO, WorkerIO};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,16 +37,14 @@ impl RequestFilter {
     async fn on_request(
         &self,
         mut request: reqwest::Request,
-        http_filter: &Option<http::HttpFilter>,
+        http_filter: &http::HttpFilter,
     ) -> anyhow::Result<Response<Bytes>> {
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
 
         let mut command = None;
-        if let Some(value) = http_filter {
-            if let Some(ref value) = value.on_request {
-                command = self.worker.call(value.clone(), event).await?;
-            }
+        if let Some(ref on_request) = http_filter.on_request {
+            command = self.worker.call(on_request.clone(), event).await?;
         }
         match command {
             Some(command) => match command {
@@ -62,7 +60,7 @@ impl RequestFilter {
                         request
                             .url_mut()
                             .set_path(js_response.headers["location"].as_str());
-                        self.on_request(request, &None).await
+                        self.on_request(request, &HttpFilter::default()).await
                     } else {
                         Ok(js_response.try_into()?)
                     }
@@ -78,17 +76,11 @@ impl HttpIO for RequestFilter {
     async fn execute_with<'a>(
         &'a self,
         request: reqwest::Request,
-        http_filter: &'a Option<http::HttpFilter>,
+        http_filter: &'a http::HttpFilter,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        if let Some(value) = http_filter {
-            if value.on_request.is_some() {
-                self.on_request(request, http_filter).await
-            } else {
-                tracing::info!("\nNo onRequest interception handler defined.");
-                self.client.execute(request).await
-            }
+        if http_filter.on_request.is_some() {
+            self.on_request(request, http_filter).await
         } else {
-            tracing::info!("\nNo onRequest interception handler defined.");
             self.client.execute(request).await
         }
     }

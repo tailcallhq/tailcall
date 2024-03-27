@@ -25,7 +25,7 @@ impl HttpIO for MockHttpClient {
     async fn execute_with<'a>(
         &'a self,
         _: Request,
-        _: &'a Option<http::HttpFilter>,
+        _: &'a http::HttpFilter,
     ) -> anyhow::Result<Response<Bytes>> {
         Ok(Response::empty())
     }
