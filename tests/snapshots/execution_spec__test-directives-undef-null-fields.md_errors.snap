@@ -6,9 +6,6 @@ expression: errors
   {
     "message": "value 'nonNullableNestedUser' is not of a scalar type",
     "trace": [
-      "Post",
-      "nestedNonScalar",
-      "@http",
       "path"
     ],
     "description": null
@@ -16,9 +13,6 @@ expression: errors
   {
     "message": "value 'id' is a nullable type",
     "trace": [
-      "Post",
-      "nestedNullable",
-      "@http",
       "path"
     ],
     "description": null
@@ -26,9 +20,6 @@ expression: errors
   {
     "message": "no value 'nonNullableUser.nonNullableNestedUser.userId' found",
     "trace": [
-      "Post",
-      "nestedUndefinedValue",
-      "@http",
       "path"
     ],
     "description": null
@@ -36,9 +27,6 @@ expression: errors
   {
     "message": "value 'nestedUser' is a nullable type",
     "trace": [
-      "Post",
-      "nestedUserNullable",
-      "@http",
       "path"
     ],
     "description": null
@@ -46,9 +34,6 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Post",
-      "userArg",
-      "@http",
       "path"
     ],
     "description": null
@@ -56,9 +41,6 @@ expression: errors
   {
     "message": "unknown template directive 'Vale'",
     "trace": [
-      "Post",
-      "userInvalidDirective",
-      "@http",
       "path"
     ],
     "description": null
@@ -66,9 +48,6 @@ expression: errors
   {
     "message": "value 'nonNullableUser' is not of a scalar type",
     "trace": [
-      "Post",
-      "userNonScalar",
-      "@http",
       "path"
     ],
     "description": null
@@ -76,9 +55,6 @@ expression: errors
   {
     "message": "value 'userId' is a nullable type",
     "trace": [
-      "Post",
-      "userNullValue",
-      "@http",
       "path"
     ],
     "description": null
@@ -86,9 +62,6 @@ expression: errors
   {
     "message": "value 'user' is a nullable type",
     "trace": [
-      "Post",
-      "userNullable",
-      "@http",
       "path"
     ],
     "description": null
@@ -96,9 +69,6 @@ expression: errors
   {
     "message": "no value 'userid' found",
     "trace": [
-      "Post",
-      "userUndefinedValue",
-      "@http",
       "path"
     ],
     "description": null
@@ -106,9 +76,6 @@ expression: errors
   {
     "message": "no value 'userid' found",
     "trace": [
-      "Post",
-      "userUndefinedValueQuery",
-      "@http",
       "query"
     ],
     "description": null
@@ -116,9 +83,6 @@ expression: errors
   {
     "message": "var 'garbage' is not set in the server config",
     "trace": [
-      "Query",
-      "userAccessHeadersVars",
-      "@http",
       "path"
     ],
     "description": null
@@ -126,9 +90,6 @@ expression: errors
   {
     "message": "can't use list type 'id' here",
     "trace": [
-      "Query",
-      "userListArg",
-      "@http",
       "path"
     ],
     "description": null
@@ -136,9 +97,6 @@ expression: errors
   {
     "message": "argument 'id' is a nullable type",
     "trace": [
-      "Query",
-      "userNullableArg",
-      "@http",
       "path"
     ],
     "description": null
@@ -146,9 +104,6 @@ expression: errors
   {
     "message": "no argument 'uid' found",
     "trace": [
-      "Query",
-      "userUndefinedArg",
-      "@http",
       "path"
     ],
     "description": null

@@ -5,11 +5,7 @@ expression: errors
 [
   {
     "message": "Couldn't find method X",
-    "trace": [
-      "Query",
-      "news",
-      "@grpc"
-    ],
+    "trace": [],
     "description": null
   }
 ]

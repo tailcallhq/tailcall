@@ -5,19 +5,12 @@ expression: errors
 [
   {
     "message": "Undeclared type 'User' was found",
-    "trace": [
-      "Query",
-      "users"
-    ],
+    "trace": [],
     "description": null
   },
   {
     "message": "No base URL defined",
-    "trace": [
-      "Query",
-      "users",
-      "@http"
-    ],
+    "trace": [],
     "description": null
   }
 ]

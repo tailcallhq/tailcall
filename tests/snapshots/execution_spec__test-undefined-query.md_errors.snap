@@ -6,9 +6,6 @@ expression: errors
   {
     "message": "no type 'user.nested.inner.id.test' found",
     "trace": [
-      "Post",
-      "innerIdNested",
-      "@http",
       "query"
     ],
     "description": null
@@ -16,9 +13,6 @@ expression: errors
   {
     "message": "no value 'user.nested.inner.test' found",
     "trace": [
-      "Post",
-      "innerNested",
-      "@http",
       "query"
     ],
     "description": null
@@ -26,9 +20,6 @@ expression: errors
   {
     "message": "no value 'user.nested.test' found",
     "trace": [
-      "Post",
-      "nested",
-      "@http",
       "query"
     ],
     "description": null
@@ -36,9 +27,6 @@ expression: errors
   {
     "message": "no value 'test' found",
     "trace": [
-      "Post",
-      "user",
-      "@http",
       "query"
     ],
     "description": null

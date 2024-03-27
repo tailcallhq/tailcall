@@ -6,9 +6,6 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Query",
-      "newsGrpcBody",
-      "@grpc",
       "body"
     ],
     "description": null
@@ -16,9 +13,6 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Query",
-      "newsGrpcHeaders",
-      "@grpc",
       "headers"
     ],
     "description": null
@@ -26,9 +20,6 @@ expression: errors
   {
     "message": "no argument 'url' found",
     "trace": [
-      "Query",
-      "newsGrpcUrl",
-      "@grpc",
       "path"
     ],
     "description": null
@@ -36,9 +27,6 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Query",
-      "postGraphQLArgs",
-      "@graphQL",
       "args"
     ],
     "description": null
@@ -46,9 +34,6 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Query",
-      "postGraphQLHeaders",
-      "@graphQL",
       "headers"
     ],
     "description": null
@@ -56,9 +41,6 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Query",
-      "postHttp",
-      "@http",
       "path"
     ],
     "description": null

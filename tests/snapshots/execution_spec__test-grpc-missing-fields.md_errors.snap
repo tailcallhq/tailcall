@@ -6,11 +6,7 @@ expression: errors
   {
     "message": "missing key: id",
     "trace": [
-      "Query",
-      "news",
-      "@grpc",
-      "NewsData",
-      "news"
+      "News"
     ],
     "description": null
   }

@@ -389,7 +389,8 @@ fn to_fields(
             return Valid::fail(format!(
                 "Multiple resolvers detected [{}]",
                 directives.join(", ")
-            ));
+            ))
+            .trace(&field.type_of);
         }
 
         update_args()
@@ -425,8 +426,8 @@ fn to_fields(
             .iter()
             .find(|&(field_name, _)| *field_name == add_field.path[0]);
         match source_field {
-            Some((_, source_field)) => to_field(&add_field.name, source_field)
-                .and_then(|field_definition| {
+            Some((_, source_field)) => {
+                to_field(&add_field.name, source_field).and_then(|field_definition| {
                     let added_field_path = match source_field.http {
                         Some(_) => add_field.path[1..]
                             .iter()
@@ -474,7 +475,7 @@ fn to_fields(
                         field_definition,
                     )
                 })
-                .trace(config::AddField::trace_name().as_str()),
+            }
             None => Valid::fail(format!(
                 "Could not find field {} in path {}",
                 add_field.path[0],
