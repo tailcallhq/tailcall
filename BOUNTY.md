@@ -1,5 +1,15 @@
 # 🚀 Bounty Program Contribution Guide 🚀
 
+[![Open Bounties](https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftailcallhq%2Fbounties%3Fstatus%3Dopen&style=for-the-badge)](https://console.algora.io/org/tailcallhq/bounties?status=open)
+[![Rewarded Bounties](https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftailcallhq%2Fbounties%3Fstatus%3Dcompleted&style=for-the-badge)](https://console.algora.io/org/tailcallhq/bounties?status=completed)
+
+<a href="https://github.com/tailcallhq/tailcall/issues?q=is%3Aissue+is%3Aopen+label%3A%22%F0%9F%92%8E+Bounty%22">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://console.algora.io/api/og/tailcallhq/leaderboard.png?p=0&theme=dark">
+    <img alt="Leaderboard of tailcallhq" src="https://console.algora.io/api/og/tailcallhq/leaderboard.png?p=0&theme=light">
+  </picture>
+</a>
+
 Hey there! Super pumped you’re considering joining our Bounty Program. This is where you can really show off your skills and get rewarded for it. Here’s all you need to know to jump in and make waves. 🌊
 
 ## Our Philosophy 🌟
