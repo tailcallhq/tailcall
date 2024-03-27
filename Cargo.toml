@@ -123,6 +123,11 @@ async-graphql = { version = "7.0.3", features = [
 ]}
 dotenvy = "0.15"
 convert_case = "0.6.0"
+rand = "0.8.5"
+
+[build-dependencies]
+tonic-build = "0.11.0"
+protoc-bin-vendored = "3.0.0"
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -203,4 +208,8 @@ harness = false
 
 [[bench]]
 name = "impl_path_string_for_evaluation_context"
+harness = false
+
+[[bench]]
+name = "protobuf_convert_output"
 harness = false
