@@ -13,6 +13,7 @@ pub mod data_loader;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+pub mod fmt;
 pub mod graphql;
 pub mod grpc;
 pub mod has_headers;

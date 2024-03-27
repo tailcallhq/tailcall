@@ -10,10 +10,10 @@ use stripmargin::StripMargin;
 use super::command::{Cli, Command};
 use super::update_checker;
 use crate::blueprint::Blueprint;
-use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
+use crate::fmt::Fmt;
 use crate::http::API_URL_PREFIX;
 use crate::print_schema;
 use crate::rest::{EndpointSet, Unchecked};
@@ -43,7 +43,7 @@ pub async fn run() -> Result<()> {
             let config_module = (config_reader.read_all(&file_paths)).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
             if let Some(format) = format {
-                Fmt::display(format.encode(&config_module)?);
+                display(format.encode(&config_module)?);
             }
             let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
@@ -178,7 +178,11 @@ fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
 }
 
 pub fn display_schema(blueprint: &Blueprint) {
-    Fmt::display(Fmt::heading("GraphQL Schema:\n"));
+    display(Fmt::heading("GraphQL Schema:\n"));
     let sdl = blueprint.to_schema();
-    Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
+    display(format!("{}\n", print_schema::print_schema(sdl)));
+}
+
+pub fn display(s: String) {
+    println!("{}", s);
 }

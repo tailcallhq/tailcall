@@ -13,10 +13,6 @@ impl Fmt {
         format!("{}", meta.yellow())
     }
 
-    pub fn display(s: String) {
-        println!("{}", s);
-    }
-
     pub fn format_n_plus_one_queries(n_plus_one_info: Vec<Vec<(String, String)>>) -> String {
         let query_paths: Vec<Vec<&String>> = n_plus_one_info
             .iter()
