@@ -7,7 +7,7 @@ use prost_reflect::prost_types::{
 };
 
 use crate::blueprint::GrpcMethod;
-use crate::config::generator::proto_generator::{
+use crate::generator::proto_generator::{
     ConfigWrapper, DescriptorType, Options, ProtoGeneratorConfig, DEFAULT_SPECTATOR,
 };
 use crate::config::{Arg, Field, Grpc, Type};
@@ -344,8 +344,8 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::config::generator::from_proto::prebuild_config;
-    use crate::config::generator::proto_generator::{
+    use crate::generator::from_proto::prebuild_config;
+    use crate::generator::proto_generator::{
         Options, ProtoGeneratorConfig, ProtoGeneratorFxn,
     };
 

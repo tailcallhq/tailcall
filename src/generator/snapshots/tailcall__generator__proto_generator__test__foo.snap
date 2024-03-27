@@ -1,5 +1,5 @@
 ---
-source: src/config/generator/proto_generator.rs
+source: src/generator/proto_generator.rs
 expression: config.to_sdl()
 ---
 schema @server @upstream {

@@ -16,7 +16,6 @@ mod config_module;
 pub mod cors;
 mod expr;
 mod from_document;
-mod generator;
 pub mod group_by;
 mod headers;
 mod into_document;

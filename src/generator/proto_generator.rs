@@ -8,7 +8,7 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use strum_macros::Display;
 
-use crate::config::generator::from_proto::prebuild_config;
+use crate::generator::from_proto::prebuild_config;
 use crate::config::{Config, Type};
 
 pub(super) static DEFAULT_SPECTATOR: &str = "_";
@@ -451,7 +451,7 @@ mod test {
     use convert_case::{Case, Casing};
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::config::generator::proto_generator::{
+    use crate::generator::proto_generator::{
         DescriptorType, FieldHolder, ProtoGenerator, ProtoGeneratorConfig, ProtoGeneratorFxn,
     };
 
