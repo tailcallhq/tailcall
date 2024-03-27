@@ -955,7 +955,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 // \r is added automatically in windows, it's safe to replace it with \n
                 let content = content.replace("\r\n", "\n");
 
-                assert_eq!(
+                pretty_assertions::assert_eq!(
                     identity,
                     content.as_ref(),
                     "Identity check failed for {:#?}",

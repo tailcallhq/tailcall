@@ -86,7 +86,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         TypeKind::InputObject(input) => {
             let directives = if !type_def.directives.is_empty() {
                 format!(
-                    "{} ",
+                    " {} ",
                     type_def
                         .directives
                         .iter()
@@ -98,7 +98,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                 String::new()
             };
             format!(
-                "input {} {} {{\n{}\n}}\n",
+                "input {}{} {{\n{}\n}}\n",
                 type_def.name.node,
                 directives,
                 input
@@ -176,16 +176,31 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                     .join("\n")
             )
         }
-        TypeKind::Enum(en) => format!(
-            "enum {} {{\n{}\n}}\n",
-            type_def.name.node,
-            en.values
-                .iter()
-                .map(|v| format!("  {}", v.node.value))
-                .collect::<Vec<String>>()
-                .join("\n")
-        ),
-        // Handle other type kinds...
+        TypeKind::Enum(en) => {
+            let directives = if !type_def.directives.is_empty() {
+                format!(
+                    " {} ",
+                    type_def
+                        .directives
+                        .iter()
+                        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                )
+            } else {
+                String::new()
+            };
+            format!(
+                "enum {}{} {{\n{}\n}}\n",
+                type_def.name.node,
+                directives,
+                en.values
+                    .iter()
+                    .map(|v| format!("  {}", v.node.value))
+                    .collect::<Vec<String>>()
+                    .join("\n")
+            )
+        } // Handle other type kinds...
     }
 }
 fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String {
