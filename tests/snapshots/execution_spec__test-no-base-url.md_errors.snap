@@ -5,11 +5,7 @@ expression: errors
 [
   {
     "message": "No base URL defined",
-    "trace": [
-      "Query",
-      "user",
-      "@http"
-    ],
+    "trace": [],
     "description": null
   }
 ]
