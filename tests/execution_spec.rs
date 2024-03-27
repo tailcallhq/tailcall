@@ -2,6 +2,7 @@ extern crate core;
 
 mod telemetry;
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -38,6 +39,7 @@ use url::Url;
 
 #[cfg(test)]
 pub mod test {
+    use std::borrow::Cow;
     use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
@@ -154,8 +156,9 @@ pub mod test {
     }
 
     impl EnvIO for TestEnvIO {
-        fn get(&self, key: &str) -> Option<String> {
-            self.vars.get(key).cloned()
+        fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+            let map = self.vars.get(key).map(Cow::from);
+            map
         }
     }
 
@@ -238,8 +241,8 @@ pub struct Env {
 }
 
 impl EnvIO for Env {
-    fn get(&self, key: &str) -> Option<String> {
-        self.env.get(key).cloned()
+    fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+        self.env.get(key).map(Cow::from)
     }
 }
 

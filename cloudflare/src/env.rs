@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::rc::Rc;
 
 use tailcall::EnvIO;
@@ -11,8 +12,8 @@ unsafe impl Send for CloudflareEnv {}
 unsafe impl Sync for CloudflareEnv {}
 
 impl EnvIO for CloudflareEnv {
-    fn get(&self, key: &str) -> Option<String> {
-        self.env.var(key).ok().map(|s| s.to_string())
+    fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+        self.env.var(key).ok().map(|s| Cow::from(s.to_string()))
     }
 }
 

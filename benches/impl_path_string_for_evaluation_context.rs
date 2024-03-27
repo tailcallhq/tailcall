@@ -81,7 +81,7 @@ impl HttpIO for Http {
 struct Env {}
 
 impl EnvIO for Env {
-    fn get(&self, _: &str) -> Option<String> {
+    fn get(&self, _: &str) -> Option<Cow<'_, str>> {
         unimplemented!("Not needed for this bench")
     }
 }

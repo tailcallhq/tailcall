@@ -72,7 +72,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
                 "args" => convert_value(ctx.path_arg(tail)?),
                 "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
                 "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
-                "env" => ctx.env_var(tail[0].as_ref()).map(|v| v.into()),
+                "env" => ctx.env_var(tail[0].as_ref()),
                 _ => None,
             })
     }
@@ -123,8 +123,8 @@ mod tests {
         }
 
         impl EnvIO for Env {
-            fn get(&self, key: &str) -> Option<String> {
-                self.env.get(key).cloned()
+            fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+                self.env.get(key).map(Cow::from)
             }
         }
 
