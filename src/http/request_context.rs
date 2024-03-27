@@ -8,6 +8,7 @@ use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::async_cache::AsyncCache;
+use crate::auth::context::AuthContext;
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
@@ -20,9 +21,13 @@ use crate::runtime::TargetRuntime;
 pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
+    // all the headers from the request
     pub request_headers: HeaderMap,
     pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
+    // request headers from client that will be sent to upstream
+    pub allowed_headers: HeaderMap,
+    pub auth_ctx: AuthContext,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
@@ -47,6 +52,8 @@ impl RequestContext {
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
             cache: AsyncCache::new(),
+            allowed_headers: HeaderMap::new(),
+            auth_ctx: AuthContext::default(),
         }
     }
     fn set_min_max_age_conc(&self, min_max_age: i32) {
@@ -187,6 +194,8 @@ impl From<&AppContext> for RequestContext {
             request_headers: HeaderMap::new(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
+            allowed_headers: HeaderMap::new(),
+            auth_ctx: (&app_ctx.auth_ctx).into(),
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),

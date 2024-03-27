@@ -1,8 +1,9 @@
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -167,6 +168,16 @@ impl ConfigReader {
                 LinkType::Operation => {
                     config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
+                LinkType::File => {
+                    if let Some(id) = &config_link.id {
+                        match config_module.extensions.files.entry(id.to_string()) {
+                            Entry::Occupied(entry) => {
+                                bail!("File with id: '{}' is already registered", entry.key());
+                            }
+                            Entry::Vacant(entry) => entry.insert(content),
+                        };
+                    }
+                }
             }
         }
 
@@ -245,7 +256,22 @@ impl ConfigReader {
         // Extend it with the links
         let mut config_module = self.ext_links(config_module, parent_dir).await?;
 
-        self.update_opentelemetry(&mut config_module)?;
+        let server = &mut config_module.config.server;
+        let reader_ctx = ConfigReaderContext {
+            env: self.runtime.env.clone(),
+            vars: &server
+                .vars
+                .iter()
+                .map(|vars| (vars.key.clone(), vars.value.clone()))
+                .collect(),
+            files: &config_module.extensions.files,
+        };
+
+        config_module
+            .config
+            .telemetry
+            .render_mustache(&reader_ctx)?;
+        server.auth.render_mustache(&reader_ctx)?;
 
         Ok(config_module)
     }
@@ -298,24 +324,6 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
-    }
-
-    fn update_opentelemetry(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
-        let server = &mut config_module.config.server;
-        let telemetry = &mut config_module.config.telemetry;
-
-        let reader_ctx = ConfigReaderContext {
-            env: self.runtime.env.clone(),
-            vars: &server
-                .vars
-                .iter()
-                .map(|vars| (vars.key.clone(), vars.value.clone()))
-                .collect(),
-        };
-
-        telemetry.render_mustache(&reader_ctx)?;
-
-        Ok(())
     }
 }
 

@@ -1,0 +1,53 @@
+schema
+  @server(
+    port: 8000
+    graphiql: true
+    vars: [
+      {
+        key: "BASIC_AUTH"
+        value: """
+        testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
+        testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
+        testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
+        """
+      }
+    ]
+    auth: [
+      {id: "basic-1", basic: {htpasswd: "{{vars.BASIC_AUTH}}"}}
+      {
+        id: "jwt-1"
+        jwt: {
+          jwks: {
+            remote: {
+              url: "https://gist.githubusercontent.com/meskill/b0e2343c4aa3e0af95ca0c9209b5818a/raw/tailcall-auth-jwt-jwks-example.json"
+            }
+          }
+        }
+      }
+    ]
+  )
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type User @protected {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String! @protected
+  user: User @http(path: "/users/{{value.userId}}")
+}

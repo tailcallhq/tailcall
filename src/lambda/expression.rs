@@ -27,6 +27,7 @@ pub enum Expression {
     List(List),
     Math(Math),
     Concurrency(Concurrent, Box<Expression>),
+    Protected(Box<Expression>),
 }
 
 impl Display for Expression {
@@ -43,6 +44,7 @@ impl Display for Expression {
             Expression::List(list) => write!(f, "List({list})"),
             Expression::Math(math) => write!(f, "Math({math})"),
             Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
+            Expression::Protected(expr) => write!(f, "Protected({expr})"),
         }
     }
 }
@@ -155,6 +157,10 @@ impl Eval for Expression {
                 Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
                     left.eval(ctx.clone(), conc).await? == right.eval(ctx, conc).await?,
                 )),
+                Expression::Protected(expr) => {
+                    ctx.request_ctx.auth_ctx.validate(ctx.request_ctx).await?;
+                    expr.eval(ctx, conc).await
+                }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,
                 Expression::Cache(cached) => cached.eval(ctx, conc).await,
                 Expression::Relation(relation) => relation.eval(ctx, conc).await,

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
+use crate::auth::context::GlobalAuthContext;
 use crate::blueprint::Type::ListType;
 use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::data_loader::DataLoader;
@@ -22,6 +23,7 @@ pub struct AppContext {
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub endpoints: EndpointSet<Checked>,
+    pub auth_ctx: Arc<GlobalAuthContext>,
 }
 
 impl AppContext {
@@ -109,6 +111,8 @@ impl AppContext {
 
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
+        let auth = blueprint.server.auth.clone();
+        let auth_ctx = GlobalAuthContext::new(auth, &runtime);
 
         AppContext {
             schema,
@@ -118,6 +122,7 @@ impl AppContext {
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
+            auth_ctx: Arc::new(auth_ctx),
         }
     }
 

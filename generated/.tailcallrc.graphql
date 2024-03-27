@@ -234,6 +234,11 @@ directive @server(
   """
   apolloTracing: Boolean
   """
+  `auth` specified list of auth providers that could be used to verify access to protected 
+  fields (that marked with @protected)
+  """
+  auth: Auth
+  """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
@@ -426,6 +431,16 @@ input Apollo {
   Setting `version` for Apollo.
   """
   version: String!
+}
+#/definitions/AuthEntry
+input AuthEntry {
+  """
+  Unique id for the auth provider. For future use
+  """
+  id: String
+}
+input Basic {
+  htpasswd: String!
 }
 input Batch {
   delay: Int!
@@ -726,6 +741,24 @@ enum HttpVersion {
 input JS {
   script: String!
 }
+input Jwks {
+  data: String!
+  remote: Remote
+}
+input Jwt {
+  audiences: [String!]
+  issuer: String
+  """
+  Specifies JWKS data that is used for JWT validation. More on [jwks](https://datatracker.ietf.org/doc/html/rfc7517). 
+  If you need to create JWKS from private key use tools like [this](https://russelldavies.github.io/jwk-creator/)
+  """
+  jwks: Jwks
+  """
+  Specifies if the kid value inside request's JWT token is required to get validated 
+  with the JWKS
+  """
+  optionalKid: Boolean!
+}
 input KeyValue {
   key: String!
   value: String!
@@ -737,6 +770,7 @@ enum LinkType {
   Cert
   Key
   Operation
+  File
 }
 enum Method {
   GET
@@ -832,6 +866,10 @@ input Schema {
   Arr: Schema
   Opt: Schema
   Enum: [String!]
+}
+input Remote {
+  maxAge: Int!
+  url: String!
 }
 """
 A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.

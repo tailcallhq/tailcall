@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(auth: [{id: "jwt", jwt: {jwks: {data: "{{link.jwks}}"}}}], graphiql: true, port: 8000) @upstream @link(id: "jwks", src: "jwks.json", type: File) {
+  query: Query
+}
+
+type Nested {
+  name: String! @const(data: "protected nested name")
+  protected: String! @const(data: "protected nested") @protected
+}
+
+type ProtectedType {
+  name: String! @const(data: "protected type name")
+  nested: String! @const(data: "protected type nested")
+}
+
+type Query {
+  nested: Nested!
+  protectedScalar: String! @const(data: "data from protected scalar") @protected
+  protectedType: ProtectedType
+  scalar: String! @const(data: "data from public scalar")
+}

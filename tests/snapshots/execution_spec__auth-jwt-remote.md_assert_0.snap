@@ -1,0 +1,18 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "scalar": "data from public scalar",
+      "nested": {
+        "name": "protected nested name"
+      }
+    }
+  }
+}
