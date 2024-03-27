@@ -55,6 +55,7 @@ impl FileDescriptorProtoResponse {
     }
 }
 
+/// Used for serializing all kinds of GRPC Reflection responses
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CustomResponse {
@@ -165,6 +166,7 @@ pub async fn get_by_proto_name(
     request_proto(resp).await
 }
 
+/// For extracting `FileDescriptorProto` from `CustomResponse`
 async fn request_proto(response: CustomResponse) -> Result<FileDescriptorProto> {
     let file_descriptor_resp = response
         .file_descriptor_response
