@@ -66,12 +66,6 @@ static OBJECT_WHITELIST: &[&str] = &[
     "PrometheusExporter",
     "Apollo",
     "Cors",
-    "Auth",
-    "AuthEntry",
-    "AuthProvider",
-    "Basic",
-    "Jwt",
-    "Jwks",
 ];
 
 #[derive(Clone, Copy)]

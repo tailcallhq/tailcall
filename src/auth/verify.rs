@@ -5,7 +5,6 @@ use super::error::Error;
 use super::jwt::jwt_verify::JwtVerifier;
 use crate::blueprint;
 use crate::http::RequestContext;
-use crate::runtime::TargetRuntime;
 
 pub(crate) trait Verify {
     async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error>;
@@ -21,14 +20,12 @@ pub enum AuthVerifier {
 }
 
 impl AuthVerifier {
-    pub fn new(config: blueprint::AuthProvider, runtime: &TargetRuntime) -> Self {
+    pub fn new(config: blueprint::AuthProvider) -> Self {
         match config {
             blueprint::AuthProvider::Basic(options) => {
                 AuthVerifier::Basic(BasicVerifier::new(options))
             }
-            blueprint::AuthProvider::Jwt(options) => {
-                AuthVerifier::Jwt(JwtVerifier::new(options, runtime))
-            }
+            blueprint::AuthProvider::Jwt(options) => AuthVerifier::Jwt(JwtVerifier::new(options)),
         }
     }
 }

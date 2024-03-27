@@ -127,7 +127,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                     .as_ref()
                     .and_then(|headers| headers.get_cors()),
             ))
-            .fuse(Auth::make(&config_server.auth))
+            .fuse(Auth::make(&config_module))
             .map(
                 |(hostname, http, response_headers, script, experimental_headers, cors, auth)| {
                     Server {

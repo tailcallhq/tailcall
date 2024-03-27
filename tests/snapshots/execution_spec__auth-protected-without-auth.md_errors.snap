@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "@protected operator is used without defining auth @server",
+    "message": "@protected operator is used but there is no @link definitions for auth providers",
     "trace": [
       "Query",
       "data",

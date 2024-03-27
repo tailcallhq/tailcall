@@ -10,13 +10,13 @@ pub fn update_protected<'a>(
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected.is_some() || type_.protected.is_some() {
-                if !config.server.auth.is_some() {
+                if config.extensions.htpasswd.is_empty() && config.extensions.jwks.is_empty() {
                     return Valid::fail(
-                        "@protected operator is used without defining auth @server".to_owned(),
+                        "@protected operator is used but there is no @link definitions for auth providers".to_owned(),
                     );
                 }
 
-                b_field.resolver = Some(Expression::Protected(Box::new(
+                b_field.resolver = Some(Expression::Protect(Box::new(
                     b_field
                         .resolver
                         .unwrap_or(Expression::Context(Context::Value)),

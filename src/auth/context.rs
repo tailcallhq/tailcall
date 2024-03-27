@@ -7,7 +7,6 @@ use super::error::Error;
 use super::verify::{AuthVerifier, Verify};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
-use crate::runtime::TargetRuntime;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
@@ -51,11 +50,11 @@ impl GlobalAuthContext {
 }
 
 impl GlobalAuthContext {
-    pub fn new(auth: Auth, runtime: &TargetRuntime) -> Self {
+    pub fn new(auth: Auth) -> Self {
         let providers = auth
             .0
             .into_iter()
-            .map(|provider| AuthVerifier::new(provider.provider, runtime))
+            .map(AuthVerifier::new)
             .collect::<Vec<_>>();
 
         Self { providers }
@@ -96,11 +95,10 @@ mod tests {
 
     #[tokio::test]
     async fn validate_request() -> Result<()> {
-        let runtime = crate::runtime::test::init(None);
         let basic_provider =
             BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
         let jwt_options = blueprint::JwtProvider::test_value();
-        let jwt_provider = JwtVerifier::new(jwt_options, &runtime);
+        let jwt_provider = JwtVerifier::new(jwt_options);
 
         let auth_context = GlobalAuthContext {
             providers: vec![

@@ -112,7 +112,7 @@ impl AppContext {
         let schema = blueprint
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
         let auth = blueprint.server.auth.clone();
-        let auth_ctx = GlobalAuthContext::new(auth, &runtime);
+        let auth_ctx = GlobalAuthContext::new(auth);
 
         AppContext {
             schema,

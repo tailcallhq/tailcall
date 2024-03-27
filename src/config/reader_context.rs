@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::path::PathString;
@@ -8,7 +8,6 @@ use crate::EnvIO;
 pub struct ConfigReaderContext<'a> {
     pub env: Arc<dyn EnvIO>,
     pub vars: &'a BTreeMap<String, String>,
-    pub files: &'a HashMap<String, String>,
 }
 
 impl<'a> PathString for ConfigReaderContext<'a> {
@@ -21,7 +20,6 @@ impl<'a> PathString for ConfigReaderContext<'a> {
             .and_then(|(head, tail)| match head.as_ref() {
                 "vars" => self.vars.get(tail[0].as_ref()).map(|v| v.into()),
                 "env" => self.env.get(tail[0].as_ref()).map(|v| v.into()),
-                "link" => self.files.get(tail[0].as_ref()).map(|v| v.into()),
                 _ => None,
             })
     }
@@ -40,7 +38,6 @@ mod tests {
                 "ENV_VAL".to_owned(),
             )])),
             vars: &BTreeMap::from_iter([("VAR_1".to_owned(), "VAR_VAL".to_owned())]),
-            files: &HashMap::from_iter([("FILE_1".to_owned(), "FILE_CONTENT".to_owned())]),
         };
 
         assert_eq!(
@@ -53,11 +50,6 @@ mod tests {
             Some("VAR_VAL".into())
         );
         assert_eq!(reader_context.path_string(&["vars", "VAR_6"]), None);
-        assert_eq!(
-            reader_context.path_string(&["link", "FILE_1"]),
-            Some("FILE_CONTENT".into())
-        );
-        assert_eq!(reader_context.path_string(&["link", "FILE_7"]), None);
         assert_eq!(reader_context.path_string(&["unknown", "unknown"]), None);
     }
 }

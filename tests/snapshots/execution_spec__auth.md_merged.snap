@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(auth: [{id: "basic", basic: {htpasswd: "{{env.BASIC_AUTH}}"}}, {id: "jwt", jwt: {jwks: {data: "{{vars.JWKS}}"}}}], vars: [{key: "JWKS", value: "{\"keys\": []}"}]) @upstream {
+schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
 }
 

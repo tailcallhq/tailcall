@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use super::{merge_headers, merge_key_value_vecs, Auth};
+use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
@@ -19,11 +19,6 @@ pub struct Server {
     /// `apolloTracing` exposes GraphQL query performance data, including
     /// execution time of queries and individual resolvers.
     pub apollo_tracing: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// `auth` specified list of auth providers that could be used to verify
-    /// access to protected fields (that marked with @protected)
-    pub auth: Auth,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `batchRequests` combines multiple requests into one, improving
@@ -231,7 +226,6 @@ impl MergeRight for Server {
         self.version = self.version.merge_right(other.version);
         self.pipeline_flush = self.pipeline_flush.merge_right(other.pipeline_flush);
         self.script = self.script.merge_right(other.script);
-        self.auth = self.auth.merge_right(other.auth);
         self
     }
 }

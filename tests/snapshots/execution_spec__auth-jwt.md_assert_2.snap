@@ -11,7 +11,7 @@ expression: response
     "data": {
       "protectedScalar": "data from protected scalar",
       "nested": {
-        "name": "protected nested name",
+        "name": "nested name",
         "protected": "protected nested"
       },
       "protectedType": {

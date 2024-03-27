@@ -1,26 +1,3 @@
----
-check_identity: true
----
-
-# auth
-
-```graphql @server
-schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
-  query: Query
-}
-
-type Query {
-  data: String @const(data: "data") @protected
-}
-```
-
-```text @file:.htpasswd
-testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
-testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
-testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
-```
-
-```json @file:jwks.json
 {
   "keys": [
     {
@@ -33,4 +10,3 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     }
   ]
 }
-```

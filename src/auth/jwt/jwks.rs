@@ -10,8 +10,8 @@ use crate::auth::error::Error;
 
 #[derive(Setters)]
 pub struct Jwks {
-    set: JwkSet,
-    optional_kid: bool,
+    pub set: JwkSet,
+    pub optional_kid: bool,
 }
 
 impl From<JwkSet> for Jwks {

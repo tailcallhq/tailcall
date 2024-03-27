@@ -1,9 +1,8 @@
-use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -168,15 +167,19 @@ impl ConfigReader {
                 LinkType::Operation => {
                     config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
-                LinkType::File => {
-                    if let Some(id) = &config_link.id {
-                        match config_module.extensions.files.entry(id.to_string()) {
-                            Entry::Occupied(entry) => {
-                                bail!("File with id: '{}' is already registered", entry.key());
-                            }
-                            Entry::Vacant(entry) => entry.insert(content),
-                        };
-                    }
+                LinkType::Htpasswd => {
+                    config_module
+                        .extensions
+                        .htpasswd
+                        .push(Content { id: config_link.id.clone(), content: content.clone() });
+                }
+                LinkType::Jwks => {
+                    let de = &mut serde_json::Deserializer::from_str(&content);
+
+                    config_module.extensions.jwks.push(Content {
+                        id: config_link.id.clone(),
+                        content: serde_path_to_error::deserialize(de)?,
+                    })
                 }
             }
         }
@@ -264,14 +267,12 @@ impl ConfigReader {
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
-            files: &config_module.extensions.files,
         };
 
         config_module
             .config
             .telemetry
             .render_mustache(&reader_ctx)?;
-        server.auth.render_mustache(&reader_ctx)?;
 
         Ok(config_module)
     }

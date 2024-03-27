@@ -1,8 +1,8 @@
-use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use derive_setters::Setters;
+use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
@@ -36,8 +36,6 @@ impl<A> Deref for Content<A> {
 /// an IO operation, i.e., reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default)]
 pub struct Extensions {
-    pub files: HashMap<String, String>,
-
     /// Contains the file descriptor sets resolved from the links
     pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
 
@@ -52,6 +50,10 @@ pub struct Extensions {
 
     /// Contains the endpoints
     pub endpoint_set: EndpointSet<Unchecked>,
+
+    pub htpasswd: Vec<Content<String>>,
+
+    pub jwks: Vec<Content<JwkSet>>,
 }
 
 impl Extensions {
@@ -81,6 +83,8 @@ impl MergeRight for Extensions {
             self.keys
         };
         self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set);
+        self.htpasswd = self.htpasswd.merge_right(other.htpasswd);
+        self.jwks = self.jwks.merge_right(other.jwks);
         self
     }
 }
