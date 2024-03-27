@@ -1822,6 +1822,20 @@
         }
       }
     },
+    "Tag": {
+      "description": "Contains source information for the type.",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "description": "Contains source name for the type.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "Telemetry": {
       "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
@@ -1964,6 +1978,17 @@
         "scalar": {
           "description": "Flag to indicate if the type is a scalar.",
           "type": "boolean"
+        },
+        "tag": {
+          "description": "Contains source information for the type.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Tag"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },

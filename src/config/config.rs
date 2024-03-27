@@ -226,6 +226,10 @@ pub struct Type {
     ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    ///
+    /// Contains source information for the type.
+    pub tag: Option<Tag>,
 }
 
 impl Type {
@@ -252,6 +256,14 @@ impl MergeRight for Type {
         }
         Self { fields, ..self }
     }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+/// Contains source information for the type.
+pub struct Tag {
+    /// Contains source name for the type.
+    pub name: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]

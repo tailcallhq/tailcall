@@ -1,0 +1,18 @@
+---
+source: src/config_generator/from_proto.rs
+expression: cfg
+---
+schema @server @upstream {
+}
+
+type REQUIRED_FIELDS_Person {
+  email: String
+  id: Int!
+  name: String!
+  phone: [REQUIRED_FIELDS_PhoneNumber]
+}
+
+type REQUIRED_FIELDS_PhoneNumber {
+  number: String!
+  type: String
+}

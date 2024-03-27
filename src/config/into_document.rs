@@ -215,6 +215,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                         .as_ref()
                         .map(|cache| pos(cache.to_directive())),
                 )
+                .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
                 .collect::<Vec<_>>(),
             kind,
         })));
