@@ -41,15 +41,15 @@ enum NEWS_Status {
   PUBLISHED
 }
 
-type GREETINGS_DUP_HelloReply {
+type GREETINGS_DUP_HelloReply @tag(name: "greetings_dup.HelloReply") {
   message: String
 }
 
-type GREETINGS_HelloReply {
+type GREETINGS_HelloReply @tag(name: "greetings.HelloReply") {
   message: String
 }
 
-type NEWS_NewsList {
+type NEWS_NewsList @tag(name: "news.NewsList") {
   news: [NEWS_News]
 }
 
