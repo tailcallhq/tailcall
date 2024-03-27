@@ -394,7 +394,7 @@ fn to_fields(
 
         update_args()
             .and(update_http().trace(config::Http::trace_name().as_str()))
-            .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
+            .and(update_grpc(&operation_type))
             .and(update_const_field().trace(config::Const::trace_name().as_str()))
             .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
             .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
@@ -414,11 +414,7 @@ fn to_fields(
             .fields
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
-        |(name, field)| {
-            validate_field_type_exist(config_module, field)
-                .and(to_field(name, field))
-                .trace(name)
-        },
+        |(name, field)| validate_field_type_exist(config_module, field).and(to_field(name, field)),
     );
 
     let to_added_field = |add_field: &config::AddField,
@@ -513,9 +509,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
             } else {
-                to_object_type_definition(name, type_, config_module)
-                    .trace(name)
-                    .and_then(|definition| match definition.clone() {
+                to_object_type_definition(name, type_, config_module).and_then(|definition| {
+                    match definition.clone() {
                         Definition::Object(object_type_definition) => {
                             if config_module.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
@@ -526,7 +521,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                             }
                         }
                         _ => Valid::succeed(definition),
-                    })
+                    }
+                })
             }
         })
         .map(|mut types| {

@@ -63,10 +63,13 @@ pub struct FieldSchema {
     pub args: JsonSchema,
     pub field: JsonSchema,
 }
+#[allow(clippy::too_many_arguments)]
 fn validate_schema(
     field_schema: FieldSchema,
     operation: &ProtobufOperation,
     name: &str,
+    ty: String,
+    config_module: &ConfigModule,
 ) -> Valid<(), String> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
@@ -81,14 +84,17 @@ fn validate_schema(
             // TODO: all of the fields in protobuf are optional actually
             // and if we want to mark some fields as required in GraphQL
             // JsonSchema won't match and the validation will fail
-            fields.compare(&output_schema, name)
+            fields.compare(&output_schema, name, ty, config_module)
         })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn validate_group_by(
     field_schema: &FieldSchema,
     operation: &ProtobufOperation,
     group_by: Vec<String>,
+    ty: String,
+    config_module: &ConfigModule,
 ) -> Valid<(), String> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
@@ -111,7 +117,7 @@ fn validate_group_by(
             let args = &field_schema.args;
             let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
             let _args = JsonSchema::Arr(Box::new(args.to_owned()));
-            fields.compare(&output_schema, group_by[0].as_str())
+            fields.compare(&output_schema, group_by[0].as_str(), ty, config_module)
         })
 }
 
@@ -179,9 +185,23 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
-                    validate_schema(field_schema, &operation, field.name()).unit()
+                    validate_schema(
+                        field_schema,
+                        &operation,
+                        field.name(),
+                        field.type_of.clone(),
+                        config_module,
+                    )
+                    .unit()
                 } else {
-                    validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
+                    validate_group_by(
+                        &field_schema,
+                        &operation,
+                        grpc.group_by.clone(),
+                        field.type_of.clone(),
+                        config_module,
+                    )
+                    .unit()
                 }
             } else {
                 Valid::succeed(())
