@@ -63,22 +63,13 @@ pub fn compile_http(
             let on_request = http
                 .on_request
                 .clone()
-                .or_else(|| config_module.upstream.on_request.clone());
-
+                .or(config_module.upstream.on_request.clone());
+            let http_filter = http::HttpFilter { on_request };
             if !http.group_by.is_empty() && http.method == Method::GET {
-                Expression::IO(IO::Http {
-                    req_template,
-                    group_by: Some(GroupBy::new(http.group_by.clone())),
-                    dl_id: None,
-                    http_filter: http::HttpFilter { on_request },
-                })
+                let group_by = Some(GroupBy::new(http.group_by.clone()));
+                Expression::IO(IO::Http { req_template, group_by, dl_id: None, http_filter })
             } else {
-                Expression::IO(IO::Http {
-                    req_template,
-                    group_by: None,
-                    dl_id: None,
-                    http_filter: http::HttpFilter { on_request },
-                })
+                Expression::IO(IO::Http { req_template, group_by: None, dl_id: None, http_filter })
             }
         })
 }
