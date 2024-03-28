@@ -281,7 +281,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::config_generator::from_proto::build_config;
+    use crate::config_generator::from_proto::{build_config, DescriptorType, Helper};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -351,5 +351,37 @@ mod test {
         insta::assert_snapshot!(cfg);
 
         Ok(())
+    }
+    #[test]
+    fn test_get_value() {
+        let mut helper = Helper { package: "com.example".to_string(), ..Default::default() };
+        assert_eq!(
+            helper.get_value("TestEnum", DescriptorType::Enum),
+            "COM_EXAMPLE_TestEnum"
+        );
+        assert_eq!(
+            helper.get_value("testMessage", DescriptorType::Message),
+            "COM_EXAMPLE_testMessage"
+        );
+        assert_eq!(
+            helper.get_value("QueryName", DescriptorType::Query),
+            "com_example_queryName"
+        );
+    }
+
+    #[test]
+    fn test_insert_and_get() {
+        let mut helper = Helper { package: "com.example".to_string(), ..Default::default() };
+        helper.insert("TestEnum", DescriptorType::Enum);
+        assert_eq!(
+            helper.get("TestEnum"),
+            Some("COM_EXAMPLE_TestEnum".to_string())
+        );
+        helper.insert("testMessage", DescriptorType::Message);
+        assert_eq!(
+            helper.get("testMessage"),
+            Some("COM_EXAMPLE_testMessage".to_string())
+        );
+        assert_eq!(helper.get("NonExisting"), None);
     }
 }
