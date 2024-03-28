@@ -24,7 +24,7 @@ const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
     if let Ok(path) = dotenv() {
-        tracing::info!("Content from file: {:?} are loaded", path);
+        tracing::info!("Env from file: {:?} are loaded", path);
     }
     let cli = Cli::parse();
     update_checker::check_for_update().await;
