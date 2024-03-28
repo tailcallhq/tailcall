@@ -116,11 +116,7 @@ fn get_ty(name: &str, cfg: &Config, helper: &mut Helper, ty: DescriptorType) -> 
     ty
 }
 
-fn append_enums(
-    config: &mut Config,
-    enums: Vec<EnumDescriptorProto>,
-    helper: &mut Helper,
-) -> anyhow::Result<()> {
+fn append_enums(config: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &mut Helper) {
     for enum_ in enums {
         let enum_name = enum_.name();
 
@@ -140,24 +136,19 @@ fn append_enums(
         // safe to call
         // unwrap here
     }
-    Ok(())
 }
 
-fn append_msg_type(
-    config: &mut Config,
-    messages: Vec<DescriptorProto>,
-    helper: &mut Helper,
-) -> anyhow::Result<()> {
+fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: &mut Helper) {
     if messages.is_empty() {
-        return Ok(());
+        return;
     }
     for message in messages {
         let msg_name = message.name().to_string();
 
         let mut ty = get_ty(&msg_name, config, helper, DescriptorType::Message);
 
-        append_enums(config, message.enum_type, helper)?;
-        append_msg_type(config, message.nested_type, helper)?;
+        append_enums(config, message.enum_type, helper);
+        append_msg_type(config, message.nested_type, helper);
 
         for field in message.field {
             let field_name = field.name().to_string();
@@ -183,7 +174,6 @@ fn append_msg_type(
                                                                  // safe to call
                                                                  // unwrap here
     }
-    Ok(())
 }
 
 fn generate_ty(
@@ -191,7 +181,7 @@ fn generate_ty(
     services: Vec<ServiceDescriptorProto>,
     helper: &mut Helper,
     key: &str,
-) -> anyhow::Result<Type> {
+) -> Type {
     let package = helper.package.clone();
     let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
     let mut ty = config.types.get(key).cloned().unwrap_or_default();
@@ -226,7 +216,7 @@ fn generate_ty(
                 .insert(helper.get(method_name).unwrap(), cfg_field);
         }
     }
-    Ok(ty)
+    ty
 }
 
 fn append_query_service(
@@ -234,24 +224,20 @@ fn append_query_service(
     services: Vec<ServiceDescriptorProto>,
     query: &str,
     helper: &mut Helper,
-) -> anyhow::Result<()> {
+) {
     if services.is_empty() {
-        return Ok(());
+        return;
     }
 
-    let ty = generate_ty(config, services, helper, query)?;
+    let ty = generate_ty(config, services, helper, query);
 
     if ty.ne(&Type::default()) {
         config.schema.query = Some(query.to_owned());
         config.types.insert(query.to_owned(), ty);
     }
-    Ok(())
 }
 
-pub fn build_config(
-    descriptor_sets: Vec<FileDescriptorSet>,
-    query: Option<String>,
-) -> anyhow::Result<Config> {
+pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: Option<String>) -> Config {
     let mut config = Config::default();
     let mut helper = Helper::default();
     let query = query.unwrap_or_else(|| "Query".to_string());
@@ -260,18 +246,18 @@ pub fn build_config(
         for file_descriptor in descriptor_set.file {
             helper.package = file_descriptor.package().to_string();
 
-            append_enums(&mut config, file_descriptor.enum_type, &mut helper)?;
-            append_msg_type(&mut config, file_descriptor.message_type, &mut helper)?;
+            append_enums(&mut config, file_descriptor.enum_type, &mut helper);
+            append_msg_type(&mut config, file_descriptor.message_type, &mut helper);
             append_query_service(
                 &mut config,
                 file_descriptor.service.clone(),
                 &query,
                 &mut helper,
-            )?;
+            );
         }
     }
 
-    Ok(config)
+    config
 }
 
 #[cfg(test)]
@@ -316,7 +302,7 @@ mod test {
         set.file.push(greetings.clone());
         set.file.push(greetings_dup_methods.clone());
 
-        let result = build_config(vec![set], Some("Queryx".to_string()))?.to_sdl();
+        let result = build_config(vec![set], Some("Queryx".to_string())).to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -328,7 +314,7 @@ mod test {
         set1.file.push(greetings);
         set2.file.push(greetings_dup_methods);
 
-        let result_sets = build_config(vec![set, set1, set2], Some("Queryx".to_string()))?.to_sdl();
+        let result_sets = build_config(vec![set, set1, set2], Some("Queryx".to_string())).to_sdl();
 
         pretty_assertions::assert_eq!(result, result_sets);
 
@@ -347,7 +333,7 @@ mod test {
         let req_proto = get_proto_file_descriptor("required_fields.proto")?;
         set.file.push(req_proto);
 
-        let cfg = build_config(vec![set], None)?.to_sdl();
+        let cfg = build_config(vec![set], None).to_sdl();
         insta::assert_snapshot!(cfg);
 
         Ok(())
