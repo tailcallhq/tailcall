@@ -230,6 +230,10 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    ///
+    /// Contains source information for the type.
+    pub tag: Option<Tag>,
 }
 
 impl Type {
@@ -256,6 +260,15 @@ impl MergeRight for Type {
         }
         Self { fields, ..self }
     }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+/// Used to represent an identifier for a type. Typically used via only by the
+/// configuration generators to provide additional information about the type.
+pub struct Tag {
+    /// A unique identifier for the type.
+    pub id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
