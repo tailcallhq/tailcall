@@ -33,6 +33,11 @@ pub struct Proxy {
 /// upstream server connection. This includes settings like connection timeouts,
 /// keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
+    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    /// onRequest field gives the ability to specify the global request
+    /// interception handler.
+    pub on_request: Option<String>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
     /// upstream services. If not set, no headers are forwarded, enhancing
@@ -165,6 +170,10 @@ impl Upstream {
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only.unwrap_or(false)
     }
+
+    pub fn get_on_request(&self) -> Option<String> {
+        self.on_request.clone()
+    }
 }
 
 impl MergeRight for Upstream {
@@ -178,6 +187,7 @@ impl MergeRight for Upstream {
                 other
             }
         });
+        self.on_request = self.on_request.merge_right(other.on_request);
         self.base_url = self.base_url.merge_right(other.base_url);
         self.connect_timeout = self.connect_timeout.merge_right(other.connect_timeout);
         self.http_cache = self.http_cache.merge_right(other.http_cache);

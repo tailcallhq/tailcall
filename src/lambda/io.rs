@@ -15,7 +15,7 @@ use crate::grpc::data_loader::GrpcDataLoader;
 use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
-use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, HttpFilter, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
 use crate::valid::Validator;
@@ -27,6 +27,9 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        /// Provides us the ability to pass request
+        /// interception handler via on_request field.
+        http_filter: http::HttpFilter,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -75,7 +78,7 @@ impl IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                IO::Http { req_template, dl_id, .. } => {
+                IO::Http { req_template, dl_id, http_filter, .. } => {
                     let req = req_template.to_request(&ctx)?;
                     let is_get = req.method() == reqwest::Method::GET;
 
@@ -84,7 +87,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.request_ctx.http_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req).await?
+                        execute_raw_request(&ctx, req, http_filter).await?
                     };
 
                     if ctx.request_ctx.server.get_enable_http_validation() {
@@ -110,7 +113,7 @@ impl IO {
                             dl_id.and_then(|index| ctx.request_ctx.gql_data_loaders.get(index.0));
                         execute_request_with_dl(&ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req).await?
+                        execute_raw_request(&ctx, req, &HttpFilter::default()).await?
                     };
 
                     set_headers(&ctx, &res);
@@ -190,12 +193,13 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
+    http_filter: &http::HttpFilter,
 ) -> Result<Response<async_graphql::Value>> {
     let response = ctx
         .request_ctx
         .runtime
         .http
-        .execute(req)
+        .execute_with(req, http_filter)
         .await
         .map_err(|e| EvaluationError::IOException(e.to_string()))?
         .to_json()?;

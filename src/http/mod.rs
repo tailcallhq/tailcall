@@ -20,3 +20,10 @@ pub use request_template::RequestTemplate;
 pub use response::*;
 
 pub use crate::app_context::AppContext;
+
+#[derive(Default, Clone, Debug)]
+/// User can configure the filter/interceptor
+/// for the http requests.
+pub struct HttpFilter {
+    pub on_request: Option<String>,
+}
