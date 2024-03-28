@@ -103,7 +103,7 @@ opentelemetry_sdk = { version = "0.22.1", features = [
     "logs",
     "metrics",
 ] }
-opentelemetry-http = "0.11.0"
+opentelemetry-http = "0.11.1"
 opentelemetry-stdout = { version = "0.3.0", features = [
     "trace",
     "logs",
