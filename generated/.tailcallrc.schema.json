@@ -1823,14 +1823,14 @@
       }
     },
     "Tag": {
-      "description": "Contains source information for the type.",
+      "description": "Used to represent an identifier for a type. Typically used via only by the configuration generators to provide additional information about the type.",
       "type": "object",
       "required": [
-        "name"
+        "id"
       ],
       "properties": {
-        "name": {
-          "description": "Contains source name for the type.",
+        "id": {
+          "description": "A unique identifier for the type.",
           "type": "string"
         }
       },

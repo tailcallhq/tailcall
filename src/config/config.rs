@@ -260,10 +260,11 @@ impl MergeRight for Type {
 
 #[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-/// Contains source information for the type.
+/// Used to represent an identifier for a type. Typically used via only by the
+/// configuration generators to provide additional information about the type.
 pub struct Tag {
-    /// Contains source name for the type.
-    pub name: String,
+    /// A unique identifier for the type.
+    pub id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]

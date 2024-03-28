@@ -112,7 +112,7 @@ fn get_ty(name: &str, cfg: &Config, helper: &mut Helper, ty: DescriptorType) -> 
         .unwrap_or_default(); // it should be
                               // safe to call
                               // unwrap here
-    ty.tag = Some(Tag { name: format!("{}.{}", helper.package, name) });
+    ty.tag = Some(Tag { id: format!("{}.{}", helper.package, name) });
     ty
 }
 

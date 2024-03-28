@@ -306,13 +306,14 @@ directive @server(
 ) on SCHEMA
 
 """
-Contains source information for the type.
+Used to represent an identifier for a type. Typically used via only by the configuration 
+generators to provide additional information about the type.
 """
 directive @tag(
   """
-  Contains source name for the type.
+  A unique identifier for the type.
   """
-  name: String!
+  id: String!
 ) on FIELD_DEFINITION
 
 """
