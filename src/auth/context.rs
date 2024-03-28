@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
-use futures_util::future::join_all;
 
 use super::error::Error;
 use super::verify::{AuthVerifier, Verify};
@@ -10,7 +9,7 @@ use crate::http::RequestContext;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
-    providers: Vec<AuthVerifier>,
+    verifier: AuthVerifier,
 }
 
 #[derive(Default)]
@@ -26,38 +25,14 @@ impl GlobalAuthContext {
     // expression to work with that type since otherwise any additional info
     // will be lost during conversion to anyhow::Error
     async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
-        let validations = join_all(
-            self.providers
-                .iter()
-                .map(|provider| provider.verify(request)),
-        )
-        .await;
-
-        let mut error = Error::Missing;
-
-        for v in validations {
-            let Err(err) = v else {
-                return Ok(());
-            };
-
-            if err > error {
-                error = err;
-            }
-        }
-
-        Err(error)
+        self.verifier.verify(request).await
     }
 }
 
 impl GlobalAuthContext {
     pub fn new(auth: Auth) -> Self {
-        let providers = auth
-            .0
-            .into_iter()
-            .map(AuthVerifier::new)
-            .collect::<Vec<_>>();
-
-        Self { providers }
+        let verifier = AuthVerifier::new(auth);
+        Self { verifier }
     }
 }
 
@@ -101,10 +76,7 @@ mod tests {
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let auth_context = GlobalAuthContext {
-            providers: vec![
-                AuthVerifier::Basic(basic_provider),
-                AuthVerifier::Jwt(jwt_provider),
-            ],
+            verifier: AuthVerifier::Basic(basic_provider).or(AuthVerifier::Jwt(jwt_provider)),
         };
 
         let validation = auth_context

@@ -19,27 +19,28 @@ pub struct JwtProvider {
     pub jwks: JwkSet,
 }
 
-#[derive(Clone, Debug)]
-pub enum AuthProvider {
+#[derive(Clone, Debug, Default)]
+pub enum Auth {
     Basic(BasicProvider),
     Jwt(JwtProvider),
+    And(Box<Auth>, Box<Auth>),
+    Or(Box<Auth>, Box<Auth>),
+    #[default]
+    Empty,
 }
-
-#[derive(Clone, Default, Debug)]
-pub struct Auth(pub Vec<AuthProvider>);
 
 impl Auth {
     pub fn make(config_module: &ConfigModule) -> Valid<Auth, String> {
-        let mut providers = Vec::new();
+        let mut auth = Auth::default();
 
         for htpasswd in config_module.extensions.htpasswd.iter() {
-            providers.push(AuthProvider::Basic(BasicProvider {
+            auth = auth.or(Auth::Basic(BasicProvider {
                 htpasswd: htpasswd.content.clone(),
             }))
         }
 
         for jwks in config_module.extensions.jwks.iter() {
-            providers.push(AuthProvider::Jwt(JwtProvider {
+            auth = auth.or(Auth::Jwt(JwtProvider {
                 jwks: jwks.content.clone(),
                 // TODO: read those options from link instead of using defaults
                 issuer: Default::default(),
@@ -48,6 +49,10 @@ impl Auth {
             }))
         }
 
-        Valid::succeed(Auth(providers))
+        Valid::succeed(auth)
+    }
+
+    pub fn or(self, other: Self) -> Self {
+        Auth::Or(Box::new(self), Box::new(other))
     }
 }

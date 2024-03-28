@@ -12,6 +12,7 @@ pub struct BasicVerifier {
     verifier: Htpasswd<'static>,
 }
 
+#[async_trait::async_trait]
 impl Verify for BasicVerifier {
     /// Verify the request context against the basic auth provider.
     async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {

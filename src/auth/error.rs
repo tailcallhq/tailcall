@@ -9,3 +9,13 @@ pub enum Error {
     #[error("Auth validation failed")]
     Invalid,
 }
+
+impl Error {
+    pub fn min(self, other: Self) -> Self {
+        if self > other {
+            other
+        } else {
+            self
+        }
+    }
+}

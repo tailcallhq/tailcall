@@ -62,6 +62,7 @@ impl JwtVerifier {
     }
 }
 
+#[async_trait::async_trait]
 impl Verify for JwtVerifier {
     async fn verify(&self, request: &RequestContext) -> Result<(), Error> {
         let token = self.resolve_token(request);
