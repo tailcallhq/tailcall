@@ -167,4 +167,54 @@ mod tests {
         let body_out = js_request.body;
         assert_eq!(body_out, None);
     }
+
+    #[test]
+    fn test_from_http_url_without_port() {
+        let uri = Uri::parse("http://example.com/path?query=value").unwrap();
+        assert_eq!(uri.scheme, Scheme::Http);
+        assert_eq!(uri.host.unwrap(), "example.com");
+        assert_eq!(uri.path, "/path");
+        assert_eq!(uri.query.len(), 1);
+        assert_eq!(uri.query.get("query").unwrap(), "value");
+        assert_eq!(uri.port, None);
+    }
+
+    #[test]
+    fn test_from_https_url_without_query() {
+        let uri = Uri::parse("https://example.com:8085/path").unwrap();
+        assert_eq!(uri.scheme, Scheme::Https);
+        assert_eq!(uri.host.unwrap(), "example.com");
+        assert_eq!(uri.path, "/path");
+        assert_eq!(uri.query.len(), 0);
+        assert_eq!(uri.port, Some(8085));
+    }
+
+    #[test]
+    fn test_https_display_without_path_query_and_port() {
+        let uri = Uri {
+            path: "".to_string(),
+            query: Default::default(),
+            scheme: Scheme::Https,
+            host: Some("example.com".to_string()),
+            port: None,
+        };
+        let uri_formatted = format!("{}", uri);
+        assert_eq!(uri_formatted, "https://example.com");
+    }
+
+    #[test]
+    fn test_http_display_with_host_port_scheme_path_and_query() {
+        let uri = Uri {
+            path: "/path".to_string(),
+            query: [("param".to_string(), "value".to_string())]
+                .iter()
+                .cloned()
+                .collect(),
+            scheme: Scheme::Http,
+            host: Some("example.com".to_string()),
+            port: Some(8085),
+        };
+        let uri_formatted = format!("{}", uri);
+        assert_eq!(uri_formatted, "http://example.com::8085/path?param=value");
+    }
 }

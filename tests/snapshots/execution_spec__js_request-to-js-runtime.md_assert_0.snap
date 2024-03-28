@@ -1,0 +1,22 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "x-tailcall": "tailcall-header"
+  },
+  "body": {
+    "data": {
+      "posts": [
+        {
+          "id": 11,
+          "title": "foo",
+          "body": "bar"
+        }
+      ]
+    }
+  }
+}

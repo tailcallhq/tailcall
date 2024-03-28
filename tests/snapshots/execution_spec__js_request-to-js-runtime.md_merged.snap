@@ -1,0 +1,17 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(headers: {experimental: ["x-tailcall"]}) @upstream(baseURL: "http://example.com") {
+  query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts?id=11")
+}
