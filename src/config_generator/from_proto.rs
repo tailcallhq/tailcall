@@ -250,7 +250,7 @@ pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Con
             append_query_service(
                 &mut config,
                 file_descriptor.service.clone(),
-                &query,
+                query,
                 &mut helper,
             );
         }
