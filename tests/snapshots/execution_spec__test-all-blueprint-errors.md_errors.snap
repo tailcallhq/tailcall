@@ -6,23 +6,16 @@ expression: errors
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "Query",
-      "foo"
-    ],
-    "description": null
-  },
-  {
-    "message": "No resolver has been found in the schema",
-    "trace": [
       "Mutation",
       "a"
     ],
     "description": null
   },
   {
-    "message": "type is used in input and output",
+    "message": "No resolver has been found in the schema",
     "trace": [
-      "B"
+      "Query",
+      "foo"
     ],
     "description": null
   },
@@ -32,6 +25,13 @@ expression: errors
       "Query",
       "bar",
       "@const"
+    ],
+    "description": null
+  },
+  {
+    "message": "type is used in input and output",
+    "trace": [
+      "B"
     ],
     "description": null
   }

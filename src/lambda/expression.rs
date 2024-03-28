@@ -79,7 +79,7 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
     fn from(_value: crate::valid::ValidationError<&'a str>) -> Self {
         EvaluationError::APIValidationError(
             _value
-                .as_vec()
+                .as_set()
                 .iter()
                 .map(|e| e.message.to_owned())
                 .collect(),

@@ -194,7 +194,7 @@ impl<'a> From<ValidationError<&'a str>> for CLIError {
     fn from(error: ValidationError<&'a str>) -> Self {
         CLIError::new("Invalid Configuration").caused_by(
             error
-                .as_vec()
+                .as_set()
                 .iter()
                 .map(|cause| {
                     let mut err =
@@ -213,7 +213,7 @@ impl From<ValidationError<String>> for CLIError {
     fn from(error: ValidationError<String>) -> Self {
         CLIError::new("Invalid Configuration").caused_by(
             error
-                .as_vec()
+                .as_set()
                 .iter()
                 .map(|cause| {
                     CLIError::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone()))

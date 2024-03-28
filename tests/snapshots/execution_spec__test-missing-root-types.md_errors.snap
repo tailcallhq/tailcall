@@ -4,16 +4,16 @@ expression: errors
 ---
 [
   {
-    "message": "Query type is not defined",
+    "message": "Mutation type is not defined",
     "trace": [
-      "QueryType"
+      "MutationDef"
     ],
     "description": null
   },
   {
-    "message": "Mutation type is not defined",
+    "message": "Query type is not defined",
     "trace": [
-      "MutationDef"
+      "QueryType"
     ],
     "description": null
   }

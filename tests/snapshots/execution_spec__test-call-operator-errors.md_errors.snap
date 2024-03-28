@@ -12,6 +12,15 @@ expression: errors
     "description": null
   },
   {
+    "message": "call must have query or mutation",
+    "trace": [
+      "Post",
+      "withoutOperator",
+      "@call"
+    ],
+    "description": null
+  },
+  {
     "message": "no argument 'id' found",
     "trace": [
       "Post",
@@ -38,15 +47,6 @@ expression: errors
       "urlMismatchHttp",
       "@call",
       "user"
-    ],
-    "description": null
-  },
-  {
-    "message": "call must have query or mutation",
-    "trace": [
-      "Post",
-      "withoutOperator",
-      "@call"
     ],
     "description": null
   },
