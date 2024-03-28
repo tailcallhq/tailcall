@@ -3,8 +3,6 @@ use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 
-use crate::json::JsonLike;
-
 #[derive(JsonSchema, Default)]
 pub struct Email {
     #[serde(rename = "Email")]
@@ -26,7 +24,7 @@ impl super::Scalar for Email {
     /// Function used to validate the email address
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Ok(email_str) = value.clone().as_str_ok() {
+            if let ConstValue::String(email_str) = value {
                 let email_str = email_str.to_string();
                 return email(&email_str).is_ok();
             }

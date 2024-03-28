@@ -3,8 +3,6 @@ use chrono::DateTime;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 
-use crate::json::JsonLike;
-
 #[derive(JsonSchema, Default)]
 pub struct Date {
     #[serde(rename = "Date")]
@@ -16,7 +14,7 @@ impl super::Scalar for Date {
     /// Function used to validate the date
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Ok(date_str) = value.clone().as_str_ok() {
+            if let ConstValue::String(date_str) = value {
                 return DateTime::parse_from_rfc3339(date_str).is_ok();
             }
             false
