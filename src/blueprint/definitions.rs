@@ -389,17 +389,18 @@ fn to_fields(
             return Valid::fail(format!(
                 "Multiple resolvers detected [{}]",
                 directives.join(", ")
-            ));
+            ))
+            .trace(&field.type_of);
         }
 
         update_args()
-            .and(update_http().trace(config::Http::trace_name().as_str()))
-            .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-            .and(update_const_field().trace(config::Const::trace_name().as_str()))
-            .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
-            .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
-            .and(update_modify().trace(config::Modify::trace_name().as_str()))
-            .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
+            .and(update_http())
+            .and(update_grpc(&operation_type))
+            .and(update_const_field())
+            .and(update_graphql(&operation_type))
+            .and(update_expr(&operation_type))
+            .and(update_modify())
+            .and(update_call(&operation_type))
             .and(fix_dangling_resolvers())
             .and(update_cache_resolvers())
             .and(update_protected().trace(Protected::trace_name().as_str()))
@@ -415,11 +416,7 @@ fn to_fields(
             .fields
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
-        |(name, field)| {
-            validate_field_type_exist(config_module, field)
-                .and(to_field(name, field))
-                .trace(name)
-        },
+        |(name, field)| validate_field_type_exist(config_module, field).and(to_field(name, field)),
     );
 
     let to_added_field = |add_field: &config::AddField,
@@ -430,8 +427,8 @@ fn to_fields(
             .iter()
             .find(|&(field_name, _)| *field_name == add_field.path[0]);
         match source_field {
-            Some((_, source_field)) => to_field(&add_field.name, source_field)
-                .and_then(|field_definition| {
+            Some((_, source_field)) => {
+                to_field(&add_field.name, source_field).and_then(|field_definition| {
                     let added_field_path = match source_field.http {
                         Some(_) => add_field.path[1..]
                             .iter()
@@ -479,7 +476,7 @@ fn to_fields(
                         field_definition,
                     )
                 })
-                .trace(config::AddField::trace_name().as_str()),
+            }
             None => Valid::fail(format!(
                 "Could not find field {} in path {}",
                 add_field.path[0],
@@ -514,9 +511,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
             } else {
-                to_object_type_definition(name, type_, config_module)
-                    .trace(name)
-                    .and_then(|definition| match definition.clone() {
+                to_object_type_definition(name, type_, config_module).and_then(|definition| {
+                    match definition.clone() {
                         Definition::Object(object_type_definition) => {
                             if config_module.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
@@ -527,7 +523,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                             }
                         }
                         _ => Valid::succeed(definition),
-                    })
+                    }
+                })
             }
         })
         .map(|mut types| {

@@ -6,16 +6,14 @@ expression: errors
   {
     "message": "Multiple resolvers detected [@http, @const]",
     "trace": [
-      "Query",
-      "user1"
+      "User"
     ],
     "description": null
   },
   {
     "message": "Multiple resolvers detected [@http, @call]",
     "trace": [
-      "Query",
-      "user2"
+      "User"
     ],
     "description": null
   }

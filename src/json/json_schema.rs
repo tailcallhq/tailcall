@@ -4,6 +4,7 @@ use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
 
+use crate::config::ConfigModule;
 use crate::valid::{Valid, Validator};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -91,30 +92,42 @@ impl JsonSchema {
     }
 
     // TODO: add unit tests
-    pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
+    #[allow(clippy::too_many_arguments)]
+    pub fn compare(
+        &self,
+        other: &JsonSchema,
+        name: &str,
+        ty: String,
+        cfg_module: &ConfigModule,
+    ) -> Valid<(), String> {
         match self {
             JsonSchema::Obj(a) => {
-                if let JsonSchema::Obj(b) = other {
-                    return Valid::from_iter(b.iter(), |(key, b)| {
-                        Valid::from_option(a.get(key), format!("missing key: {}", key))
-                            .and_then(|a| a.compare(b, key))
+                return if let JsonSchema::Obj(b) = other {
+                    Valid::from_iter(b.iter(), |(key, b)| {
+                        if let Some(field) =
+                            cfg_module.types.get(&ty).and_then(|v| v.fields.get(key))
+                        {
+                            Valid::from_option(a.get(key), format!("missing key: {}", key))
+                                .and_then(|a| a.compare(b, key, field.type_of.clone(), cfg_module))
+                        } else {
+                            Valid::fail(format!("missing key: {}", key)).trace(&ty)
+                        }
                     })
-                    .trace(name)
-                    .unit();
+                    .unit()
                 } else {
-                    return Valid::fail("expected Object type".to_string()).trace(name);
+                    Valid::fail("expected Object type".to_string()).trace(&ty)
                 }
             }
             JsonSchema::Arr(a) => {
                 if let JsonSchema::Arr(b) = other {
-                    return a.compare(b, name);
+                    return a.compare(b, name, ty, cfg_module);
                 } else {
                     return Valid::fail("expected Non repeatable type".to_string()).trace(name);
                 }
             }
             JsonSchema::Opt(a) => {
                 if let JsonSchema::Opt(b) = other {
-                    return a.compare(b, name);
+                    return a.compare(b, name, ty, cfg_module);
                 } else {
                     return Valid::fail("expected type to be required".to_string()).trace(name);
                 }

@@ -5,10 +5,7 @@ expression: errors
 [
   {
     "message": "Undeclared type 'User' was found",
-    "trace": [
-      "Query",
-      "users"
-    ],
+    "trace": [],
     "description": null
   }
 ]

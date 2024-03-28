@@ -5,11 +5,7 @@ expression: errors
 [
   {
     "message": "File descriptor not found for method: abc.NewsService.GetAllNews",
-    "trace": [
-      "Query",
-      "news",
-      "@grpc"
-    ],
+    "trace": [],
     "description": null
   }
 ]

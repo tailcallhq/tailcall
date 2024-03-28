@@ -5,11 +5,7 @@ expression: errors
 [
   {
     "message": "No base URL defined",
-    "trace": [
-      "Post",
-      "user",
-      "@graphQL"
-    ],
+    "trace": [],
     "description": null
   }
 ]

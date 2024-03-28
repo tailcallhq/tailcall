@@ -28,11 +28,7 @@ expression: errors
   },
   {
     "message": "expected string",
-    "trace": [
-      "Query",
-      "bar",
-      "@const"
-    ],
+    "trace": [],
     "description": null
   }
 ]
