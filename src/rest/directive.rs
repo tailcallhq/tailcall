@@ -56,3 +56,100 @@ impl TryFrom<&Directive> for Rest {
         Ok(rest)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use async_graphql::parser::types::Directive;
+    use maplit::hashmap;
+    use pretty_assertions::assert_eq;
+
+    use super::*;
+
+    fn query_to_directive(query: &str) -> Directive {
+        async_graphql::parser::parse_query(query)
+            .unwrap()
+            .operations
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .node
+            .directives
+            .first()
+            .unwrap()
+            .node
+            .clone()
+    }
+
+    fn default_rest_with(path: &str, method: Method, body: &str) -> Rest {
+        Rest::default()
+            .path(path.to_string())
+            .method(Some(method))
+            .body(Some(body.to_string()))
+    }
+
+    fn valid_all_method_queries() -> HashMap<String, Rest> {
+        hashmap! {
+            // GET method
+            r#"query ($a: Int, $v: String)
+                @rest(method: GET, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() => 
+            default_rest_with("/foo/$a", Method::GET, "v"),
+
+            // POST method
+            r#"query ($a: Int, $v: String)
+                @rest(method: POST, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() => 
+            default_rest_with("/foo/$a", Method::POST, "v"),
+
+            // PUT method
+            r#"query ($a: Int, $v: String)
+                @rest(method: PUT, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::PUT, "v"),
+
+            // DELETE method
+            r#"query ($a: Int, $v: String)
+                @rest(method: DELETE, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::DELETE, "v"),
+
+            // PATCH method
+            r#"query ($a: Int, $v: String)
+                @rest(method: PATCH, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::PATCH, "v"),
+
+
+            // HEAD method
+            r#"query ($a: Int, $v: String)
+                @rest(method: HEAD, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::HEAD, "v"),
+
+            // OPTIONS method
+            r#"query ($a: Int, $v: String)
+                @rest(method: OPTIONS, path: "/foo/$a", body: $v) {
+                    value
+                }"#.to_string() =>
+            default_rest_with("/foo/$a", Method::OPTIONS, "v"),
+        }
+    }
+
+    #[test]
+    fn test_directive_to_rest_methods() {
+        for (query, expected_rest) in valid_all_method_queries() {
+            let directive = query_to_directive(&query);
+            let actual = Rest::try_from(&directive).unwrap();
+            assert_eq!(actual, expected_rest);
+        }
+    }
+}
