@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-fn print_directives_right_pad(directives: &[Positioned<ConstDirective>]) -> String {
+fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
     if directives.is_empty() {
         return String::new();
     }
@@ -19,7 +19,7 @@ fn pos<A>(a: A) -> Positioned<A> {
 }
 
 fn print_schema(schema: &SchemaDefinition) -> String {
-    let directives = print_directives_right_pad(&schema.directives);
+    let directives = print_directives(&schema.directives);
 
     let query = schema
         .query
@@ -89,7 +89,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             )
         }
         TypeKind::InputObject(input) => {
-            let directives = print_directives_right_pad(&type_def.directives);
+            let directives = print_directives(&type_def.directives);
             format!(
                 "input {} {}{{\n{}\n}}\n",
                 type_def.name.node,
@@ -142,7 +142,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             } else {
                 String::new()
             };
-            let directives = print_directives_right_pad(&type_def.directives);
+            let directives = print_directives(&type_def.directives);
             format!(
                 "type {} {}{}{{\n{}\n}}\n",
                 type_def.name.node,
@@ -157,7 +157,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             )
         }
         TypeKind::Enum(en) => {
-            let directives = print_directives_right_pad(&type_def.directives);
+            let directives = print_directives(&type_def.directives);
             format!(
                 "enum {} {}{{\n{}\n}}\n",
                 type_def.name.node,
@@ -173,7 +173,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
 }
 
 fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String {
-    let directives = print_directives_right_pad(&field.directives);
+    let directives = print_directives(&field.directives);
     let args_str = if !field.arguments.is_empty() {
         let args = field
             .arguments
@@ -199,7 +199,7 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
 }
 
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
-    let directives_str = print_directives_right_pad(&field.directives);
+    let directives_str = print_directives(&field.directives);
     format!("  {}: {}{}", field.name.node, field.ty.node, directives_str)
 }
 fn print_directive(directive: &DirectiveDefinition) -> String {
