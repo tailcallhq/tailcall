@@ -3,14 +3,14 @@ source: src/config_generator/from_proto.rs
 expression: result
 ---
 schema @server @upstream {
-  query: Queryx
+  query: Query
 }
 
-input GREETINGS_DUP_HelloRequest @tag(id: "greetings_dup.HelloRequest")  {
+input GREETINGS_A_HelloRequest @tag(id: "greetings_a.HelloRequest")  {
   name: String
 }
 
-input GREETINGS_HelloRequest @tag(id: "greetings.HelloRequest")  {
+input GREETINGS_B_HelloRequest @tag(id: "greetings_b.HelloRequest")  {
   name: String
 }
 
@@ -41,11 +41,11 @@ enum NEWS_Status @tag(id: "news.Status")  {
   PUBLISHED
 }
 
-type GREETINGS_DUP_HelloReply @tag(id: "greetings_dup.HelloReply") {
+type GREETINGS_A_HelloReply @tag(id: "greetings_a.HelloReply") {
   message: String
 }
 
-type GREETINGS_HelloReply @tag(id: "greetings.HelloReply") {
+type GREETINGS_B_HelloReply @tag(id: "greetings_b.HelloReply") {
   message: String
 }
 
@@ -53,9 +53,9 @@ type NEWS_NewsList @tag(id: "news.NewsList") {
   news: [NEWS_News]
 }
 
-type Queryx {
-  greetings_dup_sayHello(helloRequest: GREETINGS_DUP_HelloRequest!): GREETINGS_DUP_HelloReply! @grpc(method: "greetings_dup.Greeter.SayHello")
-  greetings_sayHello(helloRequest: GREETINGS_HelloRequest!): GREETINGS_HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+type Query {
+  greetings_a_sayHello(helloRequest: GREETINGS_A_HelloRequest!): GREETINGS_A_HelloReply! @grpc(method: "greetings_a.Greeter.SayHello")
+  greetings_b_sayHello(helloRequest: GREETINGS_B_HelloRequest!): GREETINGS_B_HelloReply! @grpc(method: "greetings_b.Greeter.SayHello")
   news_addNews(news: NEWS_News!): NEWS_News! @grpc(method: "news.NewsService.AddNews")
   news_deleteNews(newsId: NEWS_NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
   news_editNews(news: NEWS_News!): NEWS_News! @grpc(method: "news.NewsService.EditNews")

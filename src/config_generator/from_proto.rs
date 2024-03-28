@@ -329,7 +329,7 @@ mod test {
         // so we do not need to explicitly mark fields as required.
 
         let mut set = FileDescriptorSet::default();
-        let req_proto = get_proto_file_descriptor("required_fields.proto")?;
+        let req_proto = get_proto_file_descriptor("person.proto")?;
         set.file.push(req_proto);
 
         let cfg = build_config(vec![set], "Query").to_sdl();
