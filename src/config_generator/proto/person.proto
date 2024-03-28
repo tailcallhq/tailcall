@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package required_fields;
+package person;
 
 // Defines a phone number
 message PhoneNumber {
