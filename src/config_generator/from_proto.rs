@@ -129,11 +129,15 @@ fn get_ty(name: &str, cfg: &Config, helper: &mut Helper, ty: DescriptorType) -> 
 }
 
 /// Processes proto enum types.
-fn append_enums(config: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &mut Helper) {
+fn append_enums(
+    mut config: Config,
+    enums: Vec<EnumDescriptorProto>,
+    helper: &mut Helper,
+) -> Config {
     for enum_ in enums {
         let enum_name = enum_.name();
 
-        let mut ty = get_ty(enum_name, config, helper, DescriptorType::Enum);
+        let mut ty = get_ty(enum_name, &config, helper, DescriptorType::Enum);
 
         let mut variants = enum_
             .value
@@ -149,20 +153,25 @@ fn append_enums(config: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &m
         // safe to call
         // unwrap here
     }
+    config
 }
 
 /// Processes proto message types.
-fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: &mut Helper) {
+fn append_msg_type(
+    mut config: Config,
+    messages: Vec<DescriptorProto>,
+    helper: &mut Helper,
+) -> Config {
     if messages.is_empty() {
-        return;
+        return config;
     }
     for message in messages {
         let msg_name = message.name().to_string();
 
-        let mut ty = get_ty(&msg_name, config, helper, DescriptorType::Message);
+        let mut ty = get_ty(&msg_name, &config, helper, DescriptorType::Message);
 
-        append_enums(config, message.enum_type, helper);
-        append_msg_type(config, message.nested_type, helper);
+        config = append_enums(config, message.enum_type, helper);
+        config = append_msg_type(config, message.nested_type, helper);
 
         for field in message.field {
             let field_name = field.name().to_string();
@@ -188,11 +197,12 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: 
                                                                  // safe to call
                                                                  // unwrap here
     }
+    config
 }
 
 /// Generates a Type configuration for service methods.
 fn generate_ty(
-    config: &mut Config,
+    config: &Config,
     services: Vec<ServiceDescriptorProto>,
     helper: &mut Helper,
     key: &str,
@@ -236,21 +246,22 @@ fn generate_ty(
 
 /// Processes proto service definitions and their methods.
 fn append_query_service(
-    config: &mut Config,
+    mut config: Config,
     services: Vec<ServiceDescriptorProto>,
     query: &str,
     helper: &mut Helper,
-) {
+) -> Config {
     if services.is_empty() {
-        return;
+        return config;
     }
 
-    let ty = generate_ty(config, services, helper, query);
+    let ty = generate_ty(&config, services, helper, query);
 
     if ty.ne(&Type::default()) {
         config.schema.query = Some(query.to_owned());
         config.types.insert(query.to_owned(), ty);
     }
+    config
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
@@ -262,14 +273,10 @@ pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Con
         for file_descriptor in descriptor_set.file {
             helper.package = file_descriptor.package().to_string();
 
-            append_enums(&mut config, file_descriptor.enum_type, &mut helper);
-            append_msg_type(&mut config, file_descriptor.message_type, &mut helper);
-            append_query_service(
-                &mut config,
-                file_descriptor.service.clone(),
-                query,
-                &mut helper,
-            );
+            config = append_enums(config, file_descriptor.enum_type, &mut helper);
+            config = append_msg_type(config, file_descriptor.message_type, &mut helper);
+            config =
+                append_query_service(config, file_descriptor.service.clone(), query, &mut helper);
         }
     }
 
