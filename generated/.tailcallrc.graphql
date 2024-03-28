@@ -737,6 +737,8 @@ enum LinkType {
   Cert
   Key
   Operation
+  Htpasswd
+  Jwks
 }
 enum Method {
   GET
