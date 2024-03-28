@@ -47,6 +47,13 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
    cargo test
    ```
 
+## Programming Style Guidelines
+
+- When calling functions that do not need to modify values, pass references of those values.
+- When calling functions that need to modify values, pass ownership of the values, and ensure they are returned from the function.
+
+**IMPORTANT:** This programming style may not be suitable for performance-sensitive components or hot code paths. In such cases, prioritize efficiency and optimization strategies to enhance performance.
+
 ## Telemetry
 
 Tailcall implements high observability standards that by following [OpenTelemetry](https://opentelemetry.io) specification. This implementation relies on the following crates:

@@ -2605,9 +2605,9 @@ dependencies = [
 
 [[package]]
 name = "insta"
-version = "1.37.0"
+version = "1.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1718b3f2b85bb5054baf8ce406e36401f27c3169205f4175504c4b1d98252d3f"
+checksum = "3eab73f58e59ca6526037208f0e98851159ec1633cf17b6cd2e1f2c3fd5d53cc"
 dependencies = [
  "console",
  "lazy_static",
@@ -2710,9 +2710,9 @@ dependencies = [
 
 [[package]]
 name = "jsonwebtoken"
-version = "9.2.0"
+version = "9.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c7ea04a7c5c055c175f189b6dc6ba036fd62306b58c66c9f6389036c503a3f4"
+checksum = "b9ae10193d25051e74945f1ea2d0b42e03cc3b890f7e4cc5faa44997d808193f"
 dependencies = [
  "base64 0.21.7",
  "js-sys",
@@ -3420,9 +3420,9 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-http"
-version = "0.11.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cbfa5308166ca861434f0b0913569579b8e587430a3d6bcd7fd671921ec145a"
+checksum = "7690dc77bf776713848c4faa6501157469017eaf332baccd4eb1cea928743d94"
 dependencies = [
  "async-trait",
  "bytes",
