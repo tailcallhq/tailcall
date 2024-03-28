@@ -286,8 +286,7 @@ mod test {
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_path.push("src");
-        proto_path.push("grpc");
-        proto_path.push("tests");
+        proto_path.push("config_generator");
         proto_path.push("proto");
         proto_path.push(name);
         Ok(protox_parse::parse(
