@@ -22,13 +22,18 @@ enum DescriptorType {
     Query,
 }
 
+/// Assists in the mapping and retrieval of proto type names to custom formatted
+/// strings based on the descriptor type.
 #[derive(Default)]
 struct Helper {
+    /// Maps proto type names to custom formatted names.
     map: HashMap<String, String>,
+    /// The current proto package name.
     package: String,
 }
 
 impl Helper {
+    /// Formats a proto type name based on its `DescriptorType`.
     fn get_value(&self, name: &str, ty: DescriptorType) -> String {
         let package = self.package.replace('.', DEFAULT_SPECTATOR).to_uppercase();
         match ty {
@@ -46,17 +51,21 @@ impl Helper {
             ),
         }
     }
+
+    /// Inserts a formatted name into the map.
     fn insert(&mut self, name: &str, ty: DescriptorType) {
         self.map.insert(
             format!("{}.{}", self.package, name),
             self.get_value(name, ty),
         );
     }
+    /// Retrieves a formatted name from the map.
     fn get(&self, name: &str) -> Option<String> {
         self.map.get(&format!("{}.{}", self.package, name)).cloned()
     }
 }
 
+/// Converts proto field types to a custom format.
 fn convert_ty(proto_ty: &str) -> String {
     let binding = proto_ty.to_lowercase();
     let proto_ty = binding.strip_prefix("type_").unwrap_or(proto_ty);
@@ -70,6 +79,7 @@ fn convert_ty(proto_ty: &str) -> String {
     .to_string()
 }
 
+/// Determines the output type for a service method.
 fn get_output_ty(output_ty: &str) -> (String, bool) {
     // type, required
     match output_ty {
@@ -82,6 +92,7 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
     }
 }
 
+/// Generates argument configurations for service methods.
 fn get_arg(input_ty: &str, helper: &mut Helper) -> Option<(String, Arg)> {
     match input_ty {
         "google.protobuf.Empty" | "" => None,
@@ -103,6 +114,7 @@ fn get_arg(input_ty: &str, helper: &mut Helper) -> Option<(String, Arg)> {
     }
 }
 
+/// Retrieves or creates a Type configuration for a given proto type.
 fn get_ty(name: &str, cfg: &Config, helper: &mut Helper, ty: DescriptorType) -> Type {
     helper.insert(name, ty);
     let mut ty = cfg
@@ -116,6 +128,7 @@ fn get_ty(name: &str, cfg: &Config, helper: &mut Helper, ty: DescriptorType) -> 
     ty
 }
 
+/// Processes proto enum types.
 fn append_enums(config: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &mut Helper) {
     for enum_ in enums {
         let enum_name = enum_.name();
@@ -138,6 +151,7 @@ fn append_enums(config: &mut Config, enums: Vec<EnumDescriptorProto>, helper: &m
     }
 }
 
+/// Processes proto message types.
 fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: &mut Helper) {
     if messages.is_empty() {
         return;
@@ -176,6 +190,7 @@ fn append_msg_type(config: &mut Config, messages: Vec<DescriptorProto>, helper: 
     }
 }
 
+/// Generates a Type configuration for service methods.
 fn generate_ty(
     config: &mut Config,
     services: Vec<ServiceDescriptorProto>,
@@ -219,6 +234,7 @@ fn generate_ty(
     ty
 }
 
+/// Processes proto service definitions and their methods.
 fn append_query_service(
     config: &mut Config,
     services: Vec<ServiceDescriptorProto>,
@@ -237,6 +253,7 @@ fn append_query_service(
     }
 }
 
+/// The main entry point that builds a Config object from proto descriptor sets.
 pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
     let mut config = Config::default();
     let mut helper = Helper::default();
