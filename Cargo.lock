@@ -2608,9 +2608,9 @@ dependencies = [
 
 [[package]]
 name = "lambda_http"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef8fafd7a4ce0bc6093cf1bed3dcdfc1239c27df1e79e3f2154f4d3299d4f60e"
+checksum = "be43a66db1ccbea4d9d504379ec71826f3ccc2ed1b08b6def62e0dd0448c4a30"
 dependencies = [
  "aws_lambda_events",
  "base64",
@@ -2635,9 +2635,9 @@ dependencies = [
 
 [[package]]
 name = "lambda_runtime"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc2904c10fbeaf07aa317fc96a0e28e89c80ed12f7949ed06afd7869b21fef32"
+checksum = "f287564236fa4d86adf18964d3a2784c1cef5aaf38b3386cee62f995c6aceeac"
 dependencies = [
  "async-stream",
  "base64",
@@ -2650,20 +2650,22 @@ dependencies = [
  "hyper 1.2.0",
  "hyper-util",
  "lambda_runtime_api_client",
+ "pin-project",
  "serde",
  "serde_json",
  "serde_path_to_error",
  "tokio",
  "tokio-stream",
  "tower",
+ "tower-layer",
  "tracing",
 ]
 
 [[package]]
 name = "lambda_runtime_api_client"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1364cd67281721d2a9a4444ba555cf4d74a195e647061fa4ccac46e6f5c3b0ae"
+checksum = "722b02764422524d3f49a934b570f7c567f811eda1f9c4bdebebcfae1bad4f23"
 dependencies = [
  "bytes",
  "futures-channel",
