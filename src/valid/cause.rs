@@ -4,8 +4,8 @@ use std::fmt::Display;
 use derive_setters::Setters;
 use thiserror::Error;
 
-#[derive(Clone, PartialEq, Debug, Setters, Error)]
-pub struct Cause<E> {
+#[derive(Clone, PartialEq, Debug, Setters, Error, Ord, PartialOrd, Eq)]
+pub struct Cause<E: Ord> {
     pub message: E,
     #[setters(strip_option)]
     pub description: Option<E>,
@@ -13,7 +13,7 @@ pub struct Cause<E> {
     pub trace: VecDeque<String>,
 }
 
-impl<E: Display> Display for Cause<E> {
+impl<E: Display + std::cmp::Ord> Display for Cause<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[")?;
         for (i, entry) in self.trace.iter().enumerate() {
@@ -30,12 +30,12 @@ impl<E: Display> Display for Cause<E> {
     }
 }
 
-impl<E> Cause<E> {
+impl<E: std::cmp::Ord> Cause<E> {
     pub fn new(e: E) -> Self {
         Cause { message: e, description: None, trace: VecDeque::new() }
     }
 
-    pub fn transform<E1>(self, e: impl Fn(E) -> E1) -> Cause<E1> {
+    pub fn transform<E1: std::cmp::Ord>(self, e: impl Fn(E) -> E1) -> Cause<E1> {
         Cause {
             message: e(self.message),
             description: self.description.map(e),

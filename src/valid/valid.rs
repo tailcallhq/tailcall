@@ -3,9 +3,9 @@ use super::ValidationError;
 use crate::valid::Cause;
 
 #[derive(Debug, PartialEq)]
-pub struct Valid<A, E>(Result<A, ValidationError<E>>);
+pub struct Valid<A, E: Ord>(Result<A, ValidationError<E>>);
 
-pub trait Validator<A, E>: Sized {
+pub trait Validator<A, E: Ord>: Sized {
     fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
         Valid(self.to_result().map(f))
     }
@@ -95,7 +95,7 @@ pub trait Validator<A, E>: Sized {
     }
 }
 
-impl<A, E> Valid<A, E> {
+impl<A, E: Ord> Valid<A, E> {
     pub fn fail(e: E) -> Valid<A, E> {
         Valid(Err((vec![Cause::new(e)]).into()))
     }
@@ -157,7 +157,7 @@ impl<A, E> Valid<A, E> {
     }
 }
 
-impl<A, E> Validator<A, E> for Valid<A, E> {
+impl<A, E: Ord> Validator<A, E> for Valid<A, E> {
     fn to_result(self) -> Result<A, ValidationError<E>> {
         self.0
     }
@@ -167,8 +167,8 @@ impl<A, E> Validator<A, E> for Valid<A, E> {
     }
 }
 
-pub struct Fusion<A, E>(Valid<A, E>);
-impl<A, E> Fusion<A, E> {
+pub struct Fusion<A, E: std::cmp::Ord>(Valid<A, E>);
+impl<A, E: std::cmp::Ord> Fusion<A, E> {
     pub fn fuse<A1>(self, other: Valid<A1, E>) -> Fusion<A::Out, E>
     where
         A: Append<A1>,
@@ -177,7 +177,7 @@ impl<A, E> Fusion<A, E> {
     }
 }
 
-impl<A, E> Validator<A, E> for Fusion<A, E> {
+impl<A, E: Ord> Validator<A, E> for Fusion<A, E> {
     fn to_result(self) -> Result<A, ValidationError<E>> {
         self.0.to_result()
     }
@@ -186,7 +186,7 @@ impl<A, E> Validator<A, E> for Fusion<A, E> {
     }
 }
 
-impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
+impl<A, E: Ord> From<Result<A, ValidationError<E>>> for Valid<A, E> {
     fn from(value: Result<A, ValidationError<E>>) -> Self {
         match value {
             Ok(a) => Valid::succeed(a),
@@ -195,7 +195,7 @@ impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
     }
 }
 
-impl<A, E> From<Fusion<A, E>> for Valid<A, E> {
+impl<A, E: Ord> From<Fusion<A, E>> for Valid<A, E> {
     fn from(value: Fusion<A, E>) -> Self {
         Valid(value.to_result())
     }
@@ -333,7 +333,7 @@ mod tests {
 
         assert_eq!(
             result1.zip(result2),
-            Valid::from_vec_cause(vec![Cause::new(-1), Cause::new(-2)])
+            Valid::from_vec_cause(vec![Cause::new(-2), Cause::new(-1),])
         );
     }
 
