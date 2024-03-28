@@ -23,7 +23,7 @@ pub struct RequestContext {
     pub upstream: Upstream,
     pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
-    // request headers from client that will be sent to upstream
+    // A subset of all the headers received in the GraphQL Request that will be sent to the upstream.
     pub allowed_headers: HeaderMap,
     pub auth_ctx: AuthContext,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
