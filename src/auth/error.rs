@@ -1,4 +1,4 @@
-#[derive(Debug, thiserror::Error, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, thiserror::Error, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Error {
     #[error("Haven't found auth parameters")]
     Missing,
@@ -8,14 +8,4 @@ pub enum Error {
     ValidationCheckFailed,
     #[error("Auth validation failed")]
     Invalid,
-}
-
-impl Error {
-    pub fn max(self, other: Self) -> Self {
-        if self < other {
-            other
-        } else {
-            self
-        }
-    }
 }

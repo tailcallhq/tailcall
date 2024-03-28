@@ -49,6 +49,12 @@ testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
 testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 ";
 
+    impl blueprint::BasicProvider {
+        pub fn test_value() -> Self {
+            Self { htpasswd: HTPASSWD_TEST.to_owned() }
+        }
+    }
+
     pub fn create_basic_auth_request(username: &str, password: &str) -> RequestContext {
         let mut req_context = RequestContext::default();
 

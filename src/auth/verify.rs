@@ -1,5 +1,7 @@
+use std::cmp::max;
+
 use anyhow::Result;
-use async_std::prelude::FutureExt;
+use futures_util::future::join_all;
 
 use super::basic::BasicVerifier;
 use super::error::Error;
@@ -12,53 +14,51 @@ pub(crate) trait Verify {
     async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error>;
 }
 
-#[allow(clippy::large_enum_variant)]
-// The difference in size is indeed significant here
-// but it's quite unlikely that someone will require to store several hundreds
-// of providers or more to care much
-pub enum AuthVerifier {
+pub enum Verifier {
     Basic(BasicVerifier),
     Jwt(JwtVerifier),
-    Or(Box<AuthVerifier>, Box<AuthVerifier>),
-    And(Box<AuthVerifier>, Box<AuthVerifier>),
 }
 
-impl AuthVerifier {
-    pub fn new(provider: blueprint::Auth) -> Option<Self> {
+pub enum AuthVerifier {
+    Single(Verifier),
+    Any(Vec<AuthVerifier>),
+    All(Vec<AuthVerifier>),
+}
+
+impl From<blueprint::AuthProvider> for Verifier {
+    fn from(provider: blueprint::AuthProvider) -> Self {
         match provider {
-            blueprint::Auth::Basic(options) => {
-                Some(AuthVerifier::Basic(BasicVerifier::new(options)))
-            }
-            blueprint::Auth::Jwt(options) => Some(AuthVerifier::Jwt(JwtVerifier::new(options))),
-            blueprint::Auth::And(a, b) => {
-                let a = Self::new(*a);
-                let b = Self::new(*b);
-
-                match (a, b) {
-                    (None, None) => None,
-                    (Some(a), None) => Some(a),
-                    (None, Some(b)) => Some(b),
-                    (Some(a), Some(b)) => Some(AuthVerifier::And(Box::new(a), Box::new(b))),
-                }
-            }
-            blueprint::Auth::Or(a, b) => {
-                let a = Self::new(*a);
-                let b = Self::new(*b);
-
-                match (a, b) {
-                    (None, None) => None,
-                    (Some(a), None) => Some(a),
-                    (None, Some(b)) => Some(b),
-                    (Some(a), Some(b)) => Some(AuthVerifier::Or(Box::new(a), Box::new(b))),
-                }
-            }
-            blueprint::Auth::Empty => None,
+            blueprint::AuthProvider::Basic(options) => Verifier::Basic(BasicVerifier::new(options)),
+            blueprint::AuthProvider::Jwt(options) => Verifier::Jwt(JwtVerifier::new(options)),
         }
     }
+}
 
-    #[cfg(test)]
-    pub fn or(self, other: AuthVerifier) -> Self {
-        AuthVerifier::Or(Box::new(self), Box::new(other))
+impl From<blueprint::Auth> for AuthVerifier {
+    fn from(provider: blueprint::Auth) -> Self {
+        match provider {
+            blueprint::Auth::Single(provider) => AuthVerifier::Single(provider.into()),
+            blueprint::Auth::All(providers) => {
+                let verifiers = providers.into_iter().map(AuthVerifier::from).collect();
+
+                AuthVerifier::All(verifiers)
+            }
+            blueprint::Auth::Any(providers) => {
+                let verifiers = providers.into_iter().map(AuthVerifier::from).collect();
+
+                AuthVerifier::Any(verifiers)
+            }
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl Verify for Verifier {
+    async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
+        match self {
+            Verifier::Basic(basic) => basic.verify(req_ctx).await,
+            Verifier::Jwt(jwt) => jwt.verify(req_ctx).await,
+        }
     }
 }
 
@@ -66,25 +66,94 @@ impl AuthVerifier {
 impl Verify for AuthVerifier {
     async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
         match self {
-            AuthVerifier::Basic(basic) => basic.verify(req_ctx).await,
-            AuthVerifier::Jwt(jwt) => jwt.verify(req_ctx).await,
-            AuthVerifier::Or(left, right) => {
-                let left_result = left.verify(req_ctx).await;
-                if left_result.is_err() {
-                    right.verify(req_ctx).await
-                } else {
-                    Ok(())
+            AuthVerifier::Single(verifier) => verifier.verify(req_ctx).await,
+            AuthVerifier::All(verifiers) => {
+                for verifier in verifiers {
+                    verifier.verify(req_ctx).await?
                 }
+
+                Ok(())
             }
-            AuthVerifier::And(left, right) => {
-                let (a, b) = left.verify(req_ctx).join(right.verify(req_ctx)).await;
-                match (a, b) {
-                    (Ok(_), Ok(_)) => Ok(()),
-                    (Ok(_), Err(e)) => Err(e),
-                    (Err(e), Ok(_)) => Err(e),
-                    (Err(e1), Err(e2)) => Err(e1.max(e2)),
+            AuthVerifier::Any(verifiers) => {
+                let results =
+                    join_all(verifiers.iter().map(|verifier| verifier.verify(req_ctx))).await;
+
+                let mut error = Error::Missing;
+
+                for result in results {
+                    if let Err(err) = result {
+                        error = max(error, err);
+                    } else {
+                        return Ok(());
+                    }
                 }
+
+                Err(error)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AuthVerifier;
+    use crate::auth::basic::tests::create_basic_auth_request;
+    use crate::auth::error::Error;
+    use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
+    use crate::auth::verify::Verify;
+    use crate::blueprint::{Auth, AuthProvider, BasicProvider, JwtProvider};
+
+    #[tokio::test]
+    async fn verify_all() {
+        let verifier = AuthVerifier::from(Auth::All(Vec::default()));
+        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
+
+        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+
+        let verifier = AuthVerifier::from(Auth::All(vec![Auth::Single(AuthProvider::Basic(
+            BasicProvider::test_value(),
+        ))]));
+
+        assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Invalid));
+
+        let req_ctx = create_basic_auth_request("testuser1", "password123");
+
+        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+
+        let verifier = AuthVerifier::from(Auth::All(vec![
+            Auth::Single(AuthProvider::Basic(BasicProvider::test_value())),
+            Auth::Single(AuthProvider::Jwt(JwtProvider::test_value())),
+        ]));
+
+        assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Missing));
+    }
+
+    #[tokio::test]
+    async fn verify_any() {
+        let verifier = AuthVerifier::from(Auth::Any(Vec::default()));
+        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
+
+        assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Missing));
+
+        let verifier = AuthVerifier::from(Auth::Any(vec![Auth::Single(AuthProvider::Basic(
+            BasicProvider::test_value(),
+        ))]));
+
+        assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Invalid));
+
+        let req_ctx = create_basic_auth_request("testuser1", "password123");
+
+        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+
+        let verifier = AuthVerifier::from(Auth::Any(vec![
+            Auth::Single(AuthProvider::Basic(BasicProvider::test_value())),
+            Auth::Single(AuthProvider::Jwt(JwtProvider::test_value())),
+        ]));
+
+        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+
+        let req_ctx = create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID);
+
+        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
     }
 }
