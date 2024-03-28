@@ -53,10 +53,9 @@ impl Eval for Math {
                     let val = val.eval(ctx, conc).await?;
 
                     val.as_f64_ok()
-                        .ok()
                         .map(|val| (val - 1f64).into())
-                        .or_else(|| val.as_u64_ok().ok().map(|val| (val - 1u64).into()))
-                        .or_else(|| val.as_i64_ok().ok().map(|val| (val - 1i64).into()))
+                        .or_else(|| val.as_u64_ok().map(|val| (val - 1u64).into()))
+                        .or_else(|| val.as_i64_ok().map(|val| (val - 1i64).into()))
                         .ok_or(EvaluationError::ExprEvalError("dec".into()))?
                 }
                 Math::Divide(lhs, rhs) => {
@@ -72,10 +71,9 @@ impl Eval for Math {
                     let val = val.eval(ctx, conc).await?;
 
                     val.as_f64_ok()
-                        .ok()
                         .map(|val| (val + 1f64).into())
-                        .or_else(|| val.as_u64_ok().ok().map(|val| (val + 1u64).into()))
-                        .or_else(|| val.as_i64_ok().ok().map(|val| (val + 1i64).into()))
+                        .or_else(|| val.as_u64_ok().map(|val| (val + 1u64).into()))
+                        .or_else(|| val.as_i64_ok().map(|val| (val + 1i64).into()))
                         .ok_or(EvaluationError::ExprEvalError("dec".into()))?
                 }
                 Math::Multiply(lhs, rhs) => {
@@ -91,9 +89,8 @@ impl Eval for Math {
                     let val = val.eval(ctx, conc).await?;
 
                     val.as_f64_ok()
-                        .ok()
                         .map(|val| (-val).into())
-                        .or_else(|| val.as_i64_ok().ok().map(|val| (-val).into()))
+                        .or_else(|| val.as_i64_ok().map(|val| (-val).into()))
                         .ok_or(EvaluationError::ExprEvalError("neg".into()))?
                 }
                 Math::Product(exprs) => {

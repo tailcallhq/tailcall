@@ -13,7 +13,7 @@ use crate::helpers::headers::MustacheHeaders;
 use crate::http::Method::POST;
 use crate::lambda::{CacheKey, GraphQLOperationContext};
 use crate::mustache::Mustache;
-use crate::path::PathGraphql;
+use crate::path_resolver::PathResolver;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -27,11 +27,13 @@ pub struct RequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_headers<C: PathGraphql>(&self, ctx: &C) -> HeaderMap {
+    fn create_headers<C: PathResolver>(&self, ctx: &C) -> HeaderMap {
         let mut header_map = HeaderMap::new();
 
         for (k, v) in &self.headers {
-            if let Ok(header_value) = HeaderValue::from_str(&v.render_graphql(ctx)) {
+            if let Ok(header_value) =
+                HeaderValue::from_str(&v.render_string(ctx).unwrap_or_default())
+            {
                 header_map.insert(k, header_value);
             }
         }
@@ -39,7 +41,7 @@ impl RequestTemplate {
         header_map
     }
 
-    fn set_headers<C: PathGraphql + HasHeaders>(
+    fn set_headers<C: PathResolver + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -58,7 +60,7 @@ impl RequestTemplate {
         req
     }
 
-    pub fn to_request<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
+    pub fn to_request<C: PathResolver + HasHeaders + GraphQLOperationContext>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -68,7 +70,7 @@ impl RequestTemplate {
         Ok(req)
     }
 
-    fn set_body<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
+    fn set_body<C: PathResolver + HasHeaders + GraphQLOperationContext>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
@@ -78,7 +80,7 @@ impl RequestTemplate {
         req
     }
 
-    fn render_graphql_query<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
+    fn render_graphql_query<C: PathResolver + HasHeaders + GraphQLOperationContext>(
         &self,
         ctx: &C,
     ) -> String {
@@ -89,7 +91,13 @@ impl RequestTemplate {
             .as_ref()
             .map(|args| {
                 args.iter()
-                    .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
+                    .map(|(k, v)| {
+                        format!(
+                            r#"{}: {}"#,
+                            k,
+                            v.render_graphql(ctx).unwrap_or_default().escape_default()
+                        )
+                    })
                     .collect::<Vec<_>>()
                     .join(", ")
             })
@@ -126,7 +134,7 @@ impl RequestTemplate {
     }
 }
 
-impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathResolver + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = DefaultHasher::new();
         let graphql_query = self.render_graphql_query(ctx);
@@ -149,16 +157,19 @@ mod tests {
     use crate::has_headers::HasHeaders;
     use crate::json::JsonLike;
     use crate::lambda::{CacheKey, GraphQLOperationContext};
-    use crate::path::PathGraphql;
+    use crate::path_resolver::PathResolver;
 
     struct Context {
         pub value: Value,
         pub headers: HeaderMap,
     }
 
-    impl PathGraphql for Context {
-        fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
-            self.value.get_path(path).map(|v| v.to_string())
+    impl PathResolver for Context {
+        fn get_path_value<Path>(&self, path: &[Path]) -> Option<async_graphql::Value>
+        where
+            Path: AsRef<str>,
+        {
+            self.value.get_path(path).map(|v| v.to_owned())
         }
     }
 

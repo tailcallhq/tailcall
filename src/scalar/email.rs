@@ -26,7 +26,7 @@ impl super::Scalar for Email {
     /// Function used to validate the email address
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Ok(email_str) = value.clone().as_str_ok() {
+            if let Some(email_str) = value.clone().as_str_ok() {
                 let email_str = email_str.to_string();
                 return email(&email_str).is_ok();
             }

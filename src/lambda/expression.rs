@@ -129,10 +129,7 @@ impl Eval for Expression {
                     Context::Value => {
                         Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
                     }
-                    Context::Path(path) => Ok(ctx
-                        .path_value(path)
-                        .map(|a| a.into_owned())
-                        .unwrap_or(async_graphql::Value::Null)),
+                    Context::Path(path) => Ok(ctx.path_value(path).unwrap_or_default()),
                     Context::PushArgs { expr, and_then } => {
                         let args = expr.eval(ctx.clone(), conc).await?;
                         let ctx = ctx.with_args(args).clone();

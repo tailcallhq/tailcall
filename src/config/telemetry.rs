@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 use super::KeyValue;
@@ -138,12 +138,19 @@ impl Telemetry {
         match &mut self.export {
             Some(TelemetryExporter::Otlp(otlp)) => {
                 let url_tmpl = Mustache::parse(&otlp.url)?;
-                otlp.url = url_tmpl.render(reader_ctx);
+                otlp.url = url_tmpl
+                    .render_string(reader_ctx)
+                    .context("url is not defined")?;
 
                 let headers = to_mustache_headers(&otlp.headers).to_result()?;
                 otlp.headers = headers
                     .into_iter()
-                    .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
+                    .map(|(key, tmpl)| {
+                        (
+                            key.as_str().to_owned(),
+                            tmpl.render_string(reader_ctx).unwrap_or_default(),
+                        )
+                    })
                     .map(|(key, value)| KeyValue { key, value })
                     .collect();
             }

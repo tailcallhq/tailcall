@@ -14,7 +14,7 @@ impl super::Scalar for PhoneNumber {
     /// Function used to validate the phone number
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Ok(phone_str) = value.clone().as_str_ok() {
+            if let Some(phone_str) = value.clone().as_str_ok() {
                 return phonenumber::parse(None, phone_str).is_ok();
             }
             false
