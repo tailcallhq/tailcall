@@ -11,8 +11,8 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn min(self, other: Self) -> Self {
-        if self > other {
+    pub fn max(self, other: Self) -> Self {
+        if self < other {
             other
         } else {
             self

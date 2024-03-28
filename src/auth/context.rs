@@ -9,7 +9,7 @@ use crate::http::RequestContext;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {
-    verifier: AuthVerifier,
+    verifier: Option<AuthVerifier>,
 }
 
 #[derive(Default)]
@@ -25,7 +25,11 @@ impl GlobalAuthContext {
     // expression to work with that type since otherwise any additional info
     // will be lost during conversion to anyhow::Error
     async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
-        self.verifier.verify(request).await
+        if let Some(verifier) = self.verifier.as_ref() {
+            verifier.verify(request).await
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -76,7 +80,7 @@ mod tests {
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let auth_context = GlobalAuthContext {
-            verifier: AuthVerifier::Basic(basic_provider).or(AuthVerifier::Jwt(jwt_provider)),
+            verifier: Some(AuthVerifier::Jwt(jwt_provider).or(AuthVerifier::Basic(basic_provider))),
         };
 
         let validation = auth_context
