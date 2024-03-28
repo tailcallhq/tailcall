@@ -4,7 +4,7 @@ info:
   title: JSON Placeholder API
   description: See https://jsonplaceholder.typicode.com/
 servers:
-  - url: https://jsonplaceholder.typicode.com
+  - url: http://jsonplaceholder.typicode.com
 paths:
   /posts:
     get:

@@ -358,7 +358,16 @@ pub fn update_cache_resolvers<'a>(
 }
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
-    let field_type = &field.type_of;
+    let field_type = field
+        .type_of
+        .strip_suffix('!')
+        .or_else(|| {
+            field
+                .type_of
+                .strip_suffix(']')
+                .and_then(|typ| typ.strip_prefix('['))
+        })
+        .unwrap_or(field.type_of.as_str());
     if !scalar::is_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
     } else {
