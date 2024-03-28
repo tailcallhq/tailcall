@@ -23,8 +23,8 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
-    if let Err(e) = dotenv() {
-        tracing::warn!("Failed to load .env file: {}", e);
+    if let Ok(path) = dotenv() {
+        tracing::info!("Content from file: {:?} are loaded", path);
     }
     let cli = Cli::parse();
     update_checker::check_for_update().await;
