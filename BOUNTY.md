@@ -42,4 +42,4 @@ We’re all about meritocracy here. That means the best ideas and implementation
 
 ## Wrapping Up 🎁
 
-We’re stoked to have you! This program is your chance to shine and get rewarded while at it. Stick to these friendly guidelines, and let’s make something awesome together. Can’t wait to see what you bring to the table!
+We’re stoked to have you! This program is your chance to shine and get rewarded while at it. Stick to these friendly guidelines, and let’s make something awesome together. We look forward to seeing what you bring to the table.
