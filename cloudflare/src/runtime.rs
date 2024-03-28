@@ -12,7 +12,7 @@ fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
 }
 
-fn init_file(env: Rc<worker::Env>, bucket_id: String) -> anyhow::Result<Arc<dyn FileIO>> {
+fn init_file(env: Rc<worker::Env>, bucket_id: &str) -> anyhow::Result<Arc<dyn FileIO>> {
     Ok(Arc::new(file::CloudflareFileIO::init(env, bucket_id)?))
 }
 
@@ -35,7 +35,7 @@ pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
         http: http.clone(),
         http2_only: http.clone(),
         env: init_env(env.clone()),
-        file: init_file(env.clone(), bucket_id)?,
+        file: init_file(env.clone(), &bucket_id)?,
         cache: init_cache(env),
         extensions: Arc::new(vec![]),
     })

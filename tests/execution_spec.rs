@@ -2,6 +2,7 @@ extern crate core;
 
 mod telemetry;
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -38,86 +39,17 @@ use url::Url;
 
 #[cfg(test)]
 pub mod test {
+    use std::borrow::Cow;
     use std::collections::HashMap;
     use std::sync::Arc;
-    use std::time::Duration;
 
-    use anyhow::{anyhow, Result};
-    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
-    use hyper::body::Bytes;
-    use reqwest::Client;
-    use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+    use anyhow::anyhow;
     use tailcall::cache::InMemoryCache;
     use tailcall::cli::javascript;
-    use tailcall::http::Response;
     use tailcall::runtime::TargetRuntime;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::blueprint::Upstream;
-    use crate::{blueprint, EnvIO, FileIO, HttpIO};
-
-    #[derive(Clone)]
-    struct TestHttp {
-        client: ClientWithMiddleware,
-    }
-
-    impl Default for TestHttp {
-        fn default() -> Self {
-            Self { client: ClientBuilder::new(Client::new()).build() }
-        }
-    }
-
-    impl TestHttp {
-        fn init(upstream: &Upstream) -> Arc<Self> {
-            let mut builder = Client::builder()
-                .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
-                .timeout(Duration::from_secs(upstream.timeout))
-                .connect_timeout(Duration::from_secs(upstream.connect_timeout))
-                .http2_keep_alive_interval(Some(Duration::from_secs(upstream.keep_alive_interval)))
-                .http2_keep_alive_timeout(Duration::from_secs(upstream.keep_alive_timeout))
-                .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
-                .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
-                .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
-                .user_agent(upstream.user_agent.clone());
-
-            // Add Http2 Prior Knowledge
-            if upstream.http2_only {
-                builder = builder.http2_prior_knowledge();
-            }
-
-            // Add Http Proxy
-            if let Some(ref proxy) = upstream.proxy {
-                builder = builder.proxy(
-                    reqwest::Proxy::http(proxy.url.clone())
-                        .expect("Failed to set proxy in http client"),
-                );
-            }
-
-            let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
-
-            if upstream.http_cache {
-                client = client.with(Cache(HttpCache {
-                    mode: CacheMode::Default,
-                    manager: MokaManager::default(),
-                    options: HttpCacheOptions::default(),
-                }))
-            }
-            Arc::new(Self { client: client.build() })
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
-            let response = self.client.execute(request).await;
-            Response::from_reqwest(
-                response?
-                    .error_for_status()
-                    .map_err(|err| err.without_url())?,
-            )
-            .await
-        }
-    }
+    use crate::{blueprint, EnvIO, FileIO, MockHttpClient};
 
     #[derive(Clone)]
     struct TestFileIO {}
@@ -154,35 +86,36 @@ pub mod test {
     }
 
     impl EnvIO for TestEnvIO {
-        fn get(&self, key: &str) -> Option<String> {
-            self.vars.get(key).cloned()
+        fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+            self.vars.get(key).map(Cow::from)
         }
     }
 
     impl TestEnvIO {
-        pub fn init() -> Self {
-            Self { vars: std::env::vars().collect() }
+        pub fn init(vars: Option<HashMap<String, String>>) -> Self {
+            Self { vars: vars.unwrap_or_default() }
         }
     }
 
-    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+    pub fn create_runtime(
+        http_client: Arc<MockHttpClient>,
+        env: Option<HashMap<String, String>>,
+        script: Option<blueprint::Script>,
+    ) -> TargetRuntime {
         let http = if let Some(script) = script.clone() {
-            javascript::init_http(TestHttp::init(&Default::default()), script)
+            javascript::init_http(http_client.clone(), script)
         } else {
-            TestHttp::init(&Default::default())
+            http_client.clone()
         };
 
         let http2 = if let Some(script) = script {
-            javascript::init_http(
-                TestHttp::init(&Upstream::default().http2_only(true)),
-                script,
-            )
+            javascript::init_http(http_client.clone(), script)
         } else {
-            TestHttp::init(&Upstream::default().http2_only(true))
+            http_client.clone()
         };
 
         let file = TestFileIO::init();
-        let env = TestEnvIO::init();
+        let env = TestEnvIO::init(env);
 
         TargetRuntime {
             http,
@@ -238,8 +171,8 @@ pub struct Env {
 }
 
 impl EnvIO for Env {
-    fn get(&self, key: &str) -> Option<String> {
-        self.env.get(key).cloned()
+    fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+        self.env.get(key).map(Cow::from)
     }
 }
 
@@ -650,7 +583,7 @@ impl ExecutionSpec {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ExecutionMock {
     mock: Mock,
     actual_hits: Arc<AtomicUsize>,
@@ -691,8 +624,8 @@ impl ExecutionMock {
     }
 }
 
-#[derive(Clone)]
-struct MockHttpClient {
+#[derive(Clone, Debug)]
+pub struct MockHttpClient {
     mocks: Vec<ExecutionMock>,
     spec_path: String,
 }
@@ -882,6 +815,7 @@ impl FileIO for MockFileSystem {
 }
 
 async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
+    let mock_http_client = Arc::new(MockHttpClient::new(&spec));
     // Parse and validate all server configs + check for identity
 
     if spec.sdl_error {
@@ -896,7 +830,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
         let config = match config {
             Ok(config) => {
-                let mut runtime = test::init(None);
+                let mut runtime = test::create_runtime(mock_http_client, spec.env.clone(), None);
                 runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
                 let reader = ConfigReader::init(runtime);
                 match reader.resolve(config, spec.path.parent()).await {
@@ -982,9 +916,8 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     let snapshot_name = format!("{}_merged", spec.safe_name);
 
     insta::assert_snapshot!(snapshot_name, merged);
-
     // Resolve all configs
-    let mut runtime = test::init(None);
+    let mut runtime = test::create_runtime(mock_http_client.clone(), spec.env.clone(), None);
     runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
     let reader = ConfigReader::init(runtime);
 
@@ -1019,7 +952,6 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     }
 
     if let Some(assert_spec) = spec.assert.as_ref() {
-        let mock_http_client = Arc::new(MockHttpClient::new(&spec));
         let app_ctx = spec
             .app_context(
                 server.first().unwrap(),

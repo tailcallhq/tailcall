@@ -226,6 +226,10 @@ pub struct Type {
     ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth providers
+    #[serde(default)]
+    pub protected: Option<Protected>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Contains source information for the type.
@@ -277,6 +281,9 @@ pub struct Cache {
     /// stored in the cache.
     pub max_age: NonZeroU64,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema)]
+pub struct Protected {}
 
 fn merge_types(
     mut self_types: BTreeMap<String, Type>,
@@ -418,6 +425,10 @@ pub struct Field {
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth provider
+    #[serde(default)]
+    pub protected: Option<Protected>,
 }
 
 impl Field {
