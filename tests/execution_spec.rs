@@ -157,8 +157,7 @@ pub mod test {
 
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {
-            let map = self.vars.get(key).map(Cow::from);
-            map
+            self.vars.get(key).map(Cow::from)
         }
     }
 

@@ -13,7 +13,7 @@ unsafe impl Sync for CloudflareEnv {}
 
 impl EnvIO for CloudflareEnv {
     fn get(&self, key: &str) -> Option<Cow<'_, str>> {
-        self.env.var(key).ok().map(|s| Cow::from(s.to_string()))
+        self.env.var(key).ok().map(Cow::from)
     }
 }
 
