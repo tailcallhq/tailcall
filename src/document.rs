@@ -2,19 +2,24 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-fn get_directive(directives: &[Positioned<ConstDirective>]) -> String {
+fn print_directives_right_pad(directives: &[Positioned<ConstDirective>]) -> String {
+    if directives.is_empty() {
+        return String::new();
+    }
     directives
         .iter()
         .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
         .collect::<Vec<String>>()
         .join(" ")
+        + " "
 }
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
+
 fn print_schema(schema: &SchemaDefinition) -> String {
-    let directives = get_directive(&schema.directives);
+    let directives = print_directives_right_pad(&schema.directives);
 
     let query = schema
         .query
@@ -28,14 +33,11 @@ fn print_schema(schema: &SchemaDefinition) -> String {
         .subscription
         .as_ref()
         .map_or(String::new(), |s| format!("  subscription: {}\n", s.node));
-    if directives.is_empty() {
-        format!("schema {{\n{}{}{}}}\n", query, mutation, subscription)
-    } else {
-        format!(
-            "schema {} {{\n{}{}{}}}\n",
-            directives, query, mutation, subscription
-        )
-    }
+
+    format!(
+        "schema {}{{\n{}{}{}}}\n",
+        directives, query, mutation, subscription
+    )
 }
 fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
@@ -87,13 +89,9 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             )
         }
         TypeKind::InputObject(input) => {
-            let directives = if !type_def.directives.is_empty() {
-                format!(" {} ", get_directive(&type_def.directives))
-            } else {
-                String::new()
-            };
+            let directives = print_directives_right_pad(&type_def.directives);
             format!(
-                "input {}{} {{\n{}\n}}\n",
+                "input {} {}{{\n{}\n}}\n",
                 type_def.name.node,
                 directives,
                 input
@@ -144,12 +142,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             } else {
                 String::new()
             };
-            let directives = if !type_def.directives.is_empty() {
-                format!("{} ", get_directive(&type_def.directives))
-            } else {
-                String::new()
-            };
-
+            let directives = print_directives_right_pad(&type_def.directives);
             format!(
                 "type {} {}{}{{\n{}\n}}\n",
                 type_def.name.node,
@@ -164,13 +157,9 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             )
         }
         TypeKind::Enum(en) => {
-            let directives = if !type_def.directives.is_empty() {
-                format!(" {} ", get_directive(&type_def.directives))
-            } else {
-                String::new()
-            };
+            let directives = print_directives_right_pad(&type_def.directives);
             format!(
-                "enum {}{} {{\n{}\n}}\n",
+                "enum {} {}{{\n{}\n}}\n",
                 type_def.name.node,
                 directives,
                 en.values
@@ -182,18 +171,9 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         } // Handle other type kinds...
     }
 }
-fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String {
-    let directives: Vec<String> = field
-        .directives
-        .iter()
-        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
-        .collect();
-    let directives_str = if !directives.is_empty() {
-        format!(" {}", directives.join(" "))
-    } else {
-        String::new()
-    };
 
+fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String {
+    let directives = print_directives_right_pad(&field.directives);
     let args_str = if !field.arguments.is_empty() {
         let args = field
             .arguments
@@ -212,24 +192,14 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
         format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
     });
     let node = &format!(
-        "  {}{}: {}{}",
-        field.name.node, args_str, field.ty.node, directives_str
+        "  {}{}: {} {}",
+        field.name.node, args_str, field.ty.node, directives
     );
-    doc + node
+    doc + node.trim_end()
 }
+
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
-    let directives: Vec<String> = field
-        .directives
-        .iter()
-        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
-        .collect();
-
-    let directives_str = if !directives.is_empty() {
-        format!(" {}", directives.join(" "))
-    } else {
-        String::new()
-    };
-
+    let directives_str = print_directives_right_pad(&field.directives);
     format!("  {}: {}{}", field.name.node, field.ty.node, directives_str)
 }
 fn print_directive(directive: &DirectiveDefinition) -> String {
