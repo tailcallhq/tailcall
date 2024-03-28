@@ -835,9 +835,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.35"
+version = "0.4.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eaf5903dcbc0a39312feb77df2ff4c76387d591b9fc7b04a238dcf8bb62639a"
+checksum = "8a0d04d43504c61aa6c7531f1871dd0d418d91130162063b789da00fd7057a5e"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
@@ -6169,9 +6169,9 @@ checksum = "d135d17ab770252ad95e9a872d365cf3090e3be864a34ab46f48555993efc904"
 
 [[package]]
 name = "worker"
-version = "0.0.22"
+version = "0.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6473612aba0ed0ba97443d1dc3998484394eb17bfb8408a384d401556be7f6d6"
+checksum = "ec770518dfe9a63f28548673f68c9fe190baff55813afd9c36c811eb46af80f1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6216,9 +6216,9 @@ dependencies = [
 
 [[package]]
 name = "worker-macros"
-version = "0.0.14"
+version = "0.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2df96d9c4852736191b678731e5def68a5a6c28ef66adef042522c94e752a86"
+checksum = "8810ad96b5e55a5ae6cd4c0df118bb2bde528ae8e8e4df65e25d235f5db36af1"
 dependencies = [
  "async-trait",
  "proc-macro2",
@@ -6232,9 +6232,9 @@ dependencies = [
 
 [[package]]
 name = "worker-sys"
-version = "0.0.14"
+version = "0.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e29f9269000f7f26796fc4620b71b00591c5b71ac75f1c202cdd45ef6fadeba"
+checksum = "09ee8668ebc5665df3f4bea3d241e949694da22f08b77895b08aaf5d5de5f3ea"
 dependencies = [
  "cfg-if",
  "js-sys",
