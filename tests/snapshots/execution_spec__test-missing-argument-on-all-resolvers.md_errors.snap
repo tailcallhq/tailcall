@@ -24,16 +24,6 @@ expression: errors
     "description": null
   },
   {
-    "message": "no argument 'url' found",
-    "trace": [
-      "Query",
-      "newsGrpcUrl",
-      "@grpc",
-      "path"
-    ],
-    "description": null
-  },
-  {
     "message": "no argument 'id' found",
     "trace": [
       "Query",
@@ -59,6 +49,16 @@ expression: errors
       "Query",
       "postHttp",
       "@http",
+      "path"
+    ],
+    "description": null
+  },
+  {
+    "message": "no argument 'url' found",
+    "trace": [
+      "Query",
+      "newsGrpcUrl",
+      "@grpc",
       "path"
     ],
     "description": null

@@ -14,6 +14,16 @@ expression: errors
     "description": null
   },
   {
+    "message": "no value 'test' found",
+    "trace": [
+      "Post",
+      "user",
+      "@http",
+      "query"
+    ],
+    "description": null
+  },
+  {
     "message": "no value 'user.nested.inner.test' found",
     "trace": [
       "Post",
@@ -28,16 +38,6 @@ expression: errors
     "trace": [
       "Post",
       "nested",
-      "@http",
-      "query"
-    ],
-    "description": null
-  },
-  {
-    "message": "no value 'test' found",
-    "trace": [
-      "Post",
-      "user",
       "@http",
       "query"
     ],

@@ -14,7 +14,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "Parsing failed because of missing field `then`",
+    "message": "Parsing failed because of missing field `else`",
     "trace": [
       "@expr",
       "body",
@@ -24,7 +24,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "Parsing failed because of missing field `else`",
+    "message": "Parsing failed because of missing field `then`",
     "trace": [
       "@expr",
       "body",

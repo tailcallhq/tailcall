@@ -4,7 +4,7 @@ use std::fmt::Display;
 use derive_setters::Setters;
 use thiserror::Error;
 
-#[derive(Clone, PartialEq, Debug, Setters, Error)]
+#[derive(Clone, PartialEq, Debug, Setters, Error, PartialOrd, Ord, Eq)]
 pub struct Cause<E> {
     pub message: E,
     #[setters(strip_option)]

@@ -917,7 +917,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             }
             Err(cause) => {
                 let errors: Vec<SDLError> =
-                    cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
+                    cause.as_set().iter().map(|e| e.to_owned().into()).collect();
 
                 let snapshot_name = format!("{}_errors", spec.safe_name);
 
