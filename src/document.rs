@@ -2,16 +2,19 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
+fn get_directive(directives: &[Positioned<ConstDirective>]) -> String {
+    directives
+        .iter()
+        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
 fn print_schema(schema: &SchemaDefinition) -> String {
-    let directives = schema
-        .directives
-        .iter()
-        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
-        .collect::<Vec<String>>()
-        .join(" ");
+    let directives = get_directive(&schema.directives);
 
     let query = schema
         .query
@@ -85,15 +88,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         }
         TypeKind::InputObject(input) => {
             let directives = if !type_def.directives.is_empty() {
-                format!(
-                    " {} ",
-                    type_def
-                        .directives
-                        .iter()
-                        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
-                        .collect::<Vec<String>>()
-                        .join(" ")
-                )
+                format!(" {} ", get_directive(&type_def.directives))
             } else {
                 String::new()
             };
@@ -150,15 +145,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                 String::new()
             };
             let directives = if !type_def.directives.is_empty() {
-                format!(
-                    "{} ",
-                    type_def
-                        .directives
-                        .iter()
-                        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
-                        .collect::<Vec<String>>()
-                        .join(" ")
-                )
+                format!("{} ", get_directive(&type_def.directives))
             } else {
                 String::new()
             };
@@ -178,15 +165,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         }
         TypeKind::Enum(en) => {
             let directives = if !type_def.directives.is_empty() {
-                format!(
-                    " {} ",
-                    type_def
-                        .directives
-                        .iter()
-                        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
-                        .collect::<Vec<String>>()
-                        .join(" ")
-                )
+                format!(" {} ", get_directive(&type_def.directives))
             } else {
                 String::new()
             };
