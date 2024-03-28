@@ -237,10 +237,9 @@ fn append_query_service(
     }
 }
 
-pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: Option<String>) -> Config {
+pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
     let mut config = Config::default();
     let mut helper = Helper::default();
-    let query = query.unwrap_or_else(|| "Query".to_string());
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
@@ -294,15 +293,15 @@ mod test {
 
         let mut set = FileDescriptorSet::default();
 
-        let news = get_proto_file_descriptor("news_enum.proto")?;
-        let greetings = get_proto_file_descriptor("greetings.proto")?;
-        let greetings_dup_methods = get_proto_file_descriptor("greetings_dup_methods.proto")?;
+        let news = get_proto_file_descriptor("news.proto")?;
+        let greetings_a = get_proto_file_descriptor("greetings_a.proto")?;
+        let greetings_b = get_proto_file_descriptor("greetings_b.proto")?;
 
         set.file.push(news.clone());
-        set.file.push(greetings.clone());
-        set.file.push(greetings_dup_methods.clone());
+        set.file.push(greetings_a.clone());
+        set.file.push(greetings_b.clone());
 
-        let result = build_config(vec![set], Some("Queryx".to_string())).to_sdl();
+        let result = build_config(vec![set], "Query").to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -311,10 +310,10 @@ mod test {
         let mut set1 = FileDescriptorSet::default();
         let mut set2 = FileDescriptorSet::default();
         set.file.push(news);
-        set1.file.push(greetings);
-        set2.file.push(greetings_dup_methods);
+        set1.file.push(greetings_a);
+        set2.file.push(greetings_b);
 
-        let result_sets = build_config(vec![set, set1, set2], Some("Queryx".to_string())).to_sdl();
+        let result_sets = build_config(vec![set, set1, set2], "Query").to_sdl();
 
         pretty_assertions::assert_eq!(result, result_sets);
 
@@ -333,7 +332,7 @@ mod test {
         let req_proto = get_proto_file_descriptor("required_fields.proto")?;
         set.file.push(req_proto);
 
-        let cfg = build_config(vec![set], None).to_sdl();
+        let cfg = build_config(vec![set], "Query").to_sdl();
         insta::assert_snapshot!(cfg);
 
         Ok(())
