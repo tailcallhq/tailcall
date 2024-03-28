@@ -6,24 +6,24 @@ schema @server @upstream {
   query: Queryx
 }
 
-input GREETINGS_DUP_HelloRequest @tag(name: "greetings_dup.HelloRequest")  {
+input GREETINGS_DUP_HelloRequest @tag(id: "greetings_dup.HelloRequest")  {
   name: String
 }
 
-input GREETINGS_HelloRequest @tag(name: "greetings.HelloRequest")  {
+input GREETINGS_HelloRequest @tag(id: "greetings.HelloRequest")  {
   name: String
 }
 
-input NEWS_Author @tag(name: "news.Author")  {
+input NEWS_Author @tag(id: "news.Author")  {
   email: String
   name: String
 }
 
-input NEWS_MultipleNewsId @tag(name: "news.MultipleNewsId")  {
+input NEWS_MultipleNewsId @tag(id: "news.MultipleNewsId")  {
   ids: [NEWS_NewsId]
 }
 
-input NEWS_News @tag(name: "news.News")  {
+input NEWS_News @tag(id: "news.News")  {
   author: NEWS_Author
   body: String
   foo: NEWS_Status
@@ -32,24 +32,24 @@ input NEWS_News @tag(name: "news.News")  {
   title: String
 }
 
-input NEWS_NewsId @tag(name: "news.NewsId")  {
+input NEWS_NewsId @tag(id: "news.NewsId")  {
   id: Int
 }
 
-enum NEWS_Status @tag(name: "news.Status")  {
+enum NEWS_Status @tag(id: "news.Status")  {
   DRAFT
   PUBLISHED
 }
 
-type GREETINGS_DUP_HelloReply @tag(name: "greetings_dup.HelloReply") {
+type GREETINGS_DUP_HelloReply @tag(id: "greetings_dup.HelloReply") {
   message: String
 }
 
-type GREETINGS_HelloReply @tag(name: "greetings.HelloReply") {
+type GREETINGS_HelloReply @tag(id: "greetings.HelloReply") {
   message: String
 }
 
-type NEWS_NewsList @tag(name: "news.NewsList") {
+type NEWS_NewsList @tag(id: "news.NewsList") {
   news: [NEWS_News]
 }
 

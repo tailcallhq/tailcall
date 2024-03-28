@@ -16,7 +16,7 @@ pub(super) static DEFAULT_SPECTATOR: &str = "_";
 
 /// Enum to represent the type of the descriptor
 #[derive(Display, Clone)]
-pub enum DescriptorType {
+enum DescriptorType {
     Enum,
     Message,
     Query,
