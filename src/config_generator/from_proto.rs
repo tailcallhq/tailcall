@@ -327,7 +327,6 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 /// The main entry point that builds a Config object from proto descriptor sets.
 pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> anyhow::Result<Config> {
     let mut ctx = Context::new(query);
-
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
             ctx.package = file_descriptor.package().to_string();
@@ -335,9 +334,10 @@ pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> anyho
                 return Err(anyhow::anyhow!("Package name is required in proto file"));
             }
 
-            ctx = ctx.append_enums(file_descriptor.enum_type);
-            ctx = ctx.append_msg_type(file_descriptor.message_type);
-            ctx = ctx.append_query_service(file_descriptor.service.clone());
+            ctx = ctx
+                .append_enums(file_descriptor.enum_type)
+                .append_msg_type(file_descriptor.message_type)
+                .append_query_service(file_descriptor.service.clone());
         }
     }
 
