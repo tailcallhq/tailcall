@@ -1,0 +1,53 @@
+---
+source: src/config_generator/from_openapi.rs
+expression: config_from_openapi_spec(content.as_str()).unwrap().to_sdl()
+---
+schema @server(graphiql: true) @upstream(baseURL: "https://api.apis.guru/v2") {
+  query: Query
+}
+
+scalar APIs
+
+type API {
+  added: String!
+  preferred: String!
+  versions: Object!
+}
+
+type ApiVersion {
+  added: String!
+  externalDocs: Object
+  info: Object!
+  link: String
+  openapiVer: String!
+  swaggerUrl: String!
+  swaggerYamlUrl: String!
+  updated: String!
+}
+
+type Metrics {
+  datasets: Array
+  fixedPct: Int
+  fixes: Int
+  invalid: Int
+  issues: Int
+  numAPIs: Int!
+  numDrivers: Int
+  numEndpoints: Int!
+  numProviders: Int
+  numSpecs: Int!
+  stars: Int
+  thisWeek: Object
+  unofficial: Int
+  unreachable: Int
+}
+
+type Query {
+  getAPI(api: String!, provider: String!): API @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
+  getMetrics: Metrics @http(path: "/metrics.json")
+  getProvider(provider: String!): APIs @http(path: "/{{args.provider}}.json")
+  getProviders: Object @http(path: "/providers.json")
+  getServiceAPI(api: String!, provider: String!, service: String!): API @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
+  getServices(provider: String!): Object @http(path: "/{{args.provider}}/services.json")
+  listAPIs: APIs @http(path: "/list.json")
+}

@@ -123,7 +123,7 @@ async-graphql = { version = "7.0.3", features = [
 ]}
 dotenvy = "0.15"
 convert_case = "0.6.0"
-oas3 = "0.4.0"
+oas3 = { path = "../oas3-rs" }
 oapi = "0.1.2"
 sppparse = "0.1.4"
 

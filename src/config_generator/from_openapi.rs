@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use oas3::spec::ObjectOrReference;
+use oas3::spec::{ObjectOrReference, SchemaType};
 use oas3::{Schema, Spec};
 
 use crate::config::{Arg, Config, Field, Http, RootSchema, Server, Type, Upstream};
@@ -23,13 +23,16 @@ fn map_spec_type(typ: String) -> String {
 }
 
 fn get_schema_type<F: FnOnce() -> String>(get_name: F, schema: Schema) -> (bool, String) {
-    let typ = schema.schema_type.unwrap().to_debug_string();
+    let typ = schema.schema_type.unwrap_or(SchemaType::Object).to_debug_string();
     let (is_list, type_name) = match typ.as_str() {
         "Array" => {
-            if let ObjectOrReference::Ref { ref ref_path } = schema.items.unwrap().as_ref() {
-                (true, ref_path.split('/').last().unwrap().to_string())
-            } else {
-                unreachable!()
+            match schema.items.unwrap().as_ref() {
+                ObjectOrReference::Ref { ref ref_path } => {
+                    (true, ref_path.split('/').last().unwrap().to_string())
+                }
+                ObjectOrReference::Object(schema) => {
+                    (true, schema.schema_type.unwrap().to_debug_string())
+                }
             }
         }
         "Object" => (false, get_name()),
@@ -59,18 +62,24 @@ fn make_config_types(spec: &Spec) -> BTreeMap<String, Type> {
         .filter_map(|(method, operation)| operation.map(|operation| (method, operation)))
         .next()
         .unwrap();
-        let output_type = operation
+
+        let Ok(response) = operation
             .responses
-            .get("200")
+            .first_key_value()
+            .map(|(_, v)| v)
             .unwrap()
-            .resolve(spec)
-            .unwrap()
+            .resolve(spec) else {
+            continue
+        };
+
+        let Some(output_type) = response
             .content
-            .get("application/json")
+            .first_key_value()
+            .map(|(_, v)| v)
             .cloned()
-            .unwrap()
-            .schema
-            .unwrap();
+            .and_then(|v| v.schema) else {
+            continue
+        };
 
         let args: BTreeMap<String, Arg> = operation
             .parameters
@@ -78,7 +87,7 @@ fn make_config_types(spec: &Spec) -> BTreeMap<String, Type> {
             .map(|param| {
                 let param = param.resolve(spec).unwrap();
                 let (is_list, name) =
-                    get_schema_type(|| param.param_type.unwrap(), param.schema.unwrap());
+                    get_schema_type(|| param.param_type.unwrap_or("Object2".to_string()), param.schema.unwrap());
                 (
                     param.name,
                     Arg {
@@ -97,10 +106,13 @@ fn make_config_types(spec: &Spec) -> BTreeMap<String, Type> {
 
         let (is_list, name) = get_schema_type(
             || {
-                if let ObjectOrReference::Ref { ref_path } = output_type {
-                    ref_path.split('/').last().unwrap().to_string()
-                } else {
-                    unreachable!()
+                match output_type {
+                    ObjectOrReference::Ref { ref_path } => {
+                        ref_path.split('/').last().unwrap().to_string()
+                    }
+                    ObjectOrReference::Object(schema) => {
+                        schema.schema_type.unwrap_or(SchemaType::Object).to_debug_string()
+                    }
                 }
             },
             schema,
@@ -131,7 +143,7 @@ fn make_config_types(spec: &Spec) -> BTreeMap<String, Type> {
 
     for (name, component) in components.schemas.into_iter() {
         let schema = component.resolve(spec).unwrap();
-        if schema.schema_type.unwrap().to_debug_string().as_str() == "Array" {
+        if schema.schema_type.filter(|typ| typ.to_debug_string().as_str() == "Array").is_some() {
             continue;
         }
 
@@ -148,7 +160,7 @@ fn make_config_types(spec: &Spec) -> BTreeMap<String, Type> {
                                 type_of: {
                                     map_spec_type(format!(
                                         "{:?}",
-                                        property.resolve(spec).unwrap().schema_type.unwrap()
+                                        property.resolve(spec).unwrap().schema_type.unwrap_or(SchemaType::Object)
                                     ))
                                 },
                                 required: schema.required.contains(&name),

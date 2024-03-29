@@ -1,0 +1,4 @@
+description: Always true for a deleted object
+enum:
+  - true
+type: boolean
