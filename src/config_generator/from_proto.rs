@@ -25,7 +25,7 @@ enum DescriptorType {
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
 #[derive(Default, Clone)]
-struct Helper<T: Default + Clone> {
+struct Context<T: Default + Clone> {
     /// Maps proto type names to custom formatted names.
     map: HashMap<String, String>,
     /// The current proto package name.
@@ -33,12 +33,12 @@ struct Helper<T: Default + Clone> {
     ty: T,
 }
 
-impl<T: Default + Clone> Helper<T> {
+impl<T: Default + Clone> Context<T> {
     fn from_ty(ty: T) -> Self {
         Self { ty, ..Default::default() }
     }
 
-    fn merge_left<S: Default + Clone>(mut self, other: Helper<S>) -> Self {
+    fn merge_left<S: Default + Clone>(mut self, other: Context<S>) -> Self {
         self.map.extend(other.map);
         self
     }
@@ -75,7 +75,7 @@ impl<T: Default + Clone> Helper<T> {
     }
 }
 
-impl Helper<Config> {
+impl Context<Config> {
     /// Retrieves or creates a Type configuration for a given proto type.
     fn get_ty(&mut self, name: &str, ty: DescriptorType) -> Type {
         self.insert(name, ty);
@@ -93,7 +93,7 @@ impl Helper<Config> {
     }
 
     /// Processes proto enum types.
-    fn append_enums(mut self, enums: Vec<EnumDescriptorProto>) -> Helper<Config> {
+    fn append_enums(mut self, enums: Vec<EnumDescriptorProto>) -> Context<Config> {
         for enum_ in enums {
             let enum_name = enum_.name();
 
@@ -117,7 +117,7 @@ impl Helper<Config> {
     }
 
     /// Processes proto message types.
-    fn append_msg_type(mut self, messages: Vec<DescriptorProto>) -> Helper<Config> {
+    fn append_msg_type(mut self, messages: Vec<DescriptorProto>) -> Context<Config> {
         if messages.is_empty() {
             return self;
         }
@@ -224,7 +224,7 @@ impl Helper<Config> {
         mut self,
         services: Vec<ServiceDescriptorProto>,
         query: &str,
-    ) -> Helper<Config> {
+    ) -> Context<Config> {
         if services.is_empty() {
             return self;
         }
@@ -268,7 +268,7 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 
 /// The main entry point that builds a Config object from proto descriptor sets.
 pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
-    let mut helper = Helper::from_ty(Config::default());
+    let mut helper = Context::from_ty(Config::default());
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
@@ -291,7 +291,7 @@ mod test {
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::config::Config;
-    use crate::config_generator::from_proto::{build_config, DescriptorType, Helper};
+    use crate::config_generator::from_proto::{build_config, Context, DescriptorType};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -364,8 +364,8 @@ mod test {
     }
     #[test]
     fn test_get_value() {
-        let mut helper: Helper<Config> =
-            Helper { package: "com.example".to_string(), ..Default::default() };
+        let mut helper: Context<Config> =
+            Context { package: "com.example".to_string(), ..Default::default() };
         assert_eq!(
             helper.get_value("TestEnum", DescriptorType::Enum),
             "COM_EXAMPLE_TestEnum"
@@ -382,8 +382,8 @@ mod test {
 
     #[test]
     fn test_insert_and_get() {
-        let mut helper: Helper<Config> =
-            Helper { package: "com.example".to_string(), ..Default::default() };
+        let mut helper: Context<Config> =
+            Context { package: "com.example".to_string(), ..Default::default() };
         helper.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
             helper.get("TestEnum"),
