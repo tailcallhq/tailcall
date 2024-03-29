@@ -336,15 +336,32 @@ mod test {
         let greetings_a = get_proto_file_descriptor("greetings_a.proto")?;
         let greetings_b = get_proto_file_descriptor("greetings_b.proto")?;
 
+        set.file.push(news);
+        set.file.push(greetings_a);
+        set.file.push(greetings_b);
+
+        let result = build_config(vec![set], "Query").to_sdl();
+
+        insta::assert_snapshot!(result);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_from_sdl() -> anyhow::Result<()> {
+        let mut set = FileDescriptorSet::default();
+
+        let news = get_proto_file_descriptor("news.proto")?;
+        let greetings_a = get_proto_file_descriptor("greetings_a.proto")?;
+        let greetings_b = get_proto_file_descriptor("greetings_b.proto")?;
+
         set.file.push(news.clone());
         set.file.push(greetings_a.clone());
         set.file.push(greetings_b.clone());
 
         let result = build_config(vec![set], "Query").to_sdl();
 
-        insta::assert_snapshot!(result);
-
-        // test for 2 different sets
+        // test for different sets
         let mut set = FileDescriptorSet::default();
         let mut set1 = FileDescriptorSet::default();
         let mut set2 = FileDescriptorSet::default();
@@ -355,7 +372,6 @@ mod test {
         let result_sets = build_config(vec![set, set1, set2], "Query").to_sdl();
 
         pretty_assertions::assert_eq!(result, result_sets);
-
         Ok(())
     }
 
