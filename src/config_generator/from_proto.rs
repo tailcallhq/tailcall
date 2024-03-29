@@ -2,6 +2,8 @@
 
 use std::collections::{BTreeSet, HashMap};
 
+use crate::blueprint::GrpcMethod;
+use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 use convert_case::{Case, Casing};
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
@@ -9,10 +11,7 @@ use prost_reflect::prost_types::{
 };
 use strum_macros::Display;
 
-use crate::blueprint::GrpcMethod;
-use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
-
-pub(super) static DEFAULT_SPECTATOR: &str = "_";
+pub(super) static DEFAULT_SEPARATOR: &str = "__";
 
 /// Enum to represent the type of the descriptor
 #[derive(Display, Clone)]
@@ -50,19 +49,22 @@ impl Context {
     }
 
     /// Formats a proto type name based on its `DescriptorType`.
-    fn get_value(&self, name: &str, ty: DescriptorType) -> String {
-        let package = self.package.replace('.', DEFAULT_SPECTATOR).to_uppercase();
+    fn get_type_name(&self, name: &str, ty: DescriptorType) -> String {
+        let package = self
+            .package
+            .replace('.', DEFAULT_SEPARATOR)
+            .to_case(Case::UpperCamel);
         match ty {
             DescriptorType::Enum => {
-                format!("{}{}{}", package, DEFAULT_SPECTATOR, name)
+                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
             }
             DescriptorType::Message => {
-                format!("{}{}{}", package, DEFAULT_SPECTATOR, name)
+                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
             }
             DescriptorType::Query => format!(
                 "{}{}{}",
-                package.to_case(Case::Snake),
-                DEFAULT_SPECTATOR,
+                package.to_case(Case::Camel),
+                DEFAULT_SEPARATOR,
                 name.to_case(Case::Camel),
             ),
         }
@@ -72,7 +74,7 @@ impl Context {
     fn insert(mut self, name: &str, ty: DescriptorType) -> Self {
         self.map.insert(
             format!("{}.{}", self.package, name),
-            self.get_value(name, ty),
+            self.get_type_name(name, ty),
         );
         self
     }
@@ -400,16 +402,16 @@ mod test {
     fn test_get_value() {
         let mut ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
-            ctx.get_value("TestEnum", DescriptorType::Enum),
-            "COM_EXAMPLE_TestEnum"
+            ctx.get_type_name("TestEnum", DescriptorType::Enum),
+            "comExample__TestEnum"
         );
         assert_eq!(
-            ctx.get_value("testMessage", DescriptorType::Message),
-            "COM_EXAMPLE_testMessage"
+            ctx.get_type_name("testMessage", DescriptorType::Message),
+            "comExample__testMessage"
         );
         assert_eq!(
-            ctx.get_value("QueryName", DescriptorType::Query),
-            "com_example_queryName"
+            ctx.get_type_name("QueryName", DescriptorType::Query),
+            "comExample__queryName"
         );
     }
 
@@ -419,12 +421,12 @@ mod test {
         ctx = ctx.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
             ctx.get("TestEnum"),
-            Some("COM_EXAMPLE_TestEnum".to_string())
+            Some("ComExample__TestEnum".to_string())
         );
         ctx = ctx.insert("testMessage", DescriptorType::Message);
         assert_eq!(
             ctx.get("testMessage"),
-            Some("COM_EXAMPLE_testMessage".to_string())
+            Some("ComExample__testMessage".to_string())
         );
         assert_eq!(ctx.get("NonExisting"), None);
     }
