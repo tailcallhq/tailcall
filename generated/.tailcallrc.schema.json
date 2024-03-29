@@ -1919,8 +1919,7 @@
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
       "type": "object",
       "required": [
-        "fields",
-        "implements"
+        "fields"
       ],
       "properties": {
         "added_fields": {
