@@ -75,6 +75,170 @@ impl<T: Default + Clone> Helper<T> {
     }
 }
 
+impl Helper<Config> {
+    /// Retrieves or creates a Type configuration for a given proto type.
+    fn get_ty(&mut self, name: &str, ty: DescriptorType) -> Type {
+        self.insert(name, ty);
+        let mut ty = self
+            .ty
+            .types
+            .get(&self.get(name).unwrap())
+            .cloned()
+            .unwrap_or_default(); // it should be
+                                  // safe to call
+                                  // unwrap here
+        ty.tag = Some(Tag { id: format!("{}.{}", self.package, name) });
+
+        ty
+    }
+
+    /// Processes proto enum types.
+    fn append_enums(mut self, enums: Vec<EnumDescriptorProto>) -> Helper<Config> {
+        for enum_ in enums {
+            let enum_name = enum_.name();
+
+            let mut ty = self.get_ty(enum_name, DescriptorType::Enum);
+
+            let mut variants = enum_
+                .value
+                .iter()
+                .map(|v| v.name().to_string())
+                .collect::<BTreeSet<String>>();
+            if let Some(vars) = ty.variants {
+                variants.extend(vars);
+            }
+            ty.variants = Some(variants);
+            self.ty.types.insert(self.get(enum_name).unwrap(), ty);
+            // it should be
+            // safe to call
+            // unwrap here
+        }
+        self
+    }
+
+    /// Processes proto message types.
+    fn append_msg_type(mut self, messages: Vec<DescriptorProto>) -> Helper<Config> {
+        if messages.is_empty() {
+            return self;
+        }
+        for message in messages {
+            let msg_name = message.name().to_string();
+
+            let mut ty = self.get_ty(&msg_name, DescriptorType::Message);
+
+            self = self.append_enums(message.enum_type);
+            self = self.append_msg_type(message.nested_type);
+
+            for field in message.field {
+                let field_name = field.name().to_string();
+                let mut cfg_field = Field::default();
+
+                let label = field.label().as_str_name().to_lowercase();
+                cfg_field.list = label.contains("repeated");
+                cfg_field.required = label.contains("required");
+
+                if field.r#type.is_some() {
+                    let type_of = convert_ty(field.r#type().as_str_name());
+                    cfg_field.type_of = type_of.to_string();
+                } else {
+                    // for non-primitive types
+                    let type_of = convert_ty(field.type_name());
+                    cfg_field.type_of = self.get(&type_of).unwrap_or(type_of);
+                }
+
+                ty.fields.insert(field_name, cfg_field);
+            }
+
+            self.ty.types.insert(self.get(&msg_name).unwrap(), ty); // it should
+                                                                    // be
+                                                                    // safe to call
+                                                                    // unwrap here
+        }
+        self
+    }
+
+    /// Generates argument configurations for service methods.
+    fn get_arg(&self, input_ty: &str) -> Option<(String, Arg)> {
+        match input_ty {
+            "google.protobuf.Empty" | "" => None,
+            any => {
+                let key = convert_ty(any).to_case(Case::Camel);
+                let val = Arg {
+                    type_of: self.get(any).unwrap_or(any.to_string()),
+                    list: false,
+                    required: true,
+                    /* Setting it not null by default. There's no way to infer this
+                     * from proto file */
+                    doc: None,
+                    modify: None,
+                    default_value: None,
+                };
+
+                Some((key, val))
+            }
+        }
+    }
+
+    /// Generates a Type configuration for service methods.
+    fn generate_ty(&mut self, services: Vec<ServiceDescriptorProto>, key: &str) -> Type {
+        let package = self.package.clone();
+        let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
+        let mut ty = self.ty.types.get(key).cloned().unwrap_or_default();
+
+        for service in services {
+            let service_name = service.name().to_string();
+            for method in &service.method {
+                let method_name = method.name();
+
+                self.insert(method_name, DescriptorType::Query);
+
+                let mut cfg_field = Field::default();
+                let arg = self.get_arg(method.input_type());
+
+                if let Some((k, v)) = arg {
+                    cfg_field.args.insert(k, v);
+                }
+
+                let (output_ty, required) = get_output_ty(method.output_type());
+                cfg_field.type_of = self.get(&output_ty).unwrap_or(output_ty.clone());
+                cfg_field.required = required;
+
+                grpc_method.service = service_name.clone();
+                grpc_method.name = method_name.to_string();
+
+                cfg_field.grpc = Some(Grpc {
+                    base_url: None,
+                    body: None,
+                    group_by: vec![],
+                    headers: vec![],
+                    method: grpc_method.to_string(),
+                });
+                ty.fields.insert(self.get(method_name).unwrap(), cfg_field);
+            }
+        }
+        ty
+    }
+
+    /// Processes proto service definitions and their methods.
+    fn append_query_service(
+        mut self,
+        services: Vec<ServiceDescriptorProto>,
+        query: &str,
+    ) -> Helper<Config> {
+        if services.is_empty() {
+            return self;
+        }
+
+        let ty = self.generate_ty(services, query);
+
+        if ty.ne(&Type::default()) {
+            self.ty.schema.query = Some(query.to_owned());
+            self.ty.types.insert(query.to_owned(), ty);
+        }
+        self
+    }
+}
+
 /// Converts proto field types to a custom format.
 fn convert_ty(proto_ty: &str) -> String {
     let binding = proto_ty.to_lowercase();
@@ -102,187 +266,6 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
     }
 }
 
-/// Generates argument configurations for service methods.
-fn get_arg(input_ty: &str, helper: Helper<Config>) -> Helper<Option<(String, Arg)>> {
-    match input_ty {
-        "google.protobuf.Empty" | "" => {
-            Helper { map: helper.map, package: helper.package, ty: None }
-        }
-        any => {
-            let key = convert_ty(any).to_case(Case::Camel);
-            let val = Arg {
-                type_of: helper.get(any).unwrap_or(any.to_string()),
-                list: false,
-                required: true,
-                /* Setting it not null by default. There's no way to infer this
-                 * from proto file */
-                doc: None,
-                modify: None,
-                default_value: None,
-            };
-
-            Helper {
-                map: helper.map,
-                package: helper.package,
-                ty: Some((key, val)),
-            }
-        }
-    }
-}
-
-/// Retrieves or creates a Type configuration for a given proto type.
-fn get_ty(name: &str, mut helper: Helper<Config>, ty: DescriptorType) -> Helper<Type> {
-    helper.insert(name, ty);
-    let mut ty = helper
-        .ty
-        .types
-        .get(&helper.get(name).unwrap())
-        .cloned()
-        .unwrap_or_default(); // it should be
-                              // safe to call
-                              // unwrap here
-    ty.tag = Some(Tag { id: format!("{}.{}", helper.package, name) });
-
-    Helper { ty, map: helper.map, package: helper.package }
-}
-
-/// Processes proto enum types.
-fn append_enums(enums: Vec<EnumDescriptorProto>, mut helper: Helper<Config>) -> Helper<Config> {
-    for enum_ in enums {
-        let enum_name = enum_.name();
-
-        let mut helper_ty = get_ty(enum_name, helper.clone(), DescriptorType::Enum);
-        let mut ty = helper_ty.ty.clone();
-        helper = helper.merge_left(helper_ty);
-
-        let mut variants = enum_
-            .value
-            .iter()
-            .map(|v| v.name().to_string())
-            .collect::<BTreeSet<String>>();
-        if let Some(vars) = ty.variants {
-            variants.extend(vars);
-        }
-        ty.variants = Some(variants);
-        helper.ty.types.insert(helper.get(enum_name).unwrap(), ty);
-        // it should be
-        // safe to call
-        // unwrap here
-    }
-    helper
-}
-
-/// Processes proto message types.
-fn append_msg_type(messages: Vec<DescriptorProto>, mut helper: Helper<Config>) -> Helper<Config> {
-    if messages.is_empty() {
-        return helper;
-    }
-    for message in messages {
-        let msg_name = message.name().to_string();
-
-        let mut helper_ty = get_ty(&msg_name, helper.clone(), DescriptorType::Message);
-        let mut ty = helper_ty.ty.clone();
-        helper = helper.merge_left(helper_ty);
-
-        helper = append_enums(message.enum_type, helper);
-        helper = append_msg_type(message.nested_type, helper);
-
-        for field in message.field {
-            let field_name = field.name().to_string();
-            let mut cfg_field = Field::default();
-
-            let label = field.label().as_str_name().to_lowercase();
-            cfg_field.list = label.contains("repeated");
-            cfg_field.required = label.contains("required");
-
-            if field.r#type.is_some() {
-                let type_of = convert_ty(field.r#type().as_str_name());
-                cfg_field.type_of = type_of.to_string();
-            } else {
-                // for non-primitive types
-                let type_of = convert_ty(field.type_name());
-                cfg_field.type_of = helper.get(&type_of).unwrap_or(type_of);
-            }
-
-            ty.fields.insert(field_name, cfg_field);
-        }
-
-        helper.ty.types.insert(helper.get(&msg_name).unwrap(), ty); // it should
-                                                                    // be
-                                                                    // safe to call
-                                                                    // unwrap here
-    }
-    helper
-}
-
-/// Generates a Type configuration for service methods.
-fn generate_ty(
-    services: Vec<ServiceDescriptorProto>,
-    mut helper: Helper<Config>,
-    key: &str,
-) -> Helper<Type> {
-    let package = helper.package.clone();
-    let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-    let mut ty = helper.ty.types.get(key).cloned().unwrap_or_default();
-
-    for service in services {
-        let service_name = service.name().to_string();
-        for method in &service.method {
-            let method_name = method.name();
-
-            helper.insert(method_name, DescriptorType::Query);
-
-            let mut cfg_field = Field::default();
-            let helper_arg = get_arg(method.input_type(), helper.clone());
-            let arg = helper_arg.ty.clone();
-            helper = helper.merge_left(helper_arg);
-
-            if let Some((k, v)) = arg {
-                cfg_field.args.insert(k, v);
-            }
-
-            let (output_ty, required) = get_output_ty(method.output_type());
-            cfg_field.type_of = helper.get(&output_ty).unwrap_or(output_ty.clone());
-            cfg_field.required = required;
-
-            grpc_method.service = service_name.clone();
-            grpc_method.name = method_name.to_string();
-
-            cfg_field.grpc = Some(Grpc {
-                base_url: None,
-                body: None,
-                group_by: vec![],
-                headers: vec![],
-                method: grpc_method.to_string(),
-            });
-            ty.fields
-                .insert(helper.get(method_name).unwrap(), cfg_field);
-        }
-    }
-    Helper { ty, map: helper.map, package: helper.package }
-}
-
-/// Processes proto service definitions and their methods.
-fn append_query_service(
-    services: Vec<ServiceDescriptorProto>,
-    query: &str,
-    mut helper: Helper<Config>,
-) -> Helper<Config> {
-    if services.is_empty() {
-        return helper;
-    }
-
-    let helper_ty = generate_ty(services, helper.clone(), query);
-    let ty = helper_ty.ty.clone();
-    helper = helper.merge_left(helper_ty);
-
-    if ty.ne(&Type::default()) {
-        helper.ty.schema.query = Some(query.to_owned());
-        helper.ty.types.insert(query.to_owned(), ty);
-    }
-    helper
-}
-
 /// The main entry point that builds a Config object from proto descriptor sets.
 pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
     let mut helper = Helper::from_ty(Config::default());
@@ -291,9 +274,9 @@ pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Con
         for file_descriptor in descriptor_set.file {
             helper.package = file_descriptor.package().to_string();
 
-            helper = append_enums(file_descriptor.enum_type, helper);
-            helper = append_msg_type(file_descriptor.message_type, helper);
-            helper = append_query_service(file_descriptor.service.clone(), query, helper);
+            helper = helper.append_enums(file_descriptor.enum_type);
+            helper = helper.append_msg_type(file_descriptor.message_type);
+            helper = helper.append_query_service(file_descriptor.service.clone(), query);
         }
     }
 
