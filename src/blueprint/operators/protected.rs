@@ -10,7 +10,7 @@ pub fn update_protected<'a>(
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected.is_some() || type_.protected.is_some() {
-                if type_.is_input(config) {
+                if is_input(config, type_) {
                     return Valid::fail("Input types can not be protected".to_owned());
                 }
 
@@ -30,4 +30,21 @@ pub fn update_protected<'a>(
             Valid::succeed(b_field)
         },
     )
+}
+
+fn is_input(config: &&ConfigModule, type_: &&config::Type) -> bool {
+    config
+        .types
+        .iter()
+        .find_map(
+            |(name, _type)| {
+                if _type == *type_ {
+                    Some(name)
+                } else {
+                    None
+                }
+            },
+        )
+        .map(|name| config.input_types().contains(name))
+        .unwrap_or_default()
 }

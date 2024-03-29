@@ -241,23 +241,6 @@ impl Type {
         self.fields = graphql_fields;
         self
     }
-
-    pub fn is_input(&self, config: &Config) -> bool {
-        config
-            .types
-            .iter()
-            .find_map(
-                |(name, _type)| {
-                    if _type == self {
-                        Some(name)
-                    } else {
-                        None
-                    }
-                },
-            )
-            .map(|name| config.input_types().contains(name))
-            .unwrap_or_default()
-    }
 }
 
 impl MergeRight for Type {
