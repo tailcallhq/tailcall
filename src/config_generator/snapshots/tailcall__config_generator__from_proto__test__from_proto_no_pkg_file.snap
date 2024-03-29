@@ -18,5 +18,5 @@ type NewsList @tag(id: "NewsList") {
 }
 
 type Query {
-  get_all_news: NewsList! @grpc(method: "NewsService.GetAllNews")
+  getAllNews: NewsList! @grpc(method: "NewsService.GetAllNews")
 }

@@ -231,7 +231,7 @@ impl Context {
                     .cloned()
                     .unwrap_or_default();
                 let field = Field::default().type_of(type_name.clone());
-                ty.fields.insert(type_name.to_case(Case::Snake), field);
+                ty.fields.insert(type_name.to_case(Case::Camel), field);
                 self.config.schema.query = Some(self.query.to_owned());
                 self.config.types.insert(self.query.to_owned(), ty);
             }
@@ -239,7 +239,7 @@ impl Context {
                 let field_name = &split[i + 1];
                 let field = Field::default().type_of(field_name.clone());
                 let mut ty = Type::default();
-                ty.fields.insert(field_name.to_case(Case::Snake), field);
+                ty.fields.insert(field_name.to_case(Case::Camel), field);
                 self.config.types.insert(type_name.clone(), ty);
             } else if let Some(ty) = self.config.types.get_mut(type_name) {
                 ty.fields.insert(method_name.clone(), field.clone());
@@ -257,7 +257,7 @@ impl Context {
                 .get(&self.query)
                 .cloned()
                 .unwrap_or_default();
-            ty.fields.insert(method_name.to_case(Case::Snake), field);
+            ty.fields.insert(method_name.to_case(Case::Camel), field);
             self.config.schema.query = Some(self.query.to_owned());
             self.config.types.insert(self.query.to_owned(), ty);
         }

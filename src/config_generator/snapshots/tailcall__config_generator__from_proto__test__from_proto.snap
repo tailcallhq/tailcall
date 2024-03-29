@@ -79,7 +79,7 @@ type News__NewsList @tag(id: "news.NewsList") {
 }
 
 type Query {
-  greetings_a: GreetingsA
-  greetings_b: GreetingsB
+  greetingsA: GreetingsA
+  greetingsB: GreetingsB
   news: News
 }
