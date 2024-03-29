@@ -407,16 +407,26 @@ mod test {
         Ok(())
     }
     #[test]
-    fn test_get_value() {
-        let mut ctx: Context = Context::new("Query").package("com.example".to_string());
+    fn test_get_value_enum() {
+        let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("TestEnum", DescriptorType::Enum),
             "ComExample__TestEnum"
         );
+    }
+
+    #[test]
+    fn test_get_value_message() {
+        let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("testMessage", DescriptorType::Message),
             "ComExample__testMessage"
         );
+    }
+
+    #[test]
+    fn test_get_value_query_name() {
+        let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("QueryName", DescriptorType::Operation),
             "ComExample__queryName"
@@ -424,18 +434,28 @@ mod test {
     }
 
     #[test]
-    fn test_insert_and_get() {
+    fn test_insert_and_get_enum() {
         let mut ctx: Context = Context::new("Query").package("com.example".to_string());
         ctx = ctx.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
             ctx.get("TestEnum"),
             Some("ComExample__TestEnum".to_string())
         );
+    }
+
+    #[test]
+    fn test_insert_and_get_message() {
+        let mut ctx: Context = Context::new("Query").package("com.example".to_string());
         ctx = ctx.insert("testMessage", DescriptorType::Message);
         assert_eq!(
             ctx.get("testMessage"),
             Some("ComExample__testMessage".to_string())
         );
+    }
+
+    #[test]
+    fn test_insert_and_get_non_existing() {
+        let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(ctx.get("NonExisting"), None);
     }
 }
