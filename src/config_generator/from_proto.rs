@@ -418,14 +418,16 @@ mod test {
     #[test]
     fn test_from_proto_no_pkg_file() -> anyhow::Result<()> {
         let set = new_file_desc(&["no_pkg.proto"])?;
-        insta::assert_snapshot!(from_proto(&[set], "Query").to_sdl());
+        let result = from_proto(&[set], "Query").to_sdl();
+        insta::assert_snapshot!(result);
         Ok(())
     }
 
     #[test]
     fn test_from_proto_no_service_file() -> anyhow::Result<()> {
         let set = new_file_desc(&["news_no_service.proto"])?;
-        insta::assert_snapshot!(from_proto(&[set], "Query").to_sdl());
+        let result = from_proto(&[set], "Query").to_sdl();
+        insta::assert_snapshot!(result);
 
         Ok(())
     }
