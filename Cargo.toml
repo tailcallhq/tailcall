@@ -36,7 +36,7 @@ opentelemetry-system-metrics = { version = "0.1.8", optional = true }
 rustls-pemfile = { version = "1.0.4" }
 schemars = { version = "0.8.16", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"], default-features = false }
-tokio = { version = "1.36.0", features = ["rt", "time"] }
+tokio = { version = "1.37.0", features = ["rt", "time"] }
 anyhow = "1.0.81"
 derive_setters = "0.1.6"
 thiserror = "1.0.58"
@@ -103,7 +103,7 @@ opentelemetry_sdk = { version = "0.22.1", features = [
     "logs",
     "metrics",
 ] }
-opentelemetry-http = "0.11.0"
+opentelemetry-http = "0.11.1"
 opentelemetry-stdout = { version = "0.3.0", features = [
     "trace",
     "logs",
