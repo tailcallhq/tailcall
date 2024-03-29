@@ -2,14 +2,15 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use crate::blueprint::GrpcMethod;
-use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 use convert_case::{Case, Casing};
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 use strum_macros::Display;
+
+use crate::blueprint::GrpcMethod;
+use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 
 pub(super) static DEFAULT_SEPARATOR: &str = "__";
 
@@ -18,7 +19,26 @@ pub(super) static DEFAULT_SEPARATOR: &str = "__";
 enum DescriptorType {
     Enum,
     Message,
-    Query,
+    Operation,
+}
+
+impl DescriptorType {
+    fn as_str_name(&self, package: &str, name: &str) -> String {
+        match self {
+            DescriptorType::Enum => {
+                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
+            }
+            DescriptorType::Message => {
+                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
+            }
+            DescriptorType::Operation => format!(
+                "{}{}{}",
+                package.to_case(Case::Camel),
+                DEFAULT_SEPARATOR,
+                name.to_case(Case::Camel),
+            ),
+        }
+    }
 }
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
@@ -49,32 +69,20 @@ impl Context {
     }
 
     /// Formats a proto type name based on its `DescriptorType`.
-    fn get_type_name(&self, name: &str, ty: DescriptorType) -> String {
+    fn get_name(&self, name: &str, ty: DescriptorType) -> String {
         let package = self
             .package
             .replace('.', DEFAULT_SEPARATOR)
             .to_case(Case::UpperCamel);
-        match ty {
-            DescriptorType::Enum => {
-                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
-            }
-            DescriptorType::Message => {
-                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
-            }
-            DescriptorType::Query => format!(
-                "{}{}{}",
-                package.to_case(Case::Camel),
-                DEFAULT_SEPARATOR,
-                name.to_case(Case::Camel),
-            ),
-        }
+
+        ty.as_str_name(&package, name)
     }
 
     /// Inserts a formatted name into the map.
     fn insert(mut self, name: &str, ty: DescriptorType) -> Self {
         self.map.insert(
             format!("{}.{}", self.package, name),
-            self.get_type_name(name, ty),
+            self.get_name(name, ty),
         );
         self
     }
@@ -216,7 +224,7 @@ impl Context {
             for method in &service.method {
                 let method_name = method.name();
 
-                self = self.insert(method_name, DescriptorType::Query);
+                self = self.insert(method_name, DescriptorType::Operation);
 
                 let mut cfg_field = Field::default();
                 let arg = self.get_arg(method.input_type());
@@ -402,16 +410,16 @@ mod test {
     fn test_get_value() {
         let mut ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
-            ctx.get_type_name("TestEnum", DescriptorType::Enum),
-            "comExample__TestEnum"
+            ctx.get_name("TestEnum", DescriptorType::Enum),
+            "ComExample__TestEnum"
         );
         assert_eq!(
-            ctx.get_type_name("testMessage", DescriptorType::Message),
-            "comExample__testMessage"
+            ctx.get_name("testMessage", DescriptorType::Message),
+            "ComExample__testMessage"
         );
         assert_eq!(
-            ctx.get_type_name("QueryName", DescriptorType::Query),
-            "comExample__queryName"
+            ctx.get_name("QueryName", DescriptorType::Operation),
+            "ComExample__queryName"
         );
     }
 
