@@ -43,9 +43,7 @@ impl DescriptorType {
                     name
                 )
             }
-            DescriptorType::Operation => {
-                name.to_case(Case::Camel).to_string()
-            }
+            DescriptorType::Operation => name.to_case(Case::Camel).to_string(),
         }
     }
 }
@@ -465,7 +463,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("TestEnum", DescriptorType::Enum),
-            "COM_EXAMPLE__TestEnum"
+            "ComExample__TestEnum"
         );
     }
 
@@ -474,7 +472,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("testMessage", DescriptorType::Message),
-            "COM_EXAMPLE__testMessage"
+            "ComExample__testMessage"
         );
     }
 
@@ -483,7 +481,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("QueryName", DescriptorType::Operation),
-            "com_example__queryName"
+            "queryName"
         );
     }
 
@@ -493,7 +491,7 @@ mod test {
         ctx = ctx.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
             ctx.get("TestEnum"),
-            Some("COM_EXAMPLE__TestEnum".to_string())
+            Some("ComExample__TestEnum".to_string())
         );
     }
 
@@ -503,7 +501,7 @@ mod test {
         ctx = ctx.insert("testMessage", DescriptorType::Message);
         assert_eq!(
             ctx.get("testMessage"),
-            Some("COM_EXAMPLE__testMessage".to_string())
+            Some("ComExample__testMessage".to_string())
         );
     }
 
