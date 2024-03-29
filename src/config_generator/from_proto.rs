@@ -25,19 +25,18 @@ enum DescriptorType {
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
 #[derive(Default, Clone)]
-struct Context<T: Default + Clone> {
+struct Context {
     /// Maps proto type names to custom formatted names.
     map: HashMap<String, String>,
+
     /// The current proto package name.
     package: String,
-    ty: T,
+
+    /// Final configuration that's being built up.
+    config: Config,
 }
 
-impl<T: Default + Clone> Context<T> {
-    fn from_ty(ty: T) -> Self {
-        Self { ty, ..Default::default() }
-    }
-
+impl Context {
     /// Formats a proto type name based on its `DescriptorType`.
     fn get_value(&self, name: &str, ty: DescriptorType) -> String {
         let package = self.package.replace('.', DEFAULT_SPECTATOR).to_uppercase();
@@ -68,14 +67,12 @@ impl<T: Default + Clone> Context<T> {
     fn get(&self, name: &str) -> Option<String> {
         self.map.get(&format!("{}.{}", self.package, name)).cloned()
     }
-}
 
-impl Context<Config> {
     /// Retrieves or creates a Type configuration for a given proto type.
     fn get_ty(&mut self, name: &str, ty: DescriptorType) -> Type {
         self.insert(name, ty);
         let mut ty = self
-            .ty
+            .config
             .types
             .get(&self.get(name).unwrap())
             .cloned()
@@ -88,7 +85,7 @@ impl Context<Config> {
     }
 
     /// Processes proto enum types.
-    fn append_enums(mut self, enums: Vec<EnumDescriptorProto>) -> Context<Config> {
+    fn append_enums(mut self, enums: Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
             let enum_name = enum_.name();
 
@@ -103,7 +100,7 @@ impl Context<Config> {
                 variants.extend(vars);
             }
             ty.variants = Some(variants);
-            self.ty.types.insert(self.get(enum_name).unwrap(), ty);
+            self.config.types.insert(self.get(enum_name).unwrap(), ty);
             // it should be
             // safe to call
             // unwrap here
@@ -112,7 +109,7 @@ impl Context<Config> {
     }
 
     /// Processes proto message types.
-    fn append_msg_type(mut self, messages: Vec<DescriptorProto>) -> Context<Config> {
+    fn append_msg_type(mut self, messages: Vec<DescriptorProto>) -> Self {
         if messages.is_empty() {
             return self;
         }
@@ -144,10 +141,10 @@ impl Context<Config> {
                 ty.fields.insert(field_name, cfg_field);
             }
 
-            self.ty.types.insert(self.get(&msg_name).unwrap(), ty); // it should
-                                                                    // be
-                                                                    // safe to call
-                                                                    // unwrap here
+            self.config.types.insert(self.get(&msg_name).unwrap(), ty); // it should
+                                                                        // be
+                                                                        // safe to call
+                                                                        // unwrap here
         }
         self
     }
@@ -178,7 +175,7 @@ impl Context<Config> {
     fn generate_ty(&mut self, services: Vec<ServiceDescriptorProto>, key: &str) -> Type {
         let package = self.package.clone();
         let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-        let mut ty = self.ty.types.get(key).cloned().unwrap_or_default();
+        let mut ty = self.config.types.get(key).cloned().unwrap_or_default();
 
         for service in services {
             let service_name = service.name().to_string();
@@ -215,11 +212,7 @@ impl Context<Config> {
     }
 
     /// Processes proto service definitions and their methods.
-    fn append_query_service(
-        mut self,
-        services: Vec<ServiceDescriptorProto>,
-        query: &str,
-    ) -> Context<Config> {
+    fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>, query: &str) -> Self {
         if services.is_empty() {
             return self;
         }
@@ -227,8 +220,8 @@ impl Context<Config> {
         let ty = self.generate_ty(services, query);
 
         if ty.ne(&Type::default()) {
-            self.ty.schema.query = Some(query.to_owned());
-            self.ty.types.insert(query.to_owned(), ty);
+            self.config.schema.query = Some(query.to_owned());
+            self.config.types.insert(query.to_owned(), ty);
         }
         self
     }
@@ -263,7 +256,7 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 
 /// The main entry point that builds a Config object from proto descriptor sets.
 pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
-    let mut helper = Context::from_ty(Config::default());
+    let mut helper = Context::default();
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
@@ -275,7 +268,7 @@ pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Con
         }
     }
 
-    helper.ty
+    helper.config
 }
 
 #[cfg(test)]
@@ -359,7 +352,7 @@ mod test {
     }
     #[test]
     fn test_get_value() {
-        let mut helper: Context<Config> =
+        let mut helper: Context =
             Context { package: "com.example".to_string(), ..Default::default() };
         assert_eq!(
             helper.get_value("TestEnum", DescriptorType::Enum),
@@ -377,7 +370,7 @@ mod test {
 
     #[test]
     fn test_insert_and_get() {
-        let mut helper: Context<Config> =
+        let mut helper: Context =
             Context { package: "com.example".to_string(), ..Default::default() };
         helper.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
