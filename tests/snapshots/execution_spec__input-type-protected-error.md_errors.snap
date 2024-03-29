@@ -7,7 +7,7 @@ expression: errors
     "message": "Input types can not be protected",
     "trace": [
       "Input",
-      "name",
+      "value",
       "@protected"
     ],
     "description": null
@@ -16,7 +16,7 @@ expression: errors
     "message": "Input types can not be protected",
     "trace": [
       "NewPost",
-      "name",
+      "content",
       "@protected"
     ],
     "description": null

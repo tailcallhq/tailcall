@@ -20,11 +20,11 @@ type Mutation {
 }
 
 input Input @protected {
-  name: String
+  value: String
 }
 
 input NewPost @protected {
-  name: String
+  content: String
 }
 
 type Post {
