@@ -93,20 +93,23 @@ impl Context {
         self.map.get(&format!("{}.{}", self.package, name)).cloned()
     }
 
+    /// Resolves the actual name and inserts the type.
+    fn insert_type(mut self, name: &str, ty: Type) -> Self {
+        if let Some(name) = self.get(name) {
+            self.config.types.insert(name, ty);
+        }
+        self
+    }
+
     /// Retrieves or creates a Type configuration for a given proto type.
     fn get_ty(&self, name: &str) -> Type {
         let mut ty = self
-            .config
-            .types
-            .get(
-                &self
-                    .get(name)
-                    .unwrap_or_else(|| panic!("Expected key not found in types map: {}", name)),
-            )
+            .get(name)
+            .and_then(|name| self.config.types.get(&name))
             .cloned()
             .unwrap_or_default();
-        ty.tag = Some(Tag { id: format!("{}.{}", self.package, name) });
 
+        ty.tag = Some(Tag { id: format!("{}.{}", self.package, name) });
         ty
     }
 
@@ -127,12 +130,7 @@ impl Context {
                 variants.extend(vars);
             }
             ty.variants = Some(variants);
-            self.config.types.insert(
-                self.get(enum_name).unwrap_or_else(|| {
-                    panic!("Expected key not found in types map: {}", enum_name)
-                }),
-                ty,
-            );
+            self = self.insert_type(enum_name, ty);
         }
         self
     }
@@ -171,11 +169,7 @@ impl Context {
                 ty.fields.insert(field_name, cfg_field);
             }
 
-            self.config.types.insert(
-                self.get(&msg_name)
-                    .unwrap_or_else(|| panic!("Expected key not found in types map: {}", msg_name)),
-                ty,
-            );
+            self = self.insert_type(&msg_name, ty);
         }
         self
     }
@@ -284,10 +278,9 @@ impl Context {
                     method: grpc_method.to_string(),
                 });
 
-                let method_name = self.get(method_name).unwrap_or_else(|| {
-                    panic!("Expected key not found in types map: {}", method_name)
-                });
-                self = self.append_nested_package(method_name, cfg_field);
+                if let Some(method_name) = self.get(method_name) {
+                    self = self.append_nested_package(method_name, cfg_field);
+                }
             }
         }
 
