@@ -9,7 +9,7 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
 use super::telemetry::Telemetry;
-use super::JS;
+use super::{Tag, JS};
 use crate::config::{
     self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
     Server, Union, Upstream,
@@ -211,7 +211,8 @@ where
     Cache::from_directives(directives.iter())
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(cache, fields, protected)| {
+        .fuse(Tag::from_directives(directives.iter()))
+        .map(|(cache, fields, protected, tag)| {
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
@@ -223,6 +224,7 @@ where
                 implements,
                 cache,
                 protected,
+                tag,
                 ..Default::default()
             }
         })
