@@ -1,0 +1,6 @@
+---
+source: src/config_generator/from_proto.rs
+expression: "from_proto(vec![set], \"Query\").to_sdl()"
+---
+schema @server @upstream {
+}
