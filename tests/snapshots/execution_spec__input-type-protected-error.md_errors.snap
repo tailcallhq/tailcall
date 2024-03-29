@@ -1,0 +1,24 @@
+---
+source: tests/execution_spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Input types can not be protected",
+    "trace": [
+      "Input",
+      "name",
+      "@protected"
+    ],
+    "description": null
+  },
+  {
+    "message": "Input types can not be protected",
+    "trace": [
+      "NewPost",
+      "name",
+      "@protected"
+    ],
+    "description": null
+  }
+]
