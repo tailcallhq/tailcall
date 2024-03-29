@@ -100,9 +100,7 @@ impl Context {
                     .unwrap_or_else(|| panic!("Expected key not found in types map: {}", name)),
             )
             .cloned()
-            .unwrap_or_default(); // it should be
-                                  // safe to call
-                                  // unwrap here
+            .unwrap_or_default();
         ty.tag = Some(Tag { id: format!("{}.{}", self.package, name) });
 
         ty
@@ -131,9 +129,6 @@ impl Context {
                 }),
                 ty,
             );
-            // it should be
-            // safe to call
-            // unwrap here
         }
         self
     }
@@ -245,7 +240,6 @@ impl Context {
                 ty.fields.insert(
                     self.get(method_name).unwrap_or_else(|| {
                         panic!("Expected key not found in types map: {}", method_name)
-                        // it should be safe to call unwrap here
                     }),
                     cfg_field,
                 );
