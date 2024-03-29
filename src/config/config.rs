@@ -212,6 +212,9 @@ pub struct Type {
     pub interface: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
+    /// Flat to indicate if the type is an input
+    pub input: bool,
+    ///
     /// Interfaces that the type implements.
     pub implements: BTreeSet<String>,
     #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
