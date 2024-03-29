@@ -3,6 +3,7 @@ source: src/config_generator/from_proto.rs
 expression: "from_proto(vec![set], \"Query\").to_sdl()"
 ---
 schema @server @upstream {
+  query: Query
 }
 
 type News @tag(id: "News") {
@@ -14,4 +15,8 @@ type News @tag(id: "News") {
 
 type NewsList @tag(id: "NewsList") {
   news: [News]
+}
+
+type Query {
+  get_all_news: NewsList! @grpc(method: "NewsService.GetAllNews")
 }

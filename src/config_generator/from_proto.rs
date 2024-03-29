@@ -220,7 +220,7 @@ impl Context {
         // let n = len(split)
         // len(types) = n
         // len(fields) = n-1
-        let nmo = split.len();
+        let n = split.len();
 
         for (i, type_name) in split.iter().enumerate() {
             if i == 0 {
@@ -235,7 +235,7 @@ impl Context {
                 self.config.schema.query = Some(self.query.to_owned());
                 self.config.types.insert(self.query.to_owned(), ty);
             }
-            if i + 1 < nmo {
+            if i + 1 < n {
                 let field_name = &split[i + 1];
                 let field = Field::default().type_of(field_name.clone());
                 let mut ty = Type::default();
@@ -250,12 +250,25 @@ impl Context {
             }
         }
 
+        if n == 0 {
+            let mut ty = self
+                .config
+                .types
+                .get(&self.query)
+                .cloned()
+                .unwrap_or_default();
+            ty.fields.insert(method_name.to_case(Case::Snake), field);
+            self.config.schema.query = Some(self.query.to_owned());
+            self.config.types.insert(self.query.to_owned(), ty);
+        }
+
         self
     }
 
     /// Processes proto service definitions and their methods.
     fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>) -> Self {
         if services.is_empty() {
+            self.config = Config::default();
             return self;
         }
 
@@ -410,6 +423,19 @@ mod test {
         let no_pkg = get_proto_file_descriptor("no_pkg.proto")?;
 
         set.file.push(no_pkg);
+
+        insta::assert_snapshot!(from_proto(vec![set], "Query").to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_from_proto_no_service_file() -> anyhow::Result<()> {
+        let mut set = FileDescriptorSet::default();
+
+        let news_no_service = get_proto_file_descriptor("news_no_service.proto")?;
+
+        set.file.push(news_no_service);
 
         insta::assert_snapshot!(from_proto(vec![set], "Query").to_sdl());
 
