@@ -41,12 +41,37 @@ enum NEWS__Status @tag(id: "news.Status") {
   PUBLISHED
 }
 
+type B {
+  greetings_a_b__sayHello(helloRequest: GREETINGS_A_B__HelloRequest!): GREETINGS_A_B__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
+}
+
+type C {
+  greetings_b_c__sayHello(helloRequest: GREETINGS_B_C__HelloRequest!): GREETINGS_B_C__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
+}
+
+type GREETINGS_A {
+  b: B
+}
+
 type GREETINGS_A_B__HelloReply @tag(id: "greetings_a.b.HelloReply") {
   message: String
 }
 
+type GREETINGS_B {
+  c: C
+}
+
 type GREETINGS_B_C__HelloReply @tag(id: "greetings_b.c.HelloReply") {
   message: String
+}
+
+type NEWS {
+  news__addNews(news: NEWS__News!): NEWS__News! @grpc(method: "news.NewsService.AddNews")
+  news__deleteNews(newsId: NEWS__NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
+  news__editNews(news: NEWS__News!): NEWS__News! @grpc(method: "news.NewsService.EditNews")
+  news__getAllNews: NEWS__NewsList! @grpc(method: "news.NewsService.GetAllNews")
+  news__getMultipleNews(multipleNewsId: NEWS__MultipleNewsId!): NEWS__NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
+  news__getNews(newsId: NEWS__NewsId!): NEWS__News! @grpc(method: "news.NewsService.GetNews")
 }
 
 type NEWS__NewsList @tag(id: "news.NewsList") {
@@ -54,12 +79,7 @@ type NEWS__NewsList @tag(id: "news.NewsList") {
 }
 
 type Query {
-  greetings_a_b__sayHello(helloRequest: GREETINGS_A_B__HelloRequest!): GREETINGS_A_B__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
-  greetings_b_c__sayHello(helloRequest: GREETINGS_B_C__HelloRequest!): GREETINGS_B_C__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
-  news__addNews(news: NEWS__News!): NEWS__News! @grpc(method: "news.NewsService.AddNews")
-  news__deleteNews(newsId: NEWS__NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
-  news__editNews(news: NEWS__News!): NEWS__News! @grpc(method: "news.NewsService.EditNews")
-  news__getAllNews: NEWS__NewsList! @grpc(method: "news.NewsService.GetAllNews")
-  news__getMultipleNews(multipleNewsId: NEWS__MultipleNewsId!): NEWS__NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
-  news__getNews(newsId: NEWS__NewsId!): NEWS__News! @grpc(method: "news.NewsService.GetNews")
+  greetings_a: GREETINGS_A
+  greetings_b: GREETINGS_B
+  news: NEWS
 }

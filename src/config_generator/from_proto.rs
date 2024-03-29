@@ -198,16 +198,58 @@ impl Context {
         }
     }
 
+    fn append_nested_package(mut self, method_name: String, field: Field) -> Self {
+        let split = self
+            .package
+            .split('.')
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|x| x.to_uppercase())
+            .collect::<Vec<String>>();
+        // let n = len(split)
+        // len(types) = n
+        // len(fields) = n-1
+        let nmo = split.len() - 1;
+
+        for (i, type_name) in split.iter().enumerate() {
+            if i == 0 {
+                let mut ty = self
+                    .config
+                    .types
+                    .get(&self.query)
+                    .cloned()
+                    .unwrap_or_default();
+                let field = Field::default().type_of(type_name.to_uppercase());
+                ty.fields.insert(type_name.to_lowercase(), field);
+                self.config.schema.query = Some(self.query.to_owned());
+                self.config.types.insert(self.query.to_owned(), ty);
+            }
+            if i < nmo {
+                let field_name = &split[i + 1];
+                let field = Field::default().type_of(field_name.to_uppercase());
+                let mut ty = Type::default();
+                ty.fields.insert(field_name.to_lowercase(), field);
+                self.config.types.insert(type_name.to_uppercase(), ty);
+            } else if let Some(ty) = self.config.types.get_mut(type_name) {
+                ty.fields.insert(method_name.clone(), field.clone());
+            } else {
+                let mut ty = Type::default();
+                ty.fields.insert(method_name.clone(), field.clone());
+                self.config.types.insert(type_name.to_uppercase(), ty);
+            }
+        }
+
+        self
+    }
+
     /// Processes proto service definitions and their methods.
     fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>) -> Self {
-        let query = self.query.clone();
         if services.is_empty() {
             return self;
         }
 
         let package = self.package.clone();
         let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-        let mut ty = self.config.types.get(&query).cloned().unwrap_or_default();
 
         for service in services {
             let service_name = service.name().to_string();
@@ -237,19 +279,14 @@ impl Context {
                     headers: vec![],
                     method: grpc_method.to_string(),
                 });
-                ty.fields.insert(
-                    self.get(method_name).unwrap_or_else(|| {
-                        panic!("Expected key not found in types map: {}", method_name)
-                    }),
-                    cfg_field,
-                );
+
+                let method_name = self.get(method_name).unwrap_or_else(|| {
+                    panic!("Expected key not found in types map: {}", method_name)
+                });
+                self = self.append_nested_package(method_name, cfg_field);
             }
         }
 
-        if ty.ne(&Type::default()) {
-            self.config.schema.query = Some(query.to_owned());
-            self.config.types.insert(query.to_owned(), ty);
-        }
         self
     }
 }
@@ -284,12 +321,15 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
+pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> anyhow::Result<Config> {
     let mut ctx = Context::new(query);
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
             ctx.package = file_descriptor.package().to_string();
+            if ctx.package.is_empty() {
+                return Err(anyhow::anyhow!("Package name is required in proto file"));
+            }
 
             ctx = ctx.append_enums(file_descriptor.enum_type);
             ctx = ctx.append_msg_type(file_descriptor.message_type);
@@ -297,12 +337,11 @@ pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Confi
         }
     }
 
-    ctx.config
+    Ok(ctx.config)
 }
 
 #[cfg(test)]
 mod test {
-
     use std::path::PathBuf;
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
@@ -343,9 +382,28 @@ mod test {
         set.file.push(greetings_a);
         set.file.push(greetings_b);
 
-        let result = from_proto(vec![set], "Query").to_sdl();
+        let result = from_proto(vec![set], "Query")?.to_sdl();
 
         insta::assert_snapshot!(result);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_from_proto_no_pkg_file() -> anyhow::Result<()> {
+        let mut set = FileDescriptorSet::default();
+
+        let news = get_proto_file_descriptor("news.proto")?;
+        let greetings_a = get_proto_file_descriptor("greetings_a.proto")?;
+        let no_pkg = get_proto_file_descriptor("no_pkg.proto")?;
+        let greetings_b = get_proto_file_descriptor("greetings_b.proto")?;
+
+        set.file.push(news);
+        set.file.push(greetings_a);
+        set.file.push(no_pkg);
+        set.file.push(greetings_b);
+
+        assert!(from_proto(vec![set], "Query").is_err());
 
         Ok(())
     }
@@ -362,7 +420,7 @@ mod test {
         set.file.push(greetings_a.clone());
         set.file.push(greetings_b.clone());
 
-        let result = from_proto(vec![set], "Query").to_sdl();
+        let result = from_proto(vec![set], "Query")?.to_sdl();
 
         // test for different sets
         let mut set = FileDescriptorSet::default();
@@ -372,7 +430,7 @@ mod test {
         set1.file.push(greetings_a);
         set2.file.push(greetings_b);
 
-        let result_sets = from_proto(vec![set, set1, set2], "Query").to_sdl();
+        let result_sets = from_proto(vec![set, set1, set2], "Query")?.to_sdl();
 
         pretty_assertions::assert_eq!(result, result_sets);
         Ok(())
@@ -390,11 +448,12 @@ mod test {
         let req_proto = get_proto_file_descriptor("person.proto")?;
         set.file.push(req_proto);
 
-        let cfg = from_proto(vec![set], "Query").to_sdl();
+        let cfg = from_proto(vec![set], "Query")?.to_sdl();
         insta::assert_snapshot!(cfg);
 
         Ok(())
     }
+
     #[test]
     fn test_get_value_enum() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
