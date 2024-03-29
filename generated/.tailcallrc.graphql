@@ -314,7 +314,7 @@ directive @tag(
   A unique identifier for the type.
   """
   id: String!
-) on FIELD_DEFINITION
+) on OBJECT
 
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 

@@ -35,7 +35,7 @@ lazy_static! {
         ),
         ("expr", vec![Entity::FieldDefinition], false),
         ("js", vec![Entity::FieldDefinition], false),
-        ("tag", vec![Entity::FieldDefinition], false),
+        ("tag", vec![Entity::Object], false),
     ];
 }
 
