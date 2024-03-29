@@ -12,7 +12,8 @@ use strum_macros::Display;
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 
-pub(super) static DEFAULT_SEPARATOR: &str = "_";
+pub(super) static DEFAULT_SEPARATOR: &str = "__";
+pub(super) static DEFAULT_PACKAGE_SEPARATOR: &str = "_";
 
 /// Enum to represent the type of the descriptor
 #[derive(Display, Clone)]
@@ -70,9 +71,7 @@ impl Context {
 
     /// Formats a proto type name based on its `DescriptorType`.
     fn get_name(&self, name: &str, ty: DescriptorType) -> String {
-        let package = self
-            .package
-            .replace('.', DEFAULT_SEPARATOR);
+        let package = self.package.replace('.', DEFAULT_PACKAGE_SEPARATOR);
 
         ty.as_str_name(&package, name)
     }
@@ -407,7 +406,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("TestEnum", DescriptorType::Enum),
-            "ComExample__TestEnum"
+            "COM_EXAMPLE__TestEnum"
         );
     }
 
@@ -416,7 +415,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("testMessage", DescriptorType::Message),
-            "ComExample__testMessage"
+            "COM_EXAMPLE__testMessage"
         );
     }
 
@@ -425,7 +424,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
             ctx.get_name("QueryName", DescriptorType::Operation),
-            "ComExample__queryName"
+            "com_example__queryName"
         );
     }
 
@@ -435,7 +434,7 @@ mod test {
         ctx = ctx.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
             ctx.get("TestEnum"),
-            Some("ComExample__TestEnum".to_string())
+            Some("COM_EXAMPLE__TestEnum".to_string())
         );
     }
 
@@ -445,7 +444,7 @@ mod test {
         ctx = ctx.insert("testMessage", DescriptorType::Message);
         assert_eq!(
             ctx.get("testMessage"),
-            Some("ComExample__testMessage".to_string())
+            Some("COM_EXAMPLE__testMessage".to_string())
         );
     }
 
