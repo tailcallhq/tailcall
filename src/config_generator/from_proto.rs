@@ -38,11 +38,6 @@ impl<T: Default + Clone> Context<T> {
         Self { ty, ..Default::default() }
     }
 
-    fn merge_left<S: Default + Clone>(mut self, other: Context<S>) -> Self {
-        self.map.extend(other.map);
-        self
-    }
-
     /// Formats a proto type name based on its `DescriptorType`.
     fn get_value(&self, name: &str, ty: DescriptorType) -> String {
         let package = self.package.replace('.', DEFAULT_SPECTATOR).to_uppercase();
