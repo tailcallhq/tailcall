@@ -42,6 +42,25 @@ Thank you for considering contributing to **Tailcall**! This document outlines t
 ## Testing
 
 1. **Write Tests:** For every new feature or bugfix, ensure that you write appropriate tests.
+   Structure your tests in the following way:
+
+   ```rust
+   use pretty_assertions::assert_eq;
+   fn test_something_important() {
+      let value = setup_something_using_a_function();
+
+      let actual = perform_some_operation_on_the_value(value);
+      let expected = ExpectedValue {foo: 1, bar: 2};
+
+      assert_eq!(actual, expected);
+   }
+   ```
+
+   - Setup the value using helper methods in tests.
+   - Create an actual and an expected value.
+   - Assert the two values in a new line.
+   - Ensure there are only one assertions per test.
+
 2. **Run Tests:** Before submitting a pull request, ensure all tests pass.
    ```bash
    cargo test
