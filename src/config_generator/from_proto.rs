@@ -12,7 +12,7 @@ use strum_macros::Display;
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 
-pub(super) static DEFAULT_SEPARATOR: &str = "__";
+pub(super) static DEFAULT_SEPARATOR: &str = "_";
 
 /// Enum to represent the type of the descriptor
 #[derive(Display, Clone)]
@@ -26,14 +26,14 @@ impl DescriptorType {
     fn as_str_name(&self, package: &str, name: &str) -> String {
         match self {
             DescriptorType::Enum => {
-                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
+                format!("{}{}{}", package.to_uppercase(), DEFAULT_SEPARATOR, name)
             }
             DescriptorType::Message => {
-                format!("{}{}{}", package, DEFAULT_SEPARATOR, name)
+                format!("{}{}{}", package.to_uppercase(), DEFAULT_SEPARATOR, name)
             }
             DescriptorType::Operation => format!(
                 "{}{}{}",
-                package.to_case(Case::Camel),
+                package.to_lowercase(),
                 DEFAULT_SEPARATOR,
                 name.to_case(Case::Camel),
             ),
@@ -72,8 +72,7 @@ impl Context {
     fn get_name(&self, name: &str, ty: DescriptorType) -> String {
         let package = self
             .package
-            .replace('.', DEFAULT_SEPARATOR)
-            .to_case(Case::UpperCamel);
+            .replace('.', DEFAULT_SEPARATOR);
 
         ty.as_str_name(&package, name)
     }
