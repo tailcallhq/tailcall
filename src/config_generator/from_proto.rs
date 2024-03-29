@@ -24,7 +24,7 @@ enum DescriptorType {
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
-#[derive(Clone, Setters)]
+#[derive(Setters)]
 struct Context {
     /// Maps proto type names to custom formatted names.
     map: HashMap<String, String>,
