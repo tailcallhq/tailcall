@@ -1,6 +1,7 @@
 use crate::blueprint::FieldDefinition;
 use crate::config::{self, ConfigModule, Field};
 use crate::lambda::{Context, Expression};
+use crate::scalar;
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
@@ -10,7 +11,17 @@ pub fn update_protected<'a>(
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected.is_some() || type_.protected.is_some() {
-                if type_.input {
+                let is_input = config.types.iter().any(|(_, _type)| {
+                    !_type.interface
+                        && _type.fields.iter().any(|(_, field)| {
+                            field.args.iter().any(|(_, arg)| {
+                                !scalar::is_scalar(&arg.type_of)
+                                    && config.find_type(&arg.type_of).is_some()
+                            })
+                        })
+                });
+
+                if is_input {
                     return Valid::fail("Input types can not be protected".to_owned());
                 }
 

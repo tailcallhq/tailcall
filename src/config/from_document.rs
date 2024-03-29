@@ -243,12 +243,7 @@ fn to_input_object(
 ) -> Valid<config::Type, String> {
     to_input_object_fields(&input_object_type.fields)
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(fields, protected)| config::Type {
-            fields,
-            protected,
-            input: true,
-            ..Default::default()
-        })
+        .map(|(fields, protected)| config::Type { fields, protected, ..Default::default() })
 }
 
 fn to_fields_inner<T, F>(
