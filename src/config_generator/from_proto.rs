@@ -225,12 +225,12 @@ impl Context {
 
     /// Processes proto service definitions and their methods.
     fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>) -> Self {
-        let query = &self.query;
+        let query = self.query.clone();
         if services.is_empty() {
             return self;
         }
 
-        let ty = self.generate_ty(services, query);
+        let ty = self.generate_ty(services, &query);
 
         if ty.ne(&Type::default()) {
             self.config.schema.query = Some(query.to_owned());
