@@ -1,0 +1,7 @@
+---
+source: src/config_generator/from_proto.rs
+assertion_line: 486
+expression: cfg
+---
+schema @server @upstream {
+}
