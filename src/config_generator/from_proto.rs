@@ -24,7 +24,7 @@ enum DescriptorType {
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
-#[derive(Default, Clone)]
+#[derive(Clone, Setters)]
 struct Context {
     /// Maps proto type names to custom formatted names.
     map: HashMap<String, String>,
@@ -34,9 +34,21 @@ struct Context {
 
     /// Final configuration that's being built up.
     config: Config,
+
+    /// Root GraphQL query type
+    query: String,
 }
 
 impl Context {
+    fn new(query: &str) -> Self {
+        Self {
+            query: query.to_string(),
+            map: Default::default(),
+            package: Default::default(),
+            config: Default::default(),
+        }
+    }
+
     /// Formats a proto type name based on its `DescriptorType`.
     fn get_value(&self, name: &str, ty: DescriptorType) -> String {
         let package = self.package.replace('.', DEFAULT_SPECTATOR).to_uppercase();
@@ -212,7 +224,8 @@ impl Context {
     }
 
     /// Processes proto service definitions and their methods.
-    fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>, query: &str) -> Self {
+    fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>) -> Self {
+        let query = &self.query;
         if services.is_empty() {
             return self;
         }
@@ -256,19 +269,19 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 
 /// The main entry point that builds a Config object from proto descriptor sets.
 pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
-    let mut helper = Context::default();
+    let mut ctx = Context::new(query);
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
-            helper.package = file_descriptor.package().to_string();
+            ctx.package = file_descriptor.package().to_string();
 
-            helper = helper.append_enums(file_descriptor.enum_type);
-            helper = helper.append_msg_type(file_descriptor.message_type);
-            helper = helper.append_query_service(file_descriptor.service.clone(), query);
+            ctx = ctx.append_enums(file_descriptor.enum_type);
+            ctx = ctx.append_msg_type(file_descriptor.message_type);
+            ctx = ctx.append_query_service(file_descriptor.service.clone());
         }
     }
 
-    helper.config
+    ctx.config
 }
 
 #[cfg(test)]
@@ -352,36 +365,34 @@ mod test {
     }
     #[test]
     fn test_get_value() {
-        let mut helper: Context =
-            Context { package: "com.example".to_string(), ..Default::default() };
+        let mut ctx: Context = Context::new("Query").package("com.example".to_string());
         assert_eq!(
-            helper.get_value("TestEnum", DescriptorType::Enum),
+            ctx.get_value("TestEnum", DescriptorType::Enum),
             "COM_EXAMPLE_TestEnum"
         );
         assert_eq!(
-            helper.get_value("testMessage", DescriptorType::Message),
+            ctx.get_value("testMessage", DescriptorType::Message),
             "COM_EXAMPLE_testMessage"
         );
         assert_eq!(
-            helper.get_value("QueryName", DescriptorType::Query),
+            ctx.get_value("QueryName", DescriptorType::Query),
             "com_example_queryName"
         );
     }
 
     #[test]
     fn test_insert_and_get() {
-        let mut helper: Context =
-            Context { package: "com.example".to_string(), ..Default::default() };
-        helper.insert("TestEnum", DescriptorType::Enum);
+        let mut ctx: Context = Context::new("Query").package("com.example".to_string());
+        ctx.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
-            helper.get("TestEnum"),
+            ctx.get("TestEnum"),
             Some("COM_EXAMPLE_TestEnum".to_string())
         );
-        helper.insert("testMessage", DescriptorType::Message);
+        ctx.insert("testMessage", DescriptorType::Message);
         assert_eq!(
-            helper.get("testMessage"),
+            ctx.get("testMessage"),
             Some("COM_EXAMPLE_testMessage".to_string())
         );
-        assert_eq!(helper.get("NonExisting"), None);
+        assert_eq!(ctx.get("NonExisting"), None);
     }
 }
