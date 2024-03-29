@@ -196,11 +196,16 @@ impl Context {
         }
     }
 
-    /// Generates a Type configuration for service methods.
-    fn generate_ty(&mut self, services: Vec<ServiceDescriptorProto>, key: &str) -> Type {
+    /// Processes proto service definitions and their methods.
+    fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>) -> Self {
+        let query = self.query.clone();
+        if services.is_empty() {
+            return self;
+        }
+
         let package = self.package.clone();
         let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-        let mut ty = self.config.types.get(key).cloned().unwrap_or_default();
+        let mut ty = self.config.types.get(&query).cloned().unwrap_or_default();
 
         for service in services {
             let service_name = service.name().to_string();
@@ -239,17 +244,6 @@ impl Context {
                 );
             }
         }
-        ty
-    }
-
-    /// Processes proto service definitions and their methods.
-    fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>) -> Self {
-        let query = self.query.clone();
-        if services.is_empty() {
-            return self;
-        }
-
-        let ty = self.generate_ty(services, &query);
 
         if ty.ne(&Type::default()) {
             self.config.schema.query = Some(query.to_owned());
