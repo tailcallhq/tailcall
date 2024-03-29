@@ -86,7 +86,11 @@ impl Context {
         let mut ty = self
             .config
             .types
-            .get(&self.get(name).unwrap())
+            .get(
+                &self
+                    .get(name)
+                    .unwrap_or_else(|| panic!("Expected key not found in types map: {}", name)),
+            )
             .cloned()
             .unwrap_or_default(); // it should be
                                   // safe to call
@@ -112,7 +116,12 @@ impl Context {
                 variants.extend(vars);
             }
             ty.variants = Some(variants);
-            self.config.types.insert(self.get(enum_name).unwrap(), ty);
+            self.config.types.insert(
+                self.get(enum_name).unwrap_or_else(|| {
+                    panic!("Expected key not found in types map: {}", enum_name)
+                }),
+                ty,
+            );
             // it should be
             // safe to call
             // unwrap here
@@ -153,10 +162,14 @@ impl Context {
                 ty.fields.insert(field_name, cfg_field);
             }
 
-            self.config.types.insert(self.get(&msg_name).unwrap(), ty); // it should
-                                                                        // be
-                                                                        // safe to call
-                                                                        // unwrap here
+            self.config.types.insert(
+                self.get(&msg_name)
+                    .unwrap_or_else(|| panic!("Expected key not found in types map: {}", msg_name)),
+                ty,
+            ); // it should
+               // be
+               // safe to call
+               // unwrap here
         }
         self
     }
@@ -217,7 +230,13 @@ impl Context {
                     headers: vec![],
                     method: grpc_method.to_string(),
                 });
-                ty.fields.insert(self.get(method_name).unwrap(), cfg_field);
+                ty.fields.insert(
+                    self.get(method_name).unwrap_or_else(|| {
+                        panic!("Expected key not found in types map: {}", method_name)
+                        // it should be safe to call unwrap here
+                    }),
+                    cfg_field,
+                );
             }
         }
         ty
