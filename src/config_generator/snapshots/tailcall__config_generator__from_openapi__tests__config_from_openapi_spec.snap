@@ -1,0 +1,19 @@
+---
+source: src/config_generator/from_openapi.rs
+expression: config_from_openapi_spec(content.as_str()).unwrap().to_sdl()
+---
+schema @server(graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Post {
+  completed: String!
+  id: Int!
+  title: String!
+  userId: Int!
+}
+
+type Query {
+  getPost(id: Int!): Post @http(path: "/posts/{{args.id}}")
+  getPosts: [Post] @http(path: "/posts")
+}

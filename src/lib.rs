@@ -9,6 +9,7 @@ pub mod cache;
 #[cfg(feature = "cli")]
 pub mod cli;
 pub mod config;
+pub mod config_generator;
 pub mod data_loader;
 pub mod directive;
 pub mod document;

@@ -11,8 +11,8 @@ use serde_json::Value;
 use super::telemetry::Telemetry;
 use super::{Expr, KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
-use crate::config::openapi::config_from_openapi_spec;
 use crate::config::source::Source;
+use crate::config_generator::from_openapi::config_from_openapi_spec;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -756,20 +756,14 @@ impl Config {
 
     pub fn from_source(source: Source, schema: &str) -> Result<Self> {
         match source {
-            Source::GraphQL => {
-                let config = Config::from_sdl(schema).to_result()?;
-                println!("{config:#?}");
-                Ok(config)
-            }
-            Source::Json => Ok(Config::from_json(schema)?),
-            Source::Yml => {
-                let config = config_from_openapi_spec(schema)?;
-                println!("{config:#?}");
-                println!("{}", config.to_sdl());
-                Ok(config)
-                // Ok(Config::from_yaml(schema)?)
-            }
+            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+            Source::Json => Config::from_json(schema),
+            Source::Yml => Config::from_yaml(schema),
         }
+    }
+
+    pub fn from_open_api_spec(openapi: &str) -> Result<Self> {
+        config_from_openapi_spec(openapi)
     }
 
     pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {

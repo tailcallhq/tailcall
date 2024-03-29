@@ -4,6 +4,7 @@ use oas3::spec::ObjectOrReference;
 use oas3::{Schema, Spec};
 
 use crate::config::{Arg, Config, Field, Http, RootSchema, Server, Type, Upstream};
+use crate::http::Method;
 
 trait ToDebugString: std::fmt::Debug {
     fn to_debug_string(&self) -> String {
@@ -41,23 +42,21 @@ fn get_schema_type<F: FnOnce() -> String>(get_name: F, schema: Schema) -> (bool,
 fn make_config_types(spec: &Spec) -> BTreeMap<String, Type> {
     let components = spec.components.iter().next().cloned().unwrap();
     let mut types = BTreeMap::new();
-    let mut query_fields = BTreeMap::new();
-    let mut mutation_fields = BTreeMap::new();
+    let mut fields = BTreeMap::new();
 
     for (mut path, path_item) in spec.paths.clone().into_iter() {
-        let (is_query, operation) = [
-            path_item.get,
-            path_item.head,
-            path_item.options,
-            path_item.trace,
-            path_item.put,
-            path_item.post,
-            path_item.delete,
-            path_item.patch,
+        let (method, operation) = [
+            (Method::GET, path_item.get),
+            (Method::HEAD, path_item.head),
+            (Method::OPTIONS, path_item.options),
+            (Method::TRACE, path_item.trace),
+            (Method::PUT, path_item.put),
+            (Method::POST, path_item.post),
+            (Method::DELETE, path_item.delete),
+            (Method::PATCH, path_item.patch),
         ]
         .into_iter()
-        .enumerate()
-        .filter_map(|(i, o)| o.map(|o| (i < 4, o)))
+        .filter_map(|(method, operation)| operation.map(|operation| (method, operation)))
         .next()
         .unwrap();
         let output_type = operation
@@ -121,31 +120,14 @@ fn make_config_types(spec: &Spec) -> BTreeMap<String, Type> {
             type_of: name,
             list: is_list,
             args,
-            http: Some(Http { path, ..Default::default() }),
+            http: Some(Http { path, method, ..Default::default() }),
             ..Default::default()
-        };
-
-        let fields = if is_query {
-            &mut query_fields
-        } else {
-            &mut mutation_fields
         };
 
         fields.insert(operation.operation_id.unwrap(), field);
     }
 
-    if !query_fields.is_empty() {
-        types.insert(
-            "Query".to_string(),
-            Type { fields: query_fields, ..Default::default() },
-        );
-    }
-    if !mutation_fields.is_empty() {
-        types.insert(
-            "Mutation".to_string(),
-            Type { fields: mutation_fields, ..Default::default() },
-        );
-    }
+    types.insert("Query".to_string(), Type { fields, ..Default::default() });
 
     for (name, component) in components.schemas.into_iter() {
         let schema = component.resolve(spec).unwrap();
@@ -202,7 +184,26 @@ pub fn config_from_openapi_spec(content: &str) -> Result<Config, anyhow::Error> 
         links: vec![],
         telemetry: Default::default(),
     };
-
-    println!("{}", config.to_sdl());
     Ok(config)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::Path;
+
+    use super::*;
+
+    #[test]
+    fn test_config_from_openapi_spec() {
+        let spec_folder_path = Path::new("src")
+            .join("config_generator")
+            .join("openapi_spec");
+
+        for spec_path in fs::read_dir(spec_folder_path).unwrap() {
+            let spec_path = spec_path.unwrap().path();
+            let content = fs::read_to_string(&spec_path).unwrap();
+            insta::assert_snapshot!(config_from_openapi_spec(content.as_str()).unwrap().to_sdl());
+        }
+    }
 }
