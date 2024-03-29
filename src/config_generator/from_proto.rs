@@ -24,15 +24,24 @@ enum DescriptorType {
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
-#[derive(Default)]
-struct Helper {
+#[derive(Default, Clone)]
+struct Helper<T: Default + Clone> {
     /// Maps proto type names to custom formatted names.
     map: HashMap<String, String>,
     /// The current proto package name.
     package: String,
+    ty: T,
 }
 
-impl Helper {
+impl<T: Default + Clone> Helper<T> {
+    fn from_ty(ty: T) -> Self {
+        Self { ty, ..Default::default() }
+    }
+
+    fn into_helper_config(self, config: Config) -> Helper<Config> {
+        Helper { map: self.map, package: self.package, ty: config }
+    }
+
     /// Formats a proto type name based on its `DescriptorType`.
     fn get_value(&self, name: &str, ty: DescriptorType) -> String {
         let package = self.package.replace('.', DEFAULT_SPECTATOR).to_uppercase();
@@ -93,9 +102,11 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 }
 
 /// Generates argument configurations for service methods.
-fn get_arg(input_ty: &str, helper: &mut Helper) -> Option<(String, Arg)> {
+fn get_arg(input_ty: &str, helper: Helper<Config>) -> Helper<Option<(String, Arg)>> {
     match input_ty {
-        "google.protobuf.Empty" | "" => None,
+        "google.protobuf.Empty" | "" => {
+            Helper { map: helper.map, package: helper.package, ty: None }
+        }
         any => {
             let key = convert_ty(any).to_case(Case::Camel);
             let val = Arg {
@@ -109,15 +120,20 @@ fn get_arg(input_ty: &str, helper: &mut Helper) -> Option<(String, Arg)> {
                 default_value: None,
             };
 
-            Some((key, val))
+            Helper {
+                map: helper.map,
+                package: helper.package,
+                ty: Some((key, val)),
+            }
         }
     }
 }
 
 /// Retrieves or creates a Type configuration for a given proto type.
-fn get_ty(name: &str, cfg: &Config, helper: &mut Helper, ty: DescriptorType) -> Type {
+fn get_ty(name: &str, mut helper: Helper<Config>, ty: DescriptorType) -> Helper<Type> {
     helper.insert(name, ty);
-    let mut ty = cfg
+    let mut ty = helper
+        .ty
         .types
         .get(&helper.get(name).unwrap())
         .cloned()
@@ -125,19 +141,18 @@ fn get_ty(name: &str, cfg: &Config, helper: &mut Helper, ty: DescriptorType) -> 
                               // safe to call
                               // unwrap here
     ty.tag = Some(Tag { id: format!("{}.{}", helper.package, name) });
-    ty
+    
+    Helper { ty, map: helper.map, package: helper.package }
 }
 
 /// Processes proto enum types.
-fn append_enums(
-    mut config: Config,
-    enums: Vec<EnumDescriptorProto>,
-    helper: &mut Helper,
-) -> Config {
+fn append_enums(enums: Vec<EnumDescriptorProto>, mut helper: Helper<Config>) -> Helper<Config> {
     for enum_ in enums {
         let enum_name = enum_.name();
 
-        let mut ty = get_ty(enum_name, &config, helper, DescriptorType::Enum);
+        let mut helper_ty = get_ty(enum_name, helper.clone(), DescriptorType::Enum);
+        let mut ty = helper_ty.ty.clone();
+        helper = helper_ty.into_helper_config(helper.ty);
 
         let mut variants = enum_
             .value
@@ -148,30 +163,28 @@ fn append_enums(
             variants.extend(vars);
         }
         ty.variants = Some(variants);
-        config.types.insert(helper.get(enum_name).unwrap(), ty);
+        helper.ty.types.insert(helper.get(enum_name).unwrap(), ty);
         // it should be
         // safe to call
         // unwrap here
     }
-    config
+    helper
 }
 
 /// Processes proto message types.
-fn append_msg_type(
-    mut config: Config,
-    messages: Vec<DescriptorProto>,
-    helper: &mut Helper,
-) -> Config {
+fn append_msg_type(messages: Vec<DescriptorProto>, mut helper: Helper<Config>) -> Helper<Config> {
     if messages.is_empty() {
-        return config;
+        return helper;
     }
     for message in messages {
         let msg_name = message.name().to_string();
 
-        let mut ty = get_ty(&msg_name, &config, helper, DescriptorType::Message);
+        let mut helper_ty = get_ty(&msg_name, helper.clone(), DescriptorType::Message);
+        let mut ty = helper_ty.ty.clone();
+        helper = helper_ty.into_helper_config(helper.ty);
 
-        config = append_enums(config, message.enum_type, helper);
-        config = append_msg_type(config, message.nested_type, helper);
+        helper = append_enums(message.enum_type, helper);
+        helper = append_msg_type(message.nested_type, helper);
 
         for field in message.field {
             let field_name = field.name().to_string();
@@ -193,23 +206,23 @@ fn append_msg_type(
             ty.fields.insert(field_name, cfg_field);
         }
 
-        config.types.insert(helper.get(&msg_name).unwrap(), ty); // it should be
-                                                                 // safe to call
-                                                                 // unwrap here
+        helper.ty.types.insert(helper.get(&msg_name).unwrap(), ty); // it should
+                                                                    // be
+                                                                    // safe to call
+                                                                    // unwrap here
     }
-    config
+    helper
 }
 
 /// Generates a Type configuration for service methods.
 fn generate_ty(
-    config: &Config,
     services: Vec<ServiceDescriptorProto>,
-    helper: &mut Helper,
+    mut helper: Helper<Config>,
     key: &str,
-) -> Type {
+) -> Helper<Type> {
     let package = helper.package.clone();
     let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-    let mut ty = config.types.get(key).cloned().unwrap_or_default();
+    let mut ty = helper.ty.types.get(key).cloned().unwrap_or_default();
 
     for service in services {
         let service_name = service.name().to_string();
@@ -219,7 +232,11 @@ fn generate_ty(
             helper.insert(method_name, DescriptorType::Query);
 
             let mut cfg_field = Field::default();
-            if let Some((k, v)) = get_arg(method.input_type(), helper) {
+            let helper_arg = get_arg(method.input_type(), helper.clone());
+            let arg = helper_arg.ty.clone();
+            helper = helper_arg.into_helper_config(helper.ty);
+
+            if let Some((k, v)) = arg {
                 cfg_field.args.insert(k, v);
             }
 
@@ -241,46 +258,45 @@ fn generate_ty(
                 .insert(helper.get(method_name).unwrap(), cfg_field);
         }
     }
-    ty
+    Helper { ty, map: helper.map, package: helper.package }
 }
 
 /// Processes proto service definitions and their methods.
 fn append_query_service(
-    mut config: Config,
     services: Vec<ServiceDescriptorProto>,
     query: &str,
-    helper: &mut Helper,
-) -> Config {
+    mut helper: Helper<Config>,
+) -> Helper<Config> {
     if services.is_empty() {
-        return config;
+        return helper;
     }
 
-    let ty = generate_ty(&config, services, helper, query);
+    let helper_ty = generate_ty(services, helper.clone(), query);
+    let ty = helper_ty.ty.clone();
+    helper = helper_ty.into_helper_config(helper.ty);
 
     if ty.ne(&Type::default()) {
-        config.schema.query = Some(query.to_owned());
-        config.types.insert(query.to_owned(), ty);
+        helper.ty.schema.query = Some(query.to_owned());
+        helper.ty.types.insert(query.to_owned(), ty);
     }
-    config
+    helper
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
 pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
-    let mut config = Config::default();
-    let mut helper = Helper::default();
+    let mut helper = Helper::from_ty(Config::default());
 
     for descriptor_set in descriptor_sets {
         for file_descriptor in descriptor_set.file {
             helper.package = file_descriptor.package().to_string();
 
-            config = append_enums(config, file_descriptor.enum_type, &mut helper);
-            config = append_msg_type(config, file_descriptor.message_type, &mut helper);
-            config =
-                append_query_service(config, file_descriptor.service.clone(), query, &mut helper);
+            helper = append_enums(file_descriptor.enum_type, helper);
+            helper = append_msg_type(file_descriptor.message_type, helper);
+            helper = append_query_service(file_descriptor.service.clone(), query, helper);
         }
     }
 
-    config
+    helper.ty
 }
 
 #[cfg(test)]
@@ -290,6 +306,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
+    use crate::config::Config;
     use crate::config_generator::from_proto::{build_config, DescriptorType, Helper};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
@@ -363,7 +380,8 @@ mod test {
     }
     #[test]
     fn test_get_value() {
-        let mut helper = Helper { package: "com.example".to_string(), ..Default::default() };
+        let mut helper: Helper<Config> =
+            Helper { package: "com.example".to_string(), ..Default::default() };
         assert_eq!(
             helper.get_value("TestEnum", DescriptorType::Enum),
             "COM_EXAMPLE_TestEnum"
@@ -380,7 +398,8 @@ mod test {
 
     #[test]
     fn test_insert_and_get() {
-        let mut helper = Helper { package: "com.example".to_string(), ..Default::default() };
+        let mut helper: Helper<Config> =
+            Helper { package: "com.example".to_string(), ..Default::default() };
         helper.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
             helper.get("TestEnum"),
