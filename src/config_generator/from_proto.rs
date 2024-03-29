@@ -126,7 +126,7 @@ impl Context {
     }
 
     /// Processes proto enum types.
-    fn append_enums(mut self, enums: Vec<EnumDescriptorProto>) -> Self {
+    fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
             let enum_name = enum_.name();
 
@@ -148,7 +148,7 @@ impl Context {
     }
 
     /// Processes proto message types.
-    fn append_msg_type(mut self, messages: Vec<DescriptorProto>) -> Self {
+    fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Self {
         if messages.is_empty() {
             return self;
         }
@@ -158,10 +158,10 @@ impl Context {
             self = self.insert(&msg_name, DescriptorType::Message);
             let mut ty = self.get_ty(&msg_name);
 
-            self = self.append_enums(message.enum_type);
-            self = self.append_msg_type(message.nested_type);
+            self = self.append_enums(&message.enum_type);
+            self = self.append_msg_type(&message.nested_type);
 
-            for field in message.field {
+            for field in message.field.iter() {
                 let field_name = field.name().to_string();
                 let mut cfg_field = Field::default();
 
@@ -266,7 +266,7 @@ impl Context {
     }
 
     /// Processes proto service definitions and their methods.
-    fn append_query_service(mut self, services: Vec<ServiceDescriptorProto>) -> Self {
+    fn append_query_service(mut self, services: &Vec<ServiceDescriptorProto>) -> Self {
         if services.is_empty() {
             self.config = Config::default();
             return self;
@@ -351,16 +351,16 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
+pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Config {
     let mut ctx = Context::new(query);
-    for descriptor_set in descriptor_sets {
-        for file_descriptor in descriptor_set.file {
+    for descriptor_set in descriptor_sets.iter() {
+        for file_descriptor in descriptor_set.file.iter() {
             ctx.package = file_descriptor.package().to_string();
 
             ctx = ctx
-                .append_enums(file_descriptor.enum_type)
-                .append_msg_type(file_descriptor.message_type)
-                .append_query_service(file_descriptor.service.clone());
+                .append_enums(&file_descriptor.enum_type)
+                .append_msg_type(&file_descriptor.message_type)
+                .append_query_service(&file_descriptor.service);
         }
     }
 
@@ -388,6 +388,15 @@ mod test {
         )?)
     }
 
+    fn new_file_desc(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+        let mut set = FileDescriptorSet::default();
+        for file in files.iter() {
+            let file = get_proto_file_descriptor(file)?;
+            set.file.push(file);
+        }
+        Ok(set)
+    }
+
     #[test]
     fn test_from_proto() -> anyhow::Result<()> {
         // news_enum.proto covers:
@@ -399,18 +408,8 @@ mod test {
         // test for a type used as both input and output
         // test for two types having same name in different packages
 
-        let mut set = FileDescriptorSet::default();
-
-        let news = get_proto_file_descriptor("news.proto")?;
-        let greetings_a = get_proto_file_descriptor("greetings_a.proto")?;
-        let greetings_b = get_proto_file_descriptor("greetings_b.proto")?;
-
-        set.file.push(news);
-        set.file.push(greetings_a);
-        set.file.push(greetings_b);
-
-        let result = from_proto(vec![set], "Query").to_sdl();
-
+        let set = new_file_desc(&["news.proto", "greetings_a.proto", "greetings_b.proto"])?;
+        let result = from_proto(&[set], "Query").to_sdl();
         insta::assert_snapshot!(result);
 
         Ok(())
@@ -418,55 +417,31 @@ mod test {
 
     #[test]
     fn test_from_proto_no_pkg_file() -> anyhow::Result<()> {
-        let mut set = FileDescriptorSet::default();
-
-        let no_pkg = get_proto_file_descriptor("no_pkg.proto")?;
-
-        set.file.push(no_pkg);
-
-        insta::assert_snapshot!(from_proto(vec![set], "Query").to_sdl());
-
+        let set = new_file_desc(&["no_pkg.proto"])?;
+        insta::assert_snapshot!(from_proto(&[set], "Query").to_sdl());
         Ok(())
     }
 
     #[test]
     fn test_from_proto_no_service_file() -> anyhow::Result<()> {
-        let mut set = FileDescriptorSet::default();
-
-        let news_no_service = get_proto_file_descriptor("news_no_service.proto")?;
-
-        set.file.push(news_no_service);
-
-        insta::assert_snapshot!(from_proto(vec![set], "Query").to_sdl());
+        let set = new_file_desc(&["news_no_service.proto"])?;
+        insta::assert_snapshot!(from_proto(&[set], "Query").to_sdl());
 
         Ok(())
     }
 
     #[test]
     fn test_config_from_sdl() -> anyhow::Result<()> {
-        let mut set = FileDescriptorSet::default();
+        let set = new_file_desc(&["news.proto", "greetings_a.proto", "greetings_b.proto"])?;
 
-        let news = get_proto_file_descriptor("news.proto")?;
-        let greetings_a = get_proto_file_descriptor("greetings_a.proto")?;
-        let greetings_b = get_proto_file_descriptor("greetings_b.proto")?;
+        let set1 = new_file_desc(&["news.proto"])?;
+        let set2 = new_file_desc(&["greetings_a.proto"])?;
+        let set3 = new_file_desc(&["greetings_b.proto"])?;
 
-        set.file.push(news.clone());
-        set.file.push(greetings_a.clone());
-        set.file.push(greetings_b.clone());
+        let actual = from_proto(&[set.clone()], "Query").to_sdl();
+        let expected = from_proto(&[set1, set2, set3], "Query").to_sdl();
 
-        let result = from_proto(vec![set], "Query").to_sdl();
-
-        // test for different sets
-        let mut set = FileDescriptorSet::default();
-        let mut set1 = FileDescriptorSet::default();
-        let mut set2 = FileDescriptorSet::default();
-        set.file.push(news);
-        set1.file.push(greetings_a);
-        set2.file.push(greetings_b);
-
-        let result_sets = from_proto(vec![set, set1, set2], "Query").to_sdl();
-
-        pretty_assertions::assert_eq!(result, result_sets);
+        pretty_assertions::assert_eq!(actual, expected);
         Ok(())
     }
 
@@ -478,66 +453,65 @@ mod test {
         // and our implementation (https://github.com/tailcallhq/tailcall/pull/1537) supports default values by default.
         // so we do not need to explicitly mark fields as required.
 
-        let mut set = FileDescriptorSet::default();
-        let req_proto = get_proto_file_descriptor("person.proto")?;
-        set.file.push(req_proto);
-
-        let cfg = from_proto(vec![set], "Query").to_sdl();
-        insta::assert_snapshot!(cfg);
-
+        let set = new_file_desc(&["person.proto"])?;
+        let config = from_proto(&[set], "Query").to_sdl();
+        insta::assert_snapshot!(config);
         Ok(())
     }
 
     #[test]
     fn test_get_value_enum() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
-        assert_eq!(
-            ctx.get_name("TestEnum", DescriptorType::Enum),
-            "ComExample__TestEnum"
-        );
+
+        let actual = ctx.get_name("TestEnum", DescriptorType::Enum);
+        let expected = "ComExample__TestEnum";
+        assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_get_value_message() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
-        assert_eq!(
-            ctx.get_name("testMessage", DescriptorType::Message),
-            "ComExample__testMessage"
-        );
+
+        let actual = ctx.get_name("testMessage", DescriptorType::Message);
+        let expected = "ComExample__testMessage";
+        assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_get_value_query_name() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
-        assert_eq!(
-            ctx.get_name("QueryName", DescriptorType::Operation),
-            "queryName"
-        );
+
+        let actual = ctx.get_name("QueryName", DescriptorType::Operation);
+        let expected = "queryName";
+        assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_insert_and_get_enum() {
-        let mut ctx: Context = Context::new("Query").package("com.example".to_string());
-        ctx = ctx.insert("TestEnum", DescriptorType::Enum);
-        assert_eq!(
-            ctx.get("TestEnum"),
-            Some("ComExample__TestEnum".to_string())
-        );
+        let ctx: Context = Context::new("Query")
+            .package("com.example".to_string())
+            .insert("TestEnum", DescriptorType::Enum);
+
+        let actual = ctx.get("TestEnum");
+        let expected = Some("ComExample__TestEnum".to_string());
+        assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_insert_and_get_message() {
-        let mut ctx: Context = Context::new("Query").package("com.example".to_string());
-        ctx = ctx.insert("testMessage", DescriptorType::Message);
-        assert_eq!(
-            ctx.get("testMessage"),
-            Some("ComExample__testMessage".to_string())
-        );
+        let ctx: Context = Context::new("Query")
+            .package("com.example".to_string())
+            .insert("testMessage", DescriptorType::Message);
+        let actual = ctx.get("testMessage");
+        let expected = Some("ComExample__testMessage".to_string());
+        assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_insert_and_get_non_existing() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
-        assert_eq!(ctx.get("NonExisting"), None);
+        let actual = ctx.get("NonExisting");
+        let expected = None;
+        assert_eq!(actual, expected);
     }
 }
