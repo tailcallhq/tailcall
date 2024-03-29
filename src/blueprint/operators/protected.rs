@@ -10,6 +10,10 @@ pub fn update_protected<'a>(
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected.is_some() || type_.protected.is_some() {
+                if type_.input {
+                    return Valid::fail("Input types can not be protected".to_owned());
+                }
+
                 if !config.extensions.has_auth() {
                     return Valid::fail(
                         "@protected operator is used but there is no @link definitions for auth providers".to_owned(),
