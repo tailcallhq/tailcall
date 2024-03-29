@@ -283,7 +283,7 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn build_config(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
+pub fn from_proto(descriptor_sets: Vec<FileDescriptorSet>, query: &str) -> Config {
     let mut ctx = Context::new(query);
 
     for descriptor_set in descriptor_sets {
@@ -307,7 +307,7 @@ mod test {
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
     use crate::config::Config;
-    use crate::config_generator::from_proto::{build_config, Context, DescriptorType};
+    use crate::config_generator::from_proto::{from_proto, Context, DescriptorType};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -342,7 +342,7 @@ mod test {
         set.file.push(greetings_a);
         set.file.push(greetings_b);
 
-        let result = build_config(vec![set], "Query").to_sdl();
+        let result = from_proto(vec![set], "Query").to_sdl();
 
         insta::assert_snapshot!(result);
 
@@ -361,7 +361,7 @@ mod test {
         set.file.push(greetings_a.clone());
         set.file.push(greetings_b.clone());
 
-        let result = build_config(vec![set], "Query").to_sdl();
+        let result = from_proto(vec![set], "Query").to_sdl();
 
         // test for different sets
         let mut set = FileDescriptorSet::default();
@@ -371,7 +371,7 @@ mod test {
         set1.file.push(greetings_a);
         set2.file.push(greetings_b);
 
-        let result_sets = build_config(vec![set, set1, set2], "Query").to_sdl();
+        let result_sets = from_proto(vec![set, set1, set2], "Query").to_sdl();
 
         pretty_assertions::assert_eq!(result, result_sets);
         Ok(())
@@ -389,7 +389,7 @@ mod test {
         let req_proto = get_proto_file_descriptor("person.proto")?;
         set.file.push(req_proto);
 
-        let cfg = build_config(vec![set], "Query").to_sdl();
+        let cfg = from_proto(vec![set], "Query").to_sdl();
         insta::assert_snapshot!(cfg);
 
         Ok(())
