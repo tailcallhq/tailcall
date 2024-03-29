@@ -274,11 +274,13 @@ fn get_output_ty(output_ty: &str) -> (String, bool) {
     // type, required
     match output_ty {
         "google.protobuf.Empty" => {
-            ("String".to_string(), false) // If it's no response is expected, we
-                                          // return a nullable string type
+            // If it's no response is expected, we return a nullable string type
+            ("String".to_string(), false)
         }
-        any => (any.to_string(), true), /* Setting it not null by default. There's no way to
-                                         * infer this from proto file */
+        any => {
+            // Setting it not null by default. There's no way to infer this from proto file
+            (any.to_string(), true)
+        }
     }
 }
 
