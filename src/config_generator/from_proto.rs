@@ -25,19 +25,27 @@ enum DescriptorType {
 
 impl DescriptorType {
     fn as_str_name(&self, package: &str, name: &str) -> String {
+        let package = package.replace('.', DEFAULT_PACKAGE_SEPARATOR);
         match self {
             DescriptorType::Enum => {
-                format!("{}{}{}", package.to_uppercase(), DEFAULT_SEPARATOR, name)
+                format!(
+                    "{}{}{}",
+                    package.to_case(Case::UpperCamel),
+                    DEFAULT_SEPARATOR,
+                    name
+                )
             }
             DescriptorType::Message => {
-                format!("{}{}{}", package.to_uppercase(), DEFAULT_SEPARATOR, name)
+                format!(
+                    "{}{}{}",
+                    package.to_case(Case::UpperCamel),
+                    DEFAULT_SEPARATOR,
+                    name
+                )
             }
-            DescriptorType::Operation => format!(
-                "{}{}{}",
-                package.to_lowercase(),
-                DEFAULT_SEPARATOR,
-                name.to_case(Case::Camel),
-            ),
+            DescriptorType::Operation => {
+                name.to_case(Case::Camel).to_string()
+            }
         }
     }
 }
@@ -71,9 +79,7 @@ impl Context {
 
     /// Formats a proto type name based on its `DescriptorType`.
     fn get_name(&self, name: &str, ty: DescriptorType) -> String {
-        let package = self.package.replace('.', DEFAULT_PACKAGE_SEPARATOR);
-
-        ty.as_str_name(&package, name)
+        ty.as_str_name(&self.package, name)
     }
 
     /// Inserts a formatted name into the map.

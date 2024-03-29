@@ -5,14 +5,14 @@ expression: cfg
 schema @server @upstream {
 }
 
-type PERSON__Person @tag(id: "person.Person") {
+type Person__Person @tag(id: "person.Person") {
   email: String
   id: Int!
   name: String!
-  phone: [PERSON__PhoneNumber]
+  phone: [Person__PhoneNumber]
 }
 
-type PERSON__PhoneNumber @tag(id: "person.PhoneNumber") {
+type Person__PhoneNumber @tag(id: "person.PhoneNumber") {
   number: String!
   type: String
 }

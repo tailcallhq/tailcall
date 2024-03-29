@@ -6,76 +6,76 @@ schema @server @upstream {
   query: Query
 }
 
-input GREETINGS_A_B__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
+input GreetingsAB__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
   name: String
 }
 
-input GREETINGS_B_C__HelloRequest @tag(id: "greetings_b.c.HelloRequest") {
+input GreetingsBC__HelloRequest @tag(id: "greetings_b.c.HelloRequest") {
   name: String
 }
 
-input NEWS__Author @tag(id: "news.Author") {
+input News__Author @tag(id: "news.Author") {
   email: String
   name: String
 }
 
-input NEWS__MultipleNewsId @tag(id: "news.MultipleNewsId") {
-  ids: [NEWS__NewsId]
+input News__MultipleNewsId @tag(id: "news.MultipleNewsId") {
+  ids: [News__NewsId]
 }
 
-input NEWS__News @tag(id: "news.News") {
-  author: NEWS__Author
+input News__News @tag(id: "news.News") {
+  author: News__Author
   body: String
-  foo: NEWS__Status
+  foo: News__Status
   id: Int
   postImage: String
   title: String
 }
 
-input NEWS__NewsId @tag(id: "news.NewsId") {
+input News__NewsId @tag(id: "news.NewsId") {
   id: Int
 }
 
-enum NEWS__Status @tag(id: "news.Status") {
+enum News__Status @tag(id: "news.Status") {
   DRAFT
   PUBLISHED
 }
 
 type B {
-  greetings_a_b__sayHello(helloRequest: GREETINGS_A_B__HelloRequest!): GREETINGS_A_B__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
+  sayHello(helloRequest: GreetingsAB__HelloRequest!): GreetingsAB__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
 }
 
 type C {
-  greetings_b_c__sayHello(helloRequest: GREETINGS_B_C__HelloRequest!): GREETINGS_B_C__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
+  sayHello(helloRequest: GreetingsBC__HelloRequest!): GreetingsBC__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
 }
 
 type GREETINGS_A {
   b: B
 }
 
-type GREETINGS_A_B__HelloReply @tag(id: "greetings_a.b.HelloReply") {
-  message: String
-}
-
 type GREETINGS_B {
   c: C
 }
 
-type GREETINGS_B_C__HelloReply @tag(id: "greetings_b.c.HelloReply") {
+type GreetingsAB__HelloReply @tag(id: "greetings_a.b.HelloReply") {
+  message: String
+}
+
+type GreetingsBC__HelloReply @tag(id: "greetings_b.c.HelloReply") {
   message: String
 }
 
 type NEWS {
-  news__addNews(news: NEWS__News!): NEWS__News! @grpc(method: "news.NewsService.AddNews")
-  news__deleteNews(newsId: NEWS__NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
-  news__editNews(news: NEWS__News!): NEWS__News! @grpc(method: "news.NewsService.EditNews")
-  news__getAllNews: NEWS__NewsList! @grpc(method: "news.NewsService.GetAllNews")
-  news__getMultipleNews(multipleNewsId: NEWS__MultipleNewsId!): NEWS__NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
-  news__getNews(newsId: NEWS__NewsId!): NEWS__News! @grpc(method: "news.NewsService.GetNews")
+  addNews(news: News__News!): News__News! @grpc(method: "news.NewsService.AddNews")
+  deleteNews(newsId: News__NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
+  editNews(news: News__News!): News__News! @grpc(method: "news.NewsService.EditNews")
+  getAllNews: News__NewsList! @grpc(method: "news.NewsService.GetAllNews")
+  getMultipleNews(multipleNewsId: News__MultipleNewsId!): News__NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
+  getNews(newsId: News__NewsId!): News__News! @grpc(method: "news.NewsService.GetNews")
 }
 
-type NEWS__NewsList @tag(id: "news.NewsList") {
-  news: [NEWS__News]
+type News__NewsList @tag(id: "news.NewsList") {
+  news: [News__News]
 }
 
 type Query {
