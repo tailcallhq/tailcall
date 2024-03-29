@@ -214,6 +214,7 @@ pub struct Type {
     ///
     /// Flat to indicate if the type is an input
     pub input: bool,
+    #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Interfaces that the type implements.
     pub implements: BTreeSet<String>,
