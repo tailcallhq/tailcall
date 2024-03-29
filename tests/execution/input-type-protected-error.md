@@ -2,8 +2,6 @@
 expect_validation_error: true
 ---
 
-##### only
-
 # input-type-protected-error
 
 ```graphql @server
