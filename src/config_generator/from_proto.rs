@@ -178,10 +178,7 @@ impl Context {
                 self.get(&msg_name)
                     .unwrap_or_else(|| panic!("Expected key not found in types map: {}", msg_name)),
                 ty,
-            ); // it should
-               // be
-               // safe to call
-               // unwrap here
+            );
         }
         self
     }
