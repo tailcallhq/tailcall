@@ -49,23 +49,23 @@ type C {
   sayHello(helloRequest: GreetingsBC__HelloRequest!): GreetingsBC__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
 }
 
-type GREETINGS_A {
+type GreetingsA {
   b: B
-}
-
-type GREETINGS_B {
-  c: C
 }
 
 type GreetingsAB__HelloReply @tag(id: "greetings_a.b.HelloReply") {
   message: String
 }
 
+type GreetingsB {
+  c: C
+}
+
 type GreetingsBC__HelloReply @tag(id: "greetings_b.c.HelloReply") {
   message: String
 }
 
-type NEWS {
+type News {
   addNews(news: News__News!): News__News! @grpc(method: "news.NewsService.AddNews")
   deleteNews(newsId: News__NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
   editNews(news: News__News!): News__News! @grpc(method: "news.NewsService.EditNews")
@@ -79,7 +79,7 @@ type News__NewsList @tag(id: "news.NewsList") {
 }
 
 type Query {
-  greetings_a: GREETINGS_A
-  greetings_b: GREETINGS_B
-  news: NEWS
+  greetings_a: GreetingsA
+  greetings_b: GreetingsB
+  news: News
 }

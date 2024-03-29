@@ -215,7 +215,7 @@ impl Context {
             .collect::<Vec<&str>>()
             .iter()
             .filter(|x| !x.is_empty())
-            .map(|x| x.to_uppercase())
+            .map(|x| x.to_case(Case::UpperCamel))
             .collect::<Vec<String>>();
         // let n = len(split)
         // len(types) = n
@@ -230,23 +230,23 @@ impl Context {
                     .get(&self.query)
                     .cloned()
                     .unwrap_or_default();
-                let field = Field::default().type_of(type_name.to_uppercase());
-                ty.fields.insert(type_name.to_lowercase(), field);
+                let field = Field::default().type_of(type_name.clone());
+                ty.fields.insert(type_name.to_case(Case::Snake), field);
                 self.config.schema.query = Some(self.query.to_owned());
                 self.config.types.insert(self.query.to_owned(), ty);
             }
             if i + 1 < nmo {
                 let field_name = &split[i + 1];
-                let field = Field::default().type_of(field_name.to_uppercase());
+                let field = Field::default().type_of(field_name.clone());
                 let mut ty = Type::default();
-                ty.fields.insert(field_name.to_lowercase(), field);
-                self.config.types.insert(type_name.to_uppercase(), ty);
+                ty.fields.insert(field_name.to_case(Case::Snake), field);
+                self.config.types.insert(type_name.clone(), ty);
             } else if let Some(ty) = self.config.types.get_mut(type_name) {
                 ty.fields.insert(method_name.clone(), field.clone());
             } else {
                 let mut ty = Type::default();
                 ty.fields.insert(method_name.clone(), field.clone());
-                self.config.types.insert(type_name.to_uppercase(), ty);
+                self.config.types.insert(type_name.clone(), ty);
             }
         }
 
