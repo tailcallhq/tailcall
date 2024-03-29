@@ -1,6 +1,5 @@
 ---
 source: src/config_generator/from_proto.rs
-expression: cfg
+expression: config
 ---
-schema @server @upstream {
-}
+
