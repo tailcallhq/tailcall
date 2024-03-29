@@ -1975,7 +1975,7 @@
           "uniqueItems": true
         },
         "input": {
-          "description": "Flat to indicate if the type is an input",
+          "description": "Flag to indicate if the type is an input",
           "type": "boolean"
         },
         "interface": {

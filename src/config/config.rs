@@ -212,7 +212,7 @@ pub struct Type {
     pub interface: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
-    /// Flat to indicate if the type is an input
+    /// Flag to indicate if the type is an input
     pub input: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
