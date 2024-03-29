@@ -38,8 +38,9 @@ impl<T: Default + Clone> Helper<T> {
         Self { ty, ..Default::default() }
     }
 
-    fn into_helper_config(self, config: Config) -> Helper<Config> {
-        Helper { map: self.map, package: self.package, ty: config }
+    fn merge_left<S: Default + Clone>(mut self, other: Helper<S>) -> Self {
+        self.map.extend(other.map);
+        self
     }
 
     /// Formats a proto type name based on its `DescriptorType`.
@@ -141,7 +142,7 @@ fn get_ty(name: &str, mut helper: Helper<Config>, ty: DescriptorType) -> Helper<
                               // safe to call
                               // unwrap here
     ty.tag = Some(Tag { id: format!("{}.{}", helper.package, name) });
-    
+
     Helper { ty, map: helper.map, package: helper.package }
 }
 
@@ -152,7 +153,7 @@ fn append_enums(enums: Vec<EnumDescriptorProto>, mut helper: Helper<Config>) -> 
 
         let mut helper_ty = get_ty(enum_name, helper.clone(), DescriptorType::Enum);
         let mut ty = helper_ty.ty.clone();
-        helper = helper_ty.into_helper_config(helper.ty);
+        helper = helper.merge_left(helper_ty);
 
         let mut variants = enum_
             .value
@@ -181,7 +182,7 @@ fn append_msg_type(messages: Vec<DescriptorProto>, mut helper: Helper<Config>) -
 
         let mut helper_ty = get_ty(&msg_name, helper.clone(), DescriptorType::Message);
         let mut ty = helper_ty.ty.clone();
-        helper = helper_ty.into_helper_config(helper.ty);
+        helper = helper.merge_left(helper_ty);
 
         helper = append_enums(message.enum_type, helper);
         helper = append_msg_type(message.nested_type, helper);
@@ -234,7 +235,7 @@ fn generate_ty(
             let mut cfg_field = Field::default();
             let helper_arg = get_arg(method.input_type(), helper.clone());
             let arg = helper_arg.ty.clone();
-            helper = helper_arg.into_helper_config(helper.ty);
+            helper = helper.merge_left(helper_arg);
 
             if let Some((k, v)) = arg {
                 cfg_field.args.insert(k, v);
@@ -273,7 +274,7 @@ fn append_query_service(
 
     let helper_ty = generate_ty(services, helper.clone(), query);
     let ty = helper_ty.ty.clone();
-    helper = helper_ty.into_helper_config(helper.ty);
+    helper = helper.merge_left(helper_ty);
 
     if ty.ne(&Type::default()) {
         helper.ty.schema.query = Some(query.to_owned());
