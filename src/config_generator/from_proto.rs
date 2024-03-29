@@ -69,11 +69,12 @@ impl Context {
     }
 
     /// Inserts a formatted name into the map.
-    fn insert(&mut self, name: &str, ty: DescriptorType) {
+    fn insert(mut self, name: &str, ty: DescriptorType) -> Self {
         self.map.insert(
             format!("{}.{}", self.package, name),
             self.get_value(name, ty),
         );
+        self
     }
     /// Retrieves a formatted name from the map.
     fn get(&self, name: &str) -> Option<String> {
@@ -81,8 +82,7 @@ impl Context {
     }
 
     /// Retrieves or creates a Type configuration for a given proto type.
-    fn get_ty(&mut self, name: &str, ty: DescriptorType) -> Type {
-        self.insert(name, ty);
+    fn get_ty(&self, name: &str) -> Type {
         let mut ty = self
             .config
             .types
@@ -105,7 +105,8 @@ impl Context {
         for enum_ in enums {
             let enum_name = enum_.name();
 
-            let mut ty = self.get_ty(enum_name, DescriptorType::Enum);
+            self = self.insert(enum_name, DescriptorType::Enum);
+            let mut ty = self.get_ty(enum_name);
 
             let mut variants = enum_
                 .value
@@ -137,7 +138,8 @@ impl Context {
         for message in messages {
             let msg_name = message.name().to_string();
 
-            let mut ty = self.get_ty(&msg_name, DescriptorType::Message);
+            self = self.insert(&msg_name, DescriptorType::Message);
+            let mut ty = self.get_ty(&msg_name);
 
             self = self.append_enums(message.enum_type);
             self = self.append_msg_type(message.nested_type);
@@ -212,7 +214,7 @@ impl Context {
             for method in &service.method {
                 let method_name = method.name();
 
-                self.insert(method_name, DescriptorType::Query);
+                self = self.insert(method_name, DescriptorType::Query);
 
                 let mut cfg_field = Field::default();
                 let arg = self.get_arg(method.input_type());
@@ -412,12 +414,12 @@ mod test {
     #[test]
     fn test_insert_and_get() {
         let mut ctx: Context = Context::new("Query").package("com.example".to_string());
-        ctx.insert("TestEnum", DescriptorType::Enum);
+        ctx = ctx.insert("TestEnum", DescriptorType::Enum);
         assert_eq!(
             ctx.get("TestEnum"),
             Some("COM_EXAMPLE_TestEnum".to_string())
         );
-        ctx.insert("testMessage", DescriptorType::Message);
+        ctx = ctx.insert("testMessage", DescriptorType::Message);
         assert_eq!(
             ctx.get("testMessage"),
             Some("COM_EXAMPLE_testMessage".to_string())
