@@ -743,7 +743,8 @@ impl Config {
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(serde_yaml::from_str(yaml)?)
+        Ok(config_from_openapi_spec(yaml).unwrap())
+        // Ok(serde_yaml::from_str(yaml)?)
     }
 
     pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
