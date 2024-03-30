@@ -154,8 +154,10 @@ impl Context {
         }
         for message in messages {
             let msg_name = message.name().to_string();
-            if msg_name.ends_with("Entry") {
-                continue;
+            if let Some(options) = message.options.as_ref() {
+                if options.map_entry.unwrap_or_default() {
+                    continue;
+                }
             }
 
             self = self.insert(&msg_name, DescriptorType::Message);
