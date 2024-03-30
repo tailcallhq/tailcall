@@ -10,8 +10,8 @@ use crate::is_default;
 pub struct Cors {
     /// Indicates whether the server allows credentials (e.g., cookies,
     /// authorization headers) to be sent in cross-origin requests.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub allow_credentials: bool,
+    #[serde(default)]
+    pub allow_credentials: Option<bool>,
 
     /// A list of allowed headers in cross-origin requests.
     /// This can be used to specify custom headers that are allowed to be
@@ -34,8 +34,8 @@ pub struct Cors {
     /// Indicates whether requests from private network addresses are allowed in
     /// cross-origin requests. Private network addresses typically include
     /// IP addresses reserved for internal networks.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub allow_private_network: bool,
+    #[serde(default)]
+    pub allow_private_network: Option<bool>,
 
     /// A list of headers that the server exposes to the browser in cross-origin
     /// responses. Exposing certain headers allows the client-side code to
