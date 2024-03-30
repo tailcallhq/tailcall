@@ -43,16 +43,6 @@ directive @const(
 ) on FIELD_DEFINITION
 
 """
-Allows composing operators as simple expressions
-"""
-directive @expr(
-  """
-  Root of the expression AST
-  """
-  body: ExprBody
-) on FIELD_DEFINITION
-
-"""
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
 from.
 """
@@ -222,6 +212,8 @@ Used to omit a field from public consumption.
 """
 directive @omit on FIELD_DEFINITION
 
+directive @protected on FIELD_DEFINITION
+
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
 set of server configurations. It dictates how the server behaves and helps tune tailcall 
@@ -304,6 +296,17 @@ directive @server(
   """
   workers: Int
 ) on SCHEMA
+
+"""
+Used to represent an identifier for a type. Typically used via only by the configuration 
+generators to provide additional information about the type.
+"""
+directive @tag(
+  """
+  A unique identifier for the type.
+  """
+  id: String!
+) on OBJECT
 
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
@@ -497,68 +500,6 @@ input Cors {
 enum Encoding {
   ApplicationJson
   ApplicationXWwwFormUrlencoded
-}
-"""
-Allows composing operators as simple expressions
-"""
-input Expr {
-  """
-  Root of the expression AST
-  """
-  body: ExprBody
-}
-input ExprBody {
-  http: Http
-  grpc: Grpc
-  graphQL: GraphQL
-  call: Call
-  const: JSON
-  if: ExprIf
-  and: [ExprBody]
-  or: [ExprBody]
-  cond: [ExprBody]
-  defaultTo: [ExprBody]
-  isEmpty: ExprBody
-  not: ExprBody
-  concat: [ExprBody]
-  intersection: [ExprBody]
-  difference: [[ExprBody]]
-  eq: [ExprBody]
-  gt: [ExprBody]
-  gte: [ExprBody]
-  lt: [ExprBody]
-  lte: [ExprBody]
-  max: [ExprBody]
-  min: [ExprBody]
-  pathEq: [ExprBody]
-  propEq: [ExprBody]
-  sortPath: [ExprBody]
-  symmetricDifference: [[ExprBody]]
-  union: [[ExprBody]]
-  mod: [ExprBody]
-  add: [ExprBody]
-  dec: ExprBody
-  divide: [ExprBody]
-  inc: ExprBody
-  multiply: [ExprBody]
-  negate: ExprBody
-  product: [ExprBody]
-  subtract: [ExprBody]
-  sum: [ExprBody]
-}
-input ExprIf {
-  """
-  Condition to evaluate
-  """
-  cond: ExprBody
-  """
-  Expression to evaluate if the condition is false
-  """
-  else: ExprBody
-  """
-  Expression to evaluate if the condition is true
-  """
-  then: ExprBody
 }
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 

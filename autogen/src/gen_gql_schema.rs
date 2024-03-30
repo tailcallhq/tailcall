@@ -27,14 +27,15 @@ lazy_static! {
         ("omit", vec![Entity::FieldDefinition], false),
         ("groupBy", vec![Entity::FieldDefinition], false),
         ("const", vec![Entity::FieldDefinition], false),
+        ("protected", vec![Entity::FieldDefinition], false),
         ("graphQL", vec![Entity::FieldDefinition], false),
         (
             "cache",
             vec![Entity::Object, Entity::FieldDefinition],
             false,
         ),
-        ("expr", vec![Entity::FieldDefinition], false),
         ("js", vec![Entity::FieldDefinition], false),
+        ("tag", vec![Entity::Object], false),
     ];
 }
 
@@ -53,7 +54,6 @@ static OBJECT_WHITELIST: &[&str] = &[
     "Cache",
     "Const",
     "Encoding",
-    "Expr",
     "ExprBody",
     "JS",
     "Modify",
