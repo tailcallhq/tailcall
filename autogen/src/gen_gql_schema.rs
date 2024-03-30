@@ -27,6 +27,7 @@ lazy_static! {
         ("omit", vec![Entity::FieldDefinition], false),
         ("groupBy", vec![Entity::FieldDefinition], false),
         ("const", vec![Entity::FieldDefinition], false),
+        ("protected", vec![Entity::FieldDefinition], false),
         ("graphQL", vec![Entity::FieldDefinition], false),
         (
             "cache",
