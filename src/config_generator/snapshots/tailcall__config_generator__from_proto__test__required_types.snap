@@ -1,0 +1,5 @@
+---
+source: src/config_generator/from_proto.rs
+expression: config
+---
+

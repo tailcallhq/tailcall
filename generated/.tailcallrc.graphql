@@ -306,6 +306,17 @@ directive @server(
 ) on SCHEMA
 
 """
+Used to represent an identifier for a type. Typically used via only by the configuration 
+generators to provide additional information about the type.
+"""
+directive @tag(
+  """
+  A unique identifier for the type.
+  """
+  id: String!
+) on OBJECT
+
+"""
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
 the observability of your GraphQL services powered by Tailcall.  By leveraging this 
 directive, developers gain access to valuable insights into the performance and behavior 
