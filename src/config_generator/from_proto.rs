@@ -154,7 +154,7 @@ impl Context {
         }
         for message in messages {
             let msg_name = message.name().to_string();
-            if msg_name.eq("MapEntry") {
+            if msg_name.ends_with("Entry") {
                 continue;
             }
 
@@ -336,8 +336,8 @@ fn convert_ty(proto_ty: &str) -> String {
         "int32" | "int64" | "fixed32" | "fixed64" | "uint32" | "uint64" => "Int",
         "bool" => "Boolean",
         "string" | "bytes" => "String",
-        "message" => "JSON", /* JSON scalar is preloaded by tailcall, so there is no need to
-                               * explicitly define it in the config. */
+        "message" => "JSON", /* JSON scalar is preloaded by tailcall, so there is no need to */
+        // explicitly define it in the config.
         x => x,
     }
     .to_string()

@@ -17,7 +17,10 @@ message Person {
   required int32 id = 2;
   optional string email = 3;
   repeated PhoneNumber phone = 4;
-  map<string, string> map = 5;
+  map<string, string> stringMap = 5;
+}
+message People {
+  map<string, Person> people = 1;
 }
 service PersonService {
   rpc GetPerson(google.protobuf.Empty) returns (Person) {}
