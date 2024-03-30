@@ -16,7 +16,7 @@ const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 
 #[derive(Debug, Error)]
 #[error("Unsupported file extension: {0}")]
-pub struct UnsupportedFileFormat(String);
+pub struct UnsupportedFileFormat(pub String);
 
 impl std::str::FromStr for Source {
     type Err = UnsupportedFileFormat;

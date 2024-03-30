@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 use crate::config::Source;
+use crate::config_generator::source::GeneratorSource;
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
@@ -14,7 +15,7 @@ const ABOUT: &str = r"
 \__/\__,_/_/_/\___/\__,_/_/_/";
 
 #[derive(Parser)]
-#[command(name ="tailcall",author, version = VERSION, about, long_about = Some(ABOUT))]
+#[command(name = "tailcall", author, version = VERSION, about, long_about = Some(ABOUT))]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
@@ -55,5 +56,22 @@ pub enum Command {
         // default is current directory
         #[arg(default_value = ".")]
         folder_path: String,
+    },
+    Gen {
+        /// Path for the generation source files separated
+        /// by spaces if more than one
+        #[arg(required = true)]
+        file_paths: Vec<String>,
+        /// Input format
+        #[arg(required = true)]
+        #[clap(short, long)]
+        input: GeneratorSource,
+        /// Output format
+        #[arg(required = true)]
+        #[clap(short, long)]
+        output: Source,
+        #[arg(default_value = "Query")]
+        #[clap(short, long)]
+        query: String,
     },
 }

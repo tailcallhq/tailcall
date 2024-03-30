@@ -14,6 +14,8 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
+use crate::config::Source;
+use crate::config_generator::reader::GeneratorReader;
 use crate::http::API_URL_PREFIX;
 use crate::print_schema;
 use crate::rest::{EndpointSet, Unchecked};
@@ -66,6 +68,27 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
+        Command::Gen { file_paths, input, output, query } => {
+            let generator = GeneratorReader::init(runtime);
+            let cfg = generator
+                .read_all(file_paths.as_ref(), input, query.as_str())
+                .await?;
+            match output {
+                Source::Json => {
+                    let json = cfg.to_json(true)?;
+                    Fmt::display(json);
+                }
+                Source::Yml => {
+                    let yml = cfg.to_yaml()?;
+                    Fmt::display(yml);
+                }
+                Source::GraphQL => {
+                    let sdl = cfg.to_sdl();
+                    Fmt::display(sdl);
+                }
+            }
+            Ok(())
+        }
     }
 }
 

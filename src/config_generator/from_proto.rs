@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use std::collections::{BTreeSet, HashMap};
 
 use convert_case::{Case, Casing};
@@ -383,7 +381,6 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::config::Config;
     use crate::config_generator::from_proto::{from_proto, Context, DescriptorType};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
