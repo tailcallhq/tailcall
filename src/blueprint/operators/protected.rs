@@ -36,15 +36,12 @@ fn is_input(config: &&ConfigModule, type_: &&config::Type) -> bool {
     config
         .types
         .iter()
-        .find_map(
-            |(name, _type)| {
-                if _type == *type_ {
-                    Some(name)
-                } else {
-                    None
-                }
-            },
-        )
-        .map(|name| config.input_types().contains(name))
+        .find_map(|(name, _type)| {
+            if _type == *type_ {
+                Some(config.input_types().contains(name))
+            } else {
+                None
+            }
+        })
         .unwrap_or_default()
 }
