@@ -198,6 +198,8 @@ mod tests {
         }
 
         impl EnvIO for Env {
+            use std::borrow::Cow;
+
             fn get(&self, key: &str) -> Option<Cow<'_, String>> {
                 self.env.get(key).map(Cow::from)
             }
