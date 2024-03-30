@@ -226,7 +226,6 @@
       "properties": {
         "allowCredentials": {
           "description": "Indicates whether the server allows credentials (e.g., cookies, authorization headers) to be sent in cross-origin requests.",
-          "default": null,
           "type": [
             "boolean",
             "null"
@@ -255,7 +254,6 @@
         },
         "allowPrivateNetwork": {
           "description": "Indicates whether requests from private network addresses are allowed in cross-origin requests. Private network addresses typically include IP addresses reserved for internal networks.",
-          "default": null,
           "type": [
             "boolean",
             "null"
