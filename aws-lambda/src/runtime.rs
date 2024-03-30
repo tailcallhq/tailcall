@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -12,10 +13,10 @@ use crate::http::init_http;
 pub struct LambdaEnv;
 
 impl EnvIO for LambdaEnv {
-    fn get(&self, key: &str) -> Option<String> {
+    fn get(&self, key: &str) -> Option<Cow<'_, str>> {
         // AWS Lambda sets environment variables
         // as real env vars in the runtime.
-        std::env::var(key).ok()
+        std::env::var(key).ok().map(Cow::from)
     }
 }
 

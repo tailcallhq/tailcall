@@ -167,6 +167,20 @@ impl ConfigReader {
                 LinkType::Operation => {
                     config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
+                LinkType::Htpasswd => {
+                    config_module
+                        .extensions
+                        .htpasswd
+                        .push(Content { id: config_link.id.clone(), content: content.clone() });
+                }
+                LinkType::Jwks => {
+                    let de = &mut serde_json::Deserializer::from_str(&content);
+
+                    config_module.extensions.jwks.push(Content {
+                        id: config_link.id.clone(),
+                        content: serde_path_to_error::deserialize(de)?,
+                    })
+                }
             }
         }
 
@@ -245,7 +259,20 @@ impl ConfigReader {
         // Extend it with the links
         let mut config_module = self.ext_links(config_module, parent_dir).await?;
 
-        self.update_opentelemetry(&mut config_module)?;
+        let server = &mut config_module.config.server;
+        let reader_ctx = ConfigReaderContext {
+            env: self.runtime.env.clone(),
+            vars: &server
+                .vars
+                .iter()
+                .map(|vars| (vars.key.clone(), vars.value.clone()))
+                .collect(),
+        };
+
+        config_module
+            .config
+            .telemetry
+            .render_mustache(&reader_ctx)?;
 
         Ok(config_module)
     }
@@ -298,24 +325,6 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
-    }
-
-    fn update_opentelemetry(&self, config_module: &mut ConfigModule) -> anyhow::Result<()> {
-        let server = &mut config_module.config.server;
-        let telemetry = &mut config_module.config.telemetry;
-
-        let reader_ctx = ConfigReaderContext {
-            env: self.runtime.env.clone(),
-            vars: &server
-                .vars
-                .iter()
-                .map(|vars| (vars.key.clone(), vars.value.clone()))
-                .collect(),
-        };
-
-        telemetry.render_mustache(&reader_ctx)?;
-
-        Ok(())
     }
 }
 

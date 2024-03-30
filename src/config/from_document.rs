@@ -9,10 +9,10 @@ use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
 use super::telemetry::Telemetry;
-use super::JS;
+use super::{Tag, JS};
 use crate::config::{
-    self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, RootSchema, Server, Union,
-    Upstream,
+    self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
+    Server, Union, Upstream,
 };
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, Validator};
@@ -209,8 +209,10 @@ where
     let interface = object.is_interface();
 
     Cache::from_directives(directives.iter())
-        .zip(to_fields(fields))
-        .map(|(cache, fields)| {
+        .fuse(to_fields(fields))
+        .fuse(Protected::from_directives(directives.iter()))
+        .fuse(Tag::from_directives(directives.iter()))
+        .map(|(cache, fields, protected, tag)| {
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
@@ -221,6 +223,8 @@ where
                 interface,
                 implements,
                 cache,
+                protected,
+                tag,
                 ..Default::default()
             }
         })
@@ -294,8 +298,9 @@ where
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(JS::from_directives(directives.iter()))
         .fuse(Call::from_directives(directives.iter()))
+        .fuse(Protected::from_directives(directives.iter()))
         .map(
-            |(http, graphql, cache, grpc, expr, omit, modify, script, call)| {
+            |(http, graphql, cache, grpc, expr, omit, modify, script, call, protected)| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
@@ -314,6 +319,7 @@ where
                     expr,
                     cache,
                     call,
+                    protected,
                 }
             },
         )

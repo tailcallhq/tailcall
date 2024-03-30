@@ -72,7 +72,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn headers(&self) -> &HeaderMap {
-        &self.request_ctx.request_headers
+        &self.request_ctx.allowed_headers
     }
 
     pub fn header(&self, key: &str) -> Option<&str> {
@@ -81,7 +81,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         value.to_str().ok()
     }
 
-    pub fn env_var(&self, key: &str) -> Option<String> {
+    pub fn env_var(&self, key: &str) -> Option<Cow<'_, str>> {
         self.request_ctx.runtime.env.get(key)
     }
 
@@ -198,8 +198,8 @@ mod tests {
         }
 
         impl EnvIO for Env {
-            fn get(&self, key: &str) -> Option<String> {
-                self.env.get(key).cloned()
+            fn get(&self, key: &str) -> Option<Cow<'_, String>> {
+                self.env.get(key).map(Cow::from)
             }
         }
 
@@ -284,7 +284,7 @@ mod tests {
         }
 
         static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
-            let mut req_ctx = RequestContext::default().request_headers(TEST_HEADERS.clone());
+            let mut req_ctx = RequestContext::default().allowed_headers(TEST_HEADERS.clone());
 
             req_ctx.server.vars = TEST_VARS.clone();
             req_ctx.runtime.env = Arc::new(Env::init(TEST_ENV_VARS.clone()));
