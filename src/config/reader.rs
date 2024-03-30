@@ -363,8 +363,8 @@ mod test_proto_config {
         proto_no_pkg.pop();
         proto_no_pkg.push("proto");
         proto_no_pkg.push("news_no_pkg.proto");
-        let err = &validation.as_vec().first().unwrap().message;
-        let trace = &validation.as_vec().first().unwrap().trace;
+        let err = &validation.as_vec().iter().next().unwrap().message;
+        let trace = &validation.as_vec().iter().next().unwrap().trace;
         assert!(err.starts_with("Package name is not defined for proto file"));
 
         let expected_trace = ["schema", "link[0]"]

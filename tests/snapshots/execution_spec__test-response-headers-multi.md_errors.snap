@@ -22,25 +22,5 @@ expression: errors
       "custom"
     ],
     "description": null
-  },
-  {
-    "message": "Parsing failed because of invalid HTTP header name",
-    "trace": [
-      "schema",
-      "@server",
-      "headers",
-      "custom"
-    ],
-    "description": null
-  },
-  {
-    "message": "Parsing failed because of failed to parse header value",
-    "trace": [
-      "schema",
-      "@server",
-      "headers",
-      "custom"
-    ],
-    "description": null
   }
 ]

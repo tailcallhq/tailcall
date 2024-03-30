@@ -3,9 +3,9 @@ use super::ValidationError;
 use crate::valid::Cause;
 
 #[derive(Debug, PartialEq)]
-pub struct Valid<A, E>(Result<A, ValidationError<E>>);
+pub struct Valid<A, E: std::cmp::Eq + std::hash::Hash>(Result<A, ValidationError<E>>);
 
-pub trait Validator<A, E>: Sized {
+pub trait Validator<A, E: std::cmp::Eq + std::hash::Hash>: Sized {
     fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
         Valid(self.to_result().map(f))
     }
@@ -95,7 +95,7 @@ pub trait Validator<A, E>: Sized {
     }
 }
 
-impl<A, E> Valid<A, E> {
+impl<A, E: std::cmp::Eq + std::hash::Hash> Valid<A, E> {
     pub fn fail(e: E) -> Valid<A, E> {
         Valid(Err((vec![Cause::new(e)]).into()))
     }
@@ -157,7 +157,7 @@ impl<A, E> Valid<A, E> {
     }
 }
 
-impl<A, E> Validator<A, E> for Valid<A, E> {
+impl<A, E: std::cmp::Eq + std::hash::Hash> Validator<A, E> for Valid<A, E> {
     fn to_result(self) -> Result<A, ValidationError<E>> {
         self.0
     }
@@ -167,8 +167,8 @@ impl<A, E> Validator<A, E> for Valid<A, E> {
     }
 }
 
-pub struct Fusion<A, E>(Valid<A, E>);
-impl<A, E> Fusion<A, E> {
+pub struct Fusion<A, E: std::cmp::Eq + std::hash::Hash>(Valid<A, E>);
+impl<A, E: std::cmp::Eq + std::hash::Hash> Fusion<A, E> {
     pub fn fuse<A1>(self, other: Valid<A1, E>) -> Fusion<A::Out, E>
     where
         A: Append<A1>,
@@ -177,7 +177,7 @@ impl<A, E> Fusion<A, E> {
     }
 }
 
-impl<A, E> Validator<A, E> for Fusion<A, E> {
+impl<A, E: std::cmp::Eq + std::hash::Hash> Validator<A, E> for Fusion<A, E> {
     fn to_result(self) -> Result<A, ValidationError<E>> {
         self.0.to_result()
     }
@@ -186,7 +186,7 @@ impl<A, E> Validator<A, E> for Fusion<A, E> {
     }
 }
 
-impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
+impl<A, E: std::cmp::Eq + std::hash::Hash> From<Result<A, ValidationError<E>>> for Valid<A, E> {
     fn from(value: Result<A, ValidationError<E>>) -> Self {
         match value {
             Ok(a) => Valid::succeed(a),
@@ -195,7 +195,7 @@ impl<A, E> From<Result<A, ValidationError<E>>> for Valid<A, E> {
     }
 }
 
-impl<A, E> From<Fusion<A, E>> for Valid<A, E> {
+impl<A, E: std::cmp::Eq + std::hash::Hash> From<Fusion<A, E>> for Valid<A, E> {
     fn from(value: Fusion<A, E>) -> Self {
         Valid(value.to_result())
     }
@@ -204,7 +204,7 @@ impl<A, E> From<Fusion<A, E>> for Valid<A, E> {
 impl<A, E> Clone for Valid<A, E>
 where
     A: Clone,
-    E: Clone,
+    E: Clone + std::cmp::Eq + std::hash::Hash,
 {
     fn clone(&self) -> Self {
         Self(self.0.clone())

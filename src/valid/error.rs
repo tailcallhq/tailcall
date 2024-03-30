@@ -1,13 +1,15 @@
 use std::fmt::{Debug, Display};
+use std::hash::Hash;
+use indexmap::IndexSet;
 
 use regex::Regex;
 
 use super::Cause;
 
-#[derive(Debug, PartialEq, Default, Clone)]
-pub struct ValidationError<E>(Vec<Cause<E>>);
+#[derive(Debug, PartialEq, Default, Clone, Eq)]
+pub struct ValidationError<E: Eq + Hash>(IndexSet<Cause<E>>);
 
-impl<E: Display> Display for ValidationError<E> {
+impl<E: Display + std::cmp::Eq + std::hash::Hash> Display for ValidationError<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Validation Error\n")?;
         let errors = self.as_vec();
@@ -33,22 +35,24 @@ impl<E: Display> Display for ValidationError<E> {
     }
 }
 
-impl<E> ValidationError<E> {
-    pub fn as_vec(&self) -> &Vec<Cause<E>> {
+impl<E: std::cmp::Eq + std::hash::Hash> ValidationError<E> {
+    pub fn as_vec(&self) -> &IndexSet<Cause<E>> {
         &self.0
     }
 
-    pub fn combine(mut self, mut other: ValidationError<E>) -> ValidationError<E> {
-        self.0.append(&mut other.0);
+    pub fn combine(mut self, other: ValidationError<E>) -> ValidationError<E> {
+        self.0.extend(other.0);
         self
     }
 
     pub fn empty() -> Self {
-        ValidationError(Vec::new())
+        ValidationError(IndexSet::new())
     }
 
     pub fn new(e: E) -> Self {
-        ValidationError(vec![Cause::new(e)])
+        let mut set = IndexSet::new();
+        set.insert(Cause::new(e));
+        ValidationError(set)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -56,35 +60,39 @@ impl<E> ValidationError<E> {
     }
 
     pub fn trace(self, message: &str) -> Self {
-        let mut errors = self.0;
+        let mut errors = Vec::from_iter(self.0);
         for cause in errors.iter_mut() {
             cause.trace.insert(0, message.to_owned());
         }
+        let errors = IndexSet::from_iter(errors);
         Self(errors)
     }
 
     pub fn append(self, error: E) -> Self {
         let mut errors = self.0;
-        errors.push(Cause::new(error));
+        errors.insert(Cause::new(error));
         Self(errors)
     }
 
-    pub fn transform<E1>(self, f: &impl Fn(E) -> E1) -> ValidationError<E1> {
+    pub fn transform<E1: std::cmp::Eq + std::hash::Hash>(self, f: &impl Fn(E) -> E1) -> ValidationError<E1> {
         ValidationError(self.0.into_iter().map(|cause| cause.transform(f)).collect())
     }
 }
 
-impl<E: Display + Debug> std::error::Error for ValidationError<E> {}
+impl<E: Display + Debug + std::cmp::Eq + std::hash::Hash> std::error::Error for ValidationError<E> {}
 
-impl<E> From<Cause<E>> for ValidationError<E> {
+impl<E: std::cmp::Eq + std::hash::Hash> From<Cause<E>> for ValidationError<E> {
     fn from(value: Cause<E>) -> Self {
-        ValidationError(vec![value])
+        let mut set = IndexSet::new();
+        set.insert(value);
+        ValidationError(set)
     }
 }
 
-impl<E> From<Vec<Cause<E>>> for ValidationError<E> {
+impl<E: std::cmp::Eq + std::hash::Hash> From<Vec<Cause<E>>> for ValidationError<E> {
     fn from(value: Vec<Cause<E>>) -> Self {
-        ValidationError(value)
+        let set = IndexSet::from_iter(value.into_iter());
+        ValidationError(set)
     }
 }
 
@@ -120,8 +128,9 @@ impl From<serde_path_to_error::Error<serde_json::Error>> for ValidationError<Str
                 "",
             )
             .into_owned();
-
-        ValidationError(vec![Cause::new(message).trace(trace)])
+        let mut set = IndexSet::new();
+        set.insert(Cause::new(message).trace(trace));
+        ValidationError(set)
     }
 }
 
