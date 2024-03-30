@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 
-use crate::config::{self, Batch};
+use crate::config::{self, Batch, ConfigModule};
 use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
@@ -42,14 +42,23 @@ impl Upstream {
 impl Default for Upstream {
     fn default() -> Self {
         // NOTE: Using unwrap because try_from default will never fail
-        Upstream::try_from(config::Upstream::default()).unwrap()
+        Upstream::try_from(&ConfigModule::default()).unwrap()
     }
 }
 
-impl TryFrom<crate::config::Upstream> for Upstream {
+impl TryFrom<&ConfigModule> for Upstream {
     type Error = ValidationError<String>;
 
-    fn try_from(config_upstream: config::Upstream) -> Result<Self, Self::Error> {
+    fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
+        let config_upstream = config_module.upstream.clone();
+
+        let mut allowed_headers = config_upstream.get_allowed_headers();
+
+        if config_module.extensions.has_auth() {
+            // force add auth specific headers to use it to make actual validation
+            allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
+        }
+
         get_batch(&config_upstream)
             .fuse(get_base_url(&config_upstream))
             .fuse(get_proxy(&config_upstream))
@@ -64,7 +73,7 @@ impl TryFrom<crate::config::Upstream> for Upstream {
                 timeout: (config_upstream).get_timeout(),
                 tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
                 user_agent: (config_upstream).get_user_agent(),
-                allowed_headers: (config_upstream).get_allowed_headers(),
+                allowed_headers,
                 base_url,
                 http_cache: (config_upstream).get_enable_http_cache(),
                 batch,

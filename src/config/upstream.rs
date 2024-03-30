@@ -30,6 +30,7 @@ pub struct Proxy {
 #[derive(
     Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
 )]
+#[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
 /// The `upstream` directive allows you to control various aspects of the
 /// upstream server connection. This includes settings like connection timeouts,

@@ -16,7 +16,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  foo: Foo
+  foo(val: String!): Foo
 }
 
 scalar Url

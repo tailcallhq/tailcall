@@ -96,7 +96,32 @@ type User {
 type UserWithPosts {
   id: Int!
   name: String!
-  posts: [Post] @call(query: "userPosts", args: {id: "{{value.id}}"})
+  posts: [Post] @call(steps: [{query: "userPosts", args: {id: "{{value.id}}"}}])
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int
+  userId: Int!
+  title: String
+  body: String
+  user1: User @call(steps: [{query: "user1"}])
+  userFromValue: User @call(steps: [{query: "userFromValue"}])
+  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+  userHttpHeaders: User @call(steps: [{query: "userHttpHeaders", args: {id: "{{value.userId}}"}}])
+  userHttpQuery: User @call(steps: [{query: "userHttpQuery", args: {id: "{{value.userId}}"}}])
+  userGraphQL: User @call(steps: [{query: "userGraphQL", args: {id: "{{value.userId}}"}}])
+  userGraphQLHeaders: User @call(steps: [{query: "userGraphQLHeaders", args: {id: "{{value.userId}}"}}])
+  news: NewsData! @call(steps: [{query: "news"}])
+  newsWithPortArg: NewsData! @call(steps: [{query: "news", args: {port: 50051}}])
 }
 ```
 

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{Expr, KeyValue, Link, Server, Upstream};
+use super::{KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
@@ -226,6 +226,14 @@ pub struct Type {
     ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth providers
+    #[serde(default)]
+    pub protected: Option<Protected>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    ///
+    /// Contains source information for the type.
+    pub tag: Option<Tag>,
 }
 
 impl Type {
@@ -254,15 +262,28 @@ impl MergeRight for Type {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+/// Used to represent an identifier for a type. Typically used via only by the
+/// configuration generators to provide additional information about the type.
+pub struct Tag {
+    /// A unique identifier for the type.
+    pub id: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Cache {
     /// Specifies the duration, in milliseconds, of how long the value has to be
     /// stored in the cache.
     pub max_age: NonZeroU64,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema)]
+pub struct Protected {}
 
 fn merge_types(
     mut self_types: BTreeMap<String, Type>,
@@ -315,6 +336,7 @@ impl MergeRight for RootSchema {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
 pub struct Omit {}
 
@@ -397,12 +419,12 @@ pub struct Field {
     pub graphql: Option<GraphQL>,
 
     ///
-    /// Inserts an Expression resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub expr: Option<Expr>,
-    ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth provider
+    #[serde(default)]
+    pub protected: Option<Protected>,
 }
 
 impl Field {
@@ -412,7 +434,6 @@ impl Field {
             || self.const_field.is_some()
             || self.graphql.is_some()
             || self.grpc.is_some()
-            || self.expr.is_some()
             || self.call.is_some()
     }
 
@@ -490,6 +511,7 @@ pub struct JS {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
     pub name: Option<String>,
@@ -532,6 +554,7 @@ impl MergeRight for Union {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
 /// For instance, if you add the @http operator to the `users` field of the
@@ -597,28 +620,37 @@ pub struct Http {
 }
 
 ///
+/// Provides the ability to refer to multiple fields in the Query or
+/// Mutation root.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+pub struct Call {
+    /// Steps are composed together to form a call.
+    /// If you have multiple steps, the output of the previous step is passed as
+    /// input to the next step.
+    pub steps: Vec<Step>,
+}
+
+///
 /// Provides the ability to refer to a field defined in the root Query or
 /// Mutation.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-pub struct Call {
+pub struct Step {
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Query` type that you want to call. For
-    /// instance `user`.
+    /// The name of the field on the `Query` type that you want to call.
     pub query: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Mutation` type that you want to call. For
-    /// instance `createUser`.
+    /// The name of the field on the `Mutation` type that you want to call.
     pub mutation: Option<String>,
 
-    /// The arguments of the field on the `Query` or `Mutation` type that you
-    /// want to call. For instance `{id: "{{value.userId}}"}`.
+    /// The arguments that will override the actual arguments of the field.
     #[serde(default, skip_serializing_if = "is_default")]
     pub args: BTreeMap<String, Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
 ///
 /// For instance, if you add the @grpc operator to the `users` field of the
@@ -653,6 +685,7 @@ pub struct Grpc {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.
 pub struct GraphQL {
@@ -705,6 +738,7 @@ impl Display for GraphQLOperationType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The `@const` operators allows us to embed a constant response for the
 /// schema.
 pub struct Const {
@@ -712,6 +746,7 @@ pub struct Const {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
     /// Name of the new field to be added

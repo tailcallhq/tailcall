@@ -26,6 +26,14 @@ type User {
   username: String!
   website: String
 }
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+}
 ```
 
 ```yml @mock
