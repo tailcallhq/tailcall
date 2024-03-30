@@ -6,7 +6,9 @@ use crate::valid::{Valid, Validator};
 /// fail. It can optionally consume an input to transform the provided value.
 type TryFoldFn<'a, I, O, E> = Box<dyn Fn(&I, O) -> Valid<O, E> + 'a>;
 
-pub struct TryFold<'a, I: 'a, O: 'a, E: 'a + std::cmp::Eq + std::hash::Hash>(TryFoldFn<'a, I, O, E>);
+pub struct TryFold<'a, I: 'a, O: 'a, E: 'a + std::cmp::Eq + std::hash::Hash>(
+    TryFoldFn<'a, I, O, E>,
+);
 
 impl<'a, I, O: Clone + 'a, E: std::cmp::Eq + std::hash::Hash> TryFold<'a, I, O, E> {
     /// Try to fold the value with the input.
@@ -148,7 +150,9 @@ impl<'a, I, O: Clone + 'a, E: std::cmp::Eq + std::hash::Hash> TryFold<'a, I, O, 
     }
 }
 
-impl<'a, I, O: Clone, E: std::cmp::Eq + std::hash::Hash> FromIterator<TryFold<'a, I, O, E>> for TryFold<'a, I, O, E> {
+impl<'a, I, O: Clone, E: std::cmp::Eq + std::hash::Hash> FromIterator<TryFold<'a, I, O, E>>
+    for TryFold<'a, I, O, E>
+{
     fn from_iter<T: IntoIterator<Item = TryFold<'a, I, O, E>>>(iter: T) -> Self {
         let mut iter = iter.into_iter();
         let head = iter.next();

@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
-use indexmap::IndexSet;
 
+use indexmap::IndexSet;
 use regex::Regex;
 
 use super::Cause;
@@ -74,7 +74,10 @@ impl<E: std::cmp::Eq + std::hash::Hash> ValidationError<E> {
         Self(errors)
     }
 
-    pub fn transform<E1: std::cmp::Eq + std::hash::Hash>(self, f: &impl Fn(E) -> E1) -> ValidationError<E1> {
+    pub fn transform<E1: std::cmp::Eq + std::hash::Hash>(
+        self,
+        f: &impl Fn(E) -> E1,
+    ) -> ValidationError<E1> {
         ValidationError(self.0.into_iter().map(|cause| cause.transform(f)).collect())
     }
 }
@@ -91,7 +94,7 @@ impl<E: std::cmp::Eq + std::hash::Hash> From<Cause<E>> for ValidationError<E> {
 
 impl<E: std::cmp::Eq + std::hash::Hash> From<Vec<Cause<E>>> for ValidationError<E> {
     fn from(value: Vec<Cause<E>>) -> Self {
-        let set = IndexSet::from_iter(value.into_iter());
+        let set = IndexSet::from_iter(value);
         ValidationError(set)
     }
 }
