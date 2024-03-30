@@ -77,7 +77,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn headers(&self) -> &HeaderMap {
-        &self.request_ctx.request_headers
+        &self.request_ctx.allowed_headers
     }
 
     pub fn header(&self, key: &str) -> Option<&str> {
@@ -86,7 +86,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         value.to_str().ok()
     }
 
-    pub fn env_var(&self, key: &str) -> Option<String> {
+    pub fn env_var(&self, key: &str) -> Option<Cow<'_, str>> {
         self.request_ctx.runtime.env.get(key)
     }
 

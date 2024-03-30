@@ -35,6 +35,7 @@ lazy_static! {
         ),
         ("expr", vec![Entity::FieldDefinition], false),
         ("js", vec![Entity::FieldDefinition], false),
+        ("tag", vec![Entity::Object], false),
     ];
 }
 
@@ -548,8 +549,7 @@ fn write_all_directives(
     let schema = schemars::schema_for!(config::Config);
 
     let defs: BTreeMap<String, Schema> = schema.definitions;
-    let dirs: BTreeMap<String, Schema> = defs.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-    for (name, schema) in dirs.into_iter() {
+    for (name, schema) in defs.iter() {
         let schema = schema.clone().into_object();
         write_directive(
             writer,

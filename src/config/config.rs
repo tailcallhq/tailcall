@@ -226,6 +226,14 @@ pub struct Type {
     ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth providers
+    #[serde(default)]
+    pub protected: Option<Protected>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    ///
+    /// Contains source information for the type.
+    pub tag: Option<Tag>,
 }
 
 impl Type {
@@ -254,6 +262,15 @@ impl MergeRight for Type {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+/// Used to represent an identifier for a type. Typically used via only by the
+/// configuration generators to provide additional information about the type.
+pub struct Tag {
+    /// A unique identifier for the type.
+    pub id: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
@@ -264,6 +281,9 @@ pub struct Cache {
     /// stored in the cache.
     pub max_age: NonZeroU64,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema)]
+pub struct Protected {}
 
 fn merge_types(
     mut self_types: BTreeMap<String, Type>,
@@ -405,6 +425,10 @@ pub struct Field {
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth provider
+    #[serde(default)]
+    pub protected: Option<Protected>,
 }
 
 impl Field {
