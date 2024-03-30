@@ -33,7 +33,9 @@ fn print_schema(schema: &SchemaDefinition) -> String {
         .subscription
         .as_ref()
         .map_or(String::new(), |s| format!("  subscription: {}\n", s.node));
-
+    if mutation.is_empty() && query.is_empty() {
+        return String::new();
+    }
     format!(
         "schema {}{{\n{}{}{}}}\n",
         directives, query, mutation, subscription
