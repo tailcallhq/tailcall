@@ -2,4 +2,27 @@
 source: src/config_generator/from_proto.rs
 expression: config
 ---
+schema @server @upstream {
+  query: Query
+}
 
+type Person {
+  getPerson: Person__Person! @grpc(method: "person.PersonService.GetPerson")
+}
+
+type Person__Person @tag(id: "person.Person") {
+  email: String
+  id: Int!
+  map: JSON
+  name: String!
+  phone: [Person__PhoneNumber]
+}
+
+type Person__PhoneNumber @tag(id: "person.PhoneNumber") {
+  number: String!
+  type: String
+}
+
+type Query {
+  person: Person
+}

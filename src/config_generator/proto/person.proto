@@ -2,6 +2,9 @@ syntax = "proto2";
 
 package person;
 
+import "google/protobuf/empty.proto";
+
+
 // Defines a phone number
 message PhoneNumber {
   required string number = 1;
@@ -14,4 +17,8 @@ message Person {
   required int32 id = 2;
   optional string email = 3;
   repeated PhoneNumber phone = 4;
+  map<string, string> map = 5;
+}
+service PersonService {
+  rpc GetPerson(google.protobuf.Empty) returns (Person) {}
 }

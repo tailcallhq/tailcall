@@ -154,6 +154,9 @@ impl Context {
         }
         for message in messages {
             let msg_name = message.name().to_string();
+            if msg_name.eq("MapEntry") {
+                continue;
+            }
 
             self = self.insert(&msg_name, DescriptorType::Message);
             let mut ty = self.get_ty(&msg_name);
@@ -171,7 +174,10 @@ impl Context {
 
                 if field.r#type.is_some() {
                     let type_of = convert_ty(field.r#type().as_str_name());
-                    cfg_field.type_of = type_of.to_string();
+                    if type_of.eq("JSON") {
+                        cfg_field.list = false;
+                    }
+                    cfg_field.type_of = type_of;
                 } else {
                     // for non-primitive types
                     let type_of = convert_ty(field.type_name());
@@ -330,6 +336,8 @@ fn convert_ty(proto_ty: &str) -> String {
         "int32" | "int64" | "fixed32" | "fixed64" | "uint32" | "uint64" => "Int",
         "bool" => "Boolean",
         "string" | "bytes" => "String",
+        "message" => "JSON", /* JSON scalar is preloaded by tailcall, so there is no need to
+                               * explicitly define it in the config. */
         x => x,
     }
     .to_string()
