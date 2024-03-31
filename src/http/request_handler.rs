@@ -263,10 +263,10 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
-        hyper::Method::POST if req.uri().path() == "/graphql" => {
+        Method::POST if req.uri().path() == "/graphql" => {
             graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
-        hyper::Method::POST
+        Method::POST
             if app_ctx.blueprint.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>
         {
@@ -278,8 +278,10 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
-
-        hyper::Method::GET => {
+        Method::GET if req.uri().path() == "/gen" => {
+            todo!("Handle code generation")
+        }
+        Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
             {
