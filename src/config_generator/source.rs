@@ -26,12 +26,12 @@ impl GeneratorSource {
             GeneratorSource::PROTO => PROTO_EXT,
         }
     }
-    fn contains(&self, content: &str) -> bool {
-        content.contains(&self.ext().to_string())
+    fn ends_with(&self, content: &str) -> bool {
+        content.ends_with(&format!(".{}", self.ext()))
     }
     pub fn detect(name: &str) -> Result<GeneratorSource, UnsupportedFileFormat> {
         ALL.iter()
-            .find(|format| format.contains(name))
+            .find(|format| format.ends_with(name))
             .ok_or(UnsupportedFileFormat(name.to_string()))
             .cloned()
     }
