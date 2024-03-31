@@ -82,6 +82,8 @@ mod tests {
 
     use async_graphql::parser::types::Directive;
 
+    use crate::directive;
+
     use super::*;
 
     fn query_to_directive(query: &str) -> Directive {
@@ -108,9 +110,7 @@ mod tests {
     }
 
     fn generate_query_with_directive(rest_directive: &str, query_parameter: &str) -> String {
-        dbg!(format!(
-            "query ({query_parameter}) @rest({rest_directive}) {{ value }}"
-        ))
+        format!("query ({query_parameter}) @rest({rest_directive}) {{ value }}")
     }
 
     struct RestQueryParam {
@@ -125,9 +125,17 @@ mod tests {
 
         fn string_with_method(&self, method: &str) -> String {
             format!(
-                "method: {}, path: {}, body: {}",
+                "method: {}, path: \"{}\", body: {}",
                 method, self.path, self.body
             )
+        }
+
+        fn string_without_method(&self) -> String {
+            format!("path: \"{}\", body: {}", self.path, self.body)
+        }
+
+        fn string_without_path(&self, method: &str) -> String {
+            format!("method: {}, body: {}", method, self.body)
         }
     }
 
@@ -169,7 +177,23 @@ mod tests {
     }
 
     #[test]
-    fn test_directive_should_fail() {
-        unimplemented!();
+    fn test_directive_to_rest_should_fail() {
+        let default_rest_query = RestQueryParam::new("/foo/$a", "$v");
+        const DEFAULT_QUERY_PARAM: &str = "$a: Int, $v: String";
+        let directives = vec![
+            default_rest_query.string_without_path("GET"),
+            default_rest_query.string_without_path("PUT"),
+            default_rest_query.string_without_path("DELETE"),
+            default_rest_query.string_without_path("UPDATE"),
+            default_rest_query.string_without_method(),
+        ]
+        .iter()
+        .map(|query| generate_query_with_directive(&query, DEFAULT_QUERY_PARAM))
+        .map(|query| query_to_directive(&query))
+        .map(|directive| Rest::try_from(&directive))
+        .map(|result| result.is_err())
+        .collect::<Vec<_>>();
+
+        pretty_assertions::assert_eq!(directives, vec![true; 5]);
     }
 }
