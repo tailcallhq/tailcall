@@ -278,7 +278,7 @@ impl ConfigReader {
     }
 
     /// Performs BFS to import all nested proto files
-    pub async fn resolve_descriptors(
+    async fn resolve_descriptors(
         &self,
         parent_proto: FileDescriptorProto,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
