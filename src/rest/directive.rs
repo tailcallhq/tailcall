@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use anyhow::bail;
 use async_graphql::parser::types::Directive;
 use async_graphql_value::Value;
 use derive_setters::Setters;
@@ -28,32 +29,50 @@ impl TryFrom<&Directive> for Rest {
     fn try_from(directive: &Directive) -> anyhow::Result<Self> {
         let mut rest = Rest::default();
 
+        let mut has_path = false;
+        let mut has_method = false;
+
         for (k, v) in directive.arguments.iter() {
-            if k.node.as_str() == "path" {
-                rest.path = serde_json::from_str(v.node.to_string().as_str())?;
-            }
-            if k.node.as_str() == "method" {
-                let value = serde_json::Value::String(v.node.to_string().to_uppercase());
-                rest.method = serde_json::from_value(value)?;
-            }
-            if k.node.as_str() == "query" {
-                if let Value::Object(map) = &v.node {
-                    for (k, v) in map {
-                        if let Value::Variable(v) = v {
-                            rest.query
-                                .insert(k.as_str().to_owned(), v.as_str().to_string());
-                        }
+            match k.node.as_str() {
+                "path" => {
+                    rest.path = serde_json::from_str(v.node.to_string().as_str())?;
+                    has_path = true;
+                }
+                "method" => {
+                    let value = serde_json::Value::String(v.node.to_string().to_uppercase());
+                    rest.method = serde_json::from_value(value)?;
+                    has_method = true;
+                }
+                "query" => {
+                    if let Value::Object(map) = &v.node {
+                        map.iter()
+                            .filter_map(|(k, v)| {
+                                if let Value::Variable(v) = v {
+                                    Some((k.as_str().to_owned(), v.as_str().to_string()))
+                                } else {
+                                    None
+                                }
+                            })
+                            .for_each(|(k, v)| {
+                                rest.query.insert(k, v);
+                            })
                     }
                 }
-            }
-            if k.node.as_str() == "body" {
-                if let Value::Variable(v) = &v.node {
-                    rest.body = Some(v.to_string());
+                "body" => {
+                    if let Value::Variable(v) = &v.node {
+                        rest.body = Some(v.to_string());
+                    }
                 }
-            }
+                _ => {}
+            };
         }
 
-        Ok(rest)
+        match (has_method, has_path) {
+            (true, true) => Ok(rest),
+            (true, false) => bail!("Path not provided"),
+            (false, true) => bail!("Method not provided"),
+            (false, false) => bail!("Method and Path not provided"),
+        }
     }
 }
 
@@ -62,8 +81,6 @@ mod tests {
     use std::collections::HashMap;
 
     use async_graphql::parser::types::Directive;
-    use maplit::hashmap;
-    use pretty_assertions::assert_eq;
 
     use super::*;
 
@@ -90,66 +107,69 @@ mod tests {
             .body(Some(body.to_string()))
     }
 
-    fn valid_all_method_queries() -> HashMap<String, Rest> {
-        hashmap! {
-            // GET method
-            r#"query ($a: Int, $v: String)
-                @rest(method: GET, path: "/foo/$a", body: $v) {
-                    value
-                }"#.to_string() => 
-            default_rest_with("/foo/$a", Method::GET, "v"),
+    fn generate_query_with_directive(rest_directive: &str, query_parameter: &str) -> String {
+        dbg!(format!(
+            "query ({query_parameter}) @rest({rest_directive}) {{ value }}"
+        ))
+    }
 
-            // POST method
-            r#"query ($a: Int, $v: String)
-                @rest(method: POST, path: "/foo/$a", body: $v) {
-                    value
-                }"#.to_string() => 
-            default_rest_with("/foo/$a", Method::POST, "v"),
+    struct RestQueryParam {
+        path: String,
+        body: String,
+    }
 
-            // PUT method
-            r#"query ($a: Int, $v: String)
-                @rest(method: PUT, path: "/foo/$a", body: $v) {
-                    value
-                }"#.to_string() =>
-            default_rest_with("/foo/$a", Method::PUT, "v"),
-
-            // DELETE method
-            r#"query ($a: Int, $v: String)
-                @rest(method: DELETE, path: "/foo/$a", body: $v) {
-                    value
-                }"#.to_string() =>
-            default_rest_with("/foo/$a", Method::DELETE, "v"),
-
-            // PATCH method
-            r#"query ($a: Int, $v: String)
-                @rest(method: PATCH, path: "/foo/$a", body: $v) {
-                    value
-                }"#.to_string() =>
-            default_rest_with("/foo/$a", Method::PATCH, "v"),
-
-
-            // HEAD method
-            r#"query ($a: Int, $v: String)
-                @rest(method: HEAD, path: "/foo/$a", body: $v) {
-                    value
-                }"#.to_string() =>
-            default_rest_with("/foo/$a", Method::HEAD, "v"),
-
-            // OPTIONS method
-            r#"query ($a: Int, $v: String)
-                @rest(method: OPTIONS, path: "/foo/$a", body: $v) {
-                    value
-                }"#.to_string() =>
-            default_rest_with("/foo/$a", Method::OPTIONS, "v"),
+    impl RestQueryParam {
+        fn new(path: &str, body: &str) -> Self {
+            Self { path: path.into(), body: body.into() }
         }
+
+        fn string_with_method(&self, method: &str) -> String {
+            format!(
+                "method: {}, path: {}, body: {}",
+                method, self.path, self.body
+            )
+        }
+    }
+
+    fn generate_method_variant(
+        query: &RestQueryParam,
+        method: &str,
+        default_query_param: &str,
+    ) -> (String, Rest) {
+        (
+            generate_query_with_directive(&query.string_with_method(method), default_query_param),
+            default_rest_with("/foo/$a", method.parse().unwrap(), "v"),
+        )
+    }
+
+    fn all_methods_valid() -> HashMap<String, Rest> {
+        let default_rest_query = RestQueryParam::new("/foo/$a", "$v");
+        const DEFAULT_QUERY_PARAM: &str = "$a: Int, $v: String";
+        HashMap::from([
+            generate_method_variant(&default_rest_query, "GET", DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, "PUT", DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, "DELETE", DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, "HEAD", DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, "PATCH", DEFAULT_QUERY_PARAM),
+        ])
     }
 
     #[test]
     fn test_directive_to_rest_methods() {
-        for (query, expected_rest) in valid_all_method_queries() {
-            let directive = query_to_directive(&query);
-            let actual = Rest::try_from(&directive).unwrap();
-            assert_eq!(actual, expected_rest);
-        }
+        let (actual, expected): (Vec<_>, Vec<_>) = all_methods_valid()
+            .into_iter()
+            .map(|(query, expected_rest)| {
+                let directive = query_to_directive(&query);
+                let actual = Rest::try_from(&directive).unwrap();
+                (actual, expected_rest)
+            })
+            .unzip();
+
+        pretty_assertions::assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_directive_should_fail() {
+        unimplemented!();
     }
 }
