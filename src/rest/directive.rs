@@ -81,10 +81,13 @@ mod tests {
     use std::collections::HashMap;
 
     use async_graphql::parser::types::Directive;
-
-    use crate::directive;
+    use once_cell::sync::Lazy;
 
     use super::*;
+
+    const DEFAULT_QUERY_PARAM: &str = "$a: Int, $v: String";
+    static DEFAULT_REST_QUERY: Lazy<RestQueryParam> =
+        Lazy::new(|| RestQueryParam::new("/foo/$a", "$v"));
 
     fn query_to_directive(query: &str) -> Directive {
         async_graphql::parser::parse_query(query)
@@ -113,6 +116,7 @@ mod tests {
         format!("query ({query_parameter}) @rest({rest_directive}) {{ value }}")
     }
 
+    #[derive(Clone)]
     struct RestQueryParam {
         path: String,
         body: String,
@@ -137,6 +141,10 @@ mod tests {
         fn string_without_path(&self, method: &str) -> String {
             format!("method: {}, body: {}", method, self.body)
         }
+
+        fn string_without_path_default_method(&self) -> String {
+            format!("method: GET, body: {}", self.body)
+        }
     }
 
     fn generate_method_variant(
@@ -151,8 +159,7 @@ mod tests {
     }
 
     fn all_methods_valid() -> HashMap<String, Rest> {
-        let default_rest_query = RestQueryParam::new("/foo/$a", "$v");
-        const DEFAULT_QUERY_PARAM: &str = "$a: Int, $v: String";
+        let default_rest_query = DEFAULT_REST_QUERY.clone();
         HashMap::from([
             generate_method_variant(&default_rest_query, "GET", DEFAULT_QUERY_PARAM),
             generate_method_variant(&default_rest_query, "PUT", DEFAULT_QUERY_PARAM),
@@ -178,9 +185,8 @@ mod tests {
 
     #[test]
     fn test_directive_to_rest_should_fail() {
-        let default_rest_query = RestQueryParam::new("/foo/$a", "$v");
-        const DEFAULT_QUERY_PARAM: &str = "$a: Int, $v: String";
-        let directives = vec![
+        let default_rest_query = DEFAULT_REST_QUERY.clone();
+        let directives = [
             default_rest_query.string_without_path("GET"),
             default_rest_query.string_without_path("PUT"),
             default_rest_query.string_without_path("DELETE"),
@@ -188,12 +194,34 @@ mod tests {
             default_rest_query.string_without_method(),
         ]
         .iter()
-        .map(|query| generate_query_with_directive(&query, DEFAULT_QUERY_PARAM))
+        .map(|query| generate_query_with_directive(query, DEFAULT_QUERY_PARAM))
         .map(|query| query_to_directive(&query))
         .map(|directive| Rest::try_from(&directive))
         .map(|result| result.is_err())
         .collect::<Vec<_>>();
 
         pretty_assertions::assert_eq!(directives, vec![true; 5]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn directive_to_rest_without_path() {
+        let default_rest_query = DEFAULT_REST_QUERY.clone();
+        let query = default_rest_query.string_without_path_default_method();
+        let query = generate_query_with_directive(&query, DEFAULT_QUERY_PARAM);
+        let directive = query_to_directive(&query);
+        // Will panic
+        Rest::try_from(&directive).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn directive_to_rest_without_method() {
+        let default_rest_query = DEFAULT_REST_QUERY.clone();
+        let query = default_rest_query.string_without_method();
+        let query = generate_query_with_directive(&query, DEFAULT_QUERY_PARAM);
+        let directive = query_to_directive(&query);
+        // Will panic
+        Rest::try_from(&directive).unwrap();
     }
 }
