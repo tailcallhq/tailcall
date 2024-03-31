@@ -6,7 +6,7 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use crate::config::Config;
+use crate::config::{Config, Link, LinkType};
 use crate::config_generator::from_proto::from_proto;
 use crate::config_generator::source::GeneratorSource;
 use crate::runtime::TargetRuntime;
@@ -28,8 +28,15 @@ impl GeneratorReader {
     }
     pub async fn read_all<T: AsRef<str>>(&self, files: &[T], query: &str) -> Result<Config> {
         let mut descriptors = FileDescriptorSet::default();
+        let mut links = vec![];
 
         for file in files {
+            links.push(Link {
+                id: None,
+                src: file.as_ref().to_string(),
+                type_of: LinkType::Protobuf,
+            });
+
             let file_read = self.read_file(file).await?;
             match file_read.source {
                 GeneratorSource::PROTO => {
@@ -40,8 +47,9 @@ impl GeneratorReader {
                 }
             }
         }
-
-        Ok(from_proto(&[descriptors], query))
+        let mut config = from_proto(&[descriptors], query);
+        config.links = links;
+        Ok(config)
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
