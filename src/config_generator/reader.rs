@@ -19,7 +19,6 @@ struct FileRead {
     content: String,
     #[allow(dead_code)] // TODO drop this
     source: GeneratorSource,
-    #[allow(dead_code)]
     path: String,
 }
 
@@ -27,18 +26,14 @@ impl GeneratorReader {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { runtime: runtime.clone() }
     }
-    pub async fn read_all<T: AsRef<str>>(
-        &self,
-        files: &[T],
-        input_ty: GeneratorSource,
-        query: &str,
-    ) -> Result<Config> {
+    pub async fn read_all<T: AsRef<str>>(&self, files: &[T], query: &str) -> Result<Config> {
         let mut descriptors = FileDescriptorSet::default();
 
         for file in files {
-            match input_ty {
+            let file_read = self.read_file(file).await?;
+            match file_read.source {
                 GeneratorSource::PROTO => {
-                    let parent_descriptor = self.read_proto(file).await?;
+                    let parent_descriptor = self.read_proto(file_read).await?;
                     descriptors
                         .file
                         .extend(self.resolve_descriptors(parent_descriptor).await?);
@@ -51,6 +46,17 @@ impl GeneratorReader {
 
     /// Reads a file from the filesystem or from an HTTP URL
     async fn read_file<T: AsRef<str>>(&self, file: T) -> Result<FileRead> {
+        if let Ok(file) = GoogleFileResolver::new().open_file(file.as_ref()) {
+            let content = file
+                .source()
+                .context("Unable to extract content of google well-known proto file")?
+                .to_string();
+            return Ok(FileRead {
+                content,
+                source: GeneratorSource::PROTO,
+                path: file.name().to_string(),
+            });
+        }
         // Is an HTTP URL
         let file_read = if let Ok(url) = Url::parse(file.as_ref()) {
             if url.scheme().starts_with("http") {
@@ -89,16 +95,11 @@ impl GeneratorReader {
 
     /// Tries to load well-known google proto files and if not found uses normal
     /// file and http IO to resolve them
-    async fn read_proto<T: AsRef<str>>(&self, path: T) -> Result<FileDescriptorProto> {
-        let content = if let Ok(file) = GoogleFileResolver::new().open_file(path.as_ref()) {
-            file.source()
-                .context("Unable to extract content of google well-known proto file")?
-                .to_string()
-        } else {
-            self.read_file(path.as_ref()).await?.content
-        };
-
-        Ok(protox_parse::parse(path.as_ref(), &content)?)
+    async fn read_proto(&self, file_read: FileRead) -> Result<FileDescriptorProto> {
+        Ok(protox_parse::parse(
+            file_read.path.as_ref(),
+            &file_read.content,
+        )?)
     }
 
     /// Performs BFS to import all nested proto files
@@ -112,7 +113,8 @@ impl GeneratorReader {
 
         while let Some(file) = queue.pop_front() {
             for import in file.dependency.iter() {
-                let proto = self.read_proto(import).await?;
+                let file_read = self.read_file(import).await?;
+                let proto = self.read_proto(file_read).await?;
                 if descriptors.get(import).is_none() {
                     queue.push_back(proto.clone());
                     descriptors.insert(import.clone(), proto);

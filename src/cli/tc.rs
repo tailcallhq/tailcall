@@ -68,10 +68,10 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Gen { file_paths, input, output, query } => {
+        Command::Gen { file_paths, output, query } => {
             let generator = GeneratorReader::init(runtime);
             let cfg = generator
-                .read_all(file_paths.as_ref(), input, query.as_str())
+                .read_all(file_paths.as_ref(), query.as_str())
                 .await?;
             match output {
                 Source::Json => {

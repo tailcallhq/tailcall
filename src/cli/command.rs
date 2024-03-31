@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
 
 use crate::config::Source;
-use crate::config_generator::source::GeneratorSource;
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
@@ -62,10 +61,6 @@ pub enum Command {
         /// by spaces if more than one
         #[arg(required = true)]
         file_paths: Vec<String>,
-        /// Input format
-        #[arg(required = true)]
-        #[clap(short, long)]
-        input: GeneratorSource,
         /// Output format
         #[arg(required = true)]
         #[clap(short, long)]
