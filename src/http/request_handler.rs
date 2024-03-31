@@ -299,14 +299,14 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 #[tracing::instrument(
-skip_all,
-err,
-fields(
-otel.name = "request",
-otel.kind = ?SpanKind::Server,
-url.path = %req.uri().path(),
-http.request.method = %req.method()
-)
+    skip_all,
+    err,
+    fields(
+        otel.name = "request",
+        otel.kind = ?SpanKind::Server,
+        url.path = %req.uri().path(),
+        http.request.method = %req.method()
+    )
 )]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
