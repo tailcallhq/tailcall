@@ -69,9 +69,18 @@ impl TryFrom<&Directive> for Rest {
 
         match (has_method, has_path) {
             (true, true) => Ok(rest),
-            (true, false) => bail!("Path not provided"),
-            (false, true) => bail!("Method not provided"),
-            (false, false) => bail!("Method and Path not provided"),
+            (true, false) => {
+                bail!("Path not provided in the directive: {:?}", directive);
+            }
+            (false, true) => {
+                bail!("Method not provided in the directive: {:?}", directive);
+            }
+            (false, false) => {
+                bail!(
+                    "Method and Path not provided in the directive: {:?}",
+                    directive
+                );
+            }
         }
     }
 }
@@ -204,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Path not provided in the directive")]
     fn directive_to_rest_without_path() {
         let default_rest_query = DEFAULT_REST_QUERY.clone();
         let query = default_rest_query.string_without_path_default_method();
@@ -215,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "Method not provided in the directive")]
     fn directive_to_rest_without_method() {
         let default_rest_query = DEFAULT_REST_QUERY.clone();
         let query = default_rest_query.string_without_method();
