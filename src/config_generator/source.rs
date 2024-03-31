@@ -1,6 +1,6 @@
 use crate::config::UnsupportedFileFormat;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum GeneratorSource {
     PROTO,
 }
