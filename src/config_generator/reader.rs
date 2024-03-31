@@ -1,3 +1,4 @@
+use std::collections::{HashMap, VecDeque};
 use std::iter::Extend;
 
 use anyhow::{Context, Result};
@@ -5,7 +6,6 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use url::Url;
 
-use crate::config::reader::ConfigReader;
 use crate::config::Config;
 use crate::config_generator::from_proto::from_proto;
 use crate::config_generator::source::GeneratorSource;
@@ -13,7 +13,6 @@ use crate::runtime::TargetRuntime;
 
 pub struct GeneratorReader {
     runtime: TargetRuntime,
-    reader: ConfigReader, // TODO
 }
 
 struct FileRead {
@@ -26,10 +25,7 @@ struct FileRead {
 
 impl GeneratorReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self {
-            runtime: runtime.clone(),
-            reader: ConfigReader::init(runtime),
-        }
+        Self { runtime: runtime.clone() }
     }
     pub async fn read_all<T: AsRef<str>>(
         &self,
@@ -45,7 +41,7 @@ impl GeneratorReader {
                     let parent_descriptor = self.read_proto(file).await?;
                     descriptors
                         .file
-                        .extend(self.reader.resolve_descriptors(parent_descriptor).await?);
+                        .extend(self.resolve_descriptors(parent_descriptor).await?);
                 }
             }
         }
@@ -54,7 +50,7 @@ impl GeneratorReader {
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read_file<T: AsRef<str>>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read_file<T: AsRef<str>>(&self, file: T) -> Result<FileRead> {
         // Is an HTTP URL
         let file_read = if let Ok(url) = Url::parse(file.as_ref()) {
             if url.scheme().starts_with("http") {
@@ -93,7 +89,7 @@ impl GeneratorReader {
 
     /// Tries to load well-known google proto files and if not found uses normal
     /// file and http IO to resolve them
-    async fn read_proto<T: AsRef<str>>(&self, path: T) -> anyhow::Result<FileDescriptorProto> {
+    async fn read_proto<T: AsRef<str>>(&self, path: T) -> Result<FileDescriptorProto> {
         let content = if let Ok(file) = GoogleFileResolver::new().open_file(path.as_ref()) {
             file.source()
                 .context("Unable to extract content of google well-known proto file")?
@@ -103,5 +99,30 @@ impl GeneratorReader {
         };
 
         Ok(protox_parse::parse(path.as_ref(), &content)?)
+    }
+
+    /// Performs BFS to import all nested proto files
+    pub async fn resolve_descriptors(
+        &self,
+        parent_proto: FileDescriptorProto,
+    ) -> Result<Vec<FileDescriptorProto>> {
+        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
+        let mut queue = VecDeque::new();
+        queue.push_back(parent_proto.clone());
+
+        while let Some(file) = queue.pop_front() {
+            for import in file.dependency.iter() {
+                let proto = self.read_proto(import).await?;
+                if descriptors.get(import).is_none() {
+                    queue.push_back(proto.clone());
+                    descriptors.insert(import.clone(), proto);
+                }
+            }
+        }
+        let mut descriptors = descriptors
+            .into_values()
+            .collect::<Vec<FileDescriptorProto>>();
+        descriptors.push(parent_proto);
+        Ok(descriptors)
     }
 }
