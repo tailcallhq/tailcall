@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::Parser;
 use dotenvy::dotenv;
 use inquire::Confirm;
@@ -69,26 +69,22 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_paths, input, output, query } => {
-            let file_io = runtime.file.clone();
             let generator = GeneratorReader::init(runtime);
             let cfg = generator
-                .read_all(file_paths[1..].as_ref(), input, query.as_str())
+                .read_all(file_paths.as_ref(), input, query.as_str())
                 .await?;
-            let expected_format =
-                "tailcall gen <path to output file> [<path to input files>] -i <input> -o <output>";
-            let output_file_path = file_paths.first().ok_or(anyhow!("{}", expected_format))?;
             match output {
                 Source::Json => {
                     let json = cfg.to_json(true)?;
-                    file_io.write(output_file_path, json.as_bytes()).await?;
+                    Fmt::display(json);
                 }
                 Source::Yml => {
                     let yml = cfg.to_yaml()?;
-                    file_io.write(output_file_path, yml.as_bytes()).await?;
+                    Fmt::display(yml);
                 }
                 Source::GraphQL => {
                     let sdl = cfg.to_sdl();
-                    file_io.write(output_file_path, sdl.as_bytes()).await?;
+                    Fmt::display(sdl);
                 }
             }
             Ok(())
