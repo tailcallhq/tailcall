@@ -79,10 +79,10 @@ mod tests {
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let auth_context = GlobalAuthContext {
-            verifier: Some(AuthVerifier::Any(vec![
-                AuthVerifier::Single(Verifier::Basic(basic_provider)),
-                AuthVerifier::Single(Verifier::Jwt(jwt_provider)),
-            ])),
+            verifier: Some(AuthVerifier::Or(
+                AuthVerifier::Single(Verifier::Basic(basic_provider)).into(),
+                AuthVerifier::Single(Verifier::Jwt(jwt_provider)).into(),
+            )),
         };
 
         let validation = auth_context
