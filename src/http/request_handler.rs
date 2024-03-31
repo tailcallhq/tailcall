@@ -263,10 +263,10 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         // NOTE:
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
-        Method::POST if req.uri().path() == "/graphql" => {
+        hyper::Method::POST if req.uri().path() == "/graphql" => {
             graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
-        Method::POST
+        hyper::Method::POST
             if app_ctx.blueprint.server.enable_showcase
                 && req.uri().path() == "/showcase/graphql" =>
         {
@@ -278,10 +278,8 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
-        Method::GET if req.uri().path() == "/gen" => {
-            todo!("Handle code generation")
-        }
-        Method::GET => {
+
+        hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
             {
@@ -301,14 +299,14 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 #[tracing::instrument(
-    skip_all,
-    err,
-    fields(
-        otel.name = "request",
-        otel.kind = ?SpanKind::Server,
-        url.path = %req.uri().path(),
-        http.request.method = %req.method()
-    )
+skip_all,
+err,
+fields(
+otel.name = "request",
+otel.kind = ?SpanKind::Server,
+url.path = %req.uri().path(),
+http.request.method = %req.method()
+)
 )]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
