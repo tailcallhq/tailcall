@@ -11,8 +11,8 @@ use async_graphql::Name;
 use super::telemetry::Telemetry;
 use super::{Tag, JS};
 use crate::config::{
-    self, Cache, Call, Config, Expr, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
-    Server, Union, Upstream,
+    self, Cache, Call, Config, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema, Server,
+    Union, Upstream,
 };
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, Validator};
@@ -293,14 +293,13 @@ where
         .fuse(GraphQL::from_directives(directives.iter()))
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(Grpc::from_directives(directives.iter()))
-        .fuse(Expr::from_directives(directives.iter()))
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
         .fuse(JS::from_directives(directives.iter()))
         .fuse(Call::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
         .map(
-            |(http, graphql, cache, grpc, expr, omit, modify, script, call, protected)| {
+            |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
@@ -316,7 +315,6 @@ where
                     script,
                     const_field,
                     graphql,
-                    expr,
                     cache,
                     call,
                     protected,
