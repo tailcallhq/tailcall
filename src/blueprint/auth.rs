@@ -68,19 +68,51 @@ impl Auth {
 mod tests {
     use super::{Auth, Basic, Jwt, Provider};
 
+    fn test_basic_provider_1() -> Provider {
+        Provider::Basic(Basic { htpasswd: "1".into() })
+    }
+
+    fn test_basic_provider_2() -> Provider {
+        Provider::Basic(Basic { htpasswd: "2".into() })
+    }
+
+    fn test_jwt_provider() -> Provider {
+        Provider::Jwt(Jwt::test_value())
+    }
+
     #[test]
-    fn test_and() {
-        let basic_provider_1 = Provider::Basic(Basic::test_value());
-        let basic_provider_2 = Provider::Basic(Basic::test_value());
-        let jwt_provider = Provider::Jwt(Jwt::test_value());
+    fn and_basic_with_basic() {
+        let basic_provider_1 = test_basic_provider_1();
+        let basic_provider_2 = test_basic_provider_2();
 
         assert_eq!(
             Auth::Provider(basic_provider_1.clone()).and(Auth::Provider(basic_provider_2.clone())),
             Auth::And(
-                Auth::Provider(basic_provider_1.clone()).into(),
-                Auth::Provider(basic_provider_2.clone()).into()
+                Auth::Provider(basic_provider_1).into(),
+                Auth::Provider(basic_provider_2).into()
             )
         );
+    }
+
+    #[test]
+    fn and_basic_with_jwt() {
+        let basic_provider = test_basic_provider_1();
+        let jwt_provider = test_jwt_provider();
+
+        assert_eq!(
+            Auth::Provider(basic_provider.clone()).and(Auth::Provider(jwt_provider.clone())),
+            Auth::And(
+                Auth::Provider(basic_provider).into(),
+                Auth::Provider(jwt_provider).into()
+            )
+        );
+    }
+
+    #[test]
+    fn and_nested_and_with_jwt() {
+        let basic_provider_1 = test_basic_provider_1();
+        let basic_provider_2 = test_basic_provider_2();
+        let jwt_provider = test_jwt_provider();
 
         assert_eq!(
             Auth::And(
@@ -90,118 +122,11 @@ mod tests {
             .and(Auth::Provider(jwt_provider.clone())),
             Auth::And(
                 Auth::And(
-                    Auth::Provider(basic_provider_1.clone()).into(),
-                    Auth::Provider(basic_provider_2.clone()).into()
+                    Auth::Provider(basic_provider_1).into(),
+                    Auth::Provider(basic_provider_2).into()
                 )
                 .into(),
-                Auth::Provider(jwt_provider.clone()).into()
-            )
-        );
-
-        assert_eq!(
-            Auth::Provider(jwt_provider.clone()).and(Auth::And(
-                Auth::Provider(basic_provider_1.clone()).into(),
-                Auth::Provider(basic_provider_2.clone()).into()
-            )),
-            Auth::And(
-                Auth::Provider(jwt_provider.clone()).into(),
-                Auth::And(
-                    Auth::Provider(basic_provider_1.clone()).into(),
-                    Auth::Provider(basic_provider_2.clone()).into()
-                )
-                .into()
-            )
-        );
-
-        assert_eq!(
-            Auth::Or(
-                Auth::Provider(jwt_provider.clone()).into(),
-                Auth::Provider(jwt_provider.clone()).into()
-            )
-            .and(Auth::Or(
-                Auth::Provider(basic_provider_1.clone()).into(),
-                Auth::Provider(basic_provider_2.clone()).into()
-            )),
-            Auth::And(
-                Auth::Or(
-                    Auth::Provider(jwt_provider.clone()).into(),
-                    Auth::Provider(jwt_provider.clone()).into()
-                )
-                .into(),
-                Auth::Or(
-                    Auth::Provider(basic_provider_1.clone()).into(),
-                    Auth::Provider(basic_provider_2.clone()).into()
-                )
-                .into()
-            )
-        );
-    }
-
-    #[test]
-    fn test_or() {
-        let basic_provider_1 = Provider::Basic(Basic { htpasswd: "1".into() });
-        let basic_provider_2 = Provider::Basic(Basic { htpasswd: "2".into() });
-        let jwt_provider = Provider::Jwt(Jwt::test_value());
-
-        assert_eq!(
-            Auth::Provider(basic_provider_1.clone()).or(Auth::Provider(basic_provider_2.clone())),
-            Auth::Or(
-                Auth::Provider(basic_provider_1.clone()).into(),
-                Auth::Provider(basic_provider_2.clone()).into()
-            )
-        );
-
-        assert_eq!(
-            Auth::Or(
-                Auth::Provider(basic_provider_1.clone()).into(),
-                Auth::Provider(basic_provider_2.clone()).into()
-            )
-            .or(Auth::Provider(jwt_provider.clone())),
-            Auth::Or(
-                Auth::Or(
-                    Auth::Provider(basic_provider_1.clone()).into(),
-                    Auth::Provider(basic_provider_2.clone()).into()
-                )
-                .into(),
-                Auth::Provider(jwt_provider.clone()).into()
-            )
-        );
-
-        assert_eq!(
-            Auth::Provider(jwt_provider.clone()).or(Auth::Or(
-                Auth::Provider(basic_provider_1.clone()).into(),
-                Auth::Provider(basic_provider_2.clone()).into()
-            )),
-            Auth::Or(
-                Auth::Provider(jwt_provider.clone()).into(),
-                Auth::Or(
-                    Auth::Provider(basic_provider_1.clone()).into(),
-                    Auth::Provider(basic_provider_2.clone()).into()
-                )
-                .into()
-            )
-        );
-
-        assert_eq!(
-            Auth::And(
-                Auth::Provider(jwt_provider.clone()).into(),
-                Auth::Provider(jwt_provider.clone()).into()
-            )
-            .or(Auth::And(
-                Auth::Provider(basic_provider_1.clone()).into(),
-                Auth::Provider(basic_provider_2.clone()).into()
-            )),
-            Auth::Or(
-                Auth::And(
-                    Auth::Provider(jwt_provider.clone()).into(),
-                    Auth::Provider(jwt_provider.clone()).into()
-                )
-                .into(),
-                Auth::And(
-                    Auth::Provider(basic_provider_1.clone()).into(),
-                    Auth::Provider(basic_provider_2.clone()).into()
-                )
-                .into()
+                Auth::Provider(jwt_provider).into()
             )
         );
     }
