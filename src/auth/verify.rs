@@ -25,11 +25,11 @@ pub enum AuthVerifier {
     Or(Box<AuthVerifier>, Box<AuthVerifier>),
 }
 
-impl From<blueprint::AuthProvider> for Verifier {
-    fn from(provider: blueprint::AuthProvider) -> Self {
+impl From<blueprint::Provider> for Verifier {
+    fn from(provider: blueprint::Provider) -> Self {
         match provider {
-            blueprint::AuthProvider::Basic(options) => Verifier::Basic(BasicVerifier::new(options)),
-            blueprint::AuthProvider::Jwt(options) => Verifier::Jwt(JwtVerifier::new(options)),
+            blueprint::Provider::Basic(options) => Verifier::Basic(BasicVerifier::new(options)),
+            blueprint::Provider::Jwt(options) => Verifier::Jwt(JwtVerifier::new(options)),
         }
     }
 }
@@ -37,7 +37,7 @@ impl From<blueprint::AuthProvider> for Verifier {
 impl From<blueprint::Auth> for AuthVerifier {
     fn from(provider: blueprint::Auth) -> Self {
         match provider {
-            blueprint::Auth::Single(provider) => AuthVerifier::Single(provider.into()),
+            blueprint::Auth::Provider(provider) => AuthVerifier::Single(provider.into()),
             blueprint::Auth::And(left, right) => {
                 AuthVerifier::And(Box::new((*left).into()), Box::new((*right).into()))
             }
@@ -92,13 +92,11 @@ mod tests {
     use crate::auth::error::Error;
     use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
     use crate::auth::verify::Verify;
-    use crate::blueprint::{Auth, AuthProvider, BasicProvider, JwtProvider};
+    use crate::blueprint::{Auth, Basic, Jwt, Provider};
 
     #[tokio::test]
     async fn verify() {
-        let verifier = AuthVerifier::from(Auth::Single(AuthProvider::Basic(
-            BasicProvider::test_value(),
-        )));
+        let verifier = AuthVerifier::from(Auth::Provider(Provider::Basic(Basic::test_value())));
         let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
 
         assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Invalid));
@@ -111,8 +109,8 @@ mod tests {
     #[tokio::test]
     async fn verify_and() {
         let verifier = AuthVerifier::from(Auth::And(
-            Auth::Single(AuthProvider::Basic(BasicProvider::test_value())).into(),
-            Auth::Single(AuthProvider::Basic(BasicProvider::test_value())).into(),
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
         ));
         let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
 
@@ -126,8 +124,8 @@ mod tests {
     #[tokio::test]
     async fn verify_any() {
         let verifier = AuthVerifier::from(Auth::Or(
-            Auth::Single(AuthProvider::Basic(BasicProvider::test_value())).into(),
-            Auth::Single(AuthProvider::Jwt(JwtProvider::test_value())).into(),
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+            Auth::Provider(Provider::Jwt(Jwt::test_value())).into(),
         ));
         let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
 

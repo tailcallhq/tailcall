@@ -74,8 +74,8 @@ mod tests {
     #[tokio::test]
     async fn validate_request() -> Result<()> {
         let basic_provider =
-            BasicVerifier::new(blueprint::BasicProvider { htpasswd: HTPASSWD_TEST.to_owned() });
-        let jwt_options = blueprint::JwtProvider::test_value();
+            BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
+        let jwt_options = blueprint::Jwt::test_value();
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let auth_context = GlobalAuthContext {
