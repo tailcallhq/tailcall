@@ -12,13 +12,13 @@ use super::telemetry::Telemetry;
 use super::{Expr, KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
-use crate::config_generator::from_openapi::OpenApiToGraphQLConverter;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
 use crate::{is_default, scalar};
+use crate::config_generator::from_openapi::OpenApiToGraphQLConverter;
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -743,7 +743,6 @@ impl Config {
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self> {
-        // Ok(config_from_openapi_spec(yaml).unwrap())
         Ok(serde_yaml::from_str(yaml)?)
     }
 
@@ -758,8 +757,8 @@ impl Config {
     pub fn from_source(source: Source, schema: &str) -> Result<Self> {
         match source {
             Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
-            Source::Json => Config::from_json(schema),
-            Source::Yml => Config::from_yaml(schema),
+            Source::Json => Ok(Config::from_json(schema)?),
+            Source::Yml => Ok(Config::from_yaml(schema)?),
         }
     }
 
