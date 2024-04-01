@@ -1,7 +1,6 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::mutable_key_type)]
 
-mod resource_reader;
 mod app_context;
 pub mod async_cache;
 pub mod async_graphql_hyper;
@@ -27,6 +26,7 @@ pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
+mod resource_reader;
 mod rest;
 pub mod runtime;
 pub mod scalar;

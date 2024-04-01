@@ -271,8 +271,8 @@ impl ConfigReader {
 
         Ok(protox_parse::parse(path, &content)?)
     }
-    
-        /// Checks if path is absolute else it joins file path with relative dir
+
+    /// Checks if path is absolute else it joins file path with relative dir
     /// path
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if Path::new(&src).is_absolute() {
@@ -402,6 +402,7 @@ mod reader_tests {
     use std::path::{Path, PathBuf};
 
     use pretty_assertions::assert_eq;
+
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
 
