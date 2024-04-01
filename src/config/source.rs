@@ -16,18 +16,18 @@ const GRAPHQL_EXT: &str = "graphql";
 const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 
 #[derive(Debug, Error)]
-#[error("Unsupported file extension: {0}")]
-pub struct UnsupportedFileFormat(pub String);
+#[error("Unsupported config extension: {0}")]
+pub struct UnsupportedConfigFormat(pub String);
 
 impl std::str::FromStr for Source {
-    type Err = UnsupportedFileFormat;
+    type Err = UnsupportedConfigFormat;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "json" => Ok(Source::Json),
             "yml" | "yaml" => Ok(Source::Yml),
             "graphql" | "gql" => Ok(Source::GraphQL),
-            _ => Err(UnsupportedFileFormat(s.to_string())),
+            _ => Err(UnsupportedConfigFormat(s.to_string())),
         }
     }
 }
@@ -45,10 +45,10 @@ impl Source {
         file.ends_with(&format!(".{}", self.ext()))
     }
 
-    pub fn detect(name: &str) -> Result<Source, UnsupportedFileFormat> {
+    pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
         ALL.into_iter()
             .find(|format| format.ends_with(name))
-            .ok_or(UnsupportedFileFormat(name.to_string()))
+            .ok_or(UnsupportedConfigFormat(name.to_string()))
     }
 
     pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {

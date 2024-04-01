@@ -1,4 +1,6 @@
-use crate::config::UnsupportedFileFormat;
+use thiserror::Error;
+
+use crate::config::UnsupportedConfigFormat;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum GeneratorSource {
@@ -8,6 +10,10 @@ pub enum GeneratorSource {
 const ALL: &[GeneratorSource] = &[GeneratorSource::PROTO];
 
 const PROTO_EXT: &str = "proto";
+
+#[derive(Debug, Error)]
+#[error("Unsupported config extension: {0}")]
+pub struct UnsupportedFileFormat(String);
 
 impl std::str::FromStr for GeneratorSource {
     type Err = UnsupportedFileFormat;
@@ -31,10 +37,10 @@ impl GeneratorSource {
         content.ends_with(&format!(".{}", self.ext()))
     }
 
-    pub fn detect(name: &str) -> Result<GeneratorSource, UnsupportedFileFormat> {
+    pub fn detect(name: &str) -> Result<GeneratorSource, UnsupportedConfigFormat> {
         ALL.iter()
             .find(|format| format.ends_with(name))
-            .ok_or(UnsupportedFileFormat(name.to_string()))
+            .ok_or(UnsupportedConfigFormat(name.to_string()))
             .cloned()
     }
 }
