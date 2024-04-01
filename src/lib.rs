@@ -1,6 +1,7 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::mutable_key_type)]
 
+mod resource_reader;
 mod app_context;
 pub mod async_cache;
 pub mod async_graphql_hyper;
