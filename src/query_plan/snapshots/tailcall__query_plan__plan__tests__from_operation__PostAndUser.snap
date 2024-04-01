@@ -7,25 +7,25 @@ fields:
         posts(Some(Id(0))):
                 title(None):
                     Scalar
-                body(None):
-                    Scalar
                 user(Some(Id(1))):
                         name(None):
                             Scalar
-                        username(None):
-                            Scalar
-                        website(Some(Id(2))):
-                            Scalar
 
+
+        user(Some(Id(3))):
+                username(None):
+                    Scalar
+                email(None):
+                    Scalar
 
 
 selections:
-    Resolver(2):
-
     Resolver(1):
             name
-            username
 
     Resolver(0):
             title
-            body
+
+    Resolver(3):
+            username
+            email

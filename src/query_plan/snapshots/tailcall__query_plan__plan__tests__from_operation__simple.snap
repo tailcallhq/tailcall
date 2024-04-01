@@ -1,209 +1,67 @@
 ---
 source: src/query_plan/plan.rs
-expression: plan
+expression: general_plan
 ---
-Complex {
-    field_plan: FieldPlan {
-        resolver: None,
-    },
-    children: {
-        Name(
-            "posts",
-        ): Complex {
-            field_plan: FieldPlan {
-                resolver: Some(
-                    "Http",
-                ),
-            },
-            children: {
-                Name(
-                    "body",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "id",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "title",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "user",
-                ): Complex {
-                    field_plan: FieldPlan {
-                        resolver: Some(
-                            "Http",
-                        ),
-                    },
-                    children: {
-                        Name(
-                            "email",
-                        ): Scalar(
-                            FieldPlan {
-                                resolver: None,
-                            },
-                        ),
-                        Name(
-                            "id",
-                        ): Scalar(
-                            FieldPlan {
-                                resolver: None,
-                            },
-                        ),
-                        Name(
-                            "name",
-                        ): Scalar(
-                            FieldPlan {
-                                resolver: None,
-                            },
-                        ),
-                        Name(
-                            "phone",
-                        ): Scalar(
-                            FieldPlan {
-                                resolver: None,
-                            },
-                        ),
-                        Name(
-                            "username",
-                        ): Scalar(
-                            FieldPlan {
-                                resolver: None,
-                            },
-                        ),
-                        Name(
-                            "website",
-                        ): Scalar(
-                            FieldPlan {
-                                resolver: None,
-                            },
-                        ),
-                    },
-                },
-                Name(
-                    "userId",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-            },
-        },
-        Name(
-            "user",
-        ): Complex {
-            field_plan: FieldPlan {
-                resolver: Some(
-                    "Http",
-                ),
-            },
-            children: {
-                Name(
-                    "email",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "id",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "name",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "phone",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "username",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "website",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-            },
-        },
-        Name(
-            "users",
-        ): Complex {
-            field_plan: FieldPlan {
-                resolver: Some(
-                    "Http",
-                ),
-            },
-            children: {
-                Name(
-                    "email",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "id",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "name",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "phone",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "username",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-                Name(
-                    "website",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-            },
-        },
-    },
-}
+GeneralPlan
+    fields:
+        posts(Some(Id(0))):
+                body(None):
+                    Scalar
+                id(None):
+                    Scalar
+                title(None):
+                    Scalar
+                user(Some(Id(1))):
+                        email(None):
+                            Scalar
+                        id(None):
+                            Scalar
+                        name(None):
+                            Scalar
+                        phone(None):
+                            Scalar
+                        username(None):
+                            Scalar
+                        website(Some(Id(2))):
+                            Scalar
+
+                userId(None):
+                    Scalar
+
+        user(Some(Id(3))):
+                email(None):
+                    Scalar
+                id(None):
+                    Scalar
+                name(None):
+                    Scalar
+                phone(None):
+                    Scalar
+                username(None):
+                    Scalar
+                website(Some(Id(4))):
+                    Scalar
+
+        users(Some(Id(5))):
+                email(None):
+                    Scalar
+                id(None):
+                    Scalar
+                name(None):
+                    Scalar
+                phone(None):
+                    Scalar
+                username(None):
+                    Scalar
+                website(Some(Id(6))):
+                    Scalar
+
+
+    field_plans:
+    FieldPlan[0] (GraphQL)
+    FieldPlan[1] (Http)
+    FieldPlan[2] (Http)
+    FieldPlan[3] (Http)
+    FieldPlan[4] (Http)
+    FieldPlan[5] (Http)
+    FieldPlan[6] (Http)

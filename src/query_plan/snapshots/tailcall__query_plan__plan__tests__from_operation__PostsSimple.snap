@@ -1,29 +1,14 @@
 ---
 source: src/query_plan/plan.rs
-expression: req_plan
+expression: execution_plan
 ---
-Complex {
-    field_plan: FieldPlan {
-        resolver: None,
-    },
-    children: {
-        Name(
-            "posts",
-        ): Complex {
-            field_plan: FieldPlan {
-                resolver: Some(
-                    "Http",
-                ),
-            },
-            children: {
-                Name(
-                    "title",
-                ): Scalar(
-                    FieldPlan {
-                        resolver: None,
-                    },
-                ),
-            },
-        },
-    },
-}
+ExecutionPlan
+fields:
+        posts(Some(Id(0))):
+                title(None):
+                    Scalar
+
+
+selections:
+    Resolver(0):
+            title
