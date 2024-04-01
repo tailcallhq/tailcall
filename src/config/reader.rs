@@ -128,7 +128,7 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let parent_descriptor = self.read_proto(&source.path).await?;
+                    let parent_descriptor = self.read_proto(&source.path, parent_dir).await?;
 
                     let id = Valid::from_option(
                         parent_descriptor.package.clone(),
@@ -141,7 +141,7 @@ impl ConfigReader {
                     .trace("schema")
                     .to_result()?;
 
-                    let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
+                    let mut descriptors = self.resolve_descriptors(parent_descriptor, parent_dir).await?;
                     let mut file_descriptor_set = FileDescriptorSet::default();
 
                     file_descriptor_set.file.append(&mut descriptors);
@@ -281,6 +281,7 @@ impl ConfigReader {
     async fn resolve_descriptors(
         &self,
         parent_proto: FileDescriptorProto,
+        parent_dir: Option<&Path>,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
         let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
         let mut queue = VecDeque::new();
@@ -288,7 +289,7 @@ impl ConfigReader {
 
         while let Some(file) = queue.pop_front() {
             for import in file.dependency.iter() {
-                let proto = self.read_proto(import).await?;
+                let proto = self.read_proto(import, parent_dir).await?;
                 if descriptors.get(import).is_none() {
                     queue.push_back(proto.clone());
                     descriptors.insert(import.clone(), proto);
@@ -304,13 +305,13 @@ impl ConfigReader {
 
     /// Tries to load well-known google proto files and if not found uses normal
     /// file and http IO to resolve them
-    async fn read_proto(&self, path: &str) -> anyhow::Result<FileDescriptorProto> {
+    async fn read_proto(&self, path: &str, parent_dir: Option<&Path>) -> anyhow::Result<FileDescriptorProto> {
         let content = if let Ok(file) = GoogleFileResolver::new().open_file(path) {
             file.source()
                 .context("Unable to extract content of google well-known proto file")?
                 .to_string()
         } else {
-            self.read_file(path).await?.content
+            self.read_file(Self::resolve_path(path, parent_dir)).await?.content
         };
 
         Ok(protox_parse::parse(path, &content)?)
@@ -344,7 +345,7 @@ mod test_proto_config {
         // Skipping IO tests as they are covered in reader.rs
         let reader = ConfigReader::init(crate::runtime::test::init(None));
         reader
-            .read_proto("google/protobuf/empty.proto")
+            .read_proto("google/protobuf/empty.proto", None)
             .await
             .unwrap();
     }
@@ -400,7 +401,7 @@ mod test_proto_config {
 
         let reader = ConfigReader::init(runtime);
         let helper_map = reader
-            .resolve_descriptors(reader.read_proto(&test_file).await?)
+            .resolve_descriptors(reader.read_proto(&test_file, None).await?, None)
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {
