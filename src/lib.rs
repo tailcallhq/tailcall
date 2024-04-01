@@ -33,6 +33,7 @@ mod serde_value_ext;
 pub mod tracing;
 pub mod try_fold;
 pub mod valid;
+mod query_plan;
 
 use std::borrow::Cow;
 use std::hash::Hash;
