@@ -80,59 +80,81 @@ mod tests {
     use crate::auth::verification::Verification;
     use crate::auth::verify::Verify;
     use crate::blueprint::{Auth, Basic, Jwt, Provider};
+    use crate::http::RequestContext;
 
     #[tokio::test]
-    async fn verify() {
-        let verifier = AuthVerifier::from(Auth::Provider(Provider::Basic(Basic::test_value())));
+    async fn verify_wrong_password() {
+        let verifier = setup_basic_verifier();
         let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
-
-        assert_eq!(
-            verifier.verify(&req_ctx).await,
-            Verification::fail(Error::Invalid)
-        );
-
-        let req_ctx = create_basic_auth_request("testuser1", "password123");
-
-        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
+        verify_and_assert(&verifier, &req_ctx, Verification::fail(Error::Invalid)).await;
     }
 
     #[tokio::test]
-    async fn verify_and() {
-        let verifier = AuthVerifier::from(Auth::And(
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
-            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
-        ));
-        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
-
-        assert_eq!(
-            verifier.verify(&req_ctx).await,
-            Verification::fail(Error::Invalid)
-        );
-
+    async fn verify_correct_password() {
+        let verifier = setup_basic_verifier();
         let req_ctx = create_basic_auth_request("testuser1", "password123");
-
-        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
     }
 
     #[tokio::test]
-    async fn verify_any() {
-        let verifier = AuthVerifier::from(Auth::Or(
+    async fn verify_and_wrong_password() {
+        let verifier = setup_and_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
+        verify_and_assert(&verifier, &req_ctx, Verification::fail(Error::Invalid)).await;
+    }
+
+    #[tokio::test]
+    async fn verify_and_correct_password() {
+        let verifier = setup_and_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "password123");
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
+    }
+
+    #[tokio::test]
+    async fn verify_any_wrong_password() {
+        let verifier = setup_or_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
+        verify_and_assert(&verifier, &req_ctx, Verification::fail(Error::Invalid)).await;
+    }
+
+    #[tokio::test]
+    async fn verify_any_correct_password() {
+        let verifier = setup_or_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "password123");
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
+    }
+
+    #[tokio::test]
+    async fn verify_any_jwt_valid_token() {
+        let verifier = setup_or_verifier();
+        let req_ctx = create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID);
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
+    }
+
+    // Helper Functions
+    async fn verify_and_assert(
+        verifier: &AuthVerifier,
+        req_ctx: &RequestContext,
+        expected: Verification,
+    ) {
+        assert_eq!(verifier.verify(req_ctx).await, expected);
+    }
+
+    fn setup_basic_verifier() -> AuthVerifier {
+        AuthVerifier::from(Auth::Provider(Provider::Basic(Basic::test_value())))
+    }
+
+    fn setup_and_verifier() -> AuthVerifier {
+        AuthVerifier::from(Auth::And(
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+        ))
+    }
+
+    fn setup_or_verifier() -> AuthVerifier {
+        AuthVerifier::from(Auth::Or(
             Auth::Provider(Provider::Basic(Basic::test_value())).into(),
             Auth::Provider(Provider::Jwt(Jwt::test_value())).into(),
-        ));
-        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
-
-        assert_eq!(
-            verifier.verify(&req_ctx).await,
-            Verification::fail(Error::Invalid)
-        );
-
-        let req_ctx = create_basic_auth_request("testuser1", "password123");
-
-        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
-
-        let req_ctx = create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID);
-
-        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
+        ))
     }
 }
