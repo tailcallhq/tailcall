@@ -1,11 +1,12 @@
-mod gen_gql_schema;
-
+// mod gen_gql_schema;
+use autogen::Document;
 use std::env;
+use std::fs::File;
 use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{anyhow, Result};
-use gen_gql_schema::update_gql;
+// use gen_gql_schema::update_gql;
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
@@ -14,6 +15,7 @@ use tailcall::tracing::default_tracing_for_name;
 use tailcall::{cli, config};
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
+static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 
 #[tokio::main]
 async fn main() {
@@ -68,7 +70,9 @@ async fn mode_check() -> Result<()> {
 
 async fn mode_fix() -> Result<()> {
     update_json().await?;
-    update_gql()?;
+    let file = File::create(GRAPHQL_SCHEMA_FILE)?;
+    let mut doc = Document::new(file);
+    let _ = doc.print();
     Ok(())
 }
 

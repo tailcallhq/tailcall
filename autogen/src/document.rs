@@ -1,210 +1,15 @@
-use std::collections::{BTreeMap, HashSet};
-use std::fs::File;
-use std::io::Write;
+use crate::types::*;
 
+use crate::writer::IndentedWriter;
 use anyhow::Result;
-use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
 use schemars::Map;
+use std::collections::{BTreeMap, HashSet};
+use std::io::Write;
 use tailcall::config;
 use tailcall::scalar::CUSTOM_SCALARS;
-
-static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
-
-lazy_static! {
-    static ref DIRECTIVE_ALLOW_LIST: Vec<(&'static str, Vec<Entity>, bool)> = vec![
-        ("server", vec![Entity::Schema], false),
-        ("link", vec![Entity::Schema], true),
-        ("upstream", vec![Entity::Schema], false),
-        ("http", vec![Entity::FieldDefinition], false),
-        ("call", vec![Entity::FieldDefinition], false),
-        ("grpc", vec![Entity::FieldDefinition], false),
-        ("addField", vec![Entity::Object], true),
-        ("modify", vec![Entity::FieldDefinition], false),
-        ("telemetry", vec![Entity::FieldDefinition], false),
-        ("omit", vec![Entity::FieldDefinition], false),
-        ("groupBy", vec![Entity::FieldDefinition], false),
-        ("const", vec![Entity::FieldDefinition], false),
-        ("protected", vec![Entity::FieldDefinition], false),
-        ("graphQL", vec![Entity::FieldDefinition], false),
-        (
-            "cache",
-            vec![Entity::Object, Entity::FieldDefinition],
-            false,
-        ),
-        ("js", vec![Entity::FieldDefinition], false),
-        ("tag", vec![Entity::Object], false),
-    ];
-}
-
-static OBJECT_WHITELIST: &[&str] = &[
-    "ExprBody",
-    "If",
-    "Http",
-    "Grpc",
-    "GraphQL",
-    "Proxy",
-    "KeyValue",
-    "Batch",
-    "HttpVersion",
-    "Method",
-    "Encoding",
-    "Cache",
-    "Const",
-    "Encoding",
-    "ExprBody",
-    "JS",
-    "Modify",
-    "Telemetry",
-    "TelemetryInner",
-    "TelemetryExporter",
-    "StdoutExporter",
-    "OtlpExporter",
-    "PrometheusFormat",
-    "PrometheusExporter",
-    "Apollo",
-    "Cors",
-];
-
-#[derive(Clone, Copy)]
-enum Entity {
-    Schema,
-    Object,
-    FieldDefinition,
-}
-
-trait ToGraphql {
-    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()>;
-}
-
-impl ToGraphql for Entity {
-    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
-        match self {
-            Entity::Schema => {
-                write!(f, "SCHEMA")
-            }
-            Entity::Object => {
-                write!(f, "OBJECT")
-            }
-            Entity::FieldDefinition => {
-                write!(f, "FIELD_DEFINITION")
-            }
-        }
-    }
-}
-
-impl ToGraphql for Vec<Entity> {
-    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
-        let mut iter = self.iter();
-
-        let Some(first) = iter.next() else {
-            return Ok(());
-        };
-
-        write!(f, " on ")?;
-        first.to_graphql(f)?;
-
-        for entry in iter {
-            write!(f, " | ")?;
-            entry.to_graphql(f)?;
-        }
-
-        write!(f, "\n\n")
-    }
-}
-
-struct LineBreaker<'a> {
-    string: &'a str,
-    break_at: usize,
-    index: usize,
-}
-
-impl<'a> LineBreaker<'a> {
-    fn new(string: &'a str, break_at: usize) -> Self {
-        LineBreaker { string, break_at, index: 0 }
-    }
-}
-
-impl<'a> Iterator for LineBreaker<'a> {
-    type Item = &'a str;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.string.len() {
-            return None;
-        }
-
-        let end_index = self
-            .string
-            .chars()
-            .skip(self.index + self.break_at)
-            .enumerate()
-            .find(|(_, ch)| ch.is_whitespace())
-            .map(|(index, _)| self.index + self.break_at + index + 1)
-            .unwrap_or(self.string.len());
-
-        let start_index = self.index;
-        self.index = end_index;
-
-        Some(&self.string[start_index..end_index])
-    }
-}
-
-struct IndentedWriter<W: Write> {
-    writer: W,
-    indentation: usize,
-    line_broke: bool,
-}
-
-impl<W: Write> IndentedWriter<W> {
-    fn new(writer: W) -> Self {
-        IndentedWriter { writer, indentation: 0, line_broke: false }
-    }
-
-    fn indent(&mut self) {
-        self.indentation += 2;
-    }
-
-    fn unindent(&mut self) {
-        self.indentation -= 2;
-    }
-}
-
-impl<W: std::io::Write> Write for IndentedWriter<W> {
-    #[allow(clippy::same_item_push)]
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let mut new_buf = vec![];
-        let mut extra = 0;
-
-        for ch in buf {
-            if self.line_broke && self.indentation > 0 {
-                extra += self.indentation;
-                for _ in 0..self.indentation {
-                    new_buf.push(b' ');
-                }
-            }
-            self.line_broke = false;
-
-            new_buf.push(*ch);
-            if ch == &b'\n' {
-                self.line_broke = true;
-            }
-        }
-
-        self.writer.write(&new_buf).map(|a| a - extra)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.writer.flush()
-    }
-}
-
-#[derive(Debug)]
-enum ExtraTypes {
-    Schema,
-    ObjectValidation(ObjectValidation),
-}
 
 fn write_description(
     writer: &mut IndentedWriter<impl Write>,
@@ -540,28 +345,6 @@ fn write_directive(
     Ok(())
 }
 
-fn write_all_directives(
-    writer: &mut IndentedWriter<impl Write>,
-    written_directives: &mut HashSet<String>,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> Result<()> {
-    let schema = schemars::schema_for!(config::Config);
-
-    let defs: BTreeMap<String, Schema> = schema.definitions;
-    for (name, schema) in defs.iter() {
-        let schema = schema.clone().into_object();
-        write_directive(
-            writer,
-            name.clone(),
-            schema,
-            &defs,
-            written_directives,
-            extra_it,
-        )?;
-    }
-
-    Ok(())
-}
 #[allow(clippy::too_many_arguments)]
 fn write_array_validation(
     writer: &mut IndentedWriter<impl Write>,
@@ -607,111 +390,151 @@ fn write_object_validation(
     }
 }
 
-fn write_all_input_types(
-    writer: &mut IndentedWriter<impl Write>,
-    mut extra_it: BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
-    let schema = schemars::schema_for!(config::Config);
+pub struct Document<W: Write> {
+    writer: IndentedWriter<W>,
+}
+impl<W: Write> Document<W> {
+    pub fn new(dest: W) -> Self {
+        let writer = IndentedWriter::new(dest);
+        Document { writer }
+    }
 
-    let scalar = CUSTOM_SCALARS
-        .iter()
-        .map(|(k, v)| (k.clone(), v.scalar()))
-        .collect::<Map<String, Schema>>();
+    pub fn print(&mut self) -> anyhow::Result<()> {
+        self.update_gql()?;
+        Ok(())
+    }
 
-    let mut scalar_defs = BTreeMap::new();
+    pub fn update_gql(&mut self) -> Result<()> {
+        self.generate_rc_file()?;
+        Ok(())
+    }
 
-    for (name, obj) in scalar.iter() {
-        let scalar_definition = obj
-            .clone()
-            .into_object()
-            .object
-            .as_ref()
-            .and_then(|a| a.properties.get(name))
-            .and_then(|a| a.clone().into_object().metadata)
-            .and_then(|a| a.description);
+    fn generate_rc_file(&mut self) -> Result<()> {
+        let mut written_directives = HashSet::new();
 
-        if let Some(scalar_definition) = scalar_definition {
-            scalar_defs.insert(name.clone(), scalar_definition);
+        let mut extra_it = BTreeMap::new();
+
+        self.write_all_directives(&mut written_directives, &mut extra_it)?;
+        self.write_all_input_types(extra_it)?;
+
+        Ok(())
+    }
+
+    fn write_all_directives(
+        &mut self,
+        written_directives: &mut HashSet<String>,
+        extra_it: &mut BTreeMap<String, ExtraTypes>,
+    ) -> Result<()> {
+        let schema = schemars::schema_for!(config::Config);
+
+        let defs: BTreeMap<String, Schema> = schema.definitions;
+        for (name, schema) in defs.iter() {
+            let schema = schema.clone().into_object();
+            write_directive(
+                &mut self.writer,
+                name.clone(),
+                schema,
+                &defs,
+                written_directives,
+                extra_it,
+            )?;
         }
+
+        Ok(())
     }
 
-    let defs = schema.definitions;
+    fn write_all_input_types(
+        &mut self,
+        mut extra_it: BTreeMap<String, ExtraTypes>,
+    ) -> std::io::Result<()> {
+        let schema = schemars::schema_for!(config::Config);
 
-    let mut scalar = scalar
-        .keys()
-        .map(|v| v.to_string())
-        .collect::<HashSet<String>>();
+        let scalar = CUSTOM_SCALARS
+            .iter()
+            .map(|(k, v)| (k.clone(), v.scalar()))
+            .collect::<Map<String, Schema>>();
 
-    let mut types_added = HashSet::new();
-    for (name, input_type) in defs.iter() {
-        let mut name = name.clone();
-        first_char_to_upper(&mut name);
-        write_input_type(
-            writer,
-            name,
-            input_type.clone().into_object(),
-            &defs,
-            &mut scalar,
-            &mut extra_it,
-            &mut types_added,
-        )?;
-    }
+        let mut scalar_defs = BTreeMap::new();
 
-    let mut new_extra_it = BTreeMap::new();
+        for (name, obj) in scalar.iter() {
+            let scalar_definition = obj
+                .clone()
+                .into_object()
+                .object
+                .as_ref()
+                .and_then(|a| a.properties.get(name))
+                .and_then(|a| a.clone().into_object().metadata)
+                .and_then(|a| a.description);
 
-    for (name, extra_type) in extra_it.into_iter() {
-        match extra_type {
-            ExtraTypes::Schema => {
-                if let Some(schema) = defs.get(&name).cloned() {
-                    write_input_type(
-                        writer,
-                        name,
-                        schema.into_object(),
-                        &defs,
-                        &mut scalar,
-                        &mut new_extra_it,
-                        &mut types_added,
-                    )?
+            if let Some(scalar_definition) = scalar_definition {
+                scalar_defs.insert(name.clone(), scalar_definition);
+            }
+        }
+
+        let defs = schema.definitions;
+
+        let mut scalar = scalar
+            .keys()
+            .map(|v| v.to_string())
+            .collect::<HashSet<String>>();
+
+        let mut types_added = HashSet::new();
+        for (name, input_type) in defs.iter() {
+            let mut name = name.clone();
+            first_char_to_upper(&mut name);
+            write_input_type(
+                &mut self.writer,
+                name,
+                input_type.clone().into_object(),
+                &defs,
+                &mut scalar,
+                &mut extra_it,
+                &mut types_added,
+            )?;
+        }
+
+        let mut new_extra_it = BTreeMap::new();
+
+        for (name, extra_type) in extra_it.into_iter() {
+            match extra_type {
+                ExtraTypes::Schema => {
+                    if let Some(schema) = defs.get(&name).cloned() {
+                        write_input_type(
+                            &mut self.writer,
+                            name,
+                            schema.into_object(),
+                            &defs,
+                            &mut scalar,
+                            &mut new_extra_it,
+                            &mut types_added,
+                        )?
+                    }
                 }
-            }
-            ExtraTypes::ObjectValidation(obj_valid) => {
-                write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+                ExtraTypes::ObjectValidation(obj_valid) => write_object_validation(
+                    &mut self.writer,
+                    name,
+                    obj_valid,
+                    &defs,
+                    &mut new_extra_it,
+                )?,
             }
         }
-    }
 
-    let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
-    scalar_vector.sort();
+        let mut scalar_vector: Vec<String> = Vec::from_iter(scalar);
+        scalar_vector.sort();
 
-    for name in scalar_vector {
-        if scalar_defs.contains_key(&name) {
-            let def = scalar_defs.get(&name).unwrap();
-            writeln!(writer, "\"\"\"")?;
-            writeln!(writer, "{def}")?;
-            writeln!(writer, "\"\"\"")?;
-            writeln!(writer, "scalar {name}")?;
-        } else {
-            writeln!(writer, "scalar {name}")?;
+        for name in scalar_vector {
+            if scalar_defs.contains_key(&name) {
+                let def = scalar_defs.get(&name).unwrap();
+                writeln!(&mut self.writer, "\"\"\"")?;
+                writeln!(&mut self.writer, "{def}")?;
+                writeln!(&mut self.writer, "\"\"\"")?;
+                writeln!(&mut self.writer, "scalar {name}")?;
+            } else {
+                writeln!(&mut self.writer, "scalar {name}")?;
+            }
         }
+
+        Ok(())
     }
-
-    Ok(())
-}
-
-pub fn update_gql() -> Result<()> {
-    let file = File::create(GRAPHQL_SCHEMA_FILE)?;
-    generate_rc_file(file)?;
-    Ok(())
-}
-
-fn generate_rc_file(file: File) -> Result<()> {
-    let mut file = IndentedWriter::new(file);
-    let mut written_directives = HashSet::new();
-
-    let mut extra_it = BTreeMap::new();
-
-    write_all_directives(&mut file, &mut written_directives, &mut extra_it)?;
-    write_all_input_types(&mut file, extra_it)?;
-
-    Ok(())
 }
