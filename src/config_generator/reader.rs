@@ -24,8 +24,9 @@ struct FileRead {
 
 impl GeneratorReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { runtime: runtime.clone() }
+        Self { runtime }
     }
+
     pub async fn read_all<T: AsRef<str>>(&self, files: &[T], query: &str) -> Result<Config> {
         let mut links = vec![];
         let mut config = Config::default();
