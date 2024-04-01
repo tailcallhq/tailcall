@@ -158,23 +158,26 @@ mod tests {
 
     fn generate_method_variant(
         query: &RestQueryParam,
-        method: &str,
+        method: Method,
         default_query_param: &str,
     ) -> (String, Rest) {
         (
-            generate_query_with_directive(&query.string_with_method(method), default_query_param),
-            default_rest_with("/foo/$a", method.parse().unwrap(), "v"),
+            generate_query_with_directive(
+                &query.string_with_method(&method.to_string()),
+                default_query_param,
+            ),
+            default_rest_with("/foo/$a", method, "v"),
         )
     }
 
     fn all_methods_valid() -> HashMap<String, Rest> {
         let default_rest_query = DEFAULT_REST_QUERY.clone();
         HashMap::from([
-            generate_method_variant(&default_rest_query, "GET", DEFAULT_QUERY_PARAM),
-            generate_method_variant(&default_rest_query, "PUT", DEFAULT_QUERY_PARAM),
-            generate_method_variant(&default_rest_query, "DELETE", DEFAULT_QUERY_PARAM),
-            generate_method_variant(&default_rest_query, "HEAD", DEFAULT_QUERY_PARAM),
-            generate_method_variant(&default_rest_query, "PATCH", DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, Method::GET, DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, Method::PUT, DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, Method::DELETE, DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, Method::HEAD, DEFAULT_QUERY_PARAM),
+            generate_method_variant(&default_rest_query, Method::PATCH, DEFAULT_QUERY_PARAM),
         ])
     }
 
