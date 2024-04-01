@@ -314,10 +314,10 @@
       "title": "Empty",
       "type": "object",
       "required": [
-        "JSON"
+        "Empty"
       ],
       "properties": {
-        "JSON": {
+        "Empty": {
           "description": "Empty scalar type represents an empty value.",
           "type": "null"
         }

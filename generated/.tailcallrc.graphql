@@ -784,6 +784,9 @@ scalar Date
 field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 """
 scalar Email
+"""
+Empty scalar type represents an empty value.
+"""
 scalar Empty
 """
 The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).
