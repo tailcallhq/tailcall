@@ -61,7 +61,7 @@ impl ConfigReader {
             let config_link = links
                 .get(i)
                 .context(format!("Expected a link at index: {i} but found none"))?;
-            let path = ResourceReader::resolve_path(&config_link.src, parent_dir);
+            let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.resource_reader.read_file(&path).await?;
 
@@ -271,6 +271,17 @@ impl ConfigReader {
 
         Ok(protox_parse::parse(path, &content)?)
     }
+    
+        /// Checks if path is absolute else it joins file path with relative dir
+    /// path
+    fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
+        if Path::new(&src).is_absolute() {
+            src.to_string()
+        } else {
+            let path = root_dir.unwrap_or(Path::new(""));
+            path.join(src).to_string_lossy().to_string()
+        }
+    }
 }
 
 #[cfg(test)]
@@ -388,6 +399,8 @@ mod test_proto_config {
 
 #[cfg(test)]
 mod reader_tests {
+    use std::path::{Path, PathBuf};
+
     use pretty_assertions::assert_eq;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Type};
@@ -492,5 +505,20 @@ mod reader_tests {
         let content = file_rt.read(&path).await;
 
         assert_eq!(content.unwrap(), config.extensions.script.unwrap());
+    }
+
+    #[test]
+    fn test_relative_path() {
+        let path_dir = Path::new("abc/xyz");
+        let file_relative = "foo/bar/my.proto";
+        let file_absolute = "/foo/bar/my.proto";
+        assert_eq!(
+            path_dir.to_path_buf().join(file_relative),
+            PathBuf::from(ConfigReader::resolve_path(file_relative, Some(path_dir)))
+        );
+        assert_eq!(
+            "/foo/bar/my.proto",
+            ConfigReader::resolve_path(file_absolute, Some(path_dir))
+        );
     }
 }
