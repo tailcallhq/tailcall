@@ -1,11 +1,13 @@
 pub use date::*;
 pub use email::*;
+pub use empty::*;
 pub use json::*;
 pub use phone::*;
 pub use url::*;
 
 mod date;
 mod email;
+mod empty;
 mod json;
 mod phone;
 mod url;
@@ -25,6 +27,7 @@ lazy_static! {
             Arc::new(Date::default()),
             Arc::new(Url::default()),
             Arc::new(JSON::default()),
+            Arc::new(Empty::default()),
         ];
         let mut hm = HashMap::new();
 
