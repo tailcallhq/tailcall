@@ -11,6 +11,8 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 interface IA {
   a: String
 }
