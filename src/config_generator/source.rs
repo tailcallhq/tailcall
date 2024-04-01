@@ -26,9 +26,11 @@ impl GeneratorSource {
             GeneratorSource::PROTO => PROTO_EXT,
         }
     }
+
     fn ends_with(&self, content: &str) -> bool {
         content.ends_with(&format!(".{}", self.ext()))
     }
+
     pub fn detect(name: &str) -> Result<GeneratorSource, UnsupportedFileFormat> {
         ALL.iter()
             .find(|format| format.ends_with(name))

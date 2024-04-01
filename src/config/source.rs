@@ -2,10 +2,11 @@ use thiserror::Error;
 
 use super::Config;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum Source {
     Json,
     Yml,
+    #[default]
     GraphQL,
 }
 

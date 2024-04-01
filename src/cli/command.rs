@@ -56,15 +56,18 @@ pub enum Command {
         #[arg(default_value = ".")]
         folder_path: String,
     },
+
+    /// Generates a Tailcall Configuration from one or more source files.
     Gen {
-        /// Path for the generation source files separated
-        /// by spaces if more than one
+        /// Path of the source files separated by spaces if more than one
         #[arg(required = true)]
         file_paths: Vec<String>,
-        /// Output format
-        #[arg(required = true)]
+
+        /// Format of the output fil
         #[clap(short, long)]
-        output: Source,
+        output: Option<Source>,
+
+        /// Root query name
         #[arg(default_value = "Query")]
         #[clap(short, long)]
         query: String,
