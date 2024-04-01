@@ -28,7 +28,9 @@ pub async fn execute_grpc_request(
 ) -> Result<Response<async_graphql::Value>> {
     let response = runtime.http2_only.execute(request).await?;
 
-    let grpc_status = response.headers.get(GRPC_STATUS)
+    let grpc_status = response
+        .headers
+        .get(GRPC_STATUS)
         .and_then(|header_value| header_value.to_str().ok());
 
     if response.status.is_success() {
@@ -36,7 +38,7 @@ pub async fn execute_grpc_request(
             response.to_grpc_value(operation)
         } else {
             response.to_grpc_error(status_details)
-        }
+        };
     }
     bail!("Failed to execute request");
 }
@@ -44,25 +46,27 @@ pub async fn execute_grpc_request(
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-    use reqwest::header::HeaderMap;
-    use crate::grpc::request::{GRPC_MESSAGE, GRPC_STATUS, GRPC_STATUS_DETAILS};
-    use crate::http::Response;
-    use crate::HttpIO;
-    use hyper::body::Bytes;
+
     use anyhow::Result;
     use async_trait::async_trait;
-    use base64::Engine;
     use base64::prelude::BASE64_STANDARD_NO_PAD;
+    use base64::Engine;
+    use hyper::body::Bytes;
     use hyper::header::HeaderValue;
+    use reqwest::header::HeaderMap;
     use reqwest::{Method, Request, StatusCode};
     use serde_json::json;
     use tonic::Code;
+
     use crate::blueprint::{GrpcMessage, GrpcMethod};
     use crate::grpc::execute_grpc_request;
-    use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation, ProtobufSet};
     use crate::grpc::protobuf::tests::get_proto_file;
+    use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation, ProtobufSet};
+    use crate::grpc::request::{GRPC_MESSAGE, GRPC_STATUS, GRPC_STATUS_DETAILS};
+    use crate::http::Response;
     use crate::lambda::EvaluationError;
     use crate::runtime::TargetRuntime;
+    use crate::HttpIO;
 
     enum TestScenario {
         SuccessWithoutGrpcStatus,
@@ -84,41 +88,37 @@ mod tests {
 
             match self.scenario {
                 TestScenario::SuccessWithoutGrpcStatus => {
-                    Ok(Response {
-                        status: StatusCode::OK,
-                        headers,
-                        body: message,
-                    })
-                },
+                    Ok(Response { status: StatusCode::OK, headers, body: message })
+                }
                 TestScenario::SuccessWithOkGrpcStatus => {
                     headers.insert(GRPC_STATUS, HeaderValue::from_static("0"));
-                    Ok(Response {
-                        status: StatusCode::OK,
-                        headers,
-                        body: message,
-                    })
-                },
+                    Ok(Response { status: StatusCode::OK, headers, body: message })
+                }
                 TestScenario::SuccessWithErrorGrpcStatus => {
                     headers.insert(GRPC_STATUS, HeaderValue::from_static("3"));
-                    headers.insert(GRPC_MESSAGE, HeaderValue::from_static("description message"));
+                    headers.insert(
+                        GRPC_MESSAGE,
+                        HeaderValue::from_static("description message"),
+                    );
                     headers.insert(GRPC_STATUS_DETAILS, HeaderValue::try_from(error).unwrap());
-                    Ok(Response {
-                        status: StatusCode::OK,
-                        headers,
-                        body: Bytes::default(),
-                    })
-                },
-                TestScenario::Error => {
-                    Ok(Response {
-                        status: StatusCode::NOT_FOUND,
-                        headers,
-                        body: Bytes::default(),
-                    })
-                },
+                    Ok(Response { status: StatusCode::OK, headers, body: Bytes::default() })
+                }
+                TestScenario::Error => Ok(Response {
+                    status: StatusCode::NOT_FOUND,
+                    headers,
+                    body: Bytes::default(),
+                }),
             }
         }
     }
-    async fn prepare_args(test_http: TestHttp) -> Result<(TargetRuntime, ProtobufOperation, Option<ProtobufMessage>, Request)> {
+    async fn prepare_args(
+        test_http: TestHttp,
+    ) -> Result<(
+        TargetRuntime,
+        ProtobufOperation,
+        Option<ProtobufMessage>,
+        Request,
+    )> {
         let mut runtime = crate::runtime::test::init(None);
         runtime.http2_only = Arc::new(test_http);
 
@@ -137,50 +137,52 @@ mod tests {
 
     #[tokio::test]
     async fn test_grpc_request_success_without_grpc_status() -> Result<()> {
-        let test_http = TestHttp {
-            scenario: TestScenario::SuccessWithoutGrpcStatus,
-        };
+        let test_http = TestHttp { scenario: TestScenario::SuccessWithoutGrpcStatus };
         let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
 
         let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;
 
-
-        assert!(result.is_ok(), "Expected a successful response without grpc-status");
+        assert!(
+            result.is_ok(),
+            "Expected a successful response without grpc-status"
+        );
         Ok(())
     }
 
     #[tokio::test]
     async fn test_grpc_request_success_with_ok_grpc_status() -> Result<()> {
-        let test_http = TestHttp {
-            scenario: TestScenario::SuccessWithOkGrpcStatus,
-        };
+        let test_http = TestHttp { scenario: TestScenario::SuccessWithOkGrpcStatus };
         let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
 
         let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;
 
-        assert!(result.is_ok(), "Expected a successful response with '0' (Ok) grpc-status");
+        assert!(
+            result.is_ok(),
+            "Expected a successful response with '0' (Ok) grpc-status"
+        );
         Ok(())
     }
 
     #[tokio::test]
     async fn test_grpc_request_success_with_error_grpc_status() -> Result<()> {
-        let test_http = TestHttp {
-            scenario: TestScenario::SuccessWithErrorGrpcStatus,
-        };
+        let test_http = TestHttp { scenario: TestScenario::SuccessWithErrorGrpcStatus };
         let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
 
         let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;
 
-        assert!(result.is_err(), "Expected an error response due to grpc-status");
+        assert!(
+            result.is_err(),
+            "Expected an error response due to grpc-status"
+        );
 
         if let Err(err) = result {
             match err.downcast_ref::<EvaluationError>() {
                 Some(EvaluationError::GRPCError {
-                         grpc_code,
-                         grpc_description,
-                         grpc_status_message,
-                         grpc_status_details,
-                     }) => {
+                    grpc_code,
+                    grpc_description,
+                    grpc_status_message,
+                    grpc_status_details,
+                }) => {
                     let code = Code::InvalidArgument;
                     assert_eq!(*grpc_code, code as i32);
                     assert_eq!(*grpc_description, code.description());
@@ -191,7 +193,7 @@ mod tests {
                           "error": "error message"
                         })
                     );
-                },
+                }
                 _ => panic!("Expected GRPCError"),
             }
         }
@@ -200,9 +202,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_grpc_request_error() -> Result<()> {
-        let test_http = TestHttp {
-            scenario: TestScenario::Error,
-        };
+        let test_http = TestHttp { scenario: TestScenario::Error };
         let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
 
         let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;

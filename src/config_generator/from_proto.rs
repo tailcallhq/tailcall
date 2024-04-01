@@ -317,6 +317,7 @@ impl Context {
                     group_by: vec![],
                     headers: vec![],
                     method,
+                    error_message: None,
                 });
 
                 if let Some(method_name) = self.get(method_name) {

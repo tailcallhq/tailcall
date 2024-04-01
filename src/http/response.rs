@@ -1,8 +1,8 @@
 use anyhow::Result;
 use derive_setters::Setters;
 use hyper::body::Bytes;
-use tonic::Code;
 use serde::de::DeserializeOwned;
+use tonic::Code;
 
 use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation};
 use crate::lambda::EvaluationError;
@@ -71,15 +71,13 @@ impl Response<Bytes> {
                 .unwrap_or(-1),
         );
 
-        let details = self
-            .get_header_value(GRPC_STATUS_DETAILS)
-            .and_then(|d| {
-                let status = status_details.as_ref()?.decode(d.as_bytes());
-                if let Err(ref error) = status {
-                    tracing::error!("Error while decoding status_details: {}", error);
-                }
-                status.ok()
-            });
+        let details = self.get_header_value(GRPC_STATUS_DETAILS).and_then(|d| {
+            let status = status_details.as_ref()?.decode(d.as_bytes());
+            if let Err(ref error) = status {
+                tracing::error!("Error while decoding status_details: {}", error);
+            }
+            status.ok()
+        });
 
         let error = EvaluationError::GRPCError {
             grpc_code: grpc_code as i32,
@@ -103,6 +101,7 @@ impl Response<Bytes> {
 pub mod tests {
     use anyhow::Result;
     use hyper::http::HeaderValue;
+
     use crate::http::Response;
 
     #[tokio::test]
@@ -118,7 +117,7 @@ pub mod tests {
 
     #[tokio::test]
     async fn test_get_header_value_not_found() -> Result<()> {
-        let mut resp = Response::default();
+        let resp = Response::default();
         let key = "header";
         let val = resp.get_header_value(key);
 

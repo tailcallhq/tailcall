@@ -76,7 +76,7 @@ impl ProtobufSet {
     // TODO: load definitions from proto file for now, but in future
     // it could be more convenient to load FileDescriptorSet instead
     // either from file or server reflection
-    pub fn from_proto_file(file_descriptor_set: &FileDescriptorSet) -> Result<Self> {
+    pub fn from_proto_file(file_descriptor_set: FileDescriptorSet) -> Result<Self> {
         let descriptor_pool =
             DescriptorPool::from_file_descriptor_set(file_descriptor_set.clone())?;
         Ok(Self { descriptor_pool })
@@ -102,7 +102,12 @@ impl ProtobufSet {
         let message_descriptor = self
             .descriptor_pool
             .get_message_by_name(format!("{}.{}", grpc_message.package, grpc_message.name).as_str())
-            .with_context(|| format!("Couldn't find definitions for message {}", grpc_message.name))?;
+            .with_context(|| {
+                format!(
+                    "Couldn't find definitions for message {}",
+                    grpc_message.name
+                )
+            })?;
         Ok(ProtobufMessage { message_descriptor })
     }
 }
@@ -355,7 +360,7 @@ pub mod tests {
     #[tokio::test]
     async fn service_not_found() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings._unknown.foo").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("greetings.proto").await?)?;
         let error = file.find_service(&grpc_method).unwrap_err();
 
         assert_eq!(
@@ -369,7 +374,7 @@ pub mod tests {
     #[tokio::test]
     async fn method_not_found() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter._unknown").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("greetings.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let error = service.find_operation(&grpc_method).unwrap_err();
 
@@ -381,7 +386,7 @@ pub mod tests {
     #[tokio::test]
     async fn greetings_proto_file() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("greetings.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -403,7 +408,7 @@ pub mod tests {
     async fn news_proto_file() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
-        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("news.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -428,7 +433,7 @@ pub mod tests {
     #[tokio::test]
     async fn news_proto_file_multiple_messages() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetMultipleNews").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("news.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let multiple_operation = service.find_operation(&grpc_method)?;
 
@@ -467,10 +472,13 @@ pub mod tests {
     #[tokio::test]
     async fn message_not_found() -> Result<()> {
         let grpc_message = GrpcMessage::try_from("greetings._unknown").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("errors.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
         let error = file.find_message(&grpc_message).unwrap_err();
 
-        assert_eq!(error.to_string(), "Couldn't find definitions for message _unknown");
+        assert_eq!(
+            error.to_string(),
+            "Couldn't find definitions for message _unknown"
+        );
 
         Ok(())
     }
@@ -479,7 +487,7 @@ pub mod tests {
     async fn message_found() -> Result<()> {
         let grpc_message = GrpcMessage::try_from("greetings.ErrValidation").unwrap();
 
-        let file = ProtobufSet::from_proto_file(&get_proto_file("errors.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
         let message = file.find_message(&grpc_message);
 
         assert!(message.is_ok());
