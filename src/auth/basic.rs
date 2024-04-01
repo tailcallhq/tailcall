@@ -66,30 +66,50 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     }
 
     #[tokio::test]
-    async fn verify_passwords() {
-        let provider = BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
-
+    async fn verify_missing_credentials() {
+        let provider = setup_provider();
         let validation = provider.verify(&RequestContext::default()).await;
         assert_eq!(validation, Verification::fail(Error::Missing));
+    }
 
+    #[tokio::test]
+    async fn verify_wrong_password() {
+        let provider = setup_provider();
         let validation = provider
             .verify(&create_basic_auth_request("testuser1", "wrong-password"))
             .await;
         assert_eq!(validation, Verification::fail(Error::Invalid));
+    }
 
+    #[tokio::test]
+    async fn verify_correct_password_testuser1() {
+        let provider = setup_provider();
         let validation = provider
             .verify(&create_basic_auth_request("testuser1", "password123"))
             .await;
         assert_eq!(validation, Verification::succeed());
+    }
 
+    #[tokio::test]
+    async fn verify_correct_password_testuser2() {
+        let provider = setup_provider();
         let validation = provider
             .verify(&create_basic_auth_request("testuser2", "mypassword"))
             .await;
         assert_eq!(validation, Verification::succeed());
+    }
 
+    #[tokio::test]
+    async fn verify_correct_password_testuser3() {
+        let provider = setup_provider();
         let validation = provider
             .verify(&create_basic_auth_request("testuser3", "abc123"))
             .await;
         assert_eq!(validation, Verification::succeed());
+    }
+
+    // Helper function for setting up the provider
+    fn setup_provider() -> BasicVerifier {
+        BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() })
     }
 }
