@@ -2,6 +2,9 @@ use thiserror::Error;
 
 use crate::config::UnsupportedConfigFormat;
 
+///
+/// A list of sources from which a configuration can be created
+///
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum GeneratorSource {
     PROTO,
