@@ -36,7 +36,7 @@ pub struct Server {
     pub script: Option<Script>,
     pub cors: Option<Cors>,
     pub experimental_headers: HashSet<HeaderName>,
-    pub auth: Auth,
+    pub auth: Option<Auth>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
