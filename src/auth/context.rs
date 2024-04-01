@@ -1,8 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use anyhow::Result;
-
-use super::error::Error;
+use super::verification::Verification;
 use super::verify::{AuthVerifier, Verify};
 use crate::blueprint::Auth;
 use crate::http::RequestContext;
@@ -14,7 +12,7 @@ pub struct GlobalAuthContext {
 
 #[derive(Default)]
 pub struct AuthContext {
-    auth_result: RwLock<Option<Result<(), Error>>>,
+    auth_result: RwLock<Option<Verification>>,
     global_ctx: Arc<GlobalAuthContext>,
 }
 
@@ -23,11 +21,11 @@ impl GlobalAuthContext {
     // graphql way with additional info. But this actually requires rewrites to
     // expression to work with that type since otherwise any additional info
     // will be lost during conversion to anyhow::Error
-    async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
+    async fn validate(&self, request: &RequestContext) -> Verification {
         if let Some(verifier) = self.verifier.as_ref() {
             verifier.verify(request).await
         } else {
-            Ok(())
+            Verification::succeed()
         }
     }
 }
@@ -39,7 +37,7 @@ impl GlobalAuthContext {
 }
 
 impl AuthContext {
-    pub async fn validate(&self, request: &RequestContext) -> Result<(), Error> {
+    pub async fn validate(&self, request: &RequestContext) -> Verification {
         if let Some(result) = self.auth_result.read().unwrap().as_ref() {
             return result.clone();
         }
@@ -66,13 +64,14 @@ mod tests {
     use super::*;
     use crate::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
     use crate::auth::basic::BasicVerifier;
+    use crate::auth::error::Error;
     use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
     use crate::auth::jwt::jwt_verify::JwtVerifier;
     use crate::auth::verify::Verifier;
     use crate::blueprint;
 
     #[tokio::test]
-    async fn validate_request() -> Result<()> {
+    async fn validate_request() {
         let basic_provider =
             BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
         let jwt_options = blueprint::Jwt::test_value();
@@ -85,28 +84,22 @@ mod tests {
             )),
         };
 
-        let validation = auth_context
-            .validate(&RequestContext::default())
-            .await
-            .err();
-        assert_eq!(validation, Some(Error::Missing));
+        let validation = auth_context.validate(&RequestContext::default()).await;
+        assert_eq!(validation, Verification::fail(Error::Missing));
 
         let validation = auth_context
             .validate(&create_basic_auth_request("testuser1", "wrong-password"))
-            .await
-            .err();
-        assert_eq!(validation, Some(Error::Invalid));
+            .await;
+        assert_eq!(validation, Verification::fail(Error::Invalid));
 
         let validation = auth_context
             .validate(&create_basic_auth_request("testuser1", "password123"))
             .await;
-        assert!(validation.is_ok());
+        assert_eq!(validation, Verification::succeed());
 
         let validation = auth_context
             .validate(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
             .await;
-        assert!(validation.is_ok());
-
-        Ok(())
+        assert_eq!(validation, Verification::succeed());
     }
 }

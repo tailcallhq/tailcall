@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Authentication failed: parameters not provided in the request.",
+        "message": "Authentication Failure: parameters not provided in the request.",
         "locations": [
           {
             "line": 2,

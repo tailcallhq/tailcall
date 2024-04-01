@@ -2,7 +2,7 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
@@ -158,7 +158,12 @@ impl Eval for Expression {
                     left.eval(ctx.clone(), conc).await? == right.eval(ctx, conc).await?,
                 )),
                 Expression::Protect(expr) => {
-                    ctx.request_ctx.auth_ctx.validate(ctx.request_ctx).await?;
+                    ctx.request_ctx
+                        .auth_ctx
+                        .validate(ctx.request_ctx)
+                        .await
+                        .to_result()
+                        .map_err(|e| anyhow!("Authentication Failure: {}", e.to_string()))?;
                     expr.eval(ctx, conc).await
                 }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,

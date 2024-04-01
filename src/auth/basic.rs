@@ -1,9 +1,9 @@
-use anyhow::Result;
 use headers::authorization::Basic;
 use headers::{Authorization, HeaderMapExt};
 use htpasswd_verify::Htpasswd;
 
 use super::error::Error;
+use super::verification::Verification;
 use super::verify::Verify;
 use crate::blueprint;
 use crate::http::RequestContext;
@@ -15,17 +15,17 @@ pub struct BasicVerifier {
 #[async_trait::async_trait]
 impl Verify for BasicVerifier {
     /// Verify the request context against the basic auth provider.
-    async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
+    async fn verify(&self, req_ctx: &RequestContext) -> Verification {
         let header = req_ctx.allowed_headers.typed_get::<Authorization<Basic>>();
 
         let Some(header) = header else {
-            return Err(Error::Missing);
+            return Verification::fail(Error::Missing);
         };
 
         if self.verifier.check(header.username(), header.password()) {
-            Ok(())
+            Verification::succeed()
         } else {
-            Err(Error::Invalid)
+            Verification::fail(Error::Invalid)
         }
     }
 }
@@ -66,34 +66,30 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
     }
 
     #[tokio::test]
-    async fn verify_passwords() -> Result<()> {
-        let provider =
-            BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
+    async fn verify_passwords() {
+        let provider = BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
 
-        let validation = provider.verify(&RequestContext::default()).await.err();
-        assert_eq!(validation, Some(Error::Missing));
+        let validation = provider.verify(&RequestContext::default()).await;
+        assert_eq!(validation, Verification::fail(Error::Missing));
 
         let validation = provider
             .verify(&create_basic_auth_request("testuser1", "wrong-password"))
-            .await
-            .err();
-        assert_eq!(validation, Some(Error::Invalid));
+            .await;
+        assert_eq!(validation, Verification::fail(Error::Invalid));
 
         let validation = provider
             .verify(&create_basic_auth_request("testuser1", "password123"))
             .await;
-        assert!(validation.is_ok());
+        assert_eq!(validation, Verification::succeed());
 
         let validation = provider
             .verify(&create_basic_auth_request("testuser2", "mypassword"))
             .await;
-        assert!(validation.is_ok());
+        assert_eq!(validation, Verification::succeed());
 
         let validation = provider
             .verify(&create_basic_auth_request("testuser3", "abc123"))
             .await;
-        assert!(validation.is_ok());
-
-        Ok(())
+        assert_eq!(validation, Verification::succeed());
     }
 }

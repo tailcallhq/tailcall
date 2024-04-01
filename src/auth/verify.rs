@@ -1,17 +1,14 @@
-use std::cmp::max;
-
-use anyhow::Result;
-use futures_util::{join, TryFutureExt};
+use futures_util::join;
 
 use super::basic::BasicVerifier;
-use super::error::Error;
 use super::jwt::jwt_verify::JwtVerifier;
+use super::verification::Verification;
 use crate::blueprint;
 use crate::http::RequestContext;
 
 #[async_trait::async_trait]
 pub(crate) trait Verify {
-    async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error>;
+    async fn verify(&self, req_ctx: &RequestContext) -> Verification;
 }
 
 pub enum Verifier {
@@ -50,7 +47,7 @@ impl From<blueprint::Auth> for AuthVerifier {
 
 #[async_trait::async_trait]
 impl Verify for Verifier {
-    async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
+    async fn verify(&self, req_ctx: &RequestContext) -> Verification {
         match self {
             Verifier::Basic(basic) => basic.verify(req_ctx).await,
             Verifier::Jwt(jwt) => jwt.verify(req_ctx).await,
@@ -60,26 +57,15 @@ impl Verify for Verifier {
 
 #[async_trait::async_trait]
 impl Verify for AuthVerifier {
-    async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
+    async fn verify(&self, req_ctx: &RequestContext) -> Verification {
         match self {
             AuthVerifier::Single(verifier) => verifier.verify(req_ctx).await,
             AuthVerifier::And(left, right) => {
-                match join!(left.verify(req_ctx), right.verify(req_ctx)) {
-                    (Ok(_), Ok(_)) => Ok(()),
-                    (Ok(_), Err(err)) | (Err(err), Ok(_)) => Err(err),
-                    (Err(e1), Err(e2)) => Err(max(e1, e2)),
-                }
+                let (a, b) = join!(left.verify(req_ctx), right.verify(req_ctx));
+                a.and(b)
             }
             AuthVerifier::Or(left, right) => {
-                left.verify(req_ctx)
-                    .or_else(|e1| async {
-                        if let Err(e2) = right.verify(req_ctx).await {
-                            Err(max(e1, e2))
-                        } else {
-                            Ok(())
-                        }
-                    })
-                    .await
+                left.verify(req_ctx).await.or(right.verify(req_ctx).await)
             }
         }
     }
@@ -91,6 +77,7 @@ mod tests {
     use crate::auth::basic::tests::create_basic_auth_request;
     use crate::auth::error::Error;
     use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
+    use crate::auth::verification::Verification;
     use crate::auth::verify::Verify;
     use crate::blueprint::{Auth, Basic, Jwt, Provider};
 
@@ -99,11 +86,14 @@ mod tests {
         let verifier = AuthVerifier::from(Auth::Provider(Provider::Basic(Basic::test_value())));
         let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
 
-        assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Invalid));
+        assert_eq!(
+            verifier.verify(&req_ctx).await,
+            Verification::fail(Error::Invalid)
+        );
 
         let req_ctx = create_basic_auth_request("testuser1", "password123");
 
-        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
     }
 
     #[tokio::test]
@@ -114,11 +104,14 @@ mod tests {
         ));
         let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
 
-        assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Invalid));
+        assert_eq!(
+            verifier.verify(&req_ctx).await,
+            Verification::fail(Error::Invalid)
+        );
 
         let req_ctx = create_basic_auth_request("testuser1", "password123");
 
-        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
     }
 
     #[tokio::test]
@@ -129,14 +122,17 @@ mod tests {
         ));
         let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
 
-        assert_eq!(verifier.verify(&req_ctx).await, Err(Error::Invalid));
+        assert_eq!(
+            verifier.verify(&req_ctx).await,
+            Verification::fail(Error::Invalid)
+        );
 
         let req_ctx = create_basic_auth_request("testuser1", "password123");
 
-        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
 
         let req_ctx = create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID);
 
-        assert_eq!(verifier.verify(&req_ctx).await, Ok(()));
+        assert_eq!(verifier.verify(&req_ctx).await, Verification::succeed());
     }
 }
