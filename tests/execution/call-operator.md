@@ -77,7 +77,7 @@ type News {
 type UserWithPosts {
   id: Int!
   name: String!
-  posts: [Post] @call(query: "userPosts", args: {id: "{{value.id}}"})
+  posts: [Post] @call(steps: [{query: "userPosts", args: {id: "{{value.id}}"}}])
 }
 
 type User {
@@ -94,15 +94,15 @@ type Post {
   userId: Int!
   title: String
   body: String
-  user1: User @call(query: "user1")
-  userFromValue: User @call(query: "userFromValue")
-  user: User @call(query: "user", args: {id: "{{value.userId}}"})
-  userHttpHeaders: User @call(query: "userHttpHeaders", args: {id: "{{value.userId}}"})
-  userHttpQuery: User @call(query: "userHttpQuery", args: {id: "{{value.userId}}"})
-  userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
-  userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
-  news: NewsData! @call(query: "news")
-  newsWithPortArg: NewsData! @call(query: "news", args: {port: 50051})
+  user1: User @call(steps: [{query: "user1"}])
+  userFromValue: User @call(steps: [{query: "userFromValue"}])
+  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+  userHttpHeaders: User @call(steps: [{query: "userHttpHeaders", args: {id: "{{value.userId}}"}}])
+  userHttpQuery: User @call(steps: [{query: "userHttpQuery", args: {id: "{{value.userId}}"}}])
+  userGraphQL: User @call(steps: [{query: "userGraphQL", args: {id: "{{value.userId}}"}}])
+  userGraphQLHeaders: User @call(steps: [{query: "userGraphQLHeaders", args: {id: "{{value.userId}}"}}])
+  news: NewsData! @call(steps: [{query: "news"}])
+  newsWithPortArg: NewsData! @call(steps: [{query: "news", args: {port: 50051}}])
 }
 ```
 

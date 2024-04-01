@@ -201,6 +201,16 @@ impl<A, E> From<Fusion<A, E>> for Valid<A, E> {
     }
 }
 
+impl<A, E> Clone for Valid<A, E>
+where
+    A: Clone,
+    E: Clone,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Cause, ValidationError};

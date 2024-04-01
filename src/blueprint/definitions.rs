@@ -5,7 +5,7 @@ use regex::Regex;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Config, Field, GraphQLOperationType, Union};
+use crate::config::{Config, Field, GraphQLOperationType, Protected, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
@@ -318,11 +318,12 @@ fn update_resolver_from_path(
     })
 }
 
-/// Sets empty resolver to fields that has
-/// nested resolvers for its fields.
-/// To solve the problem that by default such fields will be resolved to null
-/// value and nested resolvers won't be called
-pub fn update_nested_resolvers<'a>(
+/// This function iterates over all types and their fields identifying paths to
+/// fields with dangling resolvers and fixes them. Dangling resolvers are those
+/// resolvers that cannot be resolved from the root of the schema. This function
+/// finds such dangling resolvers and creates a resolvable path from the root
+/// schema.
+pub fn fix_dangling_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
@@ -396,11 +397,11 @@ fn to_fields(
             .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
             .and(update_const_field().trace(config::Const::trace_name().as_str()))
             .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
-            .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
             .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
-            .and(update_nested_resolvers())
+            .and(fix_dangling_resolvers())
             .and(update_cache_resolvers())
+            .and(update_protected().trace(Protected::trace_name().as_str()))
             .try_fold(
                 &(config_module, field, type_of, name),
                 FieldDefinition::default(),

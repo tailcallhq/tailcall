@@ -2,6 +2,7 @@ use tailcall::{blueprint, EnvIO, FileIO, HttpIO};
 
 #[cfg(test)]
 pub mod test {
+    use std::borrow::Cow;
     use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
@@ -118,8 +119,8 @@ pub mod test {
     }
 
     impl EnvIO for TestEnvIO {
-        fn get(&self, key: &str) -> Option<String> {
-            self.vars.get(key).cloned()
+        fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+            self.vars.get(key).map(Cow::from)
         }
     }
 

@@ -53,3 +53,29 @@ async fn test_with_args() {
 
     assert_eq!(actual, expected);
 }
+
+#[tokio::test]
+async fn test_with_args_piping() {
+    let args = Expression::Literal(
+        DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap(),
+    );
+
+    let expr = Expression::Literal(DynamicValue::Mustache(
+        Mustache::parse("{{args.a}}").unwrap(),
+    ))
+    .with_args(args)
+    .and_then(Expression::Literal(DynamicValue::Mustache(
+        Mustache::parse("{{args.b}}").unwrap(),
+    )))
+    .and_then(Expression::Literal(DynamicValue::Mustache(
+        Mustache::parse("{{args.c}}").unwrap(),
+    )))
+    .and_then(Expression::Literal(DynamicValue::Mustache(
+        Mustache::parse("{{args.d}}").unwrap(),
+    )));
+
+    let actual = eval(&expr).await.unwrap();
+    let expected = Value::from_json(json!("e")).unwrap();
+
+    assert_eq!(actual, expected);
+}

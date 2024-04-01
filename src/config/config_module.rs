@@ -2,6 +2,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use derive_setters::Setters;
+use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
@@ -48,6 +49,10 @@ pub struct Extensions {
 
     /// Contains the endpoints
     pub endpoint_set: EndpointSet<Unchecked>,
+
+    pub htpasswd: Vec<Content<String>>,
+
+    pub jwks: Vec<Content<JwkSet>>,
 }
 
 impl Extensions {
@@ -64,6 +69,10 @@ impl Extensions {
 
         Some(result)
     }
+
+    pub fn has_auth(&self) -> bool {
+        !self.htpasswd.is_empty() || !self.jwks.is_empty()
+    }
 }
 
 impl MergeRight for Extensions {
@@ -79,6 +88,8 @@ impl MergeRight for Extensions {
             self.keys
         };
         self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set);
+        self.htpasswd = self.htpasswd.merge_right(other.htpasswd);
+        self.jwks = self.jwks.merge_right(other.jwks);
         self
     }
 }

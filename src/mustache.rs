@@ -338,6 +338,15 @@ mod tests {
                 ])])
             );
         }
+
+        #[test]
+        fn single_curly_brackets() {
+            let result = Mustache::parse("test:{SHA}string").unwrap();
+            assert_eq!(
+                result,
+                Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())])
+            );
+        }
     }
 
     mod render {

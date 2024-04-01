@@ -6,6 +6,8 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 enum Foo {
   BAR
   BAZ
@@ -16,7 +18,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  foo: Foo
+  foo(val: String!): Foo
 }
 
 scalar Url

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package dummy;
+
+message Dummy {
+    repeated int32 ints = 1;
+    repeated bool flags = 2;
+    repeated string names = 3;
+    repeated float floats = 4;
+}
+
+service DummyService {
+    rpc GetDummy(Dummy) returns (Dummy) {}
+}
