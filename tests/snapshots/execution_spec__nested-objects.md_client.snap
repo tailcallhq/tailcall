@@ -11,6 +11,8 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 type Geo {
   lat: String
   lng: String

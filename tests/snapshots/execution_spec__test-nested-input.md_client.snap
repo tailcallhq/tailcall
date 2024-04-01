@@ -22,6 +22,8 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 scalar JSON
 
 scalar PhoneNumber

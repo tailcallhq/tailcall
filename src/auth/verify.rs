@@ -1,90 +1,160 @@
-use anyhow::Result;
-use async_std::prelude::FutureExt;
+use futures_util::join;
 
 use super::basic::BasicVerifier;
-use super::error::Error;
 use super::jwt::jwt_verify::JwtVerifier;
+use super::verification::Verification;
 use crate::blueprint;
 use crate::http::RequestContext;
 
 #[async_trait::async_trait]
 pub(crate) trait Verify {
-    async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error>;
+    async fn verify(&self, req_ctx: &RequestContext) -> Verification;
 }
 
-#[allow(clippy::large_enum_variant)]
-// The difference in size is indeed significant here
-// but it's quite unlikely that someone will require to store several hundreds
-// of providers or more to care much
-pub enum AuthVerifier {
+pub enum Verifier {
     Basic(BasicVerifier),
     Jwt(JwtVerifier),
-    Or(Box<AuthVerifier>, Box<AuthVerifier>),
-    And(Box<AuthVerifier>, Box<AuthVerifier>),
 }
 
-impl AuthVerifier {
-    pub fn new(provider: blueprint::Auth) -> Option<Self> {
+pub enum AuthVerifier {
+    Single(Verifier),
+    And(Box<AuthVerifier>, Box<AuthVerifier>),
+    Or(Box<AuthVerifier>, Box<AuthVerifier>),
+}
+
+impl From<blueprint::Provider> for Verifier {
+    fn from(provider: blueprint::Provider) -> Self {
         match provider {
-            blueprint::Auth::Basic(options) => {
-                Some(AuthVerifier::Basic(BasicVerifier::new(options)))
-            }
-            blueprint::Auth::Jwt(options) => Some(AuthVerifier::Jwt(JwtVerifier::new(options))),
-            blueprint::Auth::And(a, b) => {
-                let a = Self::new(*a);
-                let b = Self::new(*b);
-
-                match (a, b) {
-                    (None, None) => None,
-                    (Some(a), None) => Some(a),
-                    (None, Some(b)) => Some(b),
-                    (Some(a), Some(b)) => Some(AuthVerifier::And(Box::new(a), Box::new(b))),
-                }
-            }
-            blueprint::Auth::Or(a, b) => {
-                let a = Self::new(*a);
-                let b = Self::new(*b);
-
-                match (a, b) {
-                    (None, None) => None,
-                    (Some(a), None) => Some(a),
-                    (None, Some(b)) => Some(b),
-                    (Some(a), Some(b)) => Some(AuthVerifier::Or(Box::new(a), Box::new(b))),
-                }
-            }
-            blueprint::Auth::Empty => None,
+            blueprint::Provider::Basic(options) => Verifier::Basic(BasicVerifier::new(options)),
+            blueprint::Provider::Jwt(options) => Verifier::Jwt(JwtVerifier::new(options)),
         }
     }
+}
 
-    #[cfg(test)]
-    pub fn or(self, other: AuthVerifier) -> Self {
-        AuthVerifier::Or(Box::new(self), Box::new(other))
+impl From<blueprint::Auth> for AuthVerifier {
+    fn from(provider: blueprint::Auth) -> Self {
+        match provider {
+            blueprint::Auth::Provider(provider) => AuthVerifier::Single(provider.into()),
+            blueprint::Auth::And(left, right) => {
+                AuthVerifier::And(Box::new((*left).into()), Box::new((*right).into()))
+            }
+            blueprint::Auth::Or(left, right) => {
+                AuthVerifier::Or(Box::new((*left).into()), Box::new((*right).into()))
+            }
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl Verify for Verifier {
+    async fn verify(&self, req_ctx: &RequestContext) -> Verification {
+        match self {
+            Verifier::Basic(basic) => basic.verify(req_ctx).await,
+            Verifier::Jwt(jwt) => jwt.verify(req_ctx).await,
+        }
     }
 }
 
 #[async_trait::async_trait]
 impl Verify for AuthVerifier {
-    async fn verify(&self, req_ctx: &RequestContext) -> Result<(), Error> {
+    async fn verify(&self, req_ctx: &RequestContext) -> Verification {
         match self {
-            AuthVerifier::Basic(basic) => basic.verify(req_ctx).await,
-            AuthVerifier::Jwt(jwt) => jwt.verify(req_ctx).await,
-            AuthVerifier::Or(left, right) => {
-                let left_result = left.verify(req_ctx).await;
-                if left_result.is_err() {
-                    right.verify(req_ctx).await
-                } else {
-                    Ok(())
-                }
-            }
+            AuthVerifier::Single(verifier) => verifier.verify(req_ctx).await,
             AuthVerifier::And(left, right) => {
-                let (a, b) = left.verify(req_ctx).join(right.verify(req_ctx)).await;
-                match (a, b) {
-                    (Ok(_), Ok(_)) => Ok(()),
-                    (Ok(_), Err(e)) => Err(e),
-                    (Err(e), Ok(_)) => Err(e),
-                    (Err(e1), Err(e2)) => Err(e1.max(e2)),
-                }
+                let (a, b) = join!(left.verify(req_ctx), right.verify(req_ctx));
+                a.and(b)
+            }
+            AuthVerifier::Or(left, right) => {
+                left.verify(req_ctx).await.or(right.verify(req_ctx).await)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AuthVerifier;
+    use crate::auth::basic::tests::create_basic_auth_request;
+    use crate::auth::error::Error;
+    use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
+    use crate::auth::verification::Verification;
+    use crate::auth::verify::Verify;
+    use crate::blueprint::{Auth, Basic, Jwt, Provider};
+    use crate::http::RequestContext;
+
+    #[tokio::test]
+    async fn verify_wrong_password() {
+        let verifier = setup_basic_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
+        verify_and_assert(&verifier, &req_ctx, Verification::fail(Error::Invalid)).await;
+    }
+
+    #[tokio::test]
+    async fn verify_correct_password() {
+        let verifier = setup_basic_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "password123");
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
+    }
+
+    #[tokio::test]
+    async fn verify_and_wrong_password() {
+        let verifier = setup_and_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
+        verify_and_assert(&verifier, &req_ctx, Verification::fail(Error::Invalid)).await;
+    }
+
+    #[tokio::test]
+    async fn verify_and_correct_password() {
+        let verifier = setup_and_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "password123");
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
+    }
+
+    #[tokio::test]
+    async fn verify_any_wrong_password() {
+        let verifier = setup_or_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "wrong-password");
+        verify_and_assert(&verifier, &req_ctx, Verification::fail(Error::Invalid)).await;
+    }
+
+    #[tokio::test]
+    async fn verify_any_correct_password() {
+        let verifier = setup_or_verifier();
+        let req_ctx = create_basic_auth_request("testuser1", "password123");
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
+    }
+
+    #[tokio::test]
+    async fn verify_any_jwt_valid_token() {
+        let verifier = setup_or_verifier();
+        let req_ctx = create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID);
+        verify_and_assert(&verifier, &req_ctx, Verification::succeed()).await;
+    }
+
+    // Helper Functions
+    async fn verify_and_assert(
+        verifier: &AuthVerifier,
+        req_ctx: &RequestContext,
+        expected: Verification,
+    ) {
+        assert_eq!(verifier.verify(req_ctx).await, expected);
+    }
+
+    fn setup_basic_verifier() -> AuthVerifier {
+        AuthVerifier::from(Auth::Provider(Provider::Basic(Basic::test_value())))
+    }
+
+    fn setup_and_verifier() -> AuthVerifier {
+        AuthVerifier::from(Auth::And(
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+        ))
+    }
+
+    fn setup_or_verifier() -> AuthVerifier {
+        AuthVerifier::from(Auth::Or(
+            Auth::Provider(Provider::Basic(Basic::test_value())).into(),
+            Auth::Provider(Provider::Jwt(Jwt::test_value())).into(),
+        ))
     }
 }

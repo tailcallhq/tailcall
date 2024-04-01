@@ -186,7 +186,7 @@ impl Context {
                     cfg_field.type_of = self.get(&type_of).unwrap_or(type_of);
                 }
 
-                ty.fields.insert(field_name, cfg_field);
+                ty.fields.insert(field_name.to_case(Case::Camel), cfg_field);
             }
 
             self = self.insert_type(&msg_name, ty);
@@ -297,9 +297,9 @@ impl Context {
                     cfg_field.args.insert(k, v);
                 }
 
-                let (output_ty, required) = get_output_ty(method.output_type());
+                let output_ty = get_output_ty(method.output_type());
                 cfg_field.type_of = self.get(&output_ty).unwrap_or(output_ty.clone());
-                cfg_field.required = required;
+                cfg_field.required = true;
 
                 grpc_method.service = service_name.clone();
                 grpc_method.name = method_name.to_string();
@@ -346,16 +346,16 @@ fn convert_ty(proto_ty: &str) -> String {
 }
 
 /// Determines the output type for a service method.
-fn get_output_ty(output_ty: &str) -> (String, bool) {
+fn get_output_ty(output_ty: &str) -> String {
     // type, required
     match output_ty {
         "google.protobuf.Empty" => {
-            // If it's no response is expected, we return a nullable string type
-            ("String".to_string(), false)
+            // If it's no response is expected, we return an Empty scalar type
+            "Empty".to_string()
         }
         any => {
             // Setting it not null by default. There's no way to infer this from proto file
-            (any.to_string(), true)
+            any.to_string()
         }
     }
 }
