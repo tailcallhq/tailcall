@@ -75,7 +75,13 @@ impl Response<Bytes> {
 
         let details = self
             .get_header_value(GRPC_STATUS_DETAILS)
-            .and_then(|d| status_details.as_ref()?.decode(d.as_bytes()).ok());
+            .and_then(|d| {
+                let status = status_details.as_ref()?.decode(d.as_bytes());
+                if let Err(ref error) = status {
+                    tracing::error!("Error while decoding status_details: {}", error);
+                }
+                status.ok()
+            });
 
         let error = EvaluationError::GRPCError {
             grpc_code: grpc_code as i32,
@@ -92,5 +98,33 @@ impl Response<Bytes> {
             status: self.status,
             headers: self.headers,
         })
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use anyhow::Result;
+    use hyper::http::HeaderValue;
+    use crate::http::Response;
+
+    #[tokio::test]
+    async fn test_get_header_value_found() -> Result<()> {
+        let mut resp = Response::default();
+        let key = "header";
+        resp.headers.insert(key, HeaderValue::from_static("value"));
+        let val = resp.get_header_value(key);
+
+        assert!(val.is_some());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_header_value_not_found() -> Result<()> {
+        let mut resp = Response::default();
+        let key = "header";
+        let val = resp.get_header_value(key);
+
+        assert!(val.is_none());
+        Ok(())
     }
 }

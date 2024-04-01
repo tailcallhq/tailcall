@@ -101,7 +101,7 @@ impl ProtobufSet {
         let message_descriptor = self
             .descriptor_pool
             .get_message_by_name(format!("{}.{}", grpc_message.package, grpc_message.name).as_str())
-            .with_context(|| format!("Couldn't find definitions for message {}", grpc_message))?;
+            .with_context(|| format!("Couldn't find definitions for message {}", grpc_message.name))?;
         Ok(ProtobufMessage { message_descriptor })
     }
 }
@@ -222,7 +222,6 @@ impl ProtobufOperation {
             })?;
 
         let json = serde_json::to_value(message)?;
-
         Ok(async_graphql::Value::from_json(json)?)
     }
 }
@@ -435,6 +434,29 @@ pub mod tests {
               ]
             })
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn message_not_found() -> Result<()> {
+        let grpc_message = GrpcMessage::try_from("greetings._unknown").unwrap();
+        let file = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
+        let error = file.find_message(&grpc_message).unwrap_err();
+
+        assert_eq!(error.to_string(), "Couldn't find definitions for message _unknown");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn message_found() -> Result<()> {
+        let grpc_message = GrpcMessage::try_from("greetings.ErrValidation").unwrap();
+
+        let file = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
+        let message = file.find_message(&grpc_message);
+
+        assert!(message.is_ok());
 
         Ok(())
     }
