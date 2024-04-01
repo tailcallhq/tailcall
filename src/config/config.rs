@@ -12,7 +12,7 @@ use super::telemetry::Telemetry;
 use super::{Expr, KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
-use crate::config_generator::from_openapi::config_from_openapi_spec;
+use crate::config_generator::from_openapi::OpenApiToGraphQLConverter;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
@@ -743,8 +743,8 @@ impl Config {
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(config_from_openapi_spec(yaml).unwrap())
-        // Ok(serde_yaml::from_str(yaml)?)
+        // Ok(config_from_openapi_spec(yaml).unwrap())
+        Ok(serde_yaml::from_str(yaml)?)
     }
 
     pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
@@ -764,7 +764,7 @@ impl Config {
     }
 
     pub fn from_open_api_spec(openapi: &str) -> Result<Self> {
-        config_from_openapi_spec(openapi)
+        Ok(OpenApiToGraphQLConverter::new(openapi)?.convert())
     }
 
     pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {

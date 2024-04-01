@@ -1,24 +1,10 @@
 ---
 source: src/config_generator/from_openapi.rs
-expression: config_from_openapi_spec(content.as_str()).unwrap().to_sdl()
+expression: "OpenApiToGraphQLConverter::new(content.as_str()).unwrap().convert().to_sdl()"
 ---
 schema @server(graphiql: true) @upstream(baseURL: "https://api.spotify.com/v1") {
   query: Query
 }
-
-scalar AlbumObject
-
-scalar ArtistDiscographyAlbumObject
-
-scalar AudiobookObject
-
-scalar ChapterObject
-
-scalar CursorPagingPlayHistoryObject
-
-scalar CursorPagingSimplifiedArtistObject
-
-scalar EpisodeObject
 
 scalar Key
 
@@ -26,79 +12,86 @@ scalar Loudness
 
 scalar Mode
 
-scalar PagingArtistDiscographyAlbumObject
-
-scalar PagingArtistObject
-
-scalar PagingPlaylistObject
-
-scalar PagingPlaylistTrackObject
-
-scalar PagingSavedAlbumObject
-
-scalar PagingSavedAudiobookObject
-
-scalar PagingSavedEpisodeObject
-
-scalar PagingSavedShowObject
-
-scalar PagingSavedTrackObject
-
-scalar PagingSimplifiedAlbumObject
-
-scalar PagingSimplifiedAudiobookObject
-
-scalar PagingSimplifiedChapterObject
-
-scalar PagingSimplifiedEpisodeObject
-
-scalar PagingSimplifiedShowObject
-
-scalar PagingSimplifiedTrackObject
-
-scalar PagingTrackObject
-
-scalar PlaylistOwnerObject
-
-scalar ShowObject
-
-scalar SimplifiedAlbumObject
-
-scalar SimplifiedAudiobookObject
-
-scalar SimplifiedChapterObject
-
-scalar SimplifiedEpisodeObject
-
-scalar SimplifiedShowObject
-
 scalar Tempo
 
 scalar TimeSignature
 
+scalar Type24
+
+scalar Type27
+
+scalar Type3
+
+scalar Type37
+
+scalar Type43
+
+scalar Type47
+
+scalar Type55
+
+scalar Type56
+
+scalar Type58
+
+scalar Type59
+
+scalar Type74
+
+scalar Type8
+
+scalar Type80
+
 type AlbumBase {
-  album_type: String!
-  available_markets: Array!
-  external_urls: Object!
+  albumType: String!
+  availableMarkets: Array!
+  externalUrls: Type3!
   href: String!
   id: String!
   images: Array!
   name: String!
-  release_date: String!
-  release_date_precision: String!
-  restrictions: Object
-  total_tracks: Int!
+  releaseDate: String!
+  releaseDatePrecision: String!
+  restrictions: Type4
+  totalTracks: Int!
   type: String!
   uri: String!
+}
+
+type AlbumObject {
+  albumType: String
+  artists: Array!
+  availableMarkets: Array
+  copyrights: Array!
+  externalIds: Type7!
+  externalUrls: Type5
+  genres: Array!
+  href: String
+  id: String
+  images: Array
+  label: String!
+  name: String
+  popularity: Int!
+  releaseDate: String
+  releaseDatePrecision: String
+  restrictions: Type6
+  totalTracks: Int
+  tracks: Type8!
+  type: String
+  uri: String
 }
 
 type AlbumRestrictionObject {
   reason: String
 }
 
+type ArtistDiscographyAlbumObject {
+  albumGroup: String
+}
+
 type ArtistObject {
-  external_urls: Object
-  followers: Object
+  externalUrls: Type9
+  followers: Type10
   genres: Array
   href: String
   id: String
@@ -121,9 +114,9 @@ type AudioAnalysisObject {
 
 type AudioFeaturesObject {
   acousticness: Number
-  analysis_url: String
+  analysisUrl: String
   danceability: Number
-  duration_ms: Int
+  durationMs: Int
   energy: Number
   id: String
   instrumentalness: Number
@@ -133,8 +126,8 @@ type AudioFeaturesObject {
   mode: Int
   speechiness: Number
   tempo: Number
-  time_signature: Int
-  track_href: String
+  timeSignature: Int
+  trackHref: String
   type: String
   uri: String
   valence: Number
@@ -142,24 +135,47 @@ type AudioFeaturesObject {
 
 type AudiobookBase {
   authors: Array!
-  available_markets: Array!
+  availableMarkets: Array!
   copyrights: Array!
   description: String!
   edition: String
   explicit: Boolean!
-  external_urls: Object!
+  externalUrls: Type11!
   href: String!
-  html_description: String!
+  htmlDescription: String!
   id: String!
   images: Array!
   languages: Array!
-  media_type: String!
+  mediaType: String!
   name: String!
   narrators: Array!
   publisher: String!
-  total_chapters: Int!
+  totalChapters: Int!
   type: String!
   uri: String!
+}
+
+type AudiobookObject {
+  authors: Array
+  availableMarkets: Array
+  chapters: Object
+  copyrights: Array
+  description: String
+  edition: String
+  explicit: Boolean
+  externalUrls: Type12
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  languages: Array
+  mediaType: String
+  name: String
+  narrators: Array
+  publisher: String
+  totalChapters: Int
+  type: String
+  uri: String
 }
 
 type AuthorObject {
@@ -174,26 +190,50 @@ type CategoryObject {
 }
 
 type ChapterBase {
-  audio_preview_url: String!
-  available_markets: Array
-  chapter_number: Int!
+  audioPreviewUrl: String!
+  availableMarkets: Array
+  chapterNumber: Int!
   description: String!
-  duration_ms: Int!
+  durationMs: Int!
   explicit: Boolean!
-  external_urls: Object!
+  externalUrls: Type13!
   href: String!
-  html_description: String!
+  htmlDescription: String!
   id: String!
   images: Array!
-  is_playable: Boolean!
+  isPlayable: Boolean!
   languages: Array!
   name: String!
-  release_date: String!
-  release_date_precision: String!
-  restrictions: Object
-  resume_point: Object
+  releaseDate: String!
+  releaseDatePrecision: String!
+  restrictions: Type14
+  resumePoint: Type15
   type: String!
   uri: String!
+}
+
+type ChapterObject {
+  audioPreviewUrl: String
+  audiobook: Type19
+  availableMarkets: Array
+  chapterNumber: Int
+  description: String
+  durationMs: Int
+  explicit: Boolean
+  externalUrls: Type16
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  isPlayable: Boolean
+  languages: Array
+  name: String
+  releaseDate: String
+  releaseDatePrecision: String
+  restrictions: Type17
+  resumePoint: Type18
+  type: String
+  uri: String
 }
 
 type ChapterRestrictionObject {
@@ -201,7 +241,7 @@ type ChapterRestrictionObject {
 }
 
 type ContextObject {
-  external_urls: Object
+  externalUrls: Type20
   href: String
   type: String
   uri: String
@@ -213,25 +253,25 @@ type CopyrightObject {
 }
 
 type CurrentlyPlayingContextObject {
-  actions: Object
-  context: Object
-  currently_playing_type: String
-  device: Object
-  is_playing: Boolean
-  item: Object
-  progress_ms: Int
-  repeat_state: String
-  shuffle_state: Boolean
+  actions: Type21
+  context: Type22
+  currentlyPlayingType: String
+  device: Type23
+  isPlaying: Boolean
+  item: Type24
+  progressMs: Int
+  repeatState: String
+  shuffleState: Boolean
   timestamp: Int
 }
 
 type CurrentlyPlayingObject {
-  actions: Object
-  context: Object
-  currently_playing_type: String
-  is_playing: Boolean
-  item: Object
-  progress_ms: Int
+  actions: Type25
+  context: Type26
+  currentlyPlayingType: String
+  isPlaying: Boolean
+  item: Type27
+  progressMs: Int
   timestamp: Int
 }
 
@@ -241,8 +281,26 @@ type CursorObject {
 }
 
 type CursorPagingObject {
-  cursors: Object
+  cursors: Type28
   href: String
+  limit: Int
+  next: String
+  total: Int
+}
+
+type CursorPagingPlayHistoryObject {
+  cursors: Type29
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  total: Int
+}
+
+type CursorPagingSimplifiedArtistObject {
+  cursors: Type30
+  href: String
+  items: Array
   limit: Int
   next: String
   total: Int
@@ -250,49 +308,73 @@ type CursorPagingObject {
 
 type DeviceObject {
   id: String
-  is_active: Boolean
-  is_private_session: Boolean
-  is_restricted: Boolean
+  isActive: Boolean
+  isPrivateSession: Boolean
+  isRestricted: Boolean
   name: String
-  supports_volume: Boolean
+  supportsVolume: Boolean
   type: String
-  volume_percent: Int
+  volumePercent: Int
 }
 
 type DisallowsObject {
-  interrupting_playback: Boolean
+  interruptingPlayback: Boolean
   pausing: Boolean
   resuming: Boolean
   seeking: Boolean
-  skipping_next: Boolean
-  skipping_prev: Boolean
-  toggling_repeat_context: Boolean
-  toggling_repeat_track: Boolean
-  toggling_shuffle: Boolean
-  transferring_playback: Boolean
+  skippingNext: Boolean
+  skippingPrev: Boolean
+  togglingRepeatContext: Boolean
+  togglingRepeatTrack: Boolean
+  togglingShuffle: Boolean
+  transferringPlayback: Boolean
 }
 
 type EpisodeBase {
-  audio_preview_url: String!
+  audioPreviewUrl: String!
   description: String!
-  duration_ms: Int!
+  durationMs: Int!
   explicit: Boolean!
-  external_urls: Object!
+  externalUrls: Type31!
   href: String!
-  html_description: String!
+  htmlDescription: String!
   id: String!
   images: Array!
-  is_externally_hosted: Boolean!
-  is_playable: Boolean!
+  isExternallyHosted: Boolean!
+  isPlayable: Boolean!
   language: String
   languages: Array!
   name: String!
-  release_date: String!
-  release_date_precision: String!
-  restrictions: Object
-  resume_point: Object
+  releaseDate: String!
+  releaseDatePrecision: String!
+  restrictions: Type32
+  resumePoint: Type33
   type: String!
   uri: String!
+}
+
+type EpisodeObject {
+  audioPreviewUrl: String
+  description: String
+  durationMs: Int
+  explicit: Boolean
+  externalUrls: Type34
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  isExternallyHosted: Boolean
+  isPlayable: Boolean
+  language: String
+  languages: Array
+  name: String
+  releaseDate: String
+  releaseDatePrecision: String
+  restrictions: Type35
+  resumePoint: Type36
+  show: Type37
+  type: String
+  uri: String
 }
 
 type EpisodeRestrictionObject {
@@ -305,8 +387,8 @@ type ErrorObject {
 }
 
 type ExplicitContentSettingsObject {
-  filter_enabled: Boolean
-  filter_locked: Boolean
+  filterEnabled: Boolean
+  filterLocked: Boolean
 }
 
 type ExternalIdObject {
@@ -331,7 +413,7 @@ type ImageObject {
 }
 
 type LinkedTrackObject {
-  external_urls: Object
+  externalUrls: Type38
   href: String
   id: String
   type: String
@@ -340,6 +422,26 @@ type LinkedTrackObject {
 
 type NarratorObject {
   name: String
+}
+
+type PagingArtistDiscographyAlbumObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingArtistObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
 }
 
 type PagingFeaturedPlaylistObject {
@@ -356,34 +458,184 @@ type PagingObject {
   total: Int!
 }
 
+type PagingPlaylistObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingPlaylistTrackObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSavedAlbumObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSavedAudiobookObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSavedEpisodeObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSavedShowObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSavedTrackObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSimplifiedAlbumObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSimplifiedAudiobookObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSimplifiedChapterObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSimplifiedEpisodeObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSimplifiedShowObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingSimplifiedTrackObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
+type PagingTrackObject {
+  href: String
+  items: Array
+  limit: Int
+  next: String
+  offset: Int
+  previous: String
+  total: Int
+}
+
 type PlayHistoryObject {
-  context: Object
-  played_at: String
-  track: Object
+  context: Type39
+  playedAt: String
+  track: Type40
 }
 
 type PlaylistObject {
   collaborative: Boolean
   description: String
-  external_urls: Object
-  followers: Object
+  externalUrls: Type41
+  followers: Type42
   href: String
   id: String
   images: Array
   name: String
-  owner: Object
+  owner: Type43
   public: Boolean
-  snapshot_id: String
+  snapshotId: String
   tracks: Object
   type: String
   uri: String
 }
 
+type PlaylistOwnerObject {
+  displayName: String
+  externalUrls: Type44
+  followers: Type45
+  href: String
+  id: String
+  type: String
+  uri: String
+}
+
 type PlaylistTrackObject {
-  added_at: String
-  added_by: Object
-  is_local: Boolean
-  track: Object
+  addedAt: String
+  addedBy: Type46
+  isLocal: Boolean
+  track: Type47
 }
 
 type PlaylistTracksRefObject {
@@ -392,8 +644,8 @@ type PlaylistTracksRefObject {
 }
 
 type PlaylistUserObject {
-  external_urls: Object
-  followers: Object
+  externalUrls: Type48
+  followers: Type49
   href: String
   id: String
   type: String
@@ -402,11 +654,11 @@ type PlaylistUserObject {
 
 type PrivateUserObject {
   country: String
-  display_name: String
+  displayName: String
   email: String
-  explicit_content: Object
-  external_urls: Object
-  followers: Object
+  explicitContent: Type50
+  externalUrls: Type51
+  followers: Type52
   href: String
   id: String
   images: Array
@@ -416,9 +668,9 @@ type PrivateUserObject {
 }
 
 type PublicUserObject {
-  display_name: String
-  external_urls: Object
-  followers: Object
+  displayName: String
+  externalUrls: Type53
+  followers: Type54
   href: String
   id: String
   images: Array
@@ -427,69 +679,69 @@ type PublicUserObject {
 }
 
 type Query {
-  check-current-user-follows(ids: String!, type: String!): [Boolean] @http(path: "/me/following/contains")
-  check-if-user-follows-playlist(ids: String!, playlist_id: String!): [Boolean] @http(path: "/playlists/{{args.playlist_id}}/followers/contains")
-  check-users-saved-albums(ids: String!): [Boolean] @http(path: "/me/albums/contains")
-  check-users-saved-audiobooks(ids: String!): [Boolean] @http(path: "/me/audiobooks/contains")
-  check-users-saved-episodes(ids: String!): [Boolean] @http(path: "/me/episodes/contains")
-  check-users-saved-shows(ids: String!): [Boolean] @http(path: "/me/shows/contains")
-  check-users-saved-tracks(ids: String!): [Boolean] @http(path: "/me/tracks/contains")
-  get-a-categories-playlists(category_id: String!, limit: Int, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/categories/{{args.category_id}}/playlists")
-  get-a-category(category_id: String!, locale: String): CategoryObject @http(path: "/browse/categories/{{args.category_id}}")
-  get-a-chapter(id: String!, market: String): ChapterObject @http(path: "/chapters/{{args.id}}")
-  get-a-list-of-current-users-playlists(limit: Int, offset: Int): PagingPlaylistObject @http(path: "/me/playlists")
-  get-a-show(id: String!, market: String): ShowObject @http(path: "/shows/{{args.id}}")
-  get-a-shows-episodes(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedEpisodeObject @http(path: "/shows/{{args.id}}/episodes")
-  get-a-users-available-devices: Object @http(path: "/me/player/devices")
-  get-an-album(id: String!, market: String): AlbumObject @http(path: "/albums/{{args.id}}")
-  get-an-albums-tracks(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedTrackObject @http(path: "/albums/{{args.id}}/tracks")
-  get-an-artist(id: String!): ArtistObject @http(path: "/artists/{{args.id}}")
-  get-an-artists-albums(id: String!, include_groups: String, limit: Int, market: String, offset: Int): PagingArtistDiscographyAlbumObject @http(path: "/artists/{{args.id}}/albums")
-  get-an-artists-related-artists(id: String!): Object @http(path: "/artists/{{args.id}}/related-artists")
-  get-an-artists-top-tracks(id: String!, market: String): Object @http(path: "/artists/{{args.id}}/top-tracks")
-  get-an-audiobook(id: String!, market: String): AudiobookObject @http(path: "/audiobooks/{{args.id}}")
-  get-an-episode(id: String!, market: String): EpisodeObject @http(path: "/episodes/{{args.id}}")
-  get-audio-analysis(id: String!): AudioAnalysisObject @http(path: "/audio-analysis/{{args.id}}")
-  get-audio-features(id: String!): AudioFeaturesObject @http(path: "/audio-features/{{args.id}}")
-  get-audiobook-chapters(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedChapterObject @http(path: "/audiobooks/{{args.id}}/chapters")
-  get-available-markets: Object @http(path: "/markets")
-  get-categories(limit: Int, locale: String, offset: Int): Object @http(path: "/browse/categories")
-  get-current-users-profile: PrivateUserObject @http(path: "/me")
-  get-featured-playlists(limit: Int, locale: String, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/featured-playlists")
-  get-followed(after: String, limit: Int, type: String!): Object @http(path: "/me/following")
-  get-information-about-the-users-current-playback(additional_types: String, market: String): CurrentlyPlayingContextObject @http(path: "/me/player")
-  get-list-users-playlists(limit: Int, offset: Int, user_id: String!): PagingPlaylistObject @http(path: "/users/{{args.user_id}}/playlists")
-  get-multiple-albums(ids: String!, market: String): Object @http(path: "/albums")
-  get-multiple-artists(ids: String!): Object @http(path: "/artists")
-  get-multiple-audiobooks(ids: String!, market: String): Object @http(path: "/audiobooks")
-  get-multiple-episodes(ids: String!, market: String): Object @http(path: "/episodes")
-  get-multiple-shows(ids: String!, market: String): Object @http(path: "/shows")
-  get-new-releases(limit: Int, offset: Int): Object @http(path: "/browse/new-releases")
-  get-playlist(additional_types: String, fields: String, market: String, playlist_id: String!): PlaylistObject @http(path: "/playlists/{{args.playlist_id}}")
-  get-playlist-cover(playlist_id: String!): [ImageObject] @http(path: "/playlists/{{args.playlist_id}}/images")
-  get-playlists-tracks(additional_types: String, fields: String, limit: Int, market: String, offset: Int, playlist_id: String!): PagingPlaylistTrackObject @http(path: "/playlists/{{args.playlist_id}}/tracks")
-  get-queue: QueueObject @http(path: "/me/player/queue")
-  get-recently-played(after: Int, before: Int, limit: Int): CursorPagingPlayHistoryObject @http(path: "/me/player/recently-played")
-  get-recommendation-genres: Object @http(path: "/recommendations/available-genre-seeds")
-  get-recommendations(limit: Int, market: String, max_acousticness: Number, max_danceability: Number, max_duration_ms: Int, max_energy: Number, max_instrumentalness: Number, max_key: Int, max_liveness: Number, max_loudness: Number, max_mode: Int, max_popularity: Int, max_speechiness: Number, max_tempo: Number, max_time_signature: Int, max_valence: Number, min_acousticness: Number, min_danceability: Number, min_duration_ms: Int, min_energy: Number, min_instrumentalness: Number, min_key: Int, min_liveness: Number, min_loudness: Number, min_mode: Int, min_popularity: Int, min_speechiness: Number, min_tempo: Number, min_time_signature: Int, min_valence: Number, seed_artists: String, seed_genres: String, seed_tracks: String, target_acousticness: Number, target_danceability: Number, target_duration_ms: Int, target_energy: Number, target_instrumentalness: Number, target_key: Int, target_liveness: Number, target_loudness: Number, target_mode: Int, target_popularity: Int, target_speechiness: Number, target_tempo: Number, target_time_signature: Int, target_valence: Number): RecommendationsObject @http(path: "/recommendations")
-  get-several-audio-features(ids: String!): Object @http(path: "/audio-features")
-  get-several-chapters(ids: String!, market: String): Object @http(path: "/chapters")
-  get-several-tracks(ids: String!, market: String): Object @http(path: "/tracks")
-  get-the-users-currently-playing-track(additional_types: String, market: String): CurrentlyPlayingObject @http(path: "/me/player/currently-playing")
-  get-track(id: String!, market: String): TrackObject @http(path: "/tracks/{{args.id}}")
-  get-users-profile(user_id: String!): PublicUserObject @http(path: "/users/{{args.user_id}}")
-  get-users-saved-albums(limit: Int, market: String, offset: Int): PagingSavedAlbumObject @http(path: "/me/albums")
-  get-users-saved-audiobooks(limit: Int, offset: Int): PagingSavedAudiobookObject @http(path: "/me/audiobooks")
-  get-users-saved-episodes(limit: Int, market: String, offset: Int): PagingSavedEpisodeObject @http(path: "/me/episodes")
-  get-users-saved-shows(limit: Int, offset: Int): PagingSavedShowObject @http(path: "/me/shows")
-  get-users-saved-tracks(limit: Int, market: String, offset: Int): PagingSavedTrackObject @http(path: "/me/tracks")
-  get-users-top-artists(limit: Int, offset: Int, time_range: String): PagingArtistObject @http(path: "/me/top/artists")
-  get-users-top-tracks(limit: Int, offset: Int, time_range: String): PagingTrackObject @http(path: "/me/top/tracks")
-  search(include_external: String, limit: Int, market: String, offset: Int, q: String!, type: [String]!): Object @http(path: "/search")
+  checkCurrentUserFollows(ids: String!, type: String!): [Boolean] @http(path: "/me/following/contains")
+  checkIfUserFollowsPlaylist(ids: String!, playlistId: String!): [Boolean] @http(path: "/playlists/{{args.playlist_id}}/followers/contains")
+  checkUsersSavedAlbums(ids: String!): [Boolean] @http(path: "/me/albums/contains")
+  checkUsersSavedAudiobooks(ids: String!): [Boolean] @http(path: "/me/audiobooks/contains")
+  checkUsersSavedEpisodes(ids: String!): [Boolean] @http(path: "/me/episodes/contains")
+  checkUsersSavedShows(ids: String!): [Boolean] @http(path: "/me/shows/contains")
+  checkUsersSavedTracks(ids: String!): [Boolean] @http(path: "/me/tracks/contains")
+  getACategoriesPlaylists(categoryId: String!, limit: Int, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/categories/{{args.category_id}}/playlists")
+  getACategory(categoryId: String!, locale: String): CategoryObject @http(path: "/browse/categories/{{args.category_id}}")
+  getAChapter(id: String!, market: String): ChapterObject @http(path: "/chapters/{{args.id}}")
+  getAListOfCurrentUsersPlaylists(limit: Int, offset: Int): PagingPlaylistObject @http(path: "/me/playlists")
+  getAShow(id: String!, market: String): Type2 @http(path: "/shows/{{args.id}}")
+  getAShowsEpisodes(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedEpisodeObject @http(path: "/shows/{{args.id}}/episodes")
+  getAUsersAvailableDevices: Object @http(path: "/me/player/devices")
+  getAnAlbum(id: String!, market: String): Type0 @http(path: "/albums/{{args.id}}")
+  getAnAlbumsTracks(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedTrackObject @http(path: "/albums/{{args.id}}/tracks")
+  getAnArtist(id: String!): ArtistObject @http(path: "/artists/{{args.id}}")
+  getAnArtistsAlbums(id: String!, includeGroups: String, limit: Int, market: String, offset: Int): PagingArtistDiscographyAlbumObject @http(path: "/artists/{{args.id}}/albums")
+  getAnArtistsRelatedArtists(id: String!): Object @http(path: "/artists/{{args.id}}/related-artists")
+  getAnArtistsTopTracks(id: String!, market: String): Object @http(path: "/artists/{{args.id}}/top-tracks")
+  getAnAudiobook(id: String!, market: String): Type1 @http(path: "/audiobooks/{{args.id}}")
+  getAnEpisode(id: String!, market: String): EpisodeObject @http(path: "/episodes/{{args.id}}")
+  getAudioAnalysis(id: String!): AudioAnalysisObject @http(path: "/audio-analysis/{{args.id}}")
+  getAudioFeatures(id: String!): AudioFeaturesObject @http(path: "/audio-features/{{args.id}}")
+  getAudiobookChapters(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedChapterObject @http(path: "/audiobooks/{{args.id}}/chapters")
+  getAvailableMarkets: Object @http(path: "/markets")
+  getCategories(limit: Int, locale: String, offset: Int): Object @http(path: "/browse/categories")
+  getCurrentUsersProfile: PrivateUserObject @http(path: "/me")
+  getFeaturedPlaylists(limit: Int, locale: String, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/featured-playlists")
+  getFollowed(after: String, limit: Int, type: String!): Object @http(path: "/me/following")
+  getInformationAboutTheUsersCurrentPlayback(additionalTypes: String, market: String): CurrentlyPlayingContextObject @http(path: "/me/player")
+  getListUsersPlaylists(limit: Int, offset: Int, userId: String!): PagingPlaylistObject @http(path: "/users/{{args.user_id}}/playlists")
+  getMultipleAlbums(ids: String!, market: String): Object @http(path: "/albums")
+  getMultipleArtists(ids: String!): Object @http(path: "/artists")
+  getMultipleAudiobooks(ids: String!, market: String): Object @http(path: "/audiobooks")
+  getMultipleEpisodes(ids: String!, market: String): Object @http(path: "/episodes")
+  getMultipleShows(ids: String!, market: String): Object @http(path: "/shows")
+  getNewReleases(limit: Int, offset: Int): Object @http(path: "/browse/new-releases")
+  getPlaylist(additionalTypes: String, fields: String, market: String, playlistId: String!): PlaylistObject @http(path: "/playlists/{{args.playlist_id}}")
+  getPlaylistCover(playlistId: String!): [ImageObject] @http(path: "/playlists/{{args.playlist_id}}/images")
+  getPlaylistsTracks(additionalTypes: String, fields: String, limit: Int, market: String, offset: Int, playlistId: String!): PagingPlaylistTrackObject @http(path: "/playlists/{{args.playlist_id}}/tracks")
+  getQueue: QueueObject @http(path: "/me/player/queue")
+  getRecentlyPlayed(after: Int, before: Int, limit: Int): CursorPagingPlayHistoryObject @http(path: "/me/player/recently-played")
+  getRecommendationGenres: Object @http(path: "/recommendations/available-genre-seeds")
+  getRecommendations(limit: Int, market: String, maxAcousticness: Number, maxDanceability: Number, maxDurationMs: Int, maxEnergy: Number, maxInstrumentalness: Number, maxKey: Int, maxLiveness: Number, maxLoudness: Number, maxMode: Int, maxPopularity: Int, maxSpeechiness: Number, maxTempo: Number, maxTimeSignature: Int, maxValence: Number, minAcousticness: Number, minDanceability: Number, minDurationMs: Int, minEnergy: Number, minInstrumentalness: Number, minKey: Int, minLiveness: Number, minLoudness: Number, minMode: Int, minPopularity: Int, minSpeechiness: Number, minTempo: Number, minTimeSignature: Int, minValence: Number, seedArtists: String, seedGenres: String, seedTracks: String, targetAcousticness: Number, targetDanceability: Number, targetDurationMs: Int, targetEnergy: Number, targetInstrumentalness: Number, targetKey: Int, targetLiveness: Number, targetLoudness: Number, targetMode: Int, targetPopularity: Int, targetSpeechiness: Number, targetTempo: Number, targetTimeSignature: Int, targetValence: Number): RecommendationsObject @http(path: "/recommendations")
+  getSeveralAudioFeatures(ids: String!): Object @http(path: "/audio-features")
+  getSeveralChapters(ids: String!, market: String): Object @http(path: "/chapters")
+  getSeveralTracks(ids: String!, market: String): Object @http(path: "/tracks")
+  getTheUsersCurrentlyPlayingTrack(additionalTypes: String, market: String): CurrentlyPlayingObject @http(path: "/me/player/currently-playing")
+  getTrack(id: String!, market: String): TrackObject @http(path: "/tracks/{{args.id}}")
+  getUsersProfile(userId: String!): PublicUserObject @http(path: "/users/{{args.user_id}}")
+  getUsersSavedAlbums(limit: Int, market: String, offset: Int): PagingSavedAlbumObject @http(path: "/me/albums")
+  getUsersSavedAudiobooks(limit: Int, offset: Int): PagingSavedAudiobookObject @http(path: "/me/audiobooks")
+  getUsersSavedEpisodes(limit: Int, market: String, offset: Int): PagingSavedEpisodeObject @http(path: "/me/episodes")
+  getUsersSavedShows(limit: Int, offset: Int): PagingSavedShowObject @http(path: "/me/shows")
+  getUsersSavedTracks(limit: Int, market: String, offset: Int): PagingSavedTrackObject @http(path: "/me/tracks")
+  getUsersTopArtists(limit: Int, offset: Int, timeRange: String): PagingArtistObject @http(path: "/me/top/artists")
+  getUsersTopTracks(limit: Int, offset: Int, timeRange: String): PagingTrackObject @http(path: "/me/top/tracks")
+  search(includeExternal: String, limit: Int, market: String, offset: Int, q: String!, type: [String]!): Object @http(path: "/search")
 }
 
 type QueueObject {
-  currently_playing: Object
+  currentlyPlaying: Type55
   queue: Array
 }
 
@@ -508,87 +760,193 @@ type RecommendationsObject {
 }
 
 type ResumePointObject {
-  fully_played: Boolean
-  resume_position_ms: Int
+  fullyPlayed: Boolean
+  resumePositionMs: Int
 }
 
 type SavedAlbumObject {
-  added_at: String
-  album: Object
+  addedAt: String
+  album: Type56
 }
 
 type SavedAudiobookObject {
-  added_at: String
-  audiobook: Object
+  addedAt: String
+  audiobook: Type57
 }
 
 type SavedEpisodeObject {
-  added_at: String
-  episode: Object
+  addedAt: String
+  episode: Type58
 }
 
 type SavedShowObject {
-  added_at: String
-  show: Object
+  addedAt: String
+  show: Type59
 }
 
 type SavedTrackObject {
-  added_at: String
-  track: Object
+  addedAt: String
+  track: Type60
 }
 
 type SectionObject {
   confidence: Number
   duration: Number
   key: Int
-  key_confidence: Number
+  keyConfidence: Number
   loudness: Number
   mode: Number
-  mode_confidence: Number
+  modeConfidence: Number
   start: Number
   tempo: Number
-  tempo_confidence: Number
-  time_signature: Int
-  time_signature_confidence: Number
+  tempoConfidence: Number
+  timeSignature: Int
+  timeSignatureConfidence: Number
 }
 
 type SegmentObject {
   confidence: Number
   duration: Number
-  loudness_end: Number
-  loudness_max: Number
-  loudness_max_time: Number
-  loudness_start: Number
+  loudnessEnd: Number
+  loudnessMax: Number
+  loudnessMaxTime: Number
+  loudnessStart: Number
   pitches: Array
   start: Number
   timbre: Array
 }
 
 type ShowBase {
-  available_markets: Array!
+  availableMarkets: Array!
   copyrights: Array!
   description: String!
   explicit: Boolean!
-  external_urls: Object!
+  externalUrls: Type61!
   href: String!
-  html_description: String!
+  htmlDescription: String!
   id: String!
   images: Array!
-  is_externally_hosted: Boolean!
+  isExternallyHosted: Boolean!
   languages: Array!
-  media_type: String!
+  mediaType: String!
   name: String!
   publisher: String!
-  total_episodes: Int!
+  totalEpisodes: Int!
   type: String!
   uri: String!
 }
 
+type ShowObject {
+  availableMarkets: Array
+  copyrights: Array
+  description: String
+  episodes: Object
+  explicit: Boolean
+  externalUrls: Type62
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  isExternallyHosted: Boolean
+  languages: Array
+  mediaType: String
+  name: String
+  publisher: String
+  totalEpisodes: Int
+  type: String
+  uri: String
+}
+
+type SimplifiedAlbumObject {
+  albumType: String
+  artists: Array
+  availableMarkets: Array
+  externalUrls: Type63
+  href: String
+  id: String
+  images: Array
+  name: String
+  releaseDate: String
+  releaseDatePrecision: String
+  restrictions: Type64
+  totalTracks: Int
+  type: String
+  uri: String
+}
+
 type SimplifiedArtistObject {
-  external_urls: Object
+  externalUrls: Type65
   href: String
   id: String
   name: String
+  type: String
+  uri: String
+}
+
+type SimplifiedAudiobookObject {
+  authors: Array
+  availableMarkets: Array
+  copyrights: Array
+  description: String
+  edition: String
+  explicit: Boolean
+  externalUrls: Type66
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  languages: Array
+  mediaType: String
+  name: String
+  narrators: Array
+  publisher: String
+  totalChapters: Int
+  type: String
+  uri: String
+}
+
+type SimplifiedChapterObject {
+  audioPreviewUrl: String
+  availableMarkets: Array
+  chapterNumber: Int
+  description: String
+  durationMs: Int
+  explicit: Boolean
+  externalUrls: Type67
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  isPlayable: Boolean
+  languages: Array
+  name: String
+  releaseDate: String
+  releaseDatePrecision: String
+  restrictions: Type68
+  resumePoint: Type69
+  type: String
+  uri: String
+}
+
+type SimplifiedEpisodeObject {
+  audioPreviewUrl: String
+  description: String
+  durationMs: Int
+  explicit: Boolean
+  externalUrls: Type70
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  isExternallyHosted: Boolean
+  isPlayable: Boolean
+  language: String
+  languages: Array
+  name: String
+  releaseDate: String
+  releaseDatePrecision: String
+  restrictions: Type71
+  resumePoint: Type72
   type: String
   uri: String
 }
@@ -596,35 +954,55 @@ type SimplifiedArtistObject {
 type SimplifiedPlaylistObject {
   collaborative: Boolean
   description: String
-  external_urls: Object
+  externalUrls: Type73
   href: String
   id: String
   images: Array
   name: String
-  owner: Object
+  owner: Type74
   public: Boolean
-  snapshot_id: String
-  tracks: Object
+  snapshotId: String
+  tracks: Type75
+  type: String
+  uri: String
+}
+
+type SimplifiedShowObject {
+  availableMarkets: Array
+  copyrights: Array
+  description: String
+  explicit: Boolean
+  externalUrls: Type76
+  href: String
+  htmlDescription: String
+  id: String
+  images: Array
+  isExternallyHosted: Boolean
+  languages: Array
+  mediaType: String
+  name: String
+  publisher: String
+  totalEpisodes: Int
   type: String
   uri: String
 }
 
 type SimplifiedTrackObject {
   artists: Array
-  available_markets: Array
-  disc_number: Int
-  duration_ms: Int
+  availableMarkets: Array
+  discNumber: Int
+  durationMs: Int
   explicit: Boolean
-  external_urls: Object
+  externalUrls: Type77
   href: String
   id: String
-  is_local: Boolean
-  is_playable: Boolean
-  linked_from: Object
+  isLocal: Boolean
+  isPlayable: Boolean
+  linkedFrom: Type78
   name: String
-  preview_url: String
-  restrictions: Object
-  track_number: Int
+  previewUrl: String
+  restrictions: Type79
+  trackNumber: Int
   type: String
   uri: String
 }
@@ -636,28 +1014,423 @@ type TimeIntervalObject {
 }
 
 type TrackObject {
-  album: Object
+  album: Type80
   artists: Array
-  available_markets: Array
-  disc_number: Int
-  duration_ms: Int
+  availableMarkets: Array
+  discNumber: Int
+  durationMs: Int
   explicit: Boolean
-  external_ids: Object
-  external_urls: Object
+  externalIds: Type81
+  externalUrls: Type82
   href: String
   id: String
-  is_local: Boolean
-  is_playable: Boolean
-  linked_from: Object
+  isLocal: Boolean
+  isPlayable: Boolean
+  linkedFrom: Type83
   name: String
   popularity: Int
-  preview_url: String
-  restrictions: Object
-  track_number: Int
+  previewUrl: String
+  restrictions: Type84
+  trackNumber: Int
   type: String
   uri: String
 }
 
 type TrackRestrictionObject {
   reason: String
+}
+
+type Type0 {
+  spotify: String
+}
+
+type Type1 {
+  reason: String
+}
+
+type Type10 {
+  href: String
+  total: Int
+}
+
+type Type11 {
+  spotify: String
+}
+
+type Type12 {
+  spotify: String
+}
+
+type Type13 {
+  spotify: String
+}
+
+type Type14 {
+  reason: String
+}
+
+type Type15 {
+  spotify: String
+}
+
+type Type16 {
+  spotify: String
+}
+
+type Type17 {
+  reason: String
+}
+
+type Type18 {
+  fullyPlayed: Boolean
+  resumePositionMs: Int
+}
+
+type Type19 {
+  spotify: String
+}
+
+type Type2 {
+  ean: String
+  isrc: String
+  upc: String
+}
+
+type Type20 {
+  spotify: String
+}
+
+type Type21 {
+  interruptingPlayback: Boolean
+  pausing: Boolean
+  resuming: Boolean
+  seeking: Boolean
+  skippingNext: Boolean
+  skippingPrev: Boolean
+  togglingRepeatContext: Boolean
+  togglingRepeatTrack: Boolean
+  togglingShuffle: Boolean
+  transferringPlayback: Boolean
+}
+
+type Type22 {
+  externalUrls: Type15
+  href: String
+  type: String
+  uri: String
+}
+
+type Type23 {
+  id: String
+  isActive: Boolean
+  isPrivateSession: Boolean
+  isRestricted: Boolean
+  name: String
+  supportsVolume: Boolean
+  type: String
+  volumePercent: Int
+}
+
+type Type25 {
+  interruptingPlayback: Boolean
+  pausing: Boolean
+  resuming: Boolean
+  seeking: Boolean
+  skippingNext: Boolean
+  skippingPrev: Boolean
+  togglingRepeatContext: Boolean
+  togglingRepeatTrack: Boolean
+  togglingShuffle: Boolean
+  transferringPlayback: Boolean
+}
+
+type Type26 {
+  externalUrls: Type19
+  href: String
+  type: String
+  uri: String
+}
+
+type Type28 {
+  after: String
+  before: String
+}
+
+type Type29 {
+  after: String
+  before: String
+}
+
+type Type30 {
+  after: String
+  before: String
+}
+
+type Type31 {
+  spotify: String
+}
+
+type Type32 {
+  reason: String
+}
+
+type Type33 {
+  spotify: String
+}
+
+type Type34 {
+  spotify: String
+}
+
+type Type35 {
+  reason: String
+}
+
+type Type36 {
+  fullyPlayed: Boolean
+  resumePositionMs: Int
+}
+
+type Type38 {
+  spotify: String
+}
+
+type Type39 {
+  externalUrls: Type33
+  href: String
+  type: String
+  uri: String
+}
+
+type Type4 {
+  reason: String
+}
+
+type Type40 {
+  album: Type35
+  artists: Array
+  availableMarkets: Array
+  discNumber: Int
+  durationMs: Int
+  explicit: Boolean
+  externalIds: Type35
+  externalUrls: Type35
+  href: String
+  id: String
+  isLocal: Boolean
+  isPlayable: Boolean
+  linkedFrom: Type35
+  name: String
+  popularity: Int
+  previewUrl: String
+  restrictions: Type35
+  trackNumber: Int
+  type: String
+  uri: String
+}
+
+type Type41 {
+  href: String
+  total: Int
+}
+
+type Type42 {
+  href: String
+  total: Int
+}
+
+type Type44 {
+  spotify: String
+}
+
+type Type45 {
+  href: String
+  total: Int
+}
+
+type Type46 {
+  externalUrls: Type41
+  followers: Type41
+  href: String
+  id: String
+  type: String
+  uri: String
+}
+
+type Type48 {
+  spotify: String
+}
+
+type Type49 {
+  href: String
+  total: Int
+}
+
+type Type5 {
+  spotify: String
+}
+
+type Type50 {
+  filterEnabled: Boolean
+  filterLocked: Boolean
+}
+
+type Type51 {
+  spotify: String
+}
+
+type Type52 {
+  href: String
+  total: Int
+}
+
+type Type53 {
+  spotify: String
+}
+
+type Type54 {
+  href: String
+  total: Int
+}
+
+type Type57 {
+  reason: String
+}
+
+type Type6 {
+  reason: String
+}
+
+type Type60 {
+  album: Type57
+  artists: Array
+  availableMarkets: Array
+  discNumber: Int
+  durationMs: Int
+  explicit: Boolean
+  externalIds: Type57
+  externalUrls: Type57
+  href: String
+  id: String
+  isLocal: Boolean
+  isPlayable: Boolean
+  linkedFrom: Type57
+  name: String
+  popularity: Int
+  previewUrl: String
+  restrictions: Type57
+  trackNumber: Int
+  type: String
+  uri: String
+}
+
+type Type61 {
+  spotify: String
+}
+
+type Type62 {
+  spotify: String
+}
+
+type Type63 {
+  spotify: String
+}
+
+type Type64 {
+  reason: String
+}
+
+type Type65 {
+  spotify: String
+}
+
+type Type66 {
+  spotify: String
+}
+
+type Type67 {
+  spotify: String
+}
+
+type Type68 {
+  reason: String
+}
+
+type Type69 {
+  fullyPlayed: Boolean
+  resumePositionMs: Int
+}
+
+type Type7 {
+  ean: String
+  isrc: String
+  upc: String
+}
+
+type Type70 {
+  spotify: String
+}
+
+type Type71 {
+  reason: String
+}
+
+type Type72 {
+  fullyPlayed: Boolean
+  resumePositionMs: Int
+}
+
+type Type73 {
+  spotify: String
+}
+
+type Type75 {
+  href: String
+  total: Int
+}
+
+type Type76 {
+  spotify: String
+}
+
+type Type77 {
+  spotify: String
+}
+
+type Type78 {
+  externalUrls: Type76
+  href: String
+  id: String
+  type: String
+  uri: String
+}
+
+type Type79 {
+  reason: String
+}
+
+type Type81 {
+  ean: String
+  isrc: String
+  upc: String
+}
+
+type Type82 {
+  spotify: String
+}
+
+type Type83 {
+  externalUrls: Type82
+  href: String
+  id: String
+  type: String
+  uri: String
+}
+
+type Type84 {
+  reason: String
+}
+
+type Type9 {
+  spotify: String
 }

@@ -1,14 +1,14 @@
 ---
 source: src/config_generator/from_openapi.rs
-expression: config_from_openapi_spec(content.as_str()).unwrap().to_sdl()
+expression: "OpenApiToGraphQLConverter::new(content.as_str()).unwrap().convert().to_sdl()"
 ---
 schema @server(graphiql: true) @upstream(baseURL: "https://api.apis.guru/v2") {
   query: Query
 }
 
-scalar APIs
+scalar ApIs
 
-type API {
+type Api {
   added: String!
   preferred: String!
   versions: Object!
@@ -31,7 +31,7 @@ type Metrics {
   fixes: Int
   invalid: Int
   issues: Int
-  numAPIs: Int!
+  numApIs: Int!
   numDrivers: Int
   numEndpoints: Int!
   numProviders: Int
@@ -43,11 +43,11 @@ type Metrics {
 }
 
 type Query {
-  getAPI(api: String!, provider: String!): API @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
+  getApi(api: String!, provider: String!): Api @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
   getMetrics: Metrics @http(path: "/metrics.json")
-  getProvider(provider: String!): APIs @http(path: "/{{args.provider}}.json")
+  getProvider(provider: String!): ApIs @http(path: "/{{args.provider}}.json")
   getProviders: Object @http(path: "/providers.json")
-  getServiceAPI(api: String!, provider: String!, service: String!): API @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
+  getServiceApi(api: String!, provider: String!, service: String!): Api @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
   getServices(provider: String!): Object @http(path: "/{{args.provider}}/services.json")
-  listAPIs: APIs @http(path: "/list.json")
+  listApIs: ApIs @http(path: "/list.json")
 }
