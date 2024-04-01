@@ -48,7 +48,7 @@ impl JwtVerifier {
         let claims = self
             .decoder
             .decode(token)
-            .map_err(|_| Error::ValidationCheckFailed)?;
+            .map_err(|err| Error::Parse(err.to_string()))?;
 
         self.validate_claims(&claims)
     }
