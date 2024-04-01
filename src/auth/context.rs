@@ -71,35 +71,51 @@ mod tests {
     use crate::blueprint;
 
     #[tokio::test]
-    async fn validate_request() {
+    async fn validate_request_missing_credentials() {
+        let auth_context = setup_auth_context().await;
+        let validation = auth_context.validate(&RequestContext::default()).await;
+        assert_eq!(validation, Verification::fail(Error::Missing));
+    }
+
+    #[tokio::test]
+    async fn validate_request_basic_auth_wrong_password() {
+        let auth_context = setup_auth_context().await;
+        let validation = auth_context
+            .validate(&create_basic_auth_request("testuser1", "wrong-password"))
+            .await;
+        assert_eq!(validation, Verification::fail(Error::Invalid));
+    }
+
+    #[tokio::test]
+    async fn validate_request_basic_auth_correct_password() {
+        let auth_context = setup_auth_context().await;
+        let validation = auth_context
+            .validate(&create_basic_auth_request("testuser1", "password123"))
+            .await;
+        assert_eq!(validation, Verification::succeed());
+    }
+
+    #[tokio::test]
+    async fn validate_request_jwt_auth_valid_token() {
+        let auth_context = setup_auth_context().await;
+        let validation = auth_context
+            .validate(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
+            .await;
+        assert_eq!(validation, Verification::succeed());
+    }
+
+    // Helper function for setting up the auth context
+    async fn setup_auth_context() -> GlobalAuthContext {
         let basic_provider =
             BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
         let jwt_options = blueprint::Jwt::test_value();
         let jwt_provider = JwtVerifier::new(jwt_options);
 
-        let auth_context = GlobalAuthContext {
+        GlobalAuthContext {
             verifier: Some(AuthVerifier::Or(
                 AuthVerifier::Single(Verifier::Basic(basic_provider)).into(),
                 AuthVerifier::Single(Verifier::Jwt(jwt_provider)).into(),
             )),
-        };
-
-        let validation = auth_context.validate(&RequestContext::default()).await;
-        assert_eq!(validation, Verification::fail(Error::Missing));
-
-        let validation = auth_context
-            .validate(&create_basic_auth_request("testuser1", "wrong-password"))
-            .await;
-        assert_eq!(validation, Verification::fail(Error::Invalid));
-
-        let validation = auth_context
-            .validate(&create_basic_auth_request("testuser1", "password123"))
-            .await;
-        assert_eq!(validation, Verification::succeed());
-
-        let validation = auth_context
-            .validate(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
-            .await;
-        assert_eq!(validation, Verification::succeed());
+        }
     }
 }
