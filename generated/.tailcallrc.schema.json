@@ -310,6 +310,19 @@
         }
       }
     },
+    "Empty": {
+      "title": "Empty",
+      "type": "object",
+      "required": [
+        "JSON"
+      ],
+      "properties": {
+        "JSON": {
+          "description": "Empty scalar type represents an empty value.",
+          "type": "null"
+        }
+      }
+    },
     "Encoding": {
       "type": "string",
       "enum": [
