@@ -1,6 +1,6 @@
 ---
 source: src/config_generator/from_proto.rs
-expression: "from_proto(vec![set], \"Query\").to_sdl()"
+expression: result
 ---
 schema @server @upstream {
   query: Query
@@ -9,7 +9,7 @@ schema @server @upstream {
 type News @tag(id: "News") {
   body: String
   id: Int
-  post_image: String
+  postImage: String
   title: String
 }
 

@@ -186,7 +186,7 @@ impl Context {
                     cfg_field.type_of = self.get(&type_of).unwrap_or(type_of);
                 }
 
-                ty.fields.insert(field_name, cfg_field);
+                ty.fields.insert(field_name.to_case(Case::Camel), cfg_field);
             }
 
             self = self.insert_type(&msg_name, ty);
