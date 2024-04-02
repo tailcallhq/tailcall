@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
-use futures_util::future::try_join_all;
+
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -57,34 +57,6 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
-        let file_descriptor_metadata = links
-            .iter()
-            .filter_map(|v| {
-                if v.type_of == LinkType::Protobuf {
-                    let protobuf_link_path = Self::resolve_path(&v.src, parent_dir);
-                    Some(self.proto_reader.read(protobuf_link_path))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-        let file_descriptor_metadata = try_join_all(file_descriptor_metadata).await?;
-
-        for (i, file_descriptor_set) in file_descriptor_metadata.iter().enumerate() {
-            if let Some(id) = file_descriptor_set.package.clone() {
-                config_module
-                    .extensions
-                    .grpc_file_descriptors
-                    .push(Content {
-                        id: Some(id),
-                        content: file_descriptor_set.descriptor_set.clone(),
-                    });
-            } else {
-                return Err(anyhow!("Package name is not defined for proto file"))
-                    .context(format!("link[{}]", i));
-            }
-        }
-
         for config_link in links.iter() {
             let path = Self::resolve_path(&config_link.src, parent_dir);
 
@@ -109,7 +81,17 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    // Already handled
+                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let meta = self.proto_reader.read(path).await?;
+                    if let Some(id) = meta.package.clone() {
+                        config_module
+                            .extensions
+                            .grpc_file_descriptors
+                            .push(Content { id: Some(id), content: meta.descriptor_set.clone() });
+                    } else {
+                        return Err(anyhow!("Package name is not defined for proto file"))
+                            .context(config_link.src.to_string());
+                    }
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);
