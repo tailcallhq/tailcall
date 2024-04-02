@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
@@ -12,7 +12,7 @@ pub enum JsonSchema {
     Obj(HashMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
-    Enum(BTreeSet<String>),
+    Enum(HashMap<i32, HashSet<String>>),
     Str,
     Num,
     Bool,
@@ -136,8 +136,22 @@ impl JsonSchema {
             }
             JsonSchema::Enum(a) => {
                 if let JsonSchema::Enum(b) = other {
-                    if a.ne(b) {
-                        return Valid::fail("expected Enum type".to_string()).trace(name);
+                    if a.len() != b.len() {
+                        return Valid::fail("expected proper Enum type".to_string()).trace(name);
+                    }
+                    else {
+                        let keys : HashSet<_> = a.keys().collect();
+                        for key in keys {
+                            let mut small = &b[key];
+                            let mut large = &a[key];
+                            if a[key].len() < b[key].len() {
+                                small = &a[key];
+                                large = &b[key];
+                            }
+                            if !small.is_subset(large) {
+                                return Valid::fail("expected proper Enum type".to_string()).trace(name);
+                            }
+                        }
                     }
                 }
             }
@@ -182,11 +196,11 @@ impl TryFrom<&EnumDescriptor> for JsonSchema {
     type Error = crate::valid::ValidationError<String>;
 
     fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
-        let mut set = BTreeSet::new();
+        let mut map: HashMap<i32, HashSet<String>> = HashMap::new();
         for value in value.values() {
-            set.insert(value.name().to_string());
+            map.entry(value.number()).or_insert_with(|| HashSet::new()).insert(value.name().to_string());
         }
-        Ok(JsonSchema::Enum(set))
+        Ok(JsonSchema::Enum(map))
     }
 }
 
