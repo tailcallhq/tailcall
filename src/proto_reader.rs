@@ -109,7 +109,7 @@ impl ProtoReader {
             Ok(FileRead {
                 descriptor: content,
                 path: path.to_string(),
-                content_ty: res_file_read.content_ty,
+                content_ty: res_file_read.content_type,
             })
         }
     }

@@ -9,7 +9,7 @@ use crate::runtime::TargetRuntime;
 pub struct FileRead {
     pub content: String,
     pub path: String,
-    pub content_ty: Option<String>,
+    pub content_type: Option<String>,
 }
 
 pub struct ResourceReader {
@@ -47,7 +47,7 @@ impl ResourceReader {
             (self.runtime.file.read(&file.to_string()).await?, None)
         };
 
-        Ok(FileRead { content, path: file.to_string(), content_ty })
+        Ok(FileRead { content, path: file.to_string(), content_type: content_ty })
     }
 
     /// Reads all the files in parallel
