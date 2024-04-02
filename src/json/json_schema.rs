@@ -342,7 +342,7 @@ mod tests {
         let result = schema.compare(&value, name);
         assert_eq!(
             result,
-            Valid::fail(format!("expected Enum got: {:?}", value)).trace(name)
+            Valid::fail("expected Enum got: Arr(Enum({\"A\", \"B\"}))".to_string()).trace(name)
         );
     }
 
@@ -363,7 +363,8 @@ mod tests {
         let result = schema.compare(&value, name);
         assert_eq!(
             result,
-            Valid::fail(format!("expected {:?} but found {:?}", en, en1)).trace(name)
+            Valid::fail("expected {\"A\", \"B\"} but found {\"A\", \"B\", \"C\"}".to_string())
+                .trace(name)
         );
     }
 }
