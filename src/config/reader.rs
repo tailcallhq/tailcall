@@ -65,10 +65,7 @@ impl ConfigReader {
             .iter()
             .map(|v| Self::resolve_path(&v.src, parent_dir))
             .collect::<Vec<String>>();
-        let file_descriptor_sets = self
-            .proto_reader
-            .resolve_protos(&protobuf_links_paths)
-            .await?;
+        let file_descriptor_sets = self.proto_reader.read_all(&protobuf_links_paths).await?;
         for (i, file_descriptor_set) in file_descriptor_sets.iter().enumerate() {
             let config_link = protobuf_links.get(i).unwrap();
             let id = Valid::from_option(
