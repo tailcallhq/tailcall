@@ -67,7 +67,7 @@ type GreetingsBC__HelloReply @tag(id: "greetings_b.c.HelloReply") {
 
 type News {
   addNews(news: News__News!): News__News! @grpc(method: "news.NewsService.AddNews")
-  deleteNews(newsId: News__NewsId!): String @grpc(method: "news.NewsService.DeleteNews")
+  deleteNews(newsId: News__NewsId!): Empty! @grpc(method: "news.NewsService.DeleteNews")
   editNews(news: News__News!): News__News! @grpc(method: "news.NewsService.EditNews")
   getAllNews: News__NewsList! @grpc(method: "news.NewsService.GetAllNews")
   getMultipleNews(multipleNewsId: News__MultipleNewsId!): News__NewsList! @grpc(method: "news.NewsService.GetMultipleNews")

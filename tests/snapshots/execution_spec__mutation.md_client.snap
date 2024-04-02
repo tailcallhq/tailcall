@@ -6,6 +6,8 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 scalar JSON
 
 type Mutation {
