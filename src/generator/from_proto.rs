@@ -384,14 +384,11 @@ mod test {
     use crate::generator::from_proto::{from_proto, Context, DescriptorType};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
-        let mut proto_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        proto_path.push("src");
-        proto_path.push("config_generator");
-        proto_path.push("proto");
-        proto_path.push(name);
+        let path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("src/generator/proto/{}", name));
         Ok(protox_parse::parse(
             name,
-            std::fs::read_to_string(proto_path)?.as_str(),
+            std::fs::read_to_string(path)?.as_str(),
         )?)
     }
 
