@@ -65,22 +65,13 @@ impl ConfigReader {
             .iter()
             .map(|v| Self::resolve_path(&v.src, parent_dir))
             .collect::<Vec<String>>();
-        let file_descriptor_sets = self.proto_reader.read_all(&protobuf_links_paths).await?;
-        for (i, file_descriptor_set) in file_descriptor_sets.iter().enumerate() {
-            let config_link = protobuf_links.get(i).unwrap();
+        let file_descriptor_metadata = self.proto_reader.read_all(&protobuf_links_paths).await?;
+        for (i, file_descriptor_set) in file_descriptor_metadata.iter().enumerate() {
             let id = Valid::from_option(
                 file_descriptor_set.package.clone(),
                 format!(
-                    "Package name is not defined for proto file: {:?} with link id: {:?}",
-                    file_descriptor_set
-                        .descriptor_set
-                        .file
-                        .first()
-                        .unwrap()
-                        .name
-                        .as_ref()
-                        .unwrap(),
-                    config_link.id
+                    "Package name is not defined for proto file: {:?}",
+                    file_descriptor_set.name
                 ),
             )
             .trace(&format!("link[{}]", i))

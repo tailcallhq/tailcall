@@ -14,6 +14,7 @@ pub struct ProtoReader {
 
 pub struct ProtoMetadata {
     pub package: Option<String>,
+    pub name: Option<String>,
     pub descriptor_set: FileDescriptorSet,
 }
 
@@ -33,9 +34,11 @@ impl ProtoReader {
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
         let proto = self.read_proto(path.as_ref()).await?;
         let package = proto.package.clone();
+        let name = proto.name.clone();
         let descriptors = self.resolve_descriptors(proto).await?;
         let metadata = ProtoMetadata {
             package,
+            name,
             descriptor_set: FileDescriptorSet { file: descriptors },
         };
         Ok(metadata)
