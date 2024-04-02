@@ -1,0 +1,23 @@
+---
+source: tests/execution_spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  data: String
+}
+
+scalar Url
+
+schema {
+  query: Query
+}

@@ -2,7 +2,7 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
@@ -27,6 +27,7 @@ pub enum Expression {
     List(List),
     Math(Math),
     Concurrency(Concurrent, Box<Expression>),
+    Protect(Box<Expression>),
 }
 
 impl Display for Expression {
@@ -43,6 +44,7 @@ impl Display for Expression {
             Expression::List(list) => write!(f, "List({list})"),
             Expression::Math(math) => write!(f, "Math({math})"),
             Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
+            Expression::Protect(expr) => write!(f, "Protected({expr})"),
         }
     }
 }
@@ -155,6 +157,15 @@ impl Eval for Expression {
                 Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
                     left.eval(ctx.clone(), conc).await? == right.eval(ctx, conc).await?,
                 )),
+                Expression::Protect(expr) => {
+                    ctx.request_ctx
+                        .auth_ctx
+                        .validate(ctx.request_ctx)
+                        .await
+                        .to_result()
+                        .map_err(|e| anyhow!("Authentication Failure: {}", e.to_string()))?;
+                    expr.eval(ctx, conc).await
+                }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,
                 Expression::Cache(cached) => cached.eval(ctx, conc).await,
                 Expression::Relation(relation) => relation.eval(ctx, conc).await,

@@ -1,10 +1,18 @@
-use std::fmt::Display;
-
 use serde::{Deserialize, Serialize};
 
 use super::super::is_default;
 
-#[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone, schemars::JsonSchema)]
+#[derive(
+    Default,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Debug,
+    Clone,
+    schemars::JsonSchema,
+    strum_macros::Display,
+)]
 pub enum LinkType {
     #[default]
     Config,
@@ -13,19 +21,8 @@ pub enum LinkType {
     Cert,
     Key,
     Operation,
-}
-
-impl Display for LinkType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            LinkType::Config => "Config",
-            LinkType::Protobuf => "Protobuf",
-            LinkType::Script => "Script",
-            LinkType::Cert => "Cert",
-            LinkType::Key => "Key",
-            LinkType::Operation => "Operation",
-        })
-    }
+    Htpasswd,
+    Jwks,
 }
 
 /// The @link directive allows you to import external resources, such as

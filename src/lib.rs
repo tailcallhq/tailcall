@@ -4,6 +4,7 @@
 mod app_context;
 pub mod async_cache;
 pub mod async_graphql_hyper;
+mod auth;
 pub mod blueprint;
 pub mod cache;
 #[cfg(feature = "cli")]
@@ -25,6 +26,8 @@ pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
+mod proto_reader;
+mod resource_reader;
 mod rest;
 pub mod runtime;
 pub mod scalar;
@@ -34,6 +37,7 @@ pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 
+use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
@@ -41,7 +45,7 @@ use async_graphql_value::ConstValue;
 use http::Response;
 
 pub trait EnvIO: Send + Sync + 'static {
-    fn get(&self, key: &str) -> Option<String>;
+    fn get(&self, key: &str) -> Option<Cow<'_, str>>;
 }
 
 #[async_trait::async_trait]
@@ -95,8 +99,8 @@ pub mod tests {
     pub struct TestEnvIO(HashMap<String, String>);
 
     impl EnvIO for TestEnvIO {
-        fn get(&self, key: &str) -> Option<String> {
-            self.0.get(key).cloned()
+        fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+            self.0.get(key).map(Cow::from)
         }
     }
 

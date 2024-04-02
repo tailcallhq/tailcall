@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{Expr, KeyValue, Link, Server, Upstream};
+use super::{KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
@@ -227,6 +227,14 @@ pub struct Type {
     ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth providers
+    #[serde(default)]
+    pub protected: Option<Protected>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    ///
+    /// Contains source information for the type.
+    pub tag: Option<Tag>,
 }
 
 impl Type {
@@ -255,6 +263,15 @@ impl MergeRight for Type {
     }
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+/// Used to represent an identifier for a type. Typically used via only by the
+/// configuration generators to provide additional information about the type.
+pub struct Tag {
+    /// A unique identifier for the type.
+    pub id: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
@@ -265,6 +282,9 @@ pub struct Cache {
     /// stored in the cache.
     pub max_age: NonZeroU64,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema)]
+pub struct Protected {}
 
 fn merge_types(
     mut self_types: BTreeMap<String, Type>,
@@ -400,12 +420,12 @@ pub struct Field {
     pub graphql: Option<GraphQL>,
 
     ///
-    /// Inserts an Expression resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub expr: Option<Expr>,
-    ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth provider
+    #[serde(default)]
+    pub protected: Option<Protected>,
 }
 
 impl Field {
@@ -415,7 +435,6 @@ impl Field {
             || self.const_field.is_some()
             || self.graphql.is_some()
             || self.grpc.is_some()
-            || self.expr.is_some()
             || self.call.is_some()
     }
 

@@ -19,7 +19,7 @@ impl<'a> PathString for ConfigReaderContext<'a> {
         path.split_first()
             .and_then(|(head, tail)| match head.as_ref() {
                 "vars" => self.vars.get(tail[0].as_ref()).map(|v| v.into()),
-                "env" => self.env.get(tail[0].as_ref()).map(|v| v.into()),
+                "env" => self.env.get(tail[0].as_ref()),
                 _ => None,
             })
     }
