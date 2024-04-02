@@ -23,6 +23,7 @@ impl ProtoReader {
         Self { resource_reader: ResourceReader::init(runtime) }
     }
 
+    #[allow(dead_code)] // TODO might be used in builder reader
     pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
         let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
             .await

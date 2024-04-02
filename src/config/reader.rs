@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context;
+use futures_util::future::try_join_all;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -57,15 +58,24 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
-        let protobuf_links = links
+        let file_descriptor_metadata = links
             .iter()
-            .filter(|v| v.type_of == LinkType::Protobuf)
+            .filter_map(|v| {
+                if v.type_of == LinkType::Protobuf {
+                    let protobuf_link_path = Self::resolve_path(&v.src, parent_dir);
+                    Some(self.proto_reader.read(protobuf_link_path))
+                } else {
+                    None
+                }
+            })
             .collect::<Vec<_>>();
-        let protobuf_links_paths = protobuf_links
-            .iter()
-            .map(|v| Self::resolve_path(&v.src, parent_dir))
-            .collect::<Vec<String>>();
-        let file_descriptor_metadata = self.proto_reader.read_all(&protobuf_links_paths).await?;
+        let file_descriptor_metadata = try_join_all(file_descriptor_metadata).await?;
+        // let protobuf_links_paths = protobuf_links
+        //     .iter()
+        //     .map(|v| Self::resolve_path(&v.src, parent_dir))
+        //     .collect::<Vec<String>>();
+        // let file_descriptor_metadata =
+        // self.proto_reader.read_all(&protobuf_links_paths).await?;
         for (i, file_descriptor_set) in file_descriptor_metadata.iter().enumerate() {
             let id = Valid::from_option(
                 file_descriptor_set.package.clone(),
