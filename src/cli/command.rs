@@ -66,7 +66,7 @@ pub enum Command {
 
         /// Format of the input file
         #[clap(short, long)]
-        input: Option<GeneratorSource>,
+        input: GeneratorSource,
 
         /// Format of the output file
         #[clap(short, long)]
