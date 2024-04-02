@@ -15,9 +15,8 @@ const ALL: &[GeneratorSource] = &[GeneratorSource::PROTO];
 const PROTO_EXT: &str = "proto";
 
 #[derive(Debug, Error)]
-#[error("Unsuppo#[derive(PartialEq)]
-rted config extension: {0}")]
-#[derive(PartialEq)]
+#[derive(Debug, Error, PartialEq)]
+#[error("Unsupported config extension: {0}")]
 pub struct UnsupportedFileFormat(String);
 
 impl std::str::FromStr for GeneratorSource {
