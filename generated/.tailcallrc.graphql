@@ -212,7 +212,7 @@ Used to omit a field from public consumption.
 """
 directive @omit on FIELD_DEFINITION
 
-directive @protected on OBJECT
+directive @protected on OBJECT | FIELD_DEFINITION
 
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
