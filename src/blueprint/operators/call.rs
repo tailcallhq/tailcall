@@ -18,29 +18,30 @@ pub fn update_call<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_call(config, calls, operation_type, object_name)
-                .map(|merged_field| {
-                    b_field
-                        .args(merged_field.args)
-                        .resolver(merged_field.resolver)
-                        .name(name.to_string())
-                })
-                .map(|mut b_field| {
-                    b_field.args.iter_mut().for_each(|input_value| {
-                        match &input_value.of_type.clone() {
-                            Type::NamedType { name, .. } => {
-                                input_value.of_type =
-                                    Type::NamedType { name: name.to_owned(), non_null: false };
-                            }
-                            Type::ListType { of_type, .. } => {
-                                input_value.of_type =
-                                    Type::ListType { of_type: of_type.to_owned(), non_null: false };
-                            }
-                        }
-                    });
+            compile_call(config, calls, operation_type, object_name).map(|compiled| {
+                b_field
+                    .args(
+                        compiled
+                            .args
+                            .into_iter()
+                            .map(|mut input_value| {
+                                input_value.of_type = match &input_value.of_type {
+                                    Type::NamedType { name, .. } => {
+                                        Type::NamedType { name: name.to_owned(), non_null: false }
+                                    }
+                                    Type::ListType { of_type, .. } => Type::ListType {
+                                        of_type: of_type.to_owned(),
+                                        non_null: false,
+                                    },
+                                };
 
-                    b_field
-                })
+                                input_value
+                            })
+                            .collect(),
+                    )
+                    .resolver(compiled.resolver)
+                    .name(name.to_string())
+            })
         },
     )
 }
@@ -115,10 +116,6 @@ pub fn compile_call(
             b_fields.into_iter().reduce(|mut b_field, b_field_next| {
                 b_field.name = b_field_next.name;
                 b_field.args.extend(b_field_next.args);
-                b_field.args.iter_mut().for_each(|input_value| {
-                    dbg!(&input_value);
-                });
-                dbg!(&b_field.args);
                 b_field.of_type = b_field_next.of_type;
                 b_field.map_expr(|expr| {
                     b_field_next
