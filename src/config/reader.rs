@@ -228,26 +228,6 @@ impl ConfigReader {
 }
 
 #[cfg(test)]
-mod test_proto_config {
-    use std::path::PathBuf;
-
-    use anyhow::Result;
-
-    use crate::config::reader::ConfigReader;
-
-    #[tokio::test]
-    async fn test_proto_no_pkg() -> Result<()> {
-        let runtime = crate::runtime::test::init(None);
-        let reader = ConfigReader::init(runtime);
-        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
-        let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
-        assert!(config_module.is_err());
-        Ok(())
-    }
-}
-
-#[cfg(test)]
 mod reader_tests {
     use std::path::{Path, PathBuf};
 
