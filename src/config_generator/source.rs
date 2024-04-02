@@ -15,7 +15,9 @@ const ALL: &[GeneratorSource] = &[GeneratorSource::PROTO];
 const PROTO_EXT: &str = "proto";
 
 #[derive(Debug, Error)]
-#[error("Unsupported config extension: {0}")]
+#[error("Unsuppo#[derive(PartialEq)]
+rted config extension: {0}")]
+#[derive(PartialEq)]
 pub struct UnsupportedFileFormat(String);
 
 impl std::str::FromStr for GeneratorSource {
@@ -45,5 +47,35 @@ impl GeneratorSource {
             .find(|format| format.ends_with(name))
             .ok_or(UnsupportedConfigFormat(name.to_string()))
             .cloned()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+    use super::*;
+
+    #[test]
+    fn test_from_str() {
+        assert_eq!(GeneratorSource::from_str("proto"), Ok(GeneratorSource::PROTO));
+        assert!(GeneratorSource::from_str("foo").is_err());
+    }
+
+    #[test]
+    fn test_ext() {
+        assert_eq!(GeneratorSource::PROTO.ext(), "proto");
+    }
+
+    #[test]
+    fn test_ends_with() {
+        let proto = GeneratorSource::PROTO;
+        assert!(proto.ends_with("foo.proto"));
+        assert!(!proto.ends_with("foo.xml"));
+    }
+
+    #[test]
+    fn test_detect() {
+        assert_eq!(GeneratorSource::detect("foo.proto"), Ok(GeneratorSource::PROTO));
+        assert!(GeneratorSource::detect("foo.xml").is_err());
     }
 }

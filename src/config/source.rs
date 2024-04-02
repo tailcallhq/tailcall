@@ -15,7 +15,7 @@ const YML_EXT: &str = "yml";
 const GRAPHQL_EXT: &str = "graphql";
 const ALL: [Source; 3] = [Source::Json, Source::Yml, Source::GraphQL];
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 #[error("Unsupported config extension: {0}")]
 pub struct UnsupportedConfigFormat(pub String);
 
