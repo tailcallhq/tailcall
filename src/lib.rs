@@ -10,11 +10,11 @@ pub mod cache;
 #[cfg(feature = "cli")]
 pub mod cli;
 pub mod config;
-pub mod config_generator;
 pub mod data_loader;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+pub mod generator;
 pub mod graphql;
 pub mod grpc;
 pub mod has_headers;

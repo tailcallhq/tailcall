@@ -14,7 +14,7 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
-use crate::config_generator::Generator;
+use crate::generator::Generator;
 use crate::http::API_URL_PREFIX;
 use crate::print_schema;
 use crate::rest::{EndpointSet, Unchecked};

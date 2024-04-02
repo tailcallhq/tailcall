@@ -1,8 +1,8 @@
 use anyhow::Result;
 
 use crate::config::{Config, Link, LinkType};
-use crate::config_generator::from_proto::from_proto;
-use crate::config_generator::source::Source;
+use crate::generator::from_proto::from_proto;
+use crate::generator::source::Source;
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
 use crate::runtime::TargetRuntime;

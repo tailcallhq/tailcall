@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::{config, config_generator};
+use crate::{config, generator};
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
@@ -65,7 +65,7 @@ pub enum Command {
 
         /// Format of the input file
         #[clap(short, long)]
-        input: config_generator::Source,
+        input: generator::Source,
 
         /// Format of the output file
         #[clap(short, long)]
