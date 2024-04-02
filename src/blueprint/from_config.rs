@@ -89,11 +89,11 @@ where
     let schema = match type_ {
         Some(type_) => {
             if let Some(variants) = type_.variants.clone() {
-                let mut map : HashMap<i32, HashSet<String>> = HashMap::new();
-                let mut i =0;
-                for variant in variants {
-                    map.entry(i).or_insert_with(|| HashSet::new()).insert(variant);
-                    i = i+1;
+                let mut map: HashMap<i32, HashSet<String>> = HashMap::new();
+                for (i, variant) in variants.into_iter().enumerate() {
+                    map.entry(i as i32)
+                        .or_default()
+                        .insert(variant);
                 }
                 JsonSchema::Enum(map)
             } else {

@@ -138,9 +138,8 @@ impl JsonSchema {
                 if let JsonSchema::Enum(b) = other {
                     if a.len() != b.len() {
                         return Valid::fail("expected proper Enum type".to_string()).trace(name);
-                    }
-                    else {
-                        let keys : HashSet<_> = a.keys().collect();
+                    } else {
+                        let keys: HashSet<_> = a.keys().collect();
                         for key in keys {
                             let mut small = &b[key];
                             let mut large = &a[key];
@@ -149,7 +148,8 @@ impl JsonSchema {
                                 large = &b[key];
                             }
                             if !small.is_subset(large) {
-                                return Valid::fail("expected proper Enum type".to_string()).trace(name);
+                                return Valid::fail("expected proper Enum type".to_string())
+                                    .trace(name);
                             }
                         }
                     }
@@ -198,7 +198,9 @@ impl TryFrom<&EnumDescriptor> for JsonSchema {
     fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
         let mut map: HashMap<i32, HashSet<String>> = HashMap::new();
         for value in value.values() {
-            map.entry(value.number()).or_insert_with(|| HashSet::new()).insert(value.name().to_string());
+            map.entry(value.number())
+                .or_default()
+                .insert(value.name().to_string());
         }
         Ok(JsonSchema::Enum(map))
     }
