@@ -1,5 +1,5 @@
 // mod gen_gql_schema;
-use autogen::Document;
+use autogen::ServiceDocument;
 use std::env;
 use std::fs::File;
 use std::path::PathBuf;
@@ -71,7 +71,7 @@ async fn mode_check() -> Result<()> {
 async fn mode_fix() -> Result<()> {
     update_json().await?;
     let file = File::create(GRAPHQL_SCHEMA_FILE)?;
-    let mut doc = Document::new(file);
+    let mut doc = ServiceDocument::new(file);
     let _ = doc.print();
     Ok(())
 }
