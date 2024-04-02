@@ -23,15 +23,6 @@ impl ProtoReader {
         Self { resource_reader: ResourceReader::init(runtime) }
     }
 
-    #[allow(dead_code)] // TODO might be used in builder reader
-    pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
-        let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(resolved_protos)
-    }
-
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
         let proto = self.read_proto(path.as_ref()).await?;
         let package = proto.package.clone();
@@ -156,17 +147,6 @@ mod test_proto_config {
         }
 
         Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_read_all() {
-        let runtime = crate::runtime::test::init(None);
-        let reader = ProtoReader::init(runtime);
-        let resolved_protos = reader
-            .read_all(&["google/protobuf/empty.proto"])
-            .await
-            .unwrap();
-        assert_eq!(resolved_protos.len(), 1);
     }
 
     fn path_to_file_name(path: &Path) -> Option<String> {
