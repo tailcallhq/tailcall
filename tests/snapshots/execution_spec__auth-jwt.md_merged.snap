@@ -7,8 +7,8 @@ schema @server(graphiql: true, port: 8000) @upstream @link(id: "jwks", src: "jwk
 }
 
 type Nested {
-  name: String! @const(data: "nested name")
-  protected: String! @const(data: "protected nested") @protected
+  name: String!
+  protected: String! @protected
 }
 
 type ProtectedType {
@@ -17,7 +17,7 @@ type ProtectedType {
 }
 
 type Query {
-  nested: Nested!
+  nested: Nested! @const(data: {name: "nested name", protected: "protected nested"})
   protectedScalar: String! @const(data: "data from protected scalar") @protected
   protectedType: ProtectedType
   scalar: String! @const(data: "data from public scalar")
