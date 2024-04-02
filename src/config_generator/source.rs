@@ -14,7 +14,6 @@ const ALL: &[GeneratorSource] = &[GeneratorSource::PROTO];
 
 const PROTO_EXT: &str = "proto";
 
-#[derive(Debug, Error)]
 #[derive(Debug, Error, PartialEq)]
 #[error("Unsupported config extension: {0}")]
 pub struct UnsupportedFileFormat(String);
@@ -52,11 +51,15 @@ impl GeneratorSource {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
     use super::*;
 
     #[test]
     fn test_from_str() {
-        assert_eq!(GeneratorSource::from_str("proto"), Ok(GeneratorSource::PROTO));
+        assert_eq!(
+            GeneratorSource::from_str("proto"),
+            Ok(GeneratorSource::PROTO)
+        );
         assert!(GeneratorSource::from_str("foo").is_err());
     }
 
@@ -74,7 +77,10 @@ mod tests {
 
     #[test]
     fn test_detect() {
-        assert_eq!(GeneratorSource::detect("foo.proto"), Ok(GeneratorSource::PROTO));
+        assert_eq!(
+            GeneratorSource::detect("foo.proto"),
+            Ok(GeneratorSource::PROTO)
+        );
         assert!(GeneratorSource::detect("foo.xml").is_err());
     }
 }
