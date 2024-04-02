@@ -1501,11 +1501,14 @@
           ],
           "properties": {
             "Enum": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "uniqueItems": true
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              }
             }
           },
           "additionalProperties": false
