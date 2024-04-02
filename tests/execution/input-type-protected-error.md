@@ -23,8 +23,8 @@ input Input @protected {
   value: String
 }
 
-input NewPost @protected {
-  content: String
+input NewPost {
+  content: String @protected
 }
 
 type Post {
