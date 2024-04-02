@@ -51,19 +51,28 @@ impl ProtoReader {
         queue.push_back(parent_proto.clone());
 
         while let Some(file) = queue.pop_front() {
-            for import in file.dependency.iter() {
-                let proto = self.read_proto(import).await?;
-                if descriptors.get(import).is_none() {
+            let futures: Vec<_> = file
+                .dependency
+                .iter()
+                .map(|import| self.read_proto(import))
+                .collect();
+
+            let results = join_all(futures).await;
+
+            for result in results {
+                let proto = result?;
+                if descriptors.get(proto.name()).is_none() {
                     queue.push_back(proto.clone());
-                    descriptors.insert(import.clone(), proto);
+                    descriptors.insert(proto.name().to_string(), proto);
                 }
             }
         }
-        let mut descriptors = descriptors
+
+        let mut descriptors_vec = descriptors
             .into_values()
             .collect::<Vec<FileDescriptorProto>>();
-        descriptors.push(parent_proto);
-        Ok(descriptors)
+        descriptors_vec.push(parent_proto);
+        Ok(descriptors_vec)
     }
 
     /// Tries to load well-known google proto files and if not found uses normal
