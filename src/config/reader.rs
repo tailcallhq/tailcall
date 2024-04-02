@@ -85,10 +85,7 @@ impl ConfigReader {
             }
         }
 
-        for i in 0..links.len() {
-            let config_link = links
-                .get(i)
-                .context(format!("Expected a link at index: {i} but found none"))?;
+        for config_link in links.iter() {
             let path = Self::resolve_path(&config_link.src, parent_dir);
 
             let source = self.resource_reader.read_file(&path).await?;
