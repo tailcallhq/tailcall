@@ -14,7 +14,7 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
-use crate::config_generator::reader::GeneratorReader;
+use crate::config_generator::generator::Generator;
 use crate::http::API_URL_PREFIX;
 use crate::print_schema;
 use crate::rest::{EndpointSet, Unchecked};
@@ -68,7 +68,7 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_paths, input, output, query } => {
-            let generator = GeneratorReader::init(runtime);
+            let generator = Generator::init(runtime);
             let cfg = generator
                 .read_all(input, file_paths.as_ref(), query.as_str())
                 .await?;

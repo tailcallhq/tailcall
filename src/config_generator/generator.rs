@@ -7,10 +7,10 @@ use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
 use crate::runtime::TargetRuntime;
 
-pub struct GeneratorReader {
+pub struct Generator {
     proto_reader: ProtoReader,
 }
-impl GeneratorReader {
+impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { proto_reader: ProtoReader::init(runtime) }
     }
@@ -81,7 +81,7 @@ mod test {
                 .body(&greetings_a);
         });
 
-        let reader = GeneratorReader::init(runtime);
+        let reader = Generator::init(runtime);
         let news = format!("http://localhost:{}/news.proto", server.port());
         let greetings_a = format!("http://localhost:{}/greetings_a.proto", server.port());
         let greetings_b = test_dir

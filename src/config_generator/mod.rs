@@ -1,3 +1,3 @@
 pub mod from_proto;
-pub mod reader;
+pub mod generator;
 pub mod source;
