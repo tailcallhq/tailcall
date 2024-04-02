@@ -60,10 +60,7 @@ mod test {
     async fn test_read_all() {
         let server = start_mock_server();
         let runtime = crate::runtime::test::init(None);
-        let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join("config_generator")
-            .join("proto");
+        let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/config_generator/proto");
 
         let news_content = runtime
             .file
