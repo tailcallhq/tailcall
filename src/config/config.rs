@@ -12,13 +12,13 @@ use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
+use crate::config_generator::from_openapi::OpenApiToGraphQLConverter;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
 use crate::{is_default, scalar};
-use crate::config_generator::from_openapi::OpenApiToGraphQLConverter;
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,

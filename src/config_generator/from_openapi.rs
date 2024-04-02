@@ -97,7 +97,11 @@ impl OpenApiToGraphQLConverter {
                 })
                 .collect();
 
-            UnionOrType::Type(Type { fields, doc: schema.description.clone(), ..Default::default() })
+            UnionOrType::Type(Type {
+                fields,
+                doc: schema.description.clone(),
+                ..Default::default()
+            })
         } else if !schema.all_of.is_empty() {
             let properties: Vec<_> = schema
                 .all_of
@@ -146,7 +150,11 @@ impl OpenApiToGraphQLConverter {
                 .into_iter()
                 .map(|val| format!("{val:?}"))
                 .collect();
-            UnionOrType::Type(Type { variants: Some(variants), doc: schema.description, ..Default::default() })
+            UnionOrType::Type(Type {
+                variants: Some(variants),
+                doc: schema.description,
+                ..Default::default()
+            })
         } else {
             UnionOrType::Type(Type::default())
         }
