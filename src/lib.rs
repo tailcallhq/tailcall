@@ -26,6 +26,7 @@ pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod print_schema;
+mod proto_reader;
 mod resource_reader;
 mod rest;
 pub mod runtime;
