@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::config::{Config, Link, LinkType};
 use crate::config_generator::from_proto::from_proto;
-use crate::config_generator::source::GeneratorSource;
+use crate::config_generator::source::Source;
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
 use crate::runtime::TargetRuntime;
@@ -17,7 +17,7 @@ impl Generator {
 
     pub async fn read_all<T: AsRef<str>>(
         &self,
-        input_source: GeneratorSource,
+        input_source: Source,
         files: &[T],
         query: &str,
     ) -> Result<Config> {
@@ -27,7 +27,7 @@ impl Generator {
         let mut config = Config::default();
         for metadata in proto_metadata {
             match input_source {
-                GeneratorSource::PROTO => {
+                Source::PROTO => {
                     links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
                     config = config.merge_right(from_proto(&[metadata.descriptor_set], query));
                 }
@@ -91,11 +91,7 @@ mod test {
             .to_string();
 
         let config = reader
-            .read_all(
-                GeneratorSource::PROTO,
-                &[news, greetings_a, greetings_b],
-                "Query",
-            )
+            .read_all(Source::PROTO, &[news, greetings_a, greetings_b], "Query")
             .await
             .unwrap();
 

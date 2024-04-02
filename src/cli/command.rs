@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::config::Source;
-use crate::config_generator::source::GeneratorSource;
+use crate::{config, config_generator};
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
@@ -48,7 +47,7 @@ pub enum Command {
 
         /// Prints the input config in the provided format.
         #[clap(short, long)]
-        format: Option<Source>,
+        format: Option<config::Source>,
     },
 
     /// Initialize a new project
@@ -66,11 +65,11 @@ pub enum Command {
 
         /// Format of the input file
         #[clap(short, long)]
-        input: GeneratorSource,
+        input: config_generator::Source,
 
         /// Format of the output file
         #[clap(short, long)]
-        output: Option<Source>,
+        output: Option<config::Source>,
 
         /// Root query name
         #[arg(default_value = "Query")]

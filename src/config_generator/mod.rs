@@ -1,3 +1,6 @@
-pub mod from_proto;
-pub mod generator;
-pub mod source;
+mod from_proto;
+mod generator;
+mod source;
+
+pub use generator::Generator;
+pub use source::Source;
