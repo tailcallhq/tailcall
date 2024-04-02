@@ -32,7 +32,24 @@ impl Expression {
             None => {
                 let expr = self;
                 match expr {
-                    Expression::Context(_) => expr,
+                    Expression::Context(ctx) => match ctx {
+                        super::Context::Value => Expression::Context(super::Context::Value),
+                        super::Context::Path(path) => {
+                            Expression::Context(super::Context::Path(path))
+                        }
+                        super::Context::PushArgs { expr, and_then } => {
+                            Expression::Context(super::Context::PushArgs {
+                                expr: expr.modify_box(modifier),
+                                and_then: and_then.modify_box(modifier),
+                            })
+                        }
+                        super::Context::PushValue { expr, and_then } => {
+                            Expression::Context(super::Context::PushValue {
+                                expr: expr.modify_box(modifier),
+                                and_then: and_then.modify_box(modifier),
+                            })
+                        }
+                    },
                     Expression::Literal(_) => expr,
                     Expression::EqualTo(expr1, expr2) => {
                         Expression::EqualTo(expr1.modify_box(modifier), expr2.modify_box(modifier))
