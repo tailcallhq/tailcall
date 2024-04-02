@@ -743,6 +743,7 @@ impl Config {
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self> {
+        // Self::from_open_api_spec(yaml)
         Ok(serde_yaml::from_str(yaml)?)
     }
 

@@ -77,25 +77,27 @@ impl OpenApiToGraphQLConverter {
                 .properties
                 .into_iter()
                 .map(|(name, property)| {
+                    let property_schema = property.resolve(&self.spec).unwrap();
+                    let doc = property_schema.description.clone();
                     (
                         name.to_case(Case::Camel),
                         Field {
                             type_of: {
-                                let schema = property.resolve(&self.spec).unwrap();
-                                if let Some(type_) = schema.schema_type.as_ref() {
+                                if let Some(type_) = property_schema.schema_type.as_ref() {
                                     map_spec_type(format!("{type_:?}"))
                                 } else {
-                                    self.insert_inline_type(schema)
+                                    self.insert_inline_type(property_schema)
                                 }
                             },
                             required: schema.required.contains(&name),
+                            doc,
                             ..Default::default()
                         },
                     )
                 })
                 .collect();
 
-            UnionOrType::Type(Type { fields, ..Default::default() })
+            UnionOrType::Type(Type { fields, doc: schema.description.clone(), ..Default::default() })
         } else if !schema.all_of.is_empty() {
             let properties: Vec<_> = schema
                 .all_of
@@ -129,7 +131,7 @@ impl OpenApiToGraphQLConverter {
                 );
             }
 
-            UnionOrType::Type(Type { fields, ..Default::default() })
+            UnionOrType::Type(Type { fields, doc: schema.description, ..Default::default() })
         } else if !schema.any_of.is_empty() {
             let types = schema
                 .any_of
@@ -137,10 +139,16 @@ impl OpenApiToGraphQLConverter {
                 .map(|schema| schema_name(schema.clone()).unwrap())
                 .collect();
 
-            UnionOrType::Union(Union { types, doc: None })
+            UnionOrType::Union(Union { types, doc: schema.description })
+        } else if !schema.enum_values.is_empty() {
+            let variants = schema
+                .enum_values
+                .into_iter()
+                .map(|val| format!("{val:?}"))
+                .collect();
+            UnionOrType::Type(Type { variants: Some(variants), doc: schema.description, ..Default::default() })
         } else {
-            // TODO: handle other schema types
-            UnionOrType::Type(Type { ..Default::default() })
+            UnionOrType::Type(Type::default())
         }
     }
 
@@ -245,6 +253,7 @@ impl OpenApiToGraphQLConverter {
                 list: is_list,
                 args,
                 http: Some(Http { path, method, ..Default::default() }),
+                doc: operation.description,
                 ..Default::default()
             };
 
