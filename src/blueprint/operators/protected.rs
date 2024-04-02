@@ -5,11 +5,16 @@ use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
 pub fn update_protected<'a>(
+    type_name: &'a str,
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected.is_some() || type_.protected.is_some() {
+                if config.input_types().contains(&type_name.to_string()) {
+                    return Valid::fail("Input types can not be protected".to_owned());
+                }
+
                 if !config.extensions.has_auth() {
                     return Valid::fail(
                         "@protected operator is used but there is no @link definitions for auth providers".to_owned(),
