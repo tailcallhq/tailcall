@@ -12,10 +12,17 @@ pub struct ProtoReader {
     resource_reader: ResourceReader,
 }
 
+pub struct FileRead {
+    pub descriptor: FileDescriptorProto,
+    pub path: String,
+    pub content_ty: Option<String>,
+}
+
 pub struct ProtoMetadata {
     pub package: Option<String>,
     pub name: Option<String>,
     pub descriptor_set: FileDescriptorSet,
+    pub file_read: FileRead,
 }
 
 impl ProtoReader {
@@ -23,15 +30,27 @@ impl ProtoReader {
         Self { resource_reader: ResourceReader::init(runtime) }
     }
 
+    pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
+        let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
+            .await
+            .into_iter()
+            .collect::<anyhow::Result<Vec<_>>>()?;
+        Ok(resolved_protos)
+    }
+
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
-        let proto = self.read_proto(path.as_ref()).await?;
-        let package = proto.package.clone();
-        let name = proto.name.clone();
-        let descriptors = self.resolve_descriptors(proto).await?;
+        let file_read = self.read_proto(path.as_ref()).await?;
+        let package = file_read.descriptor.package.clone();
+        let name = file_read.descriptor.name.clone();
+        let descriptors = self
+            .resolve_descriptors(file_read.descriptor.clone())
+            .await?;
+
         let metadata = ProtoMetadata {
             package,
             name,
             descriptor_set: FileDescriptorSet { file: descriptors },
+            file_read,
         };
         Ok(metadata)
     }
@@ -55,7 +74,7 @@ impl ProtoReader {
             let results = join_all(futures).await;
 
             for result in results {
-                let proto = result?;
+                let proto = result?.descriptor;
                 if descriptors.get(proto.name()).is_none() {
                     queue.push_back(proto.clone());
                     descriptors.insert(proto.name().to_string(), proto);
@@ -72,16 +91,27 @@ impl ProtoReader {
 
     /// Tries to load well-known google proto files and if not found uses normal
     /// file and http IO to resolve them
-    async fn read_proto(&self, path: &str) -> anyhow::Result<FileDescriptorProto> {
-        let content = if let Ok(file) = GoogleFileResolver::new().open_file(path) {
-            file.source()
+    async fn read_proto(&self, path: &str) -> anyhow::Result<FileRead> {
+        if let Ok(file) = GoogleFileResolver::new().open_file(path) {
+            let content = file
+                .source()
                 .context("Unable to extract content of google well-known proto file")?
-                .to_string()
+                .to_string();
+            let content = protox_parse::parse(path, &content)?;
+            Ok(FileRead {
+                descriptor: content,
+                path: path.to_string(),
+                content_ty: None,
+            })
         } else {
-            self.resource_reader.read_file(path).await?.content
-        };
-
-        Ok(protox_parse::parse(path, &content)?)
+            let res_file_read = self.resource_reader.read_file(path).await?;
+            let content = protox_parse::parse(path, &res_file_read.content)?;
+            Ok(FileRead {
+                descriptor: content,
+                path: path.to_string(),
+                content_ty: res_file_read.content_ty,
+            })
+        }
     }
 }
 
@@ -128,7 +158,7 @@ mod test_proto_config {
 
         let reader = ProtoReader::init(runtime);
         let helper_map = reader
-            .resolve_descriptors(reader.read_proto(&test_file).await?)
+            .resolve_descriptors(reader.read_proto(&test_file).await?.descriptor)
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {

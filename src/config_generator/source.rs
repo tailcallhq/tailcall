@@ -40,9 +40,16 @@ impl GeneratorSource {
     }
 
     pub fn detect(name: &str) -> Result<GeneratorSource, UnsupportedConfigFormat> {
-        ALL.iter()
-            .find(|format| format.ends_with(name))
-            .ok_or(UnsupportedConfigFormat(name.to_string()))
-            .cloned()
+        match name {
+            "application/x-protobuf"
+            | "application/protobuf"
+            | "application/vnd.google.protobuf" => Ok(GeneratorSource::PROTO),
+
+            name => ALL
+                .iter()
+                .find(|format| format.ends_with(name))
+                .ok_or(UnsupportedConfigFormat(name.to_string()))
+                .cloned(),
+        }
     }
 }
