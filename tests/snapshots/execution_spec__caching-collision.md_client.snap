@@ -11,6 +11,8 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 type Foo {
   id: Int!
 }

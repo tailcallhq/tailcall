@@ -1,21 +1,11 @@
-#[derive(Debug, thiserror::Error, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, thiserror::Error, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Error {
-    #[error("Haven't found auth parameters")]
+    #[error("Parameters not provided in the request.")]
     Missing,
-    #[error("Couldn't validate auth request")]
-    // in case we haven't managed to actually validate the request
-    // and have failed somewhere else, usually while executing request
-    ValidationCheckFailed,
-    #[error("Auth validation failed")]
-    Invalid,
-}
 
-impl Error {
-    pub fn max(self, other: Self) -> Self {
-        if self < other {
-            other
-        } else {
-            self
-        }
-    }
+    #[error("{0}")]
+    Parse(String),
+
+    #[error("Invalid credentials or token.")]
+    Invalid,
 }
