@@ -139,6 +139,8 @@ impl JsonSchema {
                     if a.ne(b) {
                         return Valid::fail("expected Enum type".to_string()).trace(name);
                     }
+                } else {
+                    return Valid::fail(format!("expected Enum got: {:?}", other)).trace(name);
                 }
             }
         }
