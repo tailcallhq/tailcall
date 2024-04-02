@@ -1,10 +1,7 @@
-use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context;
-use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
-use protox::file::{FileResolver, GoogleFileResolver};
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -13,6 +10,7 @@ use rustls_pki_types::{
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
+use crate::proto_reader::ProtoReader;
 use crate::resource_reader::ResourceReader;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
@@ -23,13 +21,15 @@ use crate::valid::{Valid, Validator};
 pub struct ConfigReader {
     runtime: TargetRuntime,
     resource_reader: ResourceReader,
+    proto_reader: ProtoReader,
 }
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
             runtime: runtime.clone(),
-            resource_reader: ResourceReader::init(runtime),
+            resource_reader: ResourceReader::init(runtime.clone()),
+            proto_reader: ProtoReader::init(runtime),
         }
     }
 
@@ -55,6 +55,47 @@ impl ConfigReader {
 
         if links.is_empty() {
             return Ok(config_module);
+        }
+
+        let protobuf_links = links
+            .iter()
+            .filter(|v| v.type_of == LinkType::Protobuf)
+            .collect::<Vec<_>>();
+        let protobuf_links_paths = protobuf_links
+            .iter()
+            .map(|v| Self::resolve_path(&v.src, parent_dir))
+            .collect::<Vec<String>>();
+        let file_descriptor_sets = self
+            .proto_reader
+            .resolve_protos(&protobuf_links_paths)
+            .await?;
+        for (i, file_descriptor_set) in file_descriptor_sets.iter().enumerate() {
+            let config_link = protobuf_links.get(i).unwrap();
+            let id = Valid::from_option(
+                file_descriptor_set.package.clone(),
+                format!(
+                    "Package name is not defined for proto file: {:?} with link id: {:?}",
+                    file_descriptor_set
+                        .descriptor_set
+                        .file
+                        .first()
+                        .unwrap()
+                        .name
+                        .as_ref()
+                        .unwrap(),
+                    config_link.id
+                ),
+            )
+            .trace(&format!("link[{}]", i))
+            .trace("schema")
+            .to_result()?;
+            config_module
+                .extensions
+                .grpc_file_descriptors
+                .push(Content {
+                    id: Some(id),
+                    content: file_descriptor_set.descriptor_set.clone(),
+                });
         }
 
         for i in 0..links.len() {
@@ -84,28 +125,7 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let parent_descriptor = self.read_proto(&source.path).await?;
-
-                    let id = Valid::from_option(
-                        parent_descriptor.package.clone(),
-                        format!(
-                            "Package name is not defined for proto file: {:?} with link id: {:?}",
-                            parent_descriptor.name, config_link.id
-                        ),
-                    )
-                    .trace(&format!("link[{}]", i))
-                    .trace("schema")
-                    .to_result()?;
-
-                    let mut descriptors = self.resolve_descriptors(parent_descriptor).await?;
-                    let mut file_descriptor_set = FileDescriptorSet::default();
-
-                    file_descriptor_set.file.append(&mut descriptors);
-
-                    config_module
-                        .extensions
-                        .grpc_file_descriptors
-                        .push(Content { id: Some(id), content: file_descriptor_set });
+                    // Already handled
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);
@@ -233,45 +253,6 @@ impl ConfigReader {
         Ok(config_module)
     }
 
-    /// Performs BFS to import all nested proto files
-    async fn resolve_descriptors(
-        &self,
-        parent_proto: FileDescriptorProto,
-    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
-        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
-        let mut queue = VecDeque::new();
-        queue.push_back(parent_proto.clone());
-
-        while let Some(file) = queue.pop_front() {
-            for import in file.dependency.iter() {
-                let proto = self.read_proto(import).await?;
-                if descriptors.get(import).is_none() {
-                    queue.push_back(proto.clone());
-                    descriptors.insert(import.clone(), proto);
-                }
-            }
-        }
-        let mut descriptors = descriptors
-            .into_values()
-            .collect::<Vec<FileDescriptorProto>>();
-        descriptors.push(parent_proto);
-        Ok(descriptors)
-    }
-
-    /// Tries to load well-known google proto files and if not found uses normal
-    /// file and http IO to resolve them
-    async fn read_proto(&self, path: &str) -> anyhow::Result<FileDescriptorProto> {
-        let content = if let Ok(file) = GoogleFileResolver::new().open_file(path) {
-            file.source()
-                .context("Unable to extract content of google well-known proto file")?
-                .to_string()
-        } else {
-            self.resource_reader.read_file(path).await?.content
-        };
-
-        Ok(protox_parse::parse(path, &content)?)
-    }
-
     /// Checks if path is absolute else it joins file path with relative dir
     /// path
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
@@ -287,23 +268,13 @@ impl ConfigReader {
 #[cfg(test)]
 mod test_proto_config {
     use std::collections::VecDeque;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
-    use anyhow::{Context, Result};
+    use anyhow::Result;
     use pretty_assertions::assert_eq;
 
     use crate::config::reader::ConfigReader;
     use crate::valid::ValidationError;
-
-    #[tokio::test]
-    async fn test_resolve() {
-        // Skipping IO tests as they are covered in reader.rs
-        let reader = ConfigReader::init(crate::runtime::test::init(None));
-        reader
-            .read_proto("google/protobuf/empty.proto")
-            .await
-            .unwrap();
-    }
 
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
@@ -329,71 +300,6 @@ mod test_proto_config {
             .collect::<VecDeque<String>>();
         assert_eq!(&expected_trace, trace);
         Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_nested_imports() -> Result<()> {
-        let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut test_dir = root_dir.join(file!());
-        test_dir.pop(); // config
-        test_dir.pop(); // src
-
-        let mut root = test_dir.clone();
-        root.pop();
-
-        test_dir.push("grpc"); // grpc
-        test_dir.push("tests"); // tests
-        test_dir.push("proto"); // proto
-
-        let mut test_file = test_dir.clone();
-
-        test_file.push("nested0.proto"); // nested0.proto
-        assert!(test_file.exists());
-        let test_file = test_file.to_str().unwrap().to_string();
-
-        let runtime = crate::runtime::test::init(None);
-        let file_rt = runtime.file.clone();
-
-        let reader = ConfigReader::init(runtime);
-        let helper_map = reader
-            .resolve_descriptors(reader.read_proto(&test_file).await?)
-            .await?;
-        let files = test_dir.read_dir()?;
-        for file in files {
-            let file = file?;
-            let path = file.path();
-            let path_str =
-                path_to_file_name(path.as_path()).context("It must be able to extract path")?;
-            let source = file_rt.read(&path_str).await?;
-            let expected = protox_parse::parse(&path_str, &source)?;
-            let actual = helper_map
-                .iter()
-                .find(|v| v.package.eq(&expected.package))
-                .unwrap();
-
-            assert_eq!(&expected.dependency, &actual.dependency);
-        }
-
-        Ok(())
-    }
-
-    fn path_to_file_name(path: &Path) -> Option<String> {
-        let components: Vec<_> = path.components().collect();
-
-        // Find the index of the "src" component
-        if let Some(src_index) = components.iter().position(|&c| c.as_os_str() == "src") {
-            // Reconstruct the path from the "src" component onwards
-            let after_src_components = &components[src_index..];
-            let result = after_src_components
-                .iter()
-                .fold(PathBuf::new(), |mut acc, comp| {
-                    acc.push(comp);
-                    acc
-                });
-            Some(result.to_str().unwrap().to_string())
-        } else {
-            None
-        }
     }
 }
 
