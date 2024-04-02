@@ -289,7 +289,7 @@ fn merge_types(
     mut self_types: BTreeMap<String, Type>,
     other_types: BTreeMap<String, Type>,
 ) -> BTreeMap<String, Type> {
-    for (name, mut other_type) in other_types {
+    for (name, mut other_type) in other_types {x
         if let Some(self_type) = self_types.remove(&name) {
             other_type = self_type.merge_right(other_type);
         }
