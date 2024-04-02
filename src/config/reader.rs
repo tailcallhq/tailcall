@@ -3,19 +3,17 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context;
-use futures_util::future::join_all;
-use futures_util::TryFutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
-use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
+use crate::resource_reader::ResourceReader;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 use crate::valid::{Valid, Validator};
@@ -24,57 +22,15 @@ use crate::valid::{Valid, Validator};
 /// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
-}
-
-/// Response of a file read operation
-#[derive(Debug)]
-struct FileRead {
-    content: String,
-    path: String,
+    resource_reader: ResourceReader,
 }
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { runtime }
-    }
-
-    /// Reads a file from the filesystem or from an HTTP URL
-    async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
-        // Is an HTTP URL
-        let content = if let Ok(url) = Url::parse(&file.to_string()) {
-            if url.scheme().starts_with("http") {
-                let response = self
-                    .runtime
-                    .http
-                    .execute(reqwest::Request::new(reqwest::Method::GET, url))
-                    .await?;
-
-                String::from_utf8(response.body.to_vec())?
-            } else {
-                // Is a file path on Windows
-
-                self.runtime.file.read(&file.to_string()).await?
-            }
-        } else {
-            // Is a file path
-
-            self.runtime.file.read(&file.to_string()).await?
-        };
-
-        Ok(FileRead { content, path: file.to_string() })
-    }
-
-    /// Reads all the files in parallel
-    async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
-        let files = files.iter().map(|x| {
-            self.read_file(x.to_string())
-                .map_err(|e| e.context(x.to_string()))
-        });
-        let content = join_all(files)
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(content)
+        Self {
+            runtime: runtime.clone(),
+            resource_reader: ResourceReader::init(runtime),
+        }
     }
 
     /// Reads the links in a Config and fill the content
@@ -107,7 +63,7 @@ impl ConfigReader {
                 .context(format!("Expected a link at index: {i} but found none"))?;
             let path = Self::resolve_path(&config_link.src, parent_dir);
 
-            let source = self.read_file(&path).await?;
+            let source = self.resource_reader.read_file(&path).await?;
 
             let content = source.content;
 
@@ -225,7 +181,7 @@ impl ConfigReader {
 
     /// Reads all the files and returns a merged config
     pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
-        let files = self.read_files(files).await?;
+        let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
 
         for file in files.iter() {
@@ -310,7 +266,7 @@ impl ConfigReader {
                 .context("Unable to extract content of google well-known proto file")?
                 .to_string()
         } else {
-            self.read_file(path).await?.content
+            self.resource_reader.read_file(path).await?.content
         };
 
         Ok(protox_parse::parse(path, &content)?)
