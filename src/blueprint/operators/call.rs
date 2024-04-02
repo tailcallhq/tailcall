@@ -163,10 +163,9 @@ fn get_field_and_field_name<'a>(
                 query_type.fields.get(&field_name),
                 format!("{} field not found", field_name),
             )
+            .fuse(Valid::succeed(field_name))
             .fuse(Valid::succeed(query_type))
             .into()
         })
-        .map(|(_field, type_of)| (_field, field_name, type_of))
-        .into()
     })
 }

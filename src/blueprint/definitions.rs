@@ -484,6 +484,7 @@ fn to_fields(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn to_field_definition(
     field: &Field,
     operation_type: &GraphQLOperationType,
