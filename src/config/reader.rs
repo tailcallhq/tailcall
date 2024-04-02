@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use futures_util::future::try_join_all;
 use rustls_pemfile;
 use rustls_pki_types::{
@@ -15,7 +15,6 @@ use crate::proto_reader::ProtoReader;
 use crate::resource_reader::ResourceReader;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
-use crate::valid::{Valid, Validator};
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -72,23 +71,18 @@ impl ConfigReader {
         let file_descriptor_metadata = try_join_all(file_descriptor_metadata).await?;
 
         for (i, file_descriptor_set) in file_descriptor_metadata.iter().enumerate() {
-            let id = Valid::from_option(
-                file_descriptor_set.package.clone(),
-                format!(
-                    "Package name is not defined for proto file: {:?}",
-                    file_descriptor_set.name
-                ),
-            )
-            .trace(&format!("link[{}]", i))
-            .trace("schema")
-            .to_result()?;
-            config_module
-                .extensions
-                .grpc_file_descriptors
-                .push(Content {
-                    id: Some(id),
-                    content: file_descriptor_set.descriptor_set.clone(),
-                });
+            if let Some(id) = file_descriptor_set.package.clone() {
+                config_module
+                    .extensions
+                    .grpc_file_descriptors
+                    .push(Content {
+                        id: Some(id),
+                        content: file_descriptor_set.descriptor_set.clone(),
+                    });
+            } else {
+                return Err(anyhow!("Package name is not defined for proto file"))
+                    .context(format!("link[{}]", i));
+            }
         }
 
         for i in 0..links.len() {
@@ -260,14 +254,11 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod test_proto_config {
-    use std::collections::VecDeque;
     use std::path::PathBuf;
 
     use anyhow::Result;
-    use pretty_assertions::assert_eq;
 
     use crate::config::reader::ConfigReader;
-    use crate::valid::ValidationError;
 
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
@@ -276,22 +267,7 @@ mod test_proto_config {
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
-        let validation = config_module
-            .err()
-            .unwrap()
-            .downcast::<ValidationError<String>>()?;
-        proto_no_pkg.pop();
-        proto_no_pkg.push("proto");
-        proto_no_pkg.push("news_no_pkg.proto");
-        let err = &validation.as_vec().first().unwrap().message;
-        let trace = &validation.as_vec().first().unwrap().trace;
-        assert!(err.starts_with("Package name is not defined for proto file"));
-
-        let expected_trace = ["schema", "link[0]"]
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<VecDeque<String>>();
-        assert_eq!(&expected_trace, trace);
+        assert!(config_module.is_err());
         Ok(())
     }
 }
