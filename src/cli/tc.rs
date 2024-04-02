@@ -67,10 +67,11 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Gen { file_paths, output, query } => {
+        Command::Gen { file_paths, input, output, query } => {
             let generator = GeneratorReader::init(runtime);
+            let input = input.unwrap_or_default();
             let cfg = generator
-                .read_all(file_paths.as_ref(), query.as_str())
+                .read_all(input, file_paths.as_ref(), query.as_str())
                 .await?;
 
             let config = output.unwrap_or_default().encode(&cfg)?;

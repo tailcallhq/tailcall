@@ -4,8 +4,9 @@ use crate::config::UnsupportedConfigFormat;
 
 ///
 /// A list of sources from which a configuration can be created
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum GeneratorSource {
+    #[default]
     PROTO,
 }
 
@@ -40,16 +41,9 @@ impl GeneratorSource {
     }
 
     pub fn detect(name: &str) -> Result<GeneratorSource, UnsupportedConfigFormat> {
-        match name {
-            "application/x-protobuf"
-            | "application/protobuf"
-            | "application/vnd.google.protobuf" => Ok(GeneratorSource::PROTO),
-
-            name => ALL
-                .iter()
-                .find(|format| format.ends_with(name))
-                .ok_or(UnsupportedConfigFormat(name.to_string()))
-                .cloned(),
-        }
+        ALL.iter()
+            .find(|format| format.ends_with(name))
+            .ok_or(UnsupportedConfigFormat(name.to_string()))
+            .cloned()
     }
 }

@@ -15,27 +15,20 @@ impl GeneratorReader {
         Self { proto_reader: ProtoReader::init(runtime) }
     }
 
-    pub async fn read_all<T: AsRef<str>>(&self, files: &[T], query: &str) -> Result<Config> {
+    pub async fn read_all<T: AsRef<str>>(
+        &self,
+        input_source: GeneratorSource,
+        files: &[T],
+        query: &str,
+    ) -> Result<Config> {
         let mut links = vec![];
         let proto_metadata = self.proto_reader.read_all(files).await?;
 
         let mut config = Config::default();
-
         for metadata in proto_metadata {
-            let source = match metadata.file_read.content_ty {
-                Some(content_ty) => match GeneratorSource::detect(content_ty.as_str()) {
-                    Ok(source) => source,
-                    Err(_) => GeneratorSource::detect(metadata.file_read.path.as_str())?,
-                },
-                None => GeneratorSource::detect(metadata.file_read.path.as_str())?,
-            };
-            match source {
+            match input_source {
                 GeneratorSource::PROTO => {
-                    links.push(Link {
-                        id: None,
-                        src: metadata.file_read.path.clone(),
-                        type_of: LinkType::Protobuf,
-                    });
+                    links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
                     config = config.merge_right(from_proto(&[metadata.descriptor_set], query));
                 }
             }
@@ -98,7 +91,11 @@ mod test {
             .to_string();
 
         let config = reader
-            .read_all(&[news, greetings_a, greetings_b], "Query")
+            .read_all(
+                GeneratorSource::PROTO,
+                &[news, greetings_a, greetings_b],
+                "Query",
+            )
             .await
             .unwrap();
 

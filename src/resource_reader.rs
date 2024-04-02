@@ -9,7 +9,6 @@ use crate::runtime::TargetRuntime;
 pub struct FileRead {
     pub content: String,
     pub path: String,
-    pub content_type: Option<String>,
 }
 
 pub struct ResourceReader {
@@ -23,31 +22,27 @@ impl ResourceReader {
     /// Reads a file from the filesystem or from an HTTP URL
     pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
-        let (content, content_ty) = if let Ok(url) = Url::parse(&file.to_string()) {
+        let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
                 let response = self
                     .runtime
                     .http
                     .execute(reqwest::Request::new(reqwest::Method::GET, url))
                     .await?;
-                let content_ty = response
-                    .headers
-                    .get("Content-Type")
-                    .and_then(|v| v.to_str().map(|v| v.to_string()).ok());
 
-                (String::from_utf8(response.body.to_vec())?, content_ty)
+                String::from_utf8(response.body.to_vec())?
             } else {
                 // Is a file path on Windows
 
-                (self.runtime.file.read(&file.to_string()).await?, None)
+                self.runtime.file.read(&file.to_string()).await?
             }
         } else {
             // Is a file path
 
-            (self.runtime.file.read(&file.to_string()).await?, None)
+            self.runtime.file.read(&file.to_string()).await?
         };
 
-        Ok(FileRead { content, path: file.to_string(), content_type: content_ty })
+        Ok(FileRead { content, path: file.to_string() })
     }
 
     /// Reads all the files in parallel
