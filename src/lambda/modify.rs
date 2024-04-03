@@ -23,10 +23,7 @@ impl Expression {
                 let expr = self;
                 match expr {
                     Expression::Context(ctx) => match ctx {
-                        super::Context::Value => Expression::Context(super::Context::Value),
-                        super::Context::Path(path) => {
-                            Expression::Context(super::Context::Path(path))
-                        }
+                        super::Context::Value | super::Context::Path(_) => Expression::Context(ctx),
                         super::Context::PushArgs { expr, and_then } => {
                             Expression::Context(super::Context::PushArgs {
                                 expr: expr.modify_box(modifier),
