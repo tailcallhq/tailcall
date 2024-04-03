@@ -7,10 +7,23 @@ use oas3::{Schema, Spec};
 use crate::config::{Arg, Config, Field, Http, RootSchema, Server, Type, Union, Upstream};
 use crate::http::Method;
 
-fn map_spec_type(type_name: String) -> String {
-    match type_name.as_str() {
-        "Integer" => "Int".to_string(),
-        _ => type_name,
+fn schema_type_to_string(typ: &SchemaType) -> String {
+    let typ_str = match typ {
+        SchemaType::Boolean => "Boolean",
+        SchemaType::Integer => "Int",
+        SchemaType::Number => "Number",
+        SchemaType::String => "String",
+        SchemaType::Array => "Array",
+        SchemaType::Object => "Object",
+    };
+
+    typ_str.to_string()
+}
+
+fn schema_to_primitive_type(typ: &SchemaType) -> Option<String> {
+    match typ {
+        SchemaType::Array | SchemaType::Object => None,
+        x => Some(schema_type_to_string(x)),
     }
 }
 
@@ -19,12 +32,12 @@ enum UnionOrType {
     Type(Type),
 }
 
-fn schema_name(obj_or_ref: ObjectOrReference<Schema>) -> Option<String> {
+fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
     match obj_or_ref {
-        ObjectOrReference::Ref { ref ref_path } => {
-            ref_path.split('/').last().map(ToString::to_string)
+        ObjectOrReference::Ref { ref_path } => {
+            Some(ref_path.split('/').last().unwrap().to_string())
         }
-        ObjectOrReference::Object(schema) => schema.schema_type.map(|type_| format!("{type_:?}")),
+        ObjectOrReference::Object(_) => None,
     }
 }
 
@@ -41,27 +54,36 @@ impl OpenApiToGraphQLConverter {
         Ok(Self { spec, ..Default::default() })
     }
 
-    fn get_schema_type(&mut self, obj_or_ref: ObjectOrReference<Schema>) -> (bool, String) {
-        let schema = obj_or_ref.resolve(&self.spec).unwrap();
-        match schema.schema_type.as_ref() {
-            Some(type_) => {
-                let type_ = format!("{type_:?}");
-                let (is_list, type_name) = match type_.as_str() {
-                    "Array" => (
-                        true,
-                        schema_name(schema.items.unwrap().as_ref().clone()).unwrap(),
-                    ),
-                    "Object" => (false, schema_name(obj_or_ref).unwrap()),
-                    _ => (false, type_),
-                };
-
-                (is_list, map_spec_type(type_name).to_case(Case::Pascal))
+    fn get_schema_type<F: Fn() -> Option<String>>(
+        &mut self,
+        schema: Schema,
+        get_name: F,
+    ) -> (bool, String) {
+        if let Some(element) = schema.items {
+            if let Some(name) = name_from_ref_path(element.as_ref()).or_else(|| {
+                let schema = element.resolve(&self.spec).ok()?;
+                schema_to_primitive_type(schema.schema_type.as_ref().unwrap())
+            }) {
+                (true, name)
+            } else {
+                (
+                    true,
+                    self.insert_inline_type(element.resolve(&self.spec).unwrap()),
+                )
             }
-            None => {
-                let is_list = schema.items.is_some();
-                let name = self.insert_inline_type(schema);
-                (is_list, name.to_case(Case::Pascal))
-            }
+        } else if let Some(
+            typ @ (SchemaType::Integer
+            | SchemaType::String
+            | SchemaType::Number
+            | SchemaType::Boolean),
+        ) = schema.schema_type
+        {
+            (false, schema_type_to_string(&typ))
+        } else if let Some(name) = get_name() {
+            (false, name)
+        } else {
+            let name = self.insert_inline_type(schema);
+            (false, name)
         }
     }
 
@@ -83,8 +105,8 @@ impl OpenApiToGraphQLConverter {
                         name.to_case(Case::Camel),
                         Field {
                             type_of: {
-                                if let Some(type_) = property_schema.schema_type.as_ref() {
-                                    map_spec_type(format!("{type_:?}"))
+                                if let Some(typ) = property_schema.schema_type.as_ref() {
+                                    schema_type_to_string(typ)
                                 } else {
                                     self.insert_inline_type(property_schema)
                                 }
@@ -123,8 +145,8 @@ impl OpenApiToGraphQLConverter {
                     Field {
                         type_of: {
                             let schema = property.resolve(&self.spec).unwrap();
-                            if let Some(type_) = schema.schema_type.as_ref() {
-                                map_spec_type(format!("{type_:?}"))
+                            if let Some(typ) = schema.schema_type.as_ref() {
+                                schema_type_to_string(typ)
                             } else {
                                 self.insert_inline_type(schema)
                             }
@@ -140,7 +162,7 @@ impl OpenApiToGraphQLConverter {
             let types = schema
                 .any_of
                 .iter()
-                .map(|schema| schema_name(schema.clone()).unwrap())
+                .map(|schema| name_from_ref_path(schema).unwrap_or("AnyOf".into()))
                 .collect();
 
             UnionOrType::Union(Union { types, doc: schema.description })
@@ -224,12 +246,12 @@ impl OpenApiToGraphQLConverter {
                 .parameters
                 .iter()
                 .map(|param| {
-                    let obj_or_ref = ObjectOrReference::Object(
-                        param.resolve(&self.spec).unwrap().schema.unwrap(),
-                    );
                     let param = param.resolve(&self.spec).unwrap();
 
-                    let (is_list, name) = self.get_schema_type(obj_or_ref);
+                    let (is_list, name) = self
+                        .get_schema_type(param.schema.clone().unwrap(), || {
+                            param.param_type.clone()
+                        });
                     (
                         param.name.to_case(Case::Camel),
                         Arg {
@@ -244,7 +266,10 @@ impl OpenApiToGraphQLConverter {
                 })
                 .collect();
 
-            let (is_list, name) = self.get_schema_type(output_type);
+            let (is_list, name) = self
+                .get_schema_type(output_type.resolve(&self.spec).unwrap(), || {
+                    name_from_ref_path(&output_type)
+                });
 
             if !args.is_empty() {
                 let re = regex::Regex::new(r"\{\w+\}").unwrap();

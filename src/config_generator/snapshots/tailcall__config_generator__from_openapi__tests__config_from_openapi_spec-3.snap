@@ -121,7 +121,7 @@ type Query {
   """
   Returns the API entry for one specific version of an API where there is no serviceName.
   """
-  getApi(api: String!, provider: String!): Api @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
+  getApi(api: String!, provider: String!): API @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
   """
   Some basic metrics for the entire directory.
 Just stunning numbers to put on a front page and are intended purely for WoW effect :)
@@ -133,21 +133,21 @@ Just stunning numbers to put on a front page and are intended purely for WoW eff
 Returns links to the individual API entry for each API.
 
   """
-  getProvider(provider: String!): ApIs @http(path: "/{{args.provider}}.json")
+  getProvider(provider: String!): APIs @http(path: "/{{args.provider}}.json")
   """
   List all the providers in the directory
 
   """
-  getProviders: Object @http(path: "/providers.json")
+  getProviders: Type0 @http(path: "/providers.json")
   """
   Returns the API entry for one specific version of an API where there is a serviceName.
   """
-  getServiceApi(api: String!, provider: String!, service: String!): Api @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
+  getServiceApi(api: String!, provider: String!, service: String!): API @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
   """
   List all serviceNames in the directory for a particular providerName
 
   """
-  getServices(provider: String!): Object @http(path: "/{{args.provider}}/services.json")
+  getServices(provider: String!): Type1 @http(path: "/{{args.provider}}/services.json")
   """
   List all APIs in the directory.
 Returns links to the OpenAPI definitions for each API in the directory.
@@ -156,5 +156,13 @@ Some basic info from the OpenAPI definition is cached inside each object.
 This allows you to generate some simple views without needing to fetch the OpenAPI definition for each API.
 
   """
-  listApIs: ApIs @http(path: "/list.json")
+  listApIs: APIs @http(path: "/list.json")
+}
+
+type Type0 {
+  data: Array
+}
+
+type Type1 {
+  data: Array
 }
