@@ -1,8 +1,8 @@
 schema
   @server(port: 8000, graphiql: true)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
-  @link(id: "auth-basic", type: Htpasswd, src: "htpasswd")
-  @link(id: "auth-jwt", type: Jwks, src: "jwks.json") {
+  @link(id: "auth-basic", type: Htpasswd, src: ".htpasswd")
+  @link(id: "auth-jwt", type: Jwks, src: ".jwks") {
   query: Query
 }
 

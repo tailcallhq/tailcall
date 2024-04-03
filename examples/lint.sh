@@ -18,6 +18,7 @@ check_files() {
     # Execute find command with constructed options and extensions
     find "$path" -maxdepth "$depth" \( "${extensions[@]}" \) -exec sh -c '
         for file; do
+            echo "Checking file: $file"
             '"$command"' "$file" || exit 255
         done
     ' sh {} + || error_exit "tailcall check failed for one or more files."
