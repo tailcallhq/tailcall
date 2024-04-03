@@ -35,7 +35,7 @@ enum UnionOrType {
 fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
     match obj_or_ref {
         ObjectOrReference::Ref { ref_path } => {
-            Some(ref_path.split('/').last().unwrap().to_string())
+            Some(ref_path.split('/').last().unwrap().to_case(Case::Pascal))
         }
         ObjectOrReference::Object(_) => None,
     }
@@ -62,7 +62,7 @@ impl OpenApiToGraphQLConverter {
         if let Some(element) = schema.items {
             if let Some(name) = name_from_ref_path(element.as_ref()).or_else(|| {
                 let schema = element.resolve(&self.spec).ok()?;
-                schema_to_primitive_type(schema.schema_type.as_ref().unwrap())
+                schema_to_primitive_type(schema.schema_type.as_ref()?)
             }) {
                 (true, name)
             } else {
@@ -100,18 +100,16 @@ impl OpenApiToGraphQLConverter {
                 .into_iter()
                 .map(|(name, property)| {
                     let property_schema = property.resolve(&self.spec).unwrap();
+                    let (list, type_of) = self.get_schema_type(property_schema.clone(), || {
+                        name_from_ref_path(&property)
+                    });
                     let doc = property_schema.description.clone();
                     (
                         name.to_case(Case::Camel),
                         Field {
-                            type_of: {
-                                if let Some(typ) = property_schema.schema_type.as_ref() {
-                                    schema_type_to_string(typ)
-                                } else {
-                                    self.insert_inline_type(property_schema)
-                                }
-                            },
+                            type_of,
                             required: schema.required.contains(&name),
+                            list,
                             doc,
                             ..Default::default()
                         },
@@ -140,17 +138,14 @@ impl OpenApiToGraphQLConverter {
             let mut fields = BTreeMap::new();
 
             for (name, property) in properties.into_iter() {
+                let (list, type_of) = self.get_schema_type(property.resolve(&self.spec).unwrap(), || {
+                    name_from_ref_path(&property)
+                });
                 fields.insert(
                     name.to_case(Case::Camel),
                     Field {
-                        type_of: {
-                            let schema = property.resolve(&self.spec).unwrap();
-                            if let Some(typ) = schema.schema_type.as_ref() {
-                                schema_type_to_string(typ)
-                            } else {
-                                self.insert_inline_type(schema)
-                            }
-                        },
+                        type_of,
+                        list,
                         required: schema.required.contains(&name),
                         ..Default::default()
                     },
