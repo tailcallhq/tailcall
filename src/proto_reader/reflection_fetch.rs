@@ -169,7 +169,7 @@ mod grpc_fetch {
 
     const NEWS_PROTO: &[u8] = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/tests/fake_descriptor"
+        "/tests/fake_descriptor.bin"
     ));
 
     const REFLECTION_LIST_ALL: &[u8] = &[
@@ -193,10 +193,9 @@ mod grpc_fetch {
                 .body("\0\0\0\0\x12\"\x10news.NewsService");
             then.status(200).body(NEWS_PROTO);
         });
-
         let runtime = crate::runtime::test::init(None);
         let resp = get_by_service(
-            &format!("http://localhost:{}", server.port()),
+            &format!("http://localhost:{}",server.port()),
             &runtime,
             "news.NewsService",
         )
