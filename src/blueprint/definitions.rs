@@ -331,7 +331,7 @@ pub fn fix_dangling_resolvers<'a>(
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
             {
-                b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
+                b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
                 ))));
             }

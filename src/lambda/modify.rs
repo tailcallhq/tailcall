@@ -23,20 +23,13 @@ impl Expression {
                 let expr = self;
                 match expr {
                     Expression::Context(_) => expr,
-                    Expression::Literal(_) => expr,
-                    Expression::EqualTo(expr1, expr2) => {
-                        Expression::EqualTo(expr1.modify_box(modifier), expr2.modify_box(modifier))
-                    }
+                    Expression::Dynamic(_) => expr,
                     Expression::IO(_) => expr,
                     Expression::Cache(Cache { expr, max_age }) => {
                         Expression::Cache(Cache { expr: expr.modify_box(modifier), max_age })
                     }
                     Expression::Input(expr, path) => {
                         Expression::Input(expr.modify_box(modifier), path)
-                    }
-
-                    Expression::Concurrency(conc, expr) => {
-                        Expression::Concurrency(conc, expr.modify_box(modifier))
                     }
                     Expression::Protect(expr) => Expression::Protect(expr.modify_box(modifier)),
                 }

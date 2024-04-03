@@ -121,7 +121,7 @@ fn compile_step(
                     DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
                         .map_err(|e| ValidationError::new(e.to_string())),
                 )
-                .map(Expression::Literal);
+                .map(Expression::Dynamic);
                 args.map(|args| args.and_then(expr))
             }
         })

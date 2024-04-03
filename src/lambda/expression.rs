@@ -15,12 +15,10 @@ use crate::serde_value_ext::ValueExt;
 #[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
-    Literal(DynamicValue),
-    EqualTo(Box<Expression>, Box<Expression>),
+    Dynamic(DynamicValue),
     IO(IO),
     Cache(Cache),
     Input(Box<Expression>, Vec<String>),
-    Concurrency(Concurrent, Box<Expression>),
     Protect(Box<Expression>),
 }
 
@@ -28,12 +26,10 @@ impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expression::Context(_) => write!(f, "Context"),
-            Expression::Literal(_) => write!(f, "Literal"),
-            Expression::EqualTo(_, _) => write!(f, "EqualTo"),
+            Expression::Dynamic(_) => write!(f, "Literal"),
             Expression::IO(io) => write!(f, "{io}"),
             Expression::Cache(_) => write!(f, "Cache"),
             Expression::Input(_, _) => write!(f, "Input"),
-            Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
             Expression::Protect(expr) => write!(f, "Protected({expr})"),
         }
     }
@@ -78,26 +74,6 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-    pub fn concurrency(self, conc: Concurrent) -> Self {
-        Expression::Concurrency(conc, Box::new(self))
-    }
-
-    pub fn in_parallel(self) -> Self {
-        self.concurrency(Concurrent::Parallel)
-    }
-
-    pub fn parallel_when(self, cond: bool) -> Self {
-        if cond {
-            self.concurrency(Concurrent::Parallel)
-        } else {
-            self
-        }
-    }
-
-    pub fn in_sequence(self) -> Self {
-        self.concurrency(Concurrent::Sequential)
-    }
-
     pub fn and_then(self, next: Self) -> Self {
         Expression::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
     }
@@ -116,7 +92,6 @@ impl Eval for Expression {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
                 Expression::Context(op) => match op {
                     Context::Value => {
                         Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
@@ -143,10 +118,7 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Literal(value) => value.render_value(&ctx),
-                Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
-                    left.eval(ctx.clone(), conc).await? == right.eval(ctx, conc).await?,
-                )),
+                Expression::Dynamic(value) => value.render_value(&ctx),
                 Expression::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx

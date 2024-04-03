@@ -17,17 +17,17 @@ async fn eval(expr: &Expression) -> anyhow::Result<Value> {
 #[tokio::test]
 async fn test_and_then() {
     let abcde = DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap();
-    let expr = Expression::Literal(abcde)
-        .and_then(Expression::Literal(DynamicValue::Mustache(
+    let expr = Expression::Dynamic(abcde)
+        .and_then(Expression::Dynamic(DynamicValue::Mustache(
             Mustache::parse("{{args.a}}").unwrap(),
         )))
-        .and_then(Expression::Literal(DynamicValue::Mustache(
+        .and_then(Expression::Dynamic(DynamicValue::Mustache(
             Mustache::parse("{{args.b}}").unwrap(),
         )))
-        .and_then(Expression::Literal(DynamicValue::Mustache(
+        .and_then(Expression::Dynamic(DynamicValue::Mustache(
             Mustache::parse("{{args.c}}").unwrap(),
         )))
-        .and_then(Expression::Literal(DynamicValue::Mustache(
+        .and_then(Expression::Dynamic(DynamicValue::Mustache(
             Mustache::parse("{{args.d}}").unwrap(),
         )));
 
@@ -39,11 +39,11 @@ async fn test_and_then() {
 
 #[tokio::test]
 async fn test_with_args() {
-    let args = Expression::Literal(
+    let args = Expression::Dynamic(
         DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap(),
     );
 
-    let expr = Expression::Literal(DynamicValue::Mustache(
+    let expr = Expression::Dynamic(DynamicValue::Mustache(
         Mustache::parse("{{args.a.b.c.d}}").unwrap(),
     ))
     .with_args(args);
@@ -56,21 +56,21 @@ async fn test_with_args() {
 
 #[tokio::test]
 async fn test_with_args_piping() {
-    let args = Expression::Literal(
+    let args = Expression::Dynamic(
         DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap(),
     );
 
-    let expr = Expression::Literal(DynamicValue::Mustache(
+    let expr = Expression::Dynamic(DynamicValue::Mustache(
         Mustache::parse("{{args.a}}").unwrap(),
     ))
     .with_args(args)
-    .and_then(Expression::Literal(DynamicValue::Mustache(
+    .and_then(Expression::Dynamic(DynamicValue::Mustache(
         Mustache::parse("{{args.b}}").unwrap(),
     )))
-    .and_then(Expression::Literal(DynamicValue::Mustache(
+    .and_then(Expression::Dynamic(DynamicValue::Mustache(
         Mustache::parse("{{args.c}}").unwrap(),
     )))
-    .and_then(Expression::Literal(DynamicValue::Mustache(
+    .and_then(Expression::Dynamic(DynamicValue::Mustache(
         Mustache::parse("{{args.d}}").unwrap(),
     )));
 
