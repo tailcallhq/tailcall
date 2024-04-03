@@ -6,9 +6,7 @@ use anyhow::{anyhow, Result};
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
-use super::list::List;
-use super::logic::Logic;
-use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
+use super::{Concurrent, Eval, EvaluationContext, ResolverContextLike, IO};
 use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
@@ -22,10 +20,6 @@ pub enum Expression {
     IO(IO),
     Cache(Cache),
     Input(Box<Expression>, Vec<String>),
-    Logic(Logic),
-    Relation(Relation),
-    List(List),
-    Math(Math),
     Concurrency(Concurrent, Box<Expression>),
     Protect(Box<Expression>),
 }
@@ -39,10 +33,6 @@ impl Display for Expression {
             Expression::IO(io) => write!(f, "{io}"),
             Expression::Cache(_) => write!(f, "Cache"),
             Expression::Input(_, _) => write!(f, "Input"),
-            Expression::Logic(logic) => write!(f, "Logic({logic})"),
-            Expression::Relation(relation) => write!(f, "Relation({relation})"),
-            Expression::List(list) => write!(f, "List({list})"),
-            Expression::Math(math) => write!(f, "Math({math})"),
             Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
             Expression::Protect(expr) => write!(f, "Protected({expr})"),
         }
@@ -168,10 +158,6 @@ impl Eval for Expression {
                 }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,
                 Expression::Cache(cached) => cached.eval(ctx, conc).await,
-                Expression::Relation(relation) => relation.eval(ctx, conc).await,
-                Expression::Logic(logic) => logic.eval(ctx, conc).await,
-                Expression::List(list) => list.eval(ctx, conc).await,
-                Expression::Math(math) => math.eval(ctx, conc).await,
             }
         })
     }
