@@ -16,8 +16,8 @@ use crate::mustache::Mustache;
 use crate::runtime::TargetRuntime;
 
 const REFLECTION_PROTO: &str = include_str!(concat!(
-env!("CARGO_MANIFEST_DIR"),
-"/proto/reflection.proto"
+    env!("CARGO_MANIFEST_DIR"),
+    "/proto/reflection.proto"
 ));
 
 /// This function is just used for better exception handling
@@ -79,7 +79,7 @@ impl CustomResponse {
                 "{}.{}/{}",
                 grpc_method.package, grpc_method.service, grpc_method.name
             )
-                .as_str(),
+            .as_str(),
         );
         let req_template = RequestTemplate {
             url: Mustache::parse(url.as_str())?,
@@ -119,13 +119,13 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
         json!({"list_services": ""}),
         target_runtime,
     )
-        .await?
-        .list_services_response
-        .context("Expected listServicesResponse but found none")?
-        .service
-        .iter()
-        .map(|s| s.name.clone())
-        .collect();
+    .await?
+    .list_services_response
+    .context("Expected listServicesResponse but found none")?
+    .service
+    .iter()
+    .map(|s| s.name.clone())
+    .collect();
 
     Ok(methods)
 }
@@ -143,7 +143,7 @@ pub async fn get_by_service(
         json!({"file_containing_symbol": service}),
         target_runtime,
     )
-        .await?;
+    .await?;
 
     request_proto(resp).await
 }
@@ -162,7 +162,7 @@ pub async fn get_by_proto_name(
         json!({"file_by_filename": proto_name}),
         target_runtime,
     )
-        .await?;
+    .await?;
     request_proto(resp).await
 }
 
@@ -186,8 +186,8 @@ mod grpc_fetch {
     use super::*;
 
     const NEWS_PROTO: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/fake_descriptor.bin"
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fake_descriptor.bin"
     ));
 
     const REFLECTION_LIST_ALL: &[u8] = &[
@@ -217,7 +217,7 @@ mod grpc_fetch {
             &runtime,
             "news.proto",
         )
-            .await?;
+        .await?;
         let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         news_proto.push("src");
         news_proto.push("grpc");
@@ -251,7 +251,7 @@ mod grpc_fetch {
             &runtime,
             "news.NewsService",
         )
-            .await?;
+        .await?;
         let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         news_proto.push("src");
         news_proto.push("grpc");
@@ -287,7 +287,7 @@ mod grpc_fetch {
                 "news.NewsService".to_string(),
                 "grpc.reflection.v1alpha.ServerReflection".to_string()
             ]
-                .to_vec(),
+            .to_vec(),
             resp
         );
 
@@ -335,7 +335,7 @@ mod grpc_fetch {
             &runtime,
             "nonexistent.Service",
         )
-            .await;
+        .await;
 
         assert!(result.is_err());
 
@@ -360,7 +360,7 @@ mod grpc_fetch {
             &runtime,
             "nonexistent.proto",
         )
-            .await;
+        .await;
 
         assert!(result.is_err());
 
