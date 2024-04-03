@@ -79,7 +79,6 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
                     let meta = self.proto_reader.read(path).await?;
                     config_module
                         .extensions
@@ -118,6 +117,13 @@ impl ConfigReader {
                         id: link.id.clone(),
                         content: serde_path_to_error::deserialize(de)?,
                     })
+                }
+                LinkType::GrpcReflection => {
+                    let meta = self.proto_reader.reflection_fetch(path).await?;
+                    config_module.extensions.grpc_file_descriptors.extend(
+                        meta.into_iter()
+                            .map(|m| Content { id: link.id.clone(), content: m.descriptor_set }),
+                    );
                 }
             }
         }
@@ -199,12 +205,13 @@ impl ConfigReader {
 
         let server = &mut config_module.config.server;
         let reader_ctx = ConfigReaderContext {
-            env: self.runtime.env.clone(),
+            runtime: &self.runtime,
             vars: &server
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
+            headers: Default::default(),
         };
 
         config_module

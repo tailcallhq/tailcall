@@ -680,6 +680,7 @@ enum LinkType {
   Operation
   Htpasswd
   Jwks
+  GrpcReflection
 }
 enum Method {
   GET

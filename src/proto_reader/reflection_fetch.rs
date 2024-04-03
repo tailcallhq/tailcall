@@ -17,7 +17,7 @@ use crate::runtime::TargetRuntime;
 
 const REFLECTION_PROTO: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/proto/reflection.proto"
+    "/proto/reflection.proto" /* source https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1/reflection.proto */
 ));
 
 /// This function is just used for better exception handling
@@ -110,7 +110,7 @@ impl CustomResponse {
 
 /// Makes `ListService` request to the grpc reflection server
 pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
-    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
+    let grpc_method = "grpc.reflection.v1.ServerReflection.ServerReflectionInfo".try_into()?;
 
     // Extracting names from services
     let methods: Vec<String> = CustomResponse::execute(
@@ -121,7 +121,7 @@ pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result
     )
     .await?
     .list_services_response
-    .context("Expected listServicesResponse but found none")?
+    .context("Couldn't find definitions for service ServerReflection")?
     .service
     .iter()
     .map(|s| s.name.clone())
@@ -136,7 +136,7 @@ pub async fn get_by_service(
     target_runtime: &TargetRuntime,
     service: &str,
 ) -> Result<FileDescriptorProto> {
-    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
+    let grpc_method = "grpc.reflection.v1.ServerReflection.ServerReflectionInfo".try_into()?;
     let resp = CustomResponse::execute(
         url,
         grpc_method,
@@ -147,14 +147,14 @@ pub async fn get_by_service(
 
     request_proto(resp).await
 }
-
+/* // TODO
 /// Makes `Get Proto/Symbol Name` request to the grpc reflection server
 pub async fn get_by_proto_name(
     url: &str,
     target_runtime: &TargetRuntime,
     proto_name: &str,
 ) -> Result<FileDescriptorProto> {
-    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
+    let grpc_method = "grpc.reflection.v1.ServerReflection.ServerReflectionInfo".try_into()?;
 
     let resp = CustomResponse::execute(
         url,
@@ -164,7 +164,7 @@ pub async fn get_by_proto_name(
     )
     .await?;
     request_proto(resp).await
-}
+}*/
 
 /// For extracting `FileDescriptorProto` from `CustomResponse`
 async fn request_proto(response: CustomResponse) -> Result<FileDescriptorProto> {
@@ -200,39 +200,6 @@ mod grpc_fetch {
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
     }
-    #[tokio::test]
-    async fn test_resp_file_name() -> Result<()> {
-        let server = start_mock_server();
-
-        let http_reflection_file_mock = server.mock(|when, then| {
-            when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
-                .body("\0\0\0\0\x0c\x1a\nnews.proto");
-            then.status(200).body(NEWS_PROTO);
-        });
-
-        let runtime = crate::runtime::test::init(None);
-        let resp = get_by_proto_name(
-            &format!("http://localhost:{}", server.port()),
-            &runtime,
-            "news.proto",
-        )
-        .await?;
-        let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        news_proto.push("src");
-        news_proto.push("grpc");
-        news_proto.push("tests");
-        news_proto.push("proto");
-        news_proto.push("news.proto");
-
-        let content = runtime.file.read(news_proto.to_str().unwrap()).await?;
-        let expected = protox_parse::parse("news.proto", &content)?;
-
-        assert_eq!(expected.name(), resp.name());
-
-        http_reflection_file_mock.assert();
-        Ok(())
-    }
 
     #[tokio::test]
     async fn test_resp_service() -> Result<()> {
@@ -240,7 +207,7 @@ mod grpc_fetch {
 
         let http_reflection_file_mock = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x12\"\x10news.NewsService");
             then.status(200).body(NEWS_PROTO);
         });
@@ -274,7 +241,7 @@ mod grpc_fetch {
 
         let http_reflection_list_all = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x02:\0");
             then.status(200).body(REFLECTION_LIST_ALL);
         });
@@ -301,7 +268,7 @@ mod grpc_fetch {
 
         let http_reflection_list_all_empty = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x02:\0");
             then.status(200).body("\0\0\0\0\x02:\0"); // Mock an empty response
         });
@@ -310,7 +277,7 @@ mod grpc_fetch {
         let resp = list_all_files(&format!("http://localhost:{}", server.port()), &runtime).await;
 
         assert_eq!(
-            "Expected listServicesResponse but found none",
+            "Couldn't find definitions for service ServerReflection",
             resp.err().unwrap().to_string()
         );
 
@@ -325,7 +292,7 @@ mod grpc_fetch {
 
         let http_reflection_service_not_found = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
+                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo");
             then.status(404); // Mock a 404 not found response
         });
 
@@ -340,31 +307,6 @@ mod grpc_fetch {
         assert!(result.is_err());
 
         http_reflection_service_not_found.assert();
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_get_by_proto_name_not_found() -> Result<()> {
-        let server = start_mock_server();
-
-        let http_reflection_proto_not_found = server.mock(|when, then| {
-            when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
-            then.status(404); // Mock a 404 not found response
-        });
-
-        let runtime = crate::runtime::test::init(None);
-        let result = get_by_proto_name(
-            &format!("http://localhost:{}", server.port()),
-            &runtime,
-            "nonexistent.proto",
-        )
-        .await;
-
-        assert!(result.is_err());
-
-        http_reflection_proto_not_found.assert();
 
         Ok(())
     }

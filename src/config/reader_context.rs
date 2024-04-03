@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 use headers::HeaderMap;
 
@@ -37,17 +36,23 @@ impl HasHeaders for ConfigReaderContext<'_> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
     use crate::tests::TestEnvIO;
 
     #[test]
     fn path_string() {
+        let mut runtime = crate::runtime::test::init(None);
+        runtime.env = Arc::new(TestEnvIO::from_iter([(
+            "ENV_1".to_owned(),
+            "ENV_VAL".to_owned(),
+        )]));
+
         let reader_context = ConfigReaderContext {
-            env: Arc::new(TestEnvIO::from_iter([(
-                "ENV_1".to_owned(),
-                "ENV_VAL".to_owned(),
-            )])),
+            runtime: &runtime,
             vars: &BTreeMap::from_iter([("VAR_1".to_owned(), "VAR_VAL".to_owned())]),
+            headers: Default::default(),
         };
 
         assert_eq!(

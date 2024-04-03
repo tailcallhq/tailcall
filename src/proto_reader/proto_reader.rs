@@ -5,11 +5,13 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
+use crate::proto_reader::reflection_fetch::{get_by_service, list_all_files};
 use crate::resource_reader::ResourceReader;
 use crate::runtime::TargetRuntime;
 
 pub struct ProtoReader {
     resource_reader: ResourceReader,
+    runtime: TargetRuntime,
 }
 
 pub struct ProtoMetadata {
@@ -19,7 +21,33 @@ pub struct ProtoMetadata {
 
 impl ProtoReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { resource_reader: ResourceReader::init(runtime) }
+        Self {
+            resource_reader: ResourceReader::init(runtime.clone()),
+            runtime,
+        }
+    }
+
+    pub async fn reflection_fetch<T: AsRef<str>>(
+        &self,
+        url: T,
+    ) -> anyhow::Result<Vec<ProtoMetadata>> {
+        let mut proto_metadata = vec![];
+        let service_list = list_all_files(url.as_ref(), &self.runtime).await?;
+        for service in service_list {
+            if service.eq("grpc.reflection.v1alpha.ServerReflection") {
+                continue;
+            }
+            let file_descriptor_proto =
+                get_by_service(url.as_ref(), &self.runtime, &service).await?;
+            Self::check_package(&file_descriptor_proto)?;
+            let descriptors = self.resolve_descriptors(file_descriptor_proto).await?;
+            let metadata = ProtoMetadata {
+                descriptor_set: FileDescriptorSet { file: descriptors },
+                path: url.as_ref().to_string(),
+            };
+            proto_metadata.push(metadata);
+        }
+        Ok(proto_metadata)
     }
 
     pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
@@ -32,9 +60,7 @@ impl ProtoReader {
 
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
         let file_read = self.read_proto(path.as_ref()).await?;
-        if file_read.package.is_none() {
-            anyhow::bail!("Package name is required");
-        }
+        Self::check_package(&file_read)?;
 
         let descriptors = self.resolve_descriptors(file_read).await?;
         let metadata = ProtoMetadata {
@@ -90,6 +116,12 @@ impl ProtoReader {
         };
         Ok(protox_parse::parse(path, &content)?)
     }
+    fn check_package(proto: &FileDescriptorProto) -> anyhow::Result<()> {
+        if proto.package.is_none() {
+            anyhow::bail!("Package name is required");
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -115,6 +147,7 @@ mod test_proto_config {
     async fn test_nested_imports() -> Result<()> {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut test_dir = root_dir.join(file!());
+        test_dir.pop(); // proto_reader
         test_dir.pop(); // src
 
         let mut root = test_dir.clone();
