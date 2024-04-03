@@ -137,8 +137,11 @@ impl JsonSchema {
             JsonSchema::Enum(a) => {
                 if let JsonSchema::Enum(b) = other {
                     if a.ne(b) {
-                        return Valid::fail("expected Enum type".to_string()).trace(name);
+                        return Valid::fail(format!("expected {:?} but found {:?}", a, b))
+                            .trace(name);
                     }
+                } else {
+                    return Valid::fail(format!("expected Enum got: {:?}", other)).trace(name);
                 }
             }
         }
@@ -233,7 +236,7 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::{BTreeSet, HashMap};
 
     use async_graphql::Name;
     use indexmap::IndexMap;
@@ -327,5 +330,41 @@ mod tests {
         );
 
         Ok(())
+    }
+    #[test]
+    fn test_compare_enum() {
+        let mut en = BTreeSet::new();
+        en.insert("A".to_string());
+        en.insert("B".to_string());
+        let value = JsonSchema::Arr(Box::new(JsonSchema::Enum(en.clone())));
+        let schema = JsonSchema::Enum(en);
+        let name = "foo";
+        let result = schema.compare(&value, name);
+        assert_eq!(
+            result,
+            Valid::fail("expected Enum got: Arr(Enum({\"A\", \"B\"}))".to_string()).trace(name)
+        );
+    }
+
+    #[test]
+    fn test_compare_enum_value() {
+        let mut en = BTreeSet::new();
+        en.insert("A".to_string());
+        en.insert("B".to_string());
+
+        let mut en1 = BTreeSet::new();
+        en1.insert("A".to_string());
+        en1.insert("B".to_string());
+        en1.insert("C".to_string());
+
+        let value = JsonSchema::Enum(en1.clone());
+        let schema = JsonSchema::Enum(en.clone());
+        let name = "foo";
+        let result = schema.compare(&value, name);
+        assert_eq!(
+            result,
+            Valid::fail("expected {\"A\", \"B\"} but found {\"A\", \"B\", \"C\"}".to_string())
+                .trace(name)
+        );
     }
 }
