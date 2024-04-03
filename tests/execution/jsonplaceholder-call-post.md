@@ -42,7 +42,6 @@ type Post {
     body:
       id: 1
       name: Leanne Graham
-
 ```
 
 ```yml @assert
