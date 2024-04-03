@@ -4,6 +4,11 @@ expression: merged
 ---
 schema @server(graphiql: true, port: 8000) @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
   query: Query
+  mutation: Mutation
+}
+
+type Mutation {
+  protectedType: ProtectedType @http(baseURL: "http://upstream", path: "/protected")
 }
 
 type Nested {
@@ -12,13 +17,13 @@ type Nested {
 }
 
 type ProtectedType {
-  name: String! @expr(body: "protected type name")
-  nested: String! @expr(body: "protected type nested")
+  name: String!
+  nested: String!
 }
 
 type Query {
   nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
   protectedScalar: String! @expr(body: "data from protected scalar") @protected
-  protectedType: ProtectedType
+  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
   scalar: String! @expr(body: "data from public scalar")
 }

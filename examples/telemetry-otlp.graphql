@@ -22,6 +22,7 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts") @cache(maxAge: 3000)
   user(id: Int!): User @http(path: "/users/{{args.id}}")
+  users: [User] @http(path: "/users")
   news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
 }
 

@@ -10,6 +10,10 @@ scalar Empty
 
 scalar JSON
 
+type Mutation {
+  protectedType: ProtectedType
+}
+
 type Nested {
   name: String!
   protected: String!
@@ -33,4 +37,5 @@ scalar Url
 
 schema {
   query: Query
+  mutation: Mutation
 }
