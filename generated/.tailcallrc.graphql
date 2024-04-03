@@ -323,7 +323,7 @@ directive @telemetry(
   headers that may contain sensitive data
   """
   requestHeaders: [String!]
-) on FIELD_DEFINITION
+) on SCHEMA
 
 """
 The `upstream` directive allows you to control various aspects of the upstream server 

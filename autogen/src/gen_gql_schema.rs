@@ -23,7 +23,7 @@ lazy_static! {
         ("grpc", vec![Entity::FieldDefinition], false),
         ("addField", vec![Entity::Object], true),
         ("modify", vec![Entity::FieldDefinition], false),
-        ("telemetry", vec![Entity::FieldDefinition], false),
+        ("telemetry", vec![Entity::Schema], false),
         ("omit", vec![Entity::FieldDefinition], false),
         ("groupBy", vec![Entity::FieldDefinition], false),
         ("expr", vec![Entity::FieldDefinition], false),
