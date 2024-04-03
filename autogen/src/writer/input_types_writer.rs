@@ -32,17 +32,14 @@ impl InputTypeWriter {
     pub fn write(
         &mut self,
         writer: &mut IndentedWriter<impl Write>,
-        mut extra_it: BTreeMap<String, ExtraTypes>,
+        extra_it: BTreeMap<String, ExtraTypes>,
     ) -> Result<()> {
-        self.write_all_input_types(writer, extra_it);
+        let input_types_str = self.write_all_input_types(extra_it);
         Ok(())
     }
 
-    fn write_all_input_types(
-        &mut self,
-        writer: &mut IndentedWriter<impl Write>,
-        mut extra_it: BTreeMap<String, ExtraTypes>,
-    ) -> std::io::Result<()> {
+    fn write_all_input_types(&mut self, mut extra_it: BTreeMap<String, ExtraTypes>) -> String {
+        let mut list = vec![];
         let schema = schemars::schema_for!(config::Config);
 
         let scalar = CUSTOM_SCALARS
@@ -77,16 +74,15 @@ impl InputTypeWriter {
         let mut types_added = HashSet::new();
         for (name, input_type) in defs.iter() {
             let mut name = name.clone();
-            first_char_to_upper(&mut name);
-            self.write_input_type(
+            name = uppercase_first(&name);
+            list.push(self.write_input_type(
                 name,
                 input_type.clone().into_object(),
                 &defs,
                 &mut scalar,
-                writer,
                 &mut extra_it,
                 &mut types_added,
-            )?;
+            ));
         }
 
         let mut new_extra_it = BTreeMap::new();
@@ -95,19 +91,20 @@ impl InputTypeWriter {
             match extra_type {
                 ExtraTypes::Schema => {
                     if let Some(schema) = defs.get(&name).cloned() {
-                        self.write_input_type(
+                        list.push(self.write_input_type(
                             name,
                             schema.into_object(),
                             &defs,
                             &mut scalar,
-                            writer,
                             &mut new_extra_it,
                             &mut types_added,
-                        )?
+                        ))
                     }
                 }
                 ExtraTypes::ObjectValidation(obj_valid) => {
-                    write_object_validation(writer, name, obj_valid, &defs, &mut new_extra_it)?
+                    let object_str =
+                        write_object_validation(name, obj_valid, &defs, &mut new_extra_it);
+                    list.push(object_str);
                 }
             }
         }
@@ -118,16 +115,16 @@ impl InputTypeWriter {
         for name in scalar_vector {
             if scalar_defs.contains_key(&name) {
                 let def = scalar_defs.get(&name).unwrap();
-                writeln!(writer, "\"\"\"")?;
-                writeln!(writer, "{def}")?;
-                writeln!(writer, "\"\"\"")?;
-                writeln!(writer, "scalar {name}")?;
+                list.push(format!("\"\"\"\n"));
+                list.push(format!("{def}\n"));
+                list.push(format!("\"\"\"\n"));
+                list.push(format!("scalar {name}\n"));
             } else {
-                writeln!(writer, "scalar {name}")?;
+                list.push(format!("scalar {name}\n"));
             }
         }
 
-        Ok(())
+        list.join("")
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -137,99 +134,111 @@ impl InputTypeWriter {
         typ: SchemaObject,
         defs: &BTreeMap<String, Schema>,
         scalar: &mut HashSet<String>,
-        writer: &mut IndentedWriter<impl Write>,
         extra_it: &mut BTreeMap<String, ExtraTypes>,
         types_added: &mut HashSet<String>,
-    ) -> std::io::Result<()> {
+    ) -> String {
         let name = match input_allow_list_lookup(&name, extra_it) {
             Some(name) => name,
-            None => return Ok(()),
+            None => return "".to_string(),
         };
 
         if types_added.contains(name) {
-            return Ok(());
+            return "".to_string();
         } else {
             types_added.insert(name.to_string());
         }
 
-        let description = typ
+        if let Some(description) = typ
             .metadata
             .as_ref()
-            .and_then(|metadata| metadata.description.as_ref());
-        write_description(writer, description)?;
+            .and_then(|metadata| metadata.description.as_ref())
+        {
+            description_str(description.clone());
+        }
+
+        let mut list = vec![];
+
         if let Some(obj) = typ.object {
             if obj.properties.is_empty() {
                 scalar.insert(name.to_string());
-                return Ok(());
+                return "".to_string();
             }
-            writeln!(writer, "input {name} {{")?;
-            writer.indent();
+
+            list.push(format!("input {name} {{\n"));
+
             for (name, property) in obj.properties.into_iter() {
                 let property = property.into_object();
-                let description = property
+                if let Some(description) = property
                     .metadata
                     .as_ref()
-                    .and_then(|metadata| metadata.description.as_ref());
-                write_description(writer, description)?;
-                write_field(writer, name, property, defs, extra_it)?;
+                    .and_then(|metadata| metadata.description.as_ref())
+                {
+                    list.push(format!("\t{}", description_str(description.clone())));
+                }
+                list.push(write_field(name, property, defs, extra_it));
             }
-            writer.unindent();
-            writeln!(writer, "}}")?;
+            list.push(format!("}}\n"));
         } else if let Some(enm) = typ.enum_values {
-            writeln!(writer, "enum {name} {{")?;
-            writer.indent();
+            list.push(format!("enum {name} {{\n"));
             for val in enm {
                 let val: String = format!("{val}").chars().filter(|ch| ch != &'"').collect();
-                writeln!(writer, "{val}")?;
+                list.push(format!("\t{val}"));
             }
-            writer.unindent();
-            writeln!(writer, "}}")?;
-        } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref()) {
-            if list.is_empty() {
+            list.push(format!("}}\n"));
+        } else if let Some(list_schema) = typ.subschemas.as_ref().and_then(|ss| ss.any_of.as_ref())
+        {
+            if list_schema.is_empty() {
                 scalar.insert(name.to_string());
-                return Ok(());
+                return "".to_string();
             }
-            writeln!(writer, "input {name} {{")?;
-            writer.indent();
-            for property in list {
+
+            list.push(format!("input {name} {{\n"));
+
+            for property in list_schema {
                 let property = property.clone().into_object();
-                let description = property
+                if let Some(description) = property
                     .metadata
                     .as_ref()
-                    .and_then(|metadata| metadata.description.as_ref());
-                write_description(writer, description)?;
+                    .and_then(|metadata| metadata.description.as_ref())
+                {
+                    list.push(format!("\t{}", description_str(description.clone())));
+                }
+
                 if let Some(obj) = property.object {
                     for (name, schema) in obj.properties {
-                        write_field(writer, name, schema.into_object(), defs, extra_it)?;
+                        list.push(format!("\t{}", write_field(name, property, defs, extra_it)));
                     }
                 }
             }
-            writer.unindent();
-            writeln!(writer, "}}")?;
-        } else if let Some(list) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref()) {
-            if list.is_empty() {
+            list.push(format!("}}\n"));
+        } else if let Some(list_schema) = typ.subschemas.as_ref().and_then(|ss| ss.one_of.as_ref())
+        {
+            if list_schema.is_empty() {
                 scalar.insert(name.to_string());
-                return Ok(());
+                return "".to_string();
             }
-            writeln!(writer, "input {name} {{")?;
-            writer.indent();
-            for property in list {
+
+            list.push(format!("input {name} {{\n"));
+
+            for property in list_schema {
                 if let Some(obj) = property.clone().into_object().object {
                     for (name, schema) in obj.properties {
-                        write_field(writer, name, schema.into_object(), defs, extra_it)?;
+                        list.push(format!(
+                            "\t{}",
+                            write_field(name, schema.into_object(), defs, extra_it)
+                        ));
                     }
                 }
             }
-            writer.unindent();
-            writeln!(writer, "}}")?;
+            list.push(format!("}}\n"));
         } else if let Some(SingleOrVec::Single(item)) = typ.array.and_then(|arr| arr.items) {
             if let Some(name) = item.into_object().reference {
-                writeln!(writer, "{name}")?;
+                list.push(format!("{name}"));
             } else {
                 scalar.insert(name.to_string());
             }
         }
 
-        Ok(())
+        list.join("")
     }
 }

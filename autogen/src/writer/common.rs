@@ -6,55 +6,54 @@ use schemars::schema::{
 use std::collections::BTreeMap;
 use std::io::Write;
 
-pub fn write_description(
-    writer: &mut IndentedWriter<impl Write>,
-    description: Option<&String>,
-) -> std::io::Result<()> {
-    if let Some(description) = description {
-        let description: String = description.chars().filter(|ch| ch != &'\n').collect();
-        let line_breaker = LineBreaker::new(&description, 80);
-        writeln!(writer, "\"\"\"")?;
-        for line in line_breaker {
-            writeln!(writer, "{line}")?;
-        }
-        writeln!(writer, "\"\"\"")?;
+pub fn description_str(description: String) -> String {
+    let description: String = description.chars().filter(|ch| ch != &'\n').collect();
+    let line_breaker = LineBreaker::new(&description, 80);
+
+    let mut list = vec![];
+    list.push("\"\"\"");
+    for line in line_breaker {
+        list.push(format!("{line}").as_str());
     }
-    Ok(())
+    list.push("\"\"\"");
+    list.join("\n")
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_property(
-    writer: &mut IndentedWriter<impl Write>,
+pub fn property_str(
     name: String,
     property: Schema,
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+) -> String {
     let property = property.into_object();
     let description = property
         .metadata
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref());
-    write_description(writer, description)?;
-    write_field(writer, name, property, defs, extra_it)?;
-    Ok(())
+    let mut list = vec![];
+    if let Some(d) = description {
+        list.push(description_str(d.clone()));
+    }
+    description_str(write_field(name, property, defs, extra_it));
+    list.join("\n")
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn write_field(
-    writer: &mut IndentedWriter<impl Write>,
     name: String,
     schema: SchemaObject,
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
-    write!(writer, "{name}: ")?;
-    write_type(writer, name, schema, defs, extra_it)?;
-    writeln!(writer)
+) -> String {
+    format!(
+        "{name}: {t}",
+        name = name,
+        t = write_type(name, schema, defs, extra_it)
+    )
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn first_char_to_upper(name: &mut String) {
+pub fn uppercase_first(name: &str) -> String {
     if let Some(first_char) = name.chars().next() {
         // Remove the first character and make it uppercase
         let first_char_upper = first_char.to_uppercase().to_string();
@@ -64,18 +63,18 @@ pub fn first_char_to_upper(name: &mut String) {
         chars.next();
 
         // Replace the original string with the new one
-        *name = first_char_upper + chars.as_str();
+        return first_char_upper + chars.as_str();
     }
+    return "".to_string();
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn write_type(
-    writer: &mut IndentedWriter<impl Write>,
     name: String,
     schema: SchemaObject,
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+) -> String {
     match schema.instance_type {
         Some(SingleOrVec::Single(typ))
             if matches!(
@@ -87,8 +86,7 @@ pub fn write_type(
                     | InstanceType::Integer
             ) =>
         {
-            write_instance_type(writer, &typ)?;
-            write!(writer, "!")
+            format!("{}!", instance_type(&typ))
         }
         Some(SingleOrVec::Vec(typ))
             if matches!(
@@ -100,20 +98,19 @@ pub fn write_type(
                     | InstanceType::Integer
             ) =>
         {
-            write_instance_type(writer, typ.first().unwrap())
+            format!("{}!", instance_type(typ.first().unwrap()))
         }
         _ => {
             if let Some(arr_valid) = schema.array.clone() {
-                write_array_validation(writer, name, *arr_valid, defs, extra_it)
+                write_array_validation(name, *arr_valid, defs, extra_it)
             } else if let Some(typ) = schema.object.clone() {
                 if !typ.properties.is_empty() {
                     let mut name = name;
-                    first_char_to_upper(&mut name);
-                    write!(writer, "{name}")?;
+                    name = uppercase_first(&name);
                     extra_it.insert(name, ExtraTypes::ObjectValidation(*typ));
-                    Ok(())
+                    format!("{name}")
                 } else {
-                    write!(writer, "JSON")
+                    format!("JSON")
                 }
             } else if let Some(sub_schema) = schema.subschemas.clone().into_iter().next() {
                 let list = if let Some(list) = sub_schema.any_of {
@@ -123,89 +120,80 @@ pub fn write_type(
                 } else if let Some(list) = sub_schema.one_of {
                     list
                 } else {
-                    write!(writer, "JSON")?;
-                    return Ok(());
+                    return format!("JSON");
                 };
                 let first = list.first().unwrap();
                 match first {
                     Schema::Object(obj) => {
-                        write_reference(writer, &obj.reference.clone().unwrap(), extra_it)
+                        let nm = reference_str(&obj.reference.clone().unwrap());
+                        extra_it.insert(nm.clone(), ExtraTypes::Schema);
+                        return format!("{}", nm);
                     }
                     _ => panic!(),
                 }
             } else if let Some(name) = schema.reference {
-                write_reference(writer, &name, extra_it)
+                let nm = reference_str(&name);
+                extra_it.insert(nm.clone(), ExtraTypes::Schema);
+                return format!("{}", nm);
             } else {
-                write!(writer, "JSON")
+                return format!("JSON");
             }
         }
     }
 }
 
-pub fn write_instance_type(
-    writer: &mut IndentedWriter<impl Write>,
-    typ: &InstanceType,
-) -> std::io::Result<()> {
+pub fn instance_type(typ: &InstanceType) -> String {
     match typ {
-        &InstanceType::Integer => write!(writer, "Int"),
-        x => write!(writer, "{x:?}"),
+        &InstanceType::Integer => "Int".to_string(),
+        _x => "{x:?}".to_string(),
     }
 }
 
 // refernce
-pub fn write_reference(
-    writer: &mut IndentedWriter<impl Write>,
-    reference: &str,
-    extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
-    let mut nm = reference.split('/').last().unwrap().to_string();
-    first_char_to_upper(&mut nm);
-    extra_it.insert(nm.clone(), ExtraTypes::Schema);
-    write!(writer, "{nm}")
+pub fn reference_str(reference: &str) -> String {
+    let nm = reference.split('/').last().unwrap().to_string();
+    format!("{nm}", nm = uppercase_first(&nm))
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn write_array_validation(
-    writer: &mut IndentedWriter<impl Write>,
     name: String,
     arr_valid: ArrayValidation,
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
-    write!(writer, "[")?;
+) -> String {
+    let mut list = vec![];
+    list.push("[");
     if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
-        write_type(writer, name, schema.into_object(), defs, extra_it)?;
+        let t = write_type(name, schema.into_object(), defs, extra_it);
+        list.push(t.as_str());
     } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
-        write_type(
-            writer,
-            name,
-            schemas[0].clone().into_object(),
-            defs,
-            extra_it,
-        )?;
+        let t = write_type(name, schemas[0].clone().into_object(), defs, extra_it);
+        list.push(t.as_str());
     } else {
-        write!(writer, "JSON")?;
+        list.push("JSON");
     }
-    write!(writer, "]")
+    list.push("]");
+    list.join("")
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn write_object_validation(
-    writer: &mut IndentedWriter<impl Write>,
     name: String,
     obj_valid: ObjectValidation,
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> std::io::Result<()> {
+) -> String {
     if !obj_valid.properties.is_empty() {
-        writeln!(writer, "input {name} {{")?;
-        writer.indent();
+        let mut list = vec![];
+        list.push("input {name} {{");
         for (name, property) in obj_valid.properties {
-            write_property(writer, name, property, defs, extra_it)?;
+            let t = property_str(name, property, defs, extra_it);
+            list.push("\t{t}");
         }
-        writer.unindent();
-        writeln!(writer, "}}")
+        list.push("}}");
+        list.join("")
     } else {
-        Ok(())
+        "".to_string()
     }
 }

@@ -38,7 +38,7 @@ impl Directives {
 
         for (name, schema) in defs.iter() {
             let schema = schema.clone().into_object();
-            self.write_directive(name.clone(), schema, &defs, writer, extra_it)?;
+            let _directive = self.write_directive(name.clone(), schema, &defs, extra_it);
         }
 
         Ok(())
@@ -51,65 +51,59 @@ impl Directives {
         name: String,
         schema: SchemaObject,
         defs: &BTreeMap<String, Schema>,
-        writer: &mut IndentedWriter<impl Write>,
         extra_it: &mut BTreeMap<String, ExtraTypes>,
-    ) -> std::io::Result<()> {
+    ) -> String {
+        let mut list = vec![];
         let (name, entities, is_repeatable) = match directive_allow_list_lookup(&name) {
             Some(entity) => entity,
-            None => return Ok(()),
+            None => return "".to_string(),
         };
 
         if self.written_directives.contains(name) {
-            return Ok(());
+            return "".to_string();
         }
 
-        let description = schema
+        if let Some(description) = schema
             .metadata
             .as_ref()
-            .and_then(|metadata| metadata.description.as_ref());
-        // description
-        crate::writer::common::write_description(writer, description)?;
+            .and_then(|metadata| metadata.description.as_ref())
+        {
+            // description
+            crate::writer::common::description_str(description.clone());
+        }
 
         // start write body
-        write!(writer, "directive @{}", name)?;
+        list.push(format!("directive @{}", name));
         if let Some(properties) = schema.object.map(|object| object.properties) {
             let mut properties_iter = properties.into_iter();
 
             let mut close_param = false;
             if let Some((name, property)) = properties_iter.next() {
-                writeln!(writer, "(")?;
-                writer.indent();
-                crate::writer::common::write_property(
-                    writer,
-                    name,
-                    property,
-                    defs,
-                    extra_it,
-                )?;
+                list.push(format!("(\n"));
+                list.push(format!(
+                    "\t{}",
+                    crate::writer::common::property_str(name, property, defs, extra_it)
+                ));
                 close_param = true;
             }
             for (name, property) in properties_iter {
-                crate::writer::common::write_property(
-                    writer,
-                    name,
-                    property,
-                    defs,
-                    extra_it,
-                )?;
+                list.push(format!(
+                    "\t{}",
+                    crate::writer::common::property_str(name, property, defs, extra_it)
+                ));
             }
             if close_param {
-                writer.unindent();
-                write!(writer, ")")?;
+                list.push(format!(")"));
             }
         }
 
         if is_repeatable {
-            write!(writer, " repeatable ")?;
+            list.push(format!(" repeatable "));
         }
 
         entities.to_graphql(writer)?;
         self.written_directives.insert(name.to_string());
 
-        Ok(())
+        list.join("")
     }
 }
