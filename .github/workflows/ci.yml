@@ -191,8 +191,7 @@ jobs:
         run: cargo build
 
       - name: Check all examples
-        run: |
-          find ./examples -maxdepth 1 \( -name "*.json" -o -name "*.yml" -o -name "*.yaml" -o -name "*.graphql" -o -name "*.gql" \) -exec ./target/debug/tailcall check {} \;
+        run: ./examples/lint.sh
 
   draft_release:
     name: Draft Release
