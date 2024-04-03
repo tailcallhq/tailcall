@@ -187,7 +187,7 @@ mod grpc_fetch {
 
     const NEWS_PROTO: &[u8] = include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/tests/fake_descriptor.bin"
+        "/tests/fake_descriptor"
     ));
 
     const REFLECTION_LIST_ALL: &[u8] = &[
