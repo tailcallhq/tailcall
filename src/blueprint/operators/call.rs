@@ -53,10 +53,10 @@ pub fn compile_call(
     object_name: &str,
 ) -> Valid<FieldDefinition, String> {
     Valid::from_iter(call.steps.iter(), |step| {
-        get_field_and_field_name(step, config_module).and_then(|(_field, field_name, type_of)| {
+        get_field_and_field_name(step, config_module).and_then(|(field, field_name, type_of)| {
             let args = step.args.iter();
 
-            let empties: Vec<&String> = _field
+            let empties: Vec<&String> = field
                 .args
                 .iter()
                 .filter_map(|(k, arg)| {
@@ -81,12 +81,12 @@ pub fn compile_call(
             }
 
             to_field_definition(
-                _field,
+                field,
                 operation_type,
                 object_name,
                 config_module,
                 type_of,
-                &_field.type_of,
+                &field.type_of,
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
