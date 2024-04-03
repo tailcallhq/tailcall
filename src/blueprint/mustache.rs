@@ -37,8 +37,7 @@ impl<'a> MustachePartsValidator<'a> {
 
             type_of = self
                 .config
-                .types
-                .get(&field.type_of)
+                .find_type(&field.type_of)
                 .ok_or_else(|| format!("no type '{}' found", parts.join(".").as_str()))?;
 
             len -= 1;

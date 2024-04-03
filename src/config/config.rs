@@ -91,7 +91,7 @@ impl Config {
     }
 
     pub fn recurse_type<'a>(&'a self, type_of: &str, types: &mut HashSet<&'a String>) {
-        if let Some(type_) = self.types.get(type_of) {
+        if let Some(type_) = self.find_type(type_of) {
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) {
                     types.insert(&field.type_of);
@@ -111,7 +111,7 @@ impl Config {
                         .iter()
                         .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
                     {
-                        if let Some(t) = self.types.get(&arg.type_of) {
+                        if let Some(t) = self.find_type(&arg.type_of) {
                             t.fields.iter().for_each(|(_, f)| {
                                 types.insert(&f.type_of);
                                 self.recurse_type(&f.type_of, &mut types)
@@ -123,6 +123,9 @@ impl Config {
             }
         }
         types
+    }
+    pub fn find_type(&self, name: &str) -> Option<&Type> {
+        self.types.get(name)
     }
 
     pub fn find_union(&self, name: &str) -> Option<&Union> {
@@ -156,7 +159,11 @@ impl Config {
     }
 
     pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        self.types = HashMap::from_iter(types.into_iter().map(|(k, v)| (k.to_string(), v)));
+        let mut graphql_types = HashMap::new();
+        for (name, type_) in types {
+            graphql_types.insert(name.to_string(), type_);
+        }
+        self.types = graphql_types;
         self
     }
 

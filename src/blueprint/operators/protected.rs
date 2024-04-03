@@ -13,7 +13,7 @@ pub fn update_protected<'a>(
             if field.protected.is_some() // check the field itself has marked as protected
                 || type_.protected.is_some() // check the type that contains current field
                 || config // check that output type of the field is protected
-                    .types.get(&field.type_of)
+                    .find_type(&field.type_of)
                     .and_then(|type_| type_.protected.as_ref())
                     .is_some()
             {

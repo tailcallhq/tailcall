@@ -85,7 +85,7 @@ where
     let type_of = field.name();
     let list = field.list();
     let required = field.non_null();
-    let type_ = config.types.get(type_of);
+    let type_ = config.find_type(type_of);
     let schema = match type_ {
         Some(type_) => {
             if let Some(variants) = type_.variants.clone() {

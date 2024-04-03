@@ -139,7 +139,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             });
         }
 
-        if let Some(next_type_info) = config_module.types.get(&next_field.type_of) {
+        if let Some(next_type_info) = config_module.find_type(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 config_module,
                 invalid_path_handler,
@@ -205,7 +205,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
             .fields
             .get(field_name)
             .map(|_| type_info)
-            .or_else(|| config_module.types.get(&field.type_of));
+            .or_else(|| config_module.find_type(&field.type_of));
 
         if let Some(type_info) = target_type_info {
             return process_field_within_type(ProcessFieldWithinTypeContext {
