@@ -312,7 +312,7 @@ fn update_resolver_from_path(
         }
         let resolver = match updated_base_field.resolver.clone() {
             None => resolver,
-            Some(resolver) => Expression::Input(Box::new(resolver), context.path.to_owned()),
+            Some(resolver) => Expression::Path(Box::new(resolver), context.path.to_owned()),
         };
         Valid::succeed(updated_base_field.resolver(Some(resolver)))
     })
@@ -331,7 +331,7 @@ pub fn fix_dangling_resolvers<'a>(
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types).is_succeed()
             {
-                b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
+                b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
                 ))));
             }

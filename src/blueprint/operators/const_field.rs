@@ -4,7 +4,7 @@ use crate::blueprint::*;
 use crate::config;
 use crate::config::Field;
 use crate::lambda::Expression;
-use crate::lambda::Expression::Literal;
+use crate::lambda::Expression::Dynamic;
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -41,7 +41,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
     .and_then(|value| {
         if !value.is_const() {
             // TODO: Add validation for const with Mustache here
-            Valid::succeed(Literal(value.to_owned()))
+            Valid::succeed(Dynamic(value.to_owned()))
         } else {
             let data = &value;
             match data.try_into() {
@@ -51,7 +51,7 @@ pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
                     } else {
                         Valid::succeed(())
                     };
-                    validation.map(|_| Literal(value.to_owned()))
+                    validation.map(|_| Dynamic(value.to_owned()))
                 }
                 Err(e) => Valid::fail(format!("invalid JSON: {}", e)),
             }

@@ -38,7 +38,7 @@ impl Response<Bytes> {
         operation: &ProtobufOperation,
     ) -> Result<Response<async_graphql::Value>> {
         let mut resp = Response::default();
-        let body = operation.convert_output(&self.body)?;
+        let body = operation.convert_output::<async_graphql::Value>(&self.body)?;
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;

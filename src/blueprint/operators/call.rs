@@ -100,7 +100,7 @@ pub fn compile_call(
                     DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
                         .map_err(|e| ValidationError::new(e.to_string())),
                 )
-                .map(Expression::Literal),
+                .map(Expression::Dynamic),
             )
             .map(|(mut b_field, args_expr)| {
                 if !step.args.is_empty() {
