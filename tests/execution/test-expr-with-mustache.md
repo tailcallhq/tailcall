@@ -1,4 +1,4 @@
-# Test const with mustache
+# Test expr with mustache
 
 ```graphql @server
 schema {

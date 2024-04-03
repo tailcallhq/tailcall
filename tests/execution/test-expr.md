@@ -2,7 +2,7 @@
 check_identity: true
 ---
 
-# test-const
+# test-expr
 
 ```graphql @server
 schema @server @upstream {

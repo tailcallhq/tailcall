@@ -22,14 +22,14 @@ fn validate_data_with_schema(
     }
 }
 
-pub struct CompileConst<'a> {
+pub struct CompileExpr<'a> {
     pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
     pub value: &'a serde_json::Value,
     pub validate: bool,
 }
 
-pub fn compile_const(inputs: CompileConst) -> Valid<Expression, String> {
+pub fn compile_expr(inputs: CompileExpr) -> Valid<Expression, String> {
     let config_module = inputs.config_module;
     let field = inputs.field;
     let value = inputs.value;
@@ -68,7 +68,7 @@ pub fn update_const_field<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_const(CompileConst {
+            compile_expr(CompileExpr {
                 config_module,
                 field,
                 value: &const_field.body,

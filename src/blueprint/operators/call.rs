@@ -104,7 +104,7 @@ fn compile_step(
                 validate_with_schema: true,
             })
         } else if let Some(const_field) = _field.const_field.clone() {
-            compile_const(CompileConst {
+            compile_expr(CompileExpr {
                 config_module,
                 field: _field,
                 value: &const_field.body,

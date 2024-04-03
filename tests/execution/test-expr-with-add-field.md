@@ -2,7 +2,7 @@
 expect_validation_error: true
 ---
 
-# test-const-with-add-field
+# test-expr-with-add-field
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
