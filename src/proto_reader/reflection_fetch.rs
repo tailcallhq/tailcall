@@ -17,7 +17,7 @@ use crate::runtime::TargetRuntime;
 
 const REFLECTION_PROTO: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/proto/reflection.proto" /* source https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1/reflection.proto */
+    "/proto/reflection.proto" /* source: https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1alpha/reflection.proto */
 ));
 
 /// This function is just used for better exception handling
@@ -147,24 +147,6 @@ pub async fn get_by_service(
 
     request_proto(resp).await
 }
-/* // TODO
-/// Makes `Get Proto/Symbol Name` request to the grpc reflection server
-pub async fn get_by_proto_name(
-    url: &str,
-    target_runtime: &TargetRuntime,
-    proto_name: &str,
-) -> Result<FileDescriptorProto> {
-    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
-
-    let resp = CustomResponse::execute(
-        url,
-        grpc_method,
-        json!({"file_by_filename": proto_name}),
-        target_runtime,
-    )
-    .await?;
-    request_proto(resp).await
-}*/
 
 /// For extracting `FileDescriptorProto` from `CustomResponse`
 async fn request_proto(response: CustomResponse) -> Result<FileDescriptorProto> {

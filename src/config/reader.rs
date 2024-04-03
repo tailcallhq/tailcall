@@ -56,12 +56,14 @@ impl ConfigReader {
         }
 
         for link in links.iter() {
+            let path = Self::resolve_path(&link.src, parent_dir);
+
+            let source = self.resource_reader.read_file(&path).await?;
+
+            let content = source.content;
+
             match link.type_of {
                 LinkType::Config => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;
-
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
                     config_module = config_module.merge_right(ConfigModule::from(config.clone()));
@@ -78,7 +80,6 @@ impl ConfigReader {
                 }
                 LinkType::Protobuf => {
                     let path = Self::resolve_path(&link.src, parent_dir);
-
                     let meta = self.proto_reader.read(path).await?;
                     config_module
                         .extensions
@@ -89,51 +90,27 @@ impl ConfigReader {
                         });
                 }
                 LinkType::Script => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;
-
                     config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;
-
                     config_module
                         .extensions
                         .cert
                         .extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;
-
                     config_module.extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;
-
                     config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;
-
                     config_module
                         .extensions
                         .htpasswd
                         .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;
-
                     let de = &mut serde_json::Deserializer::from_str(&content);
 
                     config_module.extensions.jwks.push(Content {
