@@ -6,20 +6,20 @@ schema @server(port: 8000, graphiql: true) @link(id: "jwks", type: Jwks, src: "j
 }
 
 type Query {
-  scalar: String! @const(data: "data from public scalar")
-  protectedScalar: String! @protected @const(data: "data from protected scalar")
+  scalar: String! @expr(body: "data from public scalar")
+  protectedScalar: String! @protected @expr(body: "data from protected scalar")
   nested: Nested!
   protectedType: ProtectedType
 }
 
 type Nested {
-  name: String! @const(data: "nested name")
-  protected: String! @protected @const(data: "protected nested")
+  name: String! @expr(body: "nested name")
+  protected: String! @protected @expr(body: "protected nested")
 }
 
 type ProtectedType @protected {
-  name: String! @const(data: "protected type name")
-  nested: String! @const(data: "protected type nested")
+  name: String! @expr(body: "protected type name")
+  nested: String! @expr(body: "protected type nested")
 }
 ```
 

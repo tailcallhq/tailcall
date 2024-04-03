@@ -107,7 +107,7 @@ fn compile_step(
             compile_const(CompileConst {
                 config_module,
                 field: _field,
-                value: &const_field.data,
+                value: &const_field.body,
                 validate: true,
             })
         } else {

@@ -10,6 +10,6 @@ schema {
 }
 
 type Query {
-  data: String @const(data: "data") @protected
+  data: String @expr(body: "data") @protected
 }
 ```

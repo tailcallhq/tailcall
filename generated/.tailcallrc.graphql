@@ -36,10 +36,10 @@ directive @call(
 ) on FIELD_DEFINITION
 
 """
-The `@const` operators allows us to embed a constant response for the schema.
+The `@expr` operators allows us to embed a constant response for the schema.
 """
-directive @const(
-  data: JSON
+directive @expr(
+  body: JSON
 ) on FIELD_DEFINITION
 
 """
@@ -444,12 +444,6 @@ input Cache {
   the cache.
   """
   maxAge: Int!
-}
-"""
-The `@const` operators allows us to embed a constant response for the schema.
-"""
-input Const {
-  data: JSON
 }
 """
 Type to configure Cross-Origin Resource Sharing (CORS) for a server.

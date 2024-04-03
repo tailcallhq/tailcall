@@ -7,7 +7,7 @@ schema @server(headers: {custom: [{key: "a", value: "a"}, {key: "a", value: "b"}
 }
 
 type Query {
-  user: User @const(data: {name: "John"})
+  user: User @expr(body: {name: "John"})
 }
 
 type User {

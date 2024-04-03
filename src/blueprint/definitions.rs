@@ -103,7 +103,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             let next_dir_const = next_field
                 .const_field
                 .as_ref()
-                .map(|_| config::Const::directive_name());
+                .map(|_| config::Expr::directive_name());
             return path_resolver_error_handler(
                 next_dir_http
                     .or(next_dir_const)
@@ -395,7 +395,7 @@ fn to_fields(
         update_args()
             .and(update_http().trace(config::Http::trace_name().as_str()))
             .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-            .and(update_const_field().trace(config::Const::trace_name().as_str()))
+            .and(update_const_field().trace(config::Expr::trace_name().as_str()))
             .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
             .and(update_modify().trace(config::Modify::trace_name().as_str()))
             .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))

@@ -8,7 +8,7 @@ expression: errors
     "trace": [
       "Query",
       "user",
-      "@const",
+      "@expr",
       "age"
     ],
     "description": null

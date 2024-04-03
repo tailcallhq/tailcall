@@ -18,7 +18,7 @@ type Post {
   title: String
   body: String
   userId: Int
-  user: User @const(data: {id: 1, name: "user1"})
+  user: User @expr(body: {id: 1, name: "user1"})
 }
 
 type User {

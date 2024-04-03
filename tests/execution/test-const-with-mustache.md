@@ -6,7 +6,7 @@ schema {
 }
 
 type Query {
-  a: A @const(data: {a: 0, b: [1, 2, 3], c: "test", d: {e: 1}, g: true})
+  a: A @expr(body: {a: 0, b: [1, 2, 3], c: "test", d: {e: 1}, g: true})
 }
 
 type A {
@@ -15,7 +15,7 @@ type A {
   c: String @modify(omit: true)
   g: Boolean @modify(omit: true)
   d: D @modify(omit: true)
-  bc: BC @const(data: {b: "{{value.b}}", c: "{{value.c}}", d: "{{value.d.e}}", f: "{{value.d}}", g: "{{value.g}}"})
+  bc: BC @expr(body: {b: "{{value.b}}", c: "{{value.c}}", d: "{{value.d.e}}", f: "{{value.d}}", g: "{{value.g}}"})
 }
 
 type BC {

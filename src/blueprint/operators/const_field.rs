@@ -71,7 +71,7 @@ pub fn update_const_field<'a>(
             compile_const(CompileConst {
                 config_module,
                 field,
-                value: &const_field.data,
+                value: &const_field.body,
                 validate: true,
             })
             .map(|resolver| b_field.resolver(Some(resolver)))
