@@ -28,8 +28,8 @@ impl Expression {
                     Expression::Cache(Cache { expr, max_age }) => {
                         Expression::Cache(Cache { expr: expr.modify_box(modifier), max_age })
                     }
-                    Expression::Input(expr, path) => {
-                        Expression::Input(expr.modify_box(modifier), path)
+                    Expression::Path(expr, path) => {
+                        Expression::Path(expr.modify_box(modifier), path)
                     }
                     Expression::Protect(expr) => Expression::Protect(expr.modify_box(modifier)),
                 }

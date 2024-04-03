@@ -18,7 +18,7 @@ pub enum Expression {
     Dynamic(DynamicValue),
     IO(IO),
     Cache(Cache),
-    Input(Box<Expression>, Vec<String>),
+    Path(Box<Expression>, Vec<String>),
     Protect(Box<Expression>),
 }
 
@@ -29,7 +29,7 @@ impl Display for Expression {
             Expression::Dynamic(_) => write!(f, "Literal"),
             Expression::IO(io) => write!(f, "{io}"),
             Expression::Cache(_) => write!(f, "Cache"),
-            Expression::Input(_, _) => write!(f, "Input"),
+            Expression::Path(_, _) => write!(f, "Input"),
             Expression::Protect(expr) => write!(f, "Protected({expr})"),
         }
     }
@@ -111,7 +111,7 @@ impl Eval for Expression {
                         and_then.eval(ctx, conc).await
                     }
                 },
-                Expression::Input(input, path) => {
+                Expression::Path(input, path) => {
                     let inp = &input.eval(ctx, conc).await?;
                     Ok(inp
                         .get_path(path)

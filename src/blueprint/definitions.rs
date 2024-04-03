@@ -312,7 +312,7 @@ fn update_resolver_from_path(
         }
         let resolver = match updated_base_field.resolver.clone() {
             None => resolver,
-            Some(resolver) => Expression::Input(Box::new(resolver), context.path.to_owned()),
+            Some(resolver) => Expression::Path(Box::new(resolver), context.path.to_owned()),
         };
         Valid::succeed(updated_base_field.resolver(Some(resolver)))
     })
