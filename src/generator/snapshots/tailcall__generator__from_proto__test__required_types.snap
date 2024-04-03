@@ -1,5 +1,5 @@
 ---
-source: src/config_generator/from_proto.rs
+source: src/generator/from_proto.rs
 expression: config
 ---
 schema @server @upstream {
