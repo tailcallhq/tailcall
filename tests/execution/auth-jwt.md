@@ -8,13 +8,13 @@ schema @server(port: 8000, graphiql: true) @link(id: "jwks", type: Jwks, src: "j
 type Query {
   scalar: String! @expr(body: "data from public scalar")
   protectedScalar: String! @protected @expr(body: "data from protected scalar")
-  nested: Nested!
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
   protectedType: ProtectedType
 }
 
 type Nested {
-  name: String! @expr(body: "nested name")
-  protected: String! @protected @expr(body: "protected nested")
+  name: String!
+  protected: String! @protected
 }
 
 type ProtectedType @protected {

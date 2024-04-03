@@ -13,9 +13,8 @@ pub struct ProtoReader {
 }
 
 pub struct ProtoMetadata {
-    pub package: Option<String>,
-    pub name: Option<String>,
     pub descriptor_set: FileDescriptorSet,
+    pub path: String,
 }
 
 impl ProtoReader {
@@ -23,15 +22,24 @@ impl ProtoReader {
         Self { resource_reader: ResourceReader::init(runtime) }
     }
 
+    pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
+        let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
+            .await
+            .into_iter()
+            .collect::<anyhow::Result<Vec<_>>>()?;
+        Ok(resolved_protos)
+    }
+
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
-        let proto = self.read_proto(path.as_ref()).await?;
-        let package = proto.package.clone();
-        let name = proto.name.clone();
-        let descriptors = self.resolve_descriptors(proto).await?;
+        let file_read = self.read_proto(path.as_ref()).await?;
+        if file_read.package.is_none() {
+            anyhow::bail!("Package name is required");
+        }
+
+        let descriptors = self.resolve_descriptors(file_read).await?;
         let metadata = ProtoMetadata {
-            package,
-            name,
             descriptor_set: FileDescriptorSet { file: descriptors },
+            path: path.as_ref().to_string(),
         };
         Ok(metadata)
     }
@@ -80,7 +88,6 @@ impl ProtoReader {
         } else {
             self.resource_reader.read_file(path).await?.content
         };
-
         Ok(protox_parse::parse(path, &content)?)
     }
 }
@@ -166,5 +173,15 @@ mod test_proto_config {
         } else {
             None
         }
+    }
+    #[tokio::test]
+    async fn test_proto_no_pkg() -> Result<()> {
+        let runtime = crate::runtime::test::init(None);
+        let reader = ProtoReader::init(runtime);
+        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
+        let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
+        assert!(config_module.is_err());
+        Ok(())
     }
 }

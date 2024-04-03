@@ -21,11 +21,9 @@ pub fn update_protected<'a>(
                     );
                 }
 
-                b_field.resolver = Some(Expression::Protect(Box::new(
-                    b_field
-                        .resolver
-                        .unwrap_or(Expression::Context(Context::Value)),
-                )));
+                b_field.resolver = Some(Expression::Protect(Box::new(b_field.resolver.unwrap_or(
+                    Expression::Context(Context::Path(vec![b_field.name.clone()])),
+                ))));
             }
 
             Valid::succeed(b_field)

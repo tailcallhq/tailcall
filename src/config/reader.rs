@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Context};
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -56,14 +55,14 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
-        for config_link in links.iter() {
-            let path = Self::resolve_path(&config_link.src, parent_dir);
+        for link in links.iter() {
+            let path = Self::resolve_path(&link.src, parent_dir);
 
             let source = self.resource_reader.read_file(&path).await?;
 
             let content = source.content;
 
-            match config_link.type_of {
+            match link.type_of {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
@@ -73,24 +72,22 @@ impl ConfigReader {
                         config_module = config_module.merge_right(
                             self.ext_links(
                                 ConfigModule::from(config),
-                                Path::new(&config_link.src).parent(),
+                                Path::new(&link.src).parent(),
                             )
                             .await?,
                         );
                     }
                 }
                 LinkType::Protobuf => {
-                    let path = Self::resolve_path(&config_link.src, parent_dir);
+                    let path = Self::resolve_path(&link.src, parent_dir);
                     let meta = self.proto_reader.read(path).await?;
-                    if let Some(id) = meta.package.clone() {
-                        config_module
-                            .extensions
-                            .grpc_file_descriptors
-                            .push(Content { id: Some(id), content: meta.descriptor_set.clone() });
-                    } else {
-                        return Err(anyhow!("Package name is not defined for proto file"))
-                            .context(config_link.src.to_string());
-                    }
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: link.id.clone(),
+                            content: meta.descriptor_set.clone(),
+                        });
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);
@@ -112,13 +109,13 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .htpasswd
-                        .push(Content { id: config_link.id.clone(), content: content.clone() });
+                        .push(Content { id: link.id.clone(), content: content.clone() });
                 }
                 LinkType::Jwks => {
                     let de = &mut serde_json::Deserializer::from_str(&content);
 
                     config_module.extensions.jwks.push(Content {
-                        id: config_link.id.clone(),
+                        id: link.id.clone(),
                         content: serde_path_to_error::deserialize(de)?,
                     })
                 }
@@ -227,26 +224,6 @@ impl ConfigReader {
             let path = root_dir.unwrap_or(Path::new(""));
             path.join(src).to_string_lossy().to_string()
         }
-    }
-}
-
-#[cfg(test)]
-mod test_proto_config {
-    use std::path::PathBuf;
-
-    use anyhow::Result;
-
-    use crate::config::reader::ConfigReader;
-
-    #[tokio::test]
-    async fn test_proto_no_pkg() -> Result<()> {
-        let runtime = crate::runtime::test::init(None);
-        let reader = ConfigReader::init(runtime);
-        let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
-        let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
-        assert!(config_module.is_err());
-        Ok(())
     }
 }
 
