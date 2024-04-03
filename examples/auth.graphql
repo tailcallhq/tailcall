@@ -4,10 +4,15 @@ schema
   @link(id: "auth-basic", type: Htpasswd, src: ".htpasswd")
   @link(id: "auth-jwt", type: Jwks, src: ".jwks") {
   query: Query
+  mutation: Mutation
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+}
+
+type Mutation {
   user(id: Int!): User @http(path: "/users/{{args.id}}")
 }
 
