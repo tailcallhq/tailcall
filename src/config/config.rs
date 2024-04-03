@@ -739,8 +739,9 @@ impl Display for GraphQLOperationType {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-/// The `@expr` operators allows us to embed a constant response for the
-/// schema.
+/// The `@expr` operators allows you to specify an expression that can evaluate
+/// to a value. The expression can be a static value or built form a Mustache
+/// template. schema.
 pub struct Expr {
     pub body: Value,
 }

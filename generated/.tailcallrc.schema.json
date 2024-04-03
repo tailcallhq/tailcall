@@ -320,7 +320,7 @@
       ]
     },
     "Expr": {
-      "description": "The `@expr` operators allows us to embed a constant response for the schema.",
+      "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",
       "type": "object",
       "required": [
         "body"
