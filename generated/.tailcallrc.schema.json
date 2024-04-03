@@ -363,7 +363,14 @@
             }
           ]
         },
-        "const": {
+        "doc": {
+          "description": "Publicly visible documentation for the field.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expr": {
           "description": "Inserts a constant resolver for the field.",
           "anyOf": [
             {
@@ -372,13 +379,6 @@
             {
               "type": "null"
             }
-          ]
-        },
-        "doc": {
-          "description": "Publicly visible documentation for the field.",
-          "type": [
-            "string",
-            "null"
           ]
         },
         "graphql": {
