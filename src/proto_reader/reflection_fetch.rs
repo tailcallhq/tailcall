@@ -110,7 +110,7 @@ impl CustomResponse {
 
 /// Makes `ListService` request to the grpc reflection server
 pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
-    let grpc_method = "grpc.reflection.v1.ServerReflection.ServerReflectionInfo".try_into()?;
+    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
 
     // Extracting names from services
     let methods: Vec<String> = CustomResponse::execute(
@@ -136,7 +136,7 @@ pub async fn get_by_service(
     target_runtime: &TargetRuntime,
     service: &str,
 ) -> Result<FileDescriptorProto> {
-    let grpc_method = "grpc.reflection.v1.ServerReflection.ServerReflectionInfo".try_into()?;
+    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
     let resp = CustomResponse::execute(
         url,
         grpc_method,
@@ -154,7 +154,7 @@ pub async fn get_by_proto_name(
     target_runtime: &TargetRuntime,
     proto_name: &str,
 ) -> Result<FileDescriptorProto> {
-    let grpc_method = "grpc.reflection.v1.ServerReflection.ServerReflectionInfo".try_into()?;
+    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
 
     let resp = CustomResponse::execute(
         url,
@@ -207,7 +207,7 @@ mod grpc_fetch {
 
         let http_reflection_file_mock = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo")
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x12\"\x10news.NewsService");
             then.status(200).body(NEWS_PROTO);
         });
@@ -241,7 +241,7 @@ mod grpc_fetch {
 
         let http_reflection_list_all = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo")
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x02:\0");
             then.status(200).body(REFLECTION_LIST_ALL);
         });
@@ -268,7 +268,7 @@ mod grpc_fetch {
 
         let http_reflection_list_all_empty = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo")
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x02:\0");
             then.status(200).body("\0\0\0\0\x02:\0"); // Mock an empty response
         });
@@ -292,7 +292,7 @@ mod grpc_fetch {
 
         let http_reflection_service_not_found = server.mock(|when, then| {
             when.method(httpmock::Method::POST)
-                .path("/grpc.reflection.v1.ServerReflection/ServerReflectionInfo");
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo");
             then.status(404); // Mock a 404 not found response
         });
 
