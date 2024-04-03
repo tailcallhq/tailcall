@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
@@ -53,7 +55,9 @@ fn config_document(config: &Config) -> ServiceDocument {
             .map(|name| pos(Name::new(name))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
-    for (type_name, type_def) in config.types.iter() {
+
+    let sorted_types = config.types.iter().collect::<BTreeMap<_, _>>();
+    for (type_name, type_def) in sorted_types {
         let kind = if type_def.interface {
             TypeKind::Interface(InterfaceType {
                 implements: type_def

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -46,7 +46,7 @@ pub struct Config {
     /// A map of all the types in the schema.
     #[serde(default)]
     #[setters(skip)]
-    pub types: BTreeMap<String, Type>,
+    pub types: HashMap<String, Type>,
 
     ///
     /// A map of all the union types in the schema.
@@ -156,11 +156,7 @@ impl Config {
     }
 
     pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        let mut graphql_types = BTreeMap::new();
-        for (name, type_) in types {
-            graphql_types.insert(name.to_string(), type_);
-        }
-        self.types = graphql_types;
+        self.types = HashMap::from_iter(types.into_iter().map(|(k, v)| (k.to_string(), v)));
         self
     }
 
@@ -283,9 +279,9 @@ pub struct Cache {
 pub struct Protected {}
 
 fn merge_types(
-    mut self_types: BTreeMap<String, Type>,
-    other_types: BTreeMap<String, Type>,
-) -> BTreeMap<String, Type> {
+    mut self_types: HashMap<String, Type>,
+    other_types: HashMap<String, Type>,
+) -> HashMap<String, Type> {
     for (name, mut other_type) in other_types {
         if let Some(self_type) = self_types.remove(&name) {
             other_type = self_type.merge_right(other_type);

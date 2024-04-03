@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use async_graphql::parser::types::ConstDirective;
 
@@ -27,7 +27,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
 fn validate_type_has_resolvers(
     name: &str,
     ty: &Type,
-    types: &BTreeMap<String, Type>,
+    types: &HashMap<String, Type>,
 ) -> Valid<(), String> {
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types)
@@ -39,7 +39,7 @@ fn validate_type_has_resolvers(
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
-    types: &BTreeMap<String, Type>,
+    types: &HashMap<String, Type>,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
@@ -139,7 +139,7 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 }
 fn to_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
-) -> Valid<BTreeMap<String, config::Type>, String> {
+) -> Valid<HashMap<String, config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         match type_definition.node.kind.clone() {
@@ -165,7 +165,7 @@ fn to_types(
         .map(|option| (type_name, option))
     })
     .map(|vec| {
-        BTreeMap::from_iter(
+        HashMap::from_iter(
             vec.into_iter()
                 .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
         )
