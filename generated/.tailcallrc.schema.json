@@ -209,17 +209,6 @@
         }
       }
     },
-    "Const": {
-      "description": "The `@const` operators allows us to embed a constant response for the schema.",
-      "type": "object",
-      "required": [
-        "data"
-      ],
-      "properties": {
-        "data": true
-      },
-      "additionalProperties": false
-    },
     "Cors": {
       "description": "Type to configure Cross-Origin Resource Sharing (CORS) for a server.",
       "type": "object",
@@ -330,6 +319,17 @@
         "ApplicationXWwwFormUrlencoded"
       ]
     },
+    "Expr": {
+      "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",
+      "type": "object",
+      "required": [
+        "body"
+      ],
+      "properties": {
+        "body": true
+      },
+      "additionalProperties": false
+    },
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
       "type": "object",
@@ -363,22 +363,22 @@
             }
           ]
         },
-        "const": {
-          "description": "Inserts a constant resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Const"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "doc": {
           "description": "Publicly visible documentation for the field.",
           "type": [
             "string",
             "null"
+          ]
+        },
+        "expr": {
+          "description": "Inserts a constant resolver for the field.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Expr"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "graphql": {

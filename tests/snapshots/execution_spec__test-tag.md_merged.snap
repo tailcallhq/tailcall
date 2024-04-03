@@ -11,10 +11,10 @@ type NEWS {
 }
 
 type News__News @tag(id: "news.News") {
-  body: String @const(data: "This is a news body")
-  id: Int @const(data: 1)
-  postImage: String @const(data: "http://example.com/image.jpg")
-  title: String @const(data: "This is a news title")
+  body: String @expr(body: "This is a news body")
+  id: Int @expr(body: 1)
+  postImage: String @expr(body: "http://example.com/image.jpg")
+  title: String @expr(body: "This is a news title")
 }
 
 type News__NewsList @tag(id: "news.NewsList") {

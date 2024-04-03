@@ -26,7 +26,7 @@ lazy_static! {
         ("telemetry", vec![Entity::Schema], false),
         ("omit", vec![Entity::FieldDefinition], false),
         ("groupBy", vec![Entity::FieldDefinition], false),
-        ("const", vec![Entity::FieldDefinition], false),
+        ("expr", vec![Entity::FieldDefinition], false),
         (
             "protected",
             vec![Entity::Object, Entity::FieldDefinition],
@@ -56,7 +56,7 @@ static OBJECT_WHITELIST: &[&str] = &[
     "Method",
     "Encoding",
     "Cache",
-    "Const",
+    "Expr",
     "Encoding",
     "ExprBody",
     "JS",

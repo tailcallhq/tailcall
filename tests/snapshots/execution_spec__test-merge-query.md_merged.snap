@@ -7,6 +7,6 @@ schema @server(port: 8000) @upstream(baseURL: "http://abc.com", proxy: {url: "ht
 }
 
 type Query {
-  hello: String @const(data: "world")
-  hi: String @const(data: "world")
+  hello: String @expr(body: "world")
+  hi: String @expr(body: "world")
 }

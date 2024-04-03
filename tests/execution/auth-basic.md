@@ -7,10 +7,10 @@ schema @server(port: 8000, graphiql: true) @link(id: "htpasswd", type: Htpasswd,
 }
 
 type Query {
-  scalar: String! @const(data: "data from public scalar")
-  protectedScalar: String! @protected @const(data: "data from protected scalar")
-  nested: Nested! @const(data: {name: "nested name", protected: "protected nested"})
-  protectedType: ProtectedType @const(data: {name: "protected type name", nested: "protected type nested"})
+  scalar: String! @expr(body: "data from public scalar")
+  protectedScalar: String! @protected @expr(body: "data from protected scalar")
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
+  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
 }
 
 type Mutation {

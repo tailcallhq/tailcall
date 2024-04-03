@@ -22,8 +22,8 @@ type ProtectedType {
 }
 
 type Query {
-  nested: Nested! @const(data: {name: "nested name", protected: "protected nested"})
-  protectedScalar: String! @const(data: "data from protected scalar") @protected
-  protectedType: ProtectedType @const(data: {name: "protected type name", nested: "protected type nested"})
-  scalar: String! @const(data: "data from public scalar")
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
+  protectedScalar: String! @expr(body: "data from protected scalar") @protected
+  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
+  scalar: String! @expr(body: "data from public scalar")
 }
