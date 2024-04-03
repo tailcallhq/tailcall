@@ -13,7 +13,7 @@ pub fn update_modify<'a>(
             if let Some(modify) = field.modify.as_ref() {
                 if let Some(new_name) = &modify.name {
                     for name in type_of.implements.iter() {
-                        let interface = config.find_type(name);
+                        let interface = config.types.get(name);
                         if let Some(interface) = interface {
                             if interface.fields.iter().any(|(name, _)| name == new_name) {
                                 return Valid::fail(

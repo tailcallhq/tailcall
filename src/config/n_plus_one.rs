@@ -12,7 +12,7 @@ fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
     let type_name = context.type_name;
     let path = context.path;
     let is_list = context.is_list;
-    match config.find_type(type_name) {
+    match config.types.get(type_name) {
         Some(type_) => type_
             .fields
             .iter()
