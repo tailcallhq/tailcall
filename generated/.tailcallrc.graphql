@@ -36,7 +36,8 @@ directive @call(
 ) on FIELD_DEFINITION
 
 """
-The `@expr` operators allows us to embed a constant response for the schema.
+The `@expr` operators allows you to specify an expression that can evaluate to a 
+value. The expression can be a static value or built form a Mustache template. schema.
 """
 directive @expr(
   body: JSON
@@ -496,7 +497,8 @@ enum Encoding {
   ApplicationXWwwFormUrlencoded
 }
 """
-The `@expr` operators allows us to embed a constant response for the schema.
+The `@expr` operators allows you to specify an expression that can evaluate to a 
+value. The expression can be a static value or built form a Mustache template. schema.
 """
 input Expr {
   body: JSON
