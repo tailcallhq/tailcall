@@ -13,7 +13,6 @@ scalar JSON
 scalar PhoneNumber
 
 type Post {
-  body: String!
   id: Int!
   title: String!
   user(id: Int): User
@@ -23,17 +22,14 @@ type Post {
 type Query {
   posts: [Post]
   user(id: Int!): User
+  users: [User]
 }
 
 scalar Url
 
 type User {
-  email: String!
   id: Int!
   name: String!
-  phone: String
-  username: String!
-  website: String
 }
 
 schema {
