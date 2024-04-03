@@ -6,14 +6,14 @@ schema @upstream(allowedHeaders: ["authorization"]) {
 }
 
 type Post {
+  body: String!
   id: ID!
   title: String!
-  body: String!
   userId: ID!
 }
 
 type Query {
-  post1: Post @http(path: "/posts/{{headers.authorization}}", baseURL: "http://jsonplaceholder.typicode.com")
+  post1: Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{headers.authorization}}")
 }
 ```
 

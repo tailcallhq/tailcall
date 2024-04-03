@@ -5,7 +5,7 @@ check_identity: true
 # test-omit-list
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
@@ -22,6 +22,6 @@ type Foo {
 }
 
 type Query @addField(name: "foo", path: ["foo", "a", "0", "b"]) {
-  foo: [Foo] @http(path: "/foo") @omit
+  foo: [Foo] @http(path: "/foo")
 }
 ```

@@ -6,12 +6,27 @@ fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
     if directives.is_empty() {
         return String::new();
     }
-    directives
-        .iter()
-        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
-        .collect::<Vec<String>>()
-        .join(" ")
-        + " "
+    let directive_strings = directives
+    .iter()
+    // Convert to SDL and filter out directives with empty arguments
+    .filter_map(|d| {
+        let sdl = const_directive_to_sdl(&d.node);
+        if sdl.arguments.is_empty() {
+            None
+        } else {
+            Some(print_directive(&sdl))
+        }
+    })
+    .collect::<Vec<String>>();
+
+    // Join the strings, adding a trailing space only if directive_strings is not empty
+    let directives_joined = if !directive_strings.is_empty() {
+        directive_strings.join(" ") + " "
+    } else {
+        String::new()
+    };
+    directives_joined
+    
 }
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -36,11 +51,13 @@ fn print_schema(schema: &SchemaDefinition) -> String {
     if mutation.is_empty() && query.is_empty() {
         return String::new();
     }
+    
     format!(
         "schema {}{{\n{}{}{}}}\n",
         directives, query, mutation, subscription
     )
 }
+
 fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
         description: None,
@@ -73,6 +90,8 @@ fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
         locations: vec![],
     }
 }
+
+
 fn print_type_def(type_def: &TypeDefinition) -> String {
     match &type_def.kind {
         TypeKind::Scalar => {

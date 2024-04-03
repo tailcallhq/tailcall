@@ -5,7 +5,7 @@ check_identity: true
 # test-custom-types
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Que
   mutation: Mut
 }

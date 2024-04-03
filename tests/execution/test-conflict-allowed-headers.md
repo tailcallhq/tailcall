@@ -1,7 +1,7 @@
 # test-conflict-allowed-headers
 
 ```graphql @server
-schema @server @upstream(allowedHeaders: ["a", "b", "c"]) {
+schema @upstream(allowedHeaders: ["a", "b", "c"]) {
   query: Query
 }
 
@@ -11,7 +11,7 @@ type Query {
 ```
 
 ```graphql @server
-schema @server @upstream(allowedHeaders: ["b", "c", "d"]) {
+schema @upstream(allowedHeaders: ["b", "c", "d"]) {
   query: Query
 }
 

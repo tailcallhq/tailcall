@@ -5,7 +5,7 @@ check_identity: true
 # inline-many
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

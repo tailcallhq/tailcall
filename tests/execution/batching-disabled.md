@@ -5,12 +5,12 @@
   "server": {},
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
-    "httpCache": true,
     "batch": {
-      "maxSize": 100,
       "delay": 0,
-      "headers": []
-    }
+      "headers": [],
+      "maxSize": 100
+    },
+    "httpCache": true
   },
   "schema": {
     "query": "Query"
@@ -29,27 +29,33 @@
           "http": {
             "path": "/users/{{args.id}}"
           },
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     },
     "User": {
       "fields": {
         "id": {
           "type": "Int",
-          "cache": null
+          "cache": null,
+          "protected": null
         },
         "name": {
           "type": "String",
-          "cache": null
+          "cache": null,
+          "protected": null
         },
         "username": {
           "type": "String",
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     }
   }
 }

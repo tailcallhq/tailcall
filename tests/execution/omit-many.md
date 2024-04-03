@@ -5,7 +5,7 @@ check_identity: true
 # omit-many
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 
@@ -21,7 +21,7 @@ type Query {
 }
 
 type User @addField(name: "zipcode", path: ["address", "zipcode"]) @addField(name: "complements", path: ["address", "complements"]) {
-  address: Address @omit
+  address: Address
   name: String
 }
 ```

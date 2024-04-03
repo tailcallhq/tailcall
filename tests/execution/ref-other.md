@@ -1,21 +1,21 @@
 # Ref other
 
 ```graphql @server
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
-}
-
-type User {
-  name: String
-  id: Int
-}
-
-type User1 {
-  user1: User @http(path: "/users/1")
 }
 
 type Query {
   firstUser: User1
+}
+
+type User {
+  id: Int
+  name: String
+}
+
+type User1 {
+  user1: User @http(path: "/users/1")
 }
 ```
 

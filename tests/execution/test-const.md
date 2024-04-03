@@ -5,7 +5,7 @@ check_identity: true
 # test-const
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

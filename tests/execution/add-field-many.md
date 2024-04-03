@@ -5,7 +5,7 @@ check_identity: true
 # add-field-many
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

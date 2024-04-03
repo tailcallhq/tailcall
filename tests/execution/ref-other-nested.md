@@ -15,48 +15,57 @@
         "firstUser": {
           "type": "User1",
           "http": {
-            "path": "/users/1",
-            "baseURL": "https://jsonplaceholder.typicode.com"
+            "baseURL": "https://jsonplaceholder.typicode.com",
+            "path": "/users/1"
           },
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     },
     "User": {
       "fields": {
         "id": {
           "type": "Int",
-          "cache": null
+          "cache": null,
+          "protected": null
         },
         "name": {
           "type": "String",
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     },
     "User1": {
       "fields": {
         "user1": {
           "type": "User2",
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     },
     "User2": {
       "fields": {
         "user2": {
           "type": "User",
           "http": {
-            "path": "/users/1",
-            "baseURL": "https://jsonplaceholder.typicode.com"
+            "baseURL": "https://jsonplaceholder.typicode.com",
+            "path": "/users/1"
           },
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     }
   }
 }

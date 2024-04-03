@@ -5,12 +5,12 @@ check_identity: true
 # auth
 
 ```graphql @server
-schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
+schema @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
 }
 
 type Query {
-  data: String @const(data: "data") @protected
+  data: String @const(data: "data")
 }
 ```
 

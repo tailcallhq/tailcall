@@ -1,7 +1,7 @@
 # test-merge-batch
 
 ```graphql @server
-schema @server @upstream(batch: {delay: 0, maxSize: 1000, headers: ["a", "b"]}) {
+schema @upstream(batch: {delay: 0, headers: ["a", "b"], maxSize: 1000}) {
   query: Query
 }
 
@@ -11,7 +11,7 @@ type Query {
 ```
 
 ```graphql @server
-schema @server @upstream(batch: {delay: 5, maxSize: 100, headers: ["b", "c"]}) {
+schema @upstream(batch: {delay: 5, headers: ["b", "c"], maxSize: 100}) {
   query: Query
 }
 
@@ -21,7 +21,7 @@ type Query {
 ```
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

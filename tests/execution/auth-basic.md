@@ -1,25 +1,25 @@
 # Auth with BasicAuth
 
 ```graphql @server
-schema @server(port: 8000, graphiql: true) @link(id: "htpasswd", type: Htpasswd, src: ".htpasswd") {
+schema @server(graphiql: true, port: 8000) @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
   query: Query
-}
-
-type Query {
-  scalar: String! @const(data: "data from public scalar")
-  protectedScalar: String! @protected @const(data: "data from protected scalar")
-  nested: Nested!
-  protectedType: ProtectedType
 }
 
 type Nested {
   name: String! @const(data: "nested name")
-  protected: String! @protected @const(data: "protected nested")
+  protected: String! @const(data: "protected nested")
 }
 
-type ProtectedType @protected {
+type ProtectedType {
   name: String! @const(data: "protected type name")
   nested: String! @const(data: "protected type nested")
+}
+
+type Query {
+  nested: Nested!
+  protectedScalar: String! @const(data: "data from protected scalar")
+  protectedType: ProtectedType
+  scalar: String! @const(data: "data from public scalar")
 }
 ```
 

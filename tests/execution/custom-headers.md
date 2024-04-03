@@ -28,10 +28,12 @@
           "const": {
             "data": "Hello World!"
           },
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     }
   }
 }

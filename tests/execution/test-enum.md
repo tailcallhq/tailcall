@@ -5,7 +5,7 @@ check_identity: true
 # test-enum
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://localhost:8080") {
+schema @upstream(baseURL: "http://localhost:8080") {
   query: Query
 }
 

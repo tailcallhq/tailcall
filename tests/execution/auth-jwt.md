@@ -1,25 +1,25 @@
 # Auth with JWT loaded from const
 
 ```graphql @server
-schema @server(port: 8000, graphiql: true) @link(id: "jwks", type: Jwks, src: "jwks.json") {
+schema @server(graphiql: true, port: 8000) @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
-}
-
-type Query {
-  scalar: String! @const(data: "data from public scalar")
-  protectedScalar: String! @protected @const(data: "data from protected scalar")
-  nested: Nested!
-  protectedType: ProtectedType
 }
 
 type Nested {
   name: String! @const(data: "nested name")
-  protected: String! @protected @const(data: "protected nested")
+  protected: String! @const(data: "protected nested")
 }
 
-type ProtectedType @protected {
+type ProtectedType {
   name: String! @const(data: "protected type name")
   nested: String! @const(data: "protected type nested")
+}
+
+type Query {
+  nested: Nested!
+  protectedScalar: String! @const(data: "data from protected scalar")
+  protectedType: ProtectedType
+  scalar: String! @const(data: "data from public scalar")
 }
 ```
 

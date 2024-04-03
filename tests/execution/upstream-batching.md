@@ -5,9 +5,9 @@
   "server": {},
   "upstream": {
     "batch": {
-      "maxSize": 100,
       "delay": 1,
-      "headers": []
+      "headers": [],
+      "maxSize": 100
     }
   },
   "schema": {
@@ -24,33 +24,40 @@
             }
           },
           "http": {
+            "baseURL": "http://jsonplaceholder.typicode.com",
+            "batchKey": [
+              "id"
+            ],
             "path": "/users",
             "query": [
               {
                 "key": "id",
                 "value": "{{args.id}}"
               }
-            ],
-            "baseURL": "http://jsonplaceholder.typicode.com",
-            "batchKey": ["id"]
+            ]
           },
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     },
     "User": {
       "fields": {
         "id": {
           "type": "Int",
-          "cache": null
+          "cache": null,
+          "protected": null
         },
         "name": {
           "type": "String",
-          "cache": null
+          "cache": null,
+          "protected": null
         }
       },
-      "cache": null
+      "cache": null,
+      "protected": null
     }
   }
 }

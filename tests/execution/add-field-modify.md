@@ -5,22 +5,19 @@ schema {
   query: Query
 }
 
-type User
-  @addField(name: "street", path: ["address", "street"])
-  @addField(name: "city", path: ["address", "city"])
-  @addField(name: "zipcode", path: ["address", "zipcode"]) {
-  name: String
-  address: Address
-}
-
 type Address {
-  street: String
   city: String
+  street: String
   zipcode: String
 }
 
 type Query {
-  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+}
+
+type User @addField(name: "street", path: ["address", "street"]) @addField(name: "city", path: ["address", "city"]) @addField(name: "zipcode", path: ["address", "zipcode"]) {
+  address: Address
+  name: String
 }
 ```
 

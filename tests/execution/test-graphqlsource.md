@@ -5,7 +5,7 @@ check_identity: true
 # test-graphqlsource
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://localhost:8000/graphql") {
+schema @upstream(baseURL: "http://localhost:8000/graphql") {
   query: Query
 }
 
