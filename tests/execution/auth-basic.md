@@ -3,13 +3,18 @@
 ```graphql @server
 schema @server(port: 8000, graphiql: true) @link(id: "htpasswd", type: Htpasswd, src: ".htpasswd") {
   query: Query
+  mutation: Mutation
 }
 
 type Query {
   scalar: String! @const(data: "data from public scalar")
   protectedScalar: String! @protected @const(data: "data from protected scalar")
   nested: Nested! @const(data: {name: "nested name", protected: "protected nested"})
-  protectedType: ProtectedType
+  protectedType: ProtectedType @const(data: {name: "protected type name", nested: "protected type nested"})
+}
+
+type Mutation {
+  protectedType: ProtectedType @http(baseURL: "http://upstream", path: "/protected")
 }
 
 type Nested {
@@ -18,8 +23,8 @@ type Nested {
 }
 
 type ProtectedType @protected {
-  name: String! @const(data: "protected type name")
-  nested: String! @const(data: "protected type nested")
+  name: String!
+  nested: String!
 }
 ```
 
@@ -27,6 +32,19 @@ type ProtectedType @protected {
 testuser1:$apr1$e3dp9qh2$fFIfHU9bilvVZBl8TxKzL/
 testuser2:$2y$10$wJ/mZDURcAOBIrswCAKFsO0Nk7BpHmWl/XuhF7lNm3gBAFH3ofsuu
 testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
+```
+
+```yml @mock
+- request:
+    method: GET
+    url: http://upstream/protected
+    headers:
+      authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
+  response:
+    status: 200
+    body:
+      name: mutation name
+      nested: mutation nested
 ```
 
 ```yml @assert
@@ -68,6 +86,28 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
           name
           protected
         }
+        protectedType {
+          name
+          nested
+        }
+      }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      mutation {
+        protectedType {
+          name
+          nested
+        }
+      }
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
+  body:
+    query: |
+      mutation {
         protectedType {
           name
           nested
