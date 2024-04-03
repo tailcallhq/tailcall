@@ -1,1 +1,24 @@
-.
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server(graphiql: true, port: 8000) @upstream @link(id: "jwks", src: "jwks.json", type: Jwks) {
+  query: Query
+}
+
+type Nested {
+  name: String!
+  protected: String! @protected
+}
+
+type ProtectedType {
+  name: String! @expr(body: "protected type name")
+  nested: String! @expr(body: "protected type nested")
+}
+
+type Query {
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
+  protectedScalar: String! @expr(body: "data from protected scalar") @protected
+  protectedType: ProtectedType
+  scalar: String! @expr(body: "data from public scalar")
+}
