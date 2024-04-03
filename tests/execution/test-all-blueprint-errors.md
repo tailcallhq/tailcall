@@ -14,7 +14,7 @@ type Mutation {
 }
 type Query {
   foo(inp: B): Foo
-  bar: String @const @expr(body: {name: "John"})
+  bar: String @expr @expr(body: {name: "John"})
 }
 type Foo {
   a: String @expr(body: "1")

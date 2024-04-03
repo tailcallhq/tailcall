@@ -496,6 +496,12 @@ enum Encoding {
   ApplicationXWwwFormUrlencoded
 }
 """
+The `@expr` operators allows us to embed a constant response for the schema.
+"""
+input Expr {
+  body: JSON
+}
+"""
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
 from.
 """

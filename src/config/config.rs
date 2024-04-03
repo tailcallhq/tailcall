@@ -410,7 +410,7 @@ pub struct Field {
 
     ///
     /// Inserts a constant resolver for the field.
-    #[serde(rename = "const", default, skip_serializing_if = "is_default")]
+    #[serde(rename = "expr", default, skip_serializing_if = "is_default")]
     pub const_field: Option<Expr>,
 
     ///

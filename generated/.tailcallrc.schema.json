@@ -320,7 +320,7 @@
       ]
     },
     "Expr": {
-      "description": "The `@const` operators allows us to embed a constant response for the schema.",
+      "description": "The `@expr` operators allows us to embed a constant response for the schema.",
       "type": "object",
       "required": [
         "body"
