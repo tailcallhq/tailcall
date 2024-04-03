@@ -18,35 +18,34 @@ pub fn update_call<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_call(config, calls, operation_type, object_name).map(|compiled| {
-                b_field
-                    .args(
-                        compiled
-                            .args
-                            .into_iter()
-                            .map(|mut input_value| {
-                                input_value.of_type = match &input_value.of_type {
-                                    Type::NamedType { name, .. } => {
-                                        Type::NamedType { name: name.to_owned(), non_null: false }
-                                    }
-                                    Type::ListType { of_type, .. } => Type::ListType {
-                                        of_type: of_type.to_owned(),
-                                        non_null: false,
-                                    },
-                                };
+            compile_call(config, calls, operation_type, object_name).map(|field| {
+                let args = field
+                    .args
+                    .into_iter()
+                    .map(|mut arg_field| {
+                        arg_field.of_type = match &arg_field.of_type {
+                            Type::NamedType { name, .. } => {
+                                Type::NamedType { name: name.to_owned(), non_null: false }
+                            }
+                            Type::ListType { of_type, .. } => {
+                                Type::ListType { of_type: of_type.to_owned(), non_null: false }
+                            }
+                        };
 
-                                input_value
-                            })
-                            .collect(),
-                    )
-                    .resolver(compiled.resolver)
+                        arg_field
+                    })
+                    .collect();
+
+                b_field
+                    .args(args)
+                    .resolver(field.resolver)
                     .name(name.to_string())
             })
         },
     )
 }
 
-pub fn compile_call(
+fn compile_call(
     config_module: &ConfigModule,
     call: &config::Call,
     operation_type: &GraphQLOperationType,
