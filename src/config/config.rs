@@ -762,7 +762,9 @@ impl Config {
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self> {
-        // Self::from_open_api_spec(yaml)
+        // let config = Self::from_open_api_spec(yaml)?;
+        // println!("{}", config.to_sdl());
+        // Ok(config)
         Ok(serde_yaml::from_str(yaml)?)
     }
 

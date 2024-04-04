@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 use convert_case::{Case, Casing};
 use oas3::spec::{ObjectOrReference, SchemaType};
@@ -32,6 +32,27 @@ enum UnionOrType {
     Type(Type),
 }
 
+enum TypeName {
+    ListOf(Box<TypeName>),
+    Name(String),
+}
+
+impl TypeName {
+    fn name(&self) -> Option<String> {
+        match self {
+            TypeName::ListOf(_) => None,
+            TypeName::Name(name) => Some(name.clone()),
+        }
+    }
+
+    fn into_tuple(self) -> (bool, String) {
+        match self {
+            TypeName::ListOf(inner) => (true, inner.name().unwrap()),
+            TypeName::Name(name) => (false, name),
+        }
+    }
+}
+
 fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
     match obj_or_ref {
         ObjectOrReference::Ref { ref_path } => {
@@ -44,7 +65,9 @@ fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
 #[derive(Default)]
 pub struct OpenApiToGraphQLConverter {
     pub spec: Spec,
-    pub inline_types: BTreeMap<String, Schema>,
+    pub inline_types: VecDeque<Schema>,
+    pub inline_types_frozen: bool,
+    pub inline_types_other: VecDeque<Schema>,
     pub unions: BTreeMap<String, Vec<Schema>>,
 }
 
@@ -54,22 +77,16 @@ impl OpenApiToGraphQLConverter {
         Ok(Self { spec, ..Default::default() })
     }
 
-    fn get_schema_type<F: Fn() -> Option<String>>(
-        &mut self,
-        schema: Schema,
-        get_name: F,
-    ) -> (bool, String) {
+    fn get_schema_type(&mut self, schema: Schema, name: Option<String>) -> TypeName {
         if let Some(element) = schema.items {
             if let Some(name) = name_from_ref_path(element.as_ref()).or_else(|| {
                 let schema = element.resolve(&self.spec).ok()?;
                 schema_to_primitive_type(schema.schema_type.as_ref()?)
             }) {
-                (true, name)
+                TypeName::ListOf(Box::new(TypeName::Name(name)))
             } else {
-                (
-                    true,
-                    self.insert_inline_type(element.resolve(&self.spec).unwrap()),
-                )
+                let schema = element.resolve(&self.spec).unwrap();
+                TypeName::ListOf(Box::new(self.get_schema_type(schema, None)))
             }
         } else if let Some(
             typ @ (SchemaType::Integer
@@ -78,31 +95,46 @@ impl OpenApiToGraphQLConverter {
             | SchemaType::Boolean),
         ) = schema.schema_type
         {
-            (false, schema_type_to_string(&typ))
-        } else if let Some(name) = get_name() {
-            (false, name)
-        } else {
+            TypeName::Name(schema_type_to_string(&typ))
+        } else if schema.additional_properties.is_some() {
+            TypeName::Name("JSON".to_string())
+        } else if let Some(name) = name {
+            TypeName::Name(name)
+        } else if self.can_define_type(&schema) {
             let name = self.insert_inline_type(schema);
-            (false, name)
+            TypeName::Name(name)
+        } else {
+            TypeName::Name("JSON".to_string())
         }
     }
 
     fn insert_inline_type(&mut self, schema: Schema) -> String {
         let name = format!("Type{}", self.inline_types.len());
-        self.inline_types.insert(name.clone(), schema);
+        if self.inline_types_frozen {
+            self.inline_types_other.push_back(schema);
+        } else {
+            self.inline_types.push_back(schema);
+        }
         name
     }
 
-    fn define_type(&mut self, schema: Schema) -> UnionOrType {
+    fn can_define_type(&self, schema: &Schema) -> bool {
+        !schema.properties.is_empty()
+            || !schema.all_of.is_empty()
+            || !schema.any_of.is_empty()
+            || !schema.one_of.is_empty() || !schema.enum_values.is_empty()
+    }
+
+    fn define_type(&mut self, schema: Schema) -> Option<UnionOrType> {
         if !schema.properties.is_empty() {
             let fields = schema
                 .properties
                 .into_iter()
                 .map(|(name, property)| {
                     let property_schema = property.resolve(&self.spec).unwrap();
-                    let (list, type_of) = self.get_schema_type(property_schema.clone(), || {
-                        name_from_ref_path(&property)
-                    });
+                    let (list, type_of) = self
+                        .get_schema_type(property_schema.clone(), name_from_ref_path(&property))
+                        .into_tuple();
                     let doc = property_schema.description.clone();
                     (
                         name.to_case(Case::Camel),
@@ -117,11 +149,11 @@ impl OpenApiToGraphQLConverter {
                 })
                 .collect();
 
-            UnionOrType::Type(Type {
+            Some(UnionOrType::Type(Type {
                 fields,
                 doc: schema.description.clone(),
                 ..Default::default()
-            })
+            }))
         } else if !schema.all_of.is_empty() {
             let properties: Vec<_> = schema
                 .all_of
@@ -138,9 +170,12 @@ impl OpenApiToGraphQLConverter {
             let mut fields = BTreeMap::new();
 
             for (name, property) in properties.into_iter() {
-                let (list, type_of) = self.get_schema_type(property.resolve(&self.spec).unwrap(), || {
-                    name_from_ref_path(&property)
-                });
+                let (list, type_of) = self
+                    .get_schema_type(
+                        property.resolve(&self.spec).unwrap(),
+                        name_from_ref_path(&property),
+                    )
+                    .into_tuple();
                 fields.insert(
                     name.to_case(Case::Camel),
                     Field {
@@ -152,28 +187,41 @@ impl OpenApiToGraphQLConverter {
                 );
             }
 
-            UnionOrType::Type(Type { fields, doc: schema.description, ..Default::default() })
-        } else if !schema.any_of.is_empty() {
+            Some(UnionOrType::Type(Type {
+                fields,
+                doc: schema.description,
+                ..Default::default()
+            }))
+        } else if !schema.any_of.is_empty() || !schema.one_of.is_empty() {
             let types = schema
                 .any_of
                 .iter()
-                .map(|schema| name_from_ref_path(schema).unwrap_or("AnyOf".into()))
+                .chain(schema.one_of.iter())
+                .map(|schema| {
+                    name_from_ref_path(schema)
+                        .or_else(|| {
+                            schema_to_primitive_type(
+                                schema.resolve(&self.spec).unwrap().schema_type.as_ref()?,
+                            )
+                        })
+                        .unwrap_or(self.insert_inline_type(schema.resolve(&self.spec).unwrap()))
+                })
                 .collect();
 
-            UnionOrType::Union(Union { types, doc: schema.description })
+            Some(UnionOrType::Union(Union { types, doc: schema.description }))
         } else if !schema.enum_values.is_empty() {
             let variants = schema
                 .enum_values
                 .into_iter()
                 .map(|val| format!("{val:?}"))
                 .collect();
-            UnionOrType::Type(Type {
+            Some(UnionOrType::Type(Type {
                 variants: Some(variants),
                 doc: schema.description,
                 ..Default::default()
-            })
+            }))
         } else {
-            UnionOrType::Type(Type::default())
+            None
         }
     }
 
@@ -182,17 +230,22 @@ impl OpenApiToGraphQLConverter {
         types: &mut BTreeMap<String, Type>,
         unions: &mut BTreeMap<String, Union>,
     ) {
-        while let Some((name, schema)) = self.inline_types.pop_last() {
-            let name = name.to_case(Case::Pascal);
+        let mut index = 0;
+        self.inline_types_frozen = true;
+        while let Some(schema) = self.inline_types.pop_front() {
+            let name = format!("Type{index}").to_case(Case::Pascal);
             match self.define_type(schema) {
-                UnionOrType::Type(type_) => {
+                Some(UnionOrType::Type(type_)) => {
                     types.insert(name, type_);
                 }
-                UnionOrType::Union(union) => {
+                Some(UnionOrType::Union(union)) => {
                     unions.insert(name, union);
                 }
+                None => continue,
             }
+            index += 1;
         }
+        self.inline_types_frozen = false;
     }
 
     pub fn create_types_and_unions(&mut self) -> (BTreeMap<String, Type>, BTreeMap<String, Union>) {
@@ -244,9 +297,8 @@ impl OpenApiToGraphQLConverter {
                     let param = param.resolve(&self.spec).unwrap();
 
                     let (is_list, name) = self
-                        .get_schema_type(param.schema.clone().unwrap(), || {
-                            param.param_type.clone()
-                        });
+                        .get_schema_type(param.schema.clone().unwrap(), param.param_type.clone())
+                        .into_tuple();
                     (
                         param.name.to_case(Case::Camel),
                         Arg {
@@ -262,9 +314,11 @@ impl OpenApiToGraphQLConverter {
                 .collect();
 
             let (is_list, name) = self
-                .get_schema_type(output_type.resolve(&self.spec).unwrap(), || {
-                    name_from_ref_path(&output_type)
-                });
+                .get_schema_type(
+                    output_type.resolve(&self.spec).unwrap(),
+                    name_from_ref_path(&output_type),
+                )
+                .into_tuple();
 
             if !args.is_empty() {
                 let re = regex::Regex::new(r"\{\w+\}").unwrap();
@@ -293,16 +347,14 @@ impl OpenApiToGraphQLConverter {
         for (name, obj_or_ref) in components.schemas.into_iter() {
             let name = name.to_case(Case::Pascal);
             let schema = obj_or_ref.resolve(&self.spec).unwrap();
-            if let Some(SchemaType::Array) = schema.schema_type {
-                continue;
-            }
             match self.define_type(schema) {
-                UnionOrType::Type(type_) => {
+                Some(UnionOrType::Type(type_)) => {
                     types.insert(name, type_);
                 }
-                UnionOrType::Union(union) => {
+                Some(UnionOrType::Union(union)) => {
                     unions.insert(name, union);
                 }
+                None => continue,
             }
         }
 

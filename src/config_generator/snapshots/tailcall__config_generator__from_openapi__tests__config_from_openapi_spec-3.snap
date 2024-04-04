@@ -6,16 +6,6 @@ schema @server(graphiql: true) @upstream(baseURL: "https://api.apis.guru/v2") {
   query: Query
 }
 
-scalar ApIs
-
-scalar Type2
-
-scalar Type3
-
-scalar Type4
-
-scalar Type5
-
 type Api {
   """
   Timestamp when the API was first added to the directory
@@ -28,7 +18,7 @@ type Api {
   """
   List of supported versions of the API
   """
-  versions: Type2!
+  versions: JSON!
 }
 
 type ApiVersion {
@@ -39,11 +29,11 @@ type ApiVersion {
   """
   Copy of `externalDocs` section from OpenAPI definition
   """
-  externalDocs: Type3
+  externalDocs: JSON
   """
   Copy of `info` section from OpenAPI definition
   """
-  info: Type4!
+  info: JSON!
   """
   Link to the individual API entry for this API
   """
@@ -70,7 +60,7 @@ type Metrics {
   """
   Data used for charting etc
   """
-  datasets: [Type5]
+  datasets: [JSON]
   """
   Percentage of all APIs where auto fixes have been applied
   """
@@ -114,7 +104,7 @@ type Metrics {
   """
   Summary totals for the last 7 days
   """
-  thisWeek: Type6
+  thisWeek: Type2
   """
   Number of unofficial APIs
   """
@@ -129,19 +119,19 @@ type Query {
   """
   Returns the API entry for one specific version of an API where there is no serviceName.
   """
-  getApi(api: String!, provider: String!): Api @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
+  getApi(api: String!, provider: String!): JSON @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
   """
   Some basic metrics for the entire directory.
 Just stunning numbers to put on a front page and are intended purely for WoW effect :)
 
   """
-  getMetrics: Metrics @http(path: "/metrics.json")
+  getMetrics: JSON @http(path: "/metrics.json")
   """
   List all APIs in the directory for a particular providerName
 Returns links to the individual API entry for each API.
 
   """
-  getProvider(provider: String!): ApIs @http(path: "/{{args.provider}}.json")
+  getProvider(provider: String!): JSON @http(path: "/{{args.provider}}.json")
   """
   List all the providers in the directory
 
@@ -150,7 +140,7 @@ Returns links to the individual API entry for each API.
   """
   Returns the API entry for one specific version of an API where there is a serviceName.
   """
-  getServiceApi(api: String!, provider: String!, service: String!): Api @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
+  getServiceApi(api: String!, provider: String!, service: String!): JSON @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
   """
   List all serviceNames in the directory for a particular providerName
 
@@ -164,7 +154,7 @@ Some basic info from the OpenAPI definition is cached inside each object.
 This allows you to generate some simple views without needing to fetch the OpenAPI definition for each API.
 
   """
-  listApIs: ApIs @http(path: "/list.json")
+  listApIs: JSON @http(path: "/list.json")
 }
 
 type Type0 {
@@ -175,7 +165,7 @@ type Type1 {
   data: [String]
 }
 
-type Type6 {
+type Type2 {
   """
   APIs added in the last week
   """

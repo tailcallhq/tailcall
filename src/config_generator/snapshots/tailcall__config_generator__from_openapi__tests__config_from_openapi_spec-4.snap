@@ -6,16 +6,6 @@ schema @server(graphiql: true) @upstream(baseURL: "https://api.spotify.com/v1") 
   query: Query
 }
 
-scalar Key
-
-scalar Loudness
-
-scalar Mode
-
-scalar Tempo
-
-scalar TimeSignature
-
 scalar Type100
 
 scalar Type22
@@ -24,19 +14,11 @@ scalar Type29
 
 scalar Type36
 
-scalar Type41
-
-scalar Type44
-
 scalar Type54
 
-scalar Type58
+scalar Type60
 
-scalar Type65
-
-scalar Type73
-
-scalar Type74
+scalar Type61
 
 scalar Type75
 
@@ -49,6 +31,16 @@ scalar Type78
 scalar Type82
 
 scalar Type94
+
+union Type41 = EpisodeObject | TrackObject
+
+union Type44 = EpisodeObject | TrackObject
+
+union Type65 = EpisodeObject | TrackObject
+
+union Type73 = EpisodeObject | TrackObject
+
+union Type74 = EpisodeObject | TrackObject
 
 type AlbumBase {
   """
@@ -2692,7 +2684,11 @@ type Type102 {
 }
 
 type Type103 {
-  spotify: String
+  externalUrls: Type1
+  href: String
+  id: String
+  type: String
+  uri: String
 }
 
 type Type104 {
@@ -2949,11 +2945,20 @@ type Type37 {
 }
 
 type Type38 {
-  spotify: String
+  interruptingPlayback: Boolean
+  pausing: Boolean
+  resuming: Boolean
+  seeking: Boolean
+  skippingNext: Boolean
+  skippingPrev: Boolean
+  togglingRepeatContext: Boolean
+  togglingRepeatTrack: Boolean
+  togglingShuffle: Boolean
+  transferringPlayback: Boolean
 }
 
 type Type39 {
-  externalUrls: Type38
+  externalUrls: Type65
   href: String
   type: String
   uri: String
@@ -2988,7 +2993,10 @@ type Type42 {
 }
 
 type Type43 {
-  spotify: String
+  externalUrls: Type61
+  href: String
+  type: String
+  uri: String
 }
 
 type Type45 {
@@ -3041,36 +3049,50 @@ type Type55 {
 }
 
 type Type56 {
-  externalUrls: Type57
+  externalUrls: Type48
   href: String
   type: String
   uri: String
 }
 
 type Type57 {
+  album: Type47
+  artists: [ArtistObject]
+  availableMarkets: [String]
+  discNumber: Int
+  durationMs: Int
+  explicit: Boolean
+  externalIds: Type47
+  externalUrls: Type47
+  href: String
+  id: String
+  isLocal: Boolean
+  isPlayable: Boolean
+  linkedFrom: Type47
+  name: String
+  popularity: Int
+  previewUrl: String
+  restrictions: Type47
+  trackNumber: Int
+  type: String
+  uri: String
+}
+
+type Type58 {
   spotify: String
 }
 
 type Type59 {
-  ean: String
-  isrc: String
-  upc: String
+  href: String
+  total: Int
 }
 
 type Type6 {
-  categories: Type61!
-}
-
-type Type60 {
-  spotify: String
-}
-
-type Type61 {
-  spotify: String
+  categories: Type98!
 }
 
 type Type62 {
-  reason: String
+  spotify: String
 }
 
 type Type63 {
@@ -3079,8 +3101,8 @@ type Type63 {
 }
 
 type Type64 {
-  externalUrls: Type66
-  followers: Type67
+  externalUrls: Type40
+  followers: Type40
   href: String
   id: String
   type: String
@@ -3124,23 +3146,23 @@ type Type72 {
 }
 
 type Type79 {
-  album: Type82
+  album: Type25
   artists: [ArtistObject]
   availableMarkets: [String]
   discNumber: Int
   durationMs: Int
   explicit: Boolean
-  externalIds: Type83
-  externalUrls: Type84
+  externalIds: Type25
+  externalUrls: Type25
   href: String
   id: String
   isLocal: Boolean
   isPlayable: Boolean
-  linkedFrom: Type85
+  linkedFrom: Type25
   name: String
   popularity: Int
   previewUrl: String
-  restrictions: Type86
+  restrictions: Type25
   trackNumber: Int
   type: String
   uri: String
@@ -3159,13 +3181,11 @@ type Type81 {
 }
 
 type Type83 {
-  ean: String
-  isrc: String
-  upc: String
+  spotify: String
 }
 
 type Type84 {
-  spotify: String
+  reason: String
 }
 
 type Type85 {
@@ -3173,7 +3193,7 @@ type Type85 {
 }
 
 type Type86 {
-  reason: String
+  spotify: String
 }
 
 type Type87 {
@@ -3224,7 +3244,7 @@ type Type97 {
 }
 
 type Type98 {
-  externalUrls: Type103
+  externalUrls: Type6
   href: String
   id: String
   type: String
