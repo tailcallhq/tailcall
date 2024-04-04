@@ -71,7 +71,7 @@ impl Config {
         self.types.get(name)
     }
 
-    pub fn recurse_type<'a>(&'a self, type_of: &str, types: &mut HashSet<String>) {
+    pub fn recurse_type(&self, type_of: &str, types: &mut HashSet<String>) {
         if let Some(type_) = self.find_type(type_of) {
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) {
