@@ -160,7 +160,7 @@ impl TryFrom<config::cors::Cors> for Cors {
 
     fn try_from(value: config::cors::Cors) -> Result<Self, ValidationError<String>> {
         let cors = Cors {
-            allow_credentials: value.allow_credentials,
+            allow_credentials: value.allow_credentials.unwrap_or_default(),
             allow_headers: (!value.allow_headers.is_empty())
                 .then_some(value.allow_headers.join(", ").parse()?),
             allow_methods: {
@@ -181,7 +181,7 @@ impl TryFrom<config::cors::Cors> for Cors {
                 .into_iter()
                 .map(|val| Ok(val.parse()?))
                 .collect::<Result<_, ValidationError<String>>>()?,
-            allow_private_network: false,
+            allow_private_network: value.allow_private_network.unwrap_or_default(),
             expose_headers: Some(value.expose_headers.join(", ").parse()?),
             max_age: value.max_age.map(|val| val.into()),
             vary: value

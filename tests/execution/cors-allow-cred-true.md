@@ -9,7 +9,6 @@ schema
         allowCredentials: true
         allowMethods: [OPTIONS, POST, GET]
         allowOrigins: ["abc.com", "xyz.com"]
-        allowPrivateNetwork: false
         exposeHeaders: [""]
         maxAge: 23
       }
