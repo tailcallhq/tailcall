@@ -349,7 +349,7 @@ directive @upstream(
   of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
   (an array of HTTP headers to be included in the batch).
   """
-  batch: c
+  batch: Batch
   """
   The time in seconds that the connection will wait for a response before timing out.
   """
