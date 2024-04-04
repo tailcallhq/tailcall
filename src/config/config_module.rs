@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::ops::{Deref, Not};
+use std::ops::Deref;
 use std::sync::Arc;
 
 use jsonwebtoken::jwk::JwkSet;
@@ -45,32 +45,27 @@ impl ConfigModule {
 }
 
 fn extract_input_type(config: &Config) -> HashSet<String> {
-    config
-        .types
-        .iter()
-        .filter_map(|cfg| cfg.1.interface.not().then_some(&cfg.1.fields))
-        .fold(HashSet::new(), |mut set, fields| {
-            fields
-                .iter()
-                .flat_map(|field| {
-                    field
-                        .1
-                        .args
-                        .iter()
-                        .map(|field| field.1)
-                        .filter(|arg| !scalar::is_scalar(&arg.type_of))
-                })
-                .for_each(|arg| {
+    let mut types = HashSet::new();
+    for (_, type_of) in config.types.iter() {
+        if !type_of.interface {
+            for (_, field) in type_of.fields.iter() {
+                for (_, arg) in field
+                    .args
+                    .iter()
+                    .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
+                {
                     if let Some(t) = config.find_type(&arg.type_of) {
                         t.fields.iter().for_each(|(_, f)| {
-                            set.insert(f.type_of.clone());
-                            config.recurse_type(&f.type_of, &mut set)
+                            types.insert(f.type_of.clone());
+                            config.recurse_type(&f.type_of, &mut types)
                         })
                     }
-                    set.insert(arg.type_of.clone());
-                });
-            set
-        })
+                    types.insert(arg.type_of.clone());
+                }
+            }
+        }
+    }
+    types
 }
 
 fn extract_output_type(config: &Config, input_types: &HashSet<String>) -> HashSet<String> {
