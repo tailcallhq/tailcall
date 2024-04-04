@@ -6,7 +6,6 @@ schema
   @server(
     headers: {
       cors: {
-        allowCredentials: false
         allowHeaders: ["Authorization"]
         allowMethods: [POST, OPTIONS]
         allowOrigins: ["abc.com", "xyz.com"]
