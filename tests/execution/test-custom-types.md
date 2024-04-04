@@ -28,6 +28,6 @@ type Post {
 }
 
 type Que {
-  posts: [Post] @const(data: [{id: 1}])
+  posts: [Post] @expr(body: [{id: 1}])
 }
 ```
