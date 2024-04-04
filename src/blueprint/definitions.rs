@@ -522,43 +522,37 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
     TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_module, _| {
         let output_types = config_module.output_types();
         let input_types = config_module.input_types();
-        Valid::from_iter(
-            config_module
-                .types
-                .iter()
-                .collect::<BTreeMap<_, _>>()
-                .iter(),
-            |(name, type_)| {
-                let dbl_usage = input_types.contains(name) && output_types.contains(name);
-                if let Some(variants) = &type_.variants {
-                    if !variants.is_empty() {
-                        to_enum_type_definition(name, type_, variants).trace(name)
-                    } else {
-                        Valid::fail("No variants found for enum".to_string())
-                    }
-                } else if type_.scalar {
-                    to_scalar_type_definition(name).trace(name)
-                } else if dbl_usage {
-                    Valid::fail("type is used in input and output".to_string()).trace(name)
+        let sorted_types = config_module.types.iter().collect::<BTreeMap<_, _>>();
+
+        Valid::from_iter(sorted_types.iter(), |(name, type_)| {
+            let dbl_usage = input_types.contains(name) && output_types.contains(name);
+            if let Some(variants) = &type_.variants {
+                if !variants.is_empty() {
+                    to_enum_type_definition(name, type_, variants).trace(name)
                 } else {
-                    to_object_type_definition(name, type_, config_module)
-                        .trace(name)
-                        .and_then(|definition| match definition.clone() {
-                            Definition::Object(object_type_definition) => {
-                                if config_module.input_types().contains(name) {
-                                    to_input_object_type_definition(object_type_definition)
-                                        .trace(name)
-                                } else if type_.interface {
-                                    to_interface_type_definition(object_type_definition).trace(name)
-                                } else {
-                                    Valid::succeed(definition)
-                                }
-                            }
-                            _ => Valid::succeed(definition),
-                        })
+                    Valid::fail("No variants found for enum".to_string())
                 }
-            },
-        )
+            } else if type_.scalar {
+                to_scalar_type_definition(name).trace(name)
+            } else if dbl_usage {
+                Valid::fail("type is used in input and output".to_string()).trace(name)
+            } else {
+                to_object_type_definition(name, type_, config_module)
+                    .trace(name)
+                    .and_then(|definition| match definition.clone() {
+                        Definition::Object(object_type_definition) => {
+                            if config_module.input_types().contains(name) {
+                                to_input_object_type_definition(object_type_definition).trace(name)
+                            } else if type_.interface {
+                                to_interface_type_definition(object_type_definition).trace(name)
+                            } else {
+                                Valid::succeed(definition)
+                            }
+                        }
+                        _ => Valid::succeed(definition),
+                    })
+            }
+        })
         .map(|mut types| {
             types.extend(config_module.unions.iter().map(to_union_type_definition));
             types
