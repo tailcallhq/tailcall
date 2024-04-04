@@ -7,5 +7,5 @@ schema @server(headers: {cors: {allowHeaders: ["Authorization"], allowMethods: [
 }
 
 type Query {
-  val: Int @const(data: 1)
+  val: Int @expr(body: 1)
 }

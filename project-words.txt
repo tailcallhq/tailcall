@@ -8,3 +8,11 @@ opentelemetry
 peekable
 tailcall
 tailcallrc
+thiserror
+Hasher
+Htpasswd
+httpmock
+inlines
+Jwks
+schemars
+tupled

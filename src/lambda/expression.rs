@@ -7,9 +7,7 @@ use async_graphql::{ErrorExtensions, Value};
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
-use super::list::List;
-use super::logic::Logic;
-use super::{Concurrent, Eval, EvaluationContext, Math, Relation, ResolverContextLike, IO};
+use super::{Concurrent, Eval, EvaluationContext, ResolverContextLike, IO};
 use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
@@ -18,16 +16,10 @@ use crate::serde_value_ext::ValueExt;
 #[derive(Clone, Debug)]
 pub enum Expression {
     Context(Context),
-    Literal(DynamicValue),
-    EqualTo(Box<Expression>, Box<Expression>),
+    Dynamic(DynamicValue),
     IO(IO),
     Cache(Cache),
-    Input(Box<Expression>, Vec<String>),
-    Logic(Logic),
-    Relation(Relation),
-    List(List),
-    Math(Math),
-    Concurrency(Concurrent, Box<Expression>),
+    Path(Box<Expression>, Vec<String>),
     Protect(Box<Expression>),
 }
 
@@ -35,16 +27,10 @@ impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expression::Context(_) => write!(f, "Context"),
-            Expression::Literal(_) => write!(f, "Literal"),
-            Expression::EqualTo(_, _) => write!(f, "EqualTo"),
+            Expression::Dynamic(_) => write!(f, "Literal"),
             Expression::IO(io) => write!(f, "{io}"),
             Expression::Cache(_) => write!(f, "Cache"),
-            Expression::Input(_, _) => write!(f, "Input"),
-            Expression::Logic(logic) => write!(f, "Logic({logic})"),
-            Expression::Relation(relation) => write!(f, "Relation({relation})"),
-            Expression::List(list) => write!(f, "List({list})"),
-            Expression::Math(math) => write!(f, "Math({math})"),
-            Expression::Concurrency(conc, _) => write!(f, "Concurrency({conc})"),
+            Expression::Path(_, _) => write!(f, "Input"),
             Expression::Protect(expr) => write!(f, "Protected({expr})"),
         }
     }
@@ -116,26 +102,6 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 }
 
 impl Expression {
-    pub fn concurrency(self, conc: Concurrent) -> Self {
-        Expression::Concurrency(conc, Box::new(self))
-    }
-
-    pub fn in_parallel(self) -> Self {
-        self.concurrency(Concurrent::Parallel)
-    }
-
-    pub fn parallel_when(self, cond: bool) -> Self {
-        if cond {
-            self.concurrency(Concurrent::Parallel)
-        } else {
-            self
-        }
-    }
-
-    pub fn in_sequence(self) -> Self {
-        self.concurrency(Concurrent::Sequential)
-    }
-
     pub fn and_then(self, next: Self) -> Self {
         Expression::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
     }
@@ -154,7 +120,6 @@ impl Eval for Expression {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                Expression::Concurrency(conc, expr) => Ok(expr.eval(ctx, conc).await?),
                 Expression::Context(op) => match op {
                     Context::Value => {
                         Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
@@ -174,17 +139,14 @@ impl Eval for Expression {
                         and_then.eval(ctx, conc).await
                     }
                 },
-                Expression::Input(input, path) => {
+                Expression::Path(input, path) => {
                     let inp = &input.eval(ctx, conc).await?;
                     Ok(inp
                         .get_path(path)
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Literal(value) => value.render_value(&ctx),
-                Expression::EqualTo(left, right) => Ok(async_graphql::Value::from(
-                    left.eval(ctx.clone(), conc).await? == right.eval(ctx, conc).await?,
-                )),
+                Expression::Dynamic(value) => value.render_value(&ctx),
                 Expression::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx
@@ -196,10 +158,6 @@ impl Eval for Expression {
                 }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,
                 Expression::Cache(cached) => cached.eval(ctx, conc).await,
-                Expression::Relation(relation) => relation.eval(ctx, conc).await,
-                Expression::Logic(logic) => logic.eval(ctx, conc).await,
-                Expression::List(list) => list.eval(ctx, conc).await,
-                Expression::Math(math) => math.eval(ctx, conc).await,
             }
         })
     }

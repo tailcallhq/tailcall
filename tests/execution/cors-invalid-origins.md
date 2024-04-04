@@ -12,6 +12,6 @@ schema
 }
 
 type Query {
-  val: Int @const(data: 1)
+  val: Int @expr(body: 1)
 }
 ```

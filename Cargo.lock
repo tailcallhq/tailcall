@@ -2955,7 +2955,16 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c000ca4d908ff18ac99b93a062cb8958d331c3220719c52e77cb19cc6ac5d2c1"
 dependencies = [
- "logos-derive",
+ "logos-derive 0.13.0",
+]
+
+[[package]]
+name = "logos"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "161971eb88a0da7ae0c333e1063467c5b5727e7fb6b710b8db4814eade3a42e8"
+dependencies = [
+ "logos-derive 0.14.0",
 ]
 
 [[package]]
@@ -2973,12 +2982,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "logos-codegen"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e31badd9de5131fdf4921f6473d457e3dd85b11b7f091ceb50e4df7c3eeb12a"
+dependencies = [
+ "beef",
+ "fnv",
+ "lazy_static",
+ "proc-macro2",
+ "quote",
+ "regex-syntax 0.8.2",
+ "syn 2.0.52",
+]
+
+[[package]]
 name = "logos-derive"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbfc0d229f1f42d790440136d941afd806bc9e949e2bcb8faa813b0f00d1267e"
 dependencies = [
- "logos-codegen",
+ "logos-codegen 0.13.0",
+]
+
+[[package]]
+name = "logos-derive"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c2a69b3eb68d5bd595107c9ee58d7e07fe2bb5e360cc85b0f084dedac80de0a"
+dependencies = [
+ "logos-codegen 0.14.0",
 ]
 
 [[package]]
@@ -3997,12 +4030,12 @@ dependencies = [
 
 [[package]]
 name = "prost-reflect"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ae9372e3227f3685376a0836e5c248611eafc95a0be900d44bc6cdf225b700f"
+checksum = "6f5eec97d5d34bdd17ad2db2219aabf46b054c6c41bd5529767c9ce55be5898f"
 dependencies = [
- "base64 0.21.7",
- "logos",
+ "base64 0.22.0",
+ "logos 0.14.0",
  "miette",
  "once_cell",
  "prost",
@@ -4148,7 +4181,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "033b939d76d358f7c32120c86c71f515bae45e64f2bde455200356557276276c"
 dependencies = [
- "logos",
+ "logos 0.13.0",
  "miette",
  "prost-types",
  "thiserror",

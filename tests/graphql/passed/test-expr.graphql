@@ -9,11 +9,11 @@ type User {
 }
 
 type Query {
-  user: User @const(data: {name: "John"})
+  user: User @expr(body: {name: "John", age: 12})
 }
 
 #> client-query
-query @expect(json: {data: {user: {age: null, name: "John"}}}) {
+query @expect(json: {data: {user: {age: 12, name: "John"}}}) {
   user {
     age
     name

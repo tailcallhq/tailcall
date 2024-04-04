@@ -44,7 +44,11 @@ fn benchmark_convert_output(c: &mut Criterion) {
 
     c.bench_function("test_batched_body", |b| {
         b.iter(|| {
-            black_box(protobuf_operation.convert_output(&msg).unwrap());
+            black_box(
+                protobuf_operation
+                    .convert_output::<serde_json::Value>(&msg)
+                    .unwrap(),
+            );
         })
     });
 }
