@@ -159,7 +159,11 @@ impl Upstream {
     }
 
     pub fn get_max_size(&self) -> usize {
-        self.batch.clone().unwrap_or_default().max_size.unwrap_or_default()
+        self.batch
+            .clone()
+            .unwrap_or_default()
+            .max_size
+            .unwrap_or_default()
     }
 
     pub fn get_http_2_only(&self) -> bool {
