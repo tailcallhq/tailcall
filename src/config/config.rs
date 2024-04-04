@@ -45,7 +45,6 @@ pub struct Config {
     ///
     /// A map of all the types in the schema.
     #[serde(default)]
-    #[setters(skip)]
     pub types: HashMap<String, Type>,
 
     ///
@@ -155,15 +154,6 @@ impl Config {
 
     pub fn query(mut self, query: &str) -> Self {
         self.schema.query = Some(query.to_string());
-        self
-    }
-
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        let mut graphql_types = HashMap::new();
-        for (name, type_) in types {
-            graphql_types.insert(name.to_string(), type_);
-        }
-        self.types = graphql_types;
         self
     }
 
@@ -829,10 +819,12 @@ mod tests {
     #[test]
     fn test_from_sdl_empty() {
         let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
-        let expected = Config::default().types(vec![(
-            "Foo",
+        let types = HashMap::from([(
+            "Foo".to_string(),
             Type::default().fields(vec![("a", Field::int())]),
         )]);
+
+        let expected = Config { types, ..Default::default() };
         assert_eq!(actual, expected);
     }
 }
