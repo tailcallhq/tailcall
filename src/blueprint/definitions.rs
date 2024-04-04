@@ -5,7 +5,7 @@ use regex::Regex;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Config, Field, GraphQLOperationType, Protected, Union};
+use crate::config::{Field, GraphQLOperationType, Protected, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
@@ -357,7 +357,7 @@ pub fn update_cache_resolvers<'a>(
     )
 }
 
-fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
+fn validate_field_type_exist(config: &ConfigModule, field: &Field) -> Valid<(), String> {
     let field_type = &field.type_of;
     if !scalar::is_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
