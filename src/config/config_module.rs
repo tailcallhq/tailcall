@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use derive_setters::Setters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
@@ -15,60 +14,15 @@ use crate::rest::{EndpointSet, Unchecked};
 use crate::scalar;
 
 /// A wrapper on top of Config that contains all the resolved extensions.
-#[derive(Clone, Debug, Default, Setters)]
+#[derive(Clone, Debug, Default)]
 pub struct ConfigModule {
     pub config: Config,
     pub extensions: Extensions,
+    pub input_types: HashSet<String>,
+    pub output_types: HashSet<String>,
 }
 
 impl ConfigModule {
-    pub fn output_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        let input_types = self.input_types();
-
-        if let Some(ref query) = &self.schema.query {
-            types.insert(query);
-        }
-
-        if let Some(ref mutation) = &self.schema.mutation {
-            types.insert(mutation);
-        }
-        for (type_name, type_of) in self.types.iter() {
-            if (type_of.interface || !type_of.fields.is_empty())
-                && !input_types.contains(&type_name)
-            {
-                for (_, field) in type_of.fields.iter() {
-                    types.insert(&field.type_of);
-                }
-            }
-        }
-        types
-    }
-
-    pub fn input_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        for (_, type_of) in self.types.iter() {
-            if !type_of.interface {
-                for (_, field) in type_of.fields.iter() {
-                    for (_, arg) in field
-                        .args
-                        .iter()
-                        .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
-                    {
-                        if let Some(t) = self.find_type(&arg.type_of) {
-                            t.fields.iter().for_each(|(_, f)| {
-                                types.insert(&f.type_of);
-                                self.recurse_type(&f.type_of, &mut types)
-                            })
-                        }
-                        types.insert(&arg.type_of);
-                    }
-                }
-            }
-        }
-        types
-    }
-
     pub fn find_type(&self, name: &str) -> Option<&Type> {
         self.types.get(name)
     }
@@ -80,11 +34,64 @@ impl ConfigModule {
     pub fn contains(&self, name: &str) -> bool {
         self.types.contains_key(name) || self.unions.contains_key(name)
     }
+
+    pub fn input_types(&self) -> &HashSet<String> {
+        &self.input_types
+    }
+
+    pub fn output_types(&self) -> &HashSet<String> {
+        &self.output_types
+    }
 }
 
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        ConfigModule { config, ..Default::default() }
+        let input_types = {
+            let mut types = HashSet::new();
+            for (_, type_of) in config.types.iter() {
+                if !type_of.interface {
+                    for (_, field) in type_of.fields.iter() {
+                        for (_, arg) in field
+                            .args
+                            .iter()
+                            .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
+                        {
+                            if let Some(t) = config.find_type(&arg.type_of) {
+                                t.fields.iter().for_each(|(_, f)| {
+                                    types.insert(f.type_of.clone());
+                                    config.recurse_type(&f.type_of, &mut types)
+                                })
+                            }
+                            types.insert(arg.type_of.clone());
+                        }
+                    }
+                }
+            }
+            types
+        };
+
+        let output_types = {
+            let mut types = HashSet::new();
+
+            if let Some(ref query) = &config.schema.query {
+                types.insert(query.clone());
+            }
+
+            if let Some(ref mutation) = &config.schema.mutation {
+                types.insert(mutation.clone());
+            }
+            for (type_name, type_of) in config.types.iter() {
+                if (type_of.interface || !type_of.fields.is_empty())
+                    && !input_types.contains(type_name)
+                {
+                    for (_, field) in type_of.fields.iter() {
+                        types.insert(field.type_of.clone());
+                    }
+                }
+            }
+            types
+        };
+        ConfigModule { config, input_types, output_types, ..Default::default() }
     }
 }
 
