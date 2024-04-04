@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::ops::Deref;
+use std::ops::{Deref, Not};
 use std::sync::Arc;
 
 use jsonwebtoken::jwk::JwkSet;
@@ -46,29 +46,32 @@ impl ConfigModule {
 
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        let input_types = {
-            let mut types = HashSet::new();
-            for (_, type_of) in config.types.iter() {
-                if !type_of.interface {
-                    for (_, field) in type_of.fields.iter() {
-                        for (_, arg) in field
+        let input_types = config
+            .types
+            .iter()
+            .filter_map(|cfg| cfg.1.interface.not().then_some(&cfg.1.fields))
+            .fold(HashSet::new(), |mut set, fields| {
+                fields
+                    .iter()
+                    .flat_map(|field| {
+                        field
+                            .1
                             .args
                             .iter()
-                            .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
-                        {
-                            if let Some(t) = config.find_type(&arg.type_of) {
-                                t.fields.iter().for_each(|(_, f)| {
-                                    types.insert(f.type_of.clone());
-                                    config.recurse_type(&f.type_of, &mut types)
-                                })
-                            }
-                            types.insert(arg.type_of.clone());
+                            .map(|field| field.1)
+                            .filter(|arg| !scalar::is_scalar(&arg.type_of))
+                    })
+                    .for_each(|arg| {
+                        if let Some(t) = config.find_type(&arg.type_of) {
+                            t.fields.iter().for_each(|(_, f)| {
+                                set.insert(f.type_of.clone());
+                                config.recurse_type(&f.type_of, &mut set)
+                            })
                         }
-                    }
-                }
-            }
-            types
-        };
+                        set.insert(arg.type_of.clone());
+                    });
+                set
+            });
 
         let output_types = {
             let mut types = HashSet::new();
@@ -80,6 +83,7 @@ impl From<Config> for ConfigModule {
             if let Some(ref mutation) = &config.schema.mutation {
                 types.insert(mutation.clone());
             }
+
             for (type_name, type_of) in config.types.iter() {
                 if (type_of.interface || !type_of.fields.is_empty())
                     && !input_types.contains(type_name)
@@ -91,6 +95,7 @@ impl From<Config> for ConfigModule {
             }
             types
         };
+
         ConfigModule { config, input_types, output_types, ..Default::default() }
     }
 }
