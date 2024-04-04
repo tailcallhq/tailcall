@@ -349,7 +349,7 @@ directive @upstream(
   of the batch), `delay` (the delay in milliseconds between each batch), and `headers` 
   (an array of HTTP headers to be included in the batch).
   """
-  batch: Batch
+  batch: c
   """
   The time in seconds that the connection will wait for a response before timing out.
   """
@@ -771,6 +771,28 @@ input TelemetryExporter {
   otlp: OtlpExporter
   prometheus: PrometheusExporter
   apollo: Apollo
+}
+input Apollo {
+  """
+  Setting `apiKey` for Apollo.
+  """
+  apiKey: String!
+  """
+  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
+  """
+  graphRef: String!
+  """
+  Setting `platform` for Apollo.
+  """
+  platform: String!
+  """
+  Setting `userVersion` for Apollo.
+  """
+  userVersion: String!
+  """
+  Setting `version` for Apollo.
+  """
+  version: String!
 }
 input Schema {
   Obj: JSON
