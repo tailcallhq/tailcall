@@ -178,6 +178,7 @@ impl<'ctx, Ctx: ResolverContextLike<'ctx>> PathResolver for EvaluationContext<'c
 #[cfg(test)]
 mod tests {
     mod impl_path_value {
+        use std::borrow::Cow;
         use std::collections::BTreeMap;
         use std::sync::Arc;
 
@@ -198,9 +199,7 @@ mod tests {
         }
 
         impl EnvIO for Env {
-            use std::borrow::Cow;
-
-            fn get(&self, key: &str) -> Option<Cow<'_, String>> {
+            fn get(&self, key: &str) -> Option<Cow<'_, str>> {
                 self.env.get(key).map(Cow::from)
             }
         }
