@@ -79,10 +79,8 @@ async fn get_app_ctx(
             tracing::info!("Initialized new application context");
             Ok(Ok(app_ctx))
         }
-        Err(AppCtxError::BuildError(res)) => return Ok(Err(res)),
-        Err(AppCtxError::ResponseError(err)) => {
-            return Err(err);
-        }
+        Err(AppCtxError::BuildError(res)) => Ok(Err(res)),
+        Err(AppCtxError::ResponseError(err)) => Err(err),
     }
 }
 
