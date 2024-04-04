@@ -6,6 +6,8 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 scalar JSON
 
 scalar PhoneNumber
@@ -14,7 +16,7 @@ type Post {
   body: String!
   id: Int!
   title: String!
-  user: User
+  user(id: Int): User
   userId: Int!
 }
 

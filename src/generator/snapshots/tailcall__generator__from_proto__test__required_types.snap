@@ -1,0 +1,32 @@
+---
+source: src/generator/from_proto.rs
+expression: config
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Person {
+  getPerson: Person__Person! @grpc(method: "person.PersonService.GetPerson")
+}
+
+type Person__People @tag(id: "person.People") {
+  people: JSON
+}
+
+type Person__Person @tag(id: "person.Person") {
+  email: String
+  id: Int!
+  name: String!
+  phone: [Person__PhoneNumber]
+  stringMap: JSON
+}
+
+type Person__PhoneNumber @tag(id: "person.PhoneNumber") {
+  number: String!
+  type: String
+}
+
+type Query {
+  person: Person
+}

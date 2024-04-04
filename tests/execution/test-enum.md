@@ -15,7 +15,7 @@ enum Foo {
 }
 
 type Query {
-  foo(val: String!): Foo @const(data: "{{args.val}}")
+  foo(val: String!): Foo @expr(body: "{{args.val}}")
 }
 ```
 
