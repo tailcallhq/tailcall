@@ -1,10 +1,14 @@
-use std::fmt::{Display, Write};
+use std::{
+    fmt::{Display, Write},
+    ops::Deref,
+};
 
-use crate::lambda::Expression;
+use crate::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
 
+use anyhow::Result;
 use async_graphql::{
     parser::types::{Field, Selection, SelectionSet},
-    Positioned,
+    Positioned, Value,
 };
 use indenter::indented;
 
@@ -23,7 +27,15 @@ impl From<usize> for Id {
     }
 }
 
-#[derive(Clone)]
+impl Deref for Id {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct FieldPlan {
     pub(super) id: Id,
     pub(super) resolver: Expression,
@@ -32,17 +44,27 @@ pub struct FieldPlan {
 
 impl Display for FieldPlan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "FieldPlan[{}] ({})", &self.id, &self.resolver)
+        write!(
+            f,
+            "FieldPlan[{}] ({}) depends on [{}]",
+            &self.id,
+            &self.resolver,
+            &self
+                .depends_on
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
     }
 }
 
-impl std::fmt::Debug for FieldPlan {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FieldPlan")
-            .field("id", &self.id)
-            .field("resolver", &self.resolver.to_string())
-            .field("depends_on", &self.depends_on)
-            .finish()
+impl FieldPlan {
+    pub async fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+        &'a self,
+        ctx: EvaluationContext<'a, Ctx>,
+    ) -> Result<Value> {
+        self.resolver.eval(ctx, &Concurrent::Sequential).await
     }
 }
 

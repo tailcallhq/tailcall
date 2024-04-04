@@ -3,29 +3,29 @@ source: src/query_plan/plan.rs
 expression: execution_plan
 ---
 ExecutionPlan
-fields:
+    fields:
         posts(Some(Id(0))):
-                title(None):
+            title(None):
+                Scalar
+            user(Some(Id(1))):
+                name(None):
                     Scalar
-                user(Some(Id(1))):
-                        name(None):
-                            Scalar
 
 
         user(Some(Id(3))):
-                username(None):
-                    Scalar
-                email(None):
-                    Scalar
+            username(None):
+                Scalar
+            email(None):
+                Scalar
 
 
-selections:
-    Resolver(1):
-            name
+    selections:
+        Resolver(1):
+                name
 
-    Resolver(0):
-            title
+        Resolver(0):
+                title
 
-    Resolver(3):
-            username
-            email
+        Resolver(3):
+                username
+                email

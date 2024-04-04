@@ -3,12 +3,12 @@ source: src/query_plan/plan.rs
 expression: execution_plan
 ---
 ExecutionPlan
-fields:
+    fields:
         posts(Some(Id(0))):
-                title(None):
-                    Scalar
+            title(None):
+                Scalar
 
 
-selections:
-    Resolver(0):
-            title
+    selections:
+        Resolver(0):
+                title
