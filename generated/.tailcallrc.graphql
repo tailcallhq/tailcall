@@ -434,7 +434,7 @@ input Apollo {
 input Batch {
   delay: Int!
   headers: [String!]
-  maxSize: Int!
+  maxSize: Int
 }
 """
 The @cache operator enables caching for the query, field or type it is applied to.
