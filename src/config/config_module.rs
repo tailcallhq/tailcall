@@ -44,57 +44,60 @@ impl ConfigModule {
     }
 }
 
+fn extract_input_type(config: &Config) -> HashSet<String> {
+    config
+        .types
+        .iter()
+        .filter_map(|cfg| cfg.1.interface.not().then_some(&cfg.1.fields))
+        .fold(HashSet::new(), |mut set, fields| {
+            fields
+                .iter()
+                .flat_map(|field| {
+                    field
+                        .1
+                        .args
+                        .iter()
+                        .map(|field| field.1)
+                        .filter(|arg| !scalar::is_scalar(&arg.type_of))
+                })
+                .for_each(|arg| {
+                    if let Some(t) = config.find_type(&arg.type_of) {
+                        t.fields.iter().for_each(|(_, f)| {
+                            set.insert(f.type_of.clone());
+                            config.recurse_type(&f.type_of, &mut set)
+                        })
+                    }
+                    set.insert(arg.type_of.clone());
+                });
+            set
+        })
+}
+
+fn extract_output_type(config: &Config, input_types: &HashSet<String>) -> HashSet<String> {
+    let mut types = HashSet::new();
+
+    if let Some(ref query) = &config.schema.query {
+        types.insert(query.clone());
+    }
+
+    if let Some(ref mutation) = &config.schema.mutation {
+        types.insert(mutation.clone());
+    }
+
+    for (type_name, type_of) in config.types.iter() {
+        if (type_of.interface || !type_of.fields.is_empty()) && !input_types.contains(type_name) {
+            for (_, field) in type_of.fields.iter() {
+                types.insert(field.type_of.clone());
+            }
+        }
+    }
+    types
+}
+
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        let input_types = config
-            .types
-            .iter()
-            .filter_map(|cfg| cfg.1.interface.not().then_some(&cfg.1.fields))
-            .fold(HashSet::new(), |mut set, fields| {
-                fields
-                    .iter()
-                    .flat_map(|field| {
-                        field
-                            .1
-                            .args
-                            .iter()
-                            .map(|field| field.1)
-                            .filter(|arg| !scalar::is_scalar(&arg.type_of))
-                    })
-                    .for_each(|arg| {
-                        if let Some(t) = config.find_type(&arg.type_of) {
-                            t.fields.iter().for_each(|(_, f)| {
-                                set.insert(f.type_of.clone());
-                                config.recurse_type(&f.type_of, &mut set)
-                            })
-                        }
-                        set.insert(arg.type_of.clone());
-                    });
-                set
-            });
-
-        let output_types = {
-            let mut types = HashSet::new();
-
-            if let Some(ref query) = &config.schema.query {
-                types.insert(query.clone());
-            }
-
-            if let Some(ref mutation) = &config.schema.mutation {
-                types.insert(mutation.clone());
-            }
-
-            for (type_name, type_of) in config.types.iter() {
-                if (type_of.interface || !type_of.fields.is_empty())
-                    && !input_types.contains(type_name)
-                {
-                    for (_, field) in type_of.fields.iter() {
-                        types.insert(field.type_of.clone());
-                    }
-                }
-            }
-            types
-        };
+        let input_types = extract_input_type(&config);
+        let output_types = extract_output_type(&config, &input_types);
 
         ConfigModule { config, input_types, output_types, ..Default::default() }
     }
