@@ -167,17 +167,25 @@ mod grpc_fetch {
 
     use super::*;
 
-    const NEWS_PROTO: &[u8] = include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fake_descriptor.bin"
-    ));
+    fn get_fake_descriptor() -> Vec<u8> {
+        let mut path = PathBuf::from(file!());
+        path.pop();
+        path.push("tests/fake_descriptor_b64.txt");
 
-    const REFLECTION_LIST_ALL: &[u8] = &[
-        0, 0, 0, 0, 70, 18, 2, 58, 0, 50, 64, 10, 18, 10, 16, 110, 101, 119, 115, 46, 78, 101, 119,
-        115, 83, 101, 114, 118, 105, 99, 101, 10, 42, 10, 40, 103, 114, 112, 99, 46, 114, 101, 102,
-        108, 101, 99, 116, 105, 111, 110, 46, 118, 49, 97, 108, 112, 104, 97, 46, 83, 101, 114,
-        118, 101, 114, 82, 101, 102, 108, 101, 99, 116, 105, 111, 110,
-    ];
+        let bytes = std::fs::read(path).unwrap();
+
+        BASE64_STANDARD.decode(bytes).unwrap()
+    }
+
+    fn get_fake_resp() -> Vec<u8> {
+        let mut path = PathBuf::from(file!());
+        path.pop();
+        path.push("tests/fake_resp_b64.txt");
+
+        let bytes = std::fs::read(path).unwrap();
+
+        BASE64_STANDARD.decode(bytes).unwrap()
+    }
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
@@ -191,11 +199,11 @@ mod grpc_fetch {
             when.method(httpmock::Method::POST)
                 .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x12\"\x10news.NewsService");
-            then.status(200).body(NEWS_PROTO);
+            then.status(200).body(get_fake_descriptor());
         });
         let runtime = crate::runtime::test::init(None);
         let resp = get_by_service(
-            &format!("http://localhost:{}",server.port()),
+            &format!("http://localhost:{}", server.port()),
             &runtime,
             "news.NewsService",
         )
@@ -224,7 +232,7 @@ mod grpc_fetch {
             when.method(httpmock::Method::POST)
                 .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
                 .body("\0\0\0\0\x02:\0");
-            then.status(200).body(REFLECTION_LIST_ALL);
+            then.status(200).body(get_fake_resp());
         });
 
         let runtime = crate::runtime::test::init(None);
