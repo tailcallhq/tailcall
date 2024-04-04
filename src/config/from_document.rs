@@ -176,25 +176,27 @@ fn to_scalar_type() -> config::Type {
 }
 fn to_union_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
-) -> Valid<BTreeMap<String, Union>, String> {
-    let mut unions = BTreeMap::new();
-    for type_definition in type_definitions {
-        let type_name = pos_name_to_string(&type_definition.node.name);
-        let type_opt = match type_definition.node.kind.clone() {
-            TypeKind::Union(union_type) => to_union(
-                union_type,
-                &type_definition
-                    .node
-                    .description
-                    .to_owned()
-                    .map(|pos| pos.node),
-            ),
-            _ => continue,
-        };
-        unions.insert(type_name, type_opt);
-    }
-
-    Valid::succeed(unions)
+) -> Valid<HashMap<String, Union>, String> {
+    Valid::succeed(
+        type_definitions
+            .iter()
+            .filter_map(|type_definition| {
+                let type_name = pos_name_to_string(&type_definition.node.name);
+                let type_opt = match type_definition.node.kind.clone() {
+                    TypeKind::Union(union_type) => to_union(
+                        union_type,
+                        &type_definition
+                            .node
+                            .description
+                            .to_owned()
+                            .map(|pos| pos.node),
+                    ),
+                    _ => return None,
+                };
+                Some((type_name, type_opt))
+            })
+            .collect(),
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
