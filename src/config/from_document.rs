@@ -138,7 +138,7 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
     pos.node.to_string()
 }
 fn to_types(
-    type_definitions: &Vec<&Positioned<TypeDefinition>>,
+    type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<HashMap<String, config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
@@ -175,7 +175,7 @@ fn to_scalar_type() -> config::Type {
     config::Type { scalar: true, ..Default::default() }
 }
 fn to_union_types(
-    type_definitions: &Vec<&Positioned<TypeDefinition>>,
+    type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<HashMap<String, Union>, String> {
     Valid::succeed(
         type_definitions
