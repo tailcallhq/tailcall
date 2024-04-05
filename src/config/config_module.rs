@@ -102,6 +102,8 @@ impl MergeRight for ConfigModule {
     fn merge_right(mut self, other: Self) -> Self {
         self.config = self.config.merge_right(other.config);
         self.extensions = self.extensions.merge_right(other.extensions);
+        self.input_types = self.input_types.merge_right(other.input_types);
+        self.output_types = self.output_types.merge_right(other.output_types);
         self
     }
 }
