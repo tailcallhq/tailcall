@@ -1,0 +1,19 @@
+query Users {
+    user(id: 1) {
+        name,
+        email
+    }
+}
+
+query PostsSimple {
+    posts { title }
+}
+
+query PostsComplex {
+    posts {title body user {name username website}}
+}
+
+query PostAndUser {
+    posts { title user { name } }
+    user { username email }
+}

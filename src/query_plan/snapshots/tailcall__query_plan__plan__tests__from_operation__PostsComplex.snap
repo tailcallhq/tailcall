@@ -2,7 +2,7 @@
 source: src/query_plan/plan.rs
 expression: execution_plan
 ---
-ExecutionPlan
+OperationPlan
     fields:
         posts(Some(Id(0))):
             title(None):

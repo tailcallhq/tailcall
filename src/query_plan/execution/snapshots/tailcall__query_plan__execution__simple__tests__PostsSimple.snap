@@ -1,0 +1,5 @@
+---
+source: src/query_plan/execution/simple.rs
+expression: execution_plan
+---
+Resolve(0)

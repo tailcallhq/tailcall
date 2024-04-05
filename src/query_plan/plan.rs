@@ -1,75 +1,58 @@
 use std::fmt::{Display, Write};
 
-use anyhow::{anyhow, Result};
 use async_graphql::{
     parser::types::{Selection, SelectionSet},
-    Name, Value,
+    Name,
 };
-use futures_util::future::join_all;
 use indenter::indented;
 use indexmap::IndexMap;
 
-use crate::{
-    blueprint::Definition,
-    http::RequestContext,
-    lambda::{EvaluationContext, ResolverContextLike},
-    scalar::is_scalar,
-};
+use crate::{blueprint::Definition, scalar::is_scalar};
 
-use super::{
-    execution::{PlanExecutor, SimpleExecutor},
-    resolver::{FieldPlan, FieldPlanSelection, Id},
-};
+use super::resolver::{FieldPlan, FieldPlanSelection, Id};
 
 #[derive(Debug)]
-pub enum Fields {
-    Scalar(Option<Id>),
-    Complex {
-        field_plan_id: Option<Id>,
-        children: IndexMap<Name, Fields>,
-    },
+pub struct FieldTree {
+    pub field_plan_id: Option<Id>,
+    pub children: Option<IndexMap<Name, FieldTree>>,
 }
 
-impl Display for Fields {
+impl Display for FieldTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Fields::Scalar(_id) => write!(f, "Scalar"),
-            Fields::Complex { children, .. } => {
-                for (name, fields) in children.iter() {
-                    writeln!(f, "{}({:?}):", name, fields.field_plan_id())?;
-                    writeln!(indented(f), "{}", fields)?;
-                }
-
-                Ok(())
+        if let Some(children) = &self.children {
+            for (name, tree) in children.iter() {
+                writeln!(f, "{}({:?}):", name, tree.field_plan_id)?;
+                writeln!(indented(f), "{}", tree)?;
             }
+        } else {
+            write!(f, "Scalar")?;
         }
+
+        Ok(())
     }
 }
 
 pub struct GeneralPlan {
-    fields: Fields,
+    fields: FieldTree,
     pub field_plans: Vec<FieldPlan>,
 }
 
-pub struct ExecutionPlan<'a> {
-    pub fields: Fields,
+pub struct OperationPlan {
+    pub field_tree: FieldTree,
     selections: IndexMap<Id, FieldPlanSelection>,
-    general_plan: &'a GeneralPlan,
 }
 
-impl Fields {
-    pub fn field_plan_id(&self) -> &Option<Id> {
-        match self {
-            Fields::Scalar(id) => id,
-            Fields::Complex { field_plan_id, .. } => field_plan_id,
-        }
+impl FieldTree {
+    fn is_scalar(&self) -> bool {
+        self.children.is_none()
+    }
+
+    fn scalar(field_plan_id: Option<Id>) -> Self {
+        Self { field_plan_id, children: None }
     }
 
     fn with_field_plan_id(self, id: Option<Id>) -> Self {
-        match self {
-            Fields::Scalar(_) => Fields::Scalar(id),
-            Fields::Complex { children, .. } => Fields::Complex { field_plan_id: id, children },
-        }
+        Self { field_plan_id: id, children: self.children }
     }
 
     fn from_operation(
@@ -99,7 +82,7 @@ impl Fields {
                 };
 
                 let plan = if is_scalar(type_name) {
-                    Self::Scalar(id)
+                    Self { field_plan_id: id, children: None }
                 } else {
                     Self::from_operation(
                         id.or(current_field_plan_id),
@@ -112,7 +95,7 @@ impl Fields {
             }
         }
 
-        Self::Complex { field_plan_id: None, children }
+        Self { field_plan_id: None, children: Some(children) }
     }
 
     pub fn prepare_for_request(
@@ -121,13 +104,9 @@ impl Fields {
         selections: &mut IndexMap<Id, FieldPlanSelection>,
         input_selection_set: &SelectionSet,
     ) -> Self {
-        let (field_plan_id, children) = match self {
-            Fields::Scalar(id) => {
-                assert!(input_selection_set.items.is_empty());
-
-                return Self::Scalar(*id);
-            }
-            Fields::Complex { field_plan_id, children } => (field_plan_id, children),
+        let Some(children) = &self.children else {
+            assert!(input_selection_set.items.is_empty());
+            return Self::scalar(self.field_plan_id);
         };
 
         let mut req_children = IndexMap::new();
@@ -138,14 +117,14 @@ impl Fields {
                 Selection::Field(field) => {
                     let name = &field.node.name.node;
                     let fields = children.get(name).unwrap();
-                    let fields = fields.prepare_for_request(
+                    let tree = fields.prepare_for_request(
                         &mut current_selection_set,
                         selections,
                         &field.node.selection_set.node,
                     );
 
-                    if let Some(field_plan_id) = fields.field_plan_id() {
-                        let field_selection = selections.entry(*field_plan_id);
+                    if let Some(field_plan_id) = tree.field_plan_id {
+                        let field_selection = selections.entry(field_plan_id);
 
                         match field_selection {
                             indexmap::map::Entry::Occupied(mut entry) => {
@@ -159,21 +138,24 @@ impl Fields {
                         result_selection.add(selection, current_selection_set);
                     }
 
-                    req_children.insert(name.clone(), fields);
+                    req_children.insert(name.clone(), tree);
                 }
                 Selection::FragmentSpread(_) => todo!(),
                 Selection::InlineFragment(_) => todo!(),
             }
         }
 
-        Self::Complex { field_plan_id: *field_plan_id, children: req_children }
+        Self {
+            field_plan_id: self.field_plan_id,
+            children: Some(req_children),
+        }
     }
 }
 
 impl GeneralPlan {
     pub fn from_operation(definitions: &Vec<Definition>, name: &str) -> Self {
         let mut field_plans = Vec::new();
-        let fields = Fields::from_operation(None, &mut field_plans, definitions, name);
+        let fields = FieldTree::from_operation(None, &mut field_plans, definitions, name);
 
         Self { fields, field_plans }
     }
@@ -197,8 +179,8 @@ impl Display for GeneralPlan {
     }
 }
 
-impl<'a> ExecutionPlan<'a> {
-    pub fn from_request(general_plan: &'a GeneralPlan, selection_set: &SelectionSet) -> Self {
+impl OperationPlan {
+    pub fn from_request(general_plan: &GeneralPlan, selection_set: &SelectionSet) -> Self {
         let mut selections = IndexMap::new();
         let mut result_selection = FieldPlanSelection::default();
         let fields = general_plan.fields.prepare_for_request(
@@ -207,63 +189,16 @@ impl<'a> ExecutionPlan<'a> {
             selection_set,
         );
 
-        Self { fields, selections, general_plan }
-    }
-
-    fn inner_execute<Executor: PlanExecutor + Send + Sync>(
-        &self,
-        value: Option<Value>,
-        executor: &mut Executor,
-        fields: &Fields,
-    ) -> Result<Value> {
-        match &fields {
-            Fields::Scalar(id) => value.ok_or(anyhow!("Can't resolve value for scalar")),
-            Fields::Complex { field_plan_id, children } => {
-                let value = if let Some(id) = field_plan_id {
-                    executor.resolved_value(id).transpose()?
-                } else {
-                    value
-                };
-
-                let Some(Value::Object(mut current_value_map)) = value else {
-                    return Err(anyhow!("Can't resolve value as object"));
-                };
-
-                for (name, fields) in children {
-                    let value = current_value_map.get(name);
-                    let value = self.inner_execute(value.cloned(), executor, fields)?;
-
-                    current_value_map.insert(name.to_owned(), value);
-                }
-
-                Ok(Value::Object(current_value_map))
-            }
-        }
-    }
-
-    pub async fn execute<Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        req_ctx: &'a RequestContext,
-        graphql_ctx: &'a Ctx,
-    ) -> Result<Value> {
-        let mut executor = SimpleExecutor::new(&self.general_plan, &self);
-
-        executor.resolve(req_ctx, graphql_ctx).await;
-
-        self.inner_execute(
-            Some(Value::Object(IndexMap::default())),
-            &mut executor,
-            &self.fields,
-        )
+        Self { field_tree: fields, selections }
     }
 }
 
-impl<'a> Display for ExecutionPlan<'a> {
+impl Display for OperationPlan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "ExecutionPlan")?;
+        writeln!(f, "OperationPlan")?;
         let f = &mut indented(f);
         writeln!(f, "fields:")?;
-        writeln!(indented(f), "{}", &self.fields)?;
+        writeln!(indented(f), "{}", &self.field_tree)?;
         writeln!(f, "selections:")?;
 
         let mut f = &mut indented(f);
@@ -289,7 +224,7 @@ mod tests {
             config::{Config, ConfigModule},
             http::RequestContext,
             lambda::EmptyResolverContext,
-            query_plan::plan::{ExecutionPlan, GeneralPlan},
+            query_plan::plan::{GeneralPlan, OperationPlan},
             valid::Validator,
         };
 
@@ -306,44 +241,16 @@ mod tests {
 
             insta::assert_snapshot!(general_plan);
 
-            let document = parse_query(
-                r#"
-                query Users {
-                    user(id: 1) {
-                        name,
-                        email
-                    }
-                }
-                query PostsSimple {
-                    posts { title }
-                }
-                query PostsComplex {
-                    posts {title body user {name username website}}
-                }
-                query PostAndUser {
-                    posts { title user { name } }
-                    user { username email }
-                }
-            "#,
-            )
-            .unwrap();
+            let document =
+                parse_query(fs::read_to_string(root_dir.join("user-posts-query.graphql")).unwrap())
+                    .unwrap();
 
             for (name, operation) in document.operations.iter() {
                 let name = name.unwrap().to_string();
-                let execution_plan =
-                    ExecutionPlan::from_request(&general_plan, &operation.node.selection_set.node);
+                let operation_plan =
+                    OperationPlan::from_request(&general_plan, &operation.node.selection_set.node);
 
-                insta::assert_snapshot!(name.clone(), execution_plan);
-
-                let runtime = crate::cli::runtime::init(&Blueprint::default());
-                let req_ctx = RequestContext::new(runtime);
-                let graphql_ctx = EmptyResolverContext {};
-                let result = execution_plan.execute(&req_ctx, &graphql_ctx).await;
-
-                // TODO: remove error check
-                if let Ok(result) = result {
-                    insta::assert_json_snapshot!(name.clone(), result);
-                }
+                insta::assert_snapshot!(name.clone(), operation_plan);
             }
         }
     }

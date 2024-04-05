@@ -1,0 +1,994 @@
+---
+source: src/query_plan/execution/executor.rs
+expression: executor
+---
+{
+    Id(
+        0,
+    ): Err(
+        "IOException: Request error: error sending request for url (http://upstream/graphql): error trying to connect: dns error: failed to lookup address information: Name or service not known",
+    ),
+    Id(
+        1,
+    ): Ok(
+        List(
+            [
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(1),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Leanne Graham",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Bret",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Sincere@april.biz",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Kulas Light",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Apt. 556",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "Gwenborough",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "92998-3874",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "-37.3159",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "81.1496",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "1-770-736-8031 x56442",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "hildegard.org",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Romaguera-Crona",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Multi-layered client-server neural-net",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "harness real-time e-markets",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(2),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Ervin Howell",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Antonette",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Shanna@melissa.tv",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Victor Plains",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Suite 879",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "Wisokyburgh",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "90566-7771",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "-43.9509",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "-34.4618",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "010-692-6593 x09125",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "anastasia.net",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Deckow-Crist",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Proactive didactic contingency",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "synergize scalable supply-chains",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(3),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Clementine Bauch",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Samantha",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Nathan@yesenia.net",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Douglas Extension",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Suite 847",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "McKenziehaven",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "59590-4157",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "-68.6102",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "-47.0653",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "1-463-123-4447",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "ramiro.info",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Romaguera-Jacobson",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Face to face bifurcated interface",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "e-enable strategic applications",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(4),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Patricia Lebsack",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Karianne",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Julianne.OConner@kory.org",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Hoeger Mall",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Apt. 692",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "South Elvis",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "53919-4257",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "29.4572",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "-164.2990",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "493-170-9623 x156",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "kale.biz",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Robel-Corkery",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Multi-tiered zero tolerance productivity",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "transition cutting-edge web services",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(5),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Chelsey Dietrich",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Kamren",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Lucio_Hettinger@annie.ca",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Skiles Walks",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Suite 351",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "Roscoeview",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "33263",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "-31.8129",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "62.5342",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "(254)954-1289",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "demarco.info",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Keebler LLC",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "User-centric fault-tolerant solution",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "revolutionize end-to-end systems",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(6),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Mrs. Dennis Schulist",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Leopoldo_Corkery",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Karley_Dach@jasper.info",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Norberto Crossing",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Apt. 950",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "South Christy",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "23505-1337",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "-71.4197",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "71.7478",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "1-477-935-8478 x6430",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "ola.org",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Considine-Lockman",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Synchronised bottom-line interface",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "e-enable innovative applications",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(7),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Kurtis Weissnat",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Elwyn.Skiles",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Telly.Hoeger@billy.biz",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Rex Trail",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Suite 280",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "Howemouth",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "58804-1099",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "24.8918",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "21.8984",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "210.067.6132",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "elvis.io",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Johns Group",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Configurable multimedia task-force",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "generate enterprise e-tailers",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(8),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Nicholas Runolfsdottir V",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Maxime_Nienow",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Sherwood@rosamond.me",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Ellsworth Summit",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Suite 729",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "Aliyaview",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "45169",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "-14.3990",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "-120.7677",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "586.493.6943 x140",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "jacynthe.com",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Abernathy Group",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Implemented secondary concept",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "e-enable extensible e-tailers",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(9),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Glenna Reichert",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Delphine",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Chaim_McDermott@dana.io",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Dayna Park",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Suite 449",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "Bartholomebury",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "76495-3109",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "24.6463",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "-168.8889",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "(775)976-6794 x41206",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "conrad.com",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Yost and Sons",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Switchable contextually-based project",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "aggregate real-time technologies",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+                Object(
+                    {
+                        Name(
+                            "id",
+                        ): Number(
+                            Number(10),
+                        ),
+                        Name(
+                            "name",
+                        ): String(
+                            "Clementina DuBuque",
+                        ),
+                        Name(
+                            "username",
+                        ): String(
+                            "Moriah.Stanton",
+                        ),
+                        Name(
+                            "email",
+                        ): String(
+                            "Rey.Padberg@karina.biz",
+                        ),
+                        Name(
+                            "address",
+                        ): Object(
+                            {
+                                Name(
+                                    "street",
+                                ): String(
+                                    "Kattie Turnpike",
+                                ),
+                                Name(
+                                    "suite",
+                                ): String(
+                                    "Suite 198",
+                                ),
+                                Name(
+                                    "city",
+                                ): String(
+                                    "Lebsackbury",
+                                ),
+                                Name(
+                                    "zipcode",
+                                ): String(
+                                    "31428-2261",
+                                ),
+                                Name(
+                                    "geo",
+                                ): Object(
+                                    {
+                                        Name(
+                                            "lat",
+                                        ): String(
+                                            "-38.2386",
+                                        ),
+                                        Name(
+                                            "lng",
+                                        ): String(
+                                            "57.2232",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                        Name(
+                            "phone",
+                        ): String(
+                            "024-648-3804",
+                        ),
+                        Name(
+                            "website",
+                        ): String(
+                            "ambrose.net",
+                        ),
+                        Name(
+                            "company",
+                        ): Object(
+                            {
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Hoeger LLC",
+                                ),
+                                Name(
+                                    "catchPhrase",
+                                ): String(
+                                    "Centralized empowering task-force",
+                                ),
+                                Name(
+                                    "bs",
+                                ): String(
+                                    "target end-to-end models",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            ],
+        ),
+    ),
+    Id(
+        2,
+    ): Err(
+        "IOException: HTTP status client error (404 Not Found)",
+    ),
+}

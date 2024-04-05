@@ -1,0 +1,11 @@
+---
+source: src/query_plan/execution/executor.rs
+expression: executor
+---
+{
+    Id(
+        0,
+    ): Err(
+        "IOException: Request error: error sending request for url (http://upstream/graphql): error trying to connect: dns error: failed to lookup address information: Name or service not known",
+    ),
+}
