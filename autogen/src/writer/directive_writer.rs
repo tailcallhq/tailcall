@@ -28,11 +28,7 @@ impl Directives {
     }
 
     // Write all directives: parser from RootSchema
-    pub fn write(
-        &mut self,
-        writer: &mut IndentedWriter<impl Write>,
-        extra_it: &mut BTreeMap<String, ExtraTypes>,
-    ) -> Result<()> {
+    pub fn write(&mut self, extra_it: &mut BTreeMap<String, ExtraTypes>) -> Result<()> {
         let schema = schemars::schema_for!(config::Config);
         let defs: BTreeMap<String, Schema> = schema.definitions;
 
@@ -101,7 +97,7 @@ impl Directives {
             list.push(format!(" repeatable "));
         }
 
-        entities.to_graphql(writer)?;
+        list.push(entities.to_graphql().unwrap());
         self.written_directives.insert(name.to_string());
 
         list.join("")

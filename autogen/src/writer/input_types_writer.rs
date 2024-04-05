@@ -156,7 +156,7 @@ impl InputTypeWriter {
             description_str(description.clone());
         }
 
-        let mut list = vec![];
+        let mut list: Vec<String> = vec![];
 
         if let Some(obj) = typ.object {
             if obj.properties.is_empty() {
@@ -194,8 +194,8 @@ impl InputTypeWriter {
 
             list.push(format!("input {name} {{\n"));
 
-            for property in list_schema {
-                let property = property.clone().into_object();
+            for p in list_schema {
+                let property = p.clone().into_object();
                 if let Some(description) = property
                     .metadata
                     .as_ref()
@@ -205,8 +205,11 @@ impl InputTypeWriter {
                 }
 
                 if let Some(obj) = property.object {
-                    for (name, schema) in obj.properties {
-                        list.push(format!("\t{}", write_field(name, property, defs, extra_it)));
+                    for (name, _schema) in obj.properties {
+                        list.push(format!(
+                            "\t{}",
+                            write_field(name, p.clone().into_object(), defs, extra_it)
+                        ));
                     }
                 }
             }

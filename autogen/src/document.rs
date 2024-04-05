@@ -28,7 +28,7 @@ impl<W: Write> ServiceDocument<W> {
 
     fn write(&mut self) -> Result<()> {
         let mut extra_it = BTreeMap::new();
-        self.directive.write(&mut self.writer, &mut extra_it)?;
+        self.directive.write(&mut extra_it)?;
         self.input_types.write(&mut self.writer, extra_it)?;
         Ok(())
     }

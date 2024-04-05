@@ -10,12 +10,13 @@ pub fn description_str(description: String) -> String {
     let description: String = description.chars().filter(|ch| ch != &'\n').collect();
     let line_breaker = LineBreaker::new(&description, 80);
 
-    let mut list = vec![];
-    list.push("\"\"\"");
+    let mut list: Vec<String> = vec![];
+    list.push("\"\"\"".to_string());
     for line in line_breaker {
-        list.push(format!("{line}").as_str());
+        let l = format!("{line}");
+        list.push(l);
     }
-    list.push("\"\"\"");
+    list.push("\"\"\"".to_string());
     list.join("\n")
 }
 
@@ -41,15 +42,15 @@ pub fn property_str(
 
 #[allow(clippy::too_many_arguments)]
 pub fn write_field(
-    name: String,
+    field_name: String,
     schema: SchemaObject,
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> String {
     format!(
         "{name}: {t}",
-        name = name,
-        t = write_type(name, schema, defs, extra_it)
+        name = field_name,
+        t = write_type(field_name.clone(), schema, defs, extra_it)
     )
 }
 
@@ -105,10 +106,9 @@ pub fn write_type(
                 write_array_validation(name, *arr_valid, defs, extra_it)
             } else if let Some(typ) = schema.object.clone() {
                 if !typ.properties.is_empty() {
-                    let mut name = name;
-                    name = uppercase_first(&name);
+                    let n = uppercase_first(&name);
                     extra_it.insert(name, ExtraTypes::ObjectValidation(*typ));
-                    format!("{name}")
+                    format!("{}", n.clone())
                 } else {
                     format!("JSON")
                 }
@@ -162,18 +162,21 @@ pub fn write_array_validation(
     defs: &BTreeMap<String, Schema>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> String {
-    let mut list = vec![];
-    list.push("[");
+    let mut list: Vec<String> = vec![];
+    list.push("[".to_string());
     if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
-        let t = write_type(name, schema.into_object(), defs, extra_it);
-        list.push(t.as_str());
+        list.push(write_type(name, schema.into_object(), defs, extra_it));
     } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
-        let t = write_type(name, schemas[0].clone().into_object(), defs, extra_it);
-        list.push(t.as_str());
+        list.push(write_type(
+            name,
+            schemas[0].clone().into_object(),
+            defs,
+            extra_it,
+        ));
     } else {
-        list.push("JSON");
+        list.push("JSON".to_string());
     }
-    list.push("]");
+    list.push("]".to_string());
     list.join("")
 }
 

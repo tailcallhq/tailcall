@@ -1,5 +1,4 @@
 use schemars::schema::ObjectValidation;
-use std::io::Write;
 
 use lazy_static::lazy_static;
 
@@ -66,42 +65,33 @@ pub enum Entity {
 }
 
 pub trait ToGraphql {
-    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()>;
+    fn to_graphql(&self) -> anyhow::Result<String>;
 }
 
 impl ToGraphql for Entity {
-    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
+    fn to_graphql(&self) -> anyhow::Result<String> {
         match self {
             Entity::Schema => {
-                write!(f, "SCHEMA")
+                return Ok("SCHEMA".to_string());
             }
             Entity::Object => {
-                write!(f, "OBJECT")
+                return Ok("OBJECT".to_string());
             }
             Entity::FieldDefinition => {
-                write!(f, "FIELD_DEFINITION")
+                return Ok("FIELD_DEFINITION".to_string());
             }
+            _ => return Ok("".to_string()),
         }
     }
 }
 
 impl ToGraphql for Vec<Entity> {
-    fn to_graphql(&self, f: &mut impl Write) -> std::io::Result<()> {
-        let mut iter = self.iter();
-
-        let Some(first) = iter.next() else {
-            return Ok(());
-        };
-
-        write!(f, " on ")?;
-        first.to_graphql(f)?;
-
-        for entry in iter {
-            write!(f, " | ")?;
-            entry.to_graphql(f)?;
-        }
-
-        write!(f, "\n\n")
+    fn to_graphql(&self) -> anyhow::Result<String> {
+        let list: Vec<String> = self
+            .iter()
+            .map(|f| f.clone().to_graphql().unwrap())
+            .collect();
+        Ok(list.join(""))
     }
 }
 
