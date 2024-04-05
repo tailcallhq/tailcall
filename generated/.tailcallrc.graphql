@@ -421,15 +421,15 @@ input Apollo {
   """
   Setting `platform` for Apollo.
   """
-  platform: String!
+  platform: String
   """
   Setting `userVersion` for Apollo.
   """
-  userVersion: String!
+  userVersion: String
   """
   Setting `version` for Apollo.
   """
-  version: String!
+  version: String
 }
 input Batch {
   delay: Int!
