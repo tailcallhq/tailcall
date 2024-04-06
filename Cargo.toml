@@ -93,7 +93,7 @@ strum_macros = "0.26.2"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["default","fmt","env-filter"] }
 tracing-opentelemetry = "0.23.0"
-getrandom = { version = "0.2.12", features = ["js"] }
+getrandom = { version = "0.2.13", features = ["js"] }
 prometheus = "0.13.3"
 tonic = { version = "0.11.0", default-features = false }
 opentelemetry-semantic-conventions = "0.14.0"
