@@ -56,15 +56,13 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
-
     use crate::config::{Config, Field, Http, Type};
 
     #[test]
     fn test_nplusone_resolvers() {
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
             (
-                "Query".to_string(),
+                "Query",
                 Type::default().fields(vec![(
                     "f1",
                     Field::default()
@@ -74,7 +72,7 @@ mod tests {
                 )]),
             ),
             (
-                "F1".to_string(),
+                "F1",
                 Type::default().fields(vec![(
                     "f2",
                     Field::default()
@@ -84,11 +82,11 @@ mod tests {
                 )]),
             ),
             (
-                "F2".to_string(),
+                "F2",
                 Type::default()
                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected = vec![vec![
@@ -100,9 +98,9 @@ mod tests {
 
     #[test]
     fn test_nplusone_batched_resolvers() {
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
             (
-                "Query".to_string(),
+                "Query",
                 Type::default().fields(vec![(
                     "f1",
                     Field::default()
@@ -112,7 +110,7 @@ mod tests {
                 )]),
             ),
             (
-                "F1".to_string(),
+                "F1",
                 Type::default().fields(vec![(
                     "f2",
                     Field::default()
@@ -122,11 +120,11 @@ mod tests {
                 )]),
             ),
             (
-                "F2".to_string(),
+                "F2",
                 Type::default()
                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected: Vec<Vec<(String, String)>> = vec![];
@@ -135,9 +133,9 @@ mod tests {
 
     #[test]
     fn test_nplusone_nested_resolvers() {
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
             (
-                "Query".to_string(),
+                "Query",
                 Type::default().fields(vec![(
                     "f1",
                     Field::default()
@@ -147,21 +145,21 @@ mod tests {
                 )]),
             ),
             (
-                "F1".to_string(),
+                "F1",
                 Type::default().fields(vec![(
                     "f2",
                     Field::default().type_of("F2".to_string()).to_list(),
                 )]),
             ),
             (
-                "F2".to_string(),
+                "F2",
                 Type::default().fields(vec![(
                     "f3",
                     Field::default().type_of("F3".to_string()).to_list(),
                 )]),
             ),
             (
-                "F3".to_string(),
+                "F3",
                 Type::default().fields(vec![(
                     "f4",
                     Field::default()
@@ -169,7 +167,7 @@ mod tests {
                         .http(Http::default()),
                 )]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected = vec![vec![
@@ -183,9 +181,9 @@ mod tests {
 
     #[test]
     fn test_nplusone_nested_resolvers_non_list_resolvers() {
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
             (
-                "Query".to_string(),
+                "Query",
                 Type::default().fields(vec![(
                     "f1",
                     Field::default()
@@ -194,21 +192,21 @@ mod tests {
                 )]),
             ),
             (
-                "F1".to_string(),
+                "F1",
                 Type::default().fields(vec![(
                     "f2",
                     Field::default().type_of("F2".to_string()).to_list(),
                 )]),
             ),
             (
-                "F2".to_string(),
+                "F2",
                 Type::default().fields(vec![(
                     "f3",
                     Field::default().type_of("F3".to_string()).to_list(),
                 )]),
             ),
             (
-                "F3".to_string(),
+                "F3",
                 Type::default().fields(vec![(
                     "f4",
                     Field::default()
@@ -216,7 +214,7 @@ mod tests {
                         .http(Http::default()),
                 )]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected = vec![vec![
@@ -230,9 +228,9 @@ mod tests {
 
     #[test]
     fn test_nplusone_nested_resolvers_without_resolvers() {
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
             (
-                "Query".to_string(),
+                "Query",
                 Type::default().fields(vec![(
                     "f1",
                     Field::default()
@@ -242,18 +240,18 @@ mod tests {
                 )]),
             ),
             (
-                "F1".to_string(),
+                "F1",
                 Type::default().fields(vec![(
                     "f2",
                     Field::default().type_of("F2".to_string()).to_list(),
                 )]),
             ),
             (
-                "F2".to_string(),
+                "F2",
                 Type::default()
                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected: Vec<Vec<(String, String)>> = vec![];
@@ -262,9 +260,9 @@ mod tests {
 
     #[test]
     fn test_nplusone_cycles() {
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
             (
-                "Query".to_string(),
+                "Query",
                 Type::default().fields(vec![(
                     "f1",
                     Field::default()
@@ -274,18 +272,18 @@ mod tests {
                 )]),
             ),
             (
-                "F1".to_string(),
+                "F1",
                 Type::default().fields(vec![
                     ("f1", Field::default().type_of("F1".to_string())),
                     ("f2", Field::default().type_of("F2".to_string()).to_list()),
                 ]),
             ),
             (
-                "F2".to_string(),
+                "F2",
                 Type::default()
                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected: Vec<Vec<(String, String)>> = vec![];
@@ -294,9 +292,9 @@ mod tests {
 
     #[test]
     fn test_nplusone_cycles_with_resolvers() {
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
             (
-                "Query".to_string(),
+                "Query",
                 Type::default().fields(vec![(
                     "f1",
                     Field::default()
@@ -306,7 +304,7 @@ mod tests {
                 )]),
             ),
             (
-                "F1".to_string(),
+                "F1",
                 Type::default().fields(vec![
                     ("f1", Field::default().type_of("F1".to_string()).to_list()),
                     (
@@ -318,11 +316,11 @@ mod tests {
                 ]),
             ),
             (
-                "F2".to_string(),
+                "F2",
                 Type::default()
                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected = vec![
@@ -346,13 +344,10 @@ mod tests {
             .type_of("F".to_string())
             .http(Http::default());
 
-        let config = Config::default().query("Query").types(HashMap::from([
+        let config = Config::default().query("Query").types(vec![
+            ("Query", Type::default().fields(vec![("f", f_field)])),
             (
-                "Query".to_string(),
-                Type::default().fields(vec![("f", f_field)]),
-            ),
-            (
-                "F".to_string(),
+                "F",
                 Type::default().fields(vec![(
                     "g",
                     Field::default()
@@ -362,10 +357,10 @@ mod tests {
                 )]),
             ),
             (
-                "G".to_string(),
+                "G",
                 Type::default().fields(vec![("e", Field::default().type_of("String".to_string()))]),
             ),
-        ]));
+        ]);
 
         let actual = config.n_plus_one();
         let expected = Vec::<Vec<(String, String)>>::new();

@@ -229,7 +229,7 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod reader_tests {
-    use std::collections::{BTreeSet, HashMap};
+    use std::collections::BTreeSet;
     use std::path::{Path, PathBuf};
 
     use pretty_assertions::assert_eq;
@@ -245,9 +245,9 @@ mod reader_tests {
     async fn test_all() {
         let runtime = crate::runtime::test::init(None);
 
-        let cfg = Config::default()
-            .query("Test")
-            .types(HashMap::from([("Test".to_string(), Type::default())]));
+        let mut cfg = Config::default();
+        cfg.schema.query = Some("Test".to_string());
+        cfg = cfg.types([("Test", Type::default())].to_vec());
 
         let server = start_mock_server();
         let header_serv = server.mock(|when, then| {
