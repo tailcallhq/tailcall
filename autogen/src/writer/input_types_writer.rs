@@ -1,11 +1,9 @@
 use crate::types::*;
 use crate::writer::common::*;
-use crate::writer::IndentedWriter;
 use anyhow::Result;
 use schemars::schema::{Schema, SchemaObject, SingleOrVec};
 use schemars::Map;
 use std::collections::{BTreeMap, HashSet};
-use std::io::Write;
 use tailcall::config;
 use tailcall::scalar::CUSTOM_SCALARS;
 
@@ -29,13 +27,8 @@ fn input_allow_list_lookup<'a>(
 pub struct InputTypeWriter {}
 
 impl InputTypeWriter {
-    pub fn write(
-        &mut self,
-        writer: &mut IndentedWriter<impl Write>,
-        extra_it: BTreeMap<String, ExtraTypes>,
-    ) -> Result<()> {
-        let input_types_str = self.write_all_input_types(extra_it);
-        Ok(())
+    pub fn write(&mut self, extra_it: BTreeMap<String, ExtraTypes>) -> Result<String> {
+        Ok(self.write_all_input_types(extra_it))
     }
 
     fn write_all_input_types(&mut self, mut extra_it: BTreeMap<String, ExtraTypes>) -> String {

@@ -1,13 +1,10 @@
 use crate::types::*;
 use anyhow::Result;
 use schemars::schema::{Schema, SchemaObject};
-use std::{
-    collections::{BTreeMap, HashSet},
-    io::Write,
-};
+use std::collections::{BTreeMap, HashSet};
 use tailcall::config;
 
-use crate::{Entity, ExtraTypes, IndentedWriter, DIRECTIVE_ALLOW_LIST};
+use crate::{Entity, ExtraTypes, DIRECTIVE_ALLOW_LIST};
 
 fn directive_allow_list_lookup(name: &str) -> Option<(&'static str, &'static Vec<Entity>, bool)> {
     for (nm, entity, is_repeatable) in DIRECTIVE_ALLOW_LIST.iter() {
@@ -28,16 +25,17 @@ impl Directives {
     }
 
     // Write all directives: parser from RootSchema
-    pub fn write(&mut self, extra_it: &mut BTreeMap<String, ExtraTypes>) -> Result<()> {
+    pub fn write(&mut self, extra_it: &mut BTreeMap<String, ExtraTypes>) -> Result<String> {
         let schema = schemars::schema_for!(config::Config);
         let defs: BTreeMap<String, Schema> = schema.definitions;
-
+        let mut list: Vec<String> = vec![];
         for (name, schema) in defs.iter() {
             let schema = schema.clone().into_object();
-            let _directive = self.write_directive(name.clone(), schema, &defs, extra_it);
+            let directive = self.write_directive(name.clone(), schema, &defs, extra_it);
+            list.push(directive);
         }
 
-        Ok(())
+        Ok(list.join(""))
     }
 
     #[allow(clippy::too_many_arguments)]

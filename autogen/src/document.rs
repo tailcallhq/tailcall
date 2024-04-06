@@ -1,18 +1,16 @@
-use crate::writer::IndentedWriter;
 use crate::{Directives, InputTypeWriter};
 use anyhow::Result;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 
 pub struct ServiceDocument<W: Write> {
-    writer: IndentedWriter<W>,
+    writer: W,
     directive: Directives,
     input_types: InputTypeWriter,
 }
 
 impl<W: Write> ServiceDocument<W> {
-    pub fn new(dest: W) -> Self {
-        let writer = IndentedWriter::new(dest);
+    pub fn new(writer: W) -> Self {
         let written_directives = HashSet::new();
 
         let directive = Directives::new(written_directives);
@@ -28,8 +26,10 @@ impl<W: Write> ServiceDocument<W> {
 
     fn write(&mut self) -> Result<()> {
         let mut extra_it = BTreeMap::new();
-        self.directive.write(&mut extra_it)?;
-        self.input_types.write(&mut self.writer, extra_it)?;
+        let directive_str = self.directive.write(&mut extra_it)?;
+        let input_types_str = self.input_types.write(extra_it)?;
+        write!(self.writer, "{directive_str}")?;
+        write!(self.writer, "{input_types_str}")?;
         Ok(())
     }
 }
