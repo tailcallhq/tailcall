@@ -11,7 +11,7 @@ type User {
 }
 
 type Query {
-  user: User @const(data: {name: "John"})
+  user: User @expr(body: {name: "John"})
 }
 ```
 
@@ -26,6 +26,6 @@ type User {
 }
 
 type Query {
-  user: User @const(data: {name: "John"})
+  user: User @expr(body: {name: "John"})
 }
 ```

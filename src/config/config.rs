@@ -410,8 +410,8 @@ pub struct Field {
 
     ///
     /// Inserts a constant resolver for the field.
-    #[serde(rename = "const", default, skip_serializing_if = "is_default")]
-    pub const_field: Option<Const>,
+    #[serde(rename = "expr", default, skip_serializing_if = "is_default")]
+    pub const_field: Option<Expr>,
 
     ///
     /// Inserts a GraphQL resolver for the field.
@@ -450,7 +450,7 @@ impl Field {
             directives.push(JS::trace_name());
         }
         if self.const_field.is_some() {
-            directives.push(Const::trace_name());
+            directives.push(Expr::trace_name());
         }
         if self.grpc.is_some() {
             directives.push(Grpc::trace_name());
@@ -739,10 +739,11 @@ impl Display for GraphQLOperationType {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-/// The `@const` operators allows us to embed a constant response for the
-/// schema.
-pub struct Const {
-    pub data: Value,
+/// The `@expr` operators allows you to specify an expression that can evaluate
+/// to a value. The expression can be a static value or built form a Mustache
+/// template. schema.
+pub struct Expr {
+    pub body: Value,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

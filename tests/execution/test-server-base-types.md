@@ -6,7 +6,7 @@ schema @server(port: 3000) @upstream(baseURL: "http://abc.com") {
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```
 
@@ -16,6 +16,6 @@ schema @server(port: 8000) @upstream(proxy: {url: "http://localhost:3000"}) {
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```

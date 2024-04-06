@@ -7,5 +7,5 @@ schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}, {key: "p",
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }

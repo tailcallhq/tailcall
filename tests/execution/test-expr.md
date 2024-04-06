@@ -2,7 +2,7 @@
 check_identity: true
 ---
 
-# test-const
+# test-expr
 
 ```graphql @server
 schema @server @upstream {
@@ -10,6 +10,6 @@ schema @server @upstream {
 }
 
 type Query {
-  hello: String @const(data: "Hello from server")
+  hello: String @expr(body: "Hello from server")
 }
 ```

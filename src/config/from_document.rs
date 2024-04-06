@@ -156,7 +156,9 @@ fn to_types(
             )
             .some(),
             TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-            TypeKind::InputObject(input_object_type) => to_input_object(input_object_type).some(),
+            TypeKind::InputObject(input_object_type) => {
+                to_input_object(input_object_type, &type_definition.node.directives).some()
+            }
             TypeKind::Union(_) => Valid::none(),
             TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
         }
@@ -237,9 +239,13 @@ fn to_enum(enum_type: EnumType) -> config::Type {
         .collect();
     config::Type { variants: Some(variants), ..Default::default() }
 }
-fn to_input_object(input_object_type: InputObjectType) -> Valid<config::Type, String> {
+fn to_input_object(
+    input_object_type: InputObjectType,
+    directives: &[Positioned<ConstDirective>],
+) -> Valid<config::Type, String> {
     to_input_object_fields(&input_object_type.fields)
-        .map(|fields| config::Type { fields, ..Default::default() })
+        .fuse(Protected::from_directives(directives.iter()))
+        .map(|(fields, protected)| config::Type { fields, protected, ..Default::default() })
 }
 
 fn to_fields_inner<T, F>(
@@ -369,10 +375,10 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
         .collect();
     Union { types, doc: doc.clone() }
 }
-fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Const> {
+fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {
-        if directive.node.name.node == config::Const::directive_name() {
-            config::Const::from_directive(&directive.node)
+        if directive.node.name.node == config::Expr::directive_name() {
+            config::Expr::from_directive(&directive.node)
                 .to_result()
                 .ok()
         } else {

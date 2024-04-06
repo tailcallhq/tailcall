@@ -4,13 +4,13 @@ check_identity: true
 
 # test-add-link-to-empty-config
 
-```graphql @file:link-const.graphql
+```graphql @file:link-expr.graphql
 schema @server @upstream {
   query: Query
 }
 
 type Query {
-  hello: String @const(data: "Hello from server")
+  hello: String @expr(body: "Hello from server")
 }
 ```
 
@@ -30,7 +30,7 @@ type Query {
 ```
 
 ```graphql @server
-schema @server @upstream @link(src: "link-const.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
+schema @server @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }
 ```
