@@ -1,15 +1,19 @@
 use std::fmt::{Display, Write};
 
+use anyhow::{anyhow, Result};
 use async_graphql::{
     parser::types::{Selection, SelectionSet},
-    Name,
+    Name, Value,
 };
 use indenter::indented;
 use indexmap::IndexMap;
 
 use crate::{blueprint::Definition, scalar::is_scalar};
 
-use super::resolver::{FieldPlan, FieldPlanSelection, Id};
+use super::{
+    execution::executor::ExecutionResult,
+    resolver::{FieldPlan, FieldPlanSelection, Id},
+};
 
 #[derive(Debug)]
 pub struct FieldTree {
@@ -164,13 +168,13 @@ impl GeneralPlan {
 impl Display for GeneralPlan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "GeneralPlan")?;
-        let mut f = indented(f);
+        let f = &mut indented(f);
 
         writeln!(f, "fields:")?;
-        writeln!(f, "{}", &self.fields)?;
+        writeln!(indented(f), "{}", &self.fields)?;
         writeln!(f, "field_plans:")?;
 
-        let mut f = indented(&mut f);
+        let f = &mut indented(f);
         for plan in self.field_plans.iter() {
             writeln!(f, "{}", plan)?;
         }
@@ -191,6 +195,45 @@ impl OperationPlan {
 
         Self { field_tree: fields, selections }
     }
+
+    fn inner_collect(
+        tree: &FieldTree,
+        execution_result: &mut ExecutionResult,
+        current_value: Option<Value>,
+    ) -> Result<Value> {
+        let value = if let Some(id) = &tree.field_plan_id {
+            execution_result.resolved(&id).transpose()?
+        } else {
+            current_value
+        };
+
+        if let Some(children) = &tree.children {
+            let mut current_map = if let Some(Value::Object(current_map)) = value {
+                Some(current_map)
+            } else {
+                None
+            };
+            let mut new_map = IndexMap::with_capacity(children.len());
+
+            for (name, tree) in children {
+                let value = Self::inner_collect(
+                    tree,
+                    execution_result,
+                    current_map.as_mut().and_then(|map| map.swap_remove(name)),
+                )?;
+
+                new_map.insert(name.clone(), value);
+            }
+
+            Ok(Value::Object(new_map))
+        } else {
+            value.ok_or(anyhow!("Can't resolve value for field"))
+        }
+    }
+
+    pub fn collect_value(&self, mut execution_result: ExecutionResult) -> Result<Value> {
+        Self::inner_collect(&self.field_tree, &mut execution_result, None)
+    }
 }
 
 impl Display for OperationPlan {
@@ -209,49 +252,5 @@ impl Display for OperationPlan {
         }
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    mod from_operation {
-        use std::{fs, path::Path};
-
-        use async_graphql::parser::parse_query;
-
-        use crate::{
-            blueprint::Blueprint,
-            config::{Config, ConfigModule},
-            http::RequestContext,
-            lambda::EmptyResolverContext,
-            query_plan::plan::{GeneralPlan, OperationPlan},
-            valid::Validator,
-        };
-
-        #[tokio::test]
-        async fn test_simple() {
-            let root_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/query_plan/tests");
-            let config = fs::read_to_string(root_dir.join("user-posts.graphql")).unwrap();
-            let config = Config::from_sdl(&config).to_result().unwrap();
-            let config = ConfigModule::from(config);
-            let blueprint = Blueprint::try_from(&config).unwrap();
-
-            let general_plan =
-                GeneralPlan::from_operation(&blueprint.definitions, &blueprint.query());
-
-            insta::assert_snapshot!(general_plan);
-
-            let document =
-                parse_query(fs::read_to_string(root_dir.join("user-posts-query.graphql")).unwrap())
-                    .unwrap();
-
-            for (name, operation) in document.operations.iter() {
-                let name = name.unwrap().to_string();
-                let operation_plan =
-                    OperationPlan::from_request(&general_plan, &operation.node.selection_set.node);
-
-                insta::assert_snapshot!(name.clone(), operation_plan);
-            }
-        }
     }
 }

@@ -44,8 +44,6 @@ mod tests {
     use crate::{
         blueprint::Blueprint,
         config::{Config, ConfigModule},
-        http::RequestContext,
-        lambda::EmptyResolverContext,
         query_plan::{
             execution::simple::SimpleExecutionBuilder,
             plan::{GeneralPlan, OperationPlan},

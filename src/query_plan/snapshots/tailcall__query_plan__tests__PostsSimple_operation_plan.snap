@@ -1,6 +1,6 @@
 ---
-source: src/query_plan/plan.rs
-expression: execution_plan
+source: src/query_plan/tests.rs
+expression: operation_plan
 ---
 OperationPlan
     fields:

@@ -1,0 +1,62 @@
+use std::{fs, path::Path};
+
+use async_graphql::parser::parse_query;
+
+use crate::{
+    blueprint::Blueprint,
+    config::{Config, ConfigModule},
+    http::RequestContext,
+    lambda::EmptyResolverContext,
+    query_plan::{
+        execution::{executor::Executor, simple::SimpleExecutionBuilder},
+        plan::{GeneralPlan, OperationPlan},
+    },
+    valid::Validator,
+};
+
+#[tokio::test]
+async fn test_simple() {
+    let root_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/query_plan/tests");
+    let config = fs::read_to_string(root_dir.join("user-posts.graphql")).unwrap();
+    let config = Config::from_sdl(&config).to_result().unwrap();
+    let config = ConfigModule::from(config);
+    let blueprint = Blueprint::try_from(&config).unwrap();
+
+    let general_plan = GeneralPlan::from_operation(&blueprint.definitions, &blueprint.query());
+
+    insta::assert_snapshot!("general_plan", general_plan);
+
+    let document =
+        parse_query(fs::read_to_string(root_dir.join("user-posts-query.graphql")).unwrap())
+            .unwrap();
+
+    for (name, operation) in document.operations.iter() {
+        let name = name.unwrap().to_string();
+        let operation_plan =
+            OperationPlan::from_request(&general_plan, &operation.node.selection_set.node);
+
+        insta::assert_snapshot!(format!("{name}_operation_plan"), operation_plan);
+
+        let execution_builder = SimpleExecutionBuilder {};
+        let execution_plan = execution_builder.build(&operation_plan);
+
+        insta::assert_snapshot!(format!("{name}_execution_plan"), execution_plan);
+
+        let mut executor = Executor::new(&general_plan);
+
+        let runtime = crate::cli::runtime::init(&Blueprint::default());
+        let req_ctx = RequestContext::new(runtime);
+        let graphql_ctx = EmptyResolverContext {};
+        let execution_result = executor
+            .execute(&req_ctx, &graphql_ctx, &execution_plan)
+            .await;
+
+        insta::assert_snapshot!(format!("{name}_execution_result"), execution_result);
+
+        let result = operation_plan.collect_value(execution_result);
+
+        if let Ok(result) = result {
+            insta::assert_json_snapshot!(format!("{name}_output"), result);
+        }
+    }
+}
