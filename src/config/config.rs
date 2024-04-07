@@ -51,7 +51,7 @@ pub struct Config {
     ///
     /// A map of all the union types in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub unions: HashMap<String, Union>,
+    pub unions: BTreeMap<String, Union>,
 
     ///
     /// A list of all links in the schema.
@@ -243,9 +243,9 @@ fn merge_types(
 }
 
 fn merge_unions(
-    mut self_unions: HashMap<String, Union>,
-    other_unions: HashMap<String, Union>,
-) -> HashMap<String, Union> {
+    mut self_unions: BTreeMap<String, Union>,
+    other_unions: BTreeMap<String, Union>,
+) -> BTreeMap<String, Union> {
     for (name, mut other_union) in other_unions {
         if let Some(self_union) = self_unions.remove(&name) {
             other_union = self_union.merge_right(other_union);

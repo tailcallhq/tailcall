@@ -222,9 +222,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             kind,
         })));
     }
-
-    let sorted_unions = config.unions.iter().collect::<BTreeMap<_, _>>();
-    for (name, union) in sorted_unions.iter() {
+    for (name, union) in config.unions.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: None,

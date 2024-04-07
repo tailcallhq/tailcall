@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
@@ -176,7 +176,7 @@ fn to_scalar_type() -> config::Type {
 }
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<HashMap<String, Union>, String> {
+) -> Valid<BTreeMap<String, Union>, String> {
     Valid::succeed(
         type_definitions
             .iter()
