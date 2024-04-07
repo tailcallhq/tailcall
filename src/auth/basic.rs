@@ -18,14 +18,16 @@ impl Verify for BasicVerifier {
     async fn verify(&self, req_ctx: &RequestContext) -> Verification {
         let header = req_ctx.allowed_headers.typed_get::<Authorization<Basic>>();
 
-        let Some(header) = header else {
-            return Verification::fail(Error::Missing);
-        };
-
-        if self.verifier.check(header.username(), header.password()) {
-            Verification::succeed()
+        if let Some(header) = header {
+            if self.verifier.check(header.username(), header.password()) {
+                Verification::succeed()
+            } else {
+                Verification::fail(Error::Invalid)
+            }
+        } else if req_ctx.allowed_headers.contains_key("authorization") {
+            return Verification::fail(Error::Invalid);
         } else {
-            Verification::fail(Error::Invalid)
+            return Verification::fail(Error::Missing);
         }
     }
 }
