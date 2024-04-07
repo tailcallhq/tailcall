@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
