@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
-use hyper::{Body, Method, Request, Response};
+use hyper::{Body, Method, Request};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::http::showcase::AppCtxError;
@@ -38,9 +38,12 @@ pub async fn fetch(
     }
 
     let env = Rc::new(env);
-    let app_ctx = match get_app_ctx(env, &req).await? {
+    let app_ctx = match get_app_ctx(env, &req).await {
         Ok(app_ctx) => app_ctx,
-        Err(e) => return to_response(e).await,
+        Err(AppCtxError::BuildError(resp)) => return to_response(resp).await,
+        Err(err) => {
+            return Err(err.into());
+        }
     };
     let resp = handle_request::<GraphQLRequest>(req, app_ctx).await?;
     to_response(resp).await
@@ -52,7 +55,7 @@ pub async fn fetch(
 async fn get_app_ctx(
     env: Rc<worker::Env>,
     req: &Request<Body>,
-) -> anyhow::Result<Result<Arc<AppContext>, Response<Body>>> {
+) -> Result<Arc<AppContext>, AppCtxError> {
     // Read context from cache
     let file_path = req
         .uri()
@@ -64,7 +67,7 @@ async fn get_app_ctx(
         if let Some(app_ctx) = read_app_ctx() {
             if app_ctx.0 == file_path.borrow() {
                 tracing::info!("Using cached application context");
-                return Ok(Ok(app_ctx.clone().1));
+                return Ok(app_ctx.clone().1);
             }
         }
     }
@@ -77,10 +80,9 @@ async fn get_app_ctx(
                 *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
             }
             tracing::info!("Initialized new application context");
-            Ok(Ok(app_ctx))
+            Ok(app_ctx)
         }
-        Err(AppCtxError::BuildError(res)) => Ok(Err(res)),
-        Err(AppCtxError::ResponseError(err)) => Err(err),
+        Err(err) => Err(err),
     }
 }
 
