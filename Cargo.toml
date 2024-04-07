@@ -42,7 +42,7 @@ derive_setters = "0.1.6"
 thiserror = "1.0.58"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_qs = "0.12"
+serde_qs = "0.13"
 serde_yaml = "0.9"
 serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
