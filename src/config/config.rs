@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -14,10 +14,10 @@ use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
+use crate::is_default;
 use crate::json::JsonSchema;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
-use crate::{is_default, scalar};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -67,63 +67,6 @@ impl Config {
         self.server.port.unwrap_or(8000)
     }
 
-    pub fn output_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        let input_types = self.input_types();
-
-        if let Some(ref query) = &self.schema.query {
-            types.insert(query);
-        }
-
-        if let Some(ref mutation) = &self.schema.mutation {
-            types.insert(mutation);
-        }
-        for (type_name, type_of) in self.types.iter() {
-            if (type_of.interface || !type_of.fields.is_empty())
-                && !input_types.contains(&type_name)
-            {
-                for (_, field) in type_of.fields.iter() {
-                    types.insert(&field.type_of);
-                }
-            }
-        }
-        types
-    }
-
-    pub fn recurse_type<'a>(&'a self, type_of: &str, types: &mut HashSet<&'a String>) {
-        if let Some(type_) = self.find_type(type_of) {
-            for (_, field) in type_.fields.iter() {
-                if !types.contains(&field.type_of) {
-                    types.insert(&field.type_of);
-                    self.recurse_type(&field.type_of, types);
-                }
-            }
-        }
-    }
-
-    pub fn input_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        for (_, type_of) in self.types.iter() {
-            if !type_of.interface {
-                for (_, field) in type_of.fields.iter() {
-                    for (_, arg) in field
-                        .args
-                        .iter()
-                        .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
-                    {
-                        if let Some(t) = self.find_type(&arg.type_of) {
-                            t.fields.iter().for_each(|(_, f)| {
-                                types.insert(&f.type_of);
-                                self.recurse_type(&f.type_of, &mut types)
-                            })
-                        }
-                        types.insert(&arg.type_of);
-                    }
-                }
-            }
-        }
-        types
-    }
     pub fn find_type(&self, name: &str) -> Option<&Type> {
         self.types.get(name)
     }

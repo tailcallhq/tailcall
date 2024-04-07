@@ -38,10 +38,12 @@ impl JwtVerifier {
         }
     }
 
-    fn resolve_token(&self, request: &RequestContext) -> Option<String> {
-        let value = request.allowed_headers.typed_get::<Authorization<Bearer>>();
+    fn resolve_token(&self, request: &RequestContext) -> anyhow::Result<Option<String>> {
+        let value = request
+            .allowed_headers
+            .typed_try_get::<Authorization<Bearer>>()?;
 
-        value.map(|token| token.token().to_owned())
+        Ok(value.map(|token| token.token().to_owned()))
     }
 
     async fn validate_token(&self, token: &str) -> Verification {
@@ -65,7 +67,9 @@ impl JwtVerifier {
 impl Verify for JwtVerifier {
     async fn verify(&self, request: &RequestContext) -> Verification {
         let token = self.resolve_token(request);
-
+        let Ok(token) = token else {
+            return Verification::fail(Error::Invalid);
+        };
         let Some(token) = token else {
             return Verification::fail(Error::Missing);
         };
@@ -94,7 +98,9 @@ pub fn validate_aud(options: &blueprint::Jwt, claims: &JwtClaim) -> bool {
     if audiences.is_empty() {
         true
     } else {
-        let Some(aud) = &claims.aud else { return false };
+        let Some(aud) = &claims.aud else {
+            return false;
+        };
 
         match aud {
             OneOrMany::One(aud) => audiences.contains(aud),
