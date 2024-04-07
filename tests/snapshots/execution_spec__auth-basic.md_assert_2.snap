@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Authentication Failure: Invalid credentials or token.",
+        "message": "Authentication Failure: Invalid Authorization Header",
         "locations": [
           {
             "line": 2,
