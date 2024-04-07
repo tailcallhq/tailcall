@@ -16,7 +16,13 @@ pub struct BasicVerifier {
 impl Verify for BasicVerifier {
     /// Verify the request context against the basic auth provider.
     async fn verify(&self, req_ctx: &RequestContext) -> Verification {
-        let header = req_ctx.allowed_headers.typed_get::<Authorization<Basic>>();
+        let header = req_ctx
+            .allowed_headers
+            .typed_try_get::<Authorization<Basic>>();
+
+        let Ok(header) = header else {
+            return Verification::fail(Error::Invalid);
+        };
 
         let Some(header) = header else {
             return Verification::fail(Error::Missing);
@@ -38,6 +44,8 @@ impl BasicVerifier {
 
 #[cfg(test)]
 pub mod tests {
+    use hyper::header::HeaderValue;
+
     use super::*;
 
     // testuser1:password123
@@ -63,6 +71,18 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
             .typed_insert(Authorization::basic(username, password));
 
         req_context
+    }
+
+    #[tokio::test]
+    async fn verify_auth_failure() {
+        let provider = setup_provider();
+        let mut req_ctx = RequestContext::default();
+        req_ctx.allowed_headers.insert(
+            "Authorization",
+            HeaderValue::from_static("Basic dGVzdHVzZXIyOm15cGFzc3dvcmQ"),
+        );
+        let validation = provider.verify(&req_ctx).await;
+        assert_eq!(validation, Verification::fail(Error::Invalid));
     }
 
     #[tokio::test]
