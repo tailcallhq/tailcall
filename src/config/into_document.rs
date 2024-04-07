@@ -55,9 +55,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             .map(|name| pos(Name::new(name))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
-
-    let sorted_types = config.types.iter().collect::<BTreeMap<_, _>>();
-    for (type_name, type_def) in sorted_types {
+    for (type_name, type_def) in config.types.iter() {
         let kind = if type_def.interface {
             TypeKind::Interface(InterfaceType {
                 implements: type_def

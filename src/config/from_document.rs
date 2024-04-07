@@ -138,8 +138,8 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
     pos.node.to_string()
 }
 fn to_types(
-    type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<HashMap<String, config::Type>, String> {
+    type_definitions: &Vec<&Positioned<TypeDefinition>>,
+) -> Valid<BTreeMap<String, config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         match type_definition.node.kind.clone() {
@@ -165,7 +165,7 @@ fn to_types(
         .map(|option| (type_name, option))
     })
     .map(|vec| {
-        HashMap::from_iter(
+        BTreeMap::from_iter(
             vec.into_iter()
                 .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
         )

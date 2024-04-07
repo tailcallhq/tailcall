@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use async_graphql_value::ConstValue;
 use regex::Regex;
@@ -522,10 +522,9 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
     TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_module, _| {
         let output_types = &config_module.output_types;
         let input_types = &config_module.input_types;
-        let sorted_types = config_module.types.iter().collect::<BTreeMap<_, _>>();
 
-        Valid::from_iter(sorted_types.iter(), |(name, type_)| {
-            let dbl_usage = input_types.contains(*name) && output_types.contains(*name);
+        Valid::from_iter(config_module.types.iter(), |(name, type_)| {
+            let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if let Some(variants) = &type_.variants {
                 if !variants.is_empty() {
                     to_enum_type_definition(name, type_, variants).trace(name)
@@ -541,7 +540,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
                         Definition::Object(object_type_definition) => {
-                            if config_module.input_types.contains(*name) {
+                            if config_module.input_types.contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
                             } else if type_.interface {
                                 to_interface_type_definition(object_type_definition).trace(name)

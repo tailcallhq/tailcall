@@ -229,7 +229,6 @@ impl ConfigReader {
 
 #[cfg(test)]
 mod reader_tests {
-    use std::collections::BTreeSet;
     use std::path::{Path, PathBuf};
 
     use pretty_assertions::assert_eq;
@@ -277,16 +276,15 @@ mod reader_tests {
         .collect();
         let cr = ConfigReader::init(runtime);
         let c = cr.read_all(&files).await.unwrap();
-
         assert_eq!(
             ["Post", "Query", "Test", "User"]
                 .iter()
                 .map(|i| i.to_string())
-                .collect::<BTreeSet<String>>(),
+                .collect::<Vec<String>>(),
             c.types
                 .keys()
                 .map(|i| i.to_string())
-                .collect::<BTreeSet<String>>()
+                .collect::<Vec<String>>()
         );
         foo_json_server.assert(); // checks if the request was actually made
         header_serv.assert();
@@ -310,11 +308,11 @@ mod reader_tests {
             ["Post", "Query", "User"]
                 .iter()
                 .map(|i| i.to_string())
-                .collect::<BTreeSet<String>>(),
+                .collect::<Vec<String>>(),
             c.types
                 .keys()
                 .map(|i| i.to_string())
-                .collect::<BTreeSet<String>>()
+                .collect::<Vec<String>>()
         );
     }
 
