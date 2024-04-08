@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
 
@@ -29,7 +29,6 @@ fn validate_type_has_resolvers(
     ty: &Type,
     types: &BTreeMap<String, Type>,
 ) -> Valid<(), String> {
-
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, ty)
     })
@@ -46,7 +45,11 @@ pub fn validate_field_has_resolver(
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
             if !field.has_resolver() {
-                if types.get(&field.type_of).map(|v|v.eq(parent_ty)).unwrap_or_default() {
+                if types
+                    .get(&field.type_of)
+                    .map(|v| v.eq(parent_ty))
+                    .unwrap_or_default()
+                {
                     return true;
                 }
                 let type_name = &field.type_of;
@@ -60,7 +63,7 @@ pub fn validate_field_has_resolver(
                 } else {
                     // It's a Scalar
                     true
-                }
+                };
             }
             false
         })
@@ -97,11 +100,7 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
                 .trace(mutation_type_name);
         };
 
-        validate_type_has_resolvers(
-            mutation_type_name,
-            mutation,
-            &config.types,
-        )
+        validate_type_has_resolvers(mutation_type_name, mutation, &config.types)
     } else {
         Valid::succeed(())
     }

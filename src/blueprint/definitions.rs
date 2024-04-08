@@ -329,8 +329,7 @@ pub fn fix_dangling_resolvers<'a>(
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, ty, name), mut b_field| {
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, ty)
-                    .is_succeed()
+                && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
             {
                 b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
