@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 hyper = { version = "0.14", default-features = false }
-worker = "0.0.24"
+worker = "0.1.0"
 tailcall = { path = "..", default-features = false }
 lazy_static = "1.4.0"
 anyhow = "1.0.81"
@@ -21,7 +21,7 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 tracing-subscriber-wasm = "0.1.0"
 serde_json = "1.0.115"
-serde_qs = "0.12.0"
+serde_qs = "0.13.0"
 console_error_panic_hook = "0.1.7"
 protox = "0.6.0"
 async-graphql-value = "7.0.3"

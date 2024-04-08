@@ -42,7 +42,7 @@ derive_setters = "0.1.6"
 thiserror = "1.0.58"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_qs = "0.12"
+serde_qs = "0.13"
 serde_yaml = "0.9"
 serde_urlencoded = "0.7.1"
 url = { version = "2", features = ["serde"] }
@@ -69,7 +69,7 @@ futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.3", features = ["wasm-bindgen"] }
 futures-util = { version = "0.3.30" }
 lru = { version = "0.12.3" }
-webbrowser = { version = "0.8.13", features = ["hardened", "disable-wsl"] }
+webbrowser = { version = "0.8.14", features = ["hardened", "disable-wsl"] }
 async-std = { version = "1.12.0", features = [
     "wasm-bindgen-futures",
     "unstable",
@@ -78,7 +78,7 @@ ttl_cache = { version = "0.5.1", features = ["stats"] }
 protox = "0.6.0"
 protox-parse = "0.6.0"
 prost-reflect = { version = "0.13.1", features = ["serde"] }
-prost = "0.12.3"
+prost = "0.12.4"
 update-informer = { version = "1.1.0", default-features = false, features = [
     "github",
     "reqwest",
@@ -93,7 +93,7 @@ strum_macros = "0.26.2"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["default","fmt","env-filter"] }
 tracing-opentelemetry = "0.23.0"
-getrandom = { version = "0.2.12", features = ["js"] }
+getrandom = { version = "0.2.14", features = ["js"] }
 prometheus = "0.13.3"
 tonic = { version = "0.11.0", default-features = false }
 opentelemetry-semantic-conventions = "0.14.0"
