@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 pub trait MergeRight {
     fn merge_right(self, other: Self) -> Self;
@@ -32,6 +32,16 @@ where
 impl<V> MergeRight for BTreeSet<V>
 where
     V: Ord,
+{
+    fn merge_right(mut self, other: Self) -> Self {
+        self.extend(other);
+        self
+    }
+}
+
+impl<V> MergeRight for HashSet<V>
+where
+    V: Eq + std::hash::Hash,
 {
     fn merge_right(mut self, other: Self) -> Self {
         self.extend(other);

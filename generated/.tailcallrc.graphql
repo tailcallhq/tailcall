@@ -36,10 +36,11 @@ directive @call(
 ) on FIELD_DEFINITION
 
 """
-The `@const` operators allows us to embed a constant response for the schema.
+The `@expr` operators allows you to specify an expression that can evaluate to a 
+value. The expression can be a static value or built form a Mustache template. schema.
 """
-directive @const(
-  data: JSON
+directive @expr(
+  body: JSON
 ) on FIELD_DEFINITION
 
 """
@@ -322,7 +323,7 @@ directive @telemetry(
   headers that may contain sensitive data
   """
   requestHeaders: [String!]
-) on FIELD_DEFINITION
+) on SCHEMA
 
 """
 The `upstream` directive allows you to control various aspects of the upstream server 
@@ -446,12 +447,6 @@ input Cache {
   maxAge: Int!
 }
 """
-The `@const` operators allows us to embed a constant response for the schema.
-"""
-input Const {
-  data: JSON
-}
-"""
 Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 """
 input Cors {
@@ -459,7 +454,7 @@ input Cors {
   Indicates whether the server allows credentials (e.g., cookies, authorization headers) 
   to be sent in cross-origin requests.
   """
-  allowCredentials: Boolean!
+  allowCredentials: Boolean
   """
   A list of allowed headers in cross-origin requests. This can be used to specify custom 
   headers that are allowed to be included in cross-origin requests.
@@ -480,7 +475,7 @@ input Cors {
   requests. Private network addresses typically include IP addresses reserved for internal 
   networks.
   """
-  allowPrivateNetwork: Boolean!
+  allowPrivateNetwork: Boolean
   """
   A list of headers that the server exposes to the browser in cross-origin responses. 
   Exposing certain headers allows the client-side code to access them in the response.
@@ -500,6 +495,13 @@ input Cors {
 enum Encoding {
   ApplicationJson
   ApplicationXWwwFormUrlencoded
+}
+"""
+The `@expr` operators allows you to specify an expression that can evaluate to a 
+value. The expression can be a static value or built form a Mustache template. schema.
+"""
+input Expr {
+  body: JSON
 }
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
