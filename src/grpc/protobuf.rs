@@ -2,9 +2,6 @@ use std::fmt::Debug;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
-use base64::prelude::BASE64_STANDARD_NO_PAD;
-use base64::Engine;
-use nom::AsBytes;
 use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::prost_types::FileDescriptorSet;
@@ -14,7 +11,7 @@ use prost_reflect::{
 };
 use serde_json::Deserializer;
 
-use crate::blueprint::{GrpcMessage, GrpcMethod};
+use crate::blueprint::GrpcMethod;
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);
@@ -66,7 +63,7 @@ pub fn get_field_value_as_str(message: &DynamicMessage, field_name: &str) -> Res
     Ok(protobuf_value_as_str(&field))
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ProtobufSet {
     descriptor_pool: DescriptorPool,
 }
@@ -98,14 +95,14 @@ impl ProtobufSet {
         Ok(ProtobufService { service_descriptor })
     }
 
-    pub fn find_message(&self, grpc_message: &GrpcMessage) -> Result<ProtobufMessage> {
+    pub fn find_message(&self, name: &str) -> Result<ProtobufMessage> {
         let message_descriptor = self
             .descriptor_pool
-            .get_message_by_name(format!("{}.{}", grpc_message.package, grpc_message.name).as_str())
+            .get_message_by_name(name)
             .with_context(|| {
                 format!(
                     "Couldn't find definitions for message {}",
-                    grpc_message.name
+                    name
                 )
             })?;
         Ok(ProtobufMessage { message_descriptor })
@@ -119,8 +116,7 @@ pub struct ProtobufMessage {
 
 impl ProtobufMessage {
     pub fn decode(&self, bytes: &[u8]) -> Result<Value> {
-        let bytes = BASE64_STANDARD_NO_PAD.decode(bytes)?;
-        let message = DynamicMessage::decode(self.message_descriptor.clone(), bytes.as_bytes())?;
+        let message = DynamicMessage::decode(self.message_descriptor.clone(), bytes)?;
 
         let json = serde_json::to_value(message)?;
 
@@ -465,32 +461,6 @@ pub mod tests {
               ]
             })
         );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn message_not_found() -> Result<()> {
-        let grpc_message = GrpcMessage::try_from("greetings._unknown").unwrap();
-        let file = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
-        let error = file.find_message(&grpc_message).unwrap_err();
-
-        assert_eq!(
-            error.to_string(),
-            "Couldn't find definitions for message _unknown"
-        );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn message_found() -> Result<()> {
-        let grpc_message = GrpcMessage::try_from("greetings.ErrValidation").unwrap();
-
-        let file = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
-        let message = file.find_message(&grpc_message);
-
-        assert!(message.is_ok());
 
         Ok(())
     }

@@ -4,7 +4,7 @@ use reqwest::Request;
 use url::Url;
 
 use super::protobuf::ProtobufOperation;
-use crate::grpc::protobuf::ProtobufMessage;
+use crate::grpc::protobuf::ProtobufSet;
 use crate::http::Response;
 use crate::runtime::TargetRuntime;
 
@@ -23,7 +23,7 @@ pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Reque
 pub async fn execute_grpc_request(
     runtime: &TargetRuntime,
     operation: &ProtobufOperation,
-    status_details: &Option<ProtobufMessage>,
+    protobuf_set: &ProtobufSet,
     request: Request,
 ) -> Result<Response<async_graphql::Value>> {
     let response = runtime.http2_only.execute(request).await?;
@@ -37,7 +37,7 @@ pub async fn execute_grpc_request(
         return if grpc_status.is_none() || grpc_status == Some("0") {
             response.to_grpc_value(operation)
         } else {
-            response.to_grpc_error(status_details)
+            Err(response.to_grpc_error(protobuf_set))
         };
     }
     bail!("Failed to execute request");
@@ -58,10 +58,10 @@ mod tests {
     use serde_json::json;
     use tonic::Code;
 
-    use crate::blueprint::{GrpcMessage, GrpcMethod};
+    use crate::blueprint::GrpcMethod;
     use crate::grpc::execute_grpc_request;
     use crate::grpc::protobuf::tests::get_proto_file;
-    use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation, ProtobufSet};
+    use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request::{GRPC_MESSAGE, GRPC_STATUS, GRPC_STATUS_DETAILS};
     use crate::http::Response;
     use crate::lambda::EvaluationError;
@@ -84,7 +84,7 @@ mod tests {
         async fn execute(&self, _request: Request) -> Result<Response<Bytes>> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");
-            let error = BASE64_STANDARD_NO_PAD.encode(b"\x0a\x0derror message");
+            let error = BASE64_STANDARD_NO_PAD.encode(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");
 
             match self.scenario {
                 TestScenario::SuccessWithoutGrpcStatus => {
@@ -116,7 +116,7 @@ mod tests {
     ) -> Result<(
         TargetRuntime,
         ProtobufOperation,
-        Option<ProtobufMessage>,
+        ProtobufSet,
         Request,
     )> {
         let mut runtime = crate::runtime::test::init(None);
@@ -127,20 +127,18 @@ mod tests {
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
-        let grpc_message = GrpcMessage::try_from("greetings.ErrValidation").unwrap();
-        let file = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
-        let status_details = file.find_message(&grpc_message).ok();
+        let protobuf_set = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
 
         let request = Request::new(Method::POST, "http://example.com".parse().unwrap());
-        Ok((runtime, operation, status_details, request))
+        Ok((runtime, operation, protobuf_set, request))
     }
 
     #[tokio::test]
     async fn test_grpc_request_success_without_grpc_status() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithoutGrpcStatus };
-        let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
+        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;
+        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
 
         assert!(
             result.is_ok(),
@@ -152,9 +150,9 @@ mod tests {
     #[tokio::test]
     async fn test_grpc_request_success_with_ok_grpc_status() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithOkGrpcStatus };
-        let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
+        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;
+        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
 
         assert!(
             result.is_ok(),
@@ -166,9 +164,9 @@ mod tests {
     #[tokio::test]
     async fn test_grpc_request_success_with_error_grpc_status() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithErrorGrpcStatus };
-        let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
+        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;
+        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
 
         assert!(
             result.is_err(),
@@ -190,7 +188,11 @@ mod tests {
                     assert_eq!(
                         serde_json::to_value(grpc_status_details)?,
                         json!({
-                          "error": "error message"
+                            "code": 3,
+                            "message": "error message",
+                            "details": [{
+                                "error": "error details",
+                            }]
                         })
                     );
                 }
@@ -203,9 +205,9 @@ mod tests {
     #[tokio::test]
     async fn test_grpc_request_error() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::Error };
-        let (runtime, operation, status_details, request) = prepare_args(test_http).await?;
+        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &status_details, request).await;
+        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
 
         assert!(result.is_err(), "Expected error");
         assert_eq!(result.unwrap_err().to_string(), "Failed to execute request");

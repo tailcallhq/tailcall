@@ -6,7 +6,7 @@ use prost_reflect::FieldDescriptor;
 use crate::blueprint::{FieldDefinition, TypeLike};
 use crate::config::group_by::GroupBy;
 use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
-use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation, ProtobufSet};
+use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request_template::RequestTemplate;
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, IO};
@@ -31,32 +31,17 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
     })
 }
 
-fn to_status_details(
-    config_module: &ConfigModule,
-    grpc: &Grpc,
-) -> Valid<Option<ProtobufMessage>, String> {
-    let Some(error_message) = grpc.error_message.as_ref() else {
-        return Valid::succeed(None);
-    };
-    Valid::from(GrpcMessage::try_from(error_message.as_str())).and_then(|message| {
-        Valid::from_option(
-            config_module.extensions.get_file_descriptor_set(),
-            format!("File descriptor not found for message: {}", error_message),
-        )
+fn to_protobuf_set(config_module: &ConfigModule) -> Valid<ProtobufSet, String> {
+    Valid::from_option(
+        config_module.extensions.get_file_descriptor_set(),
+        format!("File descriptor is not initialised"),
+    )
         .and_then(|file_descriptor_set| {
             Valid::from(
                 ProtobufSet::from_proto_file(file_descriptor_set)
                     .map_err(|e| ValidationError::new(e.to_string())),
             )
-            .and_then(|set| {
-                Valid::from(
-                    set.find_message(&message)
-                        .map_err(|e| ValidationError::new(e.to_string())),
-                )
-            })
         })
-        .map(Some)
-    })
 }
 
 fn to_operation(
@@ -184,35 +169,6 @@ impl TryFrom<&str> for GrpcMethod {
     }
 }
 
-pub struct GrpcMessage {
-    pub package: String,
-    pub name: String,
-}
-
-impl Display for GrpcMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{}", self.package, self.name)
-    }
-}
-
-impl TryFrom<&str> for GrpcMessage {
-    type Error = ValidationError<String>;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = value.rsplitn(2, '.').collect();
-        match &parts[..] {
-            &[name, id] => {
-                let message = GrpcMessage { package: id.to_owned(), name: name.to_owned() };
-                Ok(message)
-            }
-            _ => Err(ValidationError::new(format!(
-                "Invalid message format: {}. Expected format is <package>.<message>",
-                value
-            ))),
-        }
-    }
-}
-
 pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
@@ -230,10 +186,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
             .fuse(to_url(grpc, &method, config_module))
             .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
             .fuse(helpers::body::to_body(grpc.body.as_deref()))
-            .fuse(to_status_details(config_module, grpc))
+            .fuse(to_protobuf_set(config_module))
             .into()
         })
-        .and_then(|(operation, url, headers, body, status_details)| {
+        .and_then(|(operation, url, headers, body, protobuf_set)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
@@ -244,16 +200,16 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
             } else {
                 Valid::succeed(())
             };
-            validation.map(|_| (url, headers, operation, body, status_details))
+            validation.map(|_| (url, headers, operation, body, protobuf_set))
         })
-        .map(|(url, headers, operation, body, status_details)| {
+        .map(|(url, headers, operation, body, protobuf_set)| {
             let req_template = RequestTemplate {
                 url,
                 headers,
                 operation,
                 body,
                 operation_type: operation_type.clone(),
-                status_details,
+                protobuf_set,
             };
             if !grpc.group_by.is_empty() {
                 Expression::IO(IO::Grpc {

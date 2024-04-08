@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
 use anyhow::{anyhow, Result};
-use async_graphql::{ErrorExtensions, Value};
+use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
@@ -60,7 +60,7 @@ pub enum EvaluationError {
         grpc_code: i32,
         grpc_description: String,
         grpc_status_message: String,
-        grpc_status_details: Value,
+        grpc_status_details: ConstValue,
     },
 
     #[error("APIValidationError: {0:?}")]

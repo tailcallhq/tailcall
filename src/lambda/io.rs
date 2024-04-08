@@ -12,7 +12,7 @@ use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation};
+use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
@@ -133,7 +133,7 @@ impl IO {
                             &ctx,
                             req,
                             &req_template.operation,
-                            &req_template.status_details,
+                            &req_template.protobuf_set,
                         )
                         .await?
                     };
@@ -216,10 +216,10 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
-    status_details: &Option<ProtobufMessage>,
+    protobuf_set: &ProtobufSet,
 ) -> Result<Response<async_graphql::Value>> {
     Ok(
-        execute_grpc_request(&ctx.request_ctx.runtime, operation, status_details, req)
+        execute_grpc_request(&ctx.request_ctx.runtime, operation, protobuf_set, req)
             .await
             .map_err(|e| match e.downcast::<EvaluationError>() {
                 Ok(err) => err,

@@ -13,7 +13,7 @@ use super::request::execute_grpc_request;
 use crate::config::group_by::GroupBy;
 use crate::config::Batch;
 use crate::data_loader::{DataLoader, Loader};
-use crate::grpc::protobuf::ProtobufMessage;
+use crate::grpc::protobuf::ProtobufSet;
 use crate::grpc::request::create_grpc_request;
 use crate::http::Response;
 use crate::json::JsonLike;
@@ -23,7 +23,7 @@ use crate::runtime::TargetRuntime;
 pub struct GrpcDataLoader {
     pub(crate) runtime: TargetRuntime,
     pub(crate) operation: ProtobufOperation,
-    pub(crate) status_details: Option<ProtobufMessage>,
+    pub(crate) protobuf_set: ProtobufSet,
     pub(crate) group_by: Option<GroupBy>,
 }
 
@@ -41,7 +41,7 @@ impl GrpcDataLoader {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
                 Ok(req) => {
-                    execute_grpc_request(&self.runtime, &self.operation, &self.status_details, req)
+                    execute_grpc_request(&self.runtime, &self.operation, &self.protobuf_set, req)
                         .await
                 }
                 Err(error) => Err(error),
@@ -83,7 +83,7 @@ impl GrpcDataLoader {
         let response = execute_grpc_request(
             &self.runtime,
             &self.operation,
-            &self.status_details,
+            &self.protobuf_set,
             multiple_request,
         )
         .await?;
