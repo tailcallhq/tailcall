@@ -1,4 +1,4 @@
-# Ref other
+# Recursive Type
 
 ```graphql @server
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
