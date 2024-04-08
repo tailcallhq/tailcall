@@ -4,20 +4,13 @@ expression: operation_plan
 ---
 OperationPlan
     fields:
-        posts(Some(Id(0))):
-            title(None):
-                Scalar
-            body(None):
-                Scalar
-            user(Some(Id(1))):
-                name(None):
-                    Scalar
-                username(None):
-                    Scalar
-                website(Some(Id(2))):
-                    Scalar
-
-
+        [posts](by 0)
+            title
+            body
+            user(by 1)
+                name
+                username
+                website(by 2)
 
     selections:
         Resolver(2):

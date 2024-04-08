@@ -8,7 +8,10 @@ use async_graphql::{
 use indenter::indented;
 use indexmap::IndexMap;
 
-use crate::{blueprint::Definition, scalar::is_scalar};
+use crate::{
+    blueprint::{Definition, Type},
+    scalar::is_scalar,
+};
 
 use super::{
     execution::executor::ExecutionResult,
@@ -16,20 +19,40 @@ use super::{
 };
 
 #[derive(Debug)]
+pub enum FieldTreeEntry {
+    Scalar,
+    ScalarList,
+    Compound(IndexMap<Name, FieldTree>),
+    CompoundList(IndexMap<Name, FieldTree>),
+}
+
+#[derive(Debug)]
 pub struct FieldTree {
     pub field_plan_id: Option<Id>,
-    pub children: Option<IndexMap<Name, FieldTree>>,
+    pub entry: FieldTreeEntry,
 }
 
 impl Display for FieldTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(children) = &self.children {
-            for (name, tree) in children.iter() {
-                writeln!(f, "{}({:?}):", name, tree.field_plan_id)?;
-                writeln!(indented(f), "{}", tree)?;
+        match &self.entry {
+            FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
+                for (name, tree) in children.iter() {
+                    if matches!(&tree.entry, FieldTreeEntry::CompoundList(_)) {
+                        write!(f, "[{name}]")
+                    } else {
+                        write!(f, "{name}")
+                    }?;
+
+                    if let Some(id) = &tree.field_plan_id {
+                        write!(f, "(by {id})")?;
+                    }
+
+                    writeln!(f)?;
+
+                    write!(indented(f), "{}", tree)?;
+                }
             }
-        } else {
-            write!(f, "Scalar")?;
+            _ => {}
         }
 
         Ok(())
@@ -47,16 +70,23 @@ pub struct OperationPlan {
 }
 
 impl FieldTree {
-    fn is_scalar(&self) -> bool {
-        self.children.is_none()
-    }
-
-    fn scalar(field_plan_id: Option<Id>) -> Self {
-        Self { field_plan_id, children: None }
+    fn scalar(self) -> Self {
+        Self { field_plan_id: None, entry: FieldTreeEntry::Scalar }
     }
 
     fn with_field_plan_id(self, id: Option<Id>) -> Self {
-        Self { field_plan_id: id, children: self.children }
+        Self { field_plan_id: id, entry: self.entry }
+    }
+
+    fn to_list(self) -> Self {
+        let entry = match self.entry {
+            FieldTreeEntry::Scalar | FieldTreeEntry::ScalarList => FieldTreeEntry::ScalarList,
+            FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
+                FieldTreeEntry::CompoundList(children)
+            }
+        };
+
+        Self { entry, ..self }
     }
 
     fn from_operation(
@@ -86,7 +116,7 @@ impl FieldTree {
                 };
 
                 let plan = if is_scalar(type_name) {
-                    Self { field_plan_id: id, children: None }
+                    Self { field_plan_id: id, entry: FieldTreeEntry::Scalar }
                 } else {
                     Self::from_operation(
                         id.or(current_field_plan_id),
@@ -95,11 +125,20 @@ impl FieldTree {
                         type_name,
                     )
                 };
+
+                let plan = match &field.of_type {
+                    Type::NamedType { name, non_null } => plan,
+                    Type::ListType { of_type, non_null } => plan.to_list(),
+                };
+
                 children.insert(Name::new(&field.name), plan.with_field_plan_id(id));
             }
         }
 
-        Self { field_plan_id: None, children: Some(children) }
+        Self {
+            field_plan_id: None,
+            entry: FieldTreeEntry::Compound(children),
+        }
     }
 
     pub fn prepare_for_request(
@@ -108,50 +147,117 @@ impl FieldTree {
         selections: &mut IndexMap<Id, FieldPlanSelection>,
         input_selection_set: &SelectionSet,
     ) -> Self {
-        let Some(children) = &self.children else {
-            assert!(input_selection_set.items.is_empty());
-            return Self::scalar(self.field_plan_id);
+        let entry = match &self.entry {
+            FieldTreeEntry::Scalar => FieldTreeEntry::Scalar,
+            FieldTreeEntry::ScalarList => FieldTreeEntry::ScalarList,
+            FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
+                let mut req_children = IndexMap::new();
+                for selection in &input_selection_set.items {
+                    let mut current_selection_set = FieldPlanSelection::default();
+
+                    match &selection.node {
+                        Selection::Field(field) => {
+                            let name = &field.node.name.node;
+                            let fields = children.get(name).unwrap();
+                            let tree = fields.prepare_for_request(
+                                &mut current_selection_set,
+                                selections,
+                                &field.node.selection_set.node,
+                            );
+
+                            if let Some(field_plan_id) = tree.field_plan_id {
+                                let field_selection = selections.entry(field_plan_id);
+
+                                match field_selection {
+                                    indexmap::map::Entry::Occupied(mut entry) => {
+                                        entry.get_mut().extend(current_selection_set)
+                                    }
+                                    indexmap::map::Entry::Vacant(slot) => {
+                                        slot.insert(current_selection_set);
+                                    }
+                                }
+                            } else {
+                                result_selection.add(selection, current_selection_set);
+                            }
+
+                            req_children.insert(name.clone(), tree);
+                        }
+                        Selection::FragmentSpread(_) => todo!(),
+                        Selection::InlineFragment(_) => todo!(),
+                    }
+                }
+
+                match &self.entry {
+                    FieldTreeEntry::Compound(_) => FieldTreeEntry::Compound(req_children),
+                    FieldTreeEntry::CompoundList(_) => FieldTreeEntry::CompoundList(req_children),
+                    _ => unreachable!(),
+                }
+            }
         };
 
-        let mut req_children = IndexMap::new();
-        for selection in &input_selection_set.items {
-            let mut current_selection_set = FieldPlanSelection::default();
+        Self { field_plan_id: self.field_plan_id, entry }
+    }
 
-            match &selection.node {
-                Selection::Field(field) => {
-                    let name = &field.node.name.node;
-                    let fields = children.get(name).unwrap();
-                    let tree = fields.prepare_for_request(
-                        &mut current_selection_set,
-                        selections,
-                        &field.node.selection_set.node,
-                    );
+    fn collect_value_object(
+        children: &IndexMap<Name, FieldTree>,
+        execution_result: &mut ExecutionResult,
+        current_value: Option<Value>,
+    ) -> Result<Value> {
+        let mut current_map = if let Some(Value::Object(current_map)) = current_value {
+            Some(current_map)
+        } else {
+            None
+        };
+        let mut new_map = IndexMap::with_capacity(children.len());
 
-                    if let Some(field_plan_id) = tree.field_plan_id {
-                        let field_selection = selections.entry(field_plan_id);
+        for (name, tree) in children {
+            let value = tree.collect_value(
+                execution_result,
+                current_map.as_mut().and_then(|map| map.swap_remove(name)),
+            )?;
 
-                        match field_selection {
-                            indexmap::map::Entry::Occupied(mut entry) => {
-                                entry.get_mut().extend(current_selection_set)
-                            }
-                            indexmap::map::Entry::Vacant(slot) => {
-                                slot.insert(current_selection_set);
-                            }
-                        }
-                    } else {
-                        result_selection.add(selection, current_selection_set);
-                    }
-
-                    req_children.insert(name.clone(), tree);
-                }
-                Selection::FragmentSpread(_) => todo!(),
-                Selection::InlineFragment(_) => todo!(),
-            }
+            new_map.insert(name.clone(), value);
         }
 
-        Self {
-            field_plan_id: self.field_plan_id,
-            children: Some(req_children),
+        Ok(Value::Object(new_map))
+    }
+
+    fn collect_value(
+        &self,
+        execution_result: &mut ExecutionResult,
+        current_value: Option<Value>,
+    ) -> Result<Value> {
+        let value = if let Some(id) = &self.field_plan_id {
+            execution_result.resolved(&id).transpose()?
+        } else {
+            current_value
+        };
+
+        match &self.entry {
+            FieldTreeEntry::Scalar | FieldTreeEntry::ScalarList => value
+                .or(Some(Value::default()))
+                .ok_or(anyhow!("Can't resolve value for field")),
+            FieldTreeEntry::Compound(children) => {
+                Self::collect_value_object(children, execution_result, value)
+            }
+            FieldTreeEntry::CompoundList(children) => {
+                if let Some(Value::List(list)) = value {
+                    let result = list
+                        .into_iter()
+                        .map(|current_value| {
+                            Self::collect_value_object(
+                                children,
+                                execution_result,
+                                Some(current_value),
+                            )
+                        })
+                        .collect::<Result<Vec<_>>>()?;
+
+                    Ok(Value::List(result))
+                } else {
+                    Err(anyhow!("Expected list value"))
+                }
+            }
         }
     }
 }
@@ -196,43 +302,8 @@ impl OperationPlan {
         Self { field_tree: fields, selections }
     }
 
-    fn inner_collect(
-        tree: &FieldTree,
-        execution_result: &mut ExecutionResult,
-        current_value: Option<Value>,
-    ) -> Result<Value> {
-        let value = if let Some(id) = &tree.field_plan_id {
-            execution_result.resolved(&id).transpose()?
-        } else {
-            current_value
-        };
-
-        if let Some(children) = &tree.children {
-            let mut current_map = if let Some(Value::Object(current_map)) = value {
-                Some(current_map)
-            } else {
-                None
-            };
-            let mut new_map = IndexMap::with_capacity(children.len());
-
-            for (name, tree) in children {
-                let value = Self::inner_collect(
-                    tree,
-                    execution_result,
-                    current_map.as_mut().and_then(|map| map.swap_remove(name)),
-                )?;
-
-                new_map.insert(name.clone(), value);
-            }
-
-            Ok(Value::Object(new_map))
-        } else {
-            value.ok_or(anyhow!("Can't resolve value for field"))
-        }
-    }
-
     pub fn collect_value(&self, mut execution_result: ExecutionResult) -> Result<Value> {
-        Self::inner_collect(&self.field_tree, &mut execution_result, None)
+        self.field_tree.collect_value(&mut execution_result, None)
     }
 }
 

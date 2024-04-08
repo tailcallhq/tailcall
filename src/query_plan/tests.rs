@@ -42,7 +42,7 @@ async fn test_simple() {
 
         insta::assert_snapshot!(format!("{name}_execution_plan"), execution_plan);
 
-        let mut executor = Executor::new(&general_plan);
+        let executor = Executor::new(&general_plan);
 
         let runtime = crate::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
@@ -55,8 +55,9 @@ async fn test_simple() {
 
         let result = operation_plan.collect_value(execution_result);
 
-        if let Ok(result) = result {
-            insta::assert_json_snapshot!(format!("{name}_output"), result);
+        match result {
+            Ok(result) => insta::assert_json_snapshot!(format!("{name}_output"), result),
+            Err(err) => insta::assert_debug_snapshot!(format!("{name}_output"), err),
         }
     }
 }

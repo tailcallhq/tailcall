@@ -4,10 +4,8 @@ expression: operation_plan
 ---
 OperationPlan
     fields:
-        posts(Some(Id(0))):
-            title(None):
-                Scalar
-
+        [posts](by 0)
+            title
 
     selections:
         Resolver(0):

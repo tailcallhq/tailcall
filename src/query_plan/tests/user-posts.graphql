@@ -5,7 +5,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @graphQL(baseURL: "http://upstream/graphql", name: "posts")
+  posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
   user(id: Int!): User @http(path: "/users/1")
 }

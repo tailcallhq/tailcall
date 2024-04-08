@@ -4,12 +4,9 @@ expression: operation_plan
 ---
 OperationPlan
     fields:
-        user(Some(Id(3))):
-            name(None):
-                Scalar
-            email(None):
-                Scalar
-
+        user(by 3)
+            name
+            email
 
     selections:
         Resolver(3):

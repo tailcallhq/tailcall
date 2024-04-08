@@ -1,0 +1,5 @@
+---
+source: src/query_plan/tests.rs
+expression: err
+---
+"IOException: HTTP status client error (404 Not Found)"

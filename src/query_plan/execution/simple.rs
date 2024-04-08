@@ -1,4 +1,4 @@
-use crate::query_plan::plan::OperationPlan;
+use crate::query_plan::plan::{FieldTreeEntry, OperationPlan};
 
 use super::execution::ExecutionStep;
 
@@ -18,10 +18,13 @@ impl SimpleExecutionBuilder {
                     parallel_steps.push(ExecutionStep::Resolve(*field_plan_id));
                 }
 
-                if let Some(children) = &tree.children {
-                    for tree in children.values() {
-                        new_queue.push(tree);
+                match &tree.entry {
+                    FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
+                        for tree in children.values() {
+                            new_queue.push(tree);
+                        }
                     }
+                    _ => {}
                 }
             }
 
@@ -32,47 +35,5 @@ impl SimpleExecutionBuilder {
         }
 
         ExecutionStep::sequential(steps)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{fs, path::Path};
-
-    use async_graphql::parser::parse_query;
-
-    use crate::{
-        blueprint::Blueprint,
-        config::{Config, ConfigModule},
-        query_plan::{
-            execution::simple::SimpleExecutionBuilder,
-            plan::{GeneralPlan, OperationPlan},
-        },
-        valid::Validator,
-    };
-
-    #[tokio::test]
-    async fn test_simple() {
-        let root_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/query_plan/tests");
-        let config = fs::read_to_string(root_dir.join("user-posts.graphql")).unwrap();
-        let config = Config::from_sdl(&config).to_result().unwrap();
-        let config = ConfigModule::from(config);
-        let blueprint = Blueprint::try_from(&config).unwrap();
-
-        let general_plan = GeneralPlan::from_operation(&blueprint.definitions, &blueprint.query());
-
-        let document =
-            parse_query(fs::read_to_string(root_dir.join("user-posts-query.graphql")).unwrap())
-                .unwrap();
-
-        for (name, operation) in document.operations.iter() {
-            let name = name.unwrap().to_string();
-            let operation_plan =
-                OperationPlan::from_request(&general_plan, &operation.node.selection_set.node);
-            let execution_builder = SimpleExecutionBuilder {};
-            let execution_plan = execution_builder.build(&operation_plan);
-
-            insta::assert_snapshot!(name.clone(), execution_plan);
-        }
     }
 }
