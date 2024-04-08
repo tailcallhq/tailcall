@@ -69,13 +69,19 @@ jobs:
           name: body
           path: ci-benchmark/body.md
 
-  Cache_Benchmarks:
-    name: Cache Micro Benchmarks result
+  Track_and_Cache_Benchmarks:
+    name: Track and Cache Micro Benchmarks
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       pull-requests: write
       contents: write
     runs-on: benchmarking-runner
+    env:
+      BENCHER_PROJECT: tailcall
+      BENCHER_ADAPTER: rust_criterion
+      BENCHER_TESTBED: benchmarking-runner
+      BASE_BENCHMARK_RESULTS: benches/base.txt
+      UPPER_BOUNDARY: 0.10
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -83,17 +89,24 @@ jobs:
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Run Benchmarks
-        run: |
-          cargo install cargo-criterion rust-script
-          cargo criterion --message-format=json > benches/main_benchmarks.json
-          ./scripts/json_to_md.rs benches/main_benchmarks.json > benches/main_benchmarks.md
-          cat benches/main_benchmarks.md
+      - name: Install Bencher CLI
+        uses: bencherdev/bencher@main
 
-      - name: Cache Criterion Benchmarks Json
+      - name: Run and track Benchmarks
+        run: |
+          cargo bench > benches/base.txt
+          bencher run \
+          --project "$BENCHER_PROJECT" \
+          --branch main \
+          --testbed "$BENCHER_TESTBED" \
+          --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --adapter "$BENCHER_ADAPTER" \
+          --file "$BASE_BENCHMARK_RESULTS"
+
+      - name: Cache Criterion Benchmarks
         uses: actions/cache@v4
         with:
-          path: benches/main_benchmarks.json
+          path: benches/base.txt
           key: criterion_benchmarks_${{ github.sha }}
 
   Criterion_Compare:
@@ -103,33 +116,56 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
+    env:
+      BENCHER_PROJECT: tailcall
+      BENCHER_ADAPTER: rust_criterion
+      BENCHER_TESTBED: benchmarking-runner
+      PR_BENCHMARK_RESULTS: benches/change.txt
+      BASE_BENCHMARK_RESULTS: benches/base.txt
+      UPPER_BOUNDARY: 0.10
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Run Criterion Benchmarks
-        run: |
-          cargo install cargo-criterion rust-script
-          cargo criterion --message-format=json > benches/benchmarks.json
-          ./scripts/json_to_md.rs benches/benchmarks.json > benches/change_benchmarks.md
-
-      - name: Print Criterion Benchmarks
-        run: cat benches/change_benchmarks.md
-
       - name: Restore file
         uses: actions/cache@v4
         with:
-          path: benches/main_benchmarks.json
+          path: benches/base.txt
           key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
           fail-on-cache-miss: true
 
-      - name: Print Benchmark Comparision
-        run: ./scripts/criterion_compare.rs benches/main_benchmarks.json benches/benchmarks.json table
+      - name: Run Benchmarks
+        run: |
+          cargo bench > benches/change.txt
 
-      - name: Check Degradation
-        run: ./scripts/criterion_compare.rs  benches/main_benchmarks.json benches/benchmarks.json check
+      - name: Install Bencher CLI
+        uses: bencherdev/bencher@main
+
+      - name: Track base benchmarks
+        run: |
+          bencher run \
+          --if-branch '${{ github.head_ref }}_commit_${{ github.event.pull_request.head.sha }}' \
+          --else-branch \
+          --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --file "$BASE_BENCHMARK_RESULTS"
+
+      - name: Create PR threshold
+        run: |
+          bencher threshold create \
+          --branch '${{ github.head_ref }}_commit_${{ github.event.pull_request.head.sha }}' \
+          --testbed "$BENCHER_TESTBED" \
+          --measure latency \
+          --test percentage \
+          --upper-boundary ${{ env.UPPER_BOUNDARY }} \
+          --token "${{ secrets.BENCHER_API_TOKEN }}"
+
+      - name: Track PR Benchmarks
+        run: |
+          bencher run \
+          --branch '${{ github.head_ref }}_commit_${{ github.event.pull_request.head.sha }}' \
+          --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --github-actions "${{ secrets.GITHUB_TOKEN }}" \
+          --err \
+          --file "$PR_BENCHMARK_RESULTS"
