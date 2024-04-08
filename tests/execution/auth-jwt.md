@@ -113,4 +113,13 @@ type ProtectedType @protected {
           nested
         }
       }
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Bearer abc.def
+  body:
+    query: |
+      query {
+        protectedScalar
+      }
 ```

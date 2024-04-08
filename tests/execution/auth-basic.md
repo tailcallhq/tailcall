@@ -113,4 +113,13 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
           nested
         }
       }
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Basic dGVzdHVzZXIxOnJhbmRvbV9wYXNzd29yZA=
+  body:
+    query: |
+      query {
+        protectedScalar
+      }
 ```
