@@ -1,9 +1,13 @@
-type List {
-  head: Int
-  list: List1
+schema @server(graphiql: true) @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
 }
 
-type List1 {
-  list0: List
-  tail: Int
+type User {
+  name: String
+  id: Int
+  friend: User @http(path: "/users/2")
+}
+
+type Query {
+  user: User @http(path: "/users/1")
 }

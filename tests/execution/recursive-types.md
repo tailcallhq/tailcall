@@ -41,5 +41,5 @@ type Query {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { user { name id friend { name id } } }
+    query: query { user { name id friend { name id friend { name id } } } }
 ```
