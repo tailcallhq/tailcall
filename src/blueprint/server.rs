@@ -11,6 +11,7 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use super::Auth;
 use crate::blueprint::Cors;
+use crate::config::lint::{Lint, TextCase};
 use crate::config::{self, ConfigModule, HttpVersion};
 use crate::valid::{Valid, ValidationError, Validator};
 
@@ -37,6 +38,7 @@ pub struct Server {
     pub cors: Option<Cors>,
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<Auth>,
+    pub lint: Option<Lint>,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -80,6 +82,10 @@ impl Server {
 
     pub fn get_experimental_headers(&self) -> HashSet<HeaderName> {
         self.experimental_headers.clone()
+    }
+
+    pub fn get_lint(&self) -> Option<Lint> {
+        self.lint.clone()
     }
 }
 
@@ -128,8 +134,18 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                     .and_then(|headers| headers.get_cors()),
             ))
             .fuse(Auth::make(&config_module))
+            .fuse(validate_lint_config(config_server.get_lint()))
             .map(
-                |(hostname, http, response_headers, script, experimental_headers, cors, auth)| {
+                |(
+                    hostname,
+                    http,
+                    response_headers,
+                    script,
+                    experimental_headers,
+                    cors,
+                    auth,
+                    lint,
+                )| {
                     Server {
                         enable_apollo_tracing: (config_server).enable_apollo_tracing(),
                         enable_cache_control_header: (config_server).enable_cache_control(),
@@ -152,6 +168,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
                         script,
                         cors,
                         auth,
+                        lint,
                     }
                 },
             )
@@ -174,6 +191,42 @@ fn to_script(config_module: &crate::config::ConfigModule) -> Valid<Option<Script
             }))
         },
     )
+}
+
+fn validate_text_case(text_case: Option<TextCase>, lint_type: &str) -> Valid<(), String> {
+    if let Some(case) = text_case {
+        let text_cases = [
+            TextCase::Camel,
+            TextCase::Pascal,
+            TextCase::Snake,
+            TextCase::ScreamingSnake,
+        ];
+        for text_case in text_cases.iter() {
+            if case != *text_case {
+                return Valid::fail(format!("Invalid TextCase for {}: {:?}", lint_type, case));
+            }
+        }
+        Valid::succeed(())
+    } else {
+        // incase of no lint config is given for that lint type
+        Valid::succeed(())
+    }
+}
+
+fn validate_lint_config(
+    lint: Option<config::lint::Lint>,
+) -> Valid<Option<config::lint::Lint>, String> {
+    match lint.clone() {
+        Some(lint) => {
+            // validate field
+            validate_text_case(lint.clone().field_lint, "field");
+            validate_text_case(lint.clone().type_lint, "type");
+            validate_text_case(lint.clone().enum_lint, "enum");
+            validate_text_case(lint.clone().enum_value_lint, "enumValue");
+            Valid::succeed(Some(lint))
+        }
+        None => Valid::succeed(lint),
+    }
 }
 
 fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, String> {

@@ -1,0 +1,38 @@
+schema
+  @server(
+    lint: {type: Pascal, enum: Pascal, enumValue: ScreamingSnake, field: Camel, autoFix: true}
+    port: 8000
+    graphiql: true
+    hostname: "0.0.0.0"
+  )
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
+  query: Query
+}
+
+enum postType {
+  blog_post
+  ARTICLE
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  users: [user] @http(path: "/users")
+  user(id: Int!): user @http(path: "/users/{{args.id}}")
+}
+
+type user {
+  id: Int!
+  name: String!
+  Username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: user @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+}

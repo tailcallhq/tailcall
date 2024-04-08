@@ -7,6 +7,7 @@ use rustls_pki_types::{
 };
 
 use super::{ConfigModule, Content, Link, LinkType};
+use crate::config::lint::Lint;
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
@@ -169,13 +170,14 @@ impl ConfigReader {
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
+            let mut config = Config::from_source(source, schema)?;
+            if let Some(lint) = config.clone().server.lint {
+                config = Lint::lint(config, lint);
+            }
 
             // Create initial config module
             let new_config_module = self
-                .resolve(
-                    Config::from_source(source, schema)?,
-                    Path::new(&file.path).parent(),
-                )
+                .resolve(config.clone(), Path::new(&file.path).parent())
                 .await?;
 
             // Merge it with the original config set

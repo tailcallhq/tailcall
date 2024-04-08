@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+use super::lint::Lint;
 use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
@@ -95,6 +96,8 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    pub lint: Option<Lint>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -194,6 +197,10 @@ impl Server {
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
     }
+
+    pub fn get_lint(&self) -> Option<Lint> {
+        self.lint.clone()
+    }
 }
 impl MergeRight for Server {
     fn merge_right(mut self, other: Self) -> Self {
@@ -226,6 +233,7 @@ impl MergeRight for Server {
         self.version = self.version.merge_right(other.version);
         self.pipeline_flush = self.pipeline_flush.merge_right(other.pipeline_flush);
         self.script = self.script.merge_right(other.script);
+        self.lint = self.lint.merge_right(other.lint);
         self
     }
 }
