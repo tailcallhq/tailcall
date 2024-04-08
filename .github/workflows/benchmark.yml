@@ -81,7 +81,6 @@ jobs:
       BENCHER_ADAPTER: rust_criterion
       BENCHER_TESTBED: benchmarking-runner
       BASE_BENCHMARK_RESULTS: benches/base.txt
-      UPPER_BOUNDARY: 0.10
     steps:
       - name: Check out code
         uses: actions/checkout@v4
