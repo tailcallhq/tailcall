@@ -15,9 +15,13 @@ use crate::grpc::RequestTemplate;
 use crate::mustache::Mustache;
 use crate::runtime::TargetRuntime;
 
+///
+/// Loading reflection proto
+/// https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1alpha/reflection.proto
+///
 const REFLECTION_PROTO: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/proto/reflection.proto" /* source: https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1alpha/reflection.proto */
+    "/src/proto_reader/proto/reflection.proto"
 ));
 
 /// This function is just used for better exception handling
@@ -170,7 +174,7 @@ mod grpc_fetch {
     fn get_fake_descriptor() -> Vec<u8> {
         let mut path = PathBuf::from(file!());
         path.pop();
-        path.push("tests/fake_descriptor_b64.txt");
+        path.push("fixtures/descriptor_b64.txt");
 
         let bytes = std::fs::read(path).unwrap();
 
@@ -180,7 +184,7 @@ mod grpc_fetch {
     fn get_fake_resp() -> Vec<u8> {
         let mut path = PathBuf::from(file!());
         path.pop();
-        path.push("tests/fake_resp_b64.txt");
+        path.push("fixtures/response_b64.txt");
 
         let bytes = std::fs::read(path).unwrap();
 
