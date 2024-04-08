@@ -17,7 +17,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
             return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
         };
 
-        validate_type_has_resolvers(query_type_name, query, &config.types, &mut BTreeSet::new())
+        validate_type_has_resolvers(query_type_name, query, &config.types)
     })
     .unit()
 }
@@ -28,16 +28,10 @@ fn validate_type_has_resolvers(
     name: &str,
     ty: &Type,
     types: &BTreeMap<String, Type>,
-    visited: &mut BTreeSet<String>,
 ) -> Valid<(), String> {
-    if visited.contains(name) {
-        return Valid::succeed(());
-    } else {
-        visited.insert(name.to_string());
-    }
 
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
-        validate_field_has_resolver(name, field, types, visited)
+        validate_field_has_resolver(name, field, types, ty)
     })
     .trace(name)
     .unit()
@@ -47,22 +41,25 @@ pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
     types: &BTreeMap<String, Type>,
-    visited: &mut BTreeSet<String>,
+    parent_ty: &Type,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
             if !field.has_resolver() {
+                if types.get(&field.type_of).map(|v|v.eq(parent_ty)).unwrap_or_default() {
+                    return true;
+                }
                 let type_name = &field.type_of;
-                if let Some(ty) = types.get(type_name) {
+                return if let Some(ty) = types.get(type_name) {
                     // It's an enum
                     if ty.variants.is_some() {
                         return true;
                     }
-                    let res = validate_type_has_resolvers(type_name, ty, types, visited);
-                    return !res.is_succeed();
+                    let res = validate_type_has_resolvers(type_name, ty, types);
+                    !res.is_succeed()
                 } else {
                     // It's a Scalar
-                    return true;
+                    true
                 }
             }
             false
@@ -104,7 +101,6 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
             mutation_type_name,
             mutation,
             &config.types,
-            &mut BTreeSet::new(),
         )
     } else {
         Valid::succeed(())
