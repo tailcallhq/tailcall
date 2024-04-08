@@ -3,10 +3,10 @@ use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
 use hyper::body::Bytes;
 use indexmap::IndexMap;
+use prost::Message;
 use serde::de::DeserializeOwned;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
-use prost::Message;
 
 use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::lambda::EvaluationError;
@@ -51,13 +51,15 @@ impl Response<Bytes> {
         Ok(resp)
     }
 
-    pub fn to_grpc_error(
-        &self,
-        protobuf_set: &ProtobufSet,
-    ) -> anyhow::Error {
+    pub fn to_grpc_error(&self, protobuf_set: &ProtobufSet) -> anyhow::Error {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
-            None => return EvaluationError::IOException("Error while parsing upstream headers".to_owned()).into(),
+            None => {
+                return EvaluationError::IOException(
+                    "Error while parsing upstream headers".to_owned(),
+                )
+                .into()
+            }
         };
         let mut obj = IndexMap::new();
         let mut status_details = Vec::new();
@@ -66,7 +68,10 @@ impl Response<Bytes> {
                 let status: GrpcStatus = any_details;
 
                 obj.insert(Name::new("code"), ConstValue::Number(status.code.into()));
-                obj.insert(Name::new("message"), ConstValue::String(status.message.clone()));
+                obj.insert(
+                    Name::new("message"),
+                    ConstValue::String(status.message.clone()),
+                );
 
                 for detail in status.details {
                     let type_url = &detail.type_url;
@@ -78,11 +83,13 @@ impl Response<Bytes> {
                             tracing::error!("Error while decoding google.rpc.Status details");
                         }
                     } else {
-                        tracing::error!("Error while searching descriptor for message: {}", type_name);
+                        tracing::error!(
+                            "Error while searching descriptor for message: {}",
+                            type_name
+                        );
                     }
                 }
-            }
-            else {
+            } else {
                 tracing::error!("Error while decoding gRPC status details");
             }
         }

@@ -34,14 +34,14 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
 fn to_protobuf_set(config_module: &ConfigModule) -> Valid<ProtobufSet, String> {
     Valid::from_option(
         config_module.extensions.get_file_descriptor_set(),
-        format!("File descriptor is not initialised"),
+        "File descriptor is not initialised".to_string(),
     )
-        .and_then(|file_descriptor_set| {
-            Valid::from(
-                ProtobufSet::from_proto_file(file_descriptor_set)
-                    .map_err(|e| ValidationError::new(e.to_string())),
-            )
-        })
+    .and_then(|file_descriptor_set| {
+        Valid::from(
+            ProtobufSet::from_proto_file(file_descriptor_set)
+                .map_err(|e| ValidationError::new(e.to_string())),
+        )
+    })
 }
 
 fn to_operation(

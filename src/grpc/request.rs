@@ -113,12 +113,7 @@ mod tests {
     }
     async fn prepare_args(
         test_http: TestHttp,
-    ) -> Result<(
-        TargetRuntime,
-        ProtobufOperation,
-        ProtobufSet,
-        Request,
-    )> {
+    ) -> Result<(TargetRuntime, ProtobufOperation, ProtobufSet, Request)> {
         let mut runtime = crate::runtime::test::init(None);
         runtime.http2_only = Arc::new(test_http);
 

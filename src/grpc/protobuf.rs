@@ -99,12 +99,7 @@ impl ProtobufSet {
         let message_descriptor = self
             .descriptor_pool
             .get_message_by_name(name)
-            .with_context(|| {
-                format!(
-                    "Couldn't find definitions for message {}",
-                    name
-                )
-            })?;
+            .with_context(|| format!("Couldn't find definitions for message {}", name))?;
         Ok(ProtobufMessage { message_descriptor })
     }
 }
