@@ -1,0 +1,23 @@
+---
+source: src/generator/from_proto.rs
+expression: result
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Greetings {
+  sayHello(helloRequest: HelloRequest!): greetings.HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+}
+
+type Greetings__HelloReply @tag(id: "greetings.HelloReply") {
+  message: String
+}
+
+type Greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
+  name: String
+}
+
+type Query {
+  greetings: Greetings
+}

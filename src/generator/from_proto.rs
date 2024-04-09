@@ -443,6 +443,13 @@ mod test {
     }
 
     #[test]
+    fn test_greetings_proto_file() {
+        let set = new_file_desc(&["greetings.proto", "greetings_message.proto"]).unwrap();
+        let result = from_proto(&[set], "Query").to_sdl();
+        insta::assert_snapshot!(result);
+    }
+
+    #[test]
     fn test_config_from_sdl() -> anyhow::Result<()> {
         let set = new_file_desc(&["news.proto", "greetings_a.proto", "greetings_b.proto"])?;
 
