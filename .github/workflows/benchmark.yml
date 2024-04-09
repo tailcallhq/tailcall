@@ -5,7 +5,7 @@ on:
     paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
-  pull_request_target:
+  pull_request:
     paths-ignore: ["docs/**", "**.md"]
     types: [opened, reopened, synchronize, labeled]
 
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   macro_benchmark:
     name: Macro Benchmarks
-    if: "github.event.label.name == 'ci: benchmark' || github.event_name == 'push'"
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
