@@ -18,7 +18,6 @@ use crate::runtime::TargetRuntime;
 ///
 /// Loading reflection proto
 /// https://github.com/grpc/grpc/blob/master/src/proto/grpc/reflection/v1alpha/reflection.proto
-///
 const REFLECTION_PROTO: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/src/proto_reader/proto/reflection.proto"
