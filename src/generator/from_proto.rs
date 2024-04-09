@@ -84,17 +84,27 @@ impl Context {
         ty.as_str_name(&self.package, name)
     }
 
+    fn formatted_name(&self, name: &str) -> String {
+        let mut prefix = format!("{}.", self.package);
+        if self.package.is_empty() || name.starts_with(&prefix) {
+            name.to_string()
+        } else {
+            prefix.push_str(name);
+            prefix
+        }
+    }
+
     /// Inserts a formatted name into the map.
     fn insert(mut self, name: &str, ty: DescriptorType) -> Self {
         self.map.insert(
-            format!("{}.{}", self.package, name),
+            self.formatted_name(name),
             self.get_name(name, ty),
         );
         self
     }
     /// Retrieves a formatted name from the map.
     fn get(&self, name: &str) -> Option<String> {
-        self.map.get(&format!("{}.{}", self.package, name)).cloned()
+        self.map.get(&self.formatted_name(name)).cloned()
     }
 
     /// Resolves the actual name and inserts the type.
@@ -113,11 +123,7 @@ impl Context {
             .cloned()
             .unwrap_or_default();
 
-        let id = if self.package.is_empty() {
-            name.to_string()
-        } else {
-            format!("{}.{}", self.package, name)
-        };
+        let id = self.formatted_name(name);
 
         ty.tag = Some(Tag { id });
         ty
@@ -197,6 +203,9 @@ impl Context {
         match input_ty {
             "google.protobuf.Empty" | "" => None,
             any => {
+                let any = any
+                    .strip_prefix(&format!("{}.", self.package))
+                    .unwrap_or_else(|| any);
                 let key = convert_ty(any).to_case(Case::Camel);
                 let val = Arg {
                     type_of: self.get(any).unwrap_or(any.to_string()),
