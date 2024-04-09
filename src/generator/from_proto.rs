@@ -283,7 +283,6 @@ impl Context {
     /// Processes proto service definitions and their methods.
     fn append_query_service(mut self, services: &Vec<ServiceDescriptorProto>) -> Self {
         if services.is_empty() {
-            self.config = Config::default();
             return self;
         }
 
