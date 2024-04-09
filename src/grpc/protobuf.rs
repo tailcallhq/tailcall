@@ -75,7 +75,7 @@ impl ProtobufSet {
     // either from file or server reflection
     pub fn from_proto_file(file_descriptor_set: FileDescriptorSet) -> Result<Self> {
         let descriptor_pool =
-            DescriptorPool::from_file_descriptor_set(file_descriptor_set.clone())?;
+            DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
         Ok(Self { descriptor_pool })
     }
 
