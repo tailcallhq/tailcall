@@ -132,7 +132,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: benches/base.txt
-          key: criterion_benchmarks_${{ github.event.pull_request.base.sha }}
+          key: criterion_benchmarks_799d08df5260b225d326b1c064ad6ff1109933bf
           fail-on-cache-miss: true
 
       - name: Run Benchmarks
