@@ -16,7 +16,7 @@ concurrency:
 jobs:
   macro_benchmark:
     name: Macro Benchmarks
-    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')  || github.event_name == 'push'"
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
     permissions:
       pull-requests: write
