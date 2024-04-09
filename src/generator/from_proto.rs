@@ -96,10 +96,8 @@ impl Context {
 
     /// Inserts a formatted name into the map.
     fn insert(mut self, name: &str, ty: DescriptorType) -> Self {
-        self.map.insert(
-            self.formatted_name(name),
-            self.get_name(name, ty),
-        );
+        self.map
+            .insert(self.formatted_name(name), self.get_name(name, ty));
         self
     }
     /// Retrieves a formatted name from the map.
@@ -205,7 +203,7 @@ impl Context {
             any => {
                 let any = any
                     .strip_prefix(&format!("{}.", self.package))
-                    .unwrap_or_else(|| any);
+                    .unwrap_or(any);
                 let key = convert_ty(any).to_case(Case::Camel);
                 let val = Arg {
                     type_of: self.get(any).unwrap_or(any.to_string()),
