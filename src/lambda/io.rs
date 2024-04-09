@@ -7,6 +7,7 @@ use async_graphql_value::ConstValue;
 use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
+use crate::cli::CLIError;
 use crate::config::group_by::GroupBy;
 use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
@@ -267,7 +268,7 @@ async fn execute_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(|e| EvaluationError::IOException(e.to_string()))?
+        .map_err(|e| CLIError::new("Http Error").caused_by(vec![CLIError::new(&e.to_string())]))?
         .unwrap_or_default())
 }
 

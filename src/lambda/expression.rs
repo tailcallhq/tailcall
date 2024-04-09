@@ -2,12 +2,13 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
 use super::{Concurrent, Eval, EvaluationContext, ResolverContextLike, IO};
 use crate::blueprint::DynamicValue;
+use crate::cli::CLIError;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
@@ -84,7 +85,7 @@ impl Expression {
 }
 
 impl Eval for Expression {
-    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
+    #[tracing::instrument(skip_all, fields(otel.name = %self))]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
@@ -125,7 +126,10 @@ impl Eval for Expression {
                         .validate(ctx.request_ctx)
                         .await
                         .to_result()
-                        .map_err(|e| anyhow!("Authentication Failure: {}", e.to_string()))?;
+                        .map_err(|e| {
+                            CLIError::new("Authentication Failure")
+                                .caused_by(vec![CLIError::new(&e.to_string())])
+                        })?;
                     expr.eval(ctx, conc).await
                 }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,

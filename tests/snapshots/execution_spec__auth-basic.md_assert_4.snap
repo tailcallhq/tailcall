@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Authentication Failure: Missing Authorization Header",
+        "message": "Authentication Failure\nCaused by:\n  • Missing Authorization Header",
         "locations": [
           {
             "line": 2,

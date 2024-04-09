@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
+use async_graphql::Error;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
@@ -78,7 +79,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         Ok(Some(p))
                                     }
                                     .instrument(span)
-                                    .inspect_err(|err| tracing::error!(?err)),
+                                    .inspect_err(|err: &Error| tracing::error!("{}", err.message)),
                                 )
                             }
                         }
