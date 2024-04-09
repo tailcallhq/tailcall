@@ -87,29 +87,6 @@ When implementing any functionality that requires observability consider the fol
 - Due to limitations of tracing libraries span names could only be defined as static strings. This could be solved by specifying an additional field with special name `otel.name` (for details refer `tracing-opentelemetry` docs).
 - The naming of the attributes should follow the opentelemetry's [semantic convention](https://opentelemetry.io/docs/concepts/semantic-conventions/). Existing constants can be obtained with the [opentelemetry_semantic_conventions](https://docs.rs/opentelemetry-semantic-conventions/latest/opentelemetry_semantic_conventions/index.html) crate.
 
-## Benchmarks Comparison
-
-### Criterion Benchmarks
-
-1. **Important:** Make sure all the commits are done.
-2. **Install packages:** Install cargo-criterion rust-script.
-   ```bash
-   cargo install cargo-criterion rust-script
-   ```
-3. **Comparing Benchmarks:**
-   You need to follow the following steps to compare benchmarks between `main`(Baseline) and your branch.
-
-   ```bash
-   git checkout main
-   cargo criterion --message-format=json > main.json
-   git checkout -
-   cargo criterion --message-format=json > feature.json
-   ./scripts/criterion_compare.rs base.json main.json table
-
-   ```
-
-4. **Check the Results:** If the benchmarks show more than 10% degradation, the script will exit with an error. Please check "benches/benchmark.md" file to identify the benchmarks that failed and investigate the code changes that might have caused the degradation.
-
 ## Documentation
 
 1. **Update README:** If your changes necessitate a change in the way users interact with the application, update the README accordingly.
