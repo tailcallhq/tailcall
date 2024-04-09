@@ -25,7 +25,6 @@ jobs:
         with:
           config-name: release-drafter.yml
 
-
   Criterion_Compare:
     name: Comparing Micro Benchmarks
     runs-on: benchmarking-runner
