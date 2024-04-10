@@ -7,5 +7,5 @@ schema @server(headers: {custom: [{key: "x-id", value: "1"}, {key: "x-name", val
 }
 
 type Query {
-  greet: String @const(data: "Hello World!")
+  greet: String @expr(body: "Hello World!")
 }

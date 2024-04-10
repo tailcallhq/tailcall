@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -9,15 +9,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{Expr, KeyValue, Link, Server, Upstream};
+use super::{KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
+use crate::is_default;
 use crate::json::JsonSchema;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
-use crate::{is_default, scalar};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -67,63 +67,6 @@ impl Config {
         self.server.port.unwrap_or(8000)
     }
 
-    pub fn output_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        let input_types = self.input_types();
-
-        if let Some(ref query) = &self.schema.query {
-            types.insert(query);
-        }
-
-        if let Some(ref mutation) = &self.schema.mutation {
-            types.insert(mutation);
-        }
-        for (type_name, type_of) in self.types.iter() {
-            if (type_of.interface || !type_of.fields.is_empty())
-                && !input_types.contains(&type_name)
-            {
-                for (_, field) in type_of.fields.iter() {
-                    types.insert(&field.type_of);
-                }
-            }
-        }
-        types
-    }
-
-    pub fn recurse_type<'a>(&'a self, type_of: &str, types: &mut HashSet<&'a String>) {
-        if let Some(type_) = self.find_type(type_of) {
-            for (_, field) in type_.fields.iter() {
-                if !types.contains(&field.type_of) {
-                    types.insert(&field.type_of);
-                    self.recurse_type(&field.type_of, types);
-                }
-            }
-        }
-    }
-
-    pub fn input_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        for (_, type_of) in self.types.iter() {
-            if !type_of.interface {
-                for (_, field) in type_of.fields.iter() {
-                    for (_, arg) in field
-                        .args
-                        .iter()
-                        .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
-                    {
-                        if let Some(t) = self.find_type(&arg.type_of) {
-                            t.fields.iter().for_each(|(_, f)| {
-                                types.insert(&f.type_of);
-                                self.recurse_type(&f.type_of, &mut types)
-                            })
-                        }
-                        types.insert(&arg.type_of);
-                    }
-                }
-            }
-        }
-        types
-    }
     pub fn find_type(&self, name: &str) -> Option<&Type> {
         self.types.get(name)
     }
@@ -230,6 +173,10 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    ///
+    /// Contains source information for the type.
+    pub tag: Option<Tag>,
 }
 
 impl Type {
@@ -256,6 +203,15 @@ impl MergeRight for Type {
         }
         Self { fields, ..self }
     }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+/// Used to represent an identifier for a type. Typically used via only by the
+/// configuration generators to provide additional information about the type.
+pub struct Tag {
+    /// A unique identifier for the type.
+    pub id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
@@ -397,18 +353,14 @@ pub struct Field {
 
     ///
     /// Inserts a constant resolver for the field.
-    #[serde(rename = "const", default, skip_serializing_if = "is_default")]
-    pub const_field: Option<Const>,
+    #[serde(rename = "expr", default, skip_serializing_if = "is_default")]
+    pub const_field: Option<Expr>,
 
     ///
     /// Inserts a GraphQL resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
     pub graphql: Option<GraphQL>,
 
-    ///
-    /// Inserts an Expression resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub expr: Option<Expr>,
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
@@ -425,7 +377,6 @@ impl Field {
             || self.const_field.is_some()
             || self.graphql.is_some()
             || self.grpc.is_some()
-            || self.expr.is_some()
             || self.call.is_some()
     }
 
@@ -442,7 +393,7 @@ impl Field {
             directives.push(JS::trace_name());
         }
         if self.const_field.is_some() {
-            directives.push(Const::trace_name());
+            directives.push(Expr::trace_name());
         }
         if self.grpc.is_some() {
             directives.push(Grpc::trace_name());
@@ -731,10 +682,11 @@ impl Display for GraphQLOperationType {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-/// The `@const` operators allows us to embed a constant response for the
-/// schema.
-pub struct Const {
-    pub data: Value,
+/// The `@expr` operators allows you to specify an expression that can evaluate
+/// to a value. The expression can be a static value or built form a Mustache
+/// template. schema.
+pub struct Expr {
+    pub body: Value,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

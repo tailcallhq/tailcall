@@ -36,20 +36,11 @@ directive @call(
 ) on FIELD_DEFINITION
 
 """
-The `@const` operators allows us to embed a constant response for the schema.
-"""
-directive @const(
-  data: JSON
-) on FIELD_DEFINITION
-
-"""
-Allows composing operators as simple expressions
+The `@expr` operators allows you to specify an expression that can evaluate to a 
+value. The expression can be a static value or built form a Mustache template. schema.
 """
 directive @expr(
-  """
-  Root of the expression AST
-  """
-  body: ExprBody
+  body: JSON
 ) on FIELD_DEFINITION
 
 """
@@ -222,6 +213,8 @@ Used to omit a field from public consumption.
 """
 directive @omit on FIELD_DEFINITION
 
+directive @protected on OBJECT | FIELD_DEFINITION
+
 """
 The `@server` directive, when applied at the schema level, offers a comprehensive 
 set of server configurations. It dictates how the server behaves and helps tune tailcall 
@@ -306,6 +299,17 @@ directive @server(
 ) on SCHEMA
 
 """
+Used to represent an identifier for a type. Typically used via only by the configuration 
+generators to provide additional information about the type.
+"""
+directive @tag(
+  """
+  A unique identifier for the type.
+  """
+  id: String!
+) on OBJECT
+
+"""
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
 the observability of your GraphQL services powered by Tailcall.  By leveraging this 
 directive, developers gain access to valuable insights into the performance and behavior 
@@ -319,7 +323,7 @@ directive @telemetry(
   headers that may contain sensitive data
   """
   requestHeaders: [String!]
-) on FIELD_DEFINITION
+) on SCHEMA
 
 """
 The `upstream` directive allows you to control various aspects of the upstream server 
@@ -443,12 +447,6 @@ input Cache {
   maxAge: Int!
 }
 """
-The `@const` operators allows us to embed a constant response for the schema.
-"""
-input Const {
-  data: JSON
-}
-"""
 Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 """
 input Cors {
@@ -456,7 +454,7 @@ input Cors {
   Indicates whether the server allows credentials (e.g., cookies, authorization headers) 
   to be sent in cross-origin requests.
   """
-  allowCredentials: Boolean!
+  allowCredentials: Boolean
   """
   A list of allowed headers in cross-origin requests. This can be used to specify custom 
   headers that are allowed to be included in cross-origin requests.
@@ -477,7 +475,7 @@ input Cors {
   requests. Private network addresses typically include IP addresses reserved for internal 
   networks.
   """
-  allowPrivateNetwork: Boolean!
+  allowPrivateNetwork: Boolean
   """
   A list of headers that the server exposes to the browser in cross-origin responses. 
   Exposing certain headers allows the client-side code to access them in the response.
@@ -499,66 +497,11 @@ enum Encoding {
   ApplicationXWwwFormUrlencoded
 }
 """
-Allows composing operators as simple expressions
+The `@expr` operators allows you to specify an expression that can evaluate to a 
+value. The expression can be a static value or built form a Mustache template. schema.
 """
 input Expr {
-  """
-  Root of the expression AST
-  """
-  body: ExprBody
-}
-input ExprBody {
-  http: Http
-  grpc: Grpc
-  graphQL: GraphQL
-  call: Call
-  const: JSON
-  if: ExprIf
-  and: [ExprBody]
-  or: [ExprBody]
-  cond: [ExprBody]
-  defaultTo: [ExprBody]
-  isEmpty: ExprBody
-  not: ExprBody
-  concat: [ExprBody]
-  intersection: [ExprBody]
-  difference: [[ExprBody]]
-  eq: [ExprBody]
-  gt: [ExprBody]
-  gte: [ExprBody]
-  lt: [ExprBody]
-  lte: [ExprBody]
-  max: [ExprBody]
-  min: [ExprBody]
-  pathEq: [ExprBody]
-  propEq: [ExprBody]
-  sortPath: [ExprBody]
-  symmetricDifference: [[ExprBody]]
-  union: [[ExprBody]]
-  mod: [ExprBody]
-  add: [ExprBody]
-  dec: ExprBody
-  divide: [ExprBody]
-  inc: ExprBody
-  multiply: [ExprBody]
-  negate: ExprBody
-  product: [ExprBody]
-  subtract: [ExprBody]
-  sum: [ExprBody]
-}
-input ExprIf {
-  """
-  Condition to evaluate
-  """
-  cond: ExprBody
-  """
-  Expression to evaluate if the condition is false
-  """
-  else: ExprBody
-  """
-  Expression to evaluate if the condition is true
-  """
-  then: ExprBody
+  body: JSON
 }
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
@@ -843,6 +786,10 @@ scalar Date
 field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 """
 scalar Email
+"""
+Empty scalar type represents an empty value.
+"""
+scalar Empty
 """
 The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).
 """

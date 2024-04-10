@@ -1,25 +1,30 @@
-# Auth with JWT loaded from const
+# Auth with JWT loaded from expr
 
 ```graphql @server
 schema @server(port: 8000, graphiql: true) @link(id: "jwks", type: Jwks, src: "jwks.json") {
   query: Query
+  mutation: Mutation
 }
 
 type Query {
-  scalar: String! @const(data: "data from public scalar")
-  protectedScalar: String! @protected @const(data: "data from protected scalar")
-  nested: Nested!
-  protectedType: ProtectedType
+  scalar: String! @expr(body: "data from public scalar")
+  protectedScalar: String! @protected @expr(body: "data from protected scalar")
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
+  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
+}
+
+type Mutation {
+  protectedType: ProtectedType @http(baseURL: "http://upstream", path: "/protected")
 }
 
 type Nested {
-  name: String! @const(data: "nested name")
-  protected: String! @protected @const(data: "protected nested")
+  name: String!
+  protected: String! @protected
 }
 
 type ProtectedType @protected {
-  name: String! @const(data: "protected type name")
-  nested: String! @const(data: "protected type nested")
+  name: String!
+  nested: String!
 }
 ```
 
@@ -36,6 +41,19 @@ type ProtectedType @protected {
     }
   ]
 }
+```
+
+```yml @mock
+- request:
+    method: GET
+    url: http://upstream/protected
+    headers:
+      authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Ikk0OHFNSnA1NjZTU0tRb2dZWFl0SEJvOXE2WmNFS0hpeE5QZU5veFYxYzgifQ.eyJleHAiOjIwMTkwNTY0NDEuMCwiaXNzIjoibWUiLCJzdWIiOiJ5b3UiLCJhdWQiOlsidGhlbSJdfQ.cU-hJgVGWxK3-IBggYBChhf3FzibBKjuDLtq2urJ99FVXIGZls0VMXjyNW7yHhLLuif_9t2N5UIUIq-hwXVv7rrGRPCGrlqKU0jsUH251Spy7_ppG5_B2LsG3cBJcwkD4AVz8qjT3AaE_vYZ4WnH-CQ-F5Vm7wiYZgbdyU8xgKoH85KAxaCdJJlYOi8mApE9_zcdmTNJrTNd9sp7PX3lXSUu9AWlrZkyO-HhVbXFunVtfduDuTeVXxP8iw1wt6171CFbPmQJU_b3xCornzyFKmhSc36yvlDfoPPclWmWeyOfFEp9lVhQm0WhfDK7GiuRtaOxD-tOvpTjpcoZBeJb7bSg2OsneyeM_33a0WoPmjHw8WIxbroJz_PrfE72_TzbcTSDttKAv_e75PE48Vvx0661miFv4Gq8RBzMl2G3pQMEVCOm83v7BpodfN_YVJcqZJjVHMA70TZQ4K3L4_i9sIK9jJFfwEDVM7nsDnUu96n4vKs1fVvAuieCIPAJrfNOUMy7TwLvhnhUARsKnzmtNNrJuDhhBx-X93AHcG3micXgnqkFdKn6-ZUZ63I2KEdmjwKmLTRrv4n4eZKrRN-OrHPI4gLxJUhmyPAHzZrikMVBcDYfALqyki5SeKkwd4v0JAm87QzR4YwMdKErr0Xa5JrZqHGe2TZgVO4hIc-KrPw
+  response:
+    status: 200
+    body:
+      name: mutation name
+      nested: mutation nested
 ```
 
 ```yml @assert
@@ -72,5 +90,36 @@ type ProtectedType @protected {
           name
           nested
         }
+      }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      mutation {
+        protectedType {
+          name
+          nested
+        }
+      }
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Ikk0OHFNSnA1NjZTU0tRb2dZWFl0SEJvOXE2WmNFS0hpeE5QZU5veFYxYzgifQ.eyJleHAiOjIwMTkwNTY0NDEuMCwiaXNzIjoibWUiLCJzdWIiOiJ5b3UiLCJhdWQiOlsidGhlbSJdfQ.cU-hJgVGWxK3-IBggYBChhf3FzibBKjuDLtq2urJ99FVXIGZls0VMXjyNW7yHhLLuif_9t2N5UIUIq-hwXVv7rrGRPCGrlqKU0jsUH251Spy7_ppG5_B2LsG3cBJcwkD4AVz8qjT3AaE_vYZ4WnH-CQ-F5Vm7wiYZgbdyU8xgKoH85KAxaCdJJlYOi8mApE9_zcdmTNJrTNd9sp7PX3lXSUu9AWlrZkyO-HhVbXFunVtfduDuTeVXxP8iw1wt6171CFbPmQJU_b3xCornzyFKmhSc36yvlDfoPPclWmWeyOfFEp9lVhQm0WhfDK7GiuRtaOxD-tOvpTjpcoZBeJb7bSg2OsneyeM_33a0WoPmjHw8WIxbroJz_PrfE72_TzbcTSDttKAv_e75PE48Vvx0661miFv4Gq8RBzMl2G3pQMEVCOm83v7BpodfN_YVJcqZJjVHMA70TZQ4K3L4_i9sIK9jJFfwEDVM7nsDnUu96n4vKs1fVvAuieCIPAJrfNOUMy7TwLvhnhUARsKnzmtNNrJuDhhBx-X93AHcG3micXgnqkFdKn6-ZUZ63I2KEdmjwKmLTRrv4n4eZKrRN-OrHPI4gLxJUhmyPAHzZrikMVBcDYfALqyki5SeKkwd4v0JAm87QzR4YwMdKErr0Xa5JrZqHGe2TZgVO4hIc-KrPw
+  body:
+    query: |
+      mutation {
+        protectedType {
+          name
+          nested
+        }
+      }
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Bearer abc.def
+  body:
+    query: |
+      query {
+        protectedScalar
       }
 ```

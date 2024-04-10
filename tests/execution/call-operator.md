@@ -45,7 +45,7 @@ schema
 }
 
 type Query {
-  userId: Int! @const(data: 2)
+  userId: Int! @expr(body: 2)
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{args.id}}")
   userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])

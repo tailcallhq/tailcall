@@ -6,7 +6,7 @@ schema @server(vars: [{key: "a", value: "b"}, {key: "c", value: "d"}]) @upstream
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```
 
@@ -16,6 +16,6 @@ schema @server(vars: [{key: "a", value: "b"}, {key: "p", value: "q"}]) @upstream
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```

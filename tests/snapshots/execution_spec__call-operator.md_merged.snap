@@ -44,7 +44,7 @@ type Query {
   userGraphQLHeaders(id: Int!): User @graphQL(baseURL: "http://upstream/graphql", headers: [{key: "id", value: "{{args.id}}"}], name: "user")
   userHttpHeaders(id: ID!): User @http(headers: [{key: "id", value: "{{args.id}}"}], path: "/users")
   userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}])
-  userId: Int! @const(data: 2)
+  userId: Int! @expr(body: 2)
   userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
   userWithPosts: UserWithPosts @http(path: "/users/1")
 }

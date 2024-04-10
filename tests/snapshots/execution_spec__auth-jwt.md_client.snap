@@ -6,7 +6,13 @@ scalar Date
 
 scalar Email
 
+scalar Empty
+
 scalar JSON
+
+type Mutation {
+  protectedType: ProtectedType
+}
 
 type Nested {
   name: String!
@@ -31,4 +37,5 @@ scalar Url
 
 schema {
   query: Query
+  mutation: Mutation
 }

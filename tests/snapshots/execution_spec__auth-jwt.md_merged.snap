@@ -4,21 +4,26 @@ expression: merged
 ---
 schema @server(graphiql: true, port: 8000) @upstream @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
+  mutation: Mutation
+}
+
+type Mutation {
+  protectedType: ProtectedType @http(baseURL: "http://upstream", path: "/protected")
 }
 
 type Nested {
-  name: String! @const(data: "nested name")
-  protected: String! @const(data: "protected nested") @protected
+  name: String!
+  protected: String! @protected
 }
 
 type ProtectedType {
-  name: String! @const(data: "protected type name")
-  nested: String! @const(data: "protected type nested")
+  name: String!
+  nested: String!
 }
 
 type Query {
-  nested: Nested!
-  protectedScalar: String! @const(data: "data from protected scalar") @protected
-  protectedType: ProtectedType
-  scalar: String! @const(data: "data from public scalar")
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
+  protectedScalar: String! @expr(body: "data from protected scalar") @protected
+  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
+  scalar: String! @expr(body: "data from public scalar")
 }

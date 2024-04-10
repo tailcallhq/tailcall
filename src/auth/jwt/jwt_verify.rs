@@ -1,10 +1,10 @@
-use anyhow::Result;
 use headers::authorization::Bearer;
 use headers::{Authorization, HeaderMapExt};
 use serde::Deserialize;
 
 use super::jwks::Jwks;
 use crate::auth::error::Error;
+use crate::auth::verification::Verification;
 use crate::auth::verify::Verify;
 use crate::blueprint;
 use crate::http::RequestContext;
@@ -23,12 +23,12 @@ pub struct JwtClaim {
 }
 
 pub struct JwtVerifier {
-    options: blueprint::JwtProvider,
+    options: blueprint::Jwt,
     decoder: Jwks,
 }
 
 impl JwtVerifier {
-    pub fn new(options: blueprint::JwtProvider) -> Self {
+    pub fn new(options: blueprint::Jwt) -> Self {
         Self {
             decoder: Jwks {
                 set: options.jwks.clone(),
@@ -38,44 +38,47 @@ impl JwtVerifier {
         }
     }
 
-    fn resolve_token(&self, request: &RequestContext) -> Option<String> {
-        let value = request.allowed_headers.typed_get::<Authorization<Bearer>>();
+    fn resolve_token(&self, request: &RequestContext) -> anyhow::Result<Option<String>> {
+        let value = request
+            .allowed_headers
+            .typed_try_get::<Authorization<Bearer>>()?;
 
-        value.map(|token| token.token().to_owned())
+        Ok(value.map(|token| token.token().to_owned()))
     }
 
-    async fn validate_token(&self, token: &str) -> Result<(), Error> {
-        let claims = self
-            .decoder
-            .decode(token)
-            .map_err(|_| Error::ValidationCheckFailed)?;
-
-        self.validate_claims(&claims)
+    async fn validate_token(&self, token: &str) -> Verification {
+        Verification::from_result(
+            self.decoder.decode(token),
+            |claims| self.validate_claims(&claims),
+            |err| Verification::fail(Error::Parse(err.to_string())),
+        )
     }
 
-    fn validate_claims(&self, claims: &JwtClaim) -> Result<(), Error> {
+    fn validate_claims(&self, claims: &JwtClaim) -> Verification {
         if !validate_iss(&self.options, claims) || !validate_aud(&self.options, claims) {
-            return Err(Error::Invalid);
+            return Verification::fail(Error::Invalid);
         }
 
-        Ok(())
+        Verification::succeed()
     }
 }
 
 #[async_trait::async_trait]
 impl Verify for JwtVerifier {
-    async fn verify(&self, request: &RequestContext) -> Result<(), Error> {
+    async fn verify(&self, request: &RequestContext) -> Verification {
         let token = self.resolve_token(request);
-
+        let Ok(token) = token else {
+            return Verification::fail(Error::Invalid);
+        };
         let Some(token) = token else {
-            return Err(Error::Missing);
+            return Verification::fail(Error::Missing);
         };
 
         self.validate_token(&token).await
     }
 }
 
-pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool {
+pub fn validate_iss(options: &blueprint::Jwt, claims: &JwtClaim) -> bool {
     options
         .issuer
         .as_ref()
@@ -89,13 +92,15 @@ pub fn validate_iss(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool
         .unwrap_or(true)
 }
 
-pub fn validate_aud(options: &blueprint::JwtProvider, claims: &JwtClaim) -> bool {
+pub fn validate_aud(options: &blueprint::Jwt, claims: &JwtClaim) -> bool {
     let audiences = &options.audiences;
 
     if audiences.is_empty() {
         true
     } else {
-        let Some(aud) = &claims.aud else { return false };
+        let Some(aud) = &claims.aud else {
+            return false;
+        };
 
         match aud {
             OneOrMany::One(aud) => audiences.contains(aud),
@@ -147,7 +152,7 @@ pub mod tests {
         serde_json::from_value(value).unwrap()
     });
 
-    impl blueprint::JwtProvider {
+    impl blueprint::Jwt {
         pub fn test_value() -> Self {
             Self {
                 issuer: Default::default(),
@@ -169,19 +174,19 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn validate_token_iss() -> Result<()> {
-        let jwt_options = blueprint::JwtProvider::test_value();
+    async fn validate_token_iss() {
+        let jwt_options = blueprint::Jwt::test_value();
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let valid = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
             .await;
 
-        assert!(valid.is_ok());
+        assert_eq!(valid, Verification::succeed());
 
-        let jwt_options = blueprint::JwtProvider {
+        let jwt_options = blueprint::Jwt {
             issuer: Some("me".to_owned()),
-            ..blueprint::JwtProvider::test_value()
+            ..blueprint::Jwt::test_value()
         };
         let jwt_provider = JwtVerifier::new(jwt_options);
 
@@ -189,38 +194,35 @@ pub mod tests {
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
             .await;
 
-        assert!(valid.is_ok());
+        assert_eq!(valid, Verification::succeed());
 
-        let jwt_options = blueprint::JwtProvider {
+        let jwt_options = blueprint::Jwt {
             issuer: Some("another".to_owned()),
-            ..blueprint::JwtProvider::test_value()
+            ..blueprint::Jwt::test_value()
         };
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let error = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
-            .await
-            .err();
+            .await;
 
-        assert_eq!(error, Some(Error::Invalid));
-
-        Ok(())
+        assert_eq!(error, Verification::fail(Error::Invalid));
     }
 
     #[tokio::test]
-    async fn validate_token_aud() -> Result<()> {
-        let jwt_options = blueprint::JwtProvider::test_value();
+    async fn validate_token_aud() {
+        let jwt_options = blueprint::Jwt::test_value();
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let valid = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
             .await;
 
-        assert!(valid.is_ok());
+        assert_eq!(valid, Verification::succeed());
 
-        let jwt_options = blueprint::JwtProvider {
+        let jwt_options = blueprint::Jwt {
             audiences: HashSet::from_iter(["them".to_string()]),
-            ..blueprint::JwtProvider::test_value()
+            ..blueprint::Jwt::test_value()
         };
         let jwt_provider = JwtVerifier::new(jwt_options);
 
@@ -228,31 +230,28 @@ pub mod tests {
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
             .await;
 
-        assert!(valid.is_ok());
+        assert_eq!(valid, Verification::succeed());
 
-        let jwt_options = blueprint::JwtProvider {
+        let jwt_options = blueprint::Jwt {
             audiences: HashSet::from_iter(["anothem".to_string()]),
-            ..blueprint::JwtProvider::test_value()
+            ..blueprint::Jwt::test_value()
         };
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let error = jwt_provider
             .verify(&create_jwt_auth_request(JWT_VALID_TOKEN_WITH_KID))
-            .await
-            .err();
+            .await;
 
-        assert_eq!(error, Some(Error::Invalid));
-
-        Ok(())
+        assert_eq!(error, Verification::fail(Error::Invalid));
     }
 
     mod iss {
         use super::*;
-        use crate::blueprint::JwtProvider;
+        use crate::blueprint::Jwt;
 
         #[test]
         fn validate_iss_not_defined() {
-            let options = JwtProvider::test_value();
+            let options = Jwt::test_value();
             let mut claims = JwtClaim::default();
 
             assert!(validate_iss(&options, &claims));
@@ -264,8 +263,7 @@ pub mod tests {
 
         #[test]
         fn validate_iss_defined() {
-            let options =
-                JwtProvider { issuer: Some("iss".to_owned()), ..JwtProvider::test_value() };
+            let options = Jwt { issuer: Some("iss".to_owned()), ..Jwt::test_value() };
             let mut claims = JwtClaim::default();
 
             assert!(!validate_iss(&options, &claims));
@@ -284,11 +282,11 @@ pub mod tests {
         use std::collections::HashSet;
 
         use super::*;
-        use crate::blueprint::JwtProvider;
+        use crate::blueprint::Jwt;
 
         #[test]
         fn validate_aud_not_defined() {
-            let options = JwtProvider::test_value();
+            let options = Jwt::test_value();
             let mut claims = JwtClaim::default();
             assert!(validate_aud(&options, &claims));
 
@@ -301,9 +299,9 @@ pub mod tests {
 
         #[test]
         fn validate_aud_defined() {
-            let options = JwtProvider {
+            let options = Jwt {
                 audiences: HashSet::from_iter(["aud1".to_owned(), "aud2".to_owned()]),
-                ..JwtProvider::test_value()
+                ..Jwt::test_value()
             };
             let mut claims = JwtClaim::default();
             assert!(!validate_aud(&options, &claims));
