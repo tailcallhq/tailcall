@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::{Arc, Mutex};
 
 use anyhow::Context;
 use futures_util::future::join_all;
@@ -10,6 +11,8 @@ use crate::runtime::TargetRuntime;
 
 pub struct ProtoReader {
     resource_reader: ResourceReader,
+    descriptors: Arc<Mutex<HashMap<String, FileDescriptorProto>>>,
+    queue: Arc<Mutex<VecDeque<String>>>,
 }
 
 pub struct ProtoMetadata {
@@ -18,25 +21,56 @@ pub struct ProtoMetadata {
 }
 
 impl ProtoReader {
-    pub fn init(runtime: TargetRuntime) -> Self {
-        Self { resource_reader: ResourceReader::init(runtime) }
+    pub fn init<T: AsRef<str>>(runtime: TargetRuntime, paths: &[T]) -> Self {
+        Self {
+            resource_reader: ResourceReader::init(runtime),
+            descriptors: Arc::new(Mutex::new(HashMap::new())),
+            queue: Arc::new(Mutex::new(
+                paths.iter().map(|v| v.as_ref().to_string()).collect(),
+            )),
+        }
     }
 
-    pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
-        let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(resolved_protos)
+    // FIXME: rename to `load()`
+    /// Performs BFS to import all nested proto files
+    pub async fn read_all<T: AsRef<str>>(&self) -> anyhow::Result<Vec<ProtoMetadata>> {
+        let queue = self.queue.lock();
+        while let Some(path) = queue.unwrap().pop_front() {
+            let descriptors = self.descriptors.lock().unwrap();
+
+            if descriptors.contains_key(&path) {
+                continue;
+            }
+
+            let proto = self.read_proto(path.as_ref()).await?;
+            if proto.package.is_none() {
+                anyhow::bail!("Package name is required");
+            }
+
+            let descriptors = self.descriptors.lock().unwrap();
+            descriptors.insert(path, proto);
+
+            let queue = self.queue.lock().unwrap();
+
+            // FIXME: path should be relative to current file
+            queue.extend(proto.dependency);
+        }
+
+        let hash_map = self.descriptors.lock().unwrap();
+
+        // FIXME: return type isn't correct
+        let descriptors = hash_map.into_values().collect::<Vec<FileDescriptorProto>>();
+        Ok(descriptors)
     }
 
+    // FIXME: delete this method
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
-        let file_read = self.read_proto(path.as_ref()).await?;
-        if file_read.package.is_none() {
+        let proto = self.read_proto(path.as_ref()).await?;
+        if proto.package.is_none() {
             anyhow::bail!("Package name is required");
         }
 
-        let descriptors = self.resolve_descriptors(file_read).await?;
+        let descriptors = self.resolve_dependencies(proto).await?;
         let metadata = ProtoMetadata {
             descriptor_set: FileDescriptorSet { file: descriptors },
             path: path.as_ref().to_string(),
@@ -44,12 +78,12 @@ impl ProtoReader {
         Ok(metadata)
     }
 
+    // FIXME: delete this method
     /// Performs BFS to import all nested proto files
-    async fn resolve_descriptors(
+    async fn resolve_dependencies(
         &self,
         parent_proto: FileDescriptorProto,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
-        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
         let mut queue = VecDeque::new();
         queue.push_back(parent_proto.clone());
 
@@ -64,6 +98,7 @@ impl ProtoReader {
 
             for result in results {
                 let proto = result?;
+                let descriptors = self.descriptors.lock().unwrap();
                 if descriptors.get(proto.name()).is_none() {
                     queue.push_back(proto.clone());
                     descriptors.insert(proto.name().to_string(), proto);
@@ -71,12 +106,13 @@ impl ProtoReader {
             }
         }
 
-        let mut descriptors_vec = descriptors
-            .into_values()
-            .collect::<Vec<FileDescriptorProto>>();
+        let hash_map = self.descriptors.lock().unwrap();
+
+        let mut descriptors_vec = hash_map.into_values().collect::<Vec<FileDescriptorProto>>();
         descriptors_vec.push(parent_proto);
         Ok(descriptors_vec)
     }
+
 
     /// Tries to load well-known google proto files and if not found uses normal
     /// file and http IO to resolve them
@@ -135,7 +171,7 @@ mod test_proto_config {
 
         let reader = ProtoReader::init(runtime);
         let helper_map = reader
-            .resolve_descriptors(reader.read_proto(&test_file).await?)
+            .resolve_dependencies(reader.read_proto(&test_file).await?)
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {
