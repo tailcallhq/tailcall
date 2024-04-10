@@ -71,13 +71,15 @@ fn not_found() -> Result<Response<Body>> {
         .body(Body::empty())?)
 }
 
-fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
+fn create_request_context<'a>(
+    req: &Request<Body>,
+    app_ctx: &'a AppContext,
+)-> RequestContext <'a> {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
     let allowed_headers = create_allowed_headers(req.headers(), &allowed);
 
-    let _allowed = app_ctx.blueprint.server.get_experimental_headers();
-    RequestContext::from(app_ctx).allowed_headers(allowed_headers)
+    request_context::from(app_ctx).allowed_headers(allowed_headers)
 }
 
 fn update_cache_control_header(
@@ -94,40 +96,37 @@ fn update_cache_control_header(
 }
 
 pub fn update_response_headers(
-    resp: &mut hyper::Response<hyper::Body>,
-    req_ctx: &RequestContext,
-    app_ctx: &AppContext,
+    resp = &mut Response<Body>
+    req_ctx = &RequestContext,
+    app_ctx = &AppContext,
 ) {
     if !app_ctx.blueprint.server.response_headers.is_empty() {
-        // Add static response headers
         resp.headers_mut()
             .extend(app_ctx.blueprint.server.response_headers.clone());
+
     }
 
-    // Insert Cookie Headers
     if let Some(ref cookie_headers) = req_ctx.cookie_headers {
         let cookie_headers = cookie_headers.lock().unwrap();
-        resp.headers_mut().extend(cookie_headers.deref().clone());
-    }
+         resp.headers_mut().extend(cookie_headers.defef().clone());
+    }  
 
-    // Insert Experimental Headers
     req_ctx.extend_x_headers(resp.headers_mut());
 }
 
-#[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
-pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
+async fn handle_graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
     req_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+)-> Result <Response<Body>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
+
     match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-
             response = update_cache_control_header(response, app_ctx, req_ctx.clone());
             let mut resp = response.to_response()?;
             update_response_headers(&mut resp, &req_ctx, app_ctx);
@@ -260,11 +259,8 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     }
 
     match *req.method() {
-        // NOTE:
-        // The first check for the route should be for `/graphql`
-        // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
-            graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
+            handle_graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
         hyper::Method::POST
             if app_ctx.blueprint.server.enable_showcase
@@ -276,9 +272,8 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                     Err(res) => return Ok(res),
                 };
 
-            graphql_request::<T>(req, &app_ctx, req_counter).await
+            handle_graphql_request::<T>(req, &app_ctx, req_counter).await
         }
-
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
