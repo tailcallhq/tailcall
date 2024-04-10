@@ -835,4 +835,30 @@ mod tests {
         )]);
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn test_from_sdl_description() {
+        let actual = Config::from_sdl(
+            r#"
+                """
+                Some Documentation
+                """
+                input Foo {
+                    id: Int!
+                }
+                "#,
+        )
+        .to_result()
+        .unwrap();
+
+        let expected = Config::default().types(vec![(
+            "Foo",
+            Type {
+                doc: Some("Some Documentation".to_string()),
+                ..Default::default()
+            }
+            .fields(vec![("id", Field::int().required(true))]),
+        )]);
+        assert_eq!(actual, expected);
+    }
 }
