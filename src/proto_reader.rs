@@ -29,7 +29,13 @@ impl ProtoReader {
     }
 
     pub fn load(&self) -> anyhow::Result<Vec<ProtoMetadata>> {
-        Ok(protox::compile(&self.files, ["."])?
+        let includes: Vec<_> = self
+            .files
+            .iter()
+            .filter_map(|path| path.ancestors().skip(1).next())
+            .collect();
+
+        Ok(protox::compile(&self.files, &includes)?
             .file
             .into_iter()
             .map(|proto_file| {
@@ -43,7 +49,20 @@ impl ProtoReader {
                             None
                         }
                     })
-                    .unwrap_or_default();
+                    .or_else(|| {
+                        includes
+                            .iter()
+                            .find_map(|path| {
+                                let path = path
+                                    .join(proto_file.name.as_ref()?);
+                                if path.exists() {
+                                    Some(path)
+                                } else {
+                                    None
+                                }
+                            })
+                    })
+                    .unwrap();
                 ProtoMetadata {
                     descriptor_set: FileDescriptorSet {
                         file: vec![proto_file],
