@@ -83,10 +83,6 @@ impl Server {
     pub fn get_experimental_headers(&self) -> HashSet<HeaderName> {
         self.experimental_headers.clone()
     }
-
-    pub fn get_lint(&self) -> Option<Lint> {
-        self.lint.clone()
-    }
 }
 
 impl TryFrom<crate::config::ConfigModule> for Server {

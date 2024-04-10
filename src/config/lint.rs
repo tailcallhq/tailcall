@@ -284,4 +284,22 @@ mod lint_tests {
 
         assert!(type_linted && field_linted && enum_type_linted && variant_linted);
     }
+
+    #[tokio::test]
+    async fn test_lint_some() {
+        let runtime = crate::runtime::test::init(None);
+        let file = "examples/lint-some.graphql";
+        let cr = ConfigReader::init(runtime);
+        let c = cr.read(&file).await.unwrap();
+
+        let mut field_linted = false;
+        if let Some(user_type_data) = c.types.get("Post") {
+            let user_type_fields = user_type_data.clone().fields;
+            if user_type_fields.contains_key("title") {
+                field_linted = true;
+            }
+        }
+        
+        assert!(field_linted);
+    }
 }
