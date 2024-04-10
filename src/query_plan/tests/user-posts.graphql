@@ -17,7 +17,7 @@ type User {
   username: String!
   email: String!
   phone: String
-  website: String @const(data: "/users/website/{{value.username}}")
+  website: String @expr(body: "/users/website/{{value.username}}")
 }
 
 type Post {

@@ -1,39 +1,32 @@
-use crate::query_plan::plan::{FieldTreeEntry, OperationPlan};
+use crate::query_plan::plan::{FieldTree, FieldTreeEntry, OperationPlan};
 
 use super::execution::ExecutionStep;
 
 pub struct SimpleExecutionBuilder {}
 
 impl SimpleExecutionBuilder {
-    pub fn build(&self, operation_plan: &OperationPlan) -> ExecutionStep {
+    fn inner_build(&self, tree: &FieldTree) -> ExecutionStep {
         let mut steps = Vec::new();
-        let mut queue = vec![&operation_plan.field_tree];
 
-        while !queue.is_empty() {
-            let mut new_queue = Vec::new();
-            let mut parallel_steps = Vec::new();
-
-            for tree in queue {
-                if let Some(field_plan_id) = &tree.field_plan_id {
-                    parallel_steps.push(ExecutionStep::Resolve(*field_plan_id));
-                }
-
-                match &tree.entry {
-                    FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
-                        for tree in children.values() {
-                            new_queue.push(tree);
-                        }
-                    }
-                    _ => {}
+        match &tree.entry {
+            FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
+                for tree in children.values() {
+                    steps.push(self.inner_build(tree));
                 }
             }
-
-            if !parallel_steps.is_empty() {
-                steps.push(ExecutionStep::parallel(parallel_steps));
-            }
-            queue = new_queue;
+            _ => {}
         }
 
-        ExecutionStep::sequential(steps)
+        let steps = ExecutionStep::Parallel(steps);
+
+        if let Some(field_plan_id) = &tree.field_plan_id {
+            ExecutionStep::Sequential(vec![ExecutionStep::Resolve(*field_plan_id), steps])
+        } else {
+            steps
+        }
+    }
+
+    pub fn build(&self, operation_plan: &OperationPlan) -> ExecutionStep {
+        self.inner_build(&operation_plan.field_tree).flatten()
     }
 }

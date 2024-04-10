@@ -89,6 +89,9 @@ impl<'a> ExecutorContext<'a> {
 
                 self.resolved.insert(*id, result);
             }
+            ExecutionStep::ForEach(id) => {
+                todo!()
+            }
             ExecutionStep::Sequential(steps) => {
                 for step in steps {
                     self.execute(step).await;
