@@ -19,6 +19,7 @@ use crate::runtime::TargetRuntime;
 pub struct ConfigReader {
     runtime: TargetRuntime,
     resource_reader: ResourceReader,
+    proto_reader: ProtoReader,
 }
 
 impl ConfigReader {
@@ -26,6 +27,7 @@ impl ConfigReader {
         Self {
             runtime: runtime.clone(),
             resource_reader: ResourceReader::init(runtime.clone()),
+            proto_reader: ProtoReader::init(runtime),
         }
     }
 
@@ -77,16 +79,15 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    todo!()
-                    // let path = Self::resolve_path(&link.src, parent_dir);
-                    // let meta = ProtoReader::init(self.runtime.clone(), &[path]).read_all().await?;
-                    // config_module
-                    //     .extensions
-                    //     .grpc_file_descriptors
-                    //     .push(Content {
-                    //         id: link.id.clone(),
-                    //         content: meta.clone(),
-                    //     });
+                    let path = Self::resolve_path(&link.src, parent_dir);
+                    let meta = self.proto_reader.read(path).await?;
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: link.id.clone(),
+                            content: meta.descriptor_set.clone(),
+                        });
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);

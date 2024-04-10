@@ -1,4 +1,3 @@
-use std::path::Path;
 use anyhow::Result;
 
 use crate::config::{Config, Link, LinkType};
@@ -9,29 +8,27 @@ use crate::proto_reader::ProtoReader;
 use crate::runtime::TargetRuntime;
 
 pub struct Generator {
-    runtime: TargetRuntime,
+    proto_reader: ProtoReader,
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { runtime }
+        Self { proto_reader: ProtoReader::init(runtime) }
     }
 
-    pub async fn read_all<T: AsRef<Path>>(
+    pub async fn read_all<T: AsRef<str>>(
         &self,
         input_source: Source,
         files: &[T],
         query: &str,
     ) -> Result<Config> {
-        let mut config = Config::default();
         let mut links = vec![];
+        let proto_metadata = self.proto_reader.read_all(files).await?;
 
-        match input_source {
-            Source::PROTO => {
-                let proto_reader = ProtoReader::init(self.runtime.clone(), files);
-
-                let proto_metadata_list = proto_reader.read_all()?;
-                for metadata in proto_metadata_list {
-                    links.push(Link { id: None, src: metadata.path.display().to_string(), type_of: LinkType::Protobuf });
+        let mut config = Config::default();
+        for metadata in proto_metadata {
+            match input_source {
+                Source::PROTO => {
+                    links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
                     config = config.merge_right(from_proto(&[metadata.descriptor_set], query));
                 }
             }
