@@ -7,7 +7,8 @@ input Greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
 }
 
 type Greetings {
-  sayHello(helloRequest: Greetings__HelloRequest!): Greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello", baseURL: "http://localhost")
+  sayHello(helloRequest: Greetings__HelloRequest!): Greetings__HelloReply!
+    @grpc(method: "greetings.Greeter.SayHello", baseURL: "http://localhost")
 }
 
 type Greetings__HelloReply @tag(id: "greetings.HelloReply") {
