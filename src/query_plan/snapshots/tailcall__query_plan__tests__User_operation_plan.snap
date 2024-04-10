@@ -4,11 +4,11 @@ expression: operation_plan
 ---
 OperationPlan
     fields:
-        user(by 3)
+        user(by 6)
             name
             email
 
     selections:
-        Resolver(3):
+        Resolver(6):
                 name
                 email

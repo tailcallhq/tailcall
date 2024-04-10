@@ -42,13 +42,12 @@ async fn test_simple() {
 
         insta::assert_snapshot!(format!("{name}_execution_plan"), execution_plan);
 
-        let executor = Executor::new(&general_plan);
+        let executor = Executor::new(&general_plan, &operation_plan);
 
         let runtime = crate::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
-        let graphql_ctx = EmptyResolverContext {};
         let execution_result = executor
-            .execute(&req_ctx, &graphql_ctx, &execution_plan)
+            .execute(&req_ctx, &execution_plan)
             .await;
 
         insta::assert_snapshot!(format!("{name}_execution_result"), execution_result);

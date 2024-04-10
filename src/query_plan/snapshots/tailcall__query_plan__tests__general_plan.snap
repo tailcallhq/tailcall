@@ -4,7 +4,7 @@ expression: general_plan
 ---
 GeneralPlan
     fields:
-        [posts](by 0)
+        post(by 0)
             body
             id
             title
@@ -16,26 +16,41 @@ GeneralPlan
                 username
                 website(by 2)
             userId
-        user(by 3)
+        [posts](by 3)
+            body
+            id
+            title
+            user(by 4)
+                email
+                id
+                name
+                phone
+                username
+                website(by 5)
+            userId
+        user(by 6)
             email
             id
             name
             phone
             username
-            website(by 4)
-        [users](by 5)
+            website(by 7)
+        [users](by 8)
             email
             id
             name
             phone
             username
-            website(by 6)
+            website(by 9)
 
     field_plans:
         FieldPlan[0] (Http) depends on []
         FieldPlan[1] (Http) depends on [0]
-        FieldPlan[2] (Http) depends on [1]
+        FieldPlan[2] (Literal) depends on [1]
         FieldPlan[3] (Http) depends on []
         FieldPlan[4] (Http) depends on [3]
-        FieldPlan[5] (Http) depends on []
-        FieldPlan[6] (Http) depends on [5]
+        FieldPlan[5] (Literal) depends on [4]
+        FieldPlan[6] (Http) depends on []
+        FieldPlan[7] (Literal) depends on [6]
+        FieldPlan[8] (Http) depends on []
+        FieldPlan[9] (Literal) depends on [8]

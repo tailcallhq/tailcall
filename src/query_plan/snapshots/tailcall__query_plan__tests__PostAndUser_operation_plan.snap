@@ -4,21 +4,21 @@ expression: operation_plan
 ---
 OperationPlan
     fields:
-        [posts](by 0)
+        [posts](by 3)
             title
-            user(by 1)
+            user(by 4)
                 name
-        user(by 3)
+        user(by 6)
             username
             email
 
     selections:
-        Resolver(1):
+        Resolver(4):
                 name
 
-        Resolver(0):
+        Resolver(3):
                 title
 
-        Resolver(3):
+        Resolver(6):
                 username
                 email

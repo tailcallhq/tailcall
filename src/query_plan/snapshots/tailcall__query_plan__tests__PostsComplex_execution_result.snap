@@ -4,7 +4,7 @@ expression: execution_result
 ---
 {
     Id(
-        0,
+        3,
     ): Ok(
         List(
             [
@@ -2412,7 +2412,7 @@ expression: execution_result
         ),
     ),
     Id(
-        1,
+        4,
     ): Ok(
         List(
             [
@@ -3390,8 +3390,10 @@ expression: execution_result
         ),
     ),
     Id(
-        2,
-    ): Err(
-        "IOException: HTTP status client error (404 Not Found)",
+        5,
+    ): Ok(
+        String(
+            "/users/website/",
+        ),
     ),
 }

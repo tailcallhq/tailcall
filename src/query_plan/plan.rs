@@ -59,16 +59,6 @@ impl Display for FieldTree {
     }
 }
 
-pub struct GeneralPlan {
-    fields: FieldTree,
-    pub field_plans: Vec<FieldPlan>,
-}
-
-pub struct OperationPlan {
-    pub field_tree: FieldTree,
-    selections: IndexMap<Id, FieldPlanSelection>,
-}
-
 impl FieldTree {
     fn scalar(self) -> Self {
         Self { field_plan_id: None, entry: FieldTreeEntry::Scalar }
@@ -146,6 +136,7 @@ impl FieldTree {
         result_selection: &mut FieldPlanSelection,
         selections: &mut IndexMap<Id, FieldPlanSelection>,
         input_selection_set: &SelectionSet,
+        arguments_map: &mut IndexMap<Id, IndexMap<Name, Value>>,
     ) -> Self {
         let entry = match &self.entry {
             FieldTreeEntry::Scalar => FieldTreeEntry::Scalar,
@@ -158,11 +149,13 @@ impl FieldTree {
                     match &selection.node {
                         Selection::Field(field) => {
                             let name = &field.node.name.node;
+                            let arguments = &field.node.arguments;
                             let fields = children.get(name).unwrap();
                             let tree = fields.prepare_for_request(
                                 &mut current_selection_set,
                                 selections,
                                 &field.node.selection_set.node,
+                                arguments_map,
                             );
 
                             if let Some(field_plan_id) = tree.field_plan_id {
@@ -176,6 +169,19 @@ impl FieldTree {
                                         slot.insert(current_selection_set);
                                     }
                                 }
+
+                                let arguments = arguments
+                                    .iter()
+                                    .map(|(name, value)| {
+                                        (
+                                            name.node.clone(),
+                                            // TODO: handle query variables
+                                            value.node.clone().into_const().unwrap_or_default(),
+                                        )
+                                    })
+                                    .collect();
+
+                                arguments_map.insert(field_plan_id, arguments);
                             } else {
                                 result_selection.add(selection, current_selection_set);
                             }
@@ -262,13 +268,9 @@ impl FieldTree {
     }
 }
 
-impl GeneralPlan {
-    pub fn from_operation(definitions: &Vec<Definition>, name: &str) -> Self {
-        let mut field_plans = Vec::new();
-        let fields = FieldTree::from_operation(None, &mut field_plans, definitions, name);
-
-        Self { fields, field_plans }
-    }
+pub struct GeneralPlan {
+    fields: FieldTree,
+    pub field_plans: Vec<FieldPlan>,
 }
 
 impl Display for GeneralPlan {
@@ -289,22 +291,19 @@ impl Display for GeneralPlan {
     }
 }
 
-impl OperationPlan {
-    pub fn from_request(general_plan: &GeneralPlan, selection_set: &SelectionSet) -> Self {
-        let mut selections = IndexMap::new();
-        let mut result_selection = FieldPlanSelection::default();
-        let fields = general_plan.fields.prepare_for_request(
-            &mut result_selection,
-            &mut selections,
-            selection_set,
-        );
+impl GeneralPlan {
+    pub fn from_operation(definitions: &Vec<Definition>, name: &str) -> Self {
+        let mut field_plans = Vec::new();
+        let fields = FieldTree::from_operation(None, &mut field_plans, definitions, name);
 
-        Self { field_tree: fields, selections }
+        Self { fields, field_plans }
     }
+}
 
-    pub fn collect_value(&self, mut execution_result: ExecutionResult) -> Result<Value> {
-        self.field_tree.collect_value(&mut execution_result, None)
-    }
+pub struct OperationPlan {
+    pub field_tree: FieldTree,
+    selections: IndexMap<Id, FieldPlanSelection>,
+    pub arguments_map: IndexMap<Id, IndexMap<Name, Value>>,
 }
 
 impl Display for OperationPlan {
@@ -323,5 +322,25 @@ impl Display for OperationPlan {
         }
 
         Ok(())
+    }
+}
+
+impl OperationPlan {
+    pub fn from_request(general_plan: &GeneralPlan, selection_set: &SelectionSet) -> Self {
+        let mut selections = IndexMap::new();
+        let mut result_selection = FieldPlanSelection::default();
+        let mut arguments_map = IndexMap::new();
+        let fields = general_plan.fields.prepare_for_request(
+            &mut result_selection,
+            &mut selections,
+            selection_set,
+            &mut arguments_map,
+        );
+
+        Self { field_tree: fields, selections, arguments_map }
+    }
+
+    pub fn collect_value(&self, mut execution_result: ExecutionResult) -> Result<Value> {
+        self.field_tree.collect_value(&mut execution_result, None)
     }
 }

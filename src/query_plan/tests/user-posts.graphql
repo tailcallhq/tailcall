@@ -7,7 +7,8 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/1")
+  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  post(id: Int!): Post @http(path: "/posts/{{args.id}}")
 }
 
 type User {
@@ -16,7 +17,7 @@ type User {
   username: String!
   email: String!
   phone: String
-  website: String @http(path: "/users/website/{{value.id}}")
+  website: String @const(data: "/users/website/{{value.username}}")
 }
 
 type Post {

@@ -1,7 +1,18 @@
-query Users {
+query User {
     user(id: 1) {
         name,
         email
+    }
+}
+
+query Post {
+    post(id: 1) {
+        title
+        user {
+            name
+            email
+            website
+        }
     }
 }
 
@@ -15,5 +26,5 @@ query PostsComplex {
 
 query PostAndUser {
     posts { title user { name } }
-    user { username email }
+    user(id: 2) { username email }
 }

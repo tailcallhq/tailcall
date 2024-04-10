@@ -4,9 +4,9 @@ expression: operation_plan
 ---
 OperationPlan
     fields:
-        [posts](by 0)
+        [posts](by 3)
             title
 
     selections:
-        Resolver(0):
+        Resolver(3):
                 title

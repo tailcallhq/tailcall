@@ -12,7 +12,7 @@ use async_graphql::{
 };
 use indenter::indented;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id(usize);
 
 impl Display for Id {
