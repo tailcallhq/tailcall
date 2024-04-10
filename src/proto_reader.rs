@@ -29,15 +29,8 @@ impl ProtoReader {
     }
 
     // FIXME: rename to `load()`
-    /// Performs BFS to import all nested proto files
     pub fn read_all(&self) -> anyhow::Result<Vec<ProtoMetadata>> {
-        let includes: Vec<_> = self
-            .files
-            .iter()
-            .filter_map(|path| path.ancestors().skip(1).next())
-            .collect();
-
-        Ok(protox::compile(&self.files, &includes)?
+        Ok(protox::compile(&self.files, ["."])?
             .file
             .into_iter()
             .map(|proto_file| {
@@ -51,20 +44,7 @@ impl ProtoReader {
                             None
                         }
                     })
-                    .or_else(|| {
-                        includes
-                            .iter()
-                            .find_map(|path| {
-                                let path = path
-                                    .join(proto_file.name.as_ref()?);
-                                if path.exists() {
-                                    Some(path)
-                                } else {
-                                    None
-                                }
-                            })
-                    })
-                    .unwrap();
+                    .unwrap_or_default();
                 ProtoMetadata {
                     descriptor_set: FileDescriptorSet {
                         file: vec![proto_file],
