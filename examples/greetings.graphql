@@ -1,4 +1,4 @@
-schema @server @upstream @link(src: "greetings.proto", type: Protobuf) {
+schema @server @upstream @link(src: "../src/generator/proto/greetings.proto", type: Protobuf) {
   query: Query
 }
 
@@ -7,7 +7,7 @@ input Greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
 }
 
 type Greetings {
-  sayHello(helloRequest: Greetings__HelloRequest!): Greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+  sayHello(helloRequest: Greetings__HelloRequest!): Greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello", baseURL: "http://localhost")
 }
 
 type Greetings__HelloReply @tag(id: "greetings.HelloReply") {
