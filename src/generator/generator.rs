@@ -29,7 +29,7 @@ impl Generator {
             Source::PROTO => {
                 let proto_reader = ProtoReader::init(self.runtime.clone(), files);
 
-                let proto_metadata_list = proto_reader.read_all()?;
+                let proto_metadata_list = proto_reader.load()?;
                 for metadata in proto_metadata_list {
                     links.push(Link { id: None, src: metadata.path.display().to_string(), type_of: LinkType::Protobuf });
                     config = config.merge_right(from_proto(&[metadata.descriptor_set], query));

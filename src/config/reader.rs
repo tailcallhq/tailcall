@@ -77,16 +77,19 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    todo!()
-                    // let path = Self::resolve_path(&link.src, parent_dir);
-                    // let meta = ProtoReader::init(self.runtime.clone(), &[path]).read_all().await?;
-                    // config_module
-                    //     .extensions
-                    //     .grpc_file_descriptors
-                    //     .push(Content {
-                    //         id: link.id.clone(),
-                    //         content: meta.clone(),
-                    //     });
+                    let path = Self::resolve_path(&link.src, parent_dir);
+                    let meta = ProtoReader::init(self.runtime.clone(), &[path])
+                        .load()?
+                        .into_iter()
+                        .next()
+                        .ok_or(anyhow::anyhow!("No Proto file found"))?;
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: link.id.clone(),
+                            content: meta.descriptor_set.clone(),
+                        });
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);

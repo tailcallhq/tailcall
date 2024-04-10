@@ -28,8 +28,7 @@ impl ProtoReader {
         }
     }
 
-    // FIXME: rename to `load()`
-    pub fn read_all(&self) -> anyhow::Result<Vec<ProtoMetadata>> {
+    pub fn load(&self) -> anyhow::Result<Vec<ProtoMetadata>> {
         Ok(protox::compile(&self.files, ["."])?
             .file
             .into_iter()
