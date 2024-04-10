@@ -79,7 +79,8 @@ impl ConfigReader {
                 LinkType::Protobuf => {
                     let path = Self::resolve_path(&link.src, parent_dir);
                     let meta = ProtoReader::init(self.runtime.clone(), &[path])
-                        .load()?
+                        .load()
+                        .await?
                         .into_iter()
                         .next()
                         .ok_or(anyhow::anyhow!("No Proto file found"))?;

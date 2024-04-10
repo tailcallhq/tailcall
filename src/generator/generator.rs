@@ -16,7 +16,7 @@ impl Generator {
         Self { runtime }
     }
 
-    pub async fn read_all<T: AsRef<Path>>(
+    pub async fn read_all<T: AsRef<str>>(
         &self,
         input_source: Source,
         files: &[T],
@@ -27,11 +27,11 @@ impl Generator {
 
         match input_source {
             Source::PROTO => {
-                let proto_reader = ProtoReader::init(self.runtime.clone(), files);
+                let mut proto_reader = ProtoReader::init(self.runtime.clone(), files);
 
-                let proto_metadata_list = proto_reader.load()?;
+                let proto_metadata_list = proto_reader.load().await?;
                 for metadata in proto_metadata_list {
-                    links.push(Link { id: None, src: metadata.path.display().to_string(), type_of: LinkType::Protobuf });
+                    links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
                     config = config.merge_right(from_proto(&[metadata.descriptor_set], query));
                 }
             }
