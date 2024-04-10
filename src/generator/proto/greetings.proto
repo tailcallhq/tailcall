@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package greetings;
-import "greetings_message.proto";
+import "src/generator/proto/greetings_message.proto";
 service Greeter {
   rpc SayHello (greetings.HelloRequest) returns (greetings.HelloReply) {}
 }
