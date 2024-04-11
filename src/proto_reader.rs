@@ -31,7 +31,8 @@ impl ProtoReader {
                 .iter()
                 .filter_map(|path| {
                     Path::new(path.as_ref())
-                        .ancestors().nth(1)
+                        .ancestors()
+                        .nth(1)
                         .map(Path::to_path_buf)
                 })
                 .collect(),
