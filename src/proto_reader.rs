@@ -63,6 +63,7 @@ impl ProtoReader {
         Ok(metadata)
     }
 
+    /// Performs BFS to import all nested proto files
     async fn resolve_dependencies(
         &mut self,
         parent_proto: FileDescriptorProto,
