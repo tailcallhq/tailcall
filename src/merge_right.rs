@@ -49,7 +49,13 @@ impl Scalar for String {}
 
 impl Scalar for HttpVersion {}
 
-impl Scalar for ScriptOptions {}
+impl MergeRight for ScriptOptions {
+    fn merge_right(self, other: Self) -> Self {
+        ScriptOptions {
+            timeout: self.timeout.merge_right(other.timeout),
+        }
+    }
+}
 
 impl Scalar for Proxy {}
 
@@ -67,9 +73,9 @@ impl<A> MergeRight for Vec<A> {
 }
 
 impl<K, V> MergeRight for BTreeMap<K, V>
-where
-    K: Ord,
-    V: Clone,
+    where
+        K: Ord,
+        V: Clone,
 {
     fn merge_right(mut self, other: Self) -> Self {
         self.extend(other);
@@ -78,8 +84,8 @@ where
 }
 
 impl<V> MergeRight for BTreeSet<V>
-where
-    V: Ord,
+    where
+        V: Ord,
 {
     fn merge_right(mut self, other: Self) -> Self {
         self.extend(other);
@@ -88,8 +94,8 @@ where
 }
 
 impl<V> MergeRight for HashSet<V>
-where
-    V: Eq + std::hash::Hash,
+    where
+        V: Eq + std::hash::Hash,
 {
     fn merge_right(mut self, other: Self) -> Self {
         self.extend(other);

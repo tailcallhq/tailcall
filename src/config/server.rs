@@ -195,6 +195,7 @@ impl Server {
         self.pipeline_flush.unwrap_or(true)
     }
 }
+
 impl MergeRight for Server {
     fn merge_right(mut self, other: Self) -> Self {
         self.apollo_tracing = self.apollo_tracing.merge_right(other.apollo_tracing);
@@ -227,5 +228,63 @@ impl MergeRight for Server {
         self.pipeline_flush = self.pipeline_flush.merge_right(other.pipeline_flush);
         self.script = self.script.merge_right(other.script);
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::ScriptOptions;
+    use super::*;
+
+    fn server_with_script_options(so: ScriptOptions) -> Server {
+        Server {
+            script: Some(so),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn script_options_merge_both() {
+        let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
+        let b = server_with_script_options(ScriptOptions { timeout: Some(200) });
+        let merged = a.merge_right(b);
+        let expected = ScriptOptions { timeout: Some(200) };
+        assert_eq!(merged.script, Some(expected));
+    }
+
+    #[test]
+    fn script_options_merge_first() {
+        let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
+        let b = server_with_script_options(ScriptOptions { timeout: None });
+        let merged = a.merge_right(b);
+        let expected = ScriptOptions { timeout: Some(100) };
+        assert_eq!(merged.script, Some(expected));
+    }
+
+    #[test]
+    fn script_options_merge_second() {
+        let a = server_with_script_options(ScriptOptions { timeout: None });
+        let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
+        let merged = a.merge_right(b);
+        let expected = ScriptOptions { timeout: Some(100) };
+        assert_eq!(merged.script, Some(expected));
+    }
+
+    #[test]
+    fn script_options_merge_second_default() {
+        let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
+        let b = Server::default();
+        let merged = a.merge_right(b);
+        let expected = ScriptOptions { timeout: Some(100) };
+        assert_eq!(merged.script, Some(expected));
+    }
+
+    #[test]
+    fn script_options_merge_first_default() {
+        let a = Server::default();
+        let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
+        let merged = a.merge_right(b);
+        let expected = ScriptOptions { timeout: Some(100) };
+        assert_eq!(merged.script, Some(expected));
     }
 }
