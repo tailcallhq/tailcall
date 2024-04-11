@@ -26,7 +26,7 @@ pub struct Proxy {
 }
 
 #[derive(
-    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
+Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
 )]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
@@ -211,34 +211,24 @@ impl MergeRight for Upstream {
 mod tests {
     use super::*;
 
+    fn setup_upstream_with_headers(headers: &[&str]) -> Upstream {
+        let mut upstream = Upstream::default();
+        upstream.allowed_headers = Some(headers.iter().map(|s| s.to_string()).collect());
+        upstream
+    }
+
     #[test]
     fn allowed_headers_merge_both() {
-        let mut a = Upstream::default();
-        let mut b = Upstream::default();
-
-        a.allowed_headers = Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect());
-        b.allowed_headers = Some(["d", "e", "f"].iter().map(|s| s.to_string()).collect());
-
+        let a = setup_upstream_with_headers(&["a", "b", "c"]);
+        let b = setup_upstream_with_headers(&["d", "e", "f"]);
         let merged = a.merge_right(b);
-
-        assert_eq!(
-            merged.allowed_headers,
-            Some(
-                ["a", "b", "c", "d", "e", "f"]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect()
-            )
-        );
+        assert_eq!(merged.allowed_headers, Some(["a", "b", "c", "d", "e", "f"].iter().map(|s| s.to_string()).collect()));
     }
 
     #[test]
     fn allowed_headers_merge_first() {
-        let mut a = Upstream::default();
+        let a = setup_upstream_with_headers(&["a", "b", "c"]);
         let b = Upstream::default();
-
-        a.allowed_headers = Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect());
-
         let merged = a.merge_right(b);
 
         assert_eq!(
@@ -250,10 +240,7 @@ mod tests {
     #[test]
     fn allowed_headers_merge_second() {
         let a = Upstream::default();
-        let b = Upstream {
-            allowed_headers: Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect()),
-            ..Default::default()
-        };
+        let b = setup_upstream_with_headers(&["a", "b", "c"]);
         let merged = a.merge_right(b);
 
         assert_eq!(
