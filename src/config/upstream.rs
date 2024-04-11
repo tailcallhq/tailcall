@@ -171,12 +171,7 @@ impl Upstream {
 impl MergeRight for Upstream {
     // TODO: add unit tests for merge
     fn merge_right(mut self, other: Self) -> Self {
-        self.allowed_headers = match (self.allowed_headers, other.allowed_headers) {
-            (Some(a), Some(b)) => Some(a.merge_right(b)),
-            (Some(a), None) => Some(a),
-            (None, Some(b)) => Some(b),
-            (None, None) => None,
-        };
+        self.allowed_headers = self.allowed_headers.merge_right(other.allowed_headers);
         self.base_url = self.base_url.merge_right(other.base_url);
         self.connect_timeout = self.connect_timeout.merge_right(other.connect_timeout);
         self.http_cache = self.http_cache.merge_right(other.http_cache);
