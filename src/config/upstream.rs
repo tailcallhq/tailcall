@@ -13,6 +13,7 @@ pub struct Batch {
     pub headers: BTreeSet<String>,
     pub max_size: usize,
 }
+
 impl Default for Batch {
     fn default() -> Self {
         Batch { max_size: 100, delay: 0, headers: BTreeSet::new() }
@@ -25,7 +26,7 @@ pub struct Proxy {
 }
 
 #[derive(
-    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
+Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
 )]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
@@ -210,5 +211,61 @@ impl MergeRight for Upstream {
 
         self.http2_only = self.http2_only.merge_right(other.http2_only);
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allowed_headers_merge_both() {
+        let mut a = Upstream::default();
+        let mut b = Upstream::default();
+
+        a.allowed_headers = Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect());
+        b.allowed_headers = Some(["d", "e", "f"].iter().map(|s| s.to_string()).collect());
+
+        let merged = a.merge_right(b);
+
+        assert_eq!(
+            merged.allowed_headers,
+            Some(
+                ["a", "b", "c", "d", "e", "f"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            )
+        );
+    }
+
+    #[test]
+    fn allowed_headers_merge_first() {
+        let mut a = Upstream::default();
+        let b = Upstream::default();
+
+        a.allowed_headers = Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect());
+
+        let merged = a.merge_right(b);
+
+        assert_eq!(
+            merged.allowed_headers,
+            Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect())
+        );
+    }
+
+    #[test]
+    fn allowed_headers_merge_second() {
+        let a = Upstream::default();
+        let mut b = Upstream::default();
+
+        b.allowed_headers = Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect());
+
+        let merged = a.merge_right(b);
+
+        assert_eq!(
+            merged.allowed_headers,
+            Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect())
+        );
     }
 }
