@@ -54,7 +54,9 @@ impl FileDescriptorProtoResponse {
             .first()
             .context("Received empty fileDescriptorProto")?;
 
-        Ok(BASE64_STANDARD.decode(file_descriptor_proto)?)
+        BASE64_STANDARD
+            .decode(file_descriptor_proto)
+            .context("Failed to decode fileDescriptorProto from BASE64")
     }
 }
 
