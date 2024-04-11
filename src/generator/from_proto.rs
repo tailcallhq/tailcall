@@ -302,6 +302,7 @@ impl Context {
                 }
 
                 let output_ty = get_output_ty(method.output_type());
+                self = self.insert(&output_ty, DescriptorType::Message);
                 cfg_field.type_of = self.get(&output_ty).unwrap_or(output_ty.clone());
                 cfg_field.required = true;
 
@@ -377,6 +378,8 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Config 
                 .append_query_service(&file_descriptor.service);
         }
     }
+
+    ctx.config.remove_unused_types();
 
     ctx.config
 }

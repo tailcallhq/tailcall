@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -112,6 +112,30 @@ impl Config {
 
     pub fn contains(&self, name: &str) -> bool {
         self.types.contains_key(name) || self.unions.contains_key(name)
+    }
+
+    pub fn get_all_used_type_names(&self) -> HashSet<String> {
+        let mut set = HashSet::new();
+        let mut stack = vec!["Query".into(), "Mutation".into()];
+        while let Some(type_name) = stack.pop() {
+            if let Some(typ) = self.types.get(&type_name) {
+                set.insert(type_name);
+                for field in typ.fields.values() {
+                    stack.push(field.type_of.clone());
+                }
+            }
+        }
+
+        set
+    }
+
+    pub fn remove_unused_types(&mut self) {
+        let used_types = self.get_all_used_type_names();
+        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        let unused_types = all_types.difference(&used_types);
+        for unused_type in unused_types {
+            self.types.remove(unused_type);
+        }
     }
 }
 

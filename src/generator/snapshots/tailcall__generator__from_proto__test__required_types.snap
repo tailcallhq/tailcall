@@ -10,10 +10,6 @@ type Person {
   getPerson: Person__Person! @grpc(method: "person.PersonService.GetPerson")
 }
 
-type Person__People @tag(id: "person.People") {
-  people: JSON
-}
-
 type Person__Person @tag(id: "person.Person") {
   email: String
   id: Int!
