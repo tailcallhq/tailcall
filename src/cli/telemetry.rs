@@ -210,7 +210,7 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     let cli = crate::error::Error::new("Open Telemetry Error")
                         .caused_by(vec![Error::new(error.to_string().as_str())])
                         .trace(vec!["schema".to_string(), "@telemetry".to_string()]);
-                    tracing::error!("{}", cli.color(true));
+                    tracing::error!("{}", cli);
                 });
             }
         })?;

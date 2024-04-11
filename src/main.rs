@@ -47,7 +47,7 @@ fn main() -> anyhow::Result<()> {
         Err(error) => {
             // Ensure all errors are converted to CLIErrors before being printed.
             let cli_error: Error = error.into();
-            tracing::error!("{}", cli_error.color(true));
+            tracing::error!("{}", cli_error);
             std::process::exit(exitcode::CONFIG);
         }
     }

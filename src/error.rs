@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
 use colored::Colorize;
 use derive_setters::Setters;
@@ -6,13 +6,12 @@ use thiserror::Error;
 
 use crate::valid::ValidationError;
 
-// FIXME: Rename to Error
 /// A versatile error container that's optimized for CLI and Web.
+/// NOTE: For each target you will need implement Display and then call
+/// pretty_print with the required configurations.
 #[derive(Debug, Error, Setters, PartialEq, Clone)]
 pub struct Error {
     is_root: bool,
-    #[setters(skip)]
-    color: bool,
     message: String,
     #[setters(strip_option)]
     description: Option<String>,
@@ -26,7 +25,6 @@ impl Error {
     pub fn new(message: &str) -> Self {
         Error {
             is_root: true,
-            color: false,
             message: message.to_string(),
             description: Default::default(),
             trace: Default::default(),
@@ -44,48 +42,13 @@ impl Error {
         self
     }
 
-    fn colored<'a>(&'a self, str: &'a str, color: colored::Color) -> String {
-        if self.color {
-            str.color(color).to_string()
-        } else {
-            str.to_string()
-        }
-    }
+    pub fn pretty_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        use_color: bool,
+    ) -> std::fmt::Result {
+        let p = Printer { use_color };
 
-    fn dimmed<'a>(&'a self, str: &'a str) -> String {
-        if self.color {
-            str.dimmed().to_string()
-        } else {
-            str.to_string()
-        }
-    }
-
-    pub fn color(mut self, color: bool) -> Self {
-        self.color = color;
-        for inner in self.caused_by.iter_mut() {
-            inner.color = color;
-        }
-        self
-    }
-}
-
-fn margin(str: &str, margin: usize) -> String {
-    let mut result = String::new();
-    for line in str.split_inclusive('\n') {
-        result.push_str(&format!("{}{}", " ".repeat(margin), line));
-    }
-    result
-}
-
-fn bullet(str: &str) -> String {
-    let mut chars = margin(str, 2).chars().collect::<Vec<char>>();
-    chars[0] = '•';
-    chars[1] = ' ';
-    chars.into_iter().collect::<String>()
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let default_padding = 2;
 
         let message_color = if self.is_root {
@@ -94,11 +57,11 @@ impl Display for Error {
             colored::Color::White
         };
 
-        f.write_str(self.colored(&self.message, message_color).as_str())?;
+        f.write_str(p.colored(&self.message, message_color).as_str())?;
 
         if let Some(description) = &self.description {
-            f.write_str(&self.colored(": ", message_color))?;
-            f.write_str(&self.colored(description.to_string().as_str(), colored::Color::White))?;
+            f.write_str(&p.colored(": ", message_color))?;
+            f.write_str(&p.colored(description.to_string().as_str(), colored::Color::White))?;
         }
 
         if !self.trace.is_empty() {
@@ -112,17 +75,17 @@ impl Display for Error {
                 }
             }
             buf.push(']');
-            f.write_str(&self.colored(&buf, colored::Color::Cyan))?;
+            f.write_str(&p.colored(&buf, colored::Color::Cyan))?;
         }
 
         if !self.caused_by.is_empty() {
             f.write_str("\n")?;
-            f.write_str(self.dimmed("Caused by:").as_str())?;
+            f.write_str(p.dimmed("Caused by:").as_str())?;
             f.write_str("\n")?;
             for (i, error) in self.caused_by.iter().enumerate() {
                 let message = &error.to_string();
 
-                f.write_str(&margin(bullet(message.as_str()).as_str(), default_padding))?;
+                f.write_str(&p.margin(p.bullet(message.as_str()).as_str(), default_padding))?;
 
                 if i < self.caused_by.len() - 1 {
                     f.write_str("\n")?;
@@ -131,6 +94,43 @@ impl Display for Error {
         }
 
         Ok(())
+    }
+}
+
+struct Printer {
+    use_color: bool,
+}
+
+impl Printer {
+    fn colored(&self, str: &str, color: colored::Color) -> String {
+        if self.use_color {
+            str.color(color).to_string()
+        } else {
+            str.to_string()
+        }
+    }
+
+    fn dimmed(&self, str: &str) -> String {
+        if self.use_color {
+            str.dimmed().to_string()
+        } else {
+            str.to_string()
+        }
+    }
+
+    fn margin(&self, str: &str, margin: usize) -> String {
+        let mut result = String::new();
+        for line in str.split_inclusive('\n') {
+            result.push_str(&format!("{}{}", " ".repeat(margin), line));
+        }
+        result
+    }
+
+    fn bullet(&self, str: &str) -> String {
+        let mut chars = self.margin(str, 2).chars().collect::<Vec<char>>();
+        chars[0] = '•';
+        chars[1] = ' ';
+        chars.into_iter().collect::<String>()
     }
 }
 
@@ -230,39 +230,41 @@ mod tests {
     use super::*;
     use crate::valid::Cause;
 
+    const P: Printer = Printer { use_color: false };
+
     #[test]
     fn test_no_newline() {
         let input = "Hello";
         let expected = "    Hello";
-        assert_eq!(margin(input, 4), expected);
+        assert_eq!(P.margin(input, 4), expected);
     }
 
     #[test]
     fn test_with_newline() {
         let input = "Hello\nWorld";
         let expected = "    Hello\n    World";
-        assert_eq!(margin(input, 4), expected);
+        assert_eq!(P.margin(input, 4), expected);
     }
 
     #[test]
     fn test_empty_string() {
         let input = "";
         let expected = "";
-        assert_eq!(margin(input, 4), expected);
+        assert_eq!(P.margin(input, 4), expected);
     }
 
     #[test]
     fn test_zero_margin() {
         let input = "Hello";
         let expected = "Hello";
-        assert_eq!(margin(input, 0), expected);
+        assert_eq!(P.margin(input, 0), expected);
     }
 
     #[test]
     fn test_zero_margin_with_newline() {
         let input = "Hello\nWorld";
         let expected = "Hello\nWorld";
-        assert_eq!(margin(input, 0), expected);
+        assert_eq!(P.margin(input, 0), expected);
     }
 
     #[test]
