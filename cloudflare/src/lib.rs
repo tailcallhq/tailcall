@@ -4,6 +4,7 @@ use anyhow::anyhow;
 
 mod cache;
 mod env;
+mod error;
 mod file;
 pub mod handle;
 mod http;

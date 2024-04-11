@@ -9,7 +9,7 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::tracing::get_log_level;
-
+mod error;
 mod http;
 mod runtime;
 
