@@ -103,11 +103,23 @@ pub struct ScriptOptions {
     pub timeout: Option<u64>,
 }
 
+impl MergeRight for ScriptOptions {
+    fn merge_right(self, other: Self) -> Self {
+        ScriptOptions { timeout: self.timeout.merge_right(other.timeout) }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema)]
 pub enum HttpVersion {
     #[default]
     HTTP1,
     HTTP2,
+}
+
+impl MergeRight for HttpVersion {
+    fn merge_right(self, other: Self) -> Self {
+        other
+    }
 }
 
 impl Server {

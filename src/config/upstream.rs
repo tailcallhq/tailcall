@@ -25,6 +25,12 @@ pub struct Proxy {
     pub url: String,
 }
 
+impl MergeRight for Proxy {
+    fn merge_right(self, other: Self) -> Self {
+        other
+    }
+}
+
 #[derive(
     Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
 )]
