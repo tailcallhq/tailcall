@@ -233,14 +233,11 @@ impl MergeRight for Server {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::ScriptOptions;
     use super::*;
+    use crate::config::ScriptOptions;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
-        Server {
-            script: Some(so),
-            ..Default::default()
-        }
+        Server { script: Some(so), ..Default::default() }
     }
 
     #[test]
