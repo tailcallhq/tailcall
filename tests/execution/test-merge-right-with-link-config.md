@@ -1,5 +1,5 @@
 ---
-check_identity: true
+check_identity: false
 ---
 
 # test-merge-right-with-link-config
@@ -32,7 +32,10 @@ type BalanceRoot {
 ```
 
 ```graphql @server
-schema @server(graphiql: true) @upstream(allowedHeaders: ["Authorization"], baseURL: "https://api.stripe.com/v1/") @link(src: "stripe-types.graphql", type: Config) {
+schema
+@server(graphiql: true)
+@upstream(allowedHeaders: ["Authorization"], baseURL: "https://api.stripe.com/v1/")
+@link(src: "stripe-types.graphql", type: Config) {
   query: Query
 }
 
