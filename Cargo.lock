@@ -995,28 +995,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
 
 [[package]]
-name = "cloudflare"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-graphql-value",
- "async-std",
- "async-trait",
- "console_error_panic_hook",
- "hyper 0.14.28",
- "lazy_static",
- "protox",
- "reqwest",
- "serde_json",
- "serde_qs",
- "tailcall",
- "tracing",
- "tracing-subscriber",
- "tracing-subscriber-wasm",
- "worker",
-]
-
-[[package]]
 name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5342,6 +5320,28 @@ dependencies = [
  "url",
  "webbrowser",
  "which 6.0.1",
+]
+
+[[package]]
+name = "tailcall-cloudflare"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql-value",
+ "async-std",
+ "async-trait",
+ "console_error_panic_hook",
+ "hyper 0.14.28",
+ "lazy_static",
+ "protox",
+ "reqwest",
+ "serde_json",
+ "serde_qs",
+ "tailcall",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-subscriber-wasm",
+ "worker",
 ]
 
 [[package]]

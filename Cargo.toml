@@ -178,7 +178,7 @@ default = ["cli", "js"]
 
 
 [workspace]
-members = [".", "autogen", "aws-lambda", "cloudflare"]
+members = [".", "autogen", "aws-lambda", "tailcall-cloudflare"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
@@ -194,7 +194,7 @@ debug = false
 incremental = false
 overflow-checks = false
 
-[profile.release.package.cloudflare]
+[profile.release.package.tailcall-cloudflare]
 strip = true
 codegen-units = 1
 opt-level = 'z'
