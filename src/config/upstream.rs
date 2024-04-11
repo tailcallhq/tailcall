@@ -26,7 +26,7 @@ pub struct Proxy {
 }
 
 #[derive(
-Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
+    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
 )]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
@@ -255,10 +255,10 @@ mod tests {
     #[test]
     fn allowed_headers_merge_second() {
         let a = Upstream::default();
-        let mut b = Upstream::default();
-
-        b.allowed_headers = Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect());
-
+        let b = Upstream {
+            allowed_headers: Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect()),
+            ..Default::default()
+        };
         let merged = a.merge_right(b);
 
         assert_eq!(
