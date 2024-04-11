@@ -560,23 +560,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-lambda"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "dotenvy",
- "hyper 0.14.28",
- "lambda_http",
- "lambda_runtime",
- "reqwest",
- "tailcall",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "aws_lambda_events"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -993,28 +976,6 @@ name = "clap_lex"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
-
-[[package]]
-name = "cloudflare"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-graphql-value",
- "async-std",
- "async-trait",
- "console_error_panic_hook",
- "hyper 0.14.28",
- "lazy_static",
- "protox",
- "reqwest",
- "serde_json",
- "serde_qs",
- "tailcall",
- "tracing",
- "tracing-subscriber",
- "tracing-subscriber-wasm",
- "worker",
-]
 
 [[package]]
 name = "colorchoice"
@@ -5344,6 +5305,45 @@ dependencies = [
  "url",
  "webbrowser",
  "which 6.0.1",
+]
+
+[[package]]
+name = "tailcall-aws-lambda"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "dotenvy",
+ "hyper 0.14.28",
+ "lambda_http",
+ "lambda_runtime",
+ "reqwest",
+ "tailcall",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "tailcall-cloudflare"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql-value",
+ "async-std",
+ "async-trait",
+ "console_error_panic_hook",
+ "hyper 0.14.28",
+ "lazy_static",
+ "protox",
+ "reqwest",
+ "serde_json",
+ "serde_qs",
+ "tailcall",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-subscriber-wasm",
+ "worker",
 ]
 
 [[package]]

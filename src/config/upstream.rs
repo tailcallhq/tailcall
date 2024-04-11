@@ -13,6 +13,7 @@ pub struct Batch {
     pub headers: BTreeSet<String>,
     pub max_size: usize,
 }
+
 impl Default for Batch {
     fn default() -> Self {
         Batch { max_size: 100, delay: 0, headers: BTreeSet::new() }
@@ -22,6 +23,12 @@ impl Default for Batch {
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
 pub struct Proxy {
     pub url: String,
+}
+
+impl MergeRight for Proxy {
+    fn merge_right(self, other: Self) -> Self {
+        other
+    }
 }
 
 #[derive(
@@ -170,14 +177,7 @@ impl Upstream {
 impl MergeRight for Upstream {
     // TODO: add unit tests for merge
     fn merge_right(mut self, other: Self) -> Self {
-        self.allowed_headers = other.allowed_headers.map(|other| {
-            if let Some(mut self_headers) = self.allowed_headers {
-                self_headers = self_headers.merge_right(other);
-                self_headers
-            } else {
-                other
-            }
-        });
+        self.allowed_headers = self.allowed_headers.merge_right(other.allowed_headers);
         self.base_url = self.base_url.merge_right(other.base_url);
         self.connect_timeout = self.connect_timeout.merge_right(other.connect_timeout);
         self.http_cache = self.http_cache.merge_right(other.http_cache);
@@ -210,5 +210,57 @@ impl MergeRight for Upstream {
 
         self.http2_only = self.http2_only.merge_right(other.http2_only);
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup_upstream_with_headers(headers: &[&str]) -> Upstream {
+        Upstream {
+            allowed_headers: Some(headers.iter().map(|s| s.to_string()).collect()),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn allowed_headers_merge_both() {
+        let a = setup_upstream_with_headers(&["a", "b", "c"]);
+        let b = setup_upstream_with_headers(&["d", "e", "f"]);
+        let merged = a.merge_right(b);
+        assert_eq!(
+            merged.allowed_headers,
+            Some(
+                ["a", "b", "c", "d", "e", "f"]
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            )
+        );
+    }
+
+    #[test]
+    fn allowed_headers_merge_first() {
+        let a = setup_upstream_with_headers(&["a", "b", "c"]);
+        let b = Upstream::default();
+        let merged = a.merge_right(b);
+
+        assert_eq!(
+            merged.allowed_headers,
+            Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect())
+        );
+    }
+
+    #[test]
+    fn allowed_headers_merge_second() {
+        let a = Upstream::default();
+        let b = setup_upstream_with_headers(&["a", "b", "c"]);
+        let merged = a.merge_right(b);
+
+        assert_eq!(
+            merged.allowed_headers,
+            Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect())
+        );
     }
 }
