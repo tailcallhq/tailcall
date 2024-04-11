@@ -121,6 +121,7 @@ impl Config {
             if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
+                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
                     stack.push(field.type_of.clone());
                 }
             }
