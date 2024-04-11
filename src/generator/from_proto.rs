@@ -196,31 +196,6 @@ impl Context {
         self
     }
 
-    /// Generates argument configurations for service methods.
-    fn get_arg(&self, input_ty: &str) -> Option<(String, Arg)> {
-        match input_ty {
-            "google.protobuf.Empty" | "" => None,
-            any => {
-                let any = any
-                    .strip_prefix(&format!("{}.", self.package))
-                    .unwrap_or(any);
-                let key = convert_ty(any).to_case(Case::Camel);
-                let val = Arg {
-                    type_of: self.get(any).unwrap_or(any.to_string()),
-                    list: false,
-                    required: true,
-                    /* Setting it not null by default. There's no way to infer this
-                     * from proto file */
-                    doc: None,
-                    modify: None,
-                    default_value: None,
-                };
-
-                Some((key, val))
-            }
-        }
-    }
-
     fn append_nested_package(mut self, method_name: String, field: Field) -> Self {
         let split = self
             .package
@@ -295,10 +270,21 @@ impl Context {
                 self = self.insert(method_name, DescriptorType::Operation);
 
                 let mut cfg_field = Field::default();
-                let arg = self.get_arg(method.input_type());
+                if let Some(arg_type) = get_input_ty(method.input_type()) {
+                    self = self.insert(&arg_type, DescriptorType::Message);
+                    let key = convert_ty(&arg_type).to_case(Case::Camel);
+                    let val = Arg {
+                        type_of: self.get(&arg_type).unwrap_or(arg_type),
+                        list: false,
+                        required: true,
+                        /* Setting it not null by default. There's no way to infer this
+                         * from proto file */
+                        doc: None,
+                        modify: None,
+                        default_value: None,
+                    };
 
-                if let Some((k, v)) = arg {
-                    cfg_field.args.insert(k, v);
+                    cfg_field.args.insert(key, val);
                 }
 
                 let output_ty = get_output_ty(method.output_type());
@@ -362,6 +348,13 @@ fn get_output_ty(output_ty: &str) -> String {
             // Setting it not null by default. There's no way to infer this from proto file
             any.to_string()
         }
+    }
+}
+
+fn get_input_ty(input_ty: &str) -> Option<String> {
+    match input_ty {
+        "google.protobuf.Empty" | "" => None,
+        any => Some(any.to_string()),
     }
 }
 
@@ -449,7 +442,7 @@ mod test {
     fn test_greetings_proto_file() {
         let set = new_file_desc(&["greetings.proto", "greetings_message.proto"]).unwrap();
         let result = from_proto(&[set], "Query").to_sdl();
-        insta::assert_snapshot!(result);
+        insta::assert_snapshot!(dbg!(result));
     }
 
     #[test]
