@@ -178,7 +178,7 @@ default = ["cli", "js"]
 
 
 [workspace]
-members = [".", "autogen", "aws-lambda", "tailcall-cloudflare"]
+members = [".", "autogen", "tailcall-aws-lambda", "tailcall-cloudflare"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
