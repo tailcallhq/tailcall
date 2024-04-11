@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./cloudflare
+        working-directory: ./tailcall-cloudflare
 
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
 
       - name: Build WASM
         run: cargo check --lib --target wasm32-unknown-unknown
-        working-directory: ./cloudflare
+        working-directory: ./tailcall-cloudflare
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
