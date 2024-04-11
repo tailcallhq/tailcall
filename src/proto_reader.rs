@@ -1,6 +1,5 @@
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 
 use anyhow::Context;
 use futures_util::future::join_all;
@@ -14,6 +13,7 @@ pub struct ProtoReader {
     resource_reader: ResourceReader,
     descriptors: HashMap<String, FileDescriptorProto>,
     files: Vec<String>,
+    includes: Vec<PathBuf>,
 }
 
 pub struct ProtoMetadata {
@@ -27,6 +27,14 @@ impl ProtoReader {
             resource_reader: ResourceReader::init(runtime),
             descriptors: HashMap::new(),
             files: paths.iter().map(|path| path.as_ref().to_string()).collect(),
+            includes: paths
+                .iter()
+                .filter_map(|path| {
+                    Path::new(path.as_ref())
+                        .ancestors().nth(1)
+                        .map(Path::to_path_buf)
+                })
+                .collect(),
         }
     }
 
@@ -60,11 +68,7 @@ impl ProtoReader {
         parent_path: &str,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
         let mut queue = VecDeque::new();
-        let parent_path = Path::new(parent_path)
-            .ancestors()
-            .skip(1)
-            .next()
-            .unwrap();
+        let parent_path = Path::new(parent_path).ancestors().nth(1).unwrap();
         println!("{}", parent_path.display());
 
         queue.push_back(parent_proto.clone());
@@ -74,8 +78,16 @@ impl ProtoReader {
                 .dependency
                 .iter()
                 .map(|import| async {
-                    let import = parent_path.join(import.clone()).to_str().unwrap().to_string();
-                    self.read_proto(&import).await
+                    let import = import.clone();
+                    let import = self
+                        .includes
+                        .iter()
+                        .find_map(|include| {
+                            let path = include.join(&import);
+                            path.exists().then_some(path)
+                        })
+                        .unwrap_or_else(|| PathBuf::from(import));
+                    self.read_proto(import.to_str().unwrap()).await
                 })
                 .collect();
 
@@ -93,11 +105,13 @@ impl ProtoReader {
 
         let hash_map = &mut self.descriptors;
 
-        let mut descriptors_vec = hash_map.values().cloned().collect::<Vec<FileDescriptorProto>>();
+        let mut descriptors_vec = hash_map
+            .values()
+            .cloned()
+            .collect::<Vec<FileDescriptorProto>>();
         descriptors_vec.push(parent_proto);
         Ok(descriptors_vec)
     }
-
 
     /// Tries to load well-known google proto files and if not found uses normal
     /// file and http IO to resolve them
@@ -125,7 +139,10 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ProtoReader::init(crate::runtime::test::init(None), &["google/protobuf/empty.proto"]);
+        let reader = ProtoReader::init(
+            crate::runtime::test::init(None),
+            &["google/protobuf/empty.proto"],
+        );
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
