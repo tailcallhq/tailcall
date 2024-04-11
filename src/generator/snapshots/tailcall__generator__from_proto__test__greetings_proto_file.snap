@@ -7,7 +7,11 @@ schema @server @upstream {
 }
 
 type Greetings {
-  sayHello(helloRequest: HelloRequest!): Greetings__greetings.HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+  sayHello(helloRequest: HelloRequest!): Greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+}
+
+type Greetings__HelloReply @tag(id: "greetings.HelloReply") {
+  message: String
 }
 
 type Query {

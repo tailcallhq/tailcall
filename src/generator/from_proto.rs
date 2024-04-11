@@ -23,31 +23,28 @@ enum DescriptorType {
 
 impl DescriptorType {
     fn as_str_name(&self, package: &str, name: &str) -> String {
-        let package = package.replace('.', DEFAULT_PACKAGE_SEPARATOR);
-        if package.is_empty() {
-            return match self {
-                DescriptorType::Operation => name.to_case(Case::Camel).to_string(),
-                _ => name.to_string(),
-            };
-        }
+        let package = package
+            .split('.')
+            .map(|word| {
+                word.split('_')
+                    .map(|name| name.to_case(Case::Pascal))
+                    .reduce(|acc, x| acc + "_" + &x)
+                    .unwrap_or(word.to_string())
+            })
+            .reduce(|acc, x| acc + DEFAULT_PACKAGE_SEPARATOR + &x)
+            .unwrap_or(package.to_string());
+
+        let package_prefix = if package.is_empty() {
+            "".to_string()
+        } else {
+            package + DEFAULT_SEPARATOR
+        };
+
         match self {
-            DescriptorType::Enum => {
-                format!(
-                    "{}{}{}",
-                    package.to_case(Case::UpperCamel),
-                    DEFAULT_SEPARATOR,
-                    name
-                )
+            DescriptorType::Operation => name.to_case(Case::Camel),
+            DescriptorType::Enum | DescriptorType::Message => {
+                package_prefix + &name.to_case(Case::Pascal)
             }
-            DescriptorType::Message => {
-                format!(
-                    "{}{}{}",
-                    package.to_case(Case::UpperCamel),
-                    DEFAULT_SEPARATOR,
-                    name
-                )
-            }
-            DescriptorType::Operation => name.to_case(Case::Camel).to_string(),
         }
     }
 }
@@ -81,6 +78,9 @@ impl Context {
 
     /// Formats a proto type name based on its `DescriptorType`.
     fn get_name(&self, name: &str, ty: DescriptorType) -> String {
+        let name = name
+            .strip_prefix(&format!("{}.", self.package))
+            .unwrap_or(name);
         ty.as_str_name(&self.package, name)
     }
 
@@ -486,7 +486,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
         let actual = ctx.get_name("TestEnum", DescriptorType::Enum);
-        let expected = "ComExample__TestEnum";
+        let expected = "Com_Example__TestEnum";
         assert_eq!(actual, expected);
     }
 
@@ -495,7 +495,7 @@ mod test {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
         let actual = ctx.get_name("testMessage", DescriptorType::Message);
-        let expected = "ComExample__testMessage";
+        let expected = "Com_Example__TestMessage";
         assert_eq!(actual, expected);
     }
 
@@ -515,7 +515,7 @@ mod test {
             .insert("TestEnum", DescriptorType::Enum);
 
         let actual = ctx.get("TestEnum");
-        let expected = Some("ComExample__TestEnum".to_string());
+        let expected = Some("Com_Example__TestEnum".to_string());
         assert_eq!(actual, expected);
     }
 
@@ -525,7 +525,7 @@ mod test {
             .package("com.example".to_string())
             .insert("testMessage", DescriptorType::Message);
         let actual = ctx.get("testMessage");
-        let expected = Some("ComExample__testMessage".to_string());
+        let expected = Some("Com_Example__TestMessage".to_string());
         assert_eq!(actual, expected);
     }
 

@@ -6,11 +6,11 @@ schema @server @upstream {
   query: Query
 }
 
-input GreetingsAB__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
+input Greetings_A_B__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
   name: String
 }
 
-input GreetingsBC__HelloRequest @tag(id: "greetings_b.c.HelloRequest") {
+input Greetings_B_C__HelloRequest @tag(id: "greetings_b.c.HelloRequest") {
   name: String
 }
 
@@ -42,26 +42,26 @@ enum News__Status @tag(id: "news.Status") {
 }
 
 type B {
-  sayHello(helloRequest: GreetingsAB__HelloRequest!): GreetingsAB__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
+  sayHello(helloRequest: Greetings_A_B__HelloRequest!): Greetings_A_B__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
 }
 
 type C {
-  sayHello(helloRequest: GreetingsBC__HelloRequest!): GreetingsBC__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
+  sayHello(helloRequest: Greetings_B_C__HelloRequest!): Greetings_B_C__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
 }
 
 type GreetingsA {
   b: B
 }
 
-type GreetingsAB__HelloReply @tag(id: "greetings_a.b.HelloReply") {
-  message: String
-}
-
 type GreetingsB {
   c: C
 }
 
-type GreetingsBC__HelloReply @tag(id: "greetings_b.c.HelloReply") {
+type Greetings_A_B__HelloReply @tag(id: "greetings_a.b.HelloReply") {
+  message: String
+}
+
+type Greetings_B_C__HelloReply @tag(id: "greetings_b.c.HelloReply") {
   message: String
 }
 
