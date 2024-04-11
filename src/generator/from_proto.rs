@@ -19,6 +19,7 @@ enum DescriptorType {
     Enum,
     Message,
     Operation,
+    Key,
 }
 
 impl DescriptorType {
@@ -41,7 +42,7 @@ impl DescriptorType {
         };
 
         match self {
-            DescriptorType::Operation => name.to_case(Case::Camel),
+            DescriptorType::Operation | DescriptorType::Key => name.to_case(Case::Camel),
             DescriptorType::Enum | DescriptorType::Message => {
                 package_prefix + &name.to_case(Case::Pascal)
             }
@@ -271,10 +272,10 @@ impl Context {
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
-                    self = self.insert(&arg_type, DescriptorType::Message);
-                    let key = convert_ty(&arg_type).to_case(Case::Camel);
+                    let key = self.get_name(&convert_ty(&arg_type), DescriptorType::Key);
+                    let type_of = self.get_name(&arg_type, DescriptorType::Message);
                     let val = Arg {
-                        type_of: self.get(&arg_type).unwrap_or(arg_type),
+                        type_of,
                         list: false,
                         required: true,
                         /* Setting it not null by default. There's no way to infer this

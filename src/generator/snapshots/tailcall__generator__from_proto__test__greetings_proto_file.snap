@@ -11,7 +11,7 @@ input Greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
 }
 
 type Greetings {
-  sayHello(greetings.helloRequest: Greetings__HelloRequest!): Greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+  sayHello(helloRequest: Greetings__HelloRequest!): Greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello")
 }
 
 type Greetings__HelloReply @tag(id: "greetings.HelloReply") {
