@@ -11,11 +11,15 @@ use crate::merge_right::MergeRight;
 pub struct Batch {
     pub delay: usize,
     pub headers: BTreeSet<String>,
-    pub max_size: Option<usize>,
+    #[serde(default = "default_max_size")]
+    pub max_size: usize,
+}
+fn default_max_size() -> usize {
+    100
 }
 impl Default for Batch {
     fn default() -> Self {
-        Batch { max_size: Some(100), delay: 0, headers: BTreeSet::new() }
+        Batch { max_size: 100, delay: 0, headers: BTreeSet::new() }
     }
 }
 
@@ -159,7 +163,7 @@ impl Upstream {
     }
 
     pub fn get_max_size(&self) -> usize {
-        self.batch.clone().unwrap_or_default().max_size.unwrap_or_default()
+        self.batch.clone().unwrap_or_default().max_size
     }
 
     pub fn get_http_2_only(&self) -> bool {
