@@ -14,7 +14,11 @@ expression: response
         "id": 1,
         "friend": {
           "name": "User2",
-          "id": 2
+          "id": 2,
+          "friend": {
+            "name": "User2",
+            "id": 2
+          }
         }
       }
     }
