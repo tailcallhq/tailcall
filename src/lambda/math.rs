@@ -8,6 +8,7 @@ use async_graphql_value::ConstValue;
 use super::{
     Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
 };
+use crate::error::Error;
 use crate::json::JsonLike;
 
 #[derive(Clone, Debug, strum_macros::Display)]
@@ -29,7 +30,7 @@ impl Eval for Math {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Math::Mod(lhs, rhs) => {

@@ -11,6 +11,7 @@ use crate::async_cache::AsyncCache;
 use crate::auth::context::AuthContext;
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
+use crate::error::Error;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
@@ -33,7 +34,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<u64, ConstValue, String>,
+    pub cache: AsyncCache<u64, ConstValue, Error>,
 }
 
 impl RequestContext {

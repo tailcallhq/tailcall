@@ -7,6 +7,7 @@ use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
+use crate::error::Error;
 
 pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> u64;
@@ -39,7 +40,7 @@ impl Eval for Cache {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + 'a + Send>> {
         Box::pin(async move {
             if let Expression::IO(io) = self.expr.deref() {
                 let key = io.cache_key(&ctx);

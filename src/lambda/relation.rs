@@ -11,6 +11,7 @@ use super::{
     Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
 };
 use crate::helpers::value::HashableConstValue;
+use crate::error::Error;
 
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum Relation {
@@ -35,7 +36,7 @@ impl Eval for Relation {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Relation::Intersection(exprs) => {

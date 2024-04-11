@@ -4,6 +4,7 @@ use colored::Colorize;
 use derive_setters::Setters;
 use thiserror::Error;
 
+use crate::lambda::EvaluationError;
 use crate::valid::ValidationError;
 
 /// A versatile error container that's optimized for CLI and Web.
@@ -146,6 +147,16 @@ impl From<hyper::Error> for Error {
         } else {
             cli_error.description(message)
         }
+    }
+}
+
+impl From<EvaluationError> for Error {
+    // TODO: implement EvaluationError conversion to Error
+    // Below is some test code
+    fn from(error: EvaluationError) -> Self {
+        let cli_error = Error::new("Server Failed");
+        let message = error.to_string();
+        cli_error.description(message)
     }
 }
 

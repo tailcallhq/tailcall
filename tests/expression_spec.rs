@@ -2,11 +2,12 @@ use async_graphql::Value;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use tailcall::blueprint::{Blueprint, DynamicValue};
+use tailcall::error::Error;
 use tailcall::http::RequestContext;
 use tailcall::lambda::{Concurrent, EmptyResolverContext, Eval, EvaluationContext, Expression};
 use tailcall::mustache::Mustache;
 
-async fn eval(expr: &Expression) -> anyhow::Result<Value> {
+async fn eval(expr: &Expression) -> anyhow::Result<Value, Error> {
     let runtime = tailcall::cli::runtime::init(&Blueprint::default());
     let req_ctx = RequestContext::new(runtime);
     let res_ctx = EmptyResolverContext {};

@@ -5,14 +5,15 @@ use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 
 use crate::blueprint::DynamicValue;
+use crate::error::Error;
 use crate::path::PathString;
 
 pub trait ValueExt {
-    fn render_value(&self, ctx: &impl PathString) -> Result<GraphQLValue>;
+    fn render_value(&self, ctx: &impl PathString) -> Result<GraphQLValue, Error>;
 }
 
 impl ValueExt for DynamicValue {
-    fn render_value<'a>(&self, ctx: &'a impl PathString) -> Result<GraphQLValue> {
+    fn render_value<'a>(&self, ctx: &'a impl PathString) -> Result<GraphQLValue, Error> {
         match self {
             DynamicValue::Value(value) => Ok(value.to_owned()),
             DynamicValue::Mustache(m) => {
@@ -25,7 +26,7 @@ impl ValueExt for DynamicValue {
                     .or_else(|_| Ok(GraphQLValue::String(rendered.into_owned())))
             }
             DynamicValue::Object(obj) => {
-                let out: Result<IndexMap<_, _>> = obj
+                let out: Result<IndexMap<_, _>, Error> = obj
                     .iter()
                     .map(|(k, v)| {
                         let key = Cow::Borrowed(k.as_str());
@@ -35,7 +36,7 @@ impl ValueExt for DynamicValue {
                 out.map(GraphQLValue::Object)
             }
             DynamicValue::Array(arr) => {
-                let out: Result<Vec<_>> = arr.iter().map(|v| v.render_value(ctx)).collect();
+                let out: Result<Vec<_>, Error> = arr.iter().map(|v| v.render_value(ctx)).collect();
                 out.map(GraphQLValue::List)
             }
         }
