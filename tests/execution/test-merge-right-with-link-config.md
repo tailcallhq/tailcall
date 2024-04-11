@@ -12,6 +12,6 @@ schema @upstream(allowedHeaders: ["Authorization"]) @link(src: "stripe-types.gra
 }
 
 type Query {
-  foo: Foo @const(data: "foo")
+  foo: Foo @expr(body: {bar: "foo"})
 }
 ```

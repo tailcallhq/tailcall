@@ -2,41 +2,22 @@
 source: tests/execution_spec.rs
 expression: client
 ---
-type Balance {
-  amount: Int
-  currency: String
-  source_types: SourceTypes
-}
-
-type BalanceRoot {
-  available: [Balance]
-  connect_reserved: [ConnectReserved]
-  livemode: Boolean
-  object: String
-  pending: [Balance]
-}
-
-type ConnectReserved {
-  amount: Int
-  currency: String
-}
-
 scalar Date
 
 scalar Email
 
 scalar Empty
 
+type Foo {
+  bar: String
+}
+
 scalar JSON
 
 scalar PhoneNumber
 
 type Query {
-  balance: BalanceRoot
-}
-
-type SourceTypes {
-  card: Int
+  foo: Foo
 }
 
 scalar Url
