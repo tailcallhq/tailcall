@@ -1,5 +1,5 @@
 [package]
-name = "aws-lambda"
+name = "tailcall-aws-lambda"
 version = "0.1.0"
 edition = "2021"
 

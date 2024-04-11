@@ -560,23 +560,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-lambda"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "dotenvy",
- "hyper 0.14.28",
- "lambda_http",
- "lambda_runtime",
- "reqwest",
- "tailcall",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "aws_lambda_events"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5320,6 +5303,23 @@ dependencies = [
  "url",
  "webbrowser",
  "which 6.0.1",
+]
+
+[[package]]
+name = "tailcall-aws-lambda"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "dotenvy",
+ "hyper 0.14.28",
+ "lambda_http",
+ "lambda_runtime",
+ "reqwest",
+ "tailcall",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
