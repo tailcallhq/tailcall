@@ -74,8 +74,7 @@ impl ProtobufSet {
     // it could be more convenient to load FileDescriptorSet instead
     // either from file or server reflection
     pub fn from_proto_file(file_descriptor_set: FileDescriptorSet) -> Result<Self> {
-        let descriptor_pool =
-            DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
+        let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
         Ok(Self { descriptor_pool })
     }
 
