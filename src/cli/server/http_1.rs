@@ -5,7 +5,7 @@ use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use crate::cli::CLIError;
+use crate::error::Error;
 use crate::http::handle_request;
 
 pub async fn start_http_1(
@@ -31,7 +31,7 @@ pub async fn start_http_1(
         }
     });
     let builder = hyper::Server::try_bind(&addr)
-        .map_err(CLIError::from)?
+        .map_err(Error::from)?
         .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
     super::log_launch_and_open_browser(sc.as_ref());
 
@@ -48,7 +48,7 @@ pub async fn start_http_1(
             builder.serve(make_svc_single_req).await
         };
 
-    let result = server.map_err(CLIError::from);
+    let result = server.map_err(Error::from);
 
     Ok(result?)
 }

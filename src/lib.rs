@@ -14,6 +14,7 @@ pub mod data_loader;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+pub mod error;
 pub mod generator;
 pub mod graphql;
 pub mod grpc;

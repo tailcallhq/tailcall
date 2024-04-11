@@ -12,8 +12,8 @@ use super::update_checker;
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
+use crate::error::Error;
 use crate::generator::Generator;
 use crate::http::API_URL_PREFIX;
 use crate::print_schema;
@@ -29,7 +29,7 @@ pub async fn run() -> Result<()> {
     }
     let cli = Cli::parse();
     update_checker::check_for_update().await;
-    let runtime = cli::runtime::init(&Blueprint::default());
+    let runtime = crate::cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
     match cli.command {
         Command::Start { file_paths } => {
@@ -46,7 +46,7 @@ pub async fn run() -> Result<()> {
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
             }
-            let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
+            let blueprint = Blueprint::try_from(&config_module).map_err(Error::from);
 
             match blueprint {
                 Ok(blueprint) => {

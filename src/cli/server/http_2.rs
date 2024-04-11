@@ -10,7 +10,7 @@ use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use crate::cli::CLIError;
+use crate::error::Error;
 use crate::http::handle_request;
 
 pub async fn start_http_2(
@@ -60,7 +60,7 @@ pub async fn start_http_2(
             builder.serve(make_svc_single_req).await
         };
 
-    let result = server.map_err(CLIError::from);
+    let result = server.map_err(Error::from);
 
     Ok(result?)
 }

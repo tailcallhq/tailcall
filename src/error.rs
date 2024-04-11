@@ -6,8 +6,10 @@ use thiserror::Error;
 
 use crate::valid::ValidationError;
 
+// FIXME: Rename to Error
+/// A versatile error container that's optimized for CLI and Web.
 #[derive(Debug, Error, Setters, PartialEq, Clone)]
-pub struct CLIError {
+pub struct Error {
     is_root: bool,
     #[setters(skip)]
     color: bool,
@@ -17,12 +19,12 @@ pub struct CLIError {
     trace: Vec<String>,
 
     #[setters(skip)]
-    caused_by: Vec<CLIError>,
+    caused_by: Vec<Error>,
 }
 
-impl CLIError {
+impl Error {
     pub fn new(message: &str) -> Self {
-        CLIError {
+        Error {
             is_root: true,
             color: false,
             message: message.to_string(),
@@ -32,7 +34,7 @@ impl CLIError {
         }
     }
 
-    pub fn caused_by(mut self, error: Vec<CLIError>) -> Self {
+    pub fn caused_by(mut self, error: Vec<Error>) -> Self {
         self.caused_by = error;
 
         for error in self.caused_by.iter_mut() {
@@ -82,7 +84,7 @@ fn bullet(str: &str) -> String {
     chars.into_iter().collect::<String>()
 }
 
-impl Display for CLIError {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let default_padding = 2;
 
@@ -132,46 +134,37 @@ impl Display for CLIError {
     }
 }
 
-impl From<hyper::Error> for CLIError {
+impl From<hyper::Error> for Error {
     fn from(error: hyper::Error) -> Self {
         // TODO: add type-safety to CLIError conversion
-        let cli_error = CLIError::new("Server Failed");
+        let cli_error = Error::new("Server Failed");
         let message = error.to_string();
         if message.to_lowercase().contains("os error 48") {
             cli_error
                 .description("The port is already in use".to_string())
-                .caused_by(vec![CLIError::new(message.as_str())])
+                .caused_by(vec![Error::new(message.as_str())])
         } else {
             cli_error.description(message)
         }
     }
 }
 
-impl From<rustls::Error> for CLIError {
-    fn from(error: rustls::Error) -> Self {
-        let cli_error = CLIError::new("Failed to create TLS Acceptor");
-        let message = error.to_string();
-
-        cli_error.description(message)
-    }
-}
-
-impl From<anyhow::Error> for CLIError {
+impl From<anyhow::Error> for Error {
     fn from(error: anyhow::Error) -> Self {
         // Convert other errors to CLIError
-        let cli_error = match error.downcast::<CLIError>() {
+        let cli_error = match error.downcast::<Error>() {
             Ok(cli_error) => cli_error,
             Err(error) => {
                 // Convert other errors to CLIError
                 let cli_error = match error.downcast::<ValidationError<String>>() {
-                    Ok(validation_error) => CLIError::from(validation_error),
+                    Ok(validation_error) => Error::from(validation_error),
                     Err(error) => {
                         let sources = error
                             .source()
-                            .map(|error| vec![CLIError::new(error.to_string().as_str())])
+                            .map(|error| vec![Error::new(error.to_string().as_str())])
                             .unwrap_or_default();
 
-                        CLIError::new(&error.to_string()).caused_by(sources)
+                        Error::new(&error.to_string()).caused_by(sources)
                     }
                 };
                 cli_error
@@ -181,24 +174,23 @@ impl From<anyhow::Error> for CLIError {
     }
 }
 
-impl From<std::io::Error> for CLIError {
+impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {
-        let cli_error = CLIError::new("IO Error");
+        let cli_error = Error::new("IO Error");
         let message = error.to_string();
 
         cli_error.description(message)
     }
 }
 
-impl<'a> From<ValidationError<&'a str>> for CLIError {
+impl<'a> From<ValidationError<&'a str>> for Error {
     fn from(error: ValidationError<&'a str>) -> Self {
-        CLIError::new("Invalid Configuration").caused_by(
+        Error::new("Invalid Configuration").caused_by(
             error
                 .as_vec()
                 .iter()
                 .map(|cause| {
-                    let mut err =
-                        CLIError::new(cause.message).trace(Vec::from(cause.trace.clone()));
+                    let mut err = Error::new(cause.message).trace(Vec::from(cause.trace.clone()));
                     if let Some(description) = cause.description {
                         err = err.description(description.to_owned());
                     }
@@ -209,23 +201,23 @@ impl<'a> From<ValidationError<&'a str>> for CLIError {
     }
 }
 
-impl From<ValidationError<String>> for CLIError {
+impl From<ValidationError<String>> for Error {
     fn from(error: ValidationError<String>) -> Self {
-        CLIError::new("Invalid Configuration").caused_by(
+        Error::new("Invalid Configuration").caused_by(
             error
                 .as_vec()
                 .iter()
                 .map(|cause| {
-                    CLIError::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone()))
+                    Error::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone()))
                 })
                 .collect(),
         )
     }
 }
 
-impl From<Box<dyn std::error::Error>> for CLIError {
+impl From<Box<dyn std::error::Error>> for Error {
     fn from(value: Box<dyn std::error::Error>) -> Self {
-        CLIError::new(value.to_string().as_str())
+        Error::new(value.to_string().as_str())
     }
 }
 
@@ -275,14 +267,14 @@ mod tests {
 
     #[test]
     fn test_title() {
-        let error = CLIError::new("Server could not be started");
+        let error = Error::new("Server could not be started");
         let expected = r"Server could not be started".strip_margin();
         assert_eq!(error.to_string(), expected);
     }
 
     #[test]
     fn test_title_description() {
-        let error = CLIError::new("Server could not be started")
+        let error = Error::new("Server could not be started")
             .description("The port is already in use".to_string());
         let expected = r"|Server could not be started: The port is already in use".strip_margin();
 
@@ -291,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_title_description_trace() {
-        let error = CLIError::new("Server could not be started")
+        let error = Error::new("Server could not be started")
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
@@ -304,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_title_trace_caused_by() {
-        let error = CLIError::new("Configuration Error").caused_by(vec![CLIError::new(
+        let error = Error::new("Configuration Error").caused_by(vec![Error::new(
             "Base URL needs to be specified",
         )
         .trace(vec![
@@ -324,20 +316,20 @@ mod tests {
 
     #[test]
     fn test_title_trace_multiple_caused_by() {
-        let error = CLIError::new("Configuration Error").caused_by(vec![
-            CLIError::new("Base URL needs to be specified").trace(vec![
+        let error = Error::new("Configuration Error").caused_by(vec![
+            Error::new("Base URL needs to be specified").trace(vec![
                 "User".into(),
                 "posts".into(),
                 "@http".into(),
                 "baseURL".into(),
             ]),
-            CLIError::new("Base URL needs to be specified").trace(vec![
+            Error::new("Base URL needs to be specified").trace(vec![
                 "Post".into(),
                 "users".into(),
                 "@http".into(),
                 "baseURL".into(),
             ]),
-            CLIError::new("Base URL needs to be specified")
+            Error::new("Base URL needs to be specified")
                 .description("Set `baseURL` in @http or @server directives".into())
                 .trace(vec![
                     "Query".into(),
@@ -345,7 +337,7 @@ mod tests {
                     "@http".into(),
                     "baseURL".into(),
                 ]),
-            CLIError::new("Base URL needs to be specified").trace(vec![
+            Error::new("Base URL needs to be specified").trace(vec![
                 "Query".into(),
                 "posts".into(),
                 "@http".into(),
@@ -370,7 +362,7 @@ mod tests {
             .description("Set `baseURL` in @http or @server directives")
             .trace(vec!["Query", "users", "@http", "baseURL"]);
         let valid = ValidationError::from(cause);
-        let error = CLIError::from(valid);
+        let error = Error::from(valid);
         let expected = r"|Invalid Configuration
                      |Caused by:
                      |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
@@ -381,12 +373,12 @@ mod tests {
 
     #[test]
     fn test_cli_error_identity() {
-        let cli_error = CLIError::new("Server could not be started")
+        let cli_error = Error::new("Server could not be started")
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
         let anyhow_error: anyhow::Error = cli_error.clone().into();
 
-        let actual = CLIError::from(anyhow_error);
+        let actual = Error::from(anyhow_error);
         let expected = cli_error;
 
         assert_eq!(actual, expected);
@@ -399,8 +391,8 @@ mod tests {
         );
         let anyhow_error: anyhow::Error = validation_error.clone().into();
 
-        let actual = CLIError::from(anyhow_error);
-        let expected = CLIError::from(validation_error);
+        let actual = Error::from(anyhow_error);
+        let expected = Error::from(validation_error);
 
         assert_eq!(actual, expected);
     }
@@ -409,8 +401,8 @@ mod tests {
     fn test_generic_error() {
         let anyhow_error = anyhow::anyhow!("Some error msg");
 
-        let actual: CLIError = CLIError::from(anyhow_error);
-        let expected = CLIError::new("Some error msg");
+        let actual: Error = Error::from(anyhow_error);
+        let expected = Error::new("Some error msg");
 
         assert_eq!(actual, expected);
     }

@@ -8,7 +8,7 @@ use thiserror::Error;
 
 use super::{Concurrent, Eval, EvaluationContext, ResolverContextLike, IO};
 use crate::blueprint::DynamicValue;
-use crate::cli::CLIError;
+use crate::error::Error;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
@@ -127,8 +127,8 @@ impl Eval for Expression {
                         .await
                         .to_result()
                         .map_err(|e| {
-                            CLIError::new("Authentication Failure")
-                                .caused_by(vec![CLIError::new(&e.to_string())])
+                            Error::new("Authentication Failure")
+                                .caused_by(vec![Error::new(&e.to_string())])
                         })?;
                     expr.eval(ctx, conc).await
                 }
