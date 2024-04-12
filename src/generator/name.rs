@@ -8,6 +8,7 @@ pub(super) static DEFAULT_PACKAGE_SEPARATOR: &str = "_";
 /// A struct to represent the name of a GraphQL type.
 #[derive(Setters)]
 pub struct GraphQLType {
+    #[setters(strip_option)]
     package: Option<String>,
     name: String,
     convertor: NameConvertor,
