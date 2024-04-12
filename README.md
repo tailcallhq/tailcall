@@ -1,4 +1,4 @@
-[![Tailcall](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/logo_main.svg)](https://tailcall.run)
+[![Tailcall Logo](https://raw.githubusercontent.com/tailcallhq/tailcall/main/assets/logo_main.svg)](https://tailcall.run)
 
 Tailcall is an open-source solution for building [high-performance] GraphQL backends.
 
@@ -53,7 +53,7 @@ docker run -p 8080:8080 -p 8081:8081 ghcr.io/tailcallhq/tailcall/tc-server
 
 ## Get Started
 
-The below file is a standard `.graphQL` file, with a few additions such as `@server` and `@http` directives. So basically we specify the GraphQL schema and how to resolve that GraphQL schema in the same file, without having to write any code!
+The below file is a standard `.graphQL` file, with a few additions such as `@server` and `@http` directives. So, basically, we specify the GraphQL schema and how to resolve that GraphQL schema in the same file, without having to write any code!
 
 ```graphql
 schema
