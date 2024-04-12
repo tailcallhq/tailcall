@@ -6,10 +6,9 @@ use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
+use super::name::Entity;
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
-
-use super::name::Entity;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -39,8 +38,8 @@ impl Context {
     }
 
     /// Formats a proto type name based on its `DescriptorType`.
-    fn get_name(&self, name: &str, ty: Entity) -> String {
-        let name = name
+    fn get_name(&self, name: &str, _ty: Entity) -> String {
+        let _name = name
             .strip_prefix(&format!("{}.", self.package))
             .unwrap_or(name);
 

@@ -1,17 +1,14 @@
 use std::fmt::Display;
 
 use convert_case::{Case, Casing};
-use derive_setters::Setters;
-use strum_macros::Display;
 pub(super) static DEFAULT_SEPARATOR: &str = "_";
-pub(super) static DEFAULT_PACKAGE_SEPARATOR: &str = "_";
 
 /// A struct to represent the name of a GraphQL type.
 #[derive(Debug, Clone)]
 pub struct GraphQLType {
     package: Option<Package>,
     name: String,
-    convertor: Entity,
+    entity: Entity,
 }
 
 #[derive(Debug, Clone)]
@@ -37,7 +34,7 @@ impl Display for Package {
                 .iter()
                 .map(|a| a.to_case(Case::Snake))
                 .collect::<Vec<_>>()
-                .join(DEFAULT_PACKAGE_SEPARATOR)
+                .join(DEFAULT_SEPARATOR)
                 .as_str(),
         )
     }
@@ -51,12 +48,12 @@ impl GraphQLType {
         if input.contains(SEPARATOR) {
             if let Some((package, name)) = input.rsplit_once(SEPARATOR) {
                 let package = Package::parse(package, SEPARATOR);
-                Some(Self { package, name: name.to_string(), convertor })
+                Some(Self { package, name: name.to_string(), entity: convertor })
             } else {
                 None
             }
         } else {
-            Some(Self { package: None, name: input.to_string(), convertor })
+            Some(Self { package: None, name: input.to_string(), entity: convertor })
         }
     }
 
@@ -109,7 +106,7 @@ pub enum Entity {
 
 impl Display for GraphQLType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.convertor {
+        match self.entity {
             Entity::EnumVariant => f.write_str(self.name.to_case(Case::ScreamingSnake).as_str())?,
             Entity::Field => f.write_str(self.name.to_case(Case::Snake).as_str())?,
             Entity::Method => {
@@ -133,8 +130,9 @@ impl Display for GraphQLType {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     type TestParams = ((Entity, Option<&'static str>, &'static str), &'static str);
 
@@ -194,7 +192,7 @@ mod tests {
             ((Entity::Method, Some("a.b.c"), "foo"), "a_b_c_foo"),
             ((Entity::Method, Some("a.b"), "d.e.foo"), "a_b_foo"),
             ((Entity::Method, Some(""), "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Method, None, "a_b_c_foo"), "a_b_c_foo"),
+            ((Entity::Method, None, "a_bC_foo"), "a_b_c_foo"),
         ];
 
         assert_type_names(input);
@@ -209,13 +207,13 @@ mod tests {
             ((Entity::Field, Some("a.b.c"), "foo"), "foo"),
             ((Entity::Field, Some("a.b"), "d.e.foo"), "foo"),
             ((Entity::Field, Some(""), "a.b.c.foo"), "foo"),
-            ((Entity::Field, None, "a_b_c_foo"), "a_b_c_foo"),
+            ((Entity::Field, None, "a_bC_foo"), "a_b_c_foo"),
         ];
 
         assert_type_names(input);
     }
 
-    fn assert_type_names(input: Vec<((Entity, Option<&str>, &str), &str)>) {
+    fn assert_type_names(input: Vec<TestParams>) {
         for ((entity, package, name), expected) in input {
             let mut g = GraphQLType::parse(name, entity).unwrap();
             if let Some(package) = package {
