@@ -1,0 +1,17 @@
+---
+source: tests/execution_spec.rs
+expression: merged
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  user(id: Int!): User @http(path: "/users/1")
+}
+
+type User {
+  friend: User @http(path: "/friends/1")
+  id: Int!
+  name: String!
+}
