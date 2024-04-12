@@ -8,12 +8,16 @@ use prost_reflect::prost_types::{
 
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
-use crate::generator::GraphQLType;
+
+use super::name::Entity;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
 #[derive(Setters)]
 struct Context {
+    /// Maps proto type names to custom formatted names.
+    map: HashMap<String, String>,
+
     /// The current proto package name.
     package: String,
 
@@ -28,20 +32,77 @@ impl Context {
     fn new(query: &str) -> Self {
         Self {
             query: query.to_string(),
+            map: Default::default(),
             package: Default::default(),
             config: Default::default(),
         }
     }
 
+    /// Formats a proto type name based on its `DescriptorType`.
+    fn get_name(&self, name: &str, ty: Entity) -> String {
+        let name = name
+            .strip_prefix(&format!("{}.", self.package))
+            .unwrap_or(name);
+
+        // ty.convert(&self.package, name)
+        todo!()
+    }
+
+    fn formatted_name(&self, name: &str) -> String {
+        let mut prefix = format!("{}.", self.package);
+        if self.package.is_empty() || name.starts_with(&prefix) {
+            name.to_string()
+        } else {
+            prefix.push_str(name);
+            prefix
+        }
+    }
+
+    /// Inserts a formatted name into the map.
+    fn insert(mut self, name: &str, ty: Entity) -> Self {
+        self.map
+            .insert(self.formatted_name(name), self.get_name(name, ty));
+        self
+    }
+    /// Retrieves a formatted name from the map.
+    fn get(&self, name: &str) -> Option<String> {
+        self.map.get(&self.formatted_name(name)).cloned()
+    }
+
+    /// Resolves the actual name and inserts the type.
+    fn insert_type(mut self, name: &str, ty: Type) -> Self {
+        if let Some(name) = self.get(name) {
+            self.config.types.insert(name, ty);
+        }
+        self
+    }
+
+    /// Retrieves or creates a Type configuration for a given proto type.
+    fn get_ty(&self, name: &str) -> Type {
+        let mut ty = self
+            .get(name)
+            .and_then(|name| self.config.types.get(&name))
+            .cloned()
+            .unwrap_or_default();
+
+        let id = self.formatted_name(name);
+
+        ty.tag = Some(Tag { id });
+        ty
+    }
+
     /// Processes proto enum types.
     fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
-            let enum_name = GraphQLType::from_enum(enum_.name());
+            let enum_name = enum_.name();
+
+            self = self.insert(enum_name, Entity::Enum);
+            let mut ty = self.get_ty(enum_name);
 
             let mut variants = enum_
                 .value
                 .iter()
-                .map(|v| GraphQLType::from_enum_variant(v.name()))
+                .map(|v| v.name().to_string())
                 .collect::<BTreeSet<String>>();
             if let Some(vars) = ty.variants {
                 variants.extend(vars);
@@ -65,7 +126,7 @@ impl Context {
                 }
             }
 
-            self = self.insert(&msg_name, NameConvertor::Message);
+            self = self.insert(&msg_name, Entity::ObjectType);
             let mut ty = self.get_ty(&msg_name);
 
             self = self.append_enums(&message.enum_type);
@@ -170,12 +231,12 @@ impl Context {
             for method in &service.method {
                 let method_name = method.name();
 
-                self = self.insert(method_name, NameConvertor::Method);
+                self = self.insert(method_name, Entity::Method);
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
-                    let key = self.get_name(&convert_ty(&arg_type), NameConvertor::Arg);
-                    let type_of = self.get_name(&arg_type, NameConvertor::Message);
+                    let key = self.get_name(&convert_ty(&arg_type), Entity::Field);
+                    let type_of = self.get_name(&arg_type, Entity::ObjectType);
                     let val = Arg {
                         type_of,
                         list: false,
@@ -191,7 +252,7 @@ impl Context {
                 }
 
                 let output_ty = get_output_ty(method.output_type());
-                self = self.insert(&output_ty, NameConvertor::Message);
+                self = self.insert(&output_ty, Entity::ObjectType);
                 cfg_field.type_of = self.get(&output_ty).unwrap_or(output_ty.clone());
                 cfg_field.required = true;
 
@@ -286,7 +347,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::generator::from_proto::{from_proto, Context, NameConvertor};
+    use crate::generator::from_proto::{from_proto, Context, Entity};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let path =
@@ -381,7 +442,7 @@ mod test {
     fn test_get_value_enum() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
-        let actual = ctx.get_name("TestEnum", NameConvertor::Enum);
+        let actual = ctx.get_name("TestEnum", Entity::Enum);
         let expected = "Com_Example__TestEnum";
         assert_eq!(actual, expected);
     }
@@ -390,7 +451,7 @@ mod test {
     fn test_get_value_message() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
-        let actual = ctx.get_name("testMessage", NameConvertor::Message);
+        let actual = ctx.get_name("testMessage", Entity::ObjectType);
         let expected = "Com_Example__TestMessage";
         assert_eq!(actual, expected);
     }
@@ -399,7 +460,7 @@ mod test {
     fn test_get_value_query_name() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
-        let actual = ctx.get_name("QueryName", NameConvertor::Method);
+        let actual = ctx.get_name("QueryName", Entity::Method);
         let expected = "queryName";
         assert_eq!(actual, expected);
     }
@@ -408,7 +469,7 @@ mod test {
     fn test_insert_and_get_enum() {
         let ctx: Context = Context::new("Query")
             .package("com.example".to_string())
-            .insert("TestEnum", NameConvertor::Enum);
+            .insert("TestEnum", Entity::Enum);
 
         let actual = ctx.get("TestEnum");
         let expected = Some("Com_Example__TestEnum".to_string());
@@ -419,7 +480,7 @@ mod test {
     fn test_insert_and_get_message() {
         let ctx: Context = Context::new("Query")
             .package("com.example".to_string())
-            .insert("testMessage", NameConvertor::Message);
+            .insert("testMessage", Entity::ObjectType);
         let actual = ctx.get("testMessage");
         let expected = Some("Com_Example__TestMessage".to_string());
         assert_eq!(actual, expected);
