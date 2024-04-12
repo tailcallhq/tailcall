@@ -129,6 +129,51 @@ mod tests {
         assert_type_names(input);
     }
 
+    #[test]
+    fn test_from_object_type() {
+        let input: Vec<TestParams> = vec![
+            // Object types
+            ((Entity::ObjectType, None, "foo"), "Foo"),
+            ((Entity::ObjectType, None, "a.b.c.foo"), "A_B_C_Foo"),
+            ((Entity::ObjectType, Some("a.b.c"), "foo"), "A_B_C_Foo"),
+            ((Entity::ObjectType, Some("a.b"), "d.e.foo"), "A_B_Foo"),
+            ((Entity::ObjectType, Some(""), "a.b.c.foo"), "A_B_C_Foo"),
+            ((Entity::ObjectType, None, "a_b_c_foo"), "ABCFoo"),
+        ];
+
+        assert_type_names(input);
+    }
+
+    #[test]
+    fn test_from_method() {
+        let input: Vec<TestParams> = vec![
+            // Methods
+            ((Entity::Method, None, "foo"), "foo"),
+            ((Entity::Method, None, "a.b.c.foo"), "foo"),
+            ((Entity::Method, Some("a.b.c"), "foo"), "foo"),
+            ((Entity::Method, Some("a.b"), "d.e.foo"), "foo"),
+            ((Entity::Method, Some(""), "a.b.c.foo"), "foo"),
+            ((Entity::Method, None, "a_b_c_foo"), "a_b_c_foo"),
+        ];
+
+        assert_type_names(input);
+    }
+
+    #[test]
+    fn test_from_field() {
+        let input: Vec<TestParams> = vec![
+            // Fields
+            ((Entity::Field, None, "foo"), "foo"),
+            ((Entity::Field, None, "a.b.c.foo"), "foo"),
+            ((Entity::Field, Some("a.b.c"), "foo"), "foo"),
+            ((Entity::Field, Some("a.b"), "d.e.foo"), "foo"),
+            ((Entity::Field, Some(""), "a.b.c.foo"), "foo"),
+            ((Entity::Field, None, "a_b_c_foo"), "a_b_c_foo"),
+        ];
+
+        assert_type_names(input);
+    }
+
     fn assert_type_names(input: Vec<((Entity, Option<&str>, &str), &str)>) {
         for ((entity, package, name), expected) in input {
             let mut g = GraphQLType::new(name, entity);
