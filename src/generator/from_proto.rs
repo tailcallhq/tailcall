@@ -19,7 +19,7 @@ enum DescriptorType {
     Enum,
     Message,
     Operation,
-    Key,
+    Arg,
 }
 
 impl DescriptorType {
@@ -42,7 +42,7 @@ impl DescriptorType {
         };
 
         match self {
-            DescriptorType::Operation | DescriptorType::Key => name.to_case(Case::Camel),
+            DescriptorType::Operation | DescriptorType::Arg => name.to_case(Case::Camel),
             DescriptorType::Enum | DescriptorType::Message => {
                 package_prefix + &name.to_case(Case::Pascal)
             }
@@ -272,7 +272,7 @@ impl Context {
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
-                    let key = self.get_name(&convert_ty(&arg_type), DescriptorType::Key);
+                    let key = self.get_name(&convert_ty(&arg_type), DescriptorType::Arg);
                     let type_of = self.get_name(&arg_type, DescriptorType::Message);
                     let val = Arg {
                         type_of,
