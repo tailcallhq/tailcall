@@ -5,52 +5,9 @@ use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
-use strum_macros::Display;
 
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
-
-pub(super) static DEFAULT_SEPARATOR: &str = "__";
-pub(super) static DEFAULT_PACKAGE_SEPARATOR: &str = "_";
-
-/// Used to convert proto type names to GraphQL formatted names.
-/// Enum to represent the type of the descriptor
-#[derive(Display, Clone)]
-enum GrpcNameConvertor {
-    Enum,
-    Message,
-    Method,
-    Arg,
-}
-
-impl GrpcNameConvertor {
-    /// Takes in a name and returns a GraphQL name based on the descriptor type.
-    fn convert(&self, package: &str, name: &str) -> String {
-        let package = package
-            .split('.')
-            .map(|word| {
-                word.split('_')
-                    .map(|name| name.to_case(Case::Pascal))
-                    .reduce(|acc, x| acc + "_" + &x)
-                    .unwrap_or(word.to_string())
-            })
-            .reduce(|acc, x| acc + DEFAULT_PACKAGE_SEPARATOR + &x)
-            .unwrap_or(package.to_string());
-
-        let package_prefix = if package.is_empty() {
-            "".to_string()
-        } else {
-            package + DEFAULT_SEPARATOR
-        };
-
-        match self {
-            GrpcNameConvertor::Method | GrpcNameConvertor::Arg => name.to_case(Case::Camel),
-            GrpcNameConvertor::Enum | GrpcNameConvertor::Message => {
-                package_prefix + &name.to_case(Case::Pascal)
-            }
-        }
-    }
-}
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -80,7 +37,7 @@ impl Context {
     }
 
     /// Formats a proto type name based on its `DescriptorType`.
-    fn get_name(&self, name: &str, ty: GrpcNameConvertor) -> String {
+    fn get_name(&self, name: &str, ty: NameConvertor) -> String {
         let name = name
             .strip_prefix(&format!("{}.", self.package))
             .unwrap_or(name);
@@ -98,7 +55,7 @@ impl Context {
     }
 
     /// Inserts a formatted name into the map.
-    fn insert(mut self, name: &str, ty: GrpcNameConvertor) -> Self {
+    fn insert(mut self, name: &str, ty: NameConvertor) -> Self {
         self.map
             .insert(self.formatted_name(name), self.get_name(name, ty));
         self
@@ -135,7 +92,7 @@ impl Context {
         for enum_ in enums {
             let enum_name = enum_.name();
 
-            self = self.insert(enum_name, GrpcNameConvertor::Enum);
+            self = self.insert(enum_name, NameConvertor::Enum);
             let mut ty = self.get_ty(enum_name);
 
             let mut variants = enum_
@@ -165,7 +122,7 @@ impl Context {
                 }
             }
 
-            self = self.insert(&msg_name, GrpcNameConvertor::Message);
+            self = self.insert(&msg_name, NameConvertor::Message);
             let mut ty = self.get_ty(&msg_name);
 
             self = self.append_enums(&message.enum_type);
@@ -270,12 +227,12 @@ impl Context {
             for method in &service.method {
                 let method_name = method.name();
 
-                self = self.insert(method_name, GrpcNameConvertor::Method);
+                self = self.insert(method_name, NameConvertor::Method);
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
-                    let key = self.get_name(&convert_ty(&arg_type), GrpcNameConvertor::Arg);
-                    let type_of = self.get_name(&arg_type, GrpcNameConvertor::Message);
+                    let key = self.get_name(&convert_ty(&arg_type), NameConvertor::Arg);
+                    let type_of = self.get_name(&arg_type, NameConvertor::Message);
                     let val = Arg {
                         type_of,
                         list: false,
@@ -291,7 +248,7 @@ impl Context {
                 }
 
                 let output_ty = get_output_ty(method.output_type());
-                self = self.insert(&output_ty, GrpcNameConvertor::Message);
+                self = self.insert(&output_ty, NameConvertor::Message);
                 cfg_field.type_of = self.get(&output_ty).unwrap_or(output_ty.clone());
                 cfg_field.required = true;
 
@@ -386,7 +343,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::generator::from_proto::{from_proto, Context, GrpcNameConvertor};
+    use crate::generator::from_proto::{from_proto, Context, NameConvertor};
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let path =
@@ -481,7 +438,7 @@ mod test {
     fn test_get_value_enum() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
-        let actual = ctx.get_name("TestEnum", GrpcNameConvertor::Enum);
+        let actual = ctx.get_name("TestEnum", NameConvertor::Enum);
         let expected = "Com_Example__TestEnum";
         assert_eq!(actual, expected);
     }
@@ -490,7 +447,7 @@ mod test {
     fn test_get_value_message() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
-        let actual = ctx.get_name("testMessage", GrpcNameConvertor::Message);
+        let actual = ctx.get_name("testMessage", NameConvertor::Message);
         let expected = "Com_Example__TestMessage";
         assert_eq!(actual, expected);
     }
@@ -499,7 +456,7 @@ mod test {
     fn test_get_value_query_name() {
         let ctx: Context = Context::new("Query").package("com.example".to_string());
 
-        let actual = ctx.get_name("QueryName", GrpcNameConvertor::Method);
+        let actual = ctx.get_name("QueryName", NameConvertor::Method);
         let expected = "queryName";
         assert_eq!(actual, expected);
     }
@@ -508,7 +465,7 @@ mod test {
     fn test_insert_and_get_enum() {
         let ctx: Context = Context::new("Query")
             .package("com.example".to_string())
-            .insert("TestEnum", GrpcNameConvertor::Enum);
+            .insert("TestEnum", NameConvertor::Enum);
 
         let actual = ctx.get("TestEnum");
         let expected = Some("Com_Example__TestEnum".to_string());
@@ -519,7 +476,7 @@ mod test {
     fn test_insert_and_get_message() {
         let ctx: Context = Context::new("Query")
             .package("com.example".to_string())
-            .insert("testMessage", GrpcNameConvertor::Message);
+            .insert("testMessage", NameConvertor::Message);
         let actual = ctx.get("testMessage");
         let expected = Some("Com_Example__TestMessage".to_string());
         assert_eq!(actual, expected);
