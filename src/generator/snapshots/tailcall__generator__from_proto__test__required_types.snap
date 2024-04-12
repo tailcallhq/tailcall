@@ -10,7 +10,7 @@ type PERSON_PERSON @tag(id: "person.Person") {
   email: String
   id: Int!
   name: String!
-  phone: [PERSON_PHONE_NUMBER]
+  phone: [PERSON_PHONE_NUMBER]!
   string_map: JSON
 }
 

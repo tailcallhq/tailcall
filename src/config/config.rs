@@ -117,7 +117,13 @@ impl Config {
     /// Gets all the type names used in the schema.
     pub fn get_all_used_type_names(&self) -> HashSet<String> {
         let mut set = HashSet::new();
-        let mut stack = vec!["Query".into(), "Mutation".into()];
+        let mut stack = Vec::new();
+        if let Some(query) = &self.schema.query {
+            stack.push(query.clone());
+        }
+        if let Some(mutation) = &self.schema.mutation {
+            stack.push(mutation.clone());
+        }
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
