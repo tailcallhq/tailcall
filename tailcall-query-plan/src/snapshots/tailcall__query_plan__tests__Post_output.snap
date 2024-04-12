@@ -1,0 +1,14 @@
+---
+source: src/query_plan/tests.rs
+expression: result
+---
+{
+  "post": {
+    "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+    "user": {
+      "name": "Leanne Graham",
+      "email": "Sincere@april.biz",
+      "website": "/users/website/Bret"
+    }
+  }
+}

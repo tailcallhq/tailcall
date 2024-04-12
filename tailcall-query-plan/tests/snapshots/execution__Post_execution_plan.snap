@@ -1,0 +1,8 @@
+---
+source: query_plan/tests/execution.rs
+expression: execution_plan
+---
+Sequential:
+    Resolve(0)
+    Resolve(1)
+    Resolve(2)

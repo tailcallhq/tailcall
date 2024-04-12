@@ -1,0 +1,19 @@
+[package]
+name = "tailcall_query_plan"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+async-graphql = { workspace = true }
+futures-util = { workspace = true }
+indexmap = { workspace = true }
+tokio = { workspace = true }
+
+async-recursion = "1.1.0"
+indenter = "0.3.3"
+dashmap = "5.5.3"
+tailcall = { path = ".." }
+
+[dev-dependencies]
+insta = { workspace = true }
