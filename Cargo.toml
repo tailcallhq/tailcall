@@ -196,7 +196,7 @@ default = ["cli", "js"]
 [workspace]
 members = [
     ".",
-    "autogen",
+    "tailcall-autogen",
     "tailcall-aws-lambda",
     "tailcall-cloudflare",
     "tailcall-query-plan",
