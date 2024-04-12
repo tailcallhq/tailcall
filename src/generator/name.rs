@@ -15,7 +15,7 @@ pub struct GraphQLType {
 }
 
 impl GraphQLType {
-    fn new(name: &str, convertor: Entity) -> Self {
+    fn parse(name: &str, convertor: Entity) -> Self {
         let mut package = None;
         let mut name = name.to_string();
         if let Some(index) = name.rfind('.') {
@@ -25,24 +25,24 @@ impl GraphQLType {
         Self { package, name: name.to_string(), convertor }
     }
 
-    pub fn from_enum(name: &str) -> Self {
-        Self::new(name, Entity::Enum)
+    pub fn parse_enum(name: &str) -> Self {
+        Self::parse(name, Entity::Enum)
     }
 
-    pub fn from_enum_variant(name: &str) -> Self {
-        Self::new(name, Entity::EnumVariant)
+    pub fn parse_enum_variant(name: &str) -> Self {
+        Self::parse(name, Entity::EnumVariant)
     }
 
-    pub fn from_object_type(name: &str) -> Self {
-        Self::new(name, Entity::ObjectType)
+    pub fn parse_object_type(name: &str) -> Self {
+        Self::parse(name, Entity::ObjectType)
     }
 
-    pub fn from_method(name: &str) -> Self {
-        Self::new(name, Entity::Method)
+    pub fn parse_method(name: &str) -> Self {
+        Self::parse(name, Entity::Method)
     }
 
-    pub fn from_field(name: &str) -> Self {
-        Self::new(name, Entity::Field)
+    pub fn parse_field(name: &str) -> Self {
+        Self::parse(name, Entity::Field)
     }
 
     pub fn id(&self) -> String {
@@ -56,7 +56,7 @@ impl GraphQLType {
         if package.is_empty() {
             self
         } else {
-            Self::new(&format!("{}.{}", package, self.name), self.convertor)
+            Self::parse(&format!("{}.{}", package, self.name), self.convertor)
         }
     }
 }
@@ -77,7 +77,12 @@ impl Display for GraphQLType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.convertor {
             Entity::EnumVariant => f.write_str(self.name.to_case(Case::ScreamingSnake).as_str())?,
-            Entity::Method | Entity::Field => {
+            Entity::Field => f.write_str(self.name.to_case(Case::Snake).as_str())?,
+            Entity::Method => {
+                if let Some(package) = &self.package {
+                    f.write_str(package.replace(".", "_").to_case(Case::Snake).as_str())?;
+                    f.write_str(DEFAULT_SEPARATOR)?;
+                };
                 f.write_str(self.name.to_case(Case::Snake).as_str())?
             }
             Entity::Enum | Entity::ObjectType => {
@@ -149,10 +154,10 @@ mod tests {
         let input: Vec<TestParams> = vec![
             // Methods
             ((Entity::Method, None, "foo"), "foo"),
-            ((Entity::Method, None, "a.b.c.foo"), "foo"),
-            ((Entity::Method, Some("a.b.c"), "foo"), "foo"),
-            ((Entity::Method, Some("a.b"), "d.e.foo"), "foo"),
-            ((Entity::Method, Some(""), "a.b.c.foo"), "foo"),
+            ((Entity::Method, None, "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::Method, Some("a.b.c"), "foo"), "a_b_c_foo"),
+            ((Entity::Method, Some("a.b"), "d.e.foo"), "a_b_foo"),
+            ((Entity::Method, Some(""), "a.b.c.foo"), "a_b_c_foo"),
             ((Entity::Method, None, "a_b_c_foo"), "a_b_c_foo"),
         ];
 
@@ -176,7 +181,7 @@ mod tests {
 
     fn assert_type_names(input: Vec<((Entity, Option<&str>, &str), &str)>) {
         for ((entity, package, name), expected) in input {
-            let mut g = GraphQLType::new(name, entity);
+            let mut g = GraphQLType::parse(name, entity);
             if let Some(package) = package {
                 g = g.package(package);
             }
