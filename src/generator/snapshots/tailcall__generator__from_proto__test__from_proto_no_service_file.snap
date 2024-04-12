@@ -2,4 +2,13 @@
 source: src/generator/from_proto.rs
 expression: result
 ---
+type NEWS @tag(id: "News") {
+  body: String
+  id: Int
+  post_image: String
+  title: String
+}
 
+type NEWS_LIST @tag(id: "NewsList") {
+  news: [NEWS]!
+}

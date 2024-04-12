@@ -131,8 +131,6 @@ impl Context {
         let package = self.package.clone();
         let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
 
-        let mut ty = Type::default();
-
         for service in services {
             let service_name = service.name().to_string();
             for method in &service.method {
@@ -189,12 +187,18 @@ impl Context {
                     method: field_name.id(),
                 });
 
+                let ty = self
+                    .config
+                    .types
+                    .entry(self.query.clone())
+                    .or_insert_with(|| {
+                        self.config.schema.query = Some(self.query.clone());
+                        Type::default()
+                    });
+
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
         }
-
-        self.config.schema.query = Some(self.query.clone());
-        self.config.types.insert(self.query.clone(), ty);
         self
     }
 }
@@ -251,7 +255,7 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Config 
         }
     }
 
-    ctx.config = ctx.config.remove_unused_types();
+    // ctx.config = ctx.config.remove_unused_types();
 
     ctx.config
 }
