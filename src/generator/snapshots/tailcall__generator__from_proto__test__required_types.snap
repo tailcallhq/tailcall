@@ -18,7 +18,7 @@ type Person__Person @tag(id: "person.Person") {
   email: String
   id: Int!
   name: String!
-  phone: [Person__PhoneNumber]
+  phone: [Person__PhoneNumber]!
   stringMap: JSON
 }
 

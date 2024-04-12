@@ -170,12 +170,13 @@ impl Context {
 
                 let label = field.label().as_str_name().to_lowercase();
                 cfg_field.list = label.contains("repeated");
-                cfg_field.required = label.contains("required");
+                cfg_field.required = label.contains("required") || cfg_field.list;
 
                 if field.r#type.is_some() {
                     let type_of = convert_ty(field.r#type().as_str_name());
                     if type_of.eq("JSON") {
                         cfg_field.list = false;
+                        cfg_field.required = false;
                     }
                     cfg_field.type_of = type_of;
                 } else {
