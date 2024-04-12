@@ -54,6 +54,7 @@ impl GraphQLType {
                 let package = Package::parse(package, PACKAGE_SEPARATOR);
                 Some(Self { package, name: name.to_string(), entity: convertor })
             } else {
+                println!("Input: {input}");
                 None
             }
         } else {

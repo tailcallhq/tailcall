@@ -1,22 +1,18 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
-use convert_case::{Case, Casing};
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use super::name::Entity;
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
+use crate::generator::GraphQLType;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
 #[derive(Setters)]
 struct Context {
-    /// Maps proto type names to custom formatted names.
-    map: HashMap<String, String>,
-
     /// The current proto package name.
     package: String,
 
@@ -31,92 +27,45 @@ impl Context {
     fn new(query: &str) -> Self {
         Self {
             query: query.to_string(),
-            map: Default::default(),
             package: Default::default(),
             config: Default::default(),
         }
     }
 
-    /// Formats a proto type name based on its `DescriptorType`.
-    fn get_name(&self, name: &str, _ty: Entity) -> String {
-        let _name = name
-            .strip_prefix(&format!("{}.", self.package))
-            .unwrap_or(name);
-
-        // ty.convert(&self.package, name)
-        todo!()
-    }
-
-    fn formatted_name(&self, name: &str) -> String {
-        let mut prefix = format!("{}.", self.package);
-        if self.package.is_empty() || name.starts_with(&prefix) {
-            name.to_string()
-        } else {
-            prefix.push_str(name);
-            prefix
-        }
-    }
-
-    /// Inserts a formatted name into the map.
-    fn insert(mut self, name: &str, ty: Entity) -> Self {
-        self.map
-            .insert(self.formatted_name(name), self.get_name(name, ty));
-        self
-    }
-    /// Retrieves a formatted name from the map.
-    fn get(&self, name: &str) -> Option<String> {
-        self.map.get(&self.formatted_name(name)).cloned()
-    }
-
     /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: &str, ty: Type) -> Self {
-        if let Some(name) = self.get(name) {
-            self.config.types.insert(name, ty);
-        }
+    fn insert_type(mut self, name: String, ty: Type) -> Self {
+        self.config.types.insert(name.to_string(), ty);
         self
-    }
-
-    /// Retrieves or creates a Type configuration for a given proto type.
-    fn get_ty(&self, name: &str) -> Type {
-        let mut ty = self
-            .get(name)
-            .and_then(|name| self.config.types.get(&name))
-            .cloned()
-            .unwrap_or_default();
-
-        let id = self.formatted_name(name);
-
-        ty.tag = Some(Tag { id });
-        ty
     }
 
     /// Processes proto enum types.
     fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
+            let mut ty = Type::default();
+
             let enum_name = enum_.name();
+            ty.tag = Some(Tag { id: enum_name.to_string() });
 
-            self = self.insert(enum_name, Entity::Enum);
-            let mut ty = self.get_ty(enum_name);
-
-            let mut variants = enum_
+            let variants = enum_
                 .value
                 .iter()
-                .map(|v| v.name().to_string())
+                .map(|v| {
+                    GraphQLType::parse_enum_variant(v.name())
+                        .unwrap()
+                        .to_string()
+                })
                 .collect::<BTreeSet<String>>();
-            if let Some(vars) = ty.variants {
-                variants.extend(vars);
-            }
+
             ty.variants = Some(variants);
-            self = self.insert_type(enum_name, ty);
+
+            let type_name = GraphQLType::parse_enum(enum_name).unwrap().to_string();
+            self = self.insert_type(type_name, ty);
         }
         self
     }
 
     /// Processes proto message types.
     fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Self {
-        if messages.is_empty() {
-            return self;
-        }
         for message in messages {
             let msg_name = message.name().to_string();
             if let Some(options) = message.options.as_ref() {
@@ -125,14 +74,19 @@ impl Context {
                 }
             }
 
-            self = self.insert(&msg_name, Entity::ObjectType);
-            let mut ty = self.get_ty(&msg_name);
-
             self = self.append_enums(&message.enum_type);
             self = self.append_msg_type(&message.nested_type);
 
+            let msg_type = GraphQLType::parse_object_type(&msg_name).unwrap();
+            let msg_type = msg_type.clone().package(&self.package).unwrap_or(msg_type);
+
+            let mut ty = Type::default();
             for field in message.field.iter() {
-                let field_name = field.name().to_string();
+                let field_name = GraphQLType::parse_field(field.name()).unwrap();
+                let field_name = field_name
+                    .clone()
+                    .package(&self.package)
+                    .unwrap_or(field_name.clone());
                 let mut cfg_field = Field::default();
 
                 let label = field.label().as_str_name().to_lowercase();
@@ -148,71 +102,22 @@ impl Context {
                 } else {
                     // for non-primitive types
                     let type_of = convert_ty(field.type_name());
-                    cfg_field.type_of = self.get(&type_of).unwrap_or(type_of);
+                    let type_of = GraphQLType::parse_object_type(&type_of).unwrap();
+                    let type_of = type_of
+                        .clone()
+                        .package(&self.package)
+                        .unwrap_or(type_of)
+                        .to_string();
+                    cfg_field.type_of = type_of;
                 }
 
-                ty.fields.insert(field_name.to_case(Case::Camel), cfg_field);
+                ty.fields.insert(field_name.to_string(), cfg_field);
             }
 
-            self = self.insert_type(&msg_name, ty);
+            ty.tag = Some(Tag { id: msg_type.id() });
+
+            self = self.insert_type(msg_type.to_string(), ty);
         }
-        self
-    }
-
-    fn append_nested_package(mut self, method_name: String, field: Field) -> Self {
-        let split = self
-            .package
-            .split('.')
-            .collect::<Vec<&str>>()
-            .iter()
-            .filter(|x| !x.is_empty())
-            .map(|x| x.to_case(Case::UpperCamel))
-            .collect::<Vec<String>>();
-        // let n = len(split)
-        // len(types) = n
-        // len(fields) = n-1
-        let n = split.len();
-
-        for (i, type_name) in split.iter().enumerate() {
-            if i == 0 {
-                let mut ty = self
-                    .config
-                    .types
-                    .get(&self.query)
-                    .cloned()
-                    .unwrap_or_default();
-                let field = Field::default().type_of(type_name.clone());
-                ty.fields.insert(type_name.to_case(Case::Camel), field);
-                self.config.schema.query = Some(self.query.to_owned());
-                self.config.types.insert(self.query.to_owned(), ty);
-            }
-            if i + 1 < n {
-                let field_name = &split[i + 1];
-                let field = Field::default().type_of(field_name.clone());
-                let mut ty = Type::default();
-                ty.fields.insert(field_name.to_case(Case::Camel), field);
-                self.config.types.insert(type_name.clone(), ty);
-            } else if let Some(ty) = self.config.types.get_mut(type_name) {
-                ty.fields.insert(method_name.clone(), field.clone());
-            } else {
-                let mut ty = Type::default();
-                ty.fields.insert(method_name.clone(), field.clone());
-                self.config.types.insert(type_name.clone(), ty);
-            }
-        }
-
-        if n == 0 {
-            let mut ty = self
-                .config
-                .types
-                .get(&self.query)
-                .cloned()
-                .unwrap_or_default();
-            ty.fields.insert(method_name.to_case(Case::Camel), field);
-            self.config.schema.query = Some(self.query.to_owned());
-            self.config.types.insert(self.query.to_owned(), ty);
-        }
-
         self
     }
 
@@ -225,17 +130,29 @@ impl Context {
         let package = self.package.clone();
         let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
 
+        let mut ty = Type::default();
+
         for service in services {
             let service_name = service.name().to_string();
             for method in &service.method {
-                let method_name = method.name();
-
-                self = self.insert(method_name, Entity::Method);
+                let field_name = GraphQLType::parse_method(method.name()).unwrap();
+                let field_name = field_name
+                    .clone()
+                    .package(&self.package)
+                    .unwrap_or(field_name);
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
-                    let key = self.get_name(&convert_ty(&arg_type), Entity::Field);
-                    let type_of = self.get_name(&arg_type, Entity::ObjectType);
+                    let key = GraphQLType::parse_field(&arg_type)
+                        .unwrap()
+                        .package(&self.package)
+                        .unwrap()
+                        .to_string();
+                    let type_of = GraphQLType::parse_object_type(&arg_type)
+                        .unwrap()
+                        .package(&self.package)
+                        .unwrap()
+                        .to_string();
                     let val = Arg {
                         type_of,
                         list: false,
@@ -251,34 +168,32 @@ impl Context {
                 }
 
                 let output_ty = get_output_ty(method.output_type());
-                self = self.insert(&output_ty, Entity::ObjectType);
-                cfg_field.type_of = self.get(&output_ty).unwrap_or(output_ty.clone());
+                let output_ty = GraphQLType::parse_object_type(&output_ty).unwrap();
+                let output_ty = output_ty
+                    .clone()
+                    .package(&self.package)
+                    .unwrap_or(output_ty)
+                    .to_string();
+                cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
                 grpc_method.service = service_name.clone();
-                grpc_method.name = method_name.to_string();
-                let grpc_method_string = grpc_method.to_string();
-
-                let method = if let Some(stripped) = grpc_method_string.strip_prefix('.') {
-                    stripped.to_string()
-                } else {
-                    grpc_method_string
-                };
+                grpc_method.name = field_name.to_string();
 
                 cfg_field.grpc = Some(Grpc {
                     base_url: None,
                     body: None,
                     group_by: vec![],
                     headers: vec![],
-                    method,
+                    method: field_name.id(),
                 });
 
-                if let Some(method_name) = self.get(method_name) {
-                    self = self.append_nested_package(method_name, cfg_field);
-                }
+                ty.fields.insert(field_name.to_string(), cfg_field);
             }
         }
 
+        self.config.schema.query = Some(self.query.clone());
+        self.config.types.insert(self.query.clone(), ty);
         self
     }
 }
@@ -335,7 +250,7 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Config 
         }
     }
 
-    ctx.config.remove_unused_types();
+    ctx.config = ctx.config.remove_unused_types();
 
     ctx.config
 }
@@ -346,7 +261,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::generator::from_proto::{from_proto, Context, Entity};
+    use crate::generator::from_proto::from_proto;
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let path =
@@ -405,7 +320,7 @@ mod test {
     fn test_greetings_proto_file() {
         let set = new_file_desc(&["greetings.proto", "greetings_message.proto"]).unwrap();
         let result = from_proto(&[set], "Query").to_sdl();
-        insta::assert_snapshot!(dbg!(result));
+        insta::assert_snapshot!(result);
     }
 
     #[test]
@@ -435,61 +350,5 @@ mod test {
         let config = from_proto(&[set], "Query").to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
-    }
-
-    #[test]
-    fn test_get_value_enum() {
-        let ctx: Context = Context::new("Query").package("com.example".to_string());
-
-        let actual = ctx.get_name("TestEnum", Entity::Enum);
-        let expected = "Com_Example__TestEnum";
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn test_get_value_message() {
-        let ctx: Context = Context::new("Query").package("com.example".to_string());
-
-        let actual = ctx.get_name("testMessage", Entity::ObjectType);
-        let expected = "Com_Example__TestMessage";
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn test_get_value_query_name() {
-        let ctx: Context = Context::new("Query").package("com.example".to_string());
-
-        let actual = ctx.get_name("QueryName", Entity::Method);
-        let expected = "queryName";
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn test_insert_and_get_enum() {
-        let ctx: Context = Context::new("Query")
-            .package("com.example".to_string())
-            .insert("TestEnum", Entity::Enum);
-
-        let actual = ctx.get("TestEnum");
-        let expected = Some("Com_Example__TestEnum".to_string());
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn test_insert_and_get_message() {
-        let ctx: Context = Context::new("Query")
-            .package("com.example".to_string())
-            .insert("testMessage", Entity::ObjectType);
-        let actual = ctx.get("testMessage");
-        let expected = Some("Com_Example__TestMessage".to_string());
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn test_insert_and_get_non_existing() {
-        let ctx: Context = Context::new("Query").package("com.example".to_string());
-        let actual = ctx.get("NonExisting");
-        let expected = None;
-        assert_eq!(actual, expected);
     }
 }

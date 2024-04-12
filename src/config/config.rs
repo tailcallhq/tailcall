@@ -114,6 +114,7 @@ impl Config {
         self.types.contains_key(name) || self.unions.contains_key(name)
     }
 
+    /// Gets all the type names used in the schema.
     pub fn get_all_used_type_names(&self) -> HashSet<String> {
         let mut set = HashSet::new();
         let mut stack = vec!["Query".into(), "Mutation".into()];
@@ -130,13 +131,20 @@ impl Config {
         set
     }
 
-    pub fn remove_unused_types(&mut self) {
+    pub fn get_all_unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
         let all_types: HashSet<String> = self.types.keys().cloned().collect();
-        let unused_types = all_types.difference(&used_types);
+        all_types.difference(&used_types).cloned().collect()
+    }
+
+    /// Removes all types that are not used in the schema.
+    pub fn remove_unused_types(mut self) -> Self {
+        let unused_types = self.get_all_unused_types();
         for unused_type in unused_types {
-            self.types.remove(unused_type);
+            self.types.remove(&unused_type);
         }
+
+        self
     }
 }
 

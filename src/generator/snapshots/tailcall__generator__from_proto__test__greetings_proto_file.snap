@@ -1,23 +1,19 @@
 ---
 source: src/generator/from_proto.rs
-expression: dbg!(result)
+expression: result
 ---
 schema @server @upstream {
   query: Query
 }
 
-input Greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
+input GREETINGS_HELLO_REQUEST @tag(id: "greetings.HelloRequest") {
   name: String
 }
 
-type Greetings {
-  sayHello(helloRequest: Greetings__HelloRequest!): Greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello")
-}
-
-type Greetings__HelloReply @tag(id: "greetings.HelloReply") {
+type GREETINGS_HELLO_REPLY @tag(id: "greetings.HelloReply") {
   message: String
 }
 
 type Query {
-  greetings: Greetings
+  greetings_say_hello(hello_request: GREETINGS_HELLO_REQUEST!): GREETINGS_HELLO_REPLY! @grpc(method: "greetings.SayHello")
 }
