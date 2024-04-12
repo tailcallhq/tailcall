@@ -121,10 +121,10 @@ impl Display for GraphQLType {
             }
             Entity::Enum | Entity::ObjectType => {
                 if let Some(package) = &self.package {
-                    f.write_str(package.to_string().to_case(Case::UpperSnake).as_str())?;
+                    f.write_str(package.to_string().to_case(Case::ScreamingSnake).as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
                 };
-                f.write_str(self.name.to_case(Case::UpperCamel).as_str())?
+                f.write_str(self.name.to_case(Case::ScreamingSnake).as_str())?
             }
         };
         Ok(())
@@ -142,12 +142,12 @@ mod tests {
     fn test_from_enum() {
         let input: Vec<TestParams> = vec![
             // Enums
-            ((Entity::Enum, None, "foo"), "Foo"),
-            ((Entity::Enum, None, "a.b.c.foo"), "A_B_C_Foo"),
-            ((Entity::Enum, Some("a.b.c"), "foo"), "A_B_C_Foo"),
-            ((Entity::Enum, Some("a.b.c"), "d.e.f.foo"), "A_B_C_Foo"),
-            ((Entity::Enum, Some(""), "a.b.c.foo"), "A_B_C_Foo"),
-            ((Entity::Enum, None, "a_b_c_foo"), "ABCFoo"),
+            ((Entity::Enum, None, "foo"), "FOO"),
+            ((Entity::Enum, None, "a.b.c.foo"), "A_B_C_FOO"),
+            ((Entity::Enum, Some("a.b.c"), "foo"), "A_B_C_FOO"),
+            ((Entity::Enum, Some("a.b.c"), "d.e.f.foo"), "A_B_C_FOO"),
+            ((Entity::Enum, Some(""), "a.b.c.foo"), "A_B_C_FOO"),
+            ((Entity::Enum, None, "a_b_c_foo"), "A_B_C_FOO"),
         ];
 
         assert_type_names(input);
@@ -172,14 +172,14 @@ mod tests {
     fn test_from_object_type() {
         let input: Vec<TestParams> = vec![
             // Object types
-            ((Entity::ObjectType, None, "foo"), "Foo"),
-            ((Entity::ObjectType, None, "a.b.c.foo"), "A_B_C_Foo"),
+            ((Entity::ObjectType, None, "foo"), "FOO"),
+            ((Entity::ObjectType, None, "a.b.c.foo"), "A_B_C_FOO"),
+            ((Entity::ObjectType, Some("a.b.c"), "foo"), "A_B_C_FOO"),
+            ((Entity::ObjectType, Some("a.b"), "d.e.foo"), "A_B_FOO"),
+            ((Entity::ObjectType, Some(""), "a.b.c.foo"), "A_B_C_FOO"),
+            ((Entity::ObjectType, None, "a_b_c_foo"), "A_B_C_FOO"),
             // FIXME: failing
-            // ((Entity::ObjectType, None, "foo.bar.Baz"), "Foo_Bar_Baz"),
-            ((Entity::ObjectType, Some("a.b.c"), "foo"), "A_B_C_Foo"),
-            ((Entity::ObjectType, Some("a.b"), "d.e.foo"), "A_B_Foo"),
-            ((Entity::ObjectType, Some(""), "a.b.c.foo"), "A_B_C_Foo"),
-            ((Entity::ObjectType, None, "a_b_c_foo"), "ABCFoo"),
+            ((Entity::ObjectType, None, "foo.bar.Baz"), "FOO_BAR_BAZ"),
         ];
 
         assert_type_names(input);
