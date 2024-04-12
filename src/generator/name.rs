@@ -1,63 +1,66 @@
-use strum_macros::Display;
+use std::fmt::Display;
+
 use convert_case::{Case, Casing};
+use derive_setters::Setters;
 pub(super) static DEFAULT_SEPARATOR: &str = "__";
 pub(super) static DEFAULT_PACKAGE_SEPARATOR: &str = "_";
 
-pub struct Name<A> {
-    phantom: std::marker::PhantomData<A>,
-    package: String,
+/// A struct to represent the name of a GraphQL type.
+#[derive(Setters)]
+pub struct GraphQLType {
+    #[setters(strip_option)]
+    package: Option<String>,
     name: String,
     convertor: NameConvertor,
 }
 
-impl Name<Proto> {
-    fn new(package: &str, name: &str, convertor: NameConvertor) -> Self {
-        Self {
-            package: package.to_string(),
-            phantom: std::marker::PhantomData,
-            name: name.to_string(),
-            convertor,
-        }
-    }
-    pub fn enumeration(package: &str, name: &str) -> Self {
-        Self::new(package, name, NameConvertor::Enum)
-    }
-    pub fn message(package: &str, name: &str) -> Self {
-        Self::new(package, name, NameConvertor::Message)
-    }
-    pub fn method(package: &str, name: &str) -> Self {
-        Self::new(package, name, NameConvertor::Method)
-    }
-    pub fn arg(package: &str, name: &str) -> Self {
-        Self::new(package, name, NameConvertor::Arg)
+impl GraphQLType {
+    fn new(name: &str, convertor: NameConvertor) -> Self {
+        Self { package: None, name: name.to_string(), convertor }
     }
 
-    pub fn convert(self) -> Name<GraphQL> {
-        Name {
-            package: self.package.clone(),
-            phantom: std::marker::PhantomData,
-            name: self.convertor.convert(self.package.as_str(), &self.name),
-            convertor: self.convertor,
+    pub fn from_enum(name: &str) -> Self {
+        Self::new(name, NameConvertor::Enum)
+    }
+
+    pub fn from_enum_variant(name: &str) -> Self {
+        Self::new(name, NameConvertor::EnumVariant)
+    }
+
+    pub fn from_object_type(name: &str) -> Self {
+        Self::new(name, NameConvertor::ObjectType)
+    }
+
+    pub fn from_method(name: &str) -> Self {
+        Self::new(name, NameConvertor::Method)
+    }
+
+    pub fn from_field(name: &str) -> Self {
+        Self::new(name, NameConvertor::Field)
+    }
+
+    pub fn id(&self) -> String {
+        match self.package {
+            Some(package) => format!("{}.{}", package, self.name),
+            None => self.name.clone(),
         }
     }
 }
-
-pub struct GraphQL {}
-pub struct Proto {}
 
 /// Used to convert proto type names to GraphQL formatted names.
 /// Enum to represent the type of the descriptor
-#[derive(Display, Clone)]
+#[derive(Clone)]
 enum NameConvertor {
     Enum,
-    Message,
+    EnumVariant,
+    ObjectType,
     Method,
-    Arg,
+    Field,
 }
 
-impl NameConvertor {
-    /// Takes in a name and returns a GraphQL name based on the descriptor type.
-    fn convert(&self, package: &str, name: &str) -> String {
+impl Display for GraphQLType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let package = self.package.unwrap_or_default();
         let package = package
             .split('.')
             .map(|word| {
@@ -69,17 +72,21 @@ impl NameConvertor {
             .reduce(|acc, x| acc + DEFAULT_PACKAGE_SEPARATOR + &x)
             .unwrap_or(package.to_string());
 
-        let package_prefix = if package.is_empty() {
-            "".to_string()
-        } else {
-            package + DEFAULT_SEPARATOR
-        };
-
-        match self {
-            NameConvertor::Method | NameConvertor::Arg => name.to_case(Case::Camel),
-            NameConvertor::Enum | NameConvertor::Message => {
-                package_prefix + &name.to_case(Case::Pascal)
+        match self.convertor {
+            NameConvertor::EnumVariant => {
+                f.write_str(self.name.to_case(Case::UpperSnake).as_str())?
             }
-        }
+            NameConvertor::Method | NameConvertor::Field => {
+                f.write_str(self.name.to_case(Case::Snake).as_str())?
+            }
+            NameConvertor::Enum | NameConvertor::ObjectType => {
+                if !package.is_empty() {
+                    f.write_str(package.as_str())?;
+                    f.write_str(DEFAULT_SEPARATOR)?;
+                };
+                f.write_str(self.name.to_case(Case::Pascal).as_str())?
+            }
+        };
+        Ok(())
     }
 }

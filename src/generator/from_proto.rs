@@ -8,6 +8,7 @@ use prost_reflect::prost_types::{
 
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
+use crate::generator::GraphQLType;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -35,15 +36,12 @@ impl Context {
     /// Processes proto enum types.
     fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
-            let enum_name = enum_.name();
-
-            self = self.insert(enum_name, NameConvertor::Enum);
-            let mut ty = self.get_ty(enum_name);
+            let enum_name = GraphQLType::from_enum(enum_.name());
 
             let mut variants = enum_
                 .value
                 .iter()
-                .map(|v| v.name().to_string())
+                .map(|v| GraphQLType::from_enum_variant(v.name()))
                 .collect::<BTreeSet<String>>();
             if let Some(vars) = ty.variants {
                 variants.extend(vars);

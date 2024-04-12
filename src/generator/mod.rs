@@ -4,3 +4,4 @@ mod source;
 mod name;
 pub use generator::Generator;
 pub use source::Source;
+pub use name::GraphQLType;
