@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use convert_case::{Case, Casing};
 pub(super) static DEFAULT_SEPARATOR: &str = "_";
+static PACKAGE_SEPARATOR: &str = ".";
 
 /// A struct to represent the name of a GraphQL type.
 #[derive(Debug, Clone)]
@@ -46,13 +47,11 @@ impl Display for Package {
 }
 
 impl GraphQLType {
-    // FIXME: this can fail, should return a Result
     // FIXME: separator should be taken as an input
     fn parse(input: &str, convertor: Entity) -> Option<Self> {
-        const SEPARATOR: &str = ".";
-        if input.contains(SEPARATOR) {
-            if let Some((package, name)) = input.rsplit_once(SEPARATOR) {
-                let package = Package::parse(package, SEPARATOR);
+        if input.contains(PACKAGE_SEPARATOR) {
+            if let Some((package, name)) = input.rsplit_once(PACKAGE_SEPARATOR) {
+                let package = Package::parse(package, PACKAGE_SEPARATOR);
                 Some(Self { package, name: name.to_string(), entity: convertor })
             } else {
                 None
@@ -181,7 +180,6 @@ mod tests {
             ((Entity::ObjectType, Some("a.b"), "d.e.foo"), "A_B_FOO"),
             ((Entity::ObjectType, Some(""), "a.b.c.foo"), "A_B_C_FOO"),
             ((Entity::ObjectType, None, "a_b_c_foo"), "A_B_C_FOO"),
-            // FIXME: failing
             ((Entity::ObjectType, None, "foo.bar.Baz"), "FOO_BAR_BAZ"),
         ];
 
