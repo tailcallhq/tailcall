@@ -14,6 +14,7 @@ pub struct GraphQLType {
 #[derive(Debug, Clone)]
 struct Package {
     path: Vec<String>,
+    input: String,
 }
 
 impl Package {
@@ -22,8 +23,12 @@ impl Package {
         if path.is_empty() | input.is_empty() {
             None
         } else {
-            Some(Self { path })
+            Some(Self { path, input: input.to_string() })
         }
+    }
+
+    fn source(&self) -> &str {
+        &self.input
     }
 }
 
@@ -79,7 +84,7 @@ impl GraphQLType {
 
     pub fn id(&self) -> String {
         if let Some(ref package) = self.package {
-            format!("{}.{}", package, self.name)
+            format!("{}.{}", package.source(), self.name)
         } else {
             self.name.clone()
         }
