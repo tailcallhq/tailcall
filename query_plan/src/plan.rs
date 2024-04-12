@@ -8,7 +8,7 @@ use async_graphql::{
 use indenter::indented;
 use indexmap::IndexMap;
 
-use crate::{
+use tailcall::{
     blueprint::{Definition, Type},
     scalar::is_scalar,
 };

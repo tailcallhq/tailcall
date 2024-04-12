@@ -7,6 +7,14 @@ edition = "2021"
 name = "tailcall"
 path = "src/main.rs"
 
+[workspace.dependencies]
+anyhow = "1.0.82"
+async-graphql = { version = "7.0.3" }
+futures-util = { version = "0.3.30" }
+indexmap = "2.2"
+insta = { version = "1.38.0", features = ["json"] }
+tokio = { version = "1.37.0", features = ["rt", "time"] }
+
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
@@ -36,8 +44,8 @@ opentelemetry-system-metrics = { version = "0.1.8", optional = true }
 rustls-pemfile = { version = "1.0.4" }
 schemars = { version = "0.8.16", features = ["derive"] }
 hyper = { version = "0.14", features = ["server"], default-features = false }
-tokio = { version = "1.37.0", features = ["rt", "time"] }
-anyhow = "1.0.82"
+tokio = { workspace = true }
+anyhow = { workspace = true }
 derive_setters = "0.1.6"
 thiserror = "1.0.58"
 serde_json = { version = "1.0", features = ["preserve_order"] }
@@ -50,7 +58,7 @@ reqwest = { version = "0.11", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-indexmap = "2.2"
+indexmap = { workspace = true }
 once_cell = "1.19.0"
 clap = { version = "4.5.4", features = ["derive"] }
 colored = "2"
@@ -67,7 +75,7 @@ num_cpus = "1.16.0"
 fnv = "1.0.7"
 futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.3", features = ["wasm-bindgen"] }
-futures-util = { version = "0.3.30" }
+futures-util = { workspace = true }
 lru = { version = "0.12.3" }
 webbrowser = { version = "0.8.15", features = ["hardened", "disable-wsl"] }
 async-std = { version = "1.12.0", features = [
@@ -119,7 +127,7 @@ mime = "0.3.17"
 htpasswd-verify = { version = "0.3.0", git = "https://github.com/twistedfall/htpasswd-verify", rev = "ff14703083cbd639f7d05622b398926f3e718d61" } # fork version that is wasm compatible
 jsonwebtoken = "9.3.0"
 async-graphql-value = "7.0.3"
-async-graphql = { version = "7.0.3", features = [
+async-graphql = { workspace = true, features = [
     "dynamic-schema",
     "dataloader",
     "apollo_tracing",
@@ -128,8 +136,6 @@ async-graphql = { version = "7.0.3", features = [
 dotenvy = "0.15"
 convert_case = "0.6.0"
 rand = "0.8.5"
-indenter = "0.3.3"
-dashmap = "5.5.3"
 
 [build-dependencies]
 tonic-build = "0.11.0"
@@ -142,7 +148,7 @@ httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
 markdown = "1.0.0-alpha.16"
-insta = { version = "1.38.0", features = ["json"] }
+insta = { workspace = true }
 tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
@@ -180,7 +186,7 @@ default = ["cli", "js"]
 
 
 [workspace]
-members = [".", "autogen", "tailcall-aws-lambda", "tailcall-cloudflare"]
+members = [".", "autogen", "tailcall-aws-lambda", "tailcall-cloudflare", "query_plan"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]

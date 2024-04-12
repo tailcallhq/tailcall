@@ -1,4 +1,4 @@
-use crate::query_plan::plan::{FieldTree, FieldTreeEntry, OperationPlan};
+use crate::plan::{FieldTree, FieldTreeEntry, OperationPlan};
 
 use super::execution::ExecutionStep;
 

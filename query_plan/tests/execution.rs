@@ -2,21 +2,20 @@ use std::{fs, path::Path};
 
 use async_graphql::parser::parse_query;
 
-use crate::{
+use tailcall::{
     blueprint::Blueprint,
     config::{Config, ConfigModule},
     http::RequestContext,
-    lambda::EmptyResolverContext,
-    query_plan::{
-        execution::{executor::Executor, simple::SimpleExecutionBuilder},
-        plan::{GeneralPlan, OperationPlan},
-    },
     valid::Validator,
+};
+use tailcall_query_plan::{
+    execution::{executor::Executor, simple::SimpleExecutionBuilder},
+    plan::{GeneralPlan, OperationPlan},
 };
 
 #[tokio::test]
 async fn test_simple() {
-    let root_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/query_plan/tests");
+    let root_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/config");
     let config = fs::read_to_string(root_dir.join("user-posts.graphql")).unwrap();
     let config = Config::from_sdl(&config).to_result().unwrap();
     let config = ConfigModule::from(config);
@@ -44,7 +43,7 @@ async fn test_simple() {
 
         let executor = Executor::new(&general_plan, &operation_plan);
 
-        let runtime = crate::cli::runtime::init(&Blueprint::default());
+        let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let execution_result = executor
             .execute(&req_ctx, &execution_plan)

@@ -7,12 +7,12 @@ use futures_util::future::{join_all, try_join_all};
 use indexmap::IndexMap;
 
 use crate::{
+    plan::{GeneralPlan, OperationPlan},
+    resolver::{FieldPlan, Id},
+};
+use tailcall::{
     http::RequestContext,
     lambda::{EvaluationContext, ResolverContextLike},
-    query_plan::{
-        plan::{GeneralPlan, OperationPlan},
-        resolver::{FieldPlan, Id},
-    },
 };
 
 use super::execution::ExecutionStep;

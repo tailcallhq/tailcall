@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
 };
 
-use crate::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
+use tailcall::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
 
 use anyhow::Result;
 use async_graphql::{

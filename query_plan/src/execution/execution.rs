@@ -97,7 +97,7 @@ impl ExecutionStep {
 #[cfg(test)]
 mod tests {
     mod flatten {
-        use crate::query_plan::{execution::execution::ExecutionStep, resolver::Id};
+        use crate::{execution::execution::ExecutionStep, resolver::Id};
 
         #[test]
         fn empty() {
