@@ -1,16 +1,11 @@
-use std::{
-    fmt::{Display, Write},
-    ops::Deref,
-};
-
-use tailcall::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
+use std::fmt::{Display, Write};
+use std::ops::Deref;
 
 use anyhow::Result;
-use async_graphql::{
-    parser::types::{Field, Selection, SelectionSet},
-    Positioned, Value,
-};
+use async_graphql::parser::types::{Field, Selection, SelectionSet};
+use async_graphql::{Positioned, Value};
 use indenter::indented;
+use tailcall::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id(pub usize);

@@ -1,17 +1,14 @@
-use std::{fs, path::Path};
+use std::fs;
+use std::path::Path;
 
 use async_graphql::parser::parse_query;
-
-use tailcall::{
-    blueprint::Blueprint,
-    config::{Config, ConfigModule},
-    http::RequestContext,
-    valid::Validator,
-};
-use tailcall_query_plan::{
-    execution::{executor::Executor, simple::SimpleExecutionBuilder},
-    plan::{GeneralPlan, OperationPlan},
-};
+use tailcall::blueprint::Blueprint;
+use tailcall::config::{Config, ConfigModule};
+use tailcall::http::RequestContext;
+use tailcall::valid::Validator;
+use tailcall_query_plan::execution::executor::Executor;
+use tailcall_query_plan::execution::simple::SimpleExecutionBuilder;
+use tailcall_query_plan::plan::{GeneralPlan, OperationPlan};
 
 #[tokio::test]
 async fn test_simple() {
@@ -45,9 +42,7 @@ async fn test_simple() {
 
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
-        let execution_result = executor
-            .execute(&req_ctx, &execution_plan)
-            .await;
+        let execution_result = executor.execute(&req_ctx, &execution_plan).await;
 
         insta::assert_snapshot!(format!("{name}_execution_result"), execution_result);
 

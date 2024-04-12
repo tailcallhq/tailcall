@@ -1,21 +1,17 @@
-use std::{collections::BTreeMap, fmt::Display};
+use std::collections::BTreeMap;
+use std::fmt::Display;
 
 use anyhow::{anyhow, Result};
 use async_graphql::{Name, Value};
 use dashmap::DashMap;
 use futures_util::future::{join_all, try_join_all};
 use indexmap::IndexMap;
+use tailcall::http::RequestContext;
+use tailcall::lambda::{EvaluationContext, ResolverContextLike};
 
-use crate::{
-    plan::{GeneralPlan, OperationPlan},
-    resolver::{FieldPlan, Id},
-};
-use tailcall::{
-    http::RequestContext,
-    lambda::{EvaluationContext, ResolverContextLike},
-};
-
-use super::execution::ExecutionStep;
+use super::step::ExecutionStep;
+use crate::plan::{GeneralPlan, OperationPlan};
+use crate::resolver::{FieldPlan, Id};
 
 pub struct Executor<'a> {
     general_plan: &'a GeneralPlan,
@@ -74,7 +70,7 @@ impl<'a> ExecutorContext<'a> {
     async fn eval(&self, field_plan: &FieldPlan, value: Option<&Value>) -> Result<Value> {
         let arguments = self.operation_plan.arguments_map.get(&field_plan.id);
         let graphql_ctx = GraphqlContext { arguments, value };
-        let eval_ctx = EvaluationContext::new(&self.req_ctx, &graphql_ctx);
+        let eval_ctx = EvaluationContext::new(self.req_ctx, &graphql_ctx);
 
         field_plan.eval(eval_ctx).await
     }
@@ -89,7 +85,7 @@ impl<'a> ExecutorContext<'a> {
                     .get(**id)
                     .expect("Failed to resolved field_plan");
 
-                let parent_field_plan_id = field_plan.depends_on.get(0);
+                let parent_field_plan_id = field_plan.depends_on.first();
                 // TODO: handle multiple parent values
                 let parent_resolved = parent_field_plan_id.and_then(|id| self.resolved.get(id));
                 let parent_resolved = parent_resolved.as_ref().map(|v| v.value());
@@ -103,7 +99,7 @@ impl<'a> ExecutorContext<'a> {
 
                         ResolvedEntry::List(try_join_all(execution).await)
                     }
-                    Some(ResolvedEntry::List(Err(err))) => {
+                    Some(ResolvedEntry::List(Err(_err))) => {
                         ResolvedEntry::List(Err(anyhow!("Failed to resolve parent value")))
                     }
                     Some(ResolvedEntry::Single(value)) => {
@@ -151,7 +147,7 @@ impl<'a> ResolverContextLike<'a> for GraphqlContext<'a> {
         None
     }
 
-    fn add_error(&'a self, error: async_graphql::ServerError) {
+    fn add_error(&'a self, _error: async_graphql::ServerError) {
         // TODO: add implementation
     }
 }

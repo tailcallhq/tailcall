@@ -1,7 +1,5 @@
-use std::{
-    fmt::{Display, Write},
-    mem::{discriminant, Discriminant},
-};
+use std::fmt::{Display, Write};
+use std::mem::{discriminant, Discriminant};
 
 use indenter::indented;
 
@@ -51,10 +49,8 @@ impl ExecutionStep {
                     }
                     _ => unreachable!(),
                 }
-            } else {
-                if !step.is_empty() {
-                    result.push(step);
-                }
+            } else if !step.is_empty() {
+                result.push(step);
             }
         }
 
@@ -97,7 +93,8 @@ impl ExecutionStep {
 #[cfg(test)]
 mod tests {
     mod flatten {
-        use crate::{execution::execution::ExecutionStep, resolver::Id};
+        use crate::execution::step::ExecutionStep;
+        use crate::resolver::Id;
 
         #[test]
         fn empty() {

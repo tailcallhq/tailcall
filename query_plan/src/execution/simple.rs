@@ -1,17 +1,16 @@
+use super::step::ExecutionStep;
 use crate::plan::{FieldTree, FieldTreeEntry, OperationPlan};
-
-use super::execution::ExecutionStep;
 
 pub struct SimpleExecutionBuilder {}
 
 impl SimpleExecutionBuilder {
-    fn inner_build(&self, tree: &FieldTree) -> ExecutionStep {
+    fn inner_build(tree: &FieldTree) -> ExecutionStep {
         let mut steps = Vec::new();
 
         match &tree.entry {
             FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
                 for tree in children.values() {
-                    steps.push(self.inner_build(tree));
+                    steps.push(Self::inner_build(tree));
                 }
             }
             _ => {}
@@ -27,6 +26,6 @@ impl SimpleExecutionBuilder {
     }
 
     pub fn build(&self, operation_plan: &OperationPlan) -> ExecutionStep {
-        self.inner_build(&operation_plan.field_tree).flatten()
+        Self::inner_build(&operation_plan.field_tree).flatten()
     }
 }

@@ -1,22 +1,15 @@
 use std::fmt::{Display, Write};
 
 use anyhow::{anyhow, Result};
-use async_graphql::{
-    parser::types::{Selection, SelectionSet},
-    Name, Value,
-};
+use async_graphql::parser::types::{Selection, SelectionSet};
+use async_graphql::{Name, Value};
 use indenter::indented;
 use indexmap::IndexMap;
+use tailcall::blueprint::{Definition, Type};
+use tailcall::scalar::is_scalar;
 
-use tailcall::{
-    blueprint::{Definition, Type},
-    scalar::is_scalar,
-};
-
-use super::{
-    execution::executor::{ExecutionResult, ResolvedEntry},
-    resolver::{FieldPlan, FieldPlanSelection, Id},
-};
+use super::execution::executor::{ExecutionResult, ResolvedEntry};
+use super::resolver::{FieldPlan, FieldPlanSelection, Id};
 
 #[derive(Debug)]
 pub enum FieldTreeEntry {
@@ -60,15 +53,11 @@ impl Display for FieldTree {
 }
 
 impl FieldTree {
-    fn scalar(self) -> Self {
-        Self { field_plan_id: None, entry: FieldTreeEntry::Scalar }
-    }
-
     fn with_field_plan_id(self, id: Option<Id>) -> Self {
         Self { field_plan_id: id, entry: self.entry }
     }
 
-    fn to_list(self) -> Self {
+    fn into_list(self) -> Self {
         let entry = match self.entry {
             FieldTreeEntry::Scalar | FieldTreeEntry::ScalarList => FieldTreeEntry::ScalarList,
             FieldTreeEntry::Compound(children) | FieldTreeEntry::CompoundList(children) => {
@@ -117,8 +106,8 @@ impl FieldTree {
                 };
 
                 let plan = match &field.of_type {
-                    Type::NamedType { name, non_null } => plan,
-                    Type::ListType { of_type, non_null } => plan.to_list(),
+                    Type::NamedType { name: _, non_null: _ } => plan,
+                    Type::ListType { of_type: _, non_null: _ } => plan.into_list(),
                 };
 
                 children.insert(Name::new(&field.name), plan.with_field_plan_id(id));
@@ -131,6 +120,7 @@ impl FieldTree {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn prepare_for_request(
         &self,
         result_selection: &mut FieldPlanSelection,
@@ -237,7 +227,7 @@ impl FieldTree {
         parent_list_index: Option<usize>,
     ) -> Result<Value> {
         let value = if let Some(id) = &self.field_plan_id {
-            let value = execution_result.resolved(&id);
+            let value = execution_result.resolved(id);
 
             match value {
                 Some(ResolvedEntry::Single(Ok(value))) => Some(value),
@@ -247,7 +237,7 @@ impl FieldTree {
                     } else {
                         return Err(anyhow!("Expected parent list index"));
                     }
-                },
+                }
                 _ => None,
             }
         } else {
@@ -265,7 +255,7 @@ impl FieldTree {
             FieldTreeEntry::CompoundList(children) => {
                 if let Some(Value::List(list)) = value {
                     let result = list
-                        .into_iter()
+                        .iter()
                         .enumerate()
                         .map(|(index, current_value)| {
                             Self::collect_value_object(
@@ -358,8 +348,7 @@ impl OperationPlan {
         Self { field_tree: fields, selections, arguments_map }
     }
 
-    pub fn collect_value(&self, mut execution_result: ExecutionResult) -> Result<Value> {
-        self.field_tree
-            .collect_value(&mut execution_result, None, None)
+    pub fn collect_value(&self, execution_result: ExecutionResult) -> Result<Value> {
+        self.field_tree.collect_value(&execution_result, None, None)
     }
 }
