@@ -20,7 +20,7 @@ input News__Author @tag(id: "news.Author") {
 }
 
 input News__MultipleNewsId @tag(id: "news.MultipleNewsId") {
-  ids: [News__NewsId]
+  ids: [News__NewsId]!
 }
 
 input News__News @tag(id: "news.News") {
@@ -75,7 +75,7 @@ type News {
 }
 
 type News__NewsList @tag(id: "news.NewsList") {
-  news: [News__News]
+  news: [News__News]!
 }
 
 type Query {
