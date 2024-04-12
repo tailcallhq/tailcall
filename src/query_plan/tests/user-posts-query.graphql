@@ -25,6 +25,6 @@ query PostsComplex {
 }
 
 query PostAndUser {
-    posts { title user { name } }
+    post(id: 3) { title user { name } }
     user(id: 2) { username email }
 }

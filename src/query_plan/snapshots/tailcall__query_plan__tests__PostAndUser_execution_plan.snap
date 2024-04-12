@@ -4,6 +4,6 @@ expression: execution_plan
 ---
 Parallel:
     Sequential:
-        Resolve(3)
-        Resolve(4)
+        Resolve(0)
+        Resolve(1)
     Resolve(6)

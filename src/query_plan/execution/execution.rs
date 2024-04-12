@@ -10,7 +10,6 @@ use super::super::resolver::Id;
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionStep {
     Resolve(Id),
-    ForEach(Id),
     Sequential(Vec<ExecutionStep>),
     Parallel(Vec<ExecutionStep>),
 }
@@ -19,7 +18,6 @@ impl Display for ExecutionStep {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ExecutionStep::Resolve(id) => writeln!(f, "Resolve({id})"),
-            ExecutionStep::ForEach(id) => writeln!(f, "ForEach({id})"),
             ExecutionStep::Sequential(steps) | ExecutionStep::Parallel(steps) => {
                 match &self {
                     ExecutionStep::Sequential(_) => writeln!(f, "Sequential:"),
@@ -73,7 +71,7 @@ impl ExecutionStep {
     pub fn flatten(self) -> Self {
         let dscr = discriminant(&self);
         match self {
-            ExecutionStep::Resolve(_) | ExecutionStep::ForEach(_) => self,
+            ExecutionStep::Resolve(_) => self,
             ExecutionStep::Sequential(steps) => {
                 let mut steps = Self::inner_flatten(dscr, steps);
 

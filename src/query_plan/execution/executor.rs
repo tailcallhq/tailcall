@@ -1,9 +1,9 @@
-use std::{collections::BTreeMap, fmt::Display, sync::Mutex};
+use std::{collections::BTreeMap, fmt::Display};
 
 use anyhow::{anyhow, Result};
 use async_graphql::{Name, Value};
 use dashmap::DashMap;
-use futures_util::future::join_all;
+use futures_util::future::{join_all, try_join_all};
 use indexmap::IndexMap;
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     lambda::{EvaluationContext, ResolverContextLike},
     query_plan::{
         plan::{GeneralPlan, OperationPlan},
-        resolver::Id,
+        resolver::{FieldPlan, Id},
     },
 };
 
@@ -22,15 +22,21 @@ pub struct Executor<'a> {
     operation_plan: &'a OperationPlan,
 }
 
+#[derive(Debug)]
+pub enum ResolvedEntry {
+    Single(Result<Value>),
+    List(Result<Vec<Value>>),
+}
+
 pub struct ExecutionResult {
-    resolved: BTreeMap<Id, Result<Value>>,
+    resolved: BTreeMap<Id, ResolvedEntry>,
 }
 
 struct ExecutorContext<'a> {
     general_plan: &'a GeneralPlan,
     operation_plan: &'a OperationPlan,
     req_ctx: &'a RequestContext,
-    resolved: DashMap<Id, Result<Value>>,
+    resolved: DashMap<Id, ResolvedEntry>,
 }
 
 impl Display for ExecutionResult {
@@ -65,32 +71,48 @@ impl<'a> Executor<'a> {
 }
 
 impl<'a> ExecutorContext<'a> {
+    async fn eval(&self, field_plan: &FieldPlan, value: Option<&Value>) -> Result<Value> {
+        let arguments = self.operation_plan.arguments_map.get(&field_plan.id);
+        let graphql_ctx = GraphqlContext { arguments, value };
+        let eval_ctx = EvaluationContext::new(&self.req_ctx, &graphql_ctx);
+
+        field_plan.eval(eval_ctx).await
+    }
+
     #[async_recursion::async_recursion]
     pub async fn execute(&self, execution: &ExecutionStep) {
         match execution {
             ExecutionStep::Resolve(id) => {
-                let field_plan = self.general_plan.field_plans.get(**id);
+                let field_plan = self
+                    .general_plan
+                    .field_plans
+                    .get(**id)
+                    .expect("Failed to resolved field_plan");
 
-                let result = if let Some(field_plan) = field_plan {
-                    let arguments = self.operation_plan.arguments_map.get(id);
-                    // TODO: handle multiple parent values
-                    let value = field_plan
-                        .depends_on
-                        .get(0)
-                        .and_then(|id| self.resolved.get(id));
-                    let value = value.as_ref().and_then(|v| v.value().as_ref().ok());
-                    let graphql_ctx = GraphqlContext { arguments, value };
-                    let eval_ctx = EvaluationContext::new(&self.req_ctx, &graphql_ctx);
+                let parent_field_plan_id = field_plan.depends_on.get(0);
+                // TODO: handle multiple parent values
+                let parent_resolved = parent_field_plan_id.and_then(|id| self.resolved.get(id));
+                let parent_resolved = parent_resolved.as_ref().map(|v| v.value());
 
-                    field_plan.eval(eval_ctx).await
-                } else {
-                    Err(anyhow!("Failed to resolve field_plan for id: {id}"))
+                // TODO: handle properly nesting for parent value since
+                // rn it only considers child field is direct child of parent field
+                let result = match parent_resolved {
+                    Some(ResolvedEntry::List(Ok(list)))
+                    | Some(ResolvedEntry::Single(Ok(Value::List(list)))) => {
+                        let execution = list.iter().map(|value| self.eval(field_plan, Some(value)));
+
+                        ResolvedEntry::List(try_join_all(execution).await)
+                    }
+                    Some(ResolvedEntry::List(Err(err))) => {
+                        ResolvedEntry::List(Err(anyhow!("Failed to resolve parent value")))
+                    }
+                    Some(ResolvedEntry::Single(value)) => {
+                        ResolvedEntry::Single(self.eval(field_plan, value.as_ref().ok()).await)
+                    }
+                    None => ResolvedEntry::Single(self.eval(field_plan, None).await),
                 };
 
                 self.resolved.insert(*id, result);
-            }
-            ExecutionStep::ForEach(id) => {
-                todo!()
             }
             ExecutionStep::Sequential(steps) => {
                 for step in steps {
@@ -105,8 +127,8 @@ impl<'a> ExecutorContext<'a> {
 }
 
 impl ExecutionResult {
-    pub fn resolved(&mut self, id: &Id) -> Option<Result<Value>> {
-        self.resolved.remove(id)
+    pub fn resolved(&self, id: &Id) -> Option<&ResolvedEntry> {
+        self.resolved.get(id)
     }
 }
 

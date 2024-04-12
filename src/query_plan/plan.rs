@@ -14,7 +14,7 @@ use crate::{
 };
 
 use super::{
-    execution::executor::ExecutionResult,
+    execution::executor::{ExecutionResult, ResolvedEntry},
     resolver::{FieldPlan, FieldPlanSelection, Id},
 };
 
@@ -206,10 +206,11 @@ impl FieldTree {
 
     fn collect_value_object(
         children: &IndexMap<Name, FieldTree>,
-        execution_result: &mut ExecutionResult,
-        current_value: Option<Value>,
+        execution_result: &ExecutionResult,
+        current_value: Option<&Value>,
+        parent_list_index: Option<usize>,
     ) -> Result<Value> {
-        let mut current_map = if let Some(Value::Object(current_map)) = current_value {
+        let current_map = if let Some(Value::Object(current_map)) = current_value {
             Some(current_map)
         } else {
             None
@@ -219,7 +220,8 @@ impl FieldTree {
         for (name, tree) in children {
             let value = tree.collect_value(
                 execution_result,
-                current_map.as_mut().and_then(|map| map.swap_remove(name)),
+                current_map.and_then(|map| map.get(name)),
+                parent_list_index,
             )?;
 
             new_map.insert(name.clone(), value);
@@ -230,31 +232,47 @@ impl FieldTree {
 
     fn collect_value(
         &self,
-        execution_result: &mut ExecutionResult,
-        current_value: Option<Value>,
+        execution_result: &ExecutionResult,
+        current_value: Option<&Value>,
+        parent_list_index: Option<usize>,
     ) -> Result<Value> {
         let value = if let Some(id) = &self.field_plan_id {
-            execution_result.resolved(&id).transpose()?
+            let value = execution_result.resolved(&id);
+
+            match value {
+                Some(ResolvedEntry::Single(Ok(value))) => Some(value),
+                Some(ResolvedEntry::List(Ok(list))) => {
+                    if let Some(index) = parent_list_index {
+                        list.get(index)
+                    } else {
+                        return Err(anyhow!("Expected parent list index"));
+                    }
+                },
+                _ => None,
+            }
         } else {
             current_value
         };
 
         match &self.entry {
             FieldTreeEntry::Scalar | FieldTreeEntry::ScalarList => value
+                .cloned()
                 .or(Some(Value::default()))
                 .ok_or(anyhow!("Can't resolve value for field")),
             FieldTreeEntry::Compound(children) => {
-                Self::collect_value_object(children, execution_result, value)
+                Self::collect_value_object(children, execution_result, value, parent_list_index)
             }
             FieldTreeEntry::CompoundList(children) => {
                 if let Some(Value::List(list)) = value {
                     let result = list
                         .into_iter()
-                        .map(|current_value| {
+                        .enumerate()
+                        .map(|(index, current_value)| {
                             Self::collect_value_object(
                                 children,
                                 execution_result,
                                 Some(current_value),
+                                Some(index),
                             )
                         })
                         .collect::<Result<Vec<_>>>()?;
@@ -341,6 +359,7 @@ impl OperationPlan {
     }
 
     pub fn collect_value(&self, mut execution_result: ExecutionResult) -> Result<Value> {
-        self.field_tree.collect_value(&mut execution_result, None)
+        self.field_tree
+            .collect_value(&mut execution_result, None, None)
     }
 }
