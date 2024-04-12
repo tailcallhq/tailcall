@@ -121,7 +121,7 @@ jobs:
       BENCHER_TESTBED: benchmarking-runner
       PR_BENCHMARK_RESULTS: benches/change.txt
       BASE_BENCHMARK_RESULTS: benches/base.txt
-      BRANCH_NAME: ${{ github.head_ref }}_commit_${{ github.event.pull_request.head.sha }}
+      BRANCH_NAME: ${{ github.head_ref }}
       UPPER_BOUNDARY: 0.10
     steps:
       - name: Check out code
