@@ -2,13 +2,16 @@ use std::cell::{OnceCell, RefCell};
 use std::thread;
 
 use super::request_filter::{Command, Event};
-use rquickjs::{Context, Runtime as JsRuntime, Undefined};
-use crate::cli::javascript::shim;
+use rquickjs::function::{Args, Func, IntoJsFunc, ParamRequirement, Params, Rest};
+use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Runtime as JsRuntime, Undefined, Value};
 use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime {
-    js_runtime: JsRuntime,
     context: Context,
+
+    // NOTE: This doesn't need to be accessed directly right now but context holds a reference to it,
+    // so make sure that this is not dropped
+    _js_runtime: JsRuntime,
 }
 
 thread_local! {
@@ -26,20 +29,37 @@ lazy_static::lazy_static! {
         .expect("JS runtime not initialized");
 }
 
+#[rquickjs::function]
+fn qjs_print(msg: String, is_err: bool) {
+    if is_err {
+        eprintln!("{msg}")
+    } else {
+        println!("{msg}")
+    }
+}
+
+fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
+    //  TODO: Check unwrap
+    ctx.globals().set("__qjs_print", js_qjs_print)
+}
+
 impl LocalRuntime {
     fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
         let source = script.source;
-        let mut js_runtime = JsRuntime::new().unwrap();
-        let mut context = Context::full(&js_runtime).unwrap();
+        let js_runtime = JsRuntime::new().unwrap();
+        let context = Context::full(&js_runtime).unwrap();
         context.with(|ctx| {
-            let global = ctx.globals();
-            global.set("QuickJS", shim::QuickJs::new(ctx));
-            let _: Undefined = ctx.eval_file("src/cli/javascript/shim/console.js").unwrap();
-            let _: Undefined = ctx.eval(source).unwrap();
+            //  TODO: Check unwraps
+            setup_builtins(&ctx).unwrap();
+            let _: rquickjs::Result<Value> = ctx.eval_file("src/cli/javascript/shim/console.js");
+            let _: rquickjs::Result<Value> = ctx.eval(source);
         });
 
         tracing::debug!("JS Runtime created: {:?}", thread::current().name());
-        Ok(Self { js_runtime, context })
+        Ok(Self {
+            context,
+            _js_runtime: js_runtime
+        })
     }
 }
 
@@ -75,26 +95,30 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
         let runtime = cell
             .get_mut()
             .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
-        let _js_runtime = &mut runtime.js_runtime;
-        todo!()
-        // let scope = &mut js_runtime.handle_scope();
-        // let global = v8::Local::<v8::Object>::try_from(v8::Local::new(scope, &runtime.global))?;
-        // let args = serde_v8::to_v8(scope, event)?;
-        //
-        // // NOTE: unwrap is safe here
-        // // We receive a `None` only if the name of the function is more than the set
-        // // kMaxLength. kMaxLength is set to a very high value ~ 1 Billion, so we
-        // // don't expect to hit this limit.
-        // let fn_server_emit = v8::String::new(scope, name.as_str()).unwrap();
-        // let fn_server_emit = global
-        //     .get(scope, fn_server_emit.into())
-        //     .ok_or(anyhow::anyhow!("globalThis not initialized"))?;
-        //
-        // let fn_server_emit = v8::Local::<v8::Function>::try_from(fn_server_emit)?;
-        // let command = fn_server_emit.call(scope, global.into(), &[args]);
-        //
-        // command
-        //     .map(|output| Ok(serde_v8::from_v8(scope, output)?))
-        //     .transpose()
+        runtime.context.with(|ctx| {
+            match event {
+                Event::Request(req) => {
+                    let args = (req.into_js(&ctx),);
+
+                    // NOTE: unwrap is safe here
+                    // We receive a `None` only if the name of the function is more than the set
+                    // kMaxLength. kMaxLength is set to a very high value ~ 1 Billion, so we
+                    // don't expect to hit this limit.
+                    let fn_name = name.into_js(&ctx).unwrap(); //  TODO: Check if this unwrap fails
+
+                    let fn_value: Value = ctx.globals()
+                        .get(fn_name)
+                        .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
+
+                    let fn_server_emit = fn_value.as_function().unwrap(); //  TODO: Check if this unwrap fails
+                    dbg!(fn_server_emit);
+                    let command: Option<Value> = fn_server_emit.call(args).ok();
+                    command
+                        .map(|output| Command::from_js(&ctx, output))
+                        .transpose()
+                        .map_err(|_| anyhow::anyhow!("deserialize failed")) //  TODO: Cast original error into anyhow
+                }
+            }
+        })
     })
 }
