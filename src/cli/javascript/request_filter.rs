@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use hyper::body::Bytes;
+use rquickjs::FromJs;
 use serde::{Deserialize, Serialize};
 
 use super::{JsRequest, JsResponse};
@@ -18,6 +19,12 @@ pub enum Event {
 pub enum Command {
     Request(JsRequest),
     Response(JsResponse),
+}
+
+impl<'js> FromJs<'js> for Command {
+    fn from_js(ctx: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
+        todo!()
+    }
 }
 
 pub struct RequestFilter {

@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Display;
 
+use rquickjs::{FromJs, IntoJs};
 use serde::{Deserialize, Serialize};
 
 use super::create_header_map;
@@ -14,6 +15,18 @@ pub struct JsRequest {
     headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
     body: Option<String>,
+}
+
+impl<'js> IntoJs<'js> for JsRequest {
+    fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
+        todo!()
+    }
+}
+
+impl<'js> FromJs<'js> for JsRequest {
+    fn from_js(ctx: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
+        todo!()
+    }
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]

@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use hyper::body::Bytes;
 use nom::AsBytes;
+use rquickjs::FromJs;
 use serde::{Deserialize, Serialize};
 
 use super::create_header_map;
@@ -16,6 +17,12 @@ pub struct JsResponse {
     pub headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub body: Option<String>,
+}
+
+impl<'js> FromJs<'js> for JsResponse {
+    fn from_js(ctx: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
+        todo!()
+    }
 }
 
 impl TryFrom<JsResponse> for Response<Bytes> {
