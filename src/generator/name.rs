@@ -15,7 +15,7 @@ pub struct GraphQLType {
 }
 
 impl GraphQLType {
-    fn new(name: &str, convertor: Entity) -> Self {
+    fn parse(name: &str, convertor: Entity) -> Self {
         let mut package = None;
         let mut name = name.to_string();
         if let Some(index) = name.rfind('.') {
@@ -25,24 +25,24 @@ impl GraphQLType {
         Self { package, name: name.to_string(), convertor }
     }
 
-    pub fn from_enum(name: &str) -> Self {
-        Self::new(name, Entity::Enum)
+    pub fn parse_enum(name: &str) -> Self {
+        Self::parse(name, Entity::Enum)
     }
 
-    pub fn from_enum_variant(name: &str) -> Self {
-        Self::new(name, Entity::EnumVariant)
+    pub fn parse_enum_variant(name: &str) -> Self {
+        Self::parse(name, Entity::EnumVariant)
     }
 
-    pub fn from_object_type(name: &str) -> Self {
-        Self::new(name, Entity::ObjectType)
+    pub fn parse_object_type(name: &str) -> Self {
+        Self::parse(name, Entity::ObjectType)
     }
 
-    pub fn from_method(name: &str) -> Self {
-        Self::new(name, Entity::Method)
+    pub fn parse_method(name: &str) -> Self {
+        Self::parse(name, Entity::Method)
     }
 
-    pub fn from_field(name: &str) -> Self {
-        Self::new(name, Entity::Field)
+    pub fn parse_field(name: &str) -> Self {
+        Self::parse(name, Entity::Field)
     }
 
     pub fn id(&self) -> String {
@@ -56,7 +56,7 @@ impl GraphQLType {
         if package.is_empty() {
             self
         } else {
-            Self::new(&format!("{}.{}", package, self.name), self.convertor)
+            Self::parse(&format!("{}.{}", package, self.name), self.convertor)
         }
     }
 }
@@ -176,7 +176,7 @@ mod tests {
 
     fn assert_type_names(input: Vec<((Entity, Option<&str>, &str), &str)>) {
         for ((entity, package, name), expected) in input {
-            let mut g = GraphQLType::new(name, entity);
+            let mut g = GraphQLType::parse(name, entity);
             if let Some(package) = package {
                 g = g.package(package);
             }
