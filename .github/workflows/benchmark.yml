@@ -16,7 +16,7 @@ concurrency:
 jobs:
   macro_benchmark:
     name: Macro Benchmarks
-    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')  || github.event_name == 'push'"
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -97,7 +97,7 @@ jobs:
           cargo bench > benches/base.txt
           bencher run \
           --project "$BENCHER_PROJECT" \
-          --branch main \
+          --branch-reset main \
           --testbed "$BENCHER_TESTBED" \
           --token "${{ secrets.BENCHER_API_TOKEN }}" \
           --adapter "$BENCHER_ADAPTER" \
@@ -122,7 +122,7 @@ jobs:
       BENCHER_TESTBED: benchmarking-runner-hehe
       PR_BENCHMARK_RESULTS: benches/change.txt
       BASE_BENCHMARK_RESULTS: benches/base.txt
-      BRANCH_NAME: ${{ github.head_ref }}_commit_${{ github.event.pull_request.head.sha }}
+      BRANCH_NAME: ${{ github.head_ref }}
       UPPER_BOUNDARY: 0.10
     steps:
       - name: Check out code
@@ -147,8 +147,11 @@ jobs:
       - name: Track base benchmarks
         run: |
           bencher run \
-          --if-branch "$BRANCH_NAME" \
-          --else-branch \
+          --project "$BENCHER_PROJECT" \
+          --branch "$BRANCH_NAME" \
+          --branch-reset \
+          --testbed "$BENCHER_TESTBED" \
+          --adapter "$BENCHER_ADAPTER" \
           --token "${{ secrets.BENCHER_API_TOKEN }}" \
           --file "$BASE_BENCHMARK_RESULTS"
 
@@ -164,9 +167,12 @@ jobs:
 
       - name: Track PR Benchmarks
         run: |
-          bencher run  \
+          bencher run \
+          --project "$BENCHER_PROJECT" \
           --branch "$BRANCH_NAME" \
           --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --testbed "$BENCHER_TESTBED" \
+          --adapter "$BENCHER_ADAPTER" \
           --github-actions "${{ secrets.GITHUB_TOKEN }}" \
           --err \
           --file "$PR_BENCHMARK_RESULTS"
