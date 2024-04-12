@@ -179,18 +179,29 @@ pub struct Resolution {
 }
 
 impl ConfigModule {
+    /// This function resolves the ambiguous types by renaming the input and
+    /// output types. The resolver function should return a Resolution
+    /// object containing the new input and output types.
+    /// The function will return a new ConfigModule with the resolved types.
     pub fn resolve_ambiguous_types(mut self, resolver: impl Fn(&str) -> Resolution) -> Self {
         for key in self.input_types.intersection(&self.output_types) {
             let resolution = resolver(key);
+
+            if resolution.input.eq(&resolution.output) {
+                tracing::warn!(
+                    "Unable to resolve input and output type: {}",
+                    resolution.input
+                );
+                continue;
+            }
+
             let og_ty = self.config.types.remove(key);
 
             if let Some(og_ty) = og_ty {
                 self.config
                     .types
                     .insert(resolution.input.clone(), og_ty.clone());
-                self.config
-                    .types
-                    .insert(resolution.output.clone(), og_ty.clone());
+                self.config.types.insert(resolution.output.clone(), og_ty);
             }
 
             for v in self.config.types.values_mut() {
