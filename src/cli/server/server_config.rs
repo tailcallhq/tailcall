@@ -26,12 +26,14 @@ impl ServerConfig {
 
         if let Some(TelemetryExporter::Apollo(apollo)) = blueprint.telemetry.export.as_ref() {
             let (graph_id, variant) = apollo.graph_ref.split_once('@').unwrap();
+            let platform = apollo.platform.clone().unwrap_or("platform".to_string());
+            let version = apollo.version.clone().unwrap_or("1.0".to_string());
             extensions.push(SchemaExtension::new(ApolloTracing::new(
                 apollo.api_key.clone(),
-                apollo.platform.clone(),
+                platform,
                 graph_id.to_string(),
                 variant.to_string(),
-                apollo.version.clone(),
+                version,
             )));
         }
         rt.add_extensions(extensions);
