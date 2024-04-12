@@ -77,7 +77,12 @@ impl Display for GraphQLType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.convertor {
             Entity::EnumVariant => f.write_str(self.name.to_case(Case::ScreamingSnake).as_str())?,
-            Entity::Method | Entity::Field => {
+            Entity::Field => f.write_str(self.name.to_case(Case::Snake).as_str())?,
+            Entity::Method => {
+                if let Some(package) = &self.package {
+                    f.write_str(package.replace(".", "_").to_case(Case::Snake).as_str())?;
+                    f.write_str(DEFAULT_SEPARATOR)?;
+                };
                 f.write_str(self.name.to_case(Case::Snake).as_str())?
             }
             Entity::Enum | Entity::ObjectType => {
@@ -149,10 +154,10 @@ mod tests {
         let input: Vec<TestParams> = vec![
             // Methods
             ((Entity::Method, None, "foo"), "foo"),
-            ((Entity::Method, None, "a.b.c.foo"), "foo"),
-            ((Entity::Method, Some("a.b.c"), "foo"), "foo"),
-            ((Entity::Method, Some("a.b"), "d.e.foo"), "foo"),
-            ((Entity::Method, Some(""), "a.b.c.foo"), "foo"),
+            ((Entity::Method, None, "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::Method, Some("a.b.c"), "foo"), "a_b_c_foo"),
+            ((Entity::Method, Some("a.b"), "d.e.foo"), "a_b_foo"),
+            ((Entity::Method, Some(""), "a.b.c.foo"), "a_b_c_foo"),
             ((Entity::Method, None, "a_b_c_foo"), "a_b_c_foo"),
         ];
 
