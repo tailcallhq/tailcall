@@ -7,6 +7,7 @@ mod js_request;
 mod js_response;
 mod request_filter;
 mod runtime;
+mod shim;
 
 pub use js_request::JsRequest;
 pub use js_response::JsResponse;
