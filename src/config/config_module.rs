@@ -173,6 +173,45 @@ fn get_output_types(config: &Config, input_types: &HashSet<String>) -> HashSet<S
     types
 }
 
+pub struct Resolution {
+    pub input: String,
+    pub output: String,
+}
+
+impl ConfigModule {
+    pub fn resolve_ambiguous_types(mut self, resolver: impl Fn(&str) -> Resolution) -> Self {
+        for key in self.input_types.intersection(&self.output_types) {
+            let resolution = resolver(key);
+            let og_ty = self.config.types.remove(key);
+
+            if let Some(og_ty) = og_ty {
+                self.config
+                    .types
+                    .insert(resolution.input.clone(), og_ty.clone());
+                self.config
+                    .types
+                    .insert(resolution.output.clone(), og_ty.clone());
+            }
+
+            for v in self.config.types.values_mut() {
+                for field in v.fields.values_mut() {
+                    if field.type_of.eq(key) {
+                        field.type_of = resolution.output.clone();
+                    }
+
+                    for arg in field.args.values_mut() {
+                        if arg.type_of.eq(key) {
+                            arg.type_of = resolution.input.clone();
+                        }
+                    }
+                }
+            }
+        }
+
+        self
+    }
+}
+
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
         let input_types = get_input_types(&config);
