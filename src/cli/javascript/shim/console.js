@@ -1,4 +1,4 @@
-const {core} = Deno
+const {core} = globalThis.QuickJS
 
 function argsToMessage(...args) {
   return args.map((arg) => JSON.stringify(arg)).join(" ")
