@@ -13,9 +13,6 @@ use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 /// strings based on the descriptor type.
 #[derive(Setters)]
 struct Context {
-    /// Maps proto type names to custom formatted names.
-    map: HashMap<String, String>,
-
     /// The current proto package name.
     package: String,
 
@@ -30,61 +27,9 @@ impl Context {
     fn new(query: &str) -> Self {
         Self {
             query: query.to_string(),
-            map: Default::default(),
             package: Default::default(),
             config: Default::default(),
         }
-    }
-
-    /// Formats a proto type name based on its `DescriptorType`.
-    fn get_name(&self, name: &str, ty: NameConvertor) -> String {
-        let name = name
-            .strip_prefix(&format!("{}.", self.package))
-            .unwrap_or(name);
-        ty.convert(&self.package, name)
-    }
-
-    fn formatted_name(&self, name: &str) -> String {
-        let mut prefix = format!("{}.", self.package);
-        if self.package.is_empty() || name.starts_with(&prefix) {
-            name.to_string()
-        } else {
-            prefix.push_str(name);
-            prefix
-        }
-    }
-
-    /// Inserts a formatted name into the map.
-    fn insert(mut self, name: &str, ty: NameConvertor) -> Self {
-        self.map
-            .insert(self.formatted_name(name), self.get_name(name, ty));
-        self
-    }
-    /// Retrieves a formatted name from the map.
-    fn get(&self, name: &str) -> Option<String> {
-        self.map.get(&self.formatted_name(name)).cloned()
-    }
-
-    /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: &str, ty: Type) -> Self {
-        if let Some(name) = self.get(name) {
-            self.config.types.insert(name, ty);
-        }
-        self
-    }
-
-    /// Retrieves or creates a Type configuration for a given proto type.
-    fn get_ty(&self, name: &str) -> Type {
-        let mut ty = self
-            .get(name)
-            .and_then(|name| self.config.types.get(&name))
-            .cloned()
-            .unwrap_or_default();
-
-        let id = self.formatted_name(name);
-
-        ty.tag = Some(Tag { id });
-        ty
     }
 
     /// Processes proto enum types.
