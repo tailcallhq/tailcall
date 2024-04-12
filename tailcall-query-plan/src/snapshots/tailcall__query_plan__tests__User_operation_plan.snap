@@ -1,0 +1,14 @@
+---
+source: src/query_plan/tests.rs
+expression: operation_plan
+---
+OperationPlan
+    fields:
+        user(by 6)
+            name
+            email
+
+    selections:
+        Resolver(6):
+                name
+                email
