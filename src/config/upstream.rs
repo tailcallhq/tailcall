@@ -2,12 +2,14 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
+use tailcall_macros::MergeRight;
 
 use crate::is_default;
 use crate::merge_right::MergeRight;
-use tailcall_macros::MergeRight;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, MergeRight,
+)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
     pub delay: usize,
@@ -27,7 +29,16 @@ pub struct Proxy {
 }
 
 #[derive(
-    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema, MergeRight
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Clone,
+    Debug,
+    Setters,
+    Default,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]

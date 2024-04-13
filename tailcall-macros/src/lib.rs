@@ -15,7 +15,8 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
             let fields = if let Fields::Named(fields) = data.fields {
                 fields.named
             } else {
-                // Adjust this match arm to handle other kinds of struct fields (unnamed/tuple structs, unit structs)
+                // Adjust this match arm to handle other kinds of struct fields (unnamed/tuple
+                // structs, unit structs)
                 unimplemented!()
             };
 
@@ -35,7 +36,7 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
                     }
                 }
             }
-        },
+        }
         // Implement for enums
         Data::Enum(_) => quote! {
             impl MergeRight for #name {
