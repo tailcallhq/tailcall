@@ -12,7 +12,6 @@ use crate::config::Config;
 use crate::merge_right::MergeRight;
 use crate::rest::{EndpointSet, Unchecked};
 
-
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
 #[derive(Clone, Debug, Default, Setters)]
@@ -126,35 +125,32 @@ impl ConfigModule {
     /// object containing the new input and output types.
     /// The function will return a new ConfigModule with the resolved types.
     pub fn resolve_ambiguous_types(mut self, resolver: impl Fn(&str) -> Resolution) -> Self {
-        for key in self.input_types.intersection(&self.output_types) {
-            let resolution = resolver(key);
+        for current_name in self.input_types.intersection(&self.output_types) {
+            let resolution = resolver(current_name);
+            let input_name = resolution.input;
+            let output_name = resolution.output;
 
-            if resolution.input.eq(&resolution.output) {
-                tracing::warn!(
-                    "Unable to resolve input and output type: {}",
-                    resolution.input
-                );
+            if input_name.eq(&output_name) {
+                tracing::warn!("Unable to resolve input and output type: {}", input_name);
                 continue;
             }
 
-            let og_ty = self.config.types.remove(key);
+            let og_ty = self.config.types.remove(current_name);
 
             if let Some(og_ty) = og_ty {
-                self.config
-                    .types
-                    .insert(resolution.input.clone(), og_ty.clone());
-                self.config.types.insert(resolution.output.clone(), og_ty);
+                self.config.types.insert(input_name.clone(), og_ty.clone());
+                self.config.types.insert(output_name.clone(), og_ty);
             }
 
-            for v in self.config.types.values_mut() {
-                for field in v.fields.values_mut() {
-                    if field.type_of.eq(key) {
-                        field.type_of = resolution.output.clone();
+            for type_of in self.config.types.values_mut() {
+                for field in type_of.fields.values_mut() {
+                    if field.type_of.eq(current_name) {
+                        field.type_of = output_name.clone();
                     }
 
                     for arg in field.args.values_mut() {
-                        if arg.type_of.eq(key) {
-                            arg.type_of = resolution.input.clone();
+                        if arg.type_of.eq(current_name) {
+                            arg.type_of = input_name.clone();
                         }
                     }
                 }
