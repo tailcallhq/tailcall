@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -14,10 +14,10 @@ use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
-use crate::is_default;
 use crate::json::JsonSchema;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
+use crate::{is_default, scalar};
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
@@ -60,59 +60,6 @@ pub struct Config {
     #[serde(default, skip_serializing_if = "is_default")]
     /// Enable [opentelemetry](https://opentelemetry.io) support
     pub telemetry: Telemetry,
-}
-
-impl Config {
-    pub fn port(&self) -> u16 {
-        self.server.port.unwrap_or(8000)
-    }
-
-    pub fn find_type(&self, name: &str) -> Option<&Type> {
-        self.types.get(name)
-    }
-
-    pub fn find_union(&self, name: &str) -> Option<&Union> {
-        self.unions.get(name)
-    }
-
-    pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(self)?)
-    }
-
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
-        if pretty {
-            Ok(serde_json::to_string_pretty(self)?)
-        } else {
-            Ok(serde_json::to_string(self)?)
-        }
-    }
-
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
-    pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::document::print(doc)
-    }
-
-    pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
-        self
-    }
-
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        let mut graphql_types = BTreeMap::new();
-        for (name, type_) in types {
-            graphql_types.insert(name.to_string(), type_);
-        }
-        self.types = graphql_types;
-        self
-    }
-
-    pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name)
-    }
 }
 
 impl MergeRight for Config {
@@ -700,6 +647,57 @@ pub struct AddField {
 }
 
 impl Config {
+    pub fn port(&self) -> u16 {
+        self.server.port.unwrap_or(8000)
+    }
+
+    pub fn find_type(&self, name: &str) -> Option<&Type> {
+        self.types.get(name)
+    }
+
+    pub fn find_union(&self, name: &str) -> Option<&Union> {
+        self.unions.get(name)
+    }
+
+    pub fn to_yaml(&self) -> Result<String> {
+        Ok(serde_yaml::to_string(self)?)
+    }
+
+    pub fn to_json(&self, pretty: bool) -> Result<String> {
+        if pretty {
+            Ok(serde_json::to_string_pretty(self)?)
+        } else {
+            Ok(serde_json::to_string(self)?)
+        }
+    }
+
+    pub fn to_document(&self) -> ServiceDocument {
+        self.clone().into()
+    }
+
+    pub fn to_sdl(&self) -> String {
+        let doc = self.to_document();
+        crate::document::print(doc)
+    }
+
+    pub fn query(mut self, query: &str) -> Self {
+        self.schema.query = Some(query.to_string());
+        self
+    }
+
+    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
+        let mut graphql_types = BTreeMap::new();
+        for (name, type_) in types {
+            graphql_types.insert(name.to_string(), type_);
+        }
+        self.types = graphql_types;
+        self
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        self.types.contains_key(name) || self.unions.contains_key(name)
+    }
+
     pub fn from_json(json: &str) -> Result<Self> {
         Ok(serde_json::from_str(json)?)
     }
@@ -726,6 +724,62 @@ impl Config {
 
     pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
         super::n_plus_one::n_plus_one(self)
+    }
+
+    ///
+    /// Given a starting type, this function searches for all the unique types
+    /// that this type can be connected to via it's fields
+    fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
+        if let Some(type_) = self.find_type(type_of) {
+            for (_, field) in type_.fields.iter() {
+                if !types.contains(&field.type_of) {
+                    types.insert(field.type_of.clone());
+                    types = self.find_connections(&field.type_of, types);
+                }
+            }
+        }
+        types
+    }
+
+    ///
+    /// Goes through the complete config and finds all the types that are used
+    /// as inputs directly ot indirectly.
+    pub fn input_types(&self) -> HashSet<String> {
+        self.types
+            .iter()
+            .filter(|(_, value)| !value.interface)
+            .flat_map(|(_, type_of)| type_of.fields.iter())
+            .flat_map(|(_, field)| field.args.iter())
+            .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
+            .map(|(_, arg)| arg.type_of.clone())
+            .fold(HashSet::new(), |mut types, type_of| {
+                types.insert(type_of.clone());
+                self.find_connections(type_of.as_str(), types)
+            })
+    }
+
+    pub fn output_types(&self) -> HashSet<String> {
+        let mut types = HashSet::new();
+        let input_types = self.input_types();
+
+        if let Some(ref query) = &self.schema.query {
+            types.insert(query.clone());
+        }
+
+        if let Some(ref mutation) = &self.schema.mutation {
+            types.insert(mutation.clone());
+        }
+
+        for (type_name, type_of) in self.types.iter() {
+            if (type_of.interface || !type_of.fields.is_empty()) && !input_types.contains(type_name)
+            {
+                for (_, field) in type_of.fields.iter() {
+                    types.insert(field.type_of.clone());
+                }
+            }
+        }
+
+        types
     }
 }
 

@@ -11,7 +11,7 @@ use crate::blueprint::GrpcMethod;
 use crate::config::Config;
 use crate::merge_right::MergeRight;
 use crate::rest::{EndpointSet, Unchecked};
-use crate::scalar;
+
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
@@ -115,64 +115,6 @@ impl Deref for ConfigModule {
     }
 }
 
-fn recurse_type(config: &Config, type_of: &str, types: &mut HashSet<String>) {
-    if let Some(type_) = config.find_type(type_of) {
-        for (_, field) in type_.fields.iter() {
-            if !types.contains(&field.type_of) {
-                types.insert(field.type_of.clone());
-                recurse_type(config, &field.type_of, types);
-            }
-        }
-    }
-}
-
-fn get_input_types(config: &Config) -> HashSet<String> {
-    let mut types = HashSet::new();
-
-    for (_, type_of) in config.types.iter() {
-        if !type_of.interface {
-            for (_, field) in type_of.fields.iter() {
-                for (_, arg) in field
-                    .args
-                    .iter()
-                    .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
-                {
-                    if let Some(t) = config.find_type(&arg.type_of) {
-                        t.fields.iter().for_each(|(_, f)| {
-                            types.insert(f.type_of.clone());
-                            recurse_type(config, &f.type_of, &mut types)
-                        })
-                    }
-                    types.insert(arg.type_of.clone());
-                }
-            }
-        }
-    }
-    types
-}
-
-fn get_output_types(config: &Config, input_types: &HashSet<String>) -> HashSet<String> {
-    let mut types = HashSet::new();
-
-    if let Some(ref query) = &config.schema.query {
-        types.insert(query.clone());
-    }
-
-    if let Some(ref mutation) = &config.schema.mutation {
-        types.insert(mutation.clone());
-    }
-
-    for (type_name, type_of) in config.types.iter() {
-        if (type_of.interface || !type_of.fields.is_empty()) && !input_types.contains(type_name) {
-            for (_, field) in type_of.fields.iter() {
-                types.insert(field.type_of.clone());
-            }
-        }
-    }
-
-    types
-}
-
 pub struct Resolution {
     pub input: String,
     pub output: String,
@@ -225,8 +167,8 @@ impl ConfigModule {
 
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        let input_types = get_input_types(&config);
-        let output_types = get_output_types(&config, &input_types);
+        let input_types = config.input_types();
+        let output_types = config.output_types();
 
         ConfigModule { config, input_types, output_types, ..Default::default() }
     }
