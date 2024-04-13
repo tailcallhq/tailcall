@@ -731,6 +731,7 @@ impl Config {
     /// that this type can be connected to via it's fields
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
         if let Some(type_) = self.find_type(type_of) {
+            types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) {
                     types.insert(field.type_of.clone());
@@ -752,8 +753,7 @@ impl Config {
             .flat_map(|(_, field)| field.args.iter())
             .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
             .map(|(_, arg)| arg.type_of.clone())
-            .fold(HashSet::new(), |mut types, type_of| {
-                types.insert(type_of.clone());
+            .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of.as_str(), types)
             })
     }
