@@ -144,6 +144,7 @@ async-graphql = { workspace = true, features = [
 dotenvy = "0.15"
 convert_case = "0.6.0"
 rand = "0.8.5"
+tailcall-macros = { path = "tailcall-macros" }
 
 
 [dev-dependencies]
@@ -195,6 +196,7 @@ members = [
     "tailcall-autogen",
     "tailcall-aws-lambda",
     "tailcall-cloudflare",
+    "tailcall-macros",
     "tailcall-query-plan",
 ]
 
