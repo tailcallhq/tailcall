@@ -90,7 +90,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Install Bencher CLI
-        uses: bencherdev/bencher@v0.4.5--token "$BENCHER_API_TOKEN"
+        uses: bencherdev/bencher@v0.4.5
 
       - name: Run and track Benchmarks
         run: |
