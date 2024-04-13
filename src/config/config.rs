@@ -729,7 +729,7 @@ impl Config {
     ///
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
-    fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
+    pub fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
         if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
@@ -746,11 +746,8 @@ impl Config {
     /// Goes through the complete config and finds all the types that are used
     /// as inputs directly ot indirectly.
     pub fn input_types(&self) -> HashSet<String> {
-        self.types
+        self.arguments()
             .iter()
-            .filter(|(_, value)| !value.interface)
-            .flat_map(|(_, type_of)| type_of.fields.iter())
-            .flat_map(|(_, field)| field.args.iter())
             .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
             .map(|(_, arg)| arg.type_of.clone())
             .fold(HashSet::new(), |types, type_of| {
@@ -758,6 +755,7 @@ impl Config {
             })
     }
 
+    /// Returns a list of all the types that are not used as inputs
     pub fn output_types(&self) -> HashSet<String> {
         let mut types = HashSet::new();
         let input_types = self.input_types();
@@ -780,6 +778,16 @@ impl Config {
         }
 
         types
+    }
+
+    /// Returns a list of all the arguments in the configuration
+    pub fn arguments(&self) -> Vec<(&String, &Arg)> {
+        self.types
+            .iter()
+            .filter(|(_, value)| !value.interface)
+            .flat_map(|(_, type_of)| type_of.fields.iter())
+            .flat_map(|(_, field)| field.args.iter())
+            .collect::<Vec<_>>()
     }
 }
 
