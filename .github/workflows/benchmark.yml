@@ -81,6 +81,7 @@ jobs:
       BENCHER_ADAPTER: rust_criterion
       BENCHER_TESTBED: benchmarking-runner
       BASE_BENCHMARK_RESULTS: benches/base.txt
+      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -89,7 +90,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Install Bencher CLI
-        uses: bencherdev/bencher@main
+        uses: bencherdev/bencher@v0.4.5--token "$BENCHER_API_TOKEN"
 
       - name: Run and track Benchmarks
         run: |
@@ -98,7 +99,7 @@ jobs:
           --project "$BENCHER_PROJECT" \
           --branch main \
           --testbed "$BENCHER_TESTBED" \
-          --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --token "$BENCHER_API_TOKEN" \
           --adapter "$BENCHER_ADAPTER" \
           --file "$BASE_BENCHMARK_RESULTS"
 
@@ -122,6 +123,7 @@ jobs:
       PR_BENCHMARK_RESULTS: benches/change.txt
       BASE_BENCHMARK_RESULTS: benches/base.txt
       BRANCH_NAME: ${{ github.head_ref }}
+      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
       UPPER_BOUNDARY: 0.10
     steps:
       - name: Check out code
@@ -144,7 +146,7 @@ jobs:
           cargo bench > benches/change.txt
 
       - name: Install Bencher CLI
-        uses: bencherdev/bencher@main
+        uses: bencherdev/bencher@v0.4.5
 
       - name: Track base benchmarks
         run: |
@@ -154,7 +156,7 @@ jobs:
           --branch-reset \
           --testbed "$BENCHER_TESTBED" \
           --adapter "$BENCHER_ADAPTER" \
-          --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --token "$BENCHER_API_TOKEN" \
           --file "$BASE_BENCHMARK_RESULTS"
 
       - name: Create PR threshold
@@ -165,14 +167,14 @@ jobs:
           --measure latency \
           --test percentage \
           --upper-boundary ${{ env.UPPER_BOUNDARY }} \
-          --token "${{ secrets.BENCHER_API_TOKEN }}"
+          --token "$BENCHER_API_TOKEN"
 
       - name: Track PR Benchmarks
         run: |
           bencher run \
           --project "$BENCHER_PROJECT" \
           --branch "$BRANCH_NAME" \
-          --token "${{ secrets.BENCHER_API_TOKEN }}" \
+          --token "$BENCHER_API_TOKEN" \
           --testbed "$BENCHER_TESTBED" \
           --adapter "$BENCHER_ADAPTER" \
           --github-actions "${{ secrets.GITHUB_TOKEN }}" \
