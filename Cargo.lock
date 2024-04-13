@@ -321,7 +321,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "tokio",
- "tonic-build 0.10.2",
+ "tonic-build",
  "tracing",
  "uname",
  "uuid",
@@ -544,20 +544,6 @@ name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
-
-[[package]]
-name = "autogen"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "lazy_static",
- "schemars",
- "serde",
- "serde_json",
- "tailcall",
- "tokio",
- "tracing",
-]
 
 [[package]]
 name = "aws_lambda_events"
@@ -1283,9 +1269,9 @@ dependencies = [
 
 [[package]]
 name = "deno_core"
-version = "0.273.0"
+version = "0.274.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cda4446ea37f4ff797badf17dc74f6f2cc2e464d26e5fa9ecf4a4d60ee111602"
+checksum = "473f7e7cfa6862e72da6adeb9ac2e252c900e18982522be45aa8241e5e6d9fd4"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1313,9 +1299,9 @@ dependencies = [
 
 [[package]]
 name = "deno_ops"
-version = "0.149.0"
+version = "0.150.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a43dda1a058478db57d064b26490fa30c2ff01d35a9d02c84fc85d1839b093c2"
+checksum = "cc87a3ee5742db42580d2a067a16990159c49044a4e447297bcd60ffb29336d7"
 dependencies = [
  "proc-macro-rules",
  "proc-macro2",
@@ -3987,56 +3973,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "protoc-bin-vendored"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "005ca8623e5633e298ad1f917d8be0a44bcf406bf3cde3b80e63003e49a3f27d"
-dependencies = [
- "protoc-bin-vendored-linux-aarch_64",
- "protoc-bin-vendored-linux-ppcle_64",
- "protoc-bin-vendored-linux-x86_32",
- "protoc-bin-vendored-linux-x86_64",
- "protoc-bin-vendored-macos-x86_64",
- "protoc-bin-vendored-win32",
-]
-
-[[package]]
-name = "protoc-bin-vendored-linux-aarch_64"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fb9fc9cce84c8694b6ea01cc6296617b288b703719b725b8c9c65f7c5874435"
-
-[[package]]
-name = "protoc-bin-vendored-linux-ppcle_64"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02d2a07dcf7173a04d49974930ccbfb7fd4d74df30ecfc8762cf2f895a094516"
-
-[[package]]
-name = "protoc-bin-vendored-linux-x86_32"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d54fef0b04fcacba64d1d80eed74a20356d96847da8497a59b0a0a436c9165b0"
-
-[[package]]
-name = "protoc-bin-vendored-linux-x86_64"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8782f2ce7d43a9a5c74ea4936f001e9e8442205c244f7a3d4286bd4c37bc924"
-
-[[package]]
-name = "protoc-bin-vendored-macos-x86_64"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5de656c7ee83f08e0ae5b81792ccfdc1d04e7876b1d9a38e6876a9e09e02537"
-
-[[package]]
-name = "protoc-bin-vendored-win32"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9653c3ed92974e34c5a6e0a510864dab979760481714c172e0a34e437cb98804"
-
-[[package]]
 name = "protox"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4757,9 +4693,9 @@ dependencies = [
 
 [[package]]
 name = "serde_v8"
-version = "0.182.0"
+version = "0.183.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31bcbb905458ba3820fc4583312449c56e183296d5bf89ba59d1d67a752c6701"
+checksum = "40a4a61adb424734b07eac7e6521e19cc07fb06f217511494ee9cd07b6e7401c"
 dependencies = [
  "bytes",
  "num-bigint",
@@ -5185,7 +5121,6 @@ dependencies = [
  "prometheus",
  "prost",
  "prost-reflect",
- "protoc-bin-vendored",
  "protox",
  "protox-parse",
  "rand",
@@ -5210,7 +5145,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic",
- "tonic-build 0.11.0",
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
@@ -5219,6 +5153,20 @@ dependencies = [
  "url",
  "webbrowser",
  "which 6.0.1",
+]
+
+[[package]]
+name = "tailcall-autogen"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tailcall",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -5557,19 +5505,6 @@ name = "tonic-build"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d021fc044c18582b9a2408cd0dd05b1596e3ecdb5c4df822bb0183545683889"
-dependencies = [
- "prettyplease",
- "proc-macro2",
- "prost-build",
- "quote",
- "syn 2.0.52",
-]
-
-[[package]]
-name = "tonic-build"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be4ef6dd70a610078cb4e338a0f79d06bc759ff1b22d2120c2ff02ae264ba9c2"
 dependencies = [
  "prettyplease",
  "proc-macro2",
