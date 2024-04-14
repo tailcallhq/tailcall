@@ -16,7 +16,7 @@ fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
         .join(" ");
 
     if !directives.is_empty() {
-        directives += " "
+        directives.push(' ')
     }
 
     directives
