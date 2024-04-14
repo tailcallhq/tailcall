@@ -122,3 +122,31 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
 
     gen.into()
 }
+
+#[cfg(test)]
+mod tests {
+    use syn::{parse_quote, Attribute};
+
+    use super::*;
+
+    #[test]
+    fn test_get_attrs_invalid_type() {
+        let attrs: Vec<Attribute> = vec![parse_quote!(#[merge_right(merge_right_fn = 123)])];
+        let result = get_attrs(&attrs);
+        assert!(
+            result.is_err(),
+            "Expected error with non-string type for `merge_right_fn`"
+        );
+    }
+
+    #[test]
+    fn test_get_attrs_unexpected_suffix() {
+        let attrs: Vec<Attribute> =
+            vec![parse_quote!(#[merge_right(merge_right_fn = "some_fn()")])];
+        let result = get_attrs(&attrs);
+        assert!(
+            result.is_err(),
+            "Expected error with unexpected suffix on string literal"
+        );
+    }
+}
