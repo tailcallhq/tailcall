@@ -170,7 +170,8 @@ mod tests {
                 .unwrap()
                 .extensions
                 .get_file_descriptor_set(&method)
-                .unwrap(),
+                .unwrap()
+                .clone(),
         )
         .unwrap();
 
