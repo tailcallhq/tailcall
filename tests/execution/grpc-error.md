@@ -67,6 +67,8 @@ type News {
 }
 ```
 
+# grpc-status-details-bin: base64.encode(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details")
+
 ```yml @mock
 - request:
     method: POST

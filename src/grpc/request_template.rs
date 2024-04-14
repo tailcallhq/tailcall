@@ -10,7 +10,7 @@ use url::Url;
 
 use super::request::create_grpc_request;
 use crate::config::GraphQLOperationType;
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+use crate::grpc::protobuf::ProtobufOperation;
 use crate::has_headers::HasHeaders;
 use crate::helpers::headers::MustacheHeaders;
 use crate::lambda::CacheKey;
@@ -26,7 +26,6 @@ pub struct RequestTemplate {
     pub body: Option<Mustache>,
     pub operation: ProtobufOperation,
     pub operation_type: GraphQLOperationType,
-    pub protobuf_set: ProtobufSet,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -135,7 +134,7 @@ mod tests {
     use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
 
-    async fn get_protobuf_op() -> (ProtobufOperation, ProtobufSet) {
+    async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut test_file = root_dir.join(file!());
 
@@ -176,9 +175,9 @@ mod tests {
         .unwrap();
 
         let method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
-        let service = protobuf_set.clone().find_service(&method).unwrap();
+        let service = protobuf_set.find_service(&method).unwrap();
 
-        (service.find_operation(&method).unwrap(), protobuf_set)
+        service.find_operation(&method).unwrap()
     }
 
     #[derive(Setters)]
@@ -207,15 +206,13 @@ mod tests {
 
     #[tokio::test]
     async fn request_with_empty_body() {
-        let (operation, protobuf_set) = get_protobuf_op().await;
         let tmpl = RequestTemplate {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![(
                 HeaderName::from_static("test-header"),
                 Mustache::parse("value").unwrap(),
             )],
-            operation,
-            protobuf_set,
+            operation: get_protobuf_op().await,
             body: None,
             operation_type: GraphQLOperationType::Query,
         };
@@ -246,14 +243,12 @@ mod tests {
 
     #[tokio::test]
     async fn request_with_body() {
-        let (operation, protobuf_set) = get_protobuf_op().await;
         let tmpl = RequestTemplate {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![],
-            operation,
+            operation: get_protobuf_op().await,
             body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
             operation_type: GraphQLOperationType::Query,
-            protobuf_set,
         };
         let ctx = Context::default();
         let rendered = tmpl.render(&ctx).unwrap();
@@ -265,14 +260,12 @@ mod tests {
     }
 
     async fn request_template_with_body(body_str: &str) -> RequestTemplate {
-        let (operation, protobuf_set) = get_protobuf_op().await;
         RequestTemplate {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![],
-            operation,
+            operation: get_protobuf_op().await,
             body: Some(Mustache::parse(body_str).unwrap()),
             operation_type: GraphQLOperationType::Query,
-            protobuf_set,
         }
     }
 

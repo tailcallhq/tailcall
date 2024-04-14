@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+use crate::grpc::protobuf::{ProtobufMessage, ProtobufOperation};
 use crate::lambda::EvaluationError;
 
 #[derive(Clone, Debug, Default, Setters)]
@@ -51,7 +51,7 @@ impl Response<Bytes> {
         Ok(resp)
     }
 
-    pub fn to_grpc_error(&self, protobuf_set: &ProtobufSet) -> anyhow::Error {
+    pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> anyhow::Error {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
             None => {
@@ -76,9 +76,15 @@ impl Response<Bytes> {
                 for detail in status.details {
                     let type_url = &detail.type_url;
                     let type_name = type_url.split('/').last().unwrap_or("");
-                    if let Ok(descriptor) = protobuf_set.find_message(type_name) {
+
+                    if let Some(message_descriptor) = operation
+                        .method
+                        .parent_pool()
+                        .get_message_by_name(type_name)
+                    {
+                        let descriptor = ProtobufMessage { message_descriptor };
                         if let Ok(decoded) = descriptor.decode(detail.value.as_slice()) {
-                            status_details.push(decoded); // and every this
+                            status_details.push(decoded);
                         } else {
                             tracing::error!("Error while decoding google.rpc.Status details");
                         }

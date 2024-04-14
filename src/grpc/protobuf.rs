@@ -105,7 +105,7 @@ impl ProtobufSet {
 
 #[derive(Debug, Clone)]
 pub struct ProtobufMessage {
-    message_descriptor: MessageDescriptor,
+    pub message_descriptor: MessageDescriptor,
 }
 
 impl ProtobufMessage {
@@ -140,7 +140,7 @@ impl ProtobufService {
 
 #[derive(Debug, Clone)]
 pub struct ProtobufOperation {
-    method: MethodDescriptor,
+    pub method: MethodDescriptor,
     pub input_type: MessageDescriptor,
     pub output_type: MessageDescriptor,
     serialize_options: SerializeOptions,

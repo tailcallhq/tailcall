@@ -31,19 +31,6 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
     })
 }
 
-fn to_protobuf_set(config_module: &ConfigModule) -> Valid<ProtobufSet, String> {
-    Valid::from_option(
-        config_module.extensions.get_file_descriptor_set(),
-        "File descriptor is not initialised".to_string(),
-    )
-    .and_then(|file_descriptor_set| {
-        Valid::from(
-            ProtobufSet::from_proto_file(file_descriptor_set)
-                .map_err(|e| ValidationError::new(e.to_string())),
-        )
-    })
-}
-
 fn to_operation(
     method: &GrpcMethod,
     file_descriptor_set: FileDescriptorSet,
@@ -186,10 +173,9 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
             .fuse(to_url(grpc, &method, config_module))
             .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
             .fuse(helpers::body::to_body(grpc.body.as_deref()))
-            .fuse(to_protobuf_set(config_module))
             .into()
         })
-        .and_then(|(operation, url, headers, body, protobuf_set)| {
+        .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
@@ -200,16 +186,15 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
             } else {
                 Valid::succeed(())
             };
-            validation.map(|_| (url, headers, operation, body, protobuf_set))
+            validation.map(|_| (url, headers, operation, body))
         })
-        .map(|(url, headers, operation, body, protobuf_set)| {
+        .map(|(url, headers, operation, body)| {
             let req_template = RequestTemplate {
                 url,
                 headers,
                 operation,
                 body,
                 operation_type: operation_type.clone(),
-                protobuf_set,
             };
             if !grpc.group_by.is_empty() {
                 Expression::IO(IO::Grpc {

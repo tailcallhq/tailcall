@@ -4,7 +4,6 @@ use reqwest::Request;
 use url::Url;
 
 use super::protobuf::ProtobufOperation;
-use crate::grpc::protobuf::ProtobufSet;
 use crate::http::Response;
 use crate::runtime::TargetRuntime;
 
@@ -23,7 +22,6 @@ pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Reque
 pub async fn execute_grpc_request(
     runtime: &TargetRuntime,
     operation: &ProtobufOperation,
-    protobuf_set: &ProtobufSet,
     request: Request,
 ) -> Result<Response<async_graphql::Value>> {
     let response = runtime.http2_only.execute(request).await?;
@@ -37,7 +35,7 @@ pub async fn execute_grpc_request(
         return if grpc_status.is_none() || grpc_status == Some("0") {
             response.to_grpc_value(operation)
         } else {
-            Err(response.to_grpc_error(protobuf_set))
+            Err(response.to_grpc_error(operation))
         };
     }
     bail!("Failed to execute request");
@@ -45,6 +43,7 @@ pub async fn execute_grpc_request(
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
     use std::sync::Arc;
 
     use anyhow::Result;
@@ -60,7 +59,6 @@ mod tests {
 
     use crate::blueprint::GrpcMethod;
     use crate::grpc::execute_grpc_request;
-    use crate::grpc::protobuf::tests::get_proto_file;
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request::{GRPC_MESSAGE, GRPC_STATUS, GRPC_STATUS_DETAILS};
     use crate::http::Response;
@@ -113,27 +111,29 @@ mod tests {
     }
     async fn prepare_args(
         test_http: TestHttp,
-    ) -> Result<(TargetRuntime, ProtobufOperation, ProtobufSet, Request)> {
+    ) -> Result<(TargetRuntime, ProtobufOperation, Request)> {
         let mut runtime = crate::runtime::test::init(None);
         runtime.http2_only = Arc::new(test_http);
 
+        let greetings_path = PathBuf::from("src/grpc/tests/proto/greetings.proto");
+        let error_path = PathBuf::from("src/grpc/tests/proto/errors.proto");
+
+        let file_descriptor_set = protox::compile([greetings_path, error_path], ["."]);
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
-        let file = ProtobufSet::from_proto_file(get_proto_file("greetings.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(file_descriptor_set.unwrap_or_default())?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
-        let protobuf_set = ProtobufSet::from_proto_file(get_proto_file("errors.proto").await?)?;
-
         let request = Request::new(Method::POST, "http://example.com".parse().unwrap());
-        Ok((runtime, operation, protobuf_set, request))
+        Ok((runtime, operation, request))
     }
 
     #[tokio::test]
     async fn test_grpc_request_success_without_grpc_status() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithoutGrpcStatus };
-        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
+        let (runtime, operation, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
+        let result = execute_grpc_request(&runtime, &operation, request).await;
 
         assert!(
             result.is_ok(),
@@ -145,9 +145,9 @@ mod tests {
     #[tokio::test]
     async fn test_grpc_request_success_with_ok_grpc_status() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithOkGrpcStatus };
-        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
+        let (runtime, operation, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
+        let result = execute_grpc_request(&runtime, &operation, request).await;
 
         assert!(
             result.is_ok(),
@@ -159,9 +159,9 @@ mod tests {
     #[tokio::test]
     async fn test_grpc_request_success_with_error_grpc_status() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithErrorGrpcStatus };
-        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
+        let (runtime, operation, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
+        let result = execute_grpc_request(&runtime, &operation, request).await;
 
         assert!(
             result.is_err(),
@@ -200,9 +200,9 @@ mod tests {
     #[tokio::test]
     async fn test_grpc_request_error() -> Result<()> {
         let test_http = TestHttp { scenario: TestScenario::Error };
-        let (runtime, operation, protobuf_set, request) = prepare_args(test_http).await?;
+        let (runtime, operation, request) = prepare_args(test_http).await?;
 
-        let result = execute_grpc_request(&runtime, &operation, &protobuf_set, request).await;
+        let result = execute_grpc_request(&runtime, &operation, request).await;
 
         assert!(result.is_err(), "Expected error");
         assert_eq!(result.unwrap_err().to_string(), "Failed to execute request");

@@ -12,7 +12,7 @@ use crate::config::GraphQLOperationType;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc::data_loader::GrpcDataLoader;
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+use crate::grpc::protobuf::ProtobufOperation;
 use crate::grpc::request::execute_grpc_request;
 use crate::grpc::request_template::RenderedRequestTemplate;
 use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
@@ -129,13 +129,7 @@ impl IO {
                         execute_grpc_request_with_dl(&ctx, rendered, data_loader).await?
                     } else {
                         let req = rendered.to_request()?;
-                        execute_raw_grpc_request(
-                            &ctx,
-                            req,
-                            &req_template.operation,
-                            &req_template.protobuf_set,
-                        )
-                        .await?
+                        execute_raw_grpc_request(&ctx, req, &req_template.operation).await?
                     };
 
                     set_headers(&ctx, &res);
@@ -216,12 +210,11 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
-    protobuf_set: &ProtobufSet,
 ) -> Result<Response<async_graphql::Value>> {
     Ok(
-        execute_grpc_request(&ctx.request_ctx.runtime, operation, protobuf_set, req)
+        execute_grpc_request(&ctx.request_ctx.runtime, operation, req)
             .await
-            .map_err(|e| EvaluationError::from(e))?,
+            .map_err(EvaluationError::from)?,
     )
 }
 
@@ -251,7 +244,7 @@ async fn execute_grpc_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(|e| EvaluationError::from(e))?
+        .map_err(EvaluationError::from)?
         .unwrap_or_default())
 }
 
