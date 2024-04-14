@@ -32,6 +32,7 @@ fn run_blocking() -> anyhow::Result<()> {
         .on_thread_stop(|| {
             TRACING_GUARD.take();
         })
+        .enable_all() // need  this for any http IO before 2nd runtime is created
         .build()?;
     rt.block_on(async { tailcall::cli::run().await })
 }

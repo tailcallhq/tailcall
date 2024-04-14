@@ -2,6 +2,8 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
+const NONEMPTY_DIRECTIVES: &[&str] = &["server", "upstream"];
+
 fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
     if directives.is_empty() {
         return String::new();
@@ -9,6 +11,7 @@ fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
     directives
         .iter()
         .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
+        .filter(|v| !v.is_empty())
         .collect::<Vec<String>>()
         .join(" ")
         + " "
@@ -213,7 +216,14 @@ fn print_directive(directive: &DirectiveDefinition) -> String {
         .join(", ");
 
     if args.is_empty() {
-        format!("@{}", directive.name.node)
+        if NONEMPTY_DIRECTIVES
+            .iter()
+            .any(|v| directive.name.node.eq(v))
+        {
+            String::new()
+        } else {
+            format!("@{}", directive.name.node)
+        }
     } else {
         format!("@{}({})", directive.name.node, args)
     }
