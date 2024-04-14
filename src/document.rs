@@ -8,13 +8,18 @@ fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
     if directives.is_empty() {
         return String::new();
     }
-    directives
+    let mut directives = directives
         .iter()
         .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
         .filter(|v| !v.is_empty())
         .collect::<Vec<String>>()
-        .join(" ")
-        + " "
+        .join(" ");
+
+    if !directives.is_empty() {
+        directives = directives + " "
+    }
+
+    directives
 }
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -23,6 +28,7 @@ fn pos<A>(a: A) -> Positioned<A> {
 
 fn print_schema(schema: &SchemaDefinition) -> String {
     let directives = print_directives(&schema.directives);
+    println!("d: {:?}",directives.as_bytes());
 
     let query = schema
         .query
