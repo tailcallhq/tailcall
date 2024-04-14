@@ -16,7 +16,7 @@ fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
         .join(" ");
 
     if !directives.is_empty() {
-        directives = directives + " "
+        directives += " "
     }
 
     directives
@@ -28,7 +28,6 @@ fn pos<A>(a: A) -> Positioned<A> {
 
 fn print_schema(schema: &SchemaDefinition) -> String {
     let directives = print_directives(&schema.directives);
-    println!("d: {:?}",directives.as_bytes());
 
     let query = schema
         .query
