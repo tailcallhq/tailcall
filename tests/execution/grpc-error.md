@@ -67,8 +67,6 @@ type News {
 }
 ```
 
-# grpc-status-details-bin: base64.encode(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details")
-
 ```yml @mock
 - request:
     method: POST
@@ -79,6 +77,7 @@ type News {
     headers:
       grpc-status: 3
       grpc-message: "grpc message"
+      # before base64 encoding: \x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details
       grpc-status-details-bin: "CAMSDWVycm9yIG1lc3NhZ2UaPgordHlwZS5nb29nbGVhcGlzLmNvbS9ncmVldGluZ3MuRXJyVmFsaWRhdGlvbhIPCg1lcnJvciBkZXRhaWxz"
     body:
 ```

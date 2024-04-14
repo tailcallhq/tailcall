@@ -11,14 +11,5 @@ expression: errors
       "@grpc"
     ],
     "description": null
-  },
-  {
-    "message": "File descriptor is not initialised",
-    "trace": [
-      "Query",
-      "news",
-      "@grpc"
-    ],
-    "description": null
   }
 ]
