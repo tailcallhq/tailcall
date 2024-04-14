@@ -113,7 +113,7 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
             }
         },
         // Optionally handle or disallow unions
-        Data::Union(_) => unimplemented!(),
+        Data::Union(_) => return syn::Error::new_spanned(input, "Union types are not supported by MergeRight").to_compile_error().into(),
     };
 
     gen.into()
