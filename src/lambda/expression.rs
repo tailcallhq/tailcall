@@ -1,6 +1,7 @@
 use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use async_graphql::ErrorExtensions;
@@ -68,6 +69,24 @@ pub enum EvaluationError {
 
     #[error("ExprEvalError: {0:?}")]
     ExprEvalError(String),
+}
+
+impl From<anyhow::Error> for EvaluationError {
+    fn from(value: anyhow::Error) -> Self {
+        match value.downcast::<EvaluationError>() {
+            Ok(err) => err,
+            Err(err) => EvaluationError::IOException(err.to_string()),
+        }
+    }
+}
+
+impl From<Arc<anyhow::Error>> for EvaluationError {
+    fn from(error: Arc<anyhow::Error>) -> Self {
+        match error.downcast_ref::<EvaluationError>() {
+            Some(err) => err.clone(),
+            None => EvaluationError::IOException(error.to_string()),
+        }
+    }
 }
 
 impl ErrorExtensions for EvaluationError {

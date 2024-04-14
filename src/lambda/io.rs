@@ -221,10 +221,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     Ok(
         execute_grpc_request(&ctx.request_ctx.runtime, operation, protobuf_set, req)
             .await
-            .map_err(|e| match e.downcast::<EvaluationError>() {
-                Ok(err) => err,
-                Err(err) => EvaluationError::IOException(err.to_string()),
-            })?,
+            .map_err(|e| EvaluationError::from(e))?,
     )
 }
 
@@ -254,10 +251,7 @@ async fn execute_grpc_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(|e| match e.downcast_ref::<EvaluationError>() {
-            Some(err) => err.clone(),
-            None => EvaluationError::IOException(e.to_string()),
-        })?
+        .map_err(|e| EvaluationError::from(e))?
         .unwrap_or_default())
 }
 
