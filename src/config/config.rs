@@ -7,7 +7,6 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
 use tailcall_macros::MergeRight;
 
 use super::telemetry::Telemetry;
@@ -22,7 +21,16 @@ use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema, MergeRight
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -120,7 +128,9 @@ impl Config {
 ///
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Type {
     ///
     /// A map of field name and its definition.
@@ -174,7 +184,9 @@ impl Type {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+)]
 #[serde(deny_unknown_fields)]
 /// Used to represent an identifier for a type. Typically used via only by the
 /// configuration generators to provide additional information about the type.
@@ -194,11 +206,22 @@ pub struct Cache {
     pub max_age: NonZeroU64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+)]
 pub struct Protected {}
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema, MergeRight
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[setters(strip_option)]
 pub struct RootSchema {

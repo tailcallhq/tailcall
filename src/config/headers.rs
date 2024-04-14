@@ -8,7 +8,9 @@ use crate::config::KeyValue;
 use crate::is_default;
 use crate::merge_right::MergeRight;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 #[serde(rename_all = "camelCase")]
 pub struct Headers {
     #[serde(default, skip_serializing_if = "is_default")]

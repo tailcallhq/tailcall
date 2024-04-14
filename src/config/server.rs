@@ -8,7 +8,9 @@ use crate::config::KeyValue;
 use crate::is_default;
 use crate::merge_right::MergeRight;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The `@server` directive, when applied at the schema level, offers a
@@ -103,7 +105,9 @@ pub struct ScriptOptions {
     pub timeout: Option<u64>,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema, MergeRight,
+)]
 pub enum HttpVersion {
     #[default]
     HTTP1,

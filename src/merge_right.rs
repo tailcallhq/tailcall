@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
-use std::sync::Arc;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 pub trait MergeRight {
     fn merge_right(self, other: Self) -> Self;

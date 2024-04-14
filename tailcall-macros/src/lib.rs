@@ -27,7 +27,7 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
                     #name: self.#name.merge_right(other.#name),
                 }
             });
-            
+
             let generics_lt = generics.lt_token;
             let generics_gt = generics.gt_token;
             let generics_params = generics.params;
