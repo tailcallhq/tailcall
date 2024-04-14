@@ -63,7 +63,7 @@ pub fn get_field_value_as_str(message: &DynamicMessage, field_name: &str) -> Res
     Ok(protobuf_value_as_str(&field))
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ProtobufSet {
     descriptor_pool: DescriptorPool,
 }
@@ -92,14 +92,6 @@ impl ProtobufSet {
             })?;
 
         Ok(ProtobufService { service_descriptor })
-    }
-
-    pub fn find_message(&self, name: &str) -> Result<ProtobufMessage> {
-        let message_descriptor = self
-            .descriptor_pool
-            .get_message_by_name(name)
-            .with_context(|| format!("Couldn't find definitions for message {}", name))?;
-        Ok(ProtobufMessage { message_descriptor })
     }
 }
 
@@ -245,6 +237,12 @@ impl ProtobufOperation {
         let json = serde_json::from_slice::<T>(ser.into_inner().as_ref())?;
         Ok(json)
     }
+
+    pub fn find_message(&self, name: &str) -> Option<ProtobufMessage> {
+        let message_descriptor = self.method.parent_pool().get_message_by_name(name)?;
+
+        Some(ProtobufMessage { message_descriptor })
+    }
 }
 
 #[cfg(test)]
@@ -306,7 +304,7 @@ pub mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor_set()
+            .get_file_descriptor_set(&method)
             .unwrap()
             .to_owned())
     }

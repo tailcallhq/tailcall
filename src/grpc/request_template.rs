@@ -169,8 +169,9 @@ mod tests {
                 .await
                 .unwrap()
                 .extensions
-                .get_file_descriptor_set()
-                .unwrap(),
+                .get_file_descriptor_set(&method)
+                .unwrap()
+                .clone(),
         )
         .unwrap();
 

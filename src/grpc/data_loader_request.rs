@@ -96,7 +96,11 @@ mod tests {
         let config_module = reader.resolve(config, None).await.unwrap();
 
         let protobuf_set = ProtobufSet::from_proto_file(
-            config_module.extensions.get_file_descriptor_set().unwrap(),
+            config_module
+                .extensions
+                .get_file_descriptor_set(&method)
+                .unwrap()
+                .clone(),
         )
         .unwrap();
 

@@ -8,8 +8,6 @@ use crate::http::Response;
 use crate::runtime::TargetRuntime;
 
 pub static GRPC_STATUS: &str = "grpc-status";
-pub static GRPC_MESSAGE: &str = "grpc-message";
-pub static GRPC_STATUS_DETAILS: &str = "grpc-status-details-bin";
 
 pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
     let mut req = Request::new(Method::POST, url);
@@ -48,19 +46,15 @@ mod tests {
 
     use anyhow::Result;
     use async_trait::async_trait;
-    use base64::prelude::BASE64_STANDARD_NO_PAD;
-    use base64::Engine;
     use hyper::body::Bytes;
-    use hyper::header::HeaderValue;
     use reqwest::header::HeaderMap;
     use reqwest::{Method, Request, StatusCode};
     use serde_json::json;
-    use tonic::Code;
+    use tonic::{Code, Status};
 
     use crate::blueprint::GrpcMethod;
     use crate::grpc::execute_grpc_request;
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::grpc::request::{GRPC_MESSAGE, GRPC_STATUS, GRPC_STATUS_DETAILS};
     use crate::http::Response;
     use crate::lambda::EvaluationError;
     use crate::runtime::TargetRuntime;
@@ -82,23 +76,21 @@ mod tests {
         async fn execute(&self, _request: Request) -> Result<Response<Bytes>> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");
-            let error = BASE64_STANDARD_NO_PAD.encode(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");
+            let error = Bytes::from_static(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");
 
             match self.scenario {
                 TestScenario::SuccessWithoutGrpcStatus => {
                     Ok(Response { status: StatusCode::OK, headers, body: message })
                 }
                 TestScenario::SuccessWithOkGrpcStatus => {
-                    headers.insert(GRPC_STATUS, HeaderValue::from_static("0"));
+                    let status = Status::ok("");
+                    status.add_header(&mut headers)?;
                     Ok(Response { status: StatusCode::OK, headers, body: message })
                 }
                 TestScenario::SuccessWithErrorGrpcStatus => {
-                    headers.insert(GRPC_STATUS, HeaderValue::from_static("3"));
-                    headers.insert(
-                        GRPC_MESSAGE,
-                        HeaderValue::from_static("description message"),
-                    );
-                    headers.insert(GRPC_STATUS_DETAILS, HeaderValue::try_from(error).unwrap());
+                    let status =
+                        Status::with_details(Code::InvalidArgument, "description message", error);
+                    status.add_header(&mut headers)?;
                     Ok(Response { status: StatusCode::OK, headers, body: Bytes::default() })
                 }
                 TestScenario::Error => Ok(Response {

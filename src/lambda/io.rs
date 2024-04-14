@@ -197,10 +197,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
         .http
         .execute(req)
         .await
-        .map_err(|e| match e.downcast::<EvaluationError>() {
-            Ok(err) => err,
-            Err(err) => EvaluationError::IOException(err.to_string()),
-        })?
+        .map_err(EvaluationError::from)?
         .to_json()?;
 
     Ok(response)
@@ -270,10 +267,7 @@ async fn execute_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(|e| match e.downcast_ref::<EvaluationError>() {
-            Some(err) => err.clone(),
-            None => EvaluationError::IOException(e.to_string()),
-        })?
+        .map_err(EvaluationError::from)?
         .unwrap_or_default())
 }
 

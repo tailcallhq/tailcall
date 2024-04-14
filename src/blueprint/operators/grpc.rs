@@ -166,10 +166,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
             Valid::from_option(
-                config_module.extensions.get_file_descriptor_set(),
+                config_module.extensions.get_file_descriptor_set(&method),
                 format!("File descriptor not found for method: {}", grpc.method),
             )
-            .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
+            .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set.clone()))
             .fuse(to_url(grpc, &method, config_module))
             .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
             .fuse(helpers::body::to_body(grpc.body.as_deref()))
