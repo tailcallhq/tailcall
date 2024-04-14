@@ -3,12 +3,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use tailcall_macros::MergeRight;
 
+use super::merge_key_value_vecs;
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
 use crate::merge_right::MergeRight;
-
-use super::merge_key_value_vecs;
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,

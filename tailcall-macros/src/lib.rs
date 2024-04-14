@@ -2,10 +2,11 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput, Fields};
+use syn::spanned::Spanned;
+use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
-const MERGE_RIGHT_FN: &'static str = "merge_right_fn";
-const MERGE_RIGHT: &'static str = "merge_right";
+const MERGE_RIGHT_FN: &str = "merge_right_fn";
+const MERGE_RIGHT: &str = "merge_right";
 
 #[derive(Default)]
 struct Attrs {
@@ -19,23 +20,26 @@ fn get_attrs(attrs: &[syn::Attribute]) -> syn::Result<Attrs> {
             attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident(MERGE_RIGHT_FN) {
                     let p: syn::Expr = meta.value()?.parse()?;
-                    let lit = if let syn::Expr::Lit(syn::ExprLit {
-                        lit: syn::Lit::Str(lit),
-                        ..
-                    }) = p
-                    {
-                        let suffix = lit.suffix();
-                        if !suffix.is_empty() {
-                            return Err(syn::Error::new(lit.span(), format!("unexpected suffix `{}` on string literal", suffix)));
-                        }
-                        lit
-                    } else {
-                        return Err(syn::Error::new(p.span(), format!(
-                                "expected merge_right {} attribute to be a string.",
-                                MERGE_RIGHT_FN
-                            )));
-                    };
-                    let expr_path: syn::ExprPath= lit.parse()?;
+                    let lit =
+                        if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(lit), .. }) = p {
+                            let suffix = lit.suffix();
+                            if !suffix.is_empty() {
+                                return Err(syn::Error::new(
+                                    lit.span(),
+                                    format!("unexpected suffix `{}` on string literal", suffix),
+                                ));
+                            }
+                            lit
+                        } else {
+                            return Err(syn::Error::new(
+                                p.span(),
+                                format!(
+                                    "expected merge_right {} attribute to be a string.",
+                                    MERGE_RIGHT_FN
+                                ),
+                            ));
+                        };
+                    let expr_path: syn::ExprPath = lit.parse()?;
                     attrs_ret.merge_right_fn = Some(expr_path);
                     Ok(())
                 } else {
@@ -46,7 +50,6 @@ fn get_attrs(attrs: &[syn::Attribute]) -> syn::Result<Attrs> {
     }
     Ok(attrs_ret)
 }
-
 
 #[proc_macro_derive(MergeRight, attributes(merge_right))]
 pub fn merge_right_derive(input: TokenStream) -> TokenStream {

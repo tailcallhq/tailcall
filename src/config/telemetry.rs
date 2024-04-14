@@ -188,9 +188,7 @@ mod tests {
             Telemetry {
                 export: Some(TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url-2".to_owned(),
-                    headers: vec![
-                        KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }
-                    ]
+                    headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }]
                 })),
                 request_headers: vec!["Api-Key-A".to_string(), "Api-Key-B".to_string(),]
             }
