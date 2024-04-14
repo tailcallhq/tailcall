@@ -33,7 +33,7 @@ fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, 
 
 fn to_operation(
     method: &GrpcMethod,
-    file_descriptor_set: &FileDescriptorSet,
+    file_descriptor_set: FileDescriptorSet,
 ) -> Valid<ProtobufOperation, String> {
     Valid::from(
         ProtobufSet::from_proto_file(file_descriptor_set)
@@ -169,7 +169,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
                 config_module.extensions.get_file_descriptor_set(&method),
                 format!("File descriptor not found for method: {}", grpc.method),
             )
-            .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set))
+            .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set.clone()))
             .fuse(to_url(grpc, &method, config_module))
             .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
             .fuse(helpers::body::to_body(grpc.body.as_deref()))

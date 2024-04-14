@@ -144,6 +144,7 @@ async-graphql = { workspace = true, features = [
 dotenvy = "0.15"
 convert_case = "0.6.0"
 rand = "0.8.5"
+tonic-types = "0.11.0"
 
 
 [dev-dependencies]
