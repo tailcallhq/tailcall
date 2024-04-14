@@ -189,7 +189,6 @@ mod tests {
                 export: Some(TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url-2".to_owned(),
                     headers: vec![
-                        KeyValue { key: "header_a".to_owned(), value: "a".to_owned() },
                         KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }
                     ]
                 })),

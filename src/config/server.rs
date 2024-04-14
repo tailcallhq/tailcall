@@ -8,6 +8,8 @@ use crate::config::KeyValue;
 use crate::is_default;
 use crate::merge_right::MergeRight;
 
+use super::merge_key_value_vecs;
+
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
 )]
@@ -84,6 +86,7 @@ pub struct Server {
     pub showcase: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[merge_right(merge_right_fn = "merge_right_vars")]
     /// This configuration defines local variables for server operations. Useful
     /// for storing constant configurations, secrets, or shared information.
     pub vars: Vec<KeyValue>,
@@ -97,6 +100,20 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+}
+
+fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
+    left = right.iter().fold(left.to_vec(), |mut acc, kv| {
+        let position = acc.iter().position(|x| x.key == kv.key);
+        if let Some(pos) = position {
+            acc[pos] = kv.clone();
+        } else {
+            acc.push(kv.clone());
+        };
+        acc
+    });
+    left = merge_key_value_vecs(&left, &right);
+    left
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]

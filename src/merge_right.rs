@@ -41,10 +41,16 @@ impl<A> MergeRight for Vec<A> {
 impl<K, V> MergeRight for BTreeMap<K, V>
 where
     K: Ord,
-    V: Clone,
+    V: Clone + MergeRight,
 {
     fn merge_right(mut self, other: Self) -> Self {
-        self.extend(other);
+        for (other_name, mut other_value) in other {
+            if let Some(self_value) = self.remove(&other_name) {
+                other_value = self_value.merge_right(other_value);
+            }
+
+            self.insert(other_name, other_value);
+        }
         self
     }
 }

@@ -2,9 +2,53 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput, Fields};
 
-#[proc_macro_derive(MergeRight)]
+const MERGE_RIGHT_FN: &'static str = "merge_right_fn";
+const MERGE_RIGHT: &'static str = "merge_right";
+
+#[derive(Default)]
+struct Attrs {
+    merge_right_fn: Option<syn::ExprPath>,
+}
+
+fn get_attrs(attrs: &[syn::Attribute]) -> syn::Result<Attrs> {
+    let mut attrs_ret = Attrs::default();
+    for attr in attrs {
+        if attr.path().is_ident(MERGE_RIGHT) {
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident(MERGE_RIGHT_FN) {
+                    let p: syn::Expr = meta.value()?.parse()?;
+                    let lit = if let syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(lit),
+                        ..
+                    }) = p
+                    {
+                        let suffix = lit.suffix();
+                        if !suffix.is_empty() {
+                            return Err(syn::Error::new(lit.span(), format!("unexpected suffix `{}` on string literal", suffix)));
+                        }
+                        lit
+                    } else {
+                        return Err(syn::Error::new(p.span(), format!(
+                                "expected merge_right {} attribute to be a string.",
+                                MERGE_RIGHT_FN
+                            )));
+                    };
+                    let expr_path: syn::ExprPath= lit.parse()?;
+                    attrs_ret.merge_right_fn = Some(expr_path);
+                    Ok(())
+                } else {
+                    Err(syn::Error::new(attr.span(), "Unknown helper attribute."))
+                }
+            })?;
+        }
+    }
+    Ok(attrs_ret)
+}
+
+
+#[proc_macro_derive(MergeRight, attributes(merge_right))]
 pub fn merge_right_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -22,9 +66,20 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
             };
 
             let merge_logic = fields.iter().map(|f| {
+                let attrs = get_attrs(&f.attrs);
+                if let Err(err) = attrs {
+                    panic!("{}", err);
+                }
+                let attrs = attrs.unwrap();
                 let name = &f.ident;
-                quote! {
-                    #name: self.#name.merge_right(other.#name),
+                if let Some(merge_right_fn) = attrs.merge_right_fn {
+                    quote! {
+                        #name: #merge_right_fn(self.#name, other.#name),
+                    }
+                } else {
+                    quote! {
+                        #name: self.#name.merge_right(other.#name),
+                    }
                 }
             });
 

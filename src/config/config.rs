@@ -129,7 +129,7 @@ impl Config {
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight
 )]
 pub struct Type {
     ///
@@ -322,6 +322,13 @@ pub struct Field {
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+}
+
+// It's a terminal implementation of MergeRight
+impl MergeRight for Field {
+    fn merge_right(self, other: Self) -> Self {
+        other
+    }
 }
 
 impl Field {
