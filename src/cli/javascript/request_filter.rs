@@ -23,7 +23,25 @@ pub enum Command {
 
 impl<'js> FromJs<'js> for Command {
     fn from_js(ctx: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        todo!()
+        let object = value
+            .as_object()
+            .ok_or(rquickjs::Error::FromJs {
+                from: value.type_name(),
+                to: "rquickjs::Object",
+                message: Some(format!("unable to cast JS Value as object"))
+            })?;
+
+        if object.contains_key("request")? {
+            Ok(Command::Request(JsRequest::from_js(ctx, object.get("request")?)?))
+        } else if object.contains_key("response")? {
+            Ok(Command::Response(JsResponse::from_js(ctx, object.get("response")?)?))
+        } else {
+            Err(rquickjs::Error::FromJs {
+                from: "object",
+                to: "tailcall::cli::javascript::request_filter::Command",
+                message: Some(format!("object must contain either request or response"))
+            })
+        }
     }
 }
 

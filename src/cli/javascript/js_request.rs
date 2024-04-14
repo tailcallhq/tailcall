@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::create_header_map;
 use crate::is_default;
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRequest {
@@ -19,13 +20,30 @@ pub struct JsRequest {
 
 impl<'js> IntoJs<'js> for JsRequest {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
-        todo!()
+        let object = rquickjs::Object::new(ctx.clone())?;
+        object.set("uri", self.uri.into_js(ctx)?)?;
+        object.set("method", self.method.into_js(ctx)?)?;
+        object.set("headers", self.headers.into_js(ctx)?)?;
+        object.set("body", self.body.into_js(ctx)?)?;
+        Ok(object.into_value())
     }
 }
 
 impl<'js> FromJs<'js> for JsRequest {
-    fn from_js(ctx: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        todo!()
+    fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
+        let object = value
+            .as_object()
+            .ok_or(rquickjs::Error::FromJs {
+                from: value.type_name(),
+                to: "rquickjs::Object",
+                message: Some(format!("unable to cast JS Value as object"))
+            })?;
+        let uri = object.get::<&str, Uri>("uri")?;
+        let method = object.get::<&str, String>("method")?;
+        let headers = object.get::<&str, BTreeMap<String, String>>("headers")?;
+        let body = object.get::<&str, Option<String>>("body")?;
+
+        Ok(JsRequest { uri, method, headers, body })
     }
 }
 
@@ -34,6 +52,40 @@ pub enum Scheme {
     #[default]
     Http,
     Https,
+}
+
+impl<'js> IntoJs<'js> for Scheme {
+    fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
+        match self {
+            Scheme::Http => Ok(rquickjs::String::from_str(ctx.clone(), "http")?.into_value()),
+            Scheme::Https => Ok(rquickjs::String::from_str(ctx.clone(), "https")?.into_value()),
+        }
+    }
+}
+
+impl<'js> FromJs<'js> for Scheme {
+    fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
+        let as_string = value
+            .as_string()
+            .ok_or(rquickjs::Error::FromJs {
+                from: value.type_name(),
+                to: "rquickjs::String",
+                message: Some(format!("unable to cast JS Value as string"))
+            })?;
+
+        let rs_string = as_string.to_string()?;
+        if rs_string == "https" {
+            Ok(Scheme::Https)
+        } else if rs_string == "http" {
+            Ok(Scheme::Http)
+        } else {
+            Err(rquickjs::Error::FromJs {
+                from: "string",
+                to: "tailcall::cli::javascript::js_request::Scheme",
+                message: Some(format!("scheme must be `http` or `https`"))
+            })
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -48,6 +100,37 @@ pub struct Uri {
     host: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     port: Option<u16>,
+}
+
+impl<'js> IntoJs<'js> for Uri {
+    fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
+        let object = rquickjs::Object::new(ctx.clone())?;
+        object.set("path", self.path.into_js(ctx)?)?;
+        object.set("query", self.query.into_js(ctx)?)?;
+        object.set("scheme", self.scheme.into_js(ctx)?)?;
+        object.set("host", self.host.into_js(ctx)?)?;
+        object.set("port", self.port.into_js(ctx)?)?;
+        Ok(object.into_value())
+    }
+}
+
+impl<'js> FromJs<'js> for Uri {
+    fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
+        let object = value
+            .as_object()
+            .ok_or(rquickjs::Error::FromJs {
+                from: value.type_name(),
+                to: "rquickjs::Object",
+                message: Some(format!("unable to cast JS Value as object"))
+            })?;
+        let path = object.get::<&str, String>("path")?;
+        let query = object.get::<&str, BTreeMap<String, String>>("query")?;
+        let scheme = object.get::<&str, Scheme>("scheme")?;
+        let host = object.get::<&str, Option<String>>("host")?;
+        let port = object.get::<&str, Option<u16>>("port")?;
+
+        Ok(Uri { path, query, scheme, host, port  })
+    }
 }
 
 impl From<&reqwest::Url> for Uri {
