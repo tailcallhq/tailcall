@@ -749,9 +749,9 @@ impl Config {
         self.arguments()
             .iter()
             .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
-            .map(|(_, arg)| arg.type_of.clone())
+            .map(|(_, arg)| arg.type_of.as_str())
             .fold(HashSet::new(), |types, type_of| {
-                self.find_connections(type_of.as_str(), types)
+                self.find_connections(type_of, types)
             })
     }
 

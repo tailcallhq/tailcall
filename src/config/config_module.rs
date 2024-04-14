@@ -227,20 +227,17 @@ mod tests {
 
     fn build_qry(mut config: Config) -> Config {
         let mut type1 = Type::default();
-        let mut field1 = crate::config::Field::default();
-        field1.type_of = "Type1".to_string();
-        let mut arg1 = crate::config::Arg::default();
-        arg1.type_of = "Type1".to_string();
+        let mut field1 =
+            crate::config::Field { type_of: "Type1".to_string(), ..Default::default() };
+
+        let arg1 = crate::config::Arg { type_of: "Type1".to_string(), ..Default::default() };
 
         field1.args.insert("arg1".to_string(), arg1);
 
-        let mut arg2 = crate::config::Arg::default();
-        arg2.type_of = "Type2".to_string();
+        let arg2 = crate::config::Arg { type_of: "Type2".to_string(), ..Default::default() };
 
-        let mut field3 = crate::config::Field::default();
-        field3.type_of = "Type3".to_string();
-        let mut arg3 = crate::config::Arg::default();
-        arg3.type_of = "Type3".to_string();
+        let _field3 = crate::config::Field { type_of: "Type3".to_string(), ..Default::default() };
+        let arg3 = crate::config::Arg { type_of: "Type3".to_string(), ..Default::default() };
 
         field1.args.insert("arg2".to_string(), arg2);
         field1.args.insert("arg3".to_string(), arg3);
