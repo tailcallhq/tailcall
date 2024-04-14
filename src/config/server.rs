@@ -1,14 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
+use tailcall_macros::MergeRight;
 
-use super::{merge_headers, merge_key_value_vecs};
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
 use crate::merge_right::MergeRight;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The `@server` directive, when applied at the schema level, offers a
@@ -97,29 +97,17 @@ pub struct Server {
     pub workers: Option<usize>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptOptions {
     pub timeout: Option<u64>,
 }
 
-impl MergeRight for ScriptOptions {
-    fn merge_right(self, other: Self) -> Self {
-        ScriptOptions { timeout: self.timeout.merge_right(other.timeout) }
-    }
-}
-
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone, Default, schemars::JsonSchema, MergeRight)]
 pub enum HttpVersion {
     #[default]
     HTTP1,
     HTTP2,
-}
-
-impl MergeRight for HttpVersion {
-    fn merge_right(self, other: Self) -> Self {
-        other
-    }
 }
 
 impl Server {
@@ -205,41 +193,6 @@ impl Server {
 
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
-    }
-}
-
-impl MergeRight for Server {
-    fn merge_right(mut self, other: Self) -> Self {
-        self.apollo_tracing = self.apollo_tracing.merge_right(other.apollo_tracing);
-        self.headers = merge_headers(self.headers, other.headers);
-        self.graphiql = self.graphiql.merge_right(other.graphiql);
-        self.introspection = self.introspection.merge_right(other.introspection);
-        self.query_validation = self.query_validation.merge_right(other.query_validation);
-        self.response_validation = self
-            .response_validation
-            .merge_right(other.response_validation);
-        self.batch_requests = self.batch_requests.merge_right(other.batch_requests);
-        self.global_response_timeout = self
-            .global_response_timeout
-            .merge_right(other.global_response_timeout);
-        self.showcase = self.showcase.merge_right(other.showcase);
-        self.workers = self.workers.merge_right(other.workers);
-        self.port = self.port.merge_right(other.port);
-        self.hostname = self.hostname.merge_right(other.hostname);
-        self.vars = other.vars.iter().fold(self.vars.to_vec(), |mut acc, kv| {
-            let position = acc.iter().position(|x| x.key == kv.key);
-            if let Some(pos) = position {
-                acc[pos] = kv.clone();
-            } else {
-                acc.push(kv.clone());
-            };
-            acc
-        });
-        self.vars = merge_key_value_vecs(&self.vars, &other.vars);
-        self.version = self.version.merge_right(other.version);
-        self.pipeline_flush = self.pipeline_flush.merge_right(other.pipeline_flush);
-        self.script = self.script.merge_right(other.script);
-        self
     }
 }
 

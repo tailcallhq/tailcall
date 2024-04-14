@@ -26,19 +26,6 @@ pub struct KeyValue {
     pub value: String,
 }
 
-pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
-    let mut acc: BTreeMap<&String, &String> =
-        current.iter().map(|kv| (&kv.key, &kv.value)).collect();
-
-    for kv in other {
-        acc.insert(&kv.key, &kv.value);
-    }
-
-    acc.iter()
-        .map(|(k, v)| KeyValue { key: k.to_string(), value: v.to_string() })
-        .collect()
-}
-
 impl Serialize for KeyValues {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

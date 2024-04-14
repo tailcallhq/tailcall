@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use crate::merge_right::MergeRight;
 
 pub trait Primitive {}
@@ -29,6 +31,8 @@ impl Primitive for bool {}
 impl Primitive for char {}
 
 impl Primitive for String {}
+
+impl Primitive for NonZeroU64 {}
 
 impl<A: Primitive> MergeRight for A {
     fn merge_right(self, other: Self) -> Self {

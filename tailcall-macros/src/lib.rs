@@ -9,6 +9,7 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
+    let generics = input.generics;
     let gen = match input.data {
         // Implement for structs
         Data::Struct(data) => {
@@ -26,9 +27,17 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
                     #name: self.#name.merge_right(other.#name),
                 }
             });
+            
+            let generics_lt = generics.lt_token;
+            let generics_gt = generics.gt_token;
+            let generics_params = generics.params;
+
+            let generics_del = quote! {
+                #generics_lt #generics_params #generics_gt
+            };
 
             quote! {
-                impl MergeRight for #name {
+                impl #generics_del MergeRight for #name #generics_del {
                     fn merge_right(self, other: Self) -> Self {
                         Self {
                             #(#merge_logic)*
