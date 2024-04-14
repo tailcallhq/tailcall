@@ -55,8 +55,8 @@ fn get_attrs(attrs: &[syn::Attribute]) -> syn::Result<Attrs> {
 pub fn merge_right_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    let name = input.ident;
-    let generics = input.generics;
+    let name = input.ident.clone();
+    let generics = input.generics.clone();
     let gen = match input.data {
         // Implement for structs
         Data::Struct(data) => {
@@ -113,7 +113,11 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
             }
         },
         // Optionally handle or disallow unions
-        Data::Union(_) => return syn::Error::new_spanned(input, "Union types are not supported by MergeRight").to_compile_error().into(),
+        Data::Union(_) => {
+            return syn::Error::new_spanned(input, "Union types are not supported by MergeRight")
+                .to_compile_error()
+                .into()
+        }
     };
 
     gen.into()
