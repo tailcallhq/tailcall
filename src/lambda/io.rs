@@ -235,7 +235,7 @@ async fn execute_grpc_request_with_dl<
         .clone()
         .map(|s| s.headers)
         .unwrap_or_default();
-    let endpoint_key = grpc::DataLoaderRequest::new(rendered, headers);
+    let endpoint_key = grpc::DataLoaderRequest::new(rendered, headers.unwrap_or_default());
 
     Ok(data_loader
         .unwrap()
@@ -261,7 +261,7 @@ async fn execute_request_with_dl<
         .clone()
         .map(|s| s.headers)
         .unwrap_or_default();
-    let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
+    let endpoint_key = crate::http::DataLoaderRequest::new(req, headers.unwrap_or_default());
 
     Ok(data_loader
         .unwrap()

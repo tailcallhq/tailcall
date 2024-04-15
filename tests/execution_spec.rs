@@ -891,9 +891,9 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             );
         } else {
             tracing::warn!(
-                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
-                    spec.path
-                );
+                "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
+                spec.path
+            );
         }
 
         server.push(config);
