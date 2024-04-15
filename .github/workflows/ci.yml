@@ -159,6 +159,13 @@ jobs:
       - name: Install Prettier
         run: npm install --global prettier
 
+      - name: Add npm global path to PATH
+        if: startsWith(runner.os, 'Windows')
+        run: |
+          $npm_global = npm config get prefix
+          echo "Adding npm global path to PATH: $npm_global"
+          echo "$npm_global" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:

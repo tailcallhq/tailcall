@@ -196,7 +196,8 @@ members = [
     ".",
     "tailcall-autogen",
     "tailcall-aws-lambda",
-    "tailcall-cloudflare", "tailcall-prettier",
+    "tailcall-cloudflare",
+    "tailcall-prettier",
     "tailcall-query-plan",
 ]
 
