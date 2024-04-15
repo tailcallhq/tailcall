@@ -8,6 +8,3 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.82"
 strum_macros = "0.26.2"
-
-[dev-dependencies]
-insta = "1.38.0"

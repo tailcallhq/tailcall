@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn test_js() -> anyhow::Result<()> {
         let prettier = format_with_prettier("const x={a:3};", Parser::Js)?;
-        assert_eq!("const x = {a: 3}\n",prettier);
+        assert_eq!("const x = {a: 3}\n", prettier);
         Ok(())
     }
 }

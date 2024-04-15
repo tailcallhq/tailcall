@@ -5215,7 +5215,6 @@ name = "tailcall-prettier"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "insta",
  "strum_macros 0.26.2",
 ]
 
