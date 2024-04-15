@@ -101,7 +101,7 @@ impl GraphQLType {
 /// Used to convert proto type names to GraphQL formatted names.
 /// Enum to represent the type of the descriptor
 #[derive(Clone, Debug)]
-pub enum Entity {
+enum Entity {
     Enum,
     EnumVariant,
     ObjectType,
