@@ -1,5 +1,0 @@
----
-source: tailcall-prettier/src/lib.rs
-expression: prettier
----
-const x = {a: 3}
