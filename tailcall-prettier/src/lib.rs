@@ -32,8 +32,16 @@ impl Parser {
     }
 }
 
+fn get_command() -> Command {
+    if cfg!(target_os = "windows") {
+        Command::new("prettier.cmd")
+    } else {
+        Command::new("prettier")
+    }
+}
+
 pub fn format_with_prettier<T: AsRef<str>>(code: T, file_ty: Parser) -> Result<String> {
-    let mut child = Command::new("prettier")
+    let mut child = get_command()
         .arg("--stdin-filepath")
         .arg(format!("file.{}", file_ty))
         .stdin(Stdio::piped())
