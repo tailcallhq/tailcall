@@ -1,6 +1,7 @@
 # Grpc datasource with batching
 
 ##### skip
+[//]: # "failed: expected mock for http://localhost:50051/news.NewsService/GetMultipleNews to be hit exactly 1 times, but it was hit 2 times for grpc-batch.md"
 
 ```protobuf @file:news.proto
 syntax = "proto3";
