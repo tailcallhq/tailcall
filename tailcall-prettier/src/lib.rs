@@ -33,10 +33,9 @@ impl Parser {
 }
 
 pub fn format_with_prettier<T: AsRef<str>>(code: T, file_ty: Parser) -> Result<String> {
-
     let mut child = Command::new("prettier")
         .arg("--stdin-filepath")
-        .arg(format!("file.{}", file_ty.to_string()))
+        .arg(format!("file.{}", file_ty))
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
@@ -55,7 +54,7 @@ pub fn format_with_prettier<T: AsRef<str>>(code: T, file_ty: Parser) -> Result<S
 
 #[cfg(test)]
 mod tests {
-    use crate::{Parser, format_with_prettier};
+    use crate::{format_with_prettier, Parser};
 
     #[test]
     fn test_js() -> anyhow::Result<()> {
