@@ -16,7 +16,7 @@ type Nested {
   protected: String! @protected
 }
 
-type ProtectedType {
+type ProtectedType @protected {
   name: String!
   nested: String!
 }

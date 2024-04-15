@@ -9,18 +9,18 @@ schema @link(id: "news", src: "tailcall/src/grpcnews.proto", type: Protobuf) {
   query: Query
 }
 
-type Query {
-  news: NewsData @grpc(method: "GetAllNews", baseURL: "http://localhost:4000")
+type News {
+  body: String!
+  id: Int!
+  postImage: String!
+  title: String!
 }
 
 type NewsData {
   news: [News]
 }
 
-type News {
-  id: Int!
-  title: String!
-  body: String!
-  postImage: String!
+type Query {
+  news: NewsData @grpc(baseURL: "http://localhost:4000", method: "GetAllNews")
 }
 ```

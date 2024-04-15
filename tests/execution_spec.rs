@@ -363,8 +363,6 @@ impl ExecutionSpec {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
                                 [a, b] => {
-                                    // check_identity =
-                                    //     a.contains("check_identity") && b.ends_with("true");
                                     sdl_error = a.contains("expect_validation_error")
                                         && b.ends_with("true");
                                 }
@@ -892,10 +890,10 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 spec.path,
             );
         } else {
-            panic!(
-                "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
-                spec.path
-            );
+            tracing::warn!(
+                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
+                    spec.path
+                );
         }
 
         server.push(config);

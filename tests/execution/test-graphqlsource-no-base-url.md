@@ -11,7 +11,7 @@ schema {
 
 type Post {
   id: Int!
-  user: User @graphQL(name: "user", args: [{key: "id", value: "{{value.userId}}"}])
+  user: User @graphQL(args: [{key: "id", value: "{{value.userId}}"}], name: "user")
 }
 
 type Query {

@@ -1,28 +1,26 @@
 # jsonplaceholder-call-post
 
 ```graphql @server
-schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
+schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: [], maxSize: 100}, httpCache: true) {
   query: Query
+}
+
+type Post {
+  id: Int!
+  title: String!
+  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+  userId: Int!
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  users: [User] @http(path: "/users")
   user(id: Int!): User @http(path: "/users/{{args.id}}")
+  users: [User] @http(path: "/users")
 }
 
 type User {
   id: Int!
   name: String!
-}
-
-type Post {
-  id: Int!
-  userId: Int!
-  title: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
 }
 ```
 

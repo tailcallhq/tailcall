@@ -23,7 +23,7 @@ function onRequest({request}) {
 ```
 
 ```graphql @server
-schema @server @link(type: Script, src: "test.js") {
+schema @link(src: "test.js", type: Script) {
   query: Query
 }
 

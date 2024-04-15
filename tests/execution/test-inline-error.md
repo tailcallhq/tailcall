@@ -9,15 +9,16 @@ schema {
   query: Query
 }
 
-type User {
-  name: String
-  address: Address
-}
 type Address {
   city: String
 }
 
 type Query @addField(name: "street", path: ["user", "address", "street"]) {
-  user: User @http(path: "/user/1", baseURL: "http://localhost:8000")
+  user: User @http(baseURL: "http://localhost:8000", path: "/user/1")
+}
+
+type User {
+  address: Address
+  name: String
 }
 ```

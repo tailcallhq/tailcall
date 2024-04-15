@@ -1,19 +1,22 @@
 # test-scalar-email
 
 ```graphql @server
-scalar Email
-scalar PhoneNumber
-scalar Date
-scalar Url
-
-schema @server(port: 8000, graphiql: true, hostname: "localhost") {
+schema @server(graphiql: true, hostname: "localhost", port: 8000) {
   query: Query
 }
 
+scalar Date
+
+scalar Email
+
+scalar PhoneNumber
+
+scalar Url
+
 type Query {
+  date(value: Date!): Date! @expr(body: "{{args.value}}")
   email(value: Email!): Email! @expr(body: "{{args.value}}")
   phone(value: PhoneNumber!): PhoneNumber! @expr(body: "{{args.value}}")
-  date(value: Date!): Date! @expr(body: "{{args.value}}")
   url(value: Url!): Url! @expr(body: "{{args.value}}")
 }
 ```

@@ -36,13 +36,16 @@ type Post {
 ```
 
 ```graphql @server
-schema
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder2")
-  @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder2") {
+schema @link(id: "placeholder", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder1", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder1", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder2", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder2", src: "jsonplaceholder.graphql", type: Config) {
   query: Query
+}
+
+type Post {
+  body: String!
+  id: Int!
+  title: String!
+  user: User @http(path: "/users/{{value.userId}}")
+  userId: Int!
 }
 
 type Query {
@@ -51,19 +54,11 @@ type Query {
 }
 
 type User {
+  email: String!
   id: Int!
   name: String!
-  username: String!
-  email: String!
   phone: String
+  username: String!
   website: String
-}
-
-type Post {
-  id: Int!
-  userId: Int!
-  title: String!
-  body: String!
-  user: User @http(path: "/users/{{value.userId}}")
 }
 ```

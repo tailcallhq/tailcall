@@ -1,18 +1,18 @@
 # Recursive Type
 
 ```graphql @server
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
-}
-
-type User {
-  name: String
-  id: Int
-  friend: User @http(path: "/friends/1")
 }
 
 type Query {
   user: User @http(path: "/users/1")
+}
+
+type User {
+  friend: User @http(path: "/friends/1")
+  id: Int
+  name: String
 }
 ```
 

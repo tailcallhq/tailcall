@@ -1,7 +1,7 @@
 # test-upstream
 
 ```graphql @server
-schema @server @upstream(proxy: {url: "http://localhost:8085"}) {
+schema @upstream(proxy: {url: "http://localhost:8085"}) {
   query: Query
 }
 

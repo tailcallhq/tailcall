@@ -29,35 +29,31 @@ message NewsList {
 ```
 
 ```graphql @server
-# for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
-schema
-  @server(port: 8080, graphiql: true)
-  @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
-  @link(id: "news", src: "./service.proto", type: Protobuf) {
+schema @server(graphiql: true, port: 8080) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) @link(id: "news", src: "./service.proto", type: Protobuf) {
   query: Query
 }
 
-type Query {
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
-}
-
 enum Status {
-  PUBLISHED
   DRAFT
   ND
+  PUBLISHED
 }
 
 type News {
-  id: Int
   foo: Status
-}
-
-input NewsInput {
   id: Int
 }
 
 type NewsData {
   news: [News]!
+}
+
+type NewsInput {
+  id: Int
+}
+
+type Query {
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
 }
 ```
 

@@ -37,7 +37,7 @@ type User {
 ```
 
 ```graphql @server
-schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {
+schema @link(src: "graphql-with-link.graphql", type: Config) {
   query: Query
 }
 ```

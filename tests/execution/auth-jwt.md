@@ -1,16 +1,9 @@
 # Auth with JWT loaded from expr
 
 ```graphql @server
-schema @server(port: 8000, graphiql: true) @link(id: "jwks", type: Jwks, src: "jwks.json") {
+schema @server(graphiql: true, port: 8000) @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
   mutation: Mutation
-}
-
-type Query {
-  scalar: String! @expr(body: "data from public scalar")
-  protectedScalar: String! @protected @expr(body: "data from protected scalar")
-  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
-  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
 }
 
 type Mutation {
@@ -25,6 +18,13 @@ type Nested {
 type ProtectedType @protected {
   name: String!
   nested: String!
+}
+
+type Query {
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
+  protectedScalar: String! @expr(body: "data from protected scalar") @protected
+  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
+  scalar: String! @expr(body: "data from public scalar")
 }
 ```
 

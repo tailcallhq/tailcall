@@ -1,7 +1,7 @@
 # add-field-many
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

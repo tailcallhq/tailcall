@@ -45,17 +45,17 @@ schema @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
-type Query {
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:4000")
+type News {
+  body: String
+  postImage: String
+  title: String
 }
 
 type NewsData {
   news: [News]!
 }
 
-type News {
-  body: String
-  postImage: String
-  title: String
+type Query {
+  news: NewsData! @grpc(baseURL: "http://localhost:4000", method: "news.NewsService.GetAllNews")
 }
 ```

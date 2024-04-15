@@ -1,7 +1,7 @@
 # omit-many
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

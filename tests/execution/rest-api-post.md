@@ -10,10 +10,7 @@ query ($id: Int!) @rest(method: POST, path: "/user/$id") {
 ```
 
 ```graphql @server
-schema
-  @server
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com")
-  @link(type: Operation, src: "operation-user.graphql") {
+schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(src: "operation-user.graphql", type: Operation) {
   query: Query
 }
 

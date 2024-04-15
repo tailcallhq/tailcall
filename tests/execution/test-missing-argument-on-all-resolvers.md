@@ -45,10 +45,6 @@ schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(id: "news
   query: Query
 }
 
-type Post {
-  id: Int!
-}
-
 type News {
   body: String
   id: Int
@@ -60,13 +56,17 @@ type NewsData {
   news: [News]!
 }
 
+type Post {
+  id: Int!
+}
+
 type Query {
-  postGraphQLArgs: Post @graphQL(name: "post", args: [{key: "id", value: "{{args.id}}"}])
-  postGraphQLHeaders: Post @graphQL(name: "post", headers: [{key: "id", value: "{{args.id}}"}])
+  newsGrpcBody: NewsData! @grpc(body: "{{args.id}}", method: "news.NewsService.GetAllNews")
+  newsGrpcHeaders: NewsData! @grpc(headers: [{key: "id", value: "{{args.id}}"}], method: "news.NewsService.GetAllNews")
+  newsGrpcUrl: NewsData! @grpc(baseURL: "{{args.url}}", method: "news.NewsService.GetAllNews")
+  postGraphQLArgs: Post @graphQL(args: [{key: "id", value: "{{args.id}}"}], name: "post")
+  postGraphQLHeaders: Post @graphQL(headers: [{key: "id", value: "{{args.id}}"}], name: "post")
   postHttp: Post @http(path: "/posts/{{args.id}}")
-  newsGrpcHeaders: NewsData! @grpc(method: "news.NewsService.GetAllNews", headers: [{key: "id", value: "{{args.id}}"}])
-  newsGrpcUrl: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "{{args.url}}")
-  newsGrpcBody: NewsData! @grpc(method: "news.NewsService.GetAllNews", body: "{{args.id}}")
 }
 
 type User {
