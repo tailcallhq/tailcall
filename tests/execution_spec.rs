@@ -768,7 +768,7 @@ impl HttpIO for MockHttpClient {
             response.body = Bytes::from_iter(body);
         } else if is_grpc {
             // Special Handling for GRPC
-            let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
+            let body = string_to_bytes(mock_response.0.body.as_str().unwrap_or_default());
             response.body = Bytes::from_iter(body);
         } else {
             let body = serde_json::to_vec(&mock_response.0.body)?;
