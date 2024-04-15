@@ -148,6 +148,7 @@ tonic-types = "0.11.0"
 
 
 [dev-dependencies]
+tailcall-prettier = {path = "tailcall-prettier"}
 criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
@@ -195,7 +196,7 @@ members = [
     ".",
     "tailcall-autogen",
     "tailcall-aws-lambda",
-    "tailcall-cloudflare",
+    "tailcall-cloudflare", "tailcall-prettier",
     "tailcall-query-plan",
 ]
 

@@ -889,9 +889,21 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 // \r is added automatically in windows, it's safe to replace it with \n
                 let content = content.replace("\r\n", "\n");
 
+                let identity = tailcall_prettier::format_with_prettier(
+                    identity,
+                    spec.path.display().to_string(),
+                )
+                .unwrap();
+
+                let content = tailcall_prettier::format_with_prettier(
+                    content,
+                    spec.path.display().to_string(),
+                )
+                .unwrap();
+
                 pretty_assertions::assert_eq!(
                     identity,
-                    content.as_ref(),
+                    content,
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
