@@ -28,7 +28,8 @@ struct Package {
 }
 
 impl Package {
-    fn parse(input: &str, separator: &str) -> Option<Self> {
+    fn parse(input: &str) -> Option<Self> {
+        let separator = PACKAGE_SEPARATOR;
         let path = input.split(separator).map(String::from).collect::<Vec<_>>();
         if path.is_empty() | input.is_empty() {
             None
@@ -60,33 +61,28 @@ impl GraphQLType<Unparsed> {
         Self(Unparsed { package: None, name: input.to_string() })
     }
 
-    // TODO: separator should be taken as an input
-    fn parse(&self, convertor: Entity) -> Option<GraphQLType<Parsed>> {
+    fn parse(&self, entity: Entity) -> Option<GraphQLType<Parsed>> {
         let unparsed = &self.0;
-        let name = &unparsed.name;
-        let package = &unparsed.package;
-        if name.contains(PACKAGE_SEPARATOR) {
-            if let Some((package, name)) = name.rsplit_once(PACKAGE_SEPARATOR) {
-                let package = Package::parse(package, PACKAGE_SEPARATOR);
+        let parsed_package = unparsed.package.as_deref().and_then(Package::parse);
+
+        // Name contains package
+        if unparsed.name.contains(PACKAGE_SEPARATOR) {
+            if let Some((package, name)) = unparsed.name.rsplit_once(PACKAGE_SEPARATOR) {
                 Some(GraphQLType(Parsed {
-                    package,
                     name: name.to_string(),
-                    entity: convertor,
+                    package: parsed_package.or(Package::parse(package)),
+                    entity,
                 }))
             } else {
                 None
             }
-        } else if let Some(package) = package {
+        }
+        // Name doesn't contain package
+        else {
             Some(GraphQLType(Parsed {
-                package: Package::parse(package, PACKAGE_SEPARATOR),
-                name: name.to_string(),
-                entity: convertor,
-            }))
-        } else {
-            Some(GraphQLType(Parsed {
-                package: None,
-                name: name.to_string(),
-                entity: convertor,
+                package: parsed_package,
+                name: unparsed.name.to_string(),
+                entity,
             }))
         }
     }
@@ -254,7 +250,7 @@ mod tests {
         for ((entity, package, name), expected) in input {
             let mut g = GraphQLType::new(name);
             if let Some(package) = package {
-                g = g.clone().package(package);
+                g = g.package(package);
             }
 
             let actual = g.parse(entity).unwrap().to_string();
