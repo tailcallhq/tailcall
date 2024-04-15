@@ -166,7 +166,8 @@ impl Upstream {
     }
 
     pub fn get_max_size(&self) -> usize {
-        self.batch.clone()
+        self.batch
+            .clone()
             .unwrap_or_default()
             .max_size
             .unwrap_or_default()
