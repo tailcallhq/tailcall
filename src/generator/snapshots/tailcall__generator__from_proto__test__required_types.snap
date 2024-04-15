@@ -6,10 +6,6 @@ schema @server @upstream {
   query: Query
 }
 
-type PERSON_PEOPLE @tag(id: "person.People") {
-  people: JSON
-}
-
 type PERSON_PERSON @tag(id: "person.Person") {
   email: String
   id: Int!
