@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-inline
 
 ```graphql @server

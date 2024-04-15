@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(graphiql: true, port: 8000) @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
+schema @server(graphiql: true, port: 8000) @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
   query: Query
   mutation: Mutation
 }

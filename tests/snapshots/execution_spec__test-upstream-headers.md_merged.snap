@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server @upstream(allowedHeaders: ["X-bar", "x-foo"], baseURL: "http://jsonplaceholder.typicode.com") {
+schema @upstream(allowedHeaders: ["X-bar", "x-foo"], baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 

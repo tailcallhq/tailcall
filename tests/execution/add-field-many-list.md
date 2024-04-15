@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # add-field-many-list
 
 ```graphql @server

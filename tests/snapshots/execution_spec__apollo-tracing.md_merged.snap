@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream {
+schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) {
   query: Query
 }
 

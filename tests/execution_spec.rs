@@ -253,7 +253,6 @@ struct ExecutionSpec {
     // Annotations for the runner
     runner: Option<Annotation>,
 
-    check_identity: bool,
     sdl_error: bool,
 }
 
@@ -331,7 +330,6 @@ impl ExecutionSpec {
         let mut files: BTreeMap<String, String> = BTreeMap::new();
         let mut assert: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
-        let mut check_identity = false;
         let mut sdl_error = false;
 
         while let Some(node) = children.next() {
@@ -365,8 +363,8 @@ impl ExecutionSpec {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
                                 [a, b] => {
-                                    check_identity =
-                                        a.contains("check_identity") && b.ends_with("true");
+                                    // check_identity =
+                                    //     a.contains("check_identity") && b.ends_with("true");
                                     sdl_error = a.contains("expect_validation_error")
                                         && b.ends_with("true");
                                 }
@@ -537,7 +535,6 @@ impl ExecutionSpec {
             files,
 
             runner,
-            check_identity,
             sdl_error,
         };
 
@@ -882,25 +879,23 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         // identity check too, but we are missing out on some by having it only
         // enabled for either new tests that request it or old graphql_spec
         // tests that were explicitly written with it in mind
-        if spec.check_identity {
-            if matches!(source, Source::GraphQL) {
-                let identity = config.to_sdl();
+        if matches!(source, Source::GraphQL) {
+            let identity = config.to_sdl();
 
-                // \r is added automatically in windows, it's safe to replace it with \n
-                let content = content.replace("\r\n", "\n");
+            // \r is added automatically in windows, it's safe to replace it with \n
+            let content = content.replace("\r\n", "\n");
 
-                pretty_assertions::assert_eq!(
-                    identity,
-                    content.as_ref(),
-                    "Identity check failed for {:#?}",
-                    spec.path,
-                );
-            } else {
-                panic!(
-                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
-                    spec.path
-                );
-            }
+            pretty_assertions::assert_eq!(
+                identity,
+                content.as_ref(),
+                "Identity check failed for {:#?}",
+                spec.path,
+            );
+        } else {
+            panic!(
+                "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
+                spec.path
+            );
         }
 
         server.push(config);

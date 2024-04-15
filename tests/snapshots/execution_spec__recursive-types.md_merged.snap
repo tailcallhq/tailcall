@@ -2,7 +2,7 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
 

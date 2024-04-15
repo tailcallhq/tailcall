@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-grpc
 
 ```protobuf @file:news.proto
