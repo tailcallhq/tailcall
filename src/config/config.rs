@@ -138,7 +138,7 @@ impl Config {
     }
 
     pub fn get_all_unused_types(&self) -> HashSet<String> {
-        let used_types = dbg!(self.get_all_used_type_names());
+        let used_types = self.get_all_used_type_names();
         let all_types: HashSet<String> = self.types.keys().cloned().collect();
         all_types.difference(&used_types).cloned().collect()
     }
