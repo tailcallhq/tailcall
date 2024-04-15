@@ -6,10 +6,19 @@ static PACKAGE_SEPARATOR: &str = ".";
 
 /// A struct to represent the name of a GraphQL type.
 #[derive(Debug, Clone)]
-pub struct GraphQLType {
+pub struct GraphQLType<A>(A);
+
+#[derive(Debug, Clone)]
+pub struct Parsed {
     package: Option<Package>,
     name: String,
     entity: Entity,
+}
+
+#[derive(Debug, Clone)]
+pub struct Unparsed {
+    package: Option<String>,
+    name: String,
 }
 
 #[derive(Debug, Clone)]
@@ -46,54 +55,75 @@ impl Display for Package {
     }
 }
 
-impl GraphQLType {
-    // FIXME: separator should be taken as an input
-    fn parse(input: &str, convertor: Entity) -> Option<Self> {
-        if input.contains(PACKAGE_SEPARATOR) {
-            if let Some((package, name)) = input.rsplit_once(PACKAGE_SEPARATOR) {
+impl GraphQLType<Unparsed> {
+    pub fn new(input: &str) -> Self {
+        Self(Unparsed { package: None, name: input.to_string() })
+    }
+
+    // TODO: separator should be taken as an input
+    fn parse(&self, convertor: Entity) -> Option<GraphQLType<Parsed>> {
+        let unparsed = &self.0;
+        let name = &unparsed.name;
+        let package = &unparsed.package;
+        if name.contains(PACKAGE_SEPARATOR) {
+            if let Some((package, name)) = name.rsplit_once(PACKAGE_SEPARATOR) {
                 let package = Package::parse(package, PACKAGE_SEPARATOR);
-                Some(Self { package, name: name.to_string(), entity: convertor })
+                Some(GraphQLType(Parsed {
+                    package,
+                    name: name.to_string(),
+                    entity: convertor,
+                }))
             } else {
-                println!("Input: {input}");
                 None
             }
+        } else if let Some(package) = package {
+            Some(GraphQLType(Parsed {
+                package: Package::parse(package, PACKAGE_SEPARATOR),
+                name: name.to_string(),
+                entity: convertor,
+            }))
         } else {
-            Some(Self { package: None, name: input.to_string(), entity: convertor })
+            Some(GraphQLType(Parsed {
+                package: None,
+                name: name.to_string(),
+                entity: convertor,
+            }))
         }
     }
 
-    pub fn parse_enum(name: &str) -> Option<Self> {
-        Self::parse(name, Entity::Enum)
+    pub fn as_enum(&self) -> Option<GraphQLType<Parsed>> {
+        self.parse(Entity::Enum)
     }
 
-    pub fn parse_enum_variant(name: &str) -> Option<Self> {
-        Self::parse(name, Entity::EnumVariant)
+    pub fn as_enum_variant(&self) -> Option<GraphQLType<Parsed>> {
+        self.parse(Entity::EnumVariant)
     }
 
-    pub fn parse_object_type(name: &str) -> Option<Self> {
-        Self::parse(name, Entity::ObjectType)
+    pub fn as_object_type(&self) -> Option<GraphQLType<Parsed>> {
+        self.parse(Entity::ObjectType)
     }
 
-    pub fn parse_method(name: &str) -> Option<Self> {
-        Self::parse(name, Entity::Method)
+    pub fn as_method(&self) -> Option<GraphQLType<Parsed>> {
+        self.parse(Entity::Method)
     }
 
-    pub fn parse_field(name: &str) -> Option<Self> {
-        Self::parse(name, Entity::Field)
+    pub fn as_field(&self) -> Option<GraphQLType<Parsed>> {
+        self.parse(Entity::Field)
     }
 
+    pub fn package(mut self, package: &str) -> Self {
+        self.0.package = Some(package.to_string());
+        self
+    }
+}
+
+impl GraphQLType<Parsed> {
     pub fn id(&self) -> String {
-        if let Some(ref package) = self.package {
-            format!("{}.{}", package.source(), self.name)
+        if let Some(ref package) = self.0.package {
+            format!("{}.{}", package.source(), self.0.name)
         } else {
-            self.name.clone()
+            self.0.name.clone()
         }
-    }
-
-    pub fn package(mut self, package: &str) -> Option<Self> {
-        let package = Package::parse(package, ".")?;
-        self.package = Some(package);
-        Some(self)
     }
 }
 
@@ -109,24 +139,27 @@ enum Entity {
     Field,
 }
 
-impl Display for GraphQLType {
+impl Display for GraphQLType<Parsed> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.entity {
-            Entity::EnumVariant => f.write_str(self.name.to_case(Case::ScreamingSnake).as_str())?,
-            Entity::Field => f.write_str(self.name.to_case(Case::Snake).as_str())?,
+        let parsed = &self.0;
+        match parsed.entity {
+            Entity::EnumVariant => {
+                f.write_str(parsed.name.to_case(Case::ScreamingSnake).as_str())?
+            }
+            Entity::Field => f.write_str(parsed.name.to_case(Case::Snake).as_str())?,
             Entity::Method => {
-                if let Some(package) = &self.package {
+                if let Some(package) = &parsed.package {
                     f.write_str(package.to_string().to_case(Case::Snake).as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
                 };
-                f.write_str(self.name.to_case(Case::Snake).as_str())?
+                f.write_str(parsed.name.to_case(Case::Snake).as_str())?
             }
             Entity::Enum | Entity::ObjectType => {
-                if let Some(package) = &self.package {
+                if let Some(package) = &parsed.package {
                     f.write_str(package.to_string().to_case(Case::ScreamingSnake).as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
                 };
-                f.write_str(self.name.to_case(Case::ScreamingSnake).as_str())?
+                f.write_str(parsed.name.to_case(Case::ScreamingSnake).as_str())?
             }
         };
         Ok(())
@@ -219,12 +252,12 @@ mod tests {
 
     fn assert_type_names(input: Vec<TestParams>) {
         for ((entity, package, name), expected) in input {
-            let mut g = GraphQLType::parse(name, entity).unwrap();
+            let mut g = GraphQLType::new(name);
             if let Some(package) = package {
-                g = g.clone().package(package).unwrap_or(g);
+                g = g.clone().package(package);
             }
 
-            let actual = g.to_string();
+            let actual = g.parse(entity).unwrap().to_string();
             assert_eq!(actual, expected, "Given: {:?}", g);
         }
     }

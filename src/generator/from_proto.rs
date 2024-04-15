@@ -50,7 +50,8 @@ impl Context {
                 .value
                 .iter()
                 .map(|v| {
-                    GraphQLType::parse_enum_variant(v.name())
+                    GraphQLType::new(v.name())
+                        .as_enum_variant()
                         .unwrap()
                         .to_string()
                 })
@@ -58,7 +59,7 @@ impl Context {
 
             ty.variants = Some(variants);
 
-            let type_name = GraphQLType::parse_enum(enum_name).unwrap().to_string();
+            let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
             self = self.insert_type(type_name, ty);
         }
         self
@@ -77,16 +78,18 @@ impl Context {
             self = self.append_enums(&message.enum_type);
             self = self.append_msg_type(&message.nested_type);
 
-            let msg_type = GraphQLType::parse_object_type(&msg_name).unwrap();
-            let msg_type = msg_type.clone().package(&self.package).unwrap_or(msg_type);
+            let msg_type = GraphQLType::new(&msg_name)
+                .package(&self.package)
+                .as_object_type()
+                .unwrap();
 
             let mut ty = Type::default();
             for field in message.field.iter() {
-                let field_name = GraphQLType::parse_field(field.name()).unwrap();
-                let field_name = field_name
-                    .clone()
+                let field_name = GraphQLType::new(field.name())
                     .package(&self.package)
-                    .unwrap_or(field_name.clone());
+                    .as_field()
+                    .unwrap();
+
                 let mut cfg_field = Field::default();
 
                 let label = field.label().as_str_name().to_lowercase();
@@ -103,12 +106,12 @@ impl Context {
                 } else {
                     // for non-primitive types
                     let type_of = convert_ty(field.type_name());
-                    let type_of = GraphQLType::parse_object_type(&type_of).unwrap();
-                    let type_of = type_of
-                        .clone()
-                        .package(&self.package)
-                        .unwrap_or(type_of)
+                    let type_of = GraphQLType::new(&type_of)
+                        .package(self.package.as_str())
+                        .as_object_type()
+                        .unwrap()
                         .to_string();
+
                     cfg_field.type_of = type_of;
                 }
 
@@ -134,22 +137,21 @@ impl Context {
         for service in services {
             let service_name = service.name().to_string();
             for method in &service.method {
-                let field_name = GraphQLType::parse_method(method.name()).unwrap();
-                let field_name = field_name
-                    .clone()
+                let field_name = GraphQLType::new(method.name())
                     .package(&self.package)
-                    .unwrap_or(field_name);
+                    .as_method()
+                    .unwrap();
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
-                    let key = GraphQLType::parse_field(&arg_type)
-                        .unwrap()
+                    let key = GraphQLType::new(&arg_type)
                         .package(&self.package)
+                        .as_field()
                         .unwrap()
                         .to_string();
-                    let type_of = GraphQLType::parse_object_type(&arg_type)
-                        .unwrap()
+                    let type_of = GraphQLType::new(&arg_type)
                         .package(&self.package)
+                        .as_object_type()
                         .unwrap()
                         .to_string();
                     let val = Arg {
@@ -167,11 +169,10 @@ impl Context {
                 }
 
                 let output_ty = get_output_ty(method.output_type());
-                let output_ty = GraphQLType::parse_object_type(&output_ty).unwrap();
-                let output_ty = output_ty
-                    .clone()
+                let output_ty = GraphQLType::new(&output_ty)
                     .package(&self.package)
-                    .unwrap_or(output_ty)
+                    .as_object_type()
+                    .unwrap()
                     .to_string();
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
