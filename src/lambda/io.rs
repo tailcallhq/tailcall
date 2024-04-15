@@ -197,7 +197,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
         .http
         .execute(req)
         .await
-        .map_err(|e| EvaluationError::IOException(e.to_string()))?
+        .map_err(EvaluationError::from)?
         .to_json()?;
 
     Ok(response)
@@ -211,7 +211,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     Ok(
         execute_grpc_request(&ctx.request_ctx.runtime, operation, req)
             .await
-            .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+            .map_err(EvaluationError::from)?,
     )
 }
 
@@ -241,7 +241,7 @@ async fn execute_grpc_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(|e| EvaluationError::IOException(e.to_string()))?
+        .map_err(EvaluationError::from)?
         .unwrap_or_default())
 }
 
@@ -267,7 +267,7 @@ async fn execute_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(|e| EvaluationError::IOException(e.to_string()))?
+        .map_err(EvaluationError::from)?
         .unwrap_or_default())
 }
 

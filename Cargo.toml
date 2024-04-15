@@ -144,10 +144,7 @@ async-graphql = { workspace = true, features = [
 dotenvy = "0.15"
 convert_case = "0.6.0"
 rand = "0.8.5"
-
-[build-dependencies]
-tonic-build = "0.11.0"
-protoc-bin-vendored = "3.0.0"
+tonic-types = "0.11.0"
 
 
 [dev-dependencies]
@@ -196,7 +193,7 @@ default = ["cli", "js"]
 [workspace]
 members = [
     ".",
-    "autogen",
+    "tailcall-autogen",
     "tailcall-aws-lambda",
     "tailcall-cloudflare",
     "tailcall-query-plan",
