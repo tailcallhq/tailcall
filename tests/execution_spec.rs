@@ -891,13 +891,13 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
                 let path_str = spec.path.display().to_string();
 
-                let identity = tailcall_prettier::format_with_prettier(
+                let identity = tailcall_prettier::format(
                     identity,
                     tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
                 )
                 .unwrap();
 
-                let content = tailcall_prettier::format_with_prettier(
+                let content = tailcall_prettier::format(
                     content,
                     tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
                 )

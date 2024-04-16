@@ -40,16 +40,16 @@ fn get_command() -> Command {
     }
 }
 
-pub fn format_with_prettier<T: AsRef<str>>(code: T, file_ty: Parser) -> Result<String> {
+pub fn format<T: AsRef<str>>(source: T, parser: Parser) -> Result<String> {
     let mut child = get_command()
         .arg("--stdin-filepath")
-        .arg(format!("file.{}", file_ty))
+        .arg(format!("file.{}", parser))
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
 
     if let Some(ref mut stdin) = child.stdin {
-        stdin.write_all(code.as_ref().as_bytes())?;
+        stdin.write_all(source.as_ref().as_bytes())?;
     }
 
     let output = child.wait_with_output()?;
@@ -62,11 +62,11 @@ pub fn format_with_prettier<T: AsRef<str>>(code: T, file_ty: Parser) -> Result<S
 
 #[cfg(test)]
 mod tests {
-    use crate::{format_with_prettier, Parser};
+    use crate::{format, Parser};
 
     #[test]
     fn test_js() -> anyhow::Result<()> {
-        let prettier = format_with_prettier("const x={a:3};", Parser::Js)?;
+        let prettier = format("const x={a:3};", Parser::Js)?;
         assert_eq!("const x = {a: 3}\n", prettier);
         Ok(())
     }
