@@ -128,7 +128,7 @@ opentelemetry-stdout = { version = "0.3.0", features = [
 opentelemetry-appender-tracing = { version = "0.3.0" }
 opentelemetry-prometheus = "0.15.0"
 phonenumber = "0.3.4"
-chrono = "0.4.37"
+chrono = "0.4.38"
 async-graphql-extension-apollo-tracing = { git = "https://github.com/tailcallhq/async_graphql_apollo_studio_extension/" }
 headers = "0.3.9" # previous version until hyper is updated to 1+
 mime = "0.3.17"
@@ -148,6 +148,7 @@ tonic-types = "0.11.0"
 
 
 [dev-dependencies]
+tailcall-prettier = {path = "tailcall-prettier"}
 criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
@@ -196,6 +197,7 @@ members = [
     "tailcall-autogen",
     "tailcall-aws-lambda",
     "tailcall-cloudflare",
+    "tailcall-prettier",
     "tailcall-query-plan",
 ]
 

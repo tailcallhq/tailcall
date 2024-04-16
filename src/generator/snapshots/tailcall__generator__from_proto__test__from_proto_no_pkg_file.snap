@@ -6,17 +6,17 @@ schema {
   query: Query
 }
 
-type News @tag(id: "News") {
+type NEWS @tag(id: "News") {
   body: String
   id: Int
-  postImage: String
+  post_image: String
   title: String
 }
 
-type NewsList @tag(id: "NewsList") {
-  news: [News]!
+type NEWS_LIST @tag(id: "NewsList") {
+  news: [NEWS]!
 }
 
 type Query {
-  getAllNews: NewsList! @grpc(method: "NewsService.GetAllNews")
+  get_all_news: NEWS_LIST! @grpc(method: "GetAllNews")
 }
