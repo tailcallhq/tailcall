@@ -41,7 +41,10 @@ message NewsList {
 ```
 
 ```graphql @server
-schema @server(graphiql: true, port: 8000) @upstream(batch: {delay: 10, maxSize: 100}, httpCache: true) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema
+  @server(graphiql: true, port: 8000)
+  @upstream(batch: {delay: 10, maxSize: 100}, httpCache: true)
+  @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -64,6 +67,12 @@ type NewsData {
 }
 
 type Query {
-  newsById(news: NewsInput!): News! @grpc(baseURL: "http://localhost:50051", body: "{{args.news}}", batchKey: ["id"], method: "news.NewsService.GetMultipleNews")
+  newsById(news: NewsInput!): News!
+    @grpc(
+      baseURL: "http://localhost:50051"
+      body: "{{args.news}}"
+      batchKey: ["id"]
+      method: "news.NewsService.GetMultipleNews"
+    )
 }
 ```

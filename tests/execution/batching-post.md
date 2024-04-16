@@ -1,7 +1,9 @@
 # Batching post
 
 ```graphql @server
-schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 1, maxSize: 1000}, httpCache: true) {
+schema
+  @server(port: 8000, queryValidation: false)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 1, maxSize: 1000}, httpCache: true) {
   query: Query
 }
 

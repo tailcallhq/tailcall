@@ -37,7 +37,10 @@ message NewsList {
 ```
 
 ```graphql @server
-schema @server(graphiql: true, port: 8000) @upstream(baseURL: "http://not-a-valid-grpc-url.com", batch: {delay: 10, maxSize: 100}, httpCache: true) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema
+  @server(graphiql: true, port: 8000)
+  @upstream(baseURL: "http://not-a-valid-grpc-url.com", batch: {delay: 10, maxSize: 100}, httpCache: true)
+  @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -61,7 +64,8 @@ type NewsData {
 
 type Query {
   news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(baseURL: "http://localhost:50051", body: "{{args.news}}", method: "news.NewsService.GetNews")
+  newsById(news: NewsInput!): News!
+    @grpc(baseURL: "http://localhost:50051", body: "{{args.news}}", method: "news.NewsService.GetNews")
 }
 ```
 

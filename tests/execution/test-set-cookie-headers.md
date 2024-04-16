@@ -1,7 +1,9 @@
 # Set Cookie Header
 
 ```graphql @server
-schema @server(headers: {setCookies: true}, graphiql: true, hostname: "0.0.0.0", port: 8080) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema
+  @server(headers: {setCookies: true}, graphiql: true, hostname: "0.0.0.0", port: 8080)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 

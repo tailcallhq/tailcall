@@ -885,19 +885,20 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
 
             let path_str = spec.path.display().to_string();
 
-                let identity = tailcall_prettier::format(
-                    identity,
-                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
-                )
-                .await
-                .unwrap();
+            let identity = tailcall_prettier::format(
+                identity,
+                tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
+            )
+            .await
+            .unwrap();
 
-                let content = tailcall_prettier::format(
-                    content,
-                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
-                )
-                .await
-                .unwrap();pretty_assertions::assert_eq!(
+            let content = tailcall_prettier::format(
+                content,
+                tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
+            )
+            .await
+            .unwrap();
+            pretty_assertions::assert_eq!(
                 identity,
                 content,
                 "Identity check failed for {:#?}",

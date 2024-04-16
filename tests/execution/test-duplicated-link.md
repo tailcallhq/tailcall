@@ -36,7 +36,12 @@ type Post {
 ```
 
 ```graphql @server
-schema @link(id: "placeholder", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder1", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder1", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder2", src: "jsonplaceholder.graphql", type: Config) @link(id: "placeholder2", src: "jsonplaceholder.graphql", type: Config) {
+schema
+  @link(id: "placeholder", src: "jsonplaceholder.graphql", type: Config)
+  @link(id: "placeholder1", src: "jsonplaceholder.graphql", type: Config)
+  @link(id: "placeholder1", src: "jsonplaceholder.graphql", type: Config)
+  @link(id: "placeholder2", src: "jsonplaceholder.graphql", type: Config)
+  @link(id: "placeholder2", src: "jsonplaceholder.graphql", type: Config) {
   query: Query
 }
 
