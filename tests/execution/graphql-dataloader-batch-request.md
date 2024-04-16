@@ -1,6 +1,5 @@
 # Graphql datasource
 
-
 ```graphql @server
 schema @upstream(batch: {delay: 1}) {
   query: Query

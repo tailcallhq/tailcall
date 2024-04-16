@@ -1,6 +1,5 @@
 # Grpc datasource with batching
 
-
 ```protobuf @file:news.proto
 syntax = "proto3";
 
