@@ -26,7 +26,7 @@ impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
             runtime: runtime.clone(),
-            resource_reader: ResourceReader::init(runtime.clone()),
+            resource_reader: ResourceReader::init(runtime.clone(), true),
             proto_reader: ProtoReader::init(runtime),
         }
     }
@@ -57,68 +57,68 @@ impl ConfigReader {
 
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
-            if link.type_of != LinkType::Protobuf {
-                // Read the file only if the type is not Protobuf
-                let source = self.resource_reader.read_file(&path).await?;
-                let content = source.content;
 
-                match link.type_of {
-                    LinkType::Config => {
-                        let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+            let source = self.resource_reader.read_file(&path).await?;
 
-                        config_module =
-                            config_module.merge_right(ConfigModule::from(config.clone()));
+            let content = source.content;
 
-                        if !config.links.is_empty() {
-                            config_module = config_module.merge_right(
-                                self.ext_links(
-                                    ConfigModule::from(config),
-                                    Path::new(&link.src).parent(),
-                                )
-                                .await?,
-                            );
-                        }
-                    }
-                    LinkType::Protobuf => {}
-                    LinkType::Script => {
-                        config_module.extensions.script = Some(content);
-                    }
-                    LinkType::Cert => {
-                        config_module
-                            .extensions
-                            .cert
-                            .extend(self.load_cert(content.clone()).await?);
-                    }
-                    LinkType::Key => {
-                        config_module.extensions.keys =
-                            Arc::new(self.load_private_key(content.clone()).await?)
-                    }
-                    LinkType::Operation => {
-                        config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
-                    }
-                    LinkType::Htpasswd => {
-                        config_module
-                            .extensions
-                            .htpasswd
-                            .push(Content { id: link.id.clone(), content: content.clone() });
-                    }
-                    LinkType::Jwks => {
-                        let de = &mut serde_json::Deserializer::from_str(&content);
+            match link.type_of {
+                LinkType::Config => {
+                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
-                        config_module.extensions.jwks.push(Content {
-                            id: link.id.clone(),
-                            content: serde_path_to_error::deserialize(de)?,
-                        })
+                    config_module = config_module.merge_right(ConfigModule::from(config.clone()));
+
+                    if !config.links.is_empty() {
+                        config_module = config_module.merge_right(
+                            self.ext_links(
+                                ConfigModule::from(config),
+                                Path::new(&link.src).parent(),
+                            )
+                            .await?,
+                        );
                     }
                 }
-            } else {
-                let path = Self::resolve_path(&link.src, parent_dir);
+                LinkType::Protobuf => {
+                    let path = Self::resolve_path(&link.src, parent_dir);
+                    let meta = self.proto_reader.read(path).await?;
+                    config_module
+                        .extensions
+                        .grpc_file_descriptors
+                        .push(Content {
+                            id: link.id.clone(),
+                            content: meta.descriptor_set.clone(),
+                        });
+                }
+                LinkType::Script => {
+                    config_module.extensions.script = Some(content);
+                }
+                LinkType::Cert => {
+                    config_module
+                        .extensions
+                        .cert
+                        .extend(self.load_cert(content.clone()).await?);
+                }
+                LinkType::Key => {
+                    config_module.extensions.keys =
+                        Arc::new(self.load_private_key(content.clone()).await?)
+                }
+                LinkType::Operation => {
+                    config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
+                }
+                LinkType::Htpasswd => {
+                    config_module
+                        .extensions
+                        .htpasswd
+                        .push(Content { id: link.id.clone(), content: content.clone() });
+                }
+                LinkType::Jwks => {
+                    let de = &mut serde_json::Deserializer::from_str(&content);
 
-                let meta = self.proto_reader.read(path).await?;
-                config_module
-                    .extensions
-                    .grpc_file_descriptors
-                    .push(Content { id: link.id.clone(), content: meta.descriptor_set.clone() });
+                    config_module.extensions.jwks.push(Content {
+                        id: link.id.clone(),
+                        content: serde_path_to_error::deserialize(de)?,
+                    })
+                }
             }
         }
 

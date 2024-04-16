@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
+use lazy_static::lazy_static;
+use tokio::sync::Mutex;
 use url::Url;
 
 use crate::runtime::TargetRuntime;
@@ -11,16 +15,34 @@ pub struct FileRead {
     pub path: String,
 }
 
+lazy_static! {
+    // Global cache accessible by all instances of ResourceReader
+    static ref CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+}
+
 pub struct ResourceReader {
     runtime: TargetRuntime,
+    enable_cache: bool,
 }
 
 impl ResourceReader {
-    pub fn init(runtime: TargetRuntime) -> Self {
-        Self { runtime }
+    pub fn init(runtime: TargetRuntime, enable_cache: bool) -> Self {
+        Self { runtime, enable_cache }
     }
     /// Reads a file from the filesystem or from an HTTP URL
     pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+        let file_path = file.to_string();
+
+        // Check cache first if caching is enabled
+        if self.enable_cache {
+            let cache = CACHE.lock().await;
+
+            // If cache is found
+            if let Some(content) = cache.get(&file_path) {
+                return Ok(FileRead { content: content.clone(), path: file_path });
+            }
+        }
+
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
@@ -41,6 +63,12 @@ impl ResourceReader {
 
             self.runtime.file.read(&file.to_string()).await?
         };
+
+        // Save to cache if caching is enabled
+        if self.enable_cache {
+            let mut cache = CACHE.lock().await;
+            cache.insert(file_path.clone(), content.clone());
+        }
 
         Ok(FileRead { content, path: file.to_string() })
     }

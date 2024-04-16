@@ -19,7 +19,7 @@ pub struct ProtoMetadata {
 
 impl ProtoReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { resource_reader: ResourceReader::init(runtime) }
+        Self { resource_reader: ResourceReader::init(runtime, true) }
     }
 
     pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
