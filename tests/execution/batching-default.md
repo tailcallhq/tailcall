@@ -1,6 +1,7 @@
 # Batching default
 
 ##### skip
+
 [//]: # "Validation Error: GroupBy can only be applied if batching is enabled [Post, user, @http]"
 
 ```graphql @server
