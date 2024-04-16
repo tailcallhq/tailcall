@@ -8,7 +8,7 @@ const console = {
   },
   error(...args) {
     globalThis.__qjs_print(`${argsToMessage(...args)}\n`, true)
-  }
+  },
 }
 
 globalThis.console = console
