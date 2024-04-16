@@ -59,7 +59,11 @@ impl Context {
 
             ty.variants = Some(variants);
 
-            let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
+            let type_name = GraphQLType::new(enum_name)
+                .package(&self.package)
+                .as_enum()
+                .unwrap()
+                .to_string();
             self = self.insert_type(type_name, ty);
         }
         self
@@ -185,7 +189,7 @@ impl Context {
                     body: None,
                     group_by: vec![],
                     headers: vec![],
-                    method: field_name.id(),
+                    method: format!("{}.{}.{}", self.package, service_name, field_name.name()),
                 });
 
                 let ty = self

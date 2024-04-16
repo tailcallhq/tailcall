@@ -96,8 +96,11 @@ impl JsonSchema {
             JsonSchema::Obj(a) => {
                 if let JsonSchema::Obj(b) = other {
                     return Valid::from_iter(b.iter(), |(key, b)| {
-                        Valid::from_option(a.get(key), format!("missing key: {}", key))
-                            .and_then(|a| a.compare(b, key))
+                        Valid::from_option(
+                            a.get(&key.to_case(Case::Snake)),
+                            format!("missing key: {}", key),
+                        )
+                        .and_then(|a| a.compare(b, key))
                     })
                     .trace(name)
                     .unit();

@@ -121,6 +121,10 @@ impl GraphQLType<Parsed> {
             self.0.name.clone()
         }
     }
+
+    pub fn name(&self) -> String {
+        self.0.name.clone()
+    }
 }
 
 // FIXME: make it private
