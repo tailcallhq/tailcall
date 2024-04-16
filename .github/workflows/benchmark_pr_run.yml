@@ -1,0 +1,30 @@
+name: Benchmark PR Run
+
+on:
+  pull_request:
+    paths-ignore: ["docs/**", "**.md"]
+    types: [opened, reopened, edited, synchronize, labeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  micro_benchmarks_pr_run:
+    name: Micro Benchmarks for PR
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')"
+    runs-on: benchmarking-runner
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Benchmarks
+        run: cargo bench > benchmark_results.txt
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark_results.txt
+          path: ./benchmark_results.txt
+      - name: Upload GitHub Pull Request Event
+        uses: actions/upload-artifact@v4
+        with:
+          name: event.json
+          path: ${{ github.event_path }}

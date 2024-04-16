@@ -6,27 +6,19 @@ schema @server @upstream {
   query: Query
 }
 
-type Person {
-  getPerson: Person__Person! @grpc(method: "person.PersonService.GetPerson")
-}
-
-type Person__People @tag(id: "person.People") {
-  people: JSON
-}
-
-type Person__Person @tag(id: "person.Person") {
+type PERSON_PERSON @tag(id: "person.Person") {
   email: String
   id: Int!
   name: String!
-  phone: [Person__PhoneNumber]
-  stringMap: JSON
+  phone: [PERSON_PHONE_NUMBER]!
+  string_map: JSON
 }
 
-type Person__PhoneNumber @tag(id: "person.PhoneNumber") {
+type PERSON_PHONE_NUMBER @tag(id: "person.PhoneNumber") {
   number: String!
   type: String
 }
 
 type Query {
-  person: Person
+  person_get_person: PERSON_PERSON! @grpc(method: "person.GetPerson")
 }

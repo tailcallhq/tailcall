@@ -4,10 +4,14 @@ pub trait MergeRight {
     fn merge_right(self, other: Self) -> Self;
 }
 
-impl<A> MergeRight for Option<A> {
-    fn merge_right(mut self, other: Self) -> Self {
-        self = other.or(self);
-        self
+impl<A: MergeRight> MergeRight for Option<A> {
+    fn merge_right(self, other: Self) -> Self {
+        match (self, other) {
+            (Some(this), Some(that)) => Some(this.merge_right(that)),
+            (None, Some(that)) => Some(that),
+            (Some(this), None) => Some(this),
+            (None, None) => None,
+        }
     }
 }
 
