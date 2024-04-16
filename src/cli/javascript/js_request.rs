@@ -31,13 +31,11 @@ impl<'js> IntoJs<'js> for JsRequest {
 
 impl<'js> FromJs<'js> for JsRequest {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        let object = value
-            .as_object()
-            .ok_or(rquickjs::Error::FromJs {
-                from: value.type_name(),
-                to: "rquickjs::Object",
-                message: Some(format!("unable to cast JS Value as object"))
-            })?;
+        let object = value.as_object().ok_or(rquickjs::Error::FromJs {
+            from: value.type_name(),
+            to: "rquickjs::Object",
+            message: Some("unable to cast JS Value as object".to_string()),
+        })?;
         let uri = object.get::<&str, Uri>("uri")?;
         let method = object.get::<&str, String>("method")?;
         let headers = object.get::<&str, BTreeMap<String, String>>("headers")?;
@@ -65,13 +63,11 @@ impl<'js> IntoJs<'js> for Scheme {
 
 impl<'js> FromJs<'js> for Scheme {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        let as_string = value
-            .as_string()
-            .ok_or(rquickjs::Error::FromJs {
-                from: value.type_name(),
-                to: "rquickjs::String",
-                message: Some(format!("unable to cast JS Value as string"))
-            })?;
+        let as_string = value.as_string().ok_or(rquickjs::Error::FromJs {
+            from: value.type_name(),
+            to: "rquickjs::String",
+            message: Some("unable to cast JS Value as string".to_string()),
+        })?;
 
         let rs_string = as_string.to_string()?;
         if rs_string == "https" {
@@ -82,7 +78,7 @@ impl<'js> FromJs<'js> for Scheme {
             Err(rquickjs::Error::FromJs {
                 from: "string",
                 to: "tailcall::cli::javascript::js_request::Scheme",
-                message: Some(format!("scheme must be `http` or `https`"))
+                message: Some("scheme must be `http` or `https`".to_string()),
             })
         }
     }
@@ -116,20 +112,18 @@ impl<'js> IntoJs<'js> for Uri {
 
 impl<'js> FromJs<'js> for Uri {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        let object = value
-            .as_object()
-            .ok_or(rquickjs::Error::FromJs {
-                from: value.type_name(),
-                to: "rquickjs::Object",
-                message: Some(format!("unable to cast JS Value as object"))
-            })?;
+        let object = value.as_object().ok_or(rquickjs::Error::FromJs {
+            from: value.type_name(),
+            to: "rquickjs::Object",
+            message: Some("unable to cast JS Value as object".to_string()),
+        })?;
         let path = object.get::<&str, String>("path")?;
         let query = object.get::<&str, BTreeMap<String, String>>("query")?;
         let scheme = object.get::<&str, Scheme>("scheme")?;
         let host = object.get::<&str, Option<String>>("host")?;
         let port = object.get::<&str, Option<u16>>("port")?;
 
-        Ok(Uri { path, query, scheme, host, port  })
+        Ok(Uri { path, query, scheme, host, port })
     }
 }
 

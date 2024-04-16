@@ -1,9 +1,10 @@
 use std::cell::{OnceCell, RefCell};
 use std::thread;
 
+use rquickjs::{Context, Ctx, FromJs, IntoJs, Value};
+
 use super::request_filter::{Command, Event};
 use super::JsRequest;
-use rquickjs::{Context, Ctx, FromJs, IntoJs, Value};
 use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime {
@@ -56,10 +57,7 @@ impl LocalRuntime {
         })?;
 
         tracing::debug!("JS Runtime created: {:?}", thread::current().name());
-        Ok(Self {
-            context,
-            _js_runtime: js_runtime
-        })
+        Ok(Self { context, _js_runtime: js_runtime })
     }
 }
 
@@ -110,7 +108,8 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
                     // don't expect to hit this limit.
                     let fn_name = name.into_js(&ctx).unwrap(); //  TODO: Check if this unwrap fails
 
-                    let fn_value: Value = ctx.globals()
+                    let fn_value: Value = ctx
+                        .globals()
                         .get(fn_name)
                         .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
 

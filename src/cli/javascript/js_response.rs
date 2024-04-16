@@ -21,13 +21,11 @@ pub struct JsResponse {
 
 impl<'js> FromJs<'js> for JsResponse {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        let object = value
-            .as_object()
-            .ok_or(rquickjs::Error::FromJs {
-                from: value.type_name(),
-                to: "rquickjs::Object",
-                message: Some(format!("unable to cast JS Value as object"))
-            })?;
+        let object = value.as_object().ok_or(rquickjs::Error::FromJs {
+            from: value.type_name(),
+            to: "rquickjs::Object",
+            message: Some("unable to cast JS Value as object".to_string()),
+        })?;
         let status = object.get::<&str, u16>("status")?;
         let headers = object.get::<&str, BTreeMap<String, String>>("headers")?;
         let body = object.get::<&str, Option<String>>("body")?;
