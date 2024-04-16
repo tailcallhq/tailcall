@@ -57,12 +57,12 @@ impl ConfigReader {
 
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
+            if link.type_of != LinkType::Protobuf {
+                // Read the file only if the type is not Protobuf
+                let source = self.resource_reader.read_file(&path).await?;
+                let content = source.content;              
 
-            let source = self.resource_reader.read_file(&path).await?;
-
-            let content = source.content;
-
-            match link.type_of {
+                match link.type_of {
                 LinkType::Config => {
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
@@ -79,16 +79,7 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let meta = self.proto_reader.read(path).await?;
-                    config_module
-                        .extensions
-                        .grpc_file_descriptors
-                        .push(Content {
-                            id: link.id.clone(),
-                            content: meta.descriptor_set.clone(),
-                        });
-                }
+                },
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);
                 }
@@ -119,6 +110,19 @@ impl ConfigReader {
                         content: serde_path_to_error::deserialize(de)?,
                     })
                 }
+            }
+            }
+            else {
+                let path = Self::resolve_path(&link.src, parent_dir);
+
+                let meta = self.proto_reader.read(path).await?;
+                config_module
+                    .extensions
+                    .grpc_file_descriptors
+                    .push(Content {
+                        id: link.id.clone(),
+                        content: meta.descriptor_set.clone(),
+                    });
             }
         }
 
