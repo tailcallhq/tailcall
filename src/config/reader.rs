@@ -1,6 +1,9 @@
 use std::path::Path;
 use std::sync::Arc;
+use std::cell::RefCell;
+use std::collections::HashMap;
 
+use async_lock::Mutex;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -24,10 +27,11 @@ pub struct ConfigReader {
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
+        let cache: Arc<Mutex<RefCell<HashMap<String, String>>>> = Default::default();
         Self {
             runtime: runtime.clone(),
-            resource_reader: ResourceReader::init(runtime.clone()),
-            proto_reader: ProtoReader::init(runtime),
+            resource_reader: ResourceReader::init(runtime.clone(), cache.clone()),
+            proto_reader: ProtoReader::init(runtime, cache.clone()),
         }
     }
 

@@ -12,7 +12,7 @@ pub struct Generator {
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { proto_reader: ProtoReader::init(runtime) }
+        Self { proto_reader: ProtoReader::init(runtime, Default::default()) }
     }
 
     pub async fn read_all<T: AsRef<str>>(

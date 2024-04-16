@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+use std::cell::RefCell;
+use std::sync::Arc;
+
+use async_lock::Mutex;
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
@@ -13,14 +18,31 @@ pub struct FileRead {
 
 pub struct ResourceReader {
     runtime: TargetRuntime,
+    // Cache file content, path->content
+    cache: Arc<Mutex<RefCell<HashMap<String, String>>>>,
 }
 
 impl ResourceReader {
-    pub fn init(runtime: TargetRuntime) -> Self {
-        Self { runtime }
+    pub fn init(runtime: TargetRuntime, cache: Arc<Mutex<RefCell<HashMap<String, String>>>>) -> Self {
+        Self { runtime, cache}
     }
     /// Reads a file from the filesystem or from an HTTP URL
     pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+        // check cache
+        let file_path = file.to_string();
+        let content = self.cache.lock().await.get_mut().get(&file_path).map(|v| v.to_owned());
+        let content = if let Some(content) = content {
+            content
+        } else {
+            let content = self.do_read_file(file.to_string()).await?;
+            self.cache.lock().await.get_mut().insert(file_path.to_owned(), content.clone());
+            content
+        };
+
+        Ok(FileRead { content, path: file_path })
+    }
+
+    async fn do_read_file<T: ToString>(&self, file: T) -> anyhow::Result<String> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
@@ -41,8 +63,7 @@ impl ResourceReader {
 
             self.runtime.file.read(&file.to_string()).await?
         };
-
-        Ok(FileRead { content, path: file.to_string() })
+        Ok(content)
     }
 
     /// Reads all the files in parallel
