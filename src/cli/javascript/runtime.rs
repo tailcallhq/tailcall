@@ -1,7 +1,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::thread;
 
-use rquickjs::{Context, Ctx, FromJs, IntoJs, Value};
+use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use super::request_filter::{Command, Event};
 use super::JsRequest;
@@ -33,9 +33,9 @@ lazy_static::lazy_static! {
 #[rquickjs::function]
 fn qjs_print(msg: String, is_err: bool) {
     if is_err {
-        eprintln!("{msg}")
+        tracing::error!("{msg}");
     } else {
-        println!("{msg}")
+        tracing::info!("{msg}");
     }
 }
 
@@ -49,8 +49,8 @@ fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
 impl LocalRuntime {
     fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
         let source = script.source;
-        let js_runtime = rquickjs::Runtime::new().unwrap();
-        let context = Context::full(&js_runtime).unwrap();
+        let js_runtime = rquickjs::Runtime::new()?;
+        let context = Context::full(&js_runtime)?;
         context.with(|ctx| {
             setup_builtins(&ctx)?;
             ctx.eval(source)
@@ -77,10 +77,18 @@ impl WorkerIO<Event, Command> for Runtime {
         let script = self.script.clone();
         CHANNEL_RUNTIME
             .spawn(async move {
+                // initialize runtime if this is the first call
+                // exit if failed to initialize
                 LOCAL_RUNTIME.with(move |cell| {
-                    cell.borrow()
-                        .get_or_init(|| LocalRuntime::try_new(script).unwrap());
-                });
+                    if cell.borrow().get().is_none() {
+                        LocalRuntime::try_new(script)
+                            .and_then(|runtime| {
+                                cell.borrow().set(runtime).map_err(|_| anyhow::anyhow!("trying to reinitialize an already initialized QuickJS runtime"))
+                            })
+                    } else {
+                        Ok(())
+                    }
+                })?;
 
                 call(name, event)
             })
@@ -102,24 +110,21 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
         runtime.context.with(|ctx| {
             match event {
                 Event::Request(req) => {
-                    // NOTE: unwrap is safe here
-                    // We receive a `None` only if the name of the function is more than the set
-                    // kMaxLength. kMaxLength is set to a very high value ~ 1 Billion, so we
-                    // don't expect to hit this limit.
-                    let fn_name = name.into_js(&ctx).unwrap(); //  TODO: Check if this unwrap fails
-
-                    let fn_value: Value = ctx
+                    let fn_as_value = ctx
                         .globals()
-                        .get(fn_name)
+                        .get::<&str, Function>(name.as_str())
                         .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
 
-                    let fn_server_emit = fn_value.as_function().unwrap(); //  TODO: Check if this unwrap fails
+                    let function = fn_as_value
+                        .as_function()
+                        .ok_or(anyhow::anyhow!("`{name}` is not a function"))?;
+
                     let args = prepare_args(&ctx, req)?;
-                    let command: Option<Value> = fn_server_emit.call(args).ok();
+                    let command: Option<Value> = function.call(args).ok();
                     command
                         .map(|output| Command::from_js(&ctx, output))
                         .transpose()
-                        .map_err(|_| anyhow::anyhow!("deserialize failed")) //  TODO: Cast original error into anyhow
+                        .map_err(|e| anyhow::anyhow!("deserialize failed: {e}"))
                 }
             }
         })
