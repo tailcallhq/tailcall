@@ -7,6 +7,8 @@ use crate::is_default;
 use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 
+const MAX_SIZE: usize = 100;
+
 #[derive(
     Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, MergeRight,
 )]
@@ -19,7 +21,7 @@ pub struct Batch {
 }
 impl Default for Batch {
     fn default() -> Self {
-        Batch { max_size: Some(100), delay: 0, headers: BTreeSet::new() }
+        Batch { max_size: Some(MAX_SIZE), delay: 0, headers: BTreeSet::new() }
     }
 }
 
@@ -176,7 +178,7 @@ impl Upstream {
             .clone()
             .unwrap_or_default()
             .max_size
-            .unwrap_or(100)
+            .unwrap_or(MAX_SIZE)
     }
 
     pub fn get_http_2_only(&self) -> bool {
