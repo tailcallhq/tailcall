@@ -10,13 +10,14 @@ use crate::merge_right::MergeRight;
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
     pub delay: usize,
-    pub headers: Option<BTreeSet<String>>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub headers: BTreeSet<String>,
     pub max_size: usize,
 }
 
 impl Default for Batch {
     fn default() -> Self {
-        Batch { max_size: 100, delay: 0, headers: None }
+        Batch { max_size: 100, delay: 0, headers: BTreeSet::new() }
     }
 }
 
