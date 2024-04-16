@@ -5215,7 +5215,9 @@ name = "tailcall-prettier"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "lazy_static",
  "strum_macros 0.26.2",
+ "tokio",
 ]
 
 [[package]]

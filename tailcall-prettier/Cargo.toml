@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.82"
+lazy_static = "1.4.0"
 strum_macros = "0.26.2"
+tokio.workspace = true
