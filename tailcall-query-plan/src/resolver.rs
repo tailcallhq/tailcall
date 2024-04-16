@@ -5,6 +5,7 @@ use anyhow::Result;
 use async_graphql::parser::types::{Field, Selection, SelectionSet};
 use async_graphql::{Positioned, Value};
 use indenter::indented;
+use tailcall::error::Error;
 use tailcall::lambda::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -58,7 +59,7 @@ impl FieldPlan {
     pub async fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Result<Value> {
+    ) -> Result<Value, Error> {
         self.resolver.eval(ctx, &Concurrent::Sequential).await
     }
 }

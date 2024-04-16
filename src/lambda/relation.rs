@@ -10,8 +10,8 @@ use futures_util::future::join_all;
 use super::{
     Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
 };
-use crate::helpers::value::HashableConstValue;
 use crate::error::Error;
+use crate::helpers::value::HashableConstValue;
 
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum Relation {
