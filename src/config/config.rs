@@ -62,6 +62,98 @@ pub struct Config {
     pub telemetry: Telemetry,
 }
 
+impl Config {
+    pub fn port(&self) -> u16 {
+        self.server.port.unwrap_or(8000)
+    }
+
+    pub fn find_type(&self, name: &str) -> Option<&Type> {
+        self.types.get(name)
+    }
+
+    pub fn find_union(&self, name: &str) -> Option<&Union> {
+        self.unions.get(name)
+    }
+
+    pub fn to_yaml(&self) -> Result<String> {
+        Ok(serde_yaml::to_string(self)?)
+    }
+
+    pub fn to_json(&self, pretty: bool) -> Result<String> {
+        if pretty {
+            Ok(serde_json::to_string_pretty(self)?)
+        } else {
+            Ok(serde_json::to_string(self)?)
+        }
+    }
+
+    pub fn to_document(&self) -> ServiceDocument {
+        self.clone().into()
+    }
+
+    pub fn to_sdl(&self) -> String {
+        let doc = self.to_document();
+        crate::document::print(doc)
+    }
+
+    pub fn query(mut self, query: &str) -> Self {
+        self.schema.query = Some(query.to_string());
+        self
+    }
+
+    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
+        let mut graphql_types = BTreeMap::new();
+        for (name, type_) in types {
+            graphql_types.insert(name.to_string(), type_);
+        }
+        self.types = graphql_types;
+        self
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        self.types.contains_key(name) || self.unions.contains_key(name)
+    }
+
+    /// Gets all the type names used in the schema.
+    pub fn get_all_used_type_names(&self) -> HashSet<String> {
+        let mut set = HashSet::new();
+        let mut stack = Vec::new();
+        if let Some(query) = &self.schema.query {
+            stack.push(query.clone());
+        }
+        if let Some(mutation) = &self.schema.mutation {
+            stack.push(mutation.clone());
+        }
+        while let Some(type_name) = stack.pop() {
+            if let Some(typ) = self.types.get(&type_name) {
+                set.insert(type_name);
+                for field in typ.fields.values() {
+                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
+                    stack.push(field.type_of.clone());
+                }
+            }
+        }
+
+        set
+    }
+
+    pub fn get_all_unused_types(&self) -> HashSet<String> {
+        let used_types = self.get_all_used_type_names();
+        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        all_types.difference(&used_types).cloned().collect()
+    }
+
+    /// Removes all types that are not used in the schema.
+    pub fn remove_unused_types(mut self) -> Self {
+        let unused_types = self.get_all_unused_types();
+        for unused_type in unused_types {
+            self.types.remove(&unused_type);
+        }
+
+        self
+    }
+}
+
 impl MergeRight for Config {
     fn merge_right(self, other: Self) -> Self {
         let server = self.server.merge_right(other.server);

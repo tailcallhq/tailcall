@@ -101,6 +101,6 @@ mod test {
             .unwrap();
 
         assert_eq!(config.links.len(), 3);
-        assert_eq!(config.types.get("Query").unwrap().fields.len(), 3);
+        assert_eq!(config.types.get("Query").unwrap().fields.len(), 8);
     }
 }
