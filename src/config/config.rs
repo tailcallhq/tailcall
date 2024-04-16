@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -122,6 +122,45 @@ impl Config {
 
     pub fn contains(&self, name: &str) -> bool {
         self.types.contains_key(name) || self.unions.contains_key(name)
+    }
+
+    /// Gets all the type names used in the schema.
+    pub fn get_all_used_type_names(&self) -> HashSet<String> {
+        let mut set = HashSet::new();
+        let mut stack = Vec::new();
+        if let Some(query) = &self.schema.query {
+            stack.push(query.clone());
+        }
+        if let Some(mutation) = &self.schema.mutation {
+            stack.push(mutation.clone());
+        }
+        while let Some(type_name) = stack.pop() {
+            if let Some(typ) = self.types.get(&type_name) {
+                set.insert(type_name);
+                for field in typ.fields.values() {
+                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
+                    stack.push(field.type_of.clone());
+                }
+            }
+        }
+
+        set
+    }
+
+    pub fn get_all_unused_types(&self) -> HashSet<String> {
+        let used_types = self.get_all_used_type_names();
+        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        all_types.difference(&used_types).cloned().collect()
+    }
+
+    /// Removes all types that are not used in the schema.
+    pub fn remove_unused_types(mut self) -> Self {
+        let unused_types = self.get_all_unused_types();
+        for unused_type in unused_types {
+            self.types.remove(&unused_type);
+        }
+
+        self
     }
 }
 

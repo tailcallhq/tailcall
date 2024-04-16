@@ -6,80 +6,55 @@ schema @server @upstream {
   query: Query
 }
 
-input GreetingsAB__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
+input GREETINGS_A_B_HELLO_REQUEST @tag(id: "greetings_a.b.HelloRequest") {
   name: String
 }
 
-input GreetingsBC__HelloRequest @tag(id: "greetings_b.c.HelloRequest") {
+input GREETINGS_B_C_HELLO_REQUEST @tag(id: "greetings_b.c.HelloRequest") {
   name: String
 }
 
-input News__Author @tag(id: "news.Author") {
+input NEWS_AUTHOR @tag(id: "news.Author") {
   email: String
   name: String
 }
 
-input News__MultipleNewsId @tag(id: "news.MultipleNewsId") {
-  ids: [News__NewsId]!
+input NEWS_MULTIPLE_NEWS_ID @tag(id: "news.MultipleNewsId") {
+  ids: [NEWS_NEWS_ID]!
 }
 
-input News__News @tag(id: "news.News") {
-  author: News__Author
+input NEWS_NEWS @tag(id: "news.News") {
+  author: NEWS_AUTHOR
   body: String
-  foo: News__Status
+  foo: NEWS_STATUS
   id: Int
-  postImage: String
+  post_image: String
   title: String
 }
 
-input News__NewsId @tag(id: "news.NewsId") {
+input NEWS_NEWS_ID @tag(id: "news.NewsId") {
   id: Int
 }
 
-enum News__Status @tag(id: "news.Status") {
-  DRAFT
-  PUBLISHED
-}
-
-type B {
-  sayHello(helloRequest: GreetingsAB__HelloRequest!): GreetingsAB__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
-}
-
-type C {
-  sayHello(helloRequest: GreetingsBC__HelloRequest!): GreetingsBC__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
-}
-
-type GreetingsA {
-  b: B
-}
-
-type GreetingsAB__HelloReply @tag(id: "greetings_a.b.HelloReply") {
+type GREETINGS_A_B_HELLO_REPLY @tag(id: "greetings_a.b.HelloReply") {
   message: String
 }
 
-type GreetingsB {
-  c: C
-}
-
-type GreetingsBC__HelloReply @tag(id: "greetings_b.c.HelloReply") {
+type GREETINGS_B_C_HELLO_REPLY @tag(id: "greetings_b.c.HelloReply") {
   message: String
 }
 
-type News {
-  addNews(news: News__News!): News__News! @grpc(method: "news.NewsService.AddNews")
-  deleteNews(newsId: News__NewsId!): Empty! @grpc(method: "news.NewsService.DeleteNews")
-  editNews(news: News__News!): News__News! @grpc(method: "news.NewsService.EditNews")
-  getAllNews: News__NewsList! @grpc(method: "news.NewsService.GetAllNews")
-  getMultipleNews(multipleNewsId: News__MultipleNewsId!): News__NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
-  getNews(newsId: News__NewsId!): News__News! @grpc(method: "news.NewsService.GetNews")
-}
-
-type News__NewsList @tag(id: "news.NewsList") {
-  news: [News__News]!
+type NEWS_NEWS_LIST @tag(id: "news.NewsList") {
+  news: [NEWS_NEWS]!
 }
 
 type Query {
-  greetingsA: GreetingsA
-  greetingsB: GreetingsB
-  news: News
+  greetings_a_b_say_hello(hello_request: GREETINGS_A_B_HELLO_REQUEST!): GREETINGS_A_B_HELLO_REPLY! @grpc(method: "greetings_a.b.SayHello")
+  greetings_b_c_say_hello(hello_request: GREETINGS_B_C_HELLO_REQUEST!): GREETINGS_B_C_HELLO_REPLY! @grpc(method: "greetings_b.c.SayHello")
+  news_add_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.AddNews")
+  news_delete_news(news_id: NEWS_NEWS_ID!): NEWS_EMPTY! @grpc(method: "news.DeleteNews")
+  news_edit_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.EditNews")
+  news_get_all_news: NEWS_NEWS_LIST! @grpc(method: "news.GetAllNews")
+  news_get_multiple_news(multiple_news_id: NEWS_MULTIPLE_NEWS_ID!): NEWS_NEWS_LIST! @grpc(method: "news.GetMultipleNews")
+  news_get_news(news_id: NEWS_NEWS_ID!): NEWS_NEWS! @grpc(method: "news.GetNews")
 }
