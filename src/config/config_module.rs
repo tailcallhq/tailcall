@@ -146,6 +146,7 @@ impl ConfigModule {
     pub fn resolve_ambiguous_types(mut self, resolver: impl Fn(&str) -> Resolution) -> Self {
         let mut resolution_map = HashMap::new();
 
+        // iterate over intersection of input and output types
         for current_name in self.input_types.intersection(&self.output_types) {
             let resolution = resolver(current_name);
 
@@ -154,7 +155,11 @@ impl ConfigModule {
             if let Some(ty) = self.config.types.get(current_name) {
                 for field in ty.fields.values() {
                     for args in field.args.values() {
-                        if self.output_types.contains(&args.type_of) {
+                        // if arg is of output type then it should be changed to that of newly
+                        // created input type.
+                        if self.output_types.contains(&args.type_of)
+                            && !resolution_map.contains_key(&args.type_of)
+                        {
                             let resolution = resolver(args.type_of.as_str());
                             resolution_map = insert_resolution(
                                 resolution_map,
@@ -167,15 +172,24 @@ impl ConfigModule {
             }
         }
 
+        // insert newly created types to the config.
         for (current_name, resolution) in &resolution_map {
             let input_name = &resolution.input;
             let output_name = &resolution.output;
 
-            if let Some(og_ty) = self.config.types.get(current_name).cloned() {
+            let og_ty = self.config.types.get(current_name).cloned();
+
+            // remove old types
+            self.config.types.remove(current_name);
+            self.input_types.remove(current_name);
+            self.output_types.remove(current_name);
+
+            // add new types
+            if let Some(og_ty) = og_ty {
                 self.config.types.insert(input_name.clone(), og_ty.clone());
                 self.input_types.insert(input_name.clone());
 
-                self.config.types.insert(output_name.clone(), og_ty.clone());
+                self.config.types.insert(output_name.clone(), og_ty);
                 self.output_types.insert(output_name.clone());
             }
         }
@@ -201,12 +215,6 @@ impl ConfigModule {
             }
         }
 
-        for current_name in resolution_map.keys() {
-            self.config.types.remove(current_name);
-            self.input_types.remove(current_name);
-            self.output_types.remove(current_name);
-        }
-
         self
     }
 }
@@ -222,8 +230,11 @@ impl From<Config> for ConfigModule {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     use crate::config::Type;
+    use crate::generator::Source;
 
     fn build_qry(mut config: Config) -> Config {
         let mut type1 = Type::default();
@@ -308,5 +319,20 @@ mod tests {
         assert!(config_module.config.types.contains_key("Type2Output"));
         assert!(config_module.config.types.contains_key("Type2Input"));
         assert!(config_module.config.types.contains_key("Type3"));
+    }
+    #[tokio::test]
+    async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
+        let gen = crate::generator::Generator::init(crate::runtime::test::init(None));
+        let news =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/grpc/tests/proto/news.proto");
+        let config_module = gen
+            .read_all(Source::PROTO, &[news.to_str().unwrap()], "Query")
+            .await?;
+        assert!(config_module.types.contains_key("News__News"));
+        assert!(config_module.types.contains_key("INPUT_News__News"));
+        assert!(config_module.types.contains_key("News__MultipleNewsId"));
+        assert!(config_module.types.contains_key("News__NewsId"));
+        assert!(config_module.types.contains_key("News__NewsList"));
+        Ok(())
     }
 }
