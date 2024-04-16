@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 pub trait MergeRight {
@@ -14,12 +13,6 @@ impl<A: MergeRight> MergeRight for Option<A> {
             (Some(this), None) => Some(this),
             (None, None) => None,
         }
-    }
-}
-
-impl<A> MergeRight for PhantomData<A> {
-    fn merge_right(self, other: Self) -> Self {
-        other
     }
 }
 
