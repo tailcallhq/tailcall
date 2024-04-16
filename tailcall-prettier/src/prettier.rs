@@ -21,13 +21,13 @@ impl Prettier {
     }
 
     pub async fn format(&self, source: String, parser: Parser) -> Result<String> {
-        let path = get_prettierrc_path()?;
+        let config = config()?;
         self.runtime
             .spawn_blocking(move || {
                 let mut command = command();
                 let mut child = command
                     .arg("-c")
-                    .arg(path)
+                    .arg(config)
                     .arg("--stdin-filepath")
                     .arg(format!("file.{}", parser))
                     .stdin(Stdio::piped())
@@ -49,7 +49,7 @@ impl Prettier {
     }
 }
 
-fn get_prettierrc_path() -> Result<String> {
+fn config() -> Result<String> {
     let mut root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root_dir.pop();
     root_dir.push(".prettierrc");
