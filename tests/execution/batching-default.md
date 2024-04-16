@@ -1,8 +1,5 @@
 # Batching default
 
-##### skip
-
-[//]: # "Validation Error: GroupBy can only be applied if batching is enabled [Post, user, @http]"
 
 ```graphql @server
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 10}) {

@@ -1,8 +1,5 @@
 # Graphql datasource
 
-##### skip
-
-[//]: # "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-dataloader-batch-request.md"
 
 ```graphql @server
 schema @upstream(batch: {delay: 1}) {

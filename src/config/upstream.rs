@@ -176,7 +176,7 @@ impl Upstream {
             .clone()
             .unwrap_or_default()
             .max_size
-            .unwrap_or_default()
+            .unwrap_or(100)
     }
 
     pub fn get_http_2_only(&self) -> bool {
