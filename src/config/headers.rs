@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use crate::config::cors::Cors;
 use crate::config::KeyValue;

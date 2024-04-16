@@ -1,6 +1,6 @@
 use hyper::header;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use crate::http::Method;
 use crate::is_default;

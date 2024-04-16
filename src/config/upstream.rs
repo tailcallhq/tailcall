@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use crate::is_default;
 use crate::merge_right::MergeRight;

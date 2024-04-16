@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use super::KeyValue;
 use crate::config::{Apollo, ConfigReaderContext};

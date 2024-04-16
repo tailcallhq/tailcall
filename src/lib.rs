@@ -38,6 +38,9 @@ pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 
+// Re-export everything from `tailcall_macros` as `macros`
+pub use tailcall_macros as macros;
+
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;

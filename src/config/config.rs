@@ -7,7 +7,7 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};

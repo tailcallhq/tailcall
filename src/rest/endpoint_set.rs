@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;

@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use super::merge_key_value_vecs;
 use crate::config::headers::Headers;

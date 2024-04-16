@@ -6,7 +6,7 @@ use derive_setters::Setters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
-use tailcall_macros::MergeRight;
+use crate::macros::MergeRight;
 
 use crate::blueprint::GrpcMethod;
 use crate::config::Config;
