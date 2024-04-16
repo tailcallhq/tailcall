@@ -1,7 +1,7 @@
 # jsonplaceholder-call-post
 
 ```graphql @server
-schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: [], maxSize: 100}, httpCache: true) {
+schema @server(graphiql: true, hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, maxSize: 100}, httpCache: true) {
   query: Query
 }
 

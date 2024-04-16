@@ -1,7 +1,7 @@
 # n + 1 Request
 
 ```graphql @server
-schema @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 

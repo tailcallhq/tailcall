@@ -6,7 +6,7 @@
 [//]: # "This test had an assertion with a fail annotation that testconv cannot convert losslessly. If you need the original responses, you can find it in git history. For example, at commit https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da"
 
 ```graphql @server
-schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(baseURL: "http://upstream/graphql", batch: {delay: 1, headers: [], maxSize: 100}, httpCache: true) {
+schema @server(hostname: "0.0.0.0", port: 8001, queryValidation: false) @upstream(baseURL: "http://upstream/graphql", batch: {delay: 1, maxSize: 100}, httpCache: true) {
   query: Query
 }
 

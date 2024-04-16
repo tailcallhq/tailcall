@@ -1,7 +1,7 @@
 # Graphql datasource
 
 ```graphql @server
-schema @upstream(batch: {delay: 1, headers: [], maxSize: 100}) {
+schema @upstream(batch: {delay: 1, maxSize: 100}) {
   query: Query
 }
 

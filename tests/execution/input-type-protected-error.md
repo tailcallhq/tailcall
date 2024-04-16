@@ -10,7 +10,7 @@ schema {
   mutation: Mutation
 }
 
-input Input {
+input Input @protected {
   value: String
 }
 

@@ -5,7 +5,7 @@ expect_validation_error: true
 # test-batch-operator-post
 
 ```graphql @server
-schema @upstream(baseURL: "http://localhost:3000", batch: {delay: 1, headers: [], maxSize: 100}) {
+schema @upstream(baseURL: "http://localhost:3000", batch: {delay: 1, maxSize: 100}) {
   query: Query
 }
 
