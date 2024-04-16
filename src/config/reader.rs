@@ -60,7 +60,7 @@ impl ConfigReader {
 
             let source = self.resource_reader.read_file(&path).await?;
 
-            let content = source.content;
+            let content = &source.content;
 
             match link.type_of {
                 LinkType::Config => {
@@ -79,8 +79,7 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
-                    let meta = self.proto_reader.read(path).await?;
+                    let meta = self.proto_reader.read_content(&source).await?;
                     config_module
                         .extensions
                         .grpc_file_descriptors
@@ -90,7 +89,7 @@ impl ConfigReader {
                         });
                 }
                 LinkType::Script => {
-                    config_module.extensions.script = Some(content);
+                    config_module.extensions.script = Some(content.to_owned());
                 }
                 LinkType::Cert => {
                     config_module

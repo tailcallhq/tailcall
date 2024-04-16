@@ -5,7 +5,7 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::resource_reader::ResourceReader;
+use crate::resource_reader::{FileRead, ResourceReader};
 use crate::runtime::TargetRuntime;
 
 pub struct ProtoReader {
@@ -32,14 +32,23 @@ impl ProtoReader {
 
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
         let file_read = self.read_proto(path.as_ref()).await?;
-        if file_read.package.is_none() {
+        self.process_file_dp(path.as_ref(), file_read).await
+    }
+
+    pub async fn read_content(&self, content: &FileRead) -> anyhow::Result<ProtoMetadata> {
+        let file_read =  protox_parse::parse(&content.path, &content.content)?;
+        self.process_file_dp(&content.path, file_read).await
+    }
+
+    async fn process_file_dp(&self, path: &str, file_dp: FileDescriptorProto) -> anyhow::Result<ProtoMetadata> {
+        if file_dp.package.is_none() {
             anyhow::bail!("Package name is required");
         }
 
-        let descriptors = self.resolve_descriptors(file_read).await?;
+        let descriptors = self.resolve_descriptors(file_dp).await?;
         let metadata = ProtoMetadata {
             descriptor_set: FileDescriptorSet { file: descriptors },
-            path: path.as_ref().to_string(),
+            path: path.to_owned()
         };
         Ok(metadata)
     }
