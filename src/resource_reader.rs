@@ -22,10 +22,7 @@ pub struct ResourceReader {
 }
 
 impl ResourceReader {
-    pub fn init(
-        runtime: TargetRuntime,
-        cache: Arc<Mutex<HashMap<String, String>>>,
-    ) -> Self {
+    pub fn init(runtime: TargetRuntime, cache: Arc<Mutex<HashMap<String, String>>>) -> Self {
         Self { runtime, cache }
     }
     /// Reads a file from the filesystem or from an HTTP URL

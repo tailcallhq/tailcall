@@ -20,10 +20,7 @@ pub struct ProtoMetadata {
 }
 
 impl ProtoReader {
-    pub fn init(
-        runtime: TargetRuntime,
-        cache: Arc<Mutex<HashMap<String, String>>>,
-    ) -> Self {
+    pub fn init(runtime: TargetRuntime, cache: Arc<Mutex<HashMap<String, String>>>) -> Self {
         Self { resource_reader: ResourceReader::init(runtime, cache) }
     }
 
