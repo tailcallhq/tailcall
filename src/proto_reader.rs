@@ -36,11 +36,15 @@ impl ProtoReader {
     }
 
     pub async fn read_content(&self, content: &FileRead) -> anyhow::Result<ProtoMetadata> {
-        let file_read =  protox_parse::parse(&content.path, &content.content)?;
+        let file_read = protox_parse::parse(&content.path, &content.content)?;
         self.process_file_dp(&content.path, file_read).await
     }
 
-    async fn process_file_dp(&self, path: &str, file_dp: FileDescriptorProto) -> anyhow::Result<ProtoMetadata> {
+    async fn process_file_dp(
+        &self,
+        path: &str,
+        file_dp: FileDescriptorProto,
+    ) -> anyhow::Result<ProtoMetadata> {
         if file_dp.package.is_none() {
             anyhow::bail!("Package name is required");
         }
@@ -48,7 +52,7 @@ impl ProtoReader {
         let descriptors = self.resolve_descriptors(file_dp).await?;
         let metadata = ProtoMetadata {
             descriptor_set: FileDescriptorSet { file: descriptors },
-            path: path.to_owned()
+            path: path.to_owned(),
         };
         Ok(metadata)
     }

@@ -64,7 +64,7 @@ impl ConfigReader {
 
             match link.type_of {
                 LinkType::Config => {
-                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+                    let config = Config::from_source(Source::detect(&source.path)?, content)?;
 
                     config_module = config_module.merge_right(ConfigModule::from(config.clone()));
 
@@ -102,7 +102,7 @@ impl ConfigReader {
                         Arc::new(self.load_private_key(content.clone()).await?)
                 }
                 LinkType::Operation => {
-                    config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
+                    config_module.extensions.endpoint_set = EndpointSet::try_new(content)?;
                 }
                 LinkType::Htpasswd => {
                     config_module
@@ -111,7 +111,7 @@ impl ConfigReader {
                         .push(Content { id: link.id.clone(), content: content.clone() });
                 }
                 LinkType::Jwks => {
-                    let de = &mut serde_json::Deserializer::from_str(&content);
+                    let de = &mut serde_json::Deserializer::from_str(content);
 
                     config_module.extensions.jwks.push(Content {
                         id: link.id.clone(),
