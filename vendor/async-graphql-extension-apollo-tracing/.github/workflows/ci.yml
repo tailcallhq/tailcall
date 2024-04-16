@@ -1,0 +1,164 @@
+# Adapted from https://github.com/BurntSushi/ripgrep/blob/master/.github/workflows/ci.yml
+#
+name: ci
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    env:
+      # For some builds, we use cross to test on 32-bit and big-endian
+      # systems.
+      CARGO: cargo
+      # When CARGO is set to CROSS, this is set to `--target matrix.target`.
+      # Note that we only use cross on Linux, so setting a target on a
+      # different OS will just use normal cargo.
+      TARGET_FLAGS:
+      # When CARGO is set to CROSS, TARGET_DIR includes matrix.target.
+      TARGET_DIR: ./target
+      # Bump this as appropriate. We pin to a version to make sure CI
+      # continues to work as cross releases in the past have broken things
+      # in subtle ways.
+      CROSS_VERSION: v0.2.5
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+      # To ensure openssl is static linked
+      OPENSSL_STATIC: 1
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - build: pinned
+          os: ubuntu-latest
+          rust: 1.75.0
+        - build: stable
+          os: ubuntu-latest
+          rust: stable
+        - build: beta
+          os: ubuntu-latest
+          rust: beta
+        - build: nightly
+          os: ubuntu-latest
+          rust: nightly
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install protoc (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: |-
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+
+    - name: Use Cross
+      if: matrix.os == 'ubuntu-latest' && matrix.target != ''
+      run: |
+        # In the past, new releases of 'cross' have broken CI. So for now, we
+        # pin it. We also use their pre-compiled binary releases because cross
+        # has over 100 dependencies and takes a bit to compile.
+        dir="$RUNNER_TEMP/cross-download"
+        mkdir "$dir"
+        echo "$dir" >> $GITHUB_PATH
+        cd "$dir"
+        curl -LO "https://github.com/cross-rs/cross/releases/download/$CROSS_VERSION/cross-x86_64-unknown-linux-musl.tar.gz"
+        tar xf cross-x86_64-unknown-linux-musl.tar.gz
+        echo "CARGO=cross" >> $GITHUB_ENV
+        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
+        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
+        echo "CROSS_CONTAINER_OPTS=${{matrix.flags}}" >> $GITHUB_ENV
+
+    - name: Show command used for Cargo
+      run: |
+        echo "cargo command is: ${{ env.CARGO }}"
+        echo "target flag is: ${{ env.TARGET_FLAGS }}"
+        echo "target dir is: ${{ env.TARGET_DIR }}"
+        echo "flags are: ${{ env.CROSS_CONTAINER_OPTS }}"
+
+    - name: Build lib
+      run: ${{ env.CARGO }} build --verbose --workspace ${{ env.TARGET_FLAGS }}
+
+    # This is useful for debugging problems when the expected build artifacts
+    # (like shell completions and man pages) aren't generated.
+    - name: Show build.rs stderr
+      shell: bash
+      run: |
+        set +x
+        stderr="$(find "${{ env.TARGET_DIR }}/debug" -name stderr -print0 | xargs -0 ls -t | head -n1)"
+        if [ -s "$stderr" ]; then
+          echo "===== $stderr ===== "
+          cat "$stderr"
+          echo "====="
+        fi
+        set -x
+
+    - name: Run tests (with cross)
+      if: matrix.target != ''
+      run: ${{ env.CARGO }} test --verbose --workspace ${{ env.TARGET_FLAGS }}
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: stable
+        components: rustfmt
+    - name: Check formatting
+      run: cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install protoc (Ubuntu)
+      shell: bash
+      run: |-
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: stable
+        components: rustfmt
+    - name: Clippy
+      run: cargo clippy -- -D warnings
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install protoc (Ubuntu)
+        shell: bash
+        run: |-
+            sudo apt-get update
+            sudo apt-get install -y protobuf-compiler
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Check documentation
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --no-deps --document-private-items --workspace

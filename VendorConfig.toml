@@ -1,0 +1,15 @@
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/tailcallhq/async_graphql_apollo_studio_extension/"]
+git = "https://github.com/tailcallhq/async_graphql_apollo_studio_extension/"
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/twistedfall/htpasswd-verify?rev=ff14703083cbd639f7d05622b398926f3e718d61"]
+git = "https://github.com/twistedfall/htpasswd-verify"
+rev = "ff14703083cbd639f7d05622b398926f3e718d61"
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
+

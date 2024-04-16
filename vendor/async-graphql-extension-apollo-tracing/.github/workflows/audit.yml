@@ -1,0 +1,20 @@
+name: Audit
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+env:
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  weekly-audit:
+    name: Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

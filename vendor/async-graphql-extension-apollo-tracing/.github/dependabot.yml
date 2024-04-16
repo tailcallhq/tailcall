@@ -1,0 +1,10 @@
+version: 2
+
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "02:00"
+    labels:
+      - "Action: no bump"
