@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -27,7 +26,7 @@ pub struct ConfigReader {
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        let cache: Arc<Mutex<RefCell<HashMap<String, String>>>> = Default::default();
+        let cache: Arc<Mutex<HashMap<String, String>>> = Default::default();
         Self {
             runtime: runtime.clone(),
             resource_reader: ResourceReader::init(runtime.clone(), cache.clone()),

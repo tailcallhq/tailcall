@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -19,13 +18,13 @@ pub struct FileRead {
 pub struct ResourceReader {
     runtime: TargetRuntime,
     // Cache file content, path->content
-    cache: Arc<Mutex<RefCell<HashMap<String, String>>>>,
+    cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl ResourceReader {
     pub fn init(
         runtime: TargetRuntime,
-        cache: Arc<Mutex<RefCell<HashMap<String, String>>>>,
+        cache: Arc<Mutex<HashMap<String, String>>>,
     ) -> Self {
         Self { runtime, cache }
     }
@@ -37,7 +36,6 @@ impl ResourceReader {
             .cache
             .lock()
             .await
-            .get_mut()
             .get(&file_path)
             .map(|v| v.to_owned());
         let content = if let Some(content) = content {
@@ -47,7 +45,6 @@ impl ResourceReader {
             self.cache
                 .lock()
                 .await
-                .get_mut()
                 .insert(file_path.to_owned(), content.clone());
             content
         };

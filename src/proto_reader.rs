@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
@@ -23,7 +22,7 @@ pub struct ProtoMetadata {
 impl ProtoReader {
     pub fn init(
         runtime: TargetRuntime,
-        cache: Arc<Mutex<RefCell<HashMap<String, String>>>>,
+        cache: Arc<Mutex<HashMap<String, String>>>,
     ) -> Self {
         Self { resource_reader: ResourceReader::init(runtime, cache) }
     }
