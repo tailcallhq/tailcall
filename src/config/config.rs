@@ -16,11 +16,21 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 use crate::json::JsonSchema;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -154,28 +164,12 @@ impl Config {
     }
 }
 
-impl MergeRight for Config {
-    fn merge_right(self, other: Self) -> Self {
-        let server = self.server.merge_right(other.server);
-        let types = merge_types(self.types, other.types);
-        let unions = merge_unions(self.unions, other.unions);
-        let schema = self.schema.merge_right(other.schema);
-        let upstream = self.upstream.merge_right(other.upstream);
-        let links = merge_links(self.links, other.links);
-        let telemetry = self.telemetry.merge_right(other.telemetry);
-
-        Self { server, upstream, types, schema, unions, links, telemetry }
-    }
-}
-
-fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
-    self_links.merge_right(other_links)
-}
-
 ///
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Type {
     ///
     /// A map of field name and its definition.
@@ -229,22 +223,9 @@ impl Type {
     }
 }
 
-impl MergeRight for Type {
-    fn merge_right(mut self, other: Self) -> Self {
-        let fields = self.fields.merge_right(other.fields);
-        self.implements = self.implements.merge_right(other.implements);
-        if let Some(ref variants) = self.variants {
-            if let Some(ref other) = other.variants {
-                self.variants = Some(variants.union(other).cloned().collect());
-            }
-        } else {
-            self.variants = other.variants;
-        }
-        Self { fields, ..self }
-    }
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[derive(
+    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+)]
 #[serde(deny_unknown_fields)]
 /// Used to represent an identifier for a type. Typically used via only by the
 /// configuration generators to provide additional information about the type.
@@ -253,7 +234,7 @@ pub struct Tag {
     pub id: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
 #[serde(rename_all = "camelCase")]
@@ -264,38 +245,22 @@ pub struct Cache {
     pub max_age: NonZeroU64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema)]
+#[derive(
+    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+)]
 pub struct Protected {}
 
-fn merge_types(
-    mut self_types: BTreeMap<String, Type>,
-    other_types: BTreeMap<String, Type>,
-) -> BTreeMap<String, Type> {
-    for (name, mut other_type) in other_types {
-        if let Some(self_type) = self_types.remove(&name) {
-            other_type = self_type.merge_right(other_type);
-        }
-
-        self_types.insert(name, other_type);
-    }
-    self_types
-}
-
-fn merge_unions(
-    mut self_unions: BTreeMap<String, Union>,
-    other_unions: BTreeMap<String, Union>,
-) -> BTreeMap<String, Union> {
-    for (name, mut other_union) in other_unions {
-        if let Some(self_union) = self_unions.remove(&name) {
-            other_union = self_union.merge_right(other_union);
-        }
-        self_unions.insert(name, other_union);
-    }
-    self_unions
-}
-
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[setters(strip_option)]
 pub struct RootSchema {
@@ -304,17 +269,6 @@ pub struct RootSchema {
     pub mutation: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub subscription: Option<String>,
-}
-
-impl MergeRight for RootSchema {
-    // TODO: add unit-tests
-    fn merge_right(self, other: Self) -> Self {
-        Self {
-            query: self.query.merge_right(other.query),
-            mutation: self.mutation.merge_right(other.mutation),
-            subscription: self.subscription.merge_right(other.subscription),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -407,6 +361,13 @@ pub struct Field {
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+}
+
+// It's a terminal implementation of MergeRight
+impl MergeRight for Field {
+    fn merge_right(self, other: Self) -> Self {
+        other
+    }
 }
 
 impl Field {
@@ -522,17 +483,10 @@ pub struct Arg {
     pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
-}
-
-impl MergeRight for Union {
-    fn merge_right(mut self, other: Self) -> Self {
-        self.types = self.types.merge_right(other.types);
-        self
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
