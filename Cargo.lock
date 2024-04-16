@@ -5147,6 +5147,7 @@ dependencies = [
  "serde_yaml",
  "stripmargin",
  "strum_macros 0.26.2",
+ "tailcall-prettier",
  "temp-env",
  "tempfile",
  "thiserror",
@@ -5214,6 +5215,16 @@ dependencies = [
  "tracing-subscriber",
  "tracing-subscriber-wasm",
  "worker",
+]
+
+[[package]]
+name = "tailcall-prettier"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "strum_macros 0.26.2",
+ "tokio",
 ]
 
 [[package]]
