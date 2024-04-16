@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_lock::Mutex;
@@ -23,19 +23,32 @@ pub struct ResourceReader {
 }
 
 impl ResourceReader {
-    pub fn init(runtime: TargetRuntime, cache: Arc<Mutex<RefCell<HashMap<String, String>>>>) -> Self {
-        Self { runtime, cache}
+    pub fn init(
+        runtime: TargetRuntime,
+        cache: Arc<Mutex<RefCell<HashMap<String, String>>>>,
+    ) -> Self {
+        Self { runtime, cache }
     }
     /// Reads a file from the filesystem or from an HTTP URL
     pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
         // check cache
         let file_path = file.to_string();
-        let content = self.cache.lock().await.get_mut().get(&file_path).map(|v| v.to_owned());
+        let content = self
+            .cache
+            .lock()
+            .await
+            .get_mut()
+            .get(&file_path)
+            .map(|v| v.to_owned());
         let content = if let Some(content) = content {
             content
         } else {
             let content = self.do_read_file(file.to_string()).await?;
-            self.cache.lock().await.get_mut().insert(file_path.to_owned(), content.clone());
+            self.cache
+                .lock()
+                .await
+                .get_mut()
+                .insert(file_path.to_owned(), content.clone());
             content
         };
 

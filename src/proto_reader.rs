@@ -1,9 +1,9 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use async_lock::Mutex;
-use std::cell::RefCell;
 
 use anyhow::Context;
+use async_lock::Mutex;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
@@ -21,7 +21,10 @@ pub struct ProtoMetadata {
 }
 
 impl ProtoReader {
-    pub fn init(runtime: TargetRuntime, cache: Arc<Mutex<RefCell<HashMap<String, String>>>>) -> Self {
+    pub fn init(
+        runtime: TargetRuntime,
+        cache: Arc<Mutex<RefCell<HashMap<String, String>>>>,
+    ) -> Self {
         Self { resource_reader: ResourceReader::init(runtime, cache) }
     }
 
