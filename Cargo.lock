@@ -5147,6 +5147,7 @@ dependencies = [
  "serde_yaml",
  "stripmargin",
  "strum_macros 0.26.2",
+ "tailcall-macros",
  "tailcall-prettier",
  "temp-env",
  "tempfile",
@@ -5215,6 +5216,15 @@ dependencies = [
  "tracing-subscriber",
  "tracing-subscriber-wasm",
  "worker",
+]
+
+[[package]]
+name = "tailcall-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.59",
 ]
 
 [[package]]
