@@ -1,12 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
-use crate::macros::MergeRight;
 
 use super::merge_key_value_vecs;
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
 use crate::is_default;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 
 #[derive(

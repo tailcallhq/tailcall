@@ -6,10 +6,10 @@ use derive_setters::Setters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
-use crate::macros::MergeRight;
 
 use crate::blueprint::GrpcMethod;
 use crate::config::Config;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::rest::{EndpointSet, Unchecked};
 use crate::scalar;

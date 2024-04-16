@@ -1,11 +1,11 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use crate::macros::MergeRight;
 
 use super::KeyValue;
 use crate::config::{Apollo, ConfigReaderContext};
 use crate::helpers::headers::to_mustache_headers;
 use crate::is_default;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::mustache::Mustache;
 use crate::valid::Validator;

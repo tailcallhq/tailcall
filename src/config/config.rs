@@ -7,7 +7,6 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::macros::MergeRight;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -17,6 +16,7 @@ use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::is_default;
 use crate::json::JsonSchema;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
 

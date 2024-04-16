@@ -1,11 +1,11 @@
 use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
-use crate::macros::MergeRight;
 
 use crate::config::cors::Cors;
 use crate::config::KeyValue;
 use crate::is_default;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 
 #[derive(

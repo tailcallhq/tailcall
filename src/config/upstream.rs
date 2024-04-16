@@ -2,9 +2,9 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
-use crate::macros::MergeRight;
 
 use crate::is_default;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 
 #[derive(
