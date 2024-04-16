@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::sync::Arc;
 
 pub trait MergeRight {
     fn merge_right(self, other: Self) -> Self;
@@ -15,6 +16,14 @@ impl<A: MergeRight> MergeRight for Option<A> {
     }
 }
 
+impl<A: MergeRight + Default> MergeRight for Arc<A> {
+    fn merge_right(self, other: Self) -> Self {
+        let l = Arc::into_inner(self);
+        let r = Arc::into_inner(other);
+        Arc::new(l.merge_right(r).unwrap_or_default())
+    }
+}
+
 impl<A> MergeRight for Vec<A> {
     fn merge_right(mut self, other: Self) -> Self {
         self.extend(other);
@@ -25,10 +34,16 @@ impl<A> MergeRight for Vec<A> {
 impl<K, V> MergeRight for BTreeMap<K, V>
 where
     K: Ord,
-    V: Clone,
+    V: Clone + MergeRight,
 {
     fn merge_right(mut self, other: Self) -> Self {
-        self.extend(other);
+        for (other_name, mut other_value) in other {
+            if let Some(self_value) = self.remove(&other_name) {
+                other_value = self_value.merge_right(other_value);
+            }
+
+            self.insert(other_name, other_value);
+        }
         self
     }
 }
