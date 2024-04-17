@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-
 use crate::config::{Config, Link, LinkType};
 use crate::generator::from_proto::from_proto;
 use crate::generator::source::Source;

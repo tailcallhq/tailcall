@@ -1,7 +1,5 @@
-
 use std::path::Path;
 use std::sync::Arc;
-
 
 use rustls_pemfile;
 use rustls_pki_types::{
