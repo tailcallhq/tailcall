@@ -5,9 +5,8 @@ use crate::generator::from_proto::from_proto;
 use crate::generator::source::Source;
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
-use crate::resource_reader::ResourceReader;
+use crate::resource_reader::{DirectResourceReader, ResourceReader};
 use crate::runtime::TargetRuntime;
-use crate::resource_reader::DirectResourceReader;
 
 pub struct Generator {
     proto_reader: ProtoReader<DirectResourceReader>,
@@ -15,7 +14,9 @@ pub struct Generator {
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
-            proto_reader: ProtoReader::init(ResourceReader::<DirectResourceReader>::direct(runtime)),
+            proto_reader: ProtoReader::init(ResourceReader::<DirectResourceReader>::direct(
+                runtime,
+            )),
         }
     }
 

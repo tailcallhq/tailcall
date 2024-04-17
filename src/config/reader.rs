@@ -10,11 +10,9 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
-use crate::resource_reader::ResourceReader;
+use crate::resource_reader::{CachedResourceReader, ResourceReader, ResourceReaderHandler};
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
-use crate::resource_reader::CachedResourceReader;
-use crate::resource_reader::ResourceReaderHandler;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -165,7 +163,10 @@ impl ConfigReader {
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString + Send + Sync>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
+    pub async fn read_all<T: ToString + Send + Sync>(
+        &self,
+        files: &[T],
+    ) -> anyhow::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
 

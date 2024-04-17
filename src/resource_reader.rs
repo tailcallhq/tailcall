@@ -40,7 +40,10 @@ impl<A> Deref for ResourceReader<A> {
 pub trait ResourceReaderHandler {
     async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
 
-    async fn read_files<T: ToString + Send + Sync>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>>;
+    async fn read_files<T: ToString + Send + Sync>(
+        &self,
+        files: &[T],
+    ) -> anyhow::Result<Vec<FileRead>>;
 }
 
 #[derive(Clone)]
@@ -52,7 +55,6 @@ impl DirectResourceReader {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { runtime }
     }
-
 }
 
 #[async_trait::async_trait]
@@ -83,7 +85,10 @@ impl ResourceReaderHandler for DirectResourceReader {
     }
 
     /// Reads all the files in parallel
-    async fn read_files<T: ToString + Send + Sync>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
+    async fn read_files<T: ToString + Send + Sync>(
+        &self,
+        files: &[T],
+    ) -> anyhow::Result<Vec<FileRead>> {
         let files = files.iter().map(|x| {
             self.read_file(x.to_string())
                 .map_err(|e| e.context(x.to_string()))
@@ -105,7 +110,10 @@ pub struct CachedResourceReader {
 
 impl CachedResourceReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { direct: DirectResourceReader::init(runtime), cache: Default::default() }
+        Self {
+            direct: DirectResourceReader::init(runtime),
+            cache: Default::default(),
+        }
     }
 }
 
