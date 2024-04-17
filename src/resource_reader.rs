@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use async_lock::Mutex;
+use std::sync::Mutex;
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
@@ -47,7 +47,7 @@ impl ResourceReader {
             .as_ref()
             .unwrap()
             .lock()
-            .await
+            .unwrap()
             .get(&file_path)
             .map(|v| v.to_owned());
         let content = if let Some(content) = content {
@@ -58,7 +58,7 @@ impl ResourceReader {
                 .as_ref()
                 .unwrap()
                 .lock()
-                .await
+                .unwrap()
                 .insert(file_path.to_owned(), file_read.content.clone());
             file_read.content
         };
