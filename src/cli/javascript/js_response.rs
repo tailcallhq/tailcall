@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use hyper::body::Bytes;
 use nom::AsBytes;
-use rquickjs::FromJs;
+use rquickjs::{FromJs, IntoJs};
 use serde::{Deserialize, Serialize};
 
 use super::create_header_map;
@@ -17,6 +17,16 @@ pub struct JsResponse {
     pub headers: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub body: Option<String>,
+}
+
+impl<'js> IntoJs<'js> for JsResponse {
+    fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
+        let object = rquickjs::Object::new(ctx.clone())?;
+        object.set("status", self.status)?;
+        object.set("headers", self.headers)?;
+        object.set("body", self.body)?;
+        Ok(object.into_value())
+    }
 }
 
 impl<'js> FromJs<'js> for JsResponse {
@@ -70,6 +80,7 @@ mod test {
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
     use reqwest::header::HeaderMap;
+    use rquickjs::{Context, FromJs, IntoJs, Runtime};
 
     use super::JsResponse;
 
@@ -84,6 +95,7 @@ mod test {
         let js_response: Result<JsResponse> = response.try_into();
         js_response
     }
+
     #[test]
     fn test_to_js_response() {
         let js_response = create_test_response();
@@ -140,5 +152,38 @@ mod test {
         let response = response.unwrap();
         assert_eq!(response.headers.get("x-unusual-header").unwrap(), "🚀");
         assert_eq!(response.body, Bytes::from(body));
+    }
+
+    #[test]
+    fn test_response_into_js() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let value = create_test_response().unwrap().into_js(&ctx).unwrap();
+            let object = value.as_object().unwrap();
+
+            let status = object.get::<&str, u16>("status").unwrap();
+            let headers = object.get::<&str, BTreeMap<String, String>>("headers").unwrap();
+            let body = object.get::<&str, Option<String>>("body").unwrap();
+
+            assert_eq!(status, reqwest::StatusCode::OK);
+            assert_eq!(body, Some("Hello, World!".to_owned()));
+            assert!(headers.contains_key("content-type"));
+            assert_eq!(headers.get("content-type"), Some(&"application/json".to_owned()));
+        });
+    }
+
+    #[test]
+    fn test_response_from_js() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let js_response =  create_test_response().unwrap().into_js(&ctx).unwrap();
+            let response = JsResponse::from_js(&ctx, js_response).unwrap();
+
+            assert_eq!(response.status, reqwest::StatusCode::OK.as_u16());
+            assert_eq!(response.body, Some("Hello, World!".to_owned()));
+            assert_eq!(response.headers.get("content-type"), Some(&"application/json".to_owned()));
+        });
     }
 }

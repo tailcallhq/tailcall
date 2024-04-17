@@ -49,6 +49,63 @@ impl<'js> FromJs<'js> for Command {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
+    use crate::cli::javascript::{request_filter::Command, JsRequest, JsResponse};
+
+    #[test]
+    fn test_command_from_invalid_object() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let value = JsString::from_str(ctx.clone(), "invalid").unwrap().into_value();
+            assert!(Command::from_js(&ctx, value).is_err());
+        });
+    }
+
+    #[test]
+    fn test_command_from_request() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let request = reqwest::Request::new(reqwest::Method::GET, "http://example.com/".parse().unwrap());
+            let js_request: JsRequest = (&request).try_into().unwrap();
+            let value = Object::new(ctx.clone()).unwrap();
+            value.set("request", js_request.into_js(&ctx)).unwrap();
+            assert!(Command::from_js(&ctx, value.into_value()).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_command_from_response() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let js_response = JsResponse {
+                status: 200,
+                headers: BTreeMap::new(),
+                body: None,
+            };
+            let value = Object::new(ctx.clone()).unwrap();
+            value.set("response", js_response).unwrap();
+            assert!(Command::from_js(&ctx, value.into_value()).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_command_from_arbitrary_object() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let value = Object::new(ctx.clone()).unwrap();
+            assert!(Command::from_js(&ctx, value.into_value()).is_err());
+        });
+    }
+}
+
 pub struct RequestFilter {
     worker: Arc<dyn WorkerIO<Event, Command>>,
     client: Arc<dyn HttpIO>,
