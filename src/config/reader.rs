@@ -97,13 +97,12 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .cert
-                        .extend(self.load_cert(content.clone()).await?);
+                        .extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    config_module.extensions.keys =
-                        Arc::new(self.load_private_key(content.clone()).await?)
+                    config_module.extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
                     let source = self.resource_reader.read_file(&path).await?;
@@ -116,7 +115,7 @@ impl ConfigReader {
                     config_module
                         .extensions
                         .htpasswd
-                        .push(Content { id: link.id.clone(), content: content.clone() });
+                        .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
                     let source = self.resource_reader.read_file(&path).await?;
