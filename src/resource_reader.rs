@@ -110,10 +110,7 @@ pub struct Cached {
 
 impl Cached {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self {
-            direct: Direct::init(runtime),
-            cache: Default::default(),
-        }
+        Self { direct: Direct::init(runtime), cache: Default::default() }
     }
 }
 

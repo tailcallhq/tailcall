@@ -14,9 +14,7 @@ pub struct Generator {
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
-            proto_reader: ProtoReader::init(ResourceReader::<Direct>::direct(
-                runtime,
-            )),
+            proto_reader: ProtoReader::init(ResourceReader::<Direct>::direct(runtime)),
         }
     }
 
