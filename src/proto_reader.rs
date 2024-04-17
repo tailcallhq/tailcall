@@ -6,8 +6,9 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
 use crate::resource_reader::ResourceReader;
+use crate::resource_reader::ResourceReaderHandler;
 
-pub struct ProtoReader<A> {
+pub struct ProtoReader<A: ResourceReaderHandler> {
     resource_reader: ResourceReader<A>,
 }
 
@@ -16,7 +17,7 @@ pub struct ProtoMetadata {
     pub path: String,
 }
 
-impl<A> ProtoReader<A> {
+impl<A: ResourceReaderHandler> ProtoReader<A> {
     pub fn init(resource_reader: ResourceReader<A>) -> Self {
         Self { resource_reader }
     }
@@ -100,12 +101,13 @@ mod test_proto_config {
 
     use crate::proto_reader::ProtoReader;
     use crate::resource_reader::ResourceReader;
+    use crate::resource_reader::CachedResourceReader;
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
         let reader =
-            ProtoReader::init(ResourceReader::init(crate::runtime::test::init(None), true));
+            ProtoReader::init(ResourceReader::<CachedResourceReader>::cached(crate::runtime::test::init(None)));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -134,7 +136,7 @@ mod test_proto_config {
         let runtime = crate::runtime::test::init(None);
         let file_rt = runtime.file.clone();
 
-        let reader = ProtoReader::init(ResourceReader::init(runtime, true));
+        let reader = ProtoReader::init(ResourceReader::<CachedResourceReader>::cached(runtime));
         let helper_map = reader
             .resolve_descriptors(reader.read_proto(&test_file).await?)
             .await?;
@@ -178,7 +180,7 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
         let runtime = crate::runtime::test::init(None);
-        let reader = ProtoReader::init(ResourceReader::init(runtime, true));
+        let reader = ProtoReader::init(ResourceReader::<CachedResourceReader>::cached(runtime));
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;

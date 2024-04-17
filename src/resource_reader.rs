@@ -36,6 +36,13 @@ impl<A> Deref for ResourceReader<A> {
     }
 }
 
+#[async_trait::async_trait]
+pub trait ResourceReaderHandler {
+    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+
+    async fn read_files<T: ToString + Send + Sync>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>>;
+}
+
 #[derive(Clone)]
 pub struct DirectResourceReader {
     runtime: TargetRuntime,
@@ -46,8 +53,12 @@ impl DirectResourceReader {
         Self { runtime }
     }
 
+}
+
+#[async_trait::async_trait]
+impl ResourceReaderHandler for DirectResourceReader {
     /// Reads a file from the filesystem or from an HTTP URL
-    pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
@@ -72,7 +83,7 @@ impl DirectResourceReader {
     }
 
     /// Reads all the files in parallel
-    pub async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
+    async fn read_files<T: ToString + Send + Sync>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
         let files = files.iter().map(|x| {
             self.read_file(x.to_string())
                 .map_err(|e| e.context(x.to_string()))
@@ -96,9 +107,12 @@ impl CachedResourceReader {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { direct: DirectResourceReader::init(runtime), cache: Default::default() }
     }
+}
 
+#[async_trait::async_trait]
+impl ResourceReaderHandler for CachedResourceReader {
     /// Reads a file from the filesystem or from an HTTP URL with cache
-    pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // check cache
         let file_path = file.to_string();
         let content = self
@@ -124,7 +138,7 @@ impl CachedResourceReader {
     }
 
     /// Reads all the files in parallel with cache
-    pub async fn read_files<T: ToString>(
+    async fn read_files<T: ToString + Send + Sync>(
         &self,
         files: &[T],
     ) -> anyhow::Result<Vec<FileRead>> {
