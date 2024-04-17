@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use std::sync::Mutex;
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
