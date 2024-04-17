@@ -6,7 +6,7 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::resource_reader::{ResourceReader};
+use crate::resource_reader::ResourceReader;
 
 pub struct ProtoReader {
     resource_reader: Arc<ResourceReader>,
