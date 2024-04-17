@@ -163,13 +163,18 @@ mod test {
             let object = value.as_object().unwrap();
 
             let status = object.get::<&str, u16>("status").unwrap();
-            let headers = object.get::<&str, BTreeMap<String, String>>("headers").unwrap();
+            let headers = object
+                .get::<&str, BTreeMap<String, String>>("headers")
+                .unwrap();
             let body = object.get::<&str, Option<String>>("body").unwrap();
 
             assert_eq!(status, reqwest::StatusCode::OK);
             assert_eq!(body, Some("Hello, World!".to_owned()));
             assert!(headers.contains_key("content-type"));
-            assert_eq!(headers.get("content-type"), Some(&"application/json".to_owned()));
+            assert_eq!(
+                headers.get("content-type"),
+                Some(&"application/json".to_owned())
+            );
         });
     }
 
@@ -178,12 +183,15 @@ mod test {
         let runtime = Runtime::new().unwrap();
         let context = Context::base(&runtime).unwrap();
         context.with(|ctx| {
-            let js_response =  create_test_response().unwrap().into_js(&ctx).unwrap();
+            let js_response = create_test_response().unwrap().into_js(&ctx).unwrap();
             let response = JsResponse::from_js(&ctx, js_response).unwrap();
 
             assert_eq!(response.status, reqwest::StatusCode::OK.as_u16());
             assert_eq!(response.body, Some("Hello, World!".to_owned()));
-            assert_eq!(response.headers.get("content-type"), Some(&"application/json".to_owned()));
+            assert_eq!(
+                response.headers.get("content-type"),
+                Some(&"application/json".to_owned())
+            );
         });
     }
 }

@@ -81,10 +81,13 @@ impl WorkerIO<Event, Command> for Runtime {
                 // exit if failed to initialize
                 LOCAL_RUNTIME.with(move |cell| {
                     if cell.borrow().get().is_none() {
-                        LocalRuntime::try_new(script)
-                            .and_then(|runtime| {
-                                cell.borrow().set(runtime).map_err(|_| anyhow::anyhow!("trying to reinitialize an already initialized QuickJS runtime"))
+                        LocalRuntime::try_new(script).and_then(|runtime| {
+                            cell.borrow().set(runtime).map_err(|_| {
+                                anyhow::anyhow!(
+                                    "trying to reinitialize an already initialized QuickJS runtime"
+                                )
                             })
+                        })
                     } else {
                         Ok(())
                     }
@@ -107,25 +110,23 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
         let runtime = cell
             .get_mut()
             .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
-        runtime.context.with(|ctx| {
-            match event {
-                Event::Request(req) => {
-                    let fn_as_value = ctx
-                        .globals()
-                        .get::<&str, Function>(name.as_str())
-                        .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
+        runtime.context.with(|ctx| match event {
+            Event::Request(req) => {
+                let fn_as_value = ctx
+                    .globals()
+                    .get::<&str, Function>(name.as_str())
+                    .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
 
-                    let function = fn_as_value
-                        .as_function()
-                        .ok_or(anyhow::anyhow!("`{name}` is not a function"))?;
+                let function = fn_as_value
+                    .as_function()
+                    .ok_or(anyhow::anyhow!("`{name}` is not a function"))?;
 
-                    let args = prepare_args(&ctx, req)?;
-                    let command: Option<Value> = function.call(args).ok();
-                    command
-                        .map(|output| Command::from_js(&ctx, output))
-                        .transpose()
-                        .map_err(|e| anyhow::anyhow!("deserialize failed: {e}"))
-                }
+                let args = prepare_args(&ctx, req)?;
+                let command: Option<Value> = function.call(args).ok();
+                command
+                    .map(|output| Command::from_js(&ctx, output))
+                    .transpose()
+                    .map_err(|e| anyhow::anyhow!("deserialize failed: {e}"))
             }
         })
     })
