@@ -21,10 +21,10 @@ pub struct JsRequest {
 impl<'js> IntoJs<'js> for JsRequest {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
         let object = rquickjs::Object::new(ctx.clone())?;
-        object.set("uri", self.uri.into_js(ctx)?)?;
-        object.set("method", self.method.into_js(ctx)?)?;
-        object.set("headers", self.headers.into_js(ctx)?)?;
-        object.set("body", self.body.into_js(ctx)?)?;
+        object.set("uri", self.uri)?;
+        object.set("method", self.method)?;
+        object.set("headers", self.headers)?;
+        object.set("body", self.body)?;
         Ok(object.into_value())
     }
 }
@@ -101,11 +101,11 @@ pub struct Uri {
 impl<'js> IntoJs<'js> for Uri {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
         let object = rquickjs::Object::new(ctx.clone())?;
-        object.set("path", self.path.into_js(ctx)?)?;
-        object.set("query", self.query.into_js(ctx)?)?;
-        object.set("scheme", self.scheme.into_js(ctx)?)?;
-        object.set("host", self.host.into_js(ctx)?)?;
-        object.set("port", self.port.into_js(ctx)?)?;
+        object.set("path", self.path)?;
+        object.set("query", self.query)?;
+        object.set("scheme", self.scheme)?;
+        object.set("host", self.host)?;
+        object.set("port", self.port)?;
         Ok(object.into_value())
     }
 }
@@ -212,6 +212,7 @@ impl TryFrom<&reqwest::Request> for JsRequest {
 mod tests {
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
+    use rquickjs::{Context, Runtime};
 
     use super::*;
     impl Uri {
@@ -276,5 +277,60 @@ mod tests {
         assert_eq!(js_request.uri.to_string(), "http://example.com/");
         let body_out = js_request.body;
         assert_eq!(body_out, None);
+    }
+
+    #[test]
+    fn test_js_request_into_js() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let mut headers = BTreeMap::new();
+            headers.insert("content-type".to_string(), "application/json".to_string());
+
+            let js_request = JsRequest {
+                uri: Uri::parse("http://example.com/").unwrap(),
+                method: "GET".to_string(),
+                headers,
+                body: Some("Hello, World!".to_string()),
+            };
+            let value = js_request.into_js(&ctx).unwrap();
+            let object = value.as_object().unwrap();
+
+            let uri = object.get::<&str, Uri>("uri").unwrap();
+            let method = object.get::<&str, String>("method").unwrap();
+            let body = object.get::<&str, Option<String>>("body").unwrap();
+            let js_headers = object.get::<&str, BTreeMap<String, String>>("headers").unwrap();
+
+            assert_eq!(uri.to_string(), "http://example.com/");
+            assert_eq!(method, "GET");
+            assert_eq!(body, Some("Hello, World!".to_string()));
+            assert_eq!(js_headers.get("content-type"), Some(&"application/json".to_string()));
+        });
+    }
+
+
+    #[test]
+    fn test_js_request_from_js() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let mut headers = BTreeMap::new();
+            headers.insert("content-type".to_string(), "application/json".to_string());
+
+            let js_request = JsRequest {
+                uri: Uri::parse("http://example.com/").unwrap(),
+                method: "GET".to_string(),
+                headers,
+                body: Some("Hello, World!".to_string()),
+            };
+            let value = js_request.into_js(&ctx).unwrap();
+
+            let js_request = JsRequest::from_js(&ctx, value).unwrap();
+            
+            assert_eq!(js_request.uri.to_string(), "http://example.com/");
+            assert_eq!(js_request.method, "GET");
+            assert_eq!(js_request.body, Some("Hello, World!".to_string()));
+            assert_eq!(js_request.headers.get("content-type"), Some(&"application/json".to_string()));
+        });
     }
 }
