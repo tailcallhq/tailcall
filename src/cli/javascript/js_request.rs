@@ -299,15 +299,19 @@ mod tests {
             let uri = object.get::<&str, Uri>("uri").unwrap();
             let method = object.get::<&str, String>("method").unwrap();
             let body = object.get::<&str, Option<String>>("body").unwrap();
-            let js_headers = object.get::<&str, BTreeMap<String, String>>("headers").unwrap();
+            let js_headers = object
+                .get::<&str, BTreeMap<String, String>>("headers")
+                .unwrap();
 
             assert_eq!(uri.to_string(), "http://example.com/");
             assert_eq!(method, "GET");
             assert_eq!(body, Some("Hello, World!".to_string()));
-            assert_eq!(js_headers.get("content-type"), Some(&"application/json".to_string()));
+            assert_eq!(
+                js_headers.get("content-type"),
+                Some(&"application/json".to_string())
+            );
         });
     }
-
 
     #[test]
     fn test_js_request_from_js() {
@@ -326,11 +330,14 @@ mod tests {
             let value = js_request.into_js(&ctx).unwrap();
 
             let js_request = JsRequest::from_js(&ctx, value).unwrap();
-            
+
             assert_eq!(js_request.uri.to_string(), "http://example.com/");
             assert_eq!(js_request.method, "GET");
             assert_eq!(js_request.body, Some("Hello, World!".to_string()));
-            assert_eq!(js_request.headers.get("content-type"), Some(&"application/json".to_string()));
+            assert_eq!(
+                js_request.headers.get("content-type"),
+                Some(&"application/json".to_string())
+            );
         });
     }
 }
