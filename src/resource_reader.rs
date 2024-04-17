@@ -24,7 +24,7 @@ pub struct ResourceReader {
 impl ResourceReader {
     pub fn init(runtime: TargetRuntime, cache: bool) -> Self {
         if cache {
-            Self {runtime, cache: Some(Default::default())}
+            Self { runtime, cache: Some(Default::default()) }
         } else {
             Self { runtime, cache: None }
         }
@@ -88,7 +88,7 @@ impl ResourceReader {
 
             self.runtime.file.read(&file.to_string()).await?
         };
-        Ok(FileRead{content, path: file.to_string()})
+        Ok(FileRead { content, path: file.to_string() })
     }
 
     pub async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
@@ -113,7 +113,10 @@ impl ResourceReader {
     }
 
     /// Reads all the files in parallel with cache
-    async fn read_files_with_cached<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
+    async fn read_files_with_cached<T: ToString>(
+        &self,
+        files: &[T],
+    ) -> anyhow::Result<Vec<FileRead>> {
         let files = files.iter().map(|x| {
             self.read_file_with_cached(x.to_string())
                 .map_err(|e| e.context(x.to_string()))

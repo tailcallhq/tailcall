@@ -6,7 +6,7 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::resource_reader::{self, ResourceReader};
+use crate::resource_reader::{ResourceReader};
 
 pub struct ProtoReader {
     resource_reader: Arc<ResourceReader>,
@@ -100,12 +100,16 @@ mod test_proto_config {
     use anyhow::{Context, Result};
     use pretty_assertions::assert_eq;
 
-    use crate::{proto_reader::ProtoReader, resource_reader::ResourceReader};
+    use crate::proto_reader::ProtoReader;
+    use crate::resource_reader::ResourceReader;
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ProtoReader::init(Arc::new(ResourceReader::init(crate::runtime::test::init(None), true)));
+        let reader = ProtoReader::init(Arc::new(ResourceReader::init(
+            crate::runtime::test::init(None),
+            true,
+        )));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
