@@ -18,13 +18,13 @@ use crate::runtime::TargetRuntime;
 /// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
-    resource_reader: Arc<ResourceReader>,
+    resource_reader: ResourceReader,
     proto_reader: ProtoReader,
 }
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        let resource_reader = Arc::new(ResourceReader::init(runtime.clone(), true));
+        let resource_reader = ResourceReader::init(runtime.clone(), true);
         Self {
             runtime: runtime.clone(),
             resource_reader: resource_reader.clone(),

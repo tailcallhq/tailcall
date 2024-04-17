@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 
 use crate::config::{Config, Link, LinkType};
@@ -16,7 +14,7 @@ pub struct Generator {
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
-            proto_reader: ProtoReader::init(Arc::new(ResourceReader::init(runtime, false))),
+            proto_reader: ProtoReader::init(ResourceReader::init(runtime, false)),
         }
     }
 

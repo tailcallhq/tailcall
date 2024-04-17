@@ -1,5 +1,4 @@
 use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
 
 use anyhow::Context;
 use futures_util::future::join_all;
@@ -9,7 +8,7 @@ use protox::file::{FileResolver, GoogleFileResolver};
 use crate::resource_reader::ResourceReader;
 
 pub struct ProtoReader {
-    resource_reader: Arc<ResourceReader>,
+    resource_reader: ResourceReader,
 }
 
 pub struct ProtoMetadata {
@@ -18,7 +17,7 @@ pub struct ProtoMetadata {
 }
 
 impl ProtoReader {
-    pub fn init(resource_reader: Arc<ResourceReader>) -> Self {
+    pub fn init(resource_reader: ResourceReader) -> Self {
         Self { resource_reader }
     }
 

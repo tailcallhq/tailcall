@@ -15,6 +15,7 @@ pub struct FileRead {
     pub path: String,
 }
 
+#[derive(Clone)]
 pub struct ResourceReader {
     runtime: TargetRuntime,
     // Cache file content, path->content
