@@ -94,7 +94,6 @@ impl ProtoReader {
 #[cfg(test)]
 mod test_proto_config {
     use std::path::{Path, PathBuf};
-    use std::sync::Arc;
 
     use anyhow::{Context, Result};
     use pretty_assertions::assert_eq;
@@ -105,10 +104,10 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ProtoReader::init(Arc::new(ResourceReader::init(
+        let reader = ProtoReader::init(ResourceReader::init(
             crate::runtime::test::init(None),
             true,
-        )));
+        ));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -137,7 +136,7 @@ mod test_proto_config {
         let runtime = crate::runtime::test::init(None);
         let file_rt = runtime.file.clone();
 
-        let reader = ProtoReader::init(Arc::new(ResourceReader::init(runtime, true)));
+        let reader = ProtoReader::init(ResourceReader::init(runtime, true));
         let helper_map = reader
             .resolve_descriptors(reader.read_proto(&test_file).await?)
             .await?;
@@ -181,7 +180,7 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
         let runtime = crate::runtime::test::init(None);
-        let reader = ProtoReader::init(Arc::new(ResourceReader::init(runtime, true)));
+        let reader = ProtoReader::init(ResourceReader::init(runtime, true));
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;
