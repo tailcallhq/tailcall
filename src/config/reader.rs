@@ -13,18 +13,19 @@ use crate::proto_reader::ProtoReader;
 use crate::resource_reader::ResourceReader;
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
+use crate::resource_reader::CachedResourceReader;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
-    resource_reader: ResourceReader,
-    proto_reader: ProtoReader,
+    resource_reader: ResourceReader<CachedResourceReader>,
+    proto_reader: ProtoReader<CachedResourceReader>,
 }
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        let resource_reader = ResourceReader::init(runtime.clone(), true);
+        let resource_reader = ResourceReader::<CachedResourceReader>::cached(runtime.clone());
         Self {
             runtime: runtime.clone(),
             resource_reader: resource_reader.clone(),

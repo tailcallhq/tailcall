@@ -7,8 +7,8 @@ use protox::file::{FileResolver, GoogleFileResolver};
 
 use crate::resource_reader::ResourceReader;
 
-pub struct ProtoReader {
-    resource_reader: ResourceReader,
+pub struct ProtoReader<A> {
+    resource_reader: ResourceReader<A>,
 }
 
 pub struct ProtoMetadata {
@@ -16,8 +16,8 @@ pub struct ProtoMetadata {
     pub path: String,
 }
 
-impl ProtoReader {
-    pub fn init(resource_reader: ResourceReader) -> Self {
+impl<A> ProtoReader<A> {
+    pub fn init(resource_reader: ResourceReader<A>) -> Self {
         Self { resource_reader }
     }
 

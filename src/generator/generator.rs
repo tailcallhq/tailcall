@@ -7,14 +7,15 @@ use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
 use crate::resource_reader::ResourceReader;
 use crate::runtime::TargetRuntime;
+use crate::resource_reader::DirectResourceReader;
 
 pub struct Generator {
-    proto_reader: ProtoReader,
+    proto_reader: ProtoReader<DirectResourceReader>,
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
-            proto_reader: ProtoReader::init(ResourceReader::init(runtime, false)),
+            proto_reader: ProtoReader::init(ResourceReader::<DirectResourceReader>::direct(runtime)),
         }
     }
 

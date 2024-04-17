@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::Arc;
 
 use std::sync::Mutex;
@@ -16,59 +17,38 @@ pub struct FileRead {
 }
 
 #[derive(Clone)]
-pub struct ResourceReader {
-    runtime: TargetRuntime,
-    // Cache file content, path->content
-    cache: Option<Arc<Mutex<HashMap<String, String>>>>,
+pub struct ResourceReader<A>(A);
+
+impl<A> ResourceReader<A> {
+    pub fn direct(runtime: TargetRuntime) -> ResourceReader<DirectResourceReader> {
+        ResourceReader::<DirectResourceReader>(DirectResourceReader::init(runtime))
+    }
+
+    pub fn cached(runtime: TargetRuntime) -> ResourceReader<CachedResourceReader> {
+        ResourceReader::<CachedResourceReader>(CachedResourceReader::init(runtime))
+    }
 }
 
-impl ResourceReader {
-    pub fn init(runtime: TargetRuntime, cache: bool) -> Self {
-        if cache {
-            Self { runtime, cache: Some(Default::default()) }
-        } else {
-            Self { runtime, cache: None }
-        }
+impl<A> Deref for ResourceReader<A> {
+    type Target = A;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
+}
 
-    pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
-        if self.cache.is_some() {
-            self.read_file_with_cached(file).await
-        } else {
-            self.read_file_direct(file).await
-        }
-    }
+#[derive(Clone)]
+pub struct DirectResourceReader {
+    runtime: TargetRuntime,
+}
 
-    /// Reads a file from the filesystem or from an HTTP URL with cache
-    async fn read_file_with_cached<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
-        // check cache
-        let file_path = file.to_string();
-        let content = self
-            .cache
-            .as_ref()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .get(&file_path)
-            .map(|v| v.to_owned());
-        let content = if let Some(content) = content {
-            content.to_owned()
-        } else {
-            let file_read = self.read_file_direct(file.to_string()).await?;
-            self.cache
-                .as_ref()
-                .unwrap()
-                .lock()
-                .unwrap()
-                .insert(file_path.to_owned(), file_read.content.clone());
-            file_read.content
-        };
-
-        Ok(FileRead { content, path: file_path })
+impl DirectResourceReader {
+    pub fn init(runtime: TargetRuntime) -> Self {
+        Self { runtime }
     }
 
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read_file_direct<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+    pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
@@ -92,18 +72,10 @@ impl ResourceReader {
         Ok(FileRead { content, path: file.to_string() })
     }
 
-    pub async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
-        if self.cache.is_some() {
-            self.read_files_with_cached(files).await
-        } else {
-            self.read_files_direct(files).await
-        }
-    }
-
     /// Reads all the files in parallel
-    async fn read_files_direct<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
+    pub async fn read_files<T: ToString>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
         let files = files.iter().map(|x| {
-            self.read_file_direct(x.to_string())
+            self.read_file(x.to_string())
                 .map_err(|e| e.context(x.to_string()))
         });
         let content = join_all(files)
@@ -112,14 +84,53 @@ impl ResourceReader {
             .collect::<anyhow::Result<Vec<_>>>()?;
         Ok(content)
     }
+}
+
+#[derive(Clone)]
+pub struct CachedResourceReader {
+    direct: DirectResourceReader,
+    // Cache file content, path->content
+    cache: Arc<Mutex<HashMap<String, String>>>,
+}
+
+impl CachedResourceReader {
+    pub fn init(runtime: TargetRuntime) -> Self {
+        Self { direct: DirectResourceReader::init(runtime), cache: Default::default() }
+    }
+
+    /// Reads a file from the filesystem or from an HTTP URL with cache
+    pub async fn read_file<T: ToString>(&self, file: T) -> anyhow::Result<FileRead> {
+        // check cache
+        let file_path = file.to_string();
+        let content = self
+            .cache
+            .as_ref()
+            .lock()
+            .unwrap()
+            .get(&file_path)
+            .map(|v| v.to_owned());
+        let content = if let Some(content) = content {
+            content.to_owned()
+        } else {
+            let file_read = self.direct.read_file(file.to_string()).await?;
+            self.cache
+                .as_ref()
+                .lock()
+                .unwrap()
+                .insert(file_path.to_owned(), file_read.content.clone());
+            file_read.content
+        };
+
+        Ok(FileRead { content, path: file_path })
+    }
 
     /// Reads all the files in parallel with cache
-    async fn read_files_with_cached<T: ToString>(
+    pub async fn read_files<T: ToString>(
         &self,
         files: &[T],
     ) -> anyhow::Result<Vec<FileRead>> {
         let files = files.iter().map(|x| {
-            self.read_file_with_cached(x.to_string())
+            self.read_file(x.to_string())
                 .map_err(|e| e.context(x.to_string()))
         });
         let content = join_all(files)
