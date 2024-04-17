@@ -10,7 +10,7 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
-use crate::resource_reader::{CachedResourceReader, ResourceReader, ResourceReaderHandler};
+use crate::resource_reader::{Cached, ResourceReader, ResourceReaderHandler};
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 
@@ -18,13 +18,13 @@ use crate::runtime::TargetRuntime;
 /// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
-    resource_reader: ResourceReader<CachedResourceReader>,
-    proto_reader: ProtoReader<CachedResourceReader>,
+    resource_reader: ResourceReader<Cached>,
+    proto_reader: ProtoReader<Cached>,
 }
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
-        let resource_reader = ResourceReader::<CachedResourceReader>::cached(runtime.clone());
+        let resource_reader = ResourceReader::<Cached>::cached(runtime.clone());
         Self {
             runtime: runtime.clone(),
             resource_reader: resource_reader.clone(),

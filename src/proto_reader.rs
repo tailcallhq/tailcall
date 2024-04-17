@@ -99,12 +99,12 @@ mod test_proto_config {
     use pretty_assertions::assert_eq;
 
     use crate::proto_reader::ProtoReader;
-    use crate::resource_reader::{CachedResourceReader, ResourceReader};
+    use crate::resource_reader::{Cached, ResourceReader};
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ProtoReader::init(ResourceReader::<CachedResourceReader>::cached(
+        let reader = ProtoReader::init(ResourceReader::<Cached>::cached(
             crate::runtime::test::init(None),
         ));
         reader
@@ -135,7 +135,7 @@ mod test_proto_config {
         let runtime = crate::runtime::test::init(None);
         let file_rt = runtime.file.clone();
 
-        let reader = ProtoReader::init(ResourceReader::<CachedResourceReader>::cached(runtime));
+        let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime));
         let helper_map = reader
             .resolve_descriptors(reader.read_proto(&test_file).await?)
             .await?;
@@ -179,7 +179,7 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
         let runtime = crate::runtime::test::init(None);
-        let reader = ProtoReader::init(ResourceReader::<CachedResourceReader>::cached(runtime));
+        let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime));
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;

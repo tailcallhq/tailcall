@@ -19,12 +19,12 @@ pub struct FileRead {
 pub struct ResourceReader<A>(A);
 
 impl<A> ResourceReader<A> {
-    pub fn direct(runtime: TargetRuntime) -> ResourceReader<DirectResourceReader> {
-        ResourceReader::<DirectResourceReader>(DirectResourceReader::init(runtime))
+    pub fn direct(runtime: TargetRuntime) -> ResourceReader<Direct> {
+        ResourceReader::<Direct>(Direct::init(runtime))
     }
 
-    pub fn cached(runtime: TargetRuntime) -> ResourceReader<CachedResourceReader> {
-        ResourceReader::<CachedResourceReader>(CachedResourceReader::init(runtime))
+    pub fn cached(runtime: TargetRuntime) -> ResourceReader<Cached> {
+        ResourceReader::<Cached>(Cached::init(runtime))
     }
 }
 
@@ -47,18 +47,18 @@ pub trait ResourceReaderHandler {
 }
 
 #[derive(Clone)]
-pub struct DirectResourceReader {
+pub struct Direct {
     runtime: TargetRuntime,
 }
 
-impl DirectResourceReader {
+impl Direct {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { runtime }
     }
 }
 
 #[async_trait::async_trait]
-impl ResourceReaderHandler for DirectResourceReader {
+impl ResourceReaderHandler for Direct {
     /// Reads a file from the filesystem or from an HTTP URL
     async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
@@ -102,23 +102,23 @@ impl ResourceReaderHandler for DirectResourceReader {
 }
 
 #[derive(Clone)]
-pub struct CachedResourceReader {
-    direct: DirectResourceReader,
+pub struct Cached {
+    direct: Direct,
     // Cache file content, path->content
     cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
-impl CachedResourceReader {
+impl Cached {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
-            direct: DirectResourceReader::init(runtime),
+            direct: Direct::init(runtime),
             cache: Default::default(),
         }
     }
 }
 
 #[async_trait::async_trait]
-impl ResourceReaderHandler for CachedResourceReader {
+impl ResourceReaderHandler for Cached {
     /// Reads a file from the filesystem or from an HTTP URL with cache
     async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // check cache
