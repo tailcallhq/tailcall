@@ -2,16 +2,14 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use anyhow::Context;
-use async_lock::Mutex;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::resource_reader::ResourceReader;
-use crate::runtime::TargetRuntime;
+use crate::resource_reader::{self, ResourceReader};
 
 pub struct ProtoReader {
-    resource_reader: ResourceReader,
+    resource_reader: Arc<ResourceReader>,
 }
 
 pub struct ProtoMetadata {
@@ -20,8 +18,8 @@ pub struct ProtoMetadata {
 }
 
 impl ProtoReader {
-    pub fn init(runtime: TargetRuntime, cache: Arc<Mutex<HashMap<String, String>>>) -> Self {
-        Self { resource_reader: ResourceReader::init(runtime, cache) }
+    pub fn init(resource_reader: Arc<ResourceReader>) -> Self {
+        Self { resource_reader }
     }
 
     pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
@@ -97,16 +95,17 @@ impl ProtoReader {
 #[cfg(test)]
 mod test_proto_config {
     use std::path::{Path, PathBuf};
+    use std::sync::Arc;
 
     use anyhow::{Context, Result};
     use pretty_assertions::assert_eq;
 
-    use crate::proto_reader::ProtoReader;
+    use crate::{proto_reader::ProtoReader, resource_reader::ResourceReader};
 
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ProtoReader::init(crate::runtime::test::init(None), Default::default());
+        let reader = ProtoReader::init(Arc::new(ResourceReader::init(crate::runtime::test::init(None), true)));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
@@ -135,7 +134,7 @@ mod test_proto_config {
         let runtime = crate::runtime::test::init(None);
         let file_rt = runtime.file.clone();
 
-        let reader = ProtoReader::init(runtime, Default::default());
+        let reader = ProtoReader::init(Arc::new(ResourceReader::init(runtime, true)));
         let helper_map = reader
             .resolve_descriptors(reader.read_proto(&test_file).await?)
             .await?;
@@ -179,7 +178,7 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
         let runtime = crate::runtime::test::init(None);
-        let reader = ProtoReader::init(runtime, Default::default());
+        let reader = ProtoReader::init(Arc::new(ResourceReader::init(runtime, true)));
         let mut proto_no_pkg = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         proto_no_pkg.push("src/grpc/tests/proto_no_pkg.graphql");
         let config_module = reader.read(proto_no_pkg.to_str().unwrap()).await;

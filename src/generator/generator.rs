@@ -1,10 +1,14 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 
+use crate::cli::run;
 use crate::config::{Config, Link, LinkType};
 use crate::generator::from_proto::from_proto;
 use crate::generator::source::Source;
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
+use crate::resource_reader::ResourceReader;
 use crate::runtime::TargetRuntime;
 
 pub struct Generator {
@@ -12,7 +16,7 @@ pub struct Generator {
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { proto_reader: ProtoReader::init(runtime, Default::default()) }
+        Self { proto_reader: ProtoReader::init(Arc::new(ResourceReader::init(runtime, false))) }
     }
 
     pub async fn read_all<T: AsRef<str>>(
