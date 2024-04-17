@@ -20,5 +20,5 @@ type PERSON_PHONE_NUMBER @tag(id: "person.PhoneNumber") {
 }
 
 type Query {
-  person_get_person: PERSON_PERSON! @grpc(method: "person.GetPerson")
+  person_get_person: PERSON_PERSON! @grpc(method: "person.PersonService.GetPerson")
 }

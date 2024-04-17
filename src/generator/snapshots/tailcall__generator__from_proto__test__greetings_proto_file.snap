@@ -15,5 +15,5 @@ type GREETINGS_HELLO_REPLY @tag(id: "greetings.HelloReply") {
 }
 
 type Query {
-  greetings_say_hello(hello_request: GREETINGS_HELLO_REQUEST!): GREETINGS_HELLO_REPLY! @grpc(method: "greetings.SayHello")
+  greetings_say_hello(hello_request: GREETINGS_HELLO_REQUEST!): GREETINGS_HELLO_REPLY! @grpc(method: "greetings.Greeter.SayHello")
 }
