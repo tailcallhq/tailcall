@@ -125,6 +125,10 @@ impl GraphQLType<Parsed> {
     pub fn name(&self) -> String {
         self.0.name.clone()
     }
+
+    pub fn package(&self) -> Option<String> {
+        self.0.package.as_ref().map(|x| x.source().to_string())
+    }
 }
 
 // FIXME: make it private

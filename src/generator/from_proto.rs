@@ -184,12 +184,18 @@ impl Context {
                 grpc_method.service = service_name.clone();
                 grpc_method.name = field_name.to_string();
 
+                let package_prefix = field_name
+                    .package()
+                    .map(|x| x + ".")
+                    .unwrap_or("".to_string());
+                let method = format!("{}{}.{}", package_prefix, service_name, field_name.name());
+
                 cfg_field.grpc = Some(Grpc {
                     base_url: None,
                     body: None,
                     group_by: vec![],
                     headers: vec![],
-                    method: format!("{}.{}.{}", self.package, service_name, field_name.name()),
+                    method,
                 });
 
                 let ty = self
