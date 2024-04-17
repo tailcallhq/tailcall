@@ -104,10 +104,8 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let reader = ProtoReader::init(ResourceReader::init(
-            crate::runtime::test::init(None),
-            true,
-        ));
+        let reader =
+            ProtoReader::init(ResourceReader::init(crate::runtime::test::init(None), true));
         reader
             .read_proto("google/protobuf/empty.proto")
             .await
