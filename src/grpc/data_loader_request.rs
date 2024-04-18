@@ -98,9 +98,7 @@ mod tests {
         let protobuf_set = ProtobufSet::from_proto_file(
             config_module
                 .extensions
-                .get_file_descriptor_set()
-                .unwrap()
-                .clone(),
+                .get_file_descriptor_set(),
         )
         .unwrap();
 

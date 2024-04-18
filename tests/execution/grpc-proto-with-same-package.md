@@ -19,18 +19,17 @@ service FooService {
 ```protobuf @file:bar.proto
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+
 package test;
 
-message Input {
-
-}
 
 message Bar {
   string bar = 1;
 }
 
 service BarService {
-  rpc GetBar (Input) returns (Bar) {}
+  rpc GetBar (google.protobuf.Empty) returns (Bar) {}
 }
 ```
 

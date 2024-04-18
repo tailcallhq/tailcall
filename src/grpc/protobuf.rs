@@ -299,9 +299,7 @@ pub mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor_set()
-            .unwrap()
-            .to_owned())
+            .get_file_descriptor_set())
     }
 
     #[test]
