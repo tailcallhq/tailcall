@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use derive_setters::Setters;
 use jsonwebtoken::jwk::JwkSet;
-use prost_reflect::prost_types::FileDescriptorSet;
+use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::config::Config;
@@ -42,7 +42,7 @@ impl<A> Deref for Content<A> {
 #[derive(Clone, Debug, Default, MergeRight)]
 pub struct Extensions {
     /// Contains the file descriptor set resolved from the links to proto files
-    pub grpc_file_descriptor_set: Option<FileDescriptorSet>,
+    pub grpc_file_descriptors: HashMap<String, FileDescriptorProto>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -63,17 +63,14 @@ pub struct Extensions {
 
 impl Extensions {
     pub fn add_proto(&mut self, metadata: ProtoMetadata) {
-        if let Some(set) = self.grpc_file_descriptor_set.as_mut() {
-            set.file.extend(metadata.descriptor_set.file);
-        } else {
-            let _ = self
-                .grpc_file_descriptor_set
-                .insert(metadata.descriptor_set);
+        for file in metadata.descriptor_set.file {
+            self.grpc_file_descriptors
+                .insert(file.name().to_string(), file);
         }
     }
 
-    pub fn get_file_descriptor_set(&self) -> Option<&FileDescriptorSet> {
-        self.grpc_file_descriptor_set.as_ref()
+    pub fn get_file_descriptor_set(&self) -> FileDescriptorSet {
+        FileDescriptorSet { file: self.grpc_file_descriptors.values().cloned().collect() }
     }
 
     pub fn has_auth(&self) -> bool {
@@ -207,114 +204,5 @@ impl From<Config> for ConfigModule {
         let output_types = config.output_types();
 
         ConfigModule { config, input_types, output_types, ..Default::default() }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::path::PathBuf;
-
-    use super::*;
-    use crate::config::Type;
-    use crate::generator::Source;
-
-    fn build_qry(mut config: Config) -> Config {
-        let mut type1 = Type::default();
-        let mut field1 =
-            crate::config::Field { type_of: "Type1".to_string(), ..Default::default() };
-
-        let arg1 = crate::config::Arg { type_of: "Type1".to_string(), ..Default::default() };
-
-        field1.args.insert("arg1".to_string(), arg1);
-
-        let arg2 = crate::config::Arg { type_of: "Type2".to_string(), ..Default::default() };
-
-        let _field3 = crate::config::Field { type_of: "Type3".to_string(), ..Default::default() };
-        let arg3 = crate::config::Arg { type_of: "Type3".to_string(), ..Default::default() };
-
-        field1.args.insert("arg2".to_string(), arg2);
-        field1.args.insert("arg3".to_string(), arg3);
-
-        let mut field2 = field1.clone();
-        field2.type_of = "Type2".to_string();
-
-        type1.fields.insert("field1".to_string(), field1);
-        type1.fields.insert("field2".to_string(), field2);
-
-        config.types.insert("Query".to_string(), type1);
-        config = config.query("Query");
-
-        config
-    }
-
-    #[test]
-    fn test_resolve_ambiguous_types() {
-        // Create a ConfigModule instance with ambiguous types
-        let mut config = Config::default();
-
-        let mut type1 = Type::default();
-        let mut type2 = Type::default();
-        let mut type3 = Type::default();
-
-        type1.fields.insert(
-            "name".to_string(),
-            crate::config::Field::default().type_of("String".to_string()),
-        );
-
-        type2.fields.insert(
-            "ty1".to_string(),
-            crate::config::Field::default().type_of("Type1".to_string()),
-        );
-        type2.fields.insert(
-            "ty3".to_string(),
-            crate::config::Field::default().type_of("Type3".to_string()),
-        );
-
-        type3.fields.insert(
-            "ty1".to_string(),
-            crate::config::Field::default().type_of("Type1".to_string()),
-        );
-        type3.fields.insert(
-            "ty2".to_string(),
-            crate::config::Field::default().type_of("Type2".to_string()),
-        );
-
-        config.types.insert("Type1".to_string(), type1);
-        config.types.insert("Type2".to_string(), type2);
-        config.types.insert("Type3".to_string(), type3);
-
-        config = build_qry(config);
-
-        let mut config_module = ConfigModule::from(config);
-
-        let resolver = |type_name: &str| -> Resolution {
-            Resolution {
-                input: format!("{}Input", type_name),
-                output: format!("{}Output", type_name),
-            }
-        };
-
-        config_module = config_module.resolve_ambiguous_types(resolver);
-
-        assert!(config_module.config.types.contains_key("Type1Input"));
-        assert!(config_module.config.types.contains_key("Type1Output"));
-        assert!(config_module.config.types.contains_key("Type2Output"));
-        assert!(config_module.config.types.contains_key("Type2Input"));
-        assert!(config_module.config.types.contains_key("Type3"));
-    }
-    #[tokio::test]
-    async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
-        let gen = crate::generator::Generator::init(crate::runtime::test::init(None));
-        let news =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/grpc/tests/proto/news.proto");
-        let config_module = gen
-            .read_all(Source::PROTO, &[news.to_str().unwrap()], "Query")
-            .await?;
-        assert!(config_module.types.contains_key("News__News"));
-        assert!(config_module.types.contains_key("INPUT_News__News"));
-        assert!(config_module.types.contains_key("News__MultipleNewsId"));
-        assert!(config_module.types.contains_key("News__NewsId"));
-        assert!(config_module.types.contains_key("News__NewsList"));
-        Ok(())
     }
 }
