@@ -43,8 +43,12 @@ impl Context {
         for enum_ in enums {
             let mut ty = Type::default();
 
-            let enum_name = enum_.name();
-            ty.tag = Some(Tag { id: enum_name.to_string() });
+            let enum_type = GraphQLType::new(enum_.name())
+                .package(&self.package)
+                .as_enum()
+                .unwrap();
+
+            ty.tag = Some(Tag { id: enum_type.id() });
 
             let variants = enum_
                 .value
@@ -59,12 +63,7 @@ impl Context {
 
             ty.variants = Some(variants);
 
-            let type_name = GraphQLType::new(enum_name)
-                .package(&self.package)
-                .as_enum()
-                .unwrap()
-                .to_string();
-            self = self.insert_type(type_name, ty);
+            self = self.insert_type(enum_type.to_string(), ty);
         }
         self
     }

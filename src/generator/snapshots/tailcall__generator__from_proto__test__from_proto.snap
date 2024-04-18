@@ -36,7 +36,7 @@ input NEWS_NEWS_ID @tag(id: "news.NewsId") {
   id: Int
 }
 
-enum NEWS_STATUS @tag(id: "Status") {
+enum NEWS_STATUS @tag(id: "news.Status") {
   DRAFT
   PUBLISHED
 }

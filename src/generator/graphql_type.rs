@@ -70,8 +70,7 @@ impl GraphQLType<Unparsed> {
         let parsed_package = unparsed
             .package
             .iter()
-            .map(|package| Package::parse(package))
-            .flatten()
+            .filter_map(|package| Package::parse(package))
             .reduce(|a, b| a.combine(b));
 
         // Name contains package
@@ -143,10 +142,6 @@ impl GraphQLType<Parsed> {
 
     pub fn name(&self) -> String {
         self.0.name.clone()
-    }
-
-    pub fn package(&self) -> Option<String> {
-        self.0.package.as_ref().map(|x| x.source().to_string())
     }
 }
 
