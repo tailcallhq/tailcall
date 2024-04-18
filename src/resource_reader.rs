@@ -36,7 +36,7 @@ impl<A: ResourceReaderHandler + Send + Sync> ResourceReader<A> {
 }
 
 impl ResourceReader<Direct> {
-    pub fn direct(runtime: TargetRuntime) -> Self {
+    fn direct(runtime: TargetRuntime) -> Self {
         ResourceReader(Direct::init(runtime))
     }
 }
@@ -102,14 +102,17 @@ impl ResourceReaderHandler for Direct {
 /// Reads the files from the filesystem or from an HTTP URL with cache
 #[derive(Clone)]
 pub struct Cached {
-    direct: Direct,
+    direct: ResourceReader<Direct>,
     // Cache file content, path -> content
     cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl Cached {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { direct: Direct::init(runtime), cache: Default::default() }
+        Self {
+            direct: ResourceReader::direct(runtime),
+            cache: Default::default(),
+        }
     }
 }
 

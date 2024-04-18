@@ -5,7 +5,7 @@ use crate::generator::from_proto::from_proto;
 use crate::generator::source::Source;
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
-use crate::resource_reader::{Direct, ResourceReader};
+use crate::resource_reader::ResourceReader;
 use crate::runtime::TargetRuntime;
 
 pub struct Generator {
