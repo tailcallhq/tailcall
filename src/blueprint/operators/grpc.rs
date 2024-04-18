@@ -165,15 +165,17 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
-            Valid::from_option(
-                config_module.extensions.get_file_descriptor_set(),
-                "Protobuf files were not specified in the config".to_string(),
-            )
-            .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set.clone()))
-            .fuse(to_url(grpc, &method, config_module))
-            .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
-            .fuse(helpers::body::to_body(grpc.body.as_deref()))
-            .into()
+            let file_descriptor_set = config_module.extensions.get_file_descriptor_set();
+
+            if file_descriptor_set.file.is_empty() {
+                return Valid::fail("Protobuf files were not specified in the config".to_string());
+            }
+
+            to_operation(&method, file_descriptor_set)
+                .fuse(to_url(grpc, &method, config_module))
+                .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
+                .fuse(helpers::body::to_body(grpc.body.as_deref()))
+                .into()
         })
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {

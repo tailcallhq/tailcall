@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
 pub trait MergeRight {
@@ -61,6 +61,16 @@ where
 impl<V> MergeRight for HashSet<V>
 where
     V: Eq + std::hash::Hash,
+{
+    fn merge_right(mut self, other: Self) -> Self {
+        self.extend(other);
+        self
+    }
+}
+
+impl<K, V> MergeRight for HashMap<K, V>
+where
+    K: Eq + std::hash::Hash,
 {
     fn merge_right(mut self, other: Self) -> Self {
         self.extend(other);
