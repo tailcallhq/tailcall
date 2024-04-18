@@ -17,14 +17,13 @@ pub struct Parsed {
 
 #[derive(Debug, Clone)]
 pub struct Unparsed {
-    package: Option<String>,
+    package: Vec<String>,
     name: String,
 }
 
 #[derive(Debug, Clone)]
 struct Package {
     path: Vec<String>,
-    input: String,
 }
 
 impl Package {
@@ -34,12 +33,17 @@ impl Package {
         if path.is_empty() | input.is_empty() {
             None
         } else {
-            Some(Self { path, input: input.to_string() })
+            Some(Self { path })
         }
     }
 
-    fn source(&self) -> &str {
-        &self.input
+    fn source(&self) -> String {
+        self.path.join(".")
+    }
+
+    fn combine(mut self, other: Package) -> Self {
+        self.path.extend(other.path);
+        self
     }
 }
 
@@ -58,12 +62,17 @@ impl Display for Package {
 
 impl GraphQLType<Unparsed> {
     pub fn new(input: &str) -> Self {
-        Self(Unparsed { package: None, name: input.to_string() })
+        Self(Unparsed { package: Vec::new(), name: input.to_string() })
     }
 
     fn parse(&self, entity: Entity) -> Option<GraphQLType<Parsed>> {
         let unparsed = &self.0;
-        let parsed_package = unparsed.package.as_deref().and_then(Package::parse);
+        let parsed_package = unparsed
+            .package
+            .iter()
+            .map(|package| Package::parse(package))
+            .flatten()
+            .reduce(|a, b| a.combine(b));
 
         // Name contains package
         if unparsed.name.contains(PACKAGE_SEPARATOR) {
@@ -108,7 +117,17 @@ impl GraphQLType<Unparsed> {
     }
 
     pub fn package(mut self, package: &str) -> Self {
-        self.0.package = Some(package.to_string());
+        self.0.package = vec![package.to_string()];
+        self
+    }
+
+    pub fn prepend_package(mut self, package: &str) -> Self {
+        self.0.package.insert(0, package.to_string());
+        self
+    }
+
+    pub fn append_package(mut self, package: &str) -> Self {
+        self.0.package.push(package.to_string());
         self
     }
 }
