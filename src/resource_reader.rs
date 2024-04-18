@@ -17,7 +17,7 @@ pub struct FileRead {
 #[derive(Clone)]
 pub struct ResourceReader<A>(A);
 
-impl<A: ResourceReaderHandler + Send + Sync> ResourceReader<A> {
+impl<A: Reader + Send + Sync> ResourceReader<A> {
     /// Reads all the files in parallel
     pub async fn read_files<T: ToString + Send + Sync>(
         &self,
@@ -33,11 +33,9 @@ impl<A: ResourceReaderHandler + Send + Sync> ResourceReader<A> {
             .collect::<anyhow::Result<Vec<_>>>()?;
         Ok(content)
     }
-}
 
-impl ResourceReader<Direct> {
-    fn direct(runtime: TargetRuntime) -> Self {
-        ResourceReader(Direct::init(runtime))
+    pub async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+        self.0.read(file).await
     }
 }
 
@@ -48,15 +46,15 @@ impl ResourceReader<Cached> {
 }
 
 #[async_trait::async_trait]
-impl<A: ResourceReaderHandler + Send + Sync> ResourceReaderHandler for ResourceReader<A> {
-    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
-        self.read_file(file).await
+impl<A: Reader + Send + Sync> Reader for ResourceReader<A> {
+    async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+        self.read(file).await
     }
 }
 
 #[async_trait::async_trait]
-pub trait ResourceReaderHandler {
-    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+pub trait Reader {
+    async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
 }
 
 /// Reads the files directly from the filesystem or from an HTTP URL
@@ -72,9 +70,9 @@ impl Direct {
 }
 
 #[async_trait::async_trait]
-impl ResourceReaderHandler for Direct {
+impl Reader for Direct {
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
@@ -102,24 +100,21 @@ impl ResourceReaderHandler for Direct {
 /// Reads the files from the filesystem or from an HTTP URL with cache
 #[derive(Clone)]
 pub struct Cached {
-    direct: ResourceReader<Direct>,
+    direct: Direct,
     // Cache file content, path -> content
     cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl Cached {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self {
-            direct: ResourceReader::direct(runtime),
-            cache: Default::default(),
-        }
+        Self { direct: Direct::init(runtime), cache: Default::default() }
     }
 }
 
 #[async_trait::async_trait]
-impl ResourceReaderHandler for Cached {
+impl Reader for Cached {
     /// Reads a file from the filesystem or from an HTTP URL with cache
-    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // check cache
         let file_path = file.to_string();
         let content = self
@@ -132,7 +127,7 @@ impl ResourceReaderHandler for Cached {
         let content = if let Some(content) = content {
             content.to_owned()
         } else {
-            let file_read = self.direct.read_file(file.to_string()).await?;
+            let file_read = self.direct.read(file.to_string()).await?;
             self.cache
                 .as_ref()
                 .lock()

@@ -5,7 +5,7 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::resource_reader::{Cached, ResourceReader, ResourceReaderHandler};
+use crate::resource_reader::{Cached, ResourceReader};
 
 pub struct ProtoReader {
     resource_reader: ResourceReader<Cached>,
