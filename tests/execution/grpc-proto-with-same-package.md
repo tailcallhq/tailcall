@@ -1,97 +1,83 @@
 # Grpc when multiple proto files have the same package name
 
-```protobuf @file:errors.proto
-syntax = "proto3";
-
-package news;
-
-// The error message definition.
-message ErrValidation {
-  string error = 1;
-}
-```
-
-```protobuf @file:news.proto
+```protobuf @file:foo.proto
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
-package news;
+package test;
 
-message News {
-    int32 id = 1;
-    string title = 2;
-    string body = 3;
-    string postImage = 4;
+message Foo {
+  string foo = 1;
 }
 
-service NewsService {
-    rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
-    rpc GetNews (NewsId) returns (News) {}
-    rpc GetMultipleNews (MultipleNewsId) returns (NewsList) {}
-    rpc DeleteNews (NewsId) returns (google.protobuf.Empty) {}
-    rpc EditNews (News) returns (News) {}
-    rpc AddNews (News) returns (News) {}
+service FooService {
+  rpc GetFoo (google.protobuf.Empty) returns (Foo) {}
+}
+```
+
+```protobuf @file:bar.proto
+syntax = "proto3";
+
+package test;
+
+message Input {
+
 }
 
-message NewsId {
-    int32 id = 1;
+message Bar {
+  string bar = 1;
 }
 
-message MultipleNewsId {
-    repeated NewsId ids = 1;
-}
-
-message NewsList {
-    repeated News news = 1;
+service BarService {
+  rpc GetBar (Input) returns (Bar) {}
 }
 ```
 
 ```graphql @server
 schema
   @server(port: 8000, graphiql: true)
-  @upstream(httpCache: true, batch: {delay: 10})
-  @link(id: "errors", src: "errors.proto", type: Protobuf)
-  @link(id: "news", src: "news.proto", type: Protobuf) {
+  @upstream(baseURL: "http://localhost:50051")
+  @link(src: "foo.proto", type: Protobuf)
+  @link(src: "bar.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:50051")
-  newsById(news: NewsInput!): News!
-    @grpc(method: "news.NewsService.GetNews", baseURL: "http://localhost:50051", body: "{{args.news}}")
-}
-input NewsInput {
-  id: Int
-  title: String
-  body: String
-  postImage: String
-}
-type NewsData {
-  news: [News]!
+  foo: Foo! @grpc(method: "test.FooService.GetFoo")
+  bar: Bar! @grpc(method: "test.BarService.GetBar")
 }
 
-type News {
-  id: Int
-  title: String
-  body: String
-  postImage: String
+type Foo {
+  foo: String
+}
+
+type Bar {
+  bar: String
 }
 ```
 
 ```yml @mock
 - request:
     method: POST
-    url: http://localhost:50051/news.NewsService/GetAllNews
+    url: http://localhost:50051/test.FooService/GetFoo
     body: null
   response:
     status: 200
-    body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
+    body: \0\0\0\0\n\n\x08test-foo
+
+- request:
+    method: POST
+    url: http://localhost:50051/test.BarService/GetBar
+    body: null
+  response:
+    status: 200
+    body: \0\0\0\0\n\n\x08test-bar
 ```
 
 ```yml @assert
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { news {news{ id }} }
+    query: query { foo { foo } bar { bar } }
 ```

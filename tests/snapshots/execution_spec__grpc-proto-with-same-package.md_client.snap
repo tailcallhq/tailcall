@@ -2,37 +2,27 @@
 source: tests/execution_spec.rs
 expression: client
 ---
+type Bar {
+  bar: String
+}
+
 scalar Date
 
 scalar Email
 
 scalar Empty
 
+type Foo {
+  foo: String
+}
+
 scalar JSON
-
-type News {
-  body: String
-  id: Int
-  postImage: String
-  title: String
-}
-
-type NewsData {
-  news: [News]!
-}
-
-input NewsInput {
-  body: String
-  id: Int
-  postImage: String
-  title: String
-}
 
 scalar PhoneNumber
 
 type Query {
-  news: NewsData!
-  newsById(news: NewsInput!): News!
+  bar: Bar!
+  foo: Foo!
 }
 
 scalar Url

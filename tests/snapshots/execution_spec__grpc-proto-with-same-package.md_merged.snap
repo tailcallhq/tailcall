@@ -2,29 +2,19 @@
 source: tests/execution_spec.rs
 expression: merged
 ---
-schema @server(graphiql: true, port: 8000) @upstream(batch: {delay: 10, headers: [], maxSize: 100}, httpCache: true) @link(id: "errors", src: "errors.proto", type: Protobuf) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema @server(graphiql: true, port: 8000) @upstream(baseURL: "http://localhost:50051") @link(src: "foo.proto", type: Protobuf) @link(src: "bar.proto", type: Protobuf) {
   query: Query
 }
 
-input NewsInput {
-  body: String
-  id: Int
-  postImage: String
-  title: String
+type Bar {
+  bar: String
 }
 
-type News {
-  body: String
-  id: Int
-  postImage: String
-  title: String
-}
-
-type NewsData {
-  news: [News]!
+type Foo {
+  foo: String
 }
 
 type Query {
-  news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(baseURL: "http://localhost:50051", body: "{{args.news}}", method: "news.NewsService.GetNews")
+  bar: Bar! @grpc(method: "test.BarService.GetBar")
+  foo: Foo! @grpc(method: "test.FooService.GetFoo")
 }

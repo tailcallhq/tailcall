@@ -9,15 +9,11 @@ expression: response
   },
   "body": {
     "data": {
-      "news": {
-        "news": [
-          {
-            "id": 1
-          },
-          {
-            "id": 2
-          }
-        ]
+      "foo": {
+        "foo": "test-foo"
+      },
+      "bar": {
+        "bar": "test-bar"
       }
     }
   }
