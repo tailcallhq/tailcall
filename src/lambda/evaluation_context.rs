@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{SelectionField, ServerError, Value};
+use jaq_interpret::{Ctx, FilterT, ParseCtx, RcIter};
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
@@ -165,21 +166,22 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
 
 // TODO: this is the same code as src/json/json_like.rs::get_path
 pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {
-    let mut value = Some(input);
-    for name in path {
-        match value {
-            Some(Value::Object(map)) => {
-                value = map.get(name.as_ref());
-            }
+    let mut defs = ParseCtx::new(vec![]);
 
-            Some(Value::List(list)) => {
-                value = list.get(name.as_ref().parse::<usize>().ok()?);
-            }
-            _ => return None,
-        }
-    }
+    let (filter, _) = jaq_parse::parse(get_jq_qry(path).as_str(), jaq_parse::main());
+    let filter = defs.compile(filter?);
+    let iter = RcIter::new(vec![].into_iter());
+    let val = jaq_interpret::Val::from(input.clone().into_json().ok()?); // TODO
+    let mut iter = filter.run((Ctx::new(vec![], &iter), val));
+    let value= iter.next()?;
+    let value = serde_json::from_str::<serde_json::Value>(&value.ok()?.to_string()).ok()?;
+    println!("{}",value);
 
-    value
+    Some(input)
+}
+
+fn get_jq_qry<T: AsRef<str>>(path: &[T]) -> String {
+    format!(".{}", path.iter().map(|v|v.as_ref()).collect::<Vec<_>>().join("."))
 }
 
 #[cfg(test)]

@@ -146,7 +146,9 @@ convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tonic-types = "0.11.0"
-
+jaq-core = "1.2.1"
+jaq-parse = "1.0.2"
+jaq-interpret = {version = "1.2.1",features = ["serde_json"]}
 
 [dev-dependencies]
 tailcall-prettier = {path = "tailcall-prettier"}

@@ -51,6 +51,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
 dependencies = [
  "cfg-if",
+ "getrandom",
  "once_cell",
  "version_check",
  "zerocopy",
@@ -838,6 +839,15 @@ dependencies = [
  "num-traits",
  "wasm-bindgen",
  "windows-targets 0.52.5",
+]
+
+[[package]]
+name = "chumsky"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eebd66744a15ded14960ab4ccdbfb51ad3b81f51f3f04a80adac98c985396c9"
+dependencies = [
+ "hashbrown 0.14.3",
 ]
 
 [[package]]
@@ -2116,6 +2126,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
+name = "hifijson"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18ae468bcb4dfecf0e4949ee28abbc99076b6a0077f51ddbc94dbfff8e6a870c"
+
+[[package]]
 name = "hmac"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2596,6 +2612,57 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
+name = "jaq-core"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03d6a5713b8f33675abfac79d1db0022a3f28764b2a6b96a185c199ad8dab86d"
+dependencies = [
+ "aho-corasick",
+ "base64 0.21.7",
+ "hifijson",
+ "jaq-interpret",
+ "libm",
+ "log",
+ "regex",
+ "time",
+ "urlencoding",
+]
+
+[[package]]
+name = "jaq-interpret"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f569e38e5fc677db8dfda89ee0b4c25b3f53e811b16434fd14bdc5b43fc362ac"
+dependencies = [
+ "ahash 0.8.11",
+ "dyn-clone",
+ "hifijson",
+ "indexmap 2.2.6",
+ "jaq-syn",
+ "once_cell",
+ "serde_json",
+]
+
+[[package]]
+name = "jaq-parse"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef6f8beb9f9922546419e774e24199e8a968f54c63a5a2323c8f3ef3321ace14"
+dependencies = [
+ "chumsky",
+ "jaq-syn",
+]
+
+[[package]]
+name = "jaq-syn"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4d60101fb791b20c982731d848ed6e7d25363656497647c2093b68bd88398d6"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "jni"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2808,6 +2875,12 @@ dependencies = [
  "cfg-if",
  "winapi",
 ]
+
+[[package]]
+name = "libm"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
 name = "libmimalloc-sys"
@@ -5104,6 +5177,9 @@ dependencies = [
  "indexmap 2.2.6",
  "inquire",
  "insta",
+ "jaq-core",
+ "jaq-interpret",
+ "jaq-parse",
  "jsonwebtoken",
  "lazy_static",
  "lru 0.12.3",
