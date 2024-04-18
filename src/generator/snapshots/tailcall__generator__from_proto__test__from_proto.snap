@@ -54,12 +54,12 @@ type NEWS_NEWS_LIST @tag(id: "news.NewsList") {
 }
 
 type Query {
-  greetings_a_b_say_hello(hello_request: GREETINGS_A_B_HELLO_REQUEST!): GREETINGS_A_B_HELLO_REPLY! @grpc(method: "greetings_a.b.Greeter.SayHello")
-  greetings_b_c_say_hello(hello_request: GREETINGS_B_C_HELLO_REQUEST!): GREETINGS_B_C_HELLO_REPLY! @grpc(method: "greetings_b.c.Greeter.SayHello")
-  news_add_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.NewsService.AddNews")
-  news_delete_news(news_id: NEWS_NEWS_ID!): NEWS_EMPTY! @grpc(method: "news.NewsService.DeleteNews")
-  news_edit_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.NewsService.EditNews")
-  news_get_all_news: NEWS_NEWS_LIST! @grpc(method: "news.NewsService.GetAllNews")
-  news_get_multiple_news(multiple_news_id: NEWS_MULTIPLE_NEWS_ID!): NEWS_NEWS_LIST! @grpc(method: "news.NewsService.GetMultipleNews")
-  news_get_news(news_id: NEWS_NEWS_ID!): NEWS_NEWS! @grpc(method: "news.NewsService.GetNews")
+  greetings_a_b_greeter_say_hello(hello_request: GREETINGS_A_B_HELLO_REQUEST!): GREETINGS_A_B_HELLO_REPLY! @grpc(method: "greetings_a.b.Greeter.SayHello")
+  greetings_b_c_greeter_say_hello(hello_request: GREETINGS_B_C_HELLO_REQUEST!): GREETINGS_B_C_HELLO_REPLY! @grpc(method: "greetings_b.c.Greeter.SayHello")
+  news_news_service_add_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.NewsService.AddNews")
+  news_news_service_delete_news(news_id: NEWS_NEWS_ID!): NEWS_EMPTY! @grpc(method: "news.NewsService.DeleteNews")
+  news_news_service_edit_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.NewsService.EditNews")
+  news_news_service_get_all_news: NEWS_NEWS_LIST! @grpc(method: "news.NewsService.GetAllNews")
+  news_news_service_get_multiple_news(multiple_news_id: NEWS_MULTIPLE_NEWS_ID!): NEWS_NEWS_LIST! @grpc(method: "news.NewsService.GetMultipleNews")
+  news_news_service_get_news(news_id: NEWS_NEWS_ID!): NEWS_NEWS! @grpc(method: "news.NewsService.GetNews")
 }

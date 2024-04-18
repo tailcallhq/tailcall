@@ -143,6 +143,7 @@ impl Context {
             for method in &service.method {
                 let field_name = GraphQLType::new(method.name())
                     .package(&self.package)
+                    .append_package(&service_name)
                     .as_method()
                     .unwrap();
 
@@ -184,11 +185,7 @@ impl Context {
                 grpc_method.service = service_name.clone();
                 grpc_method.name = field_name.to_string();
 
-                let package_prefix = field_name
-                    .package()
-                    .map(|x| x + ".")
-                    .unwrap_or("".to_string());
-                let method = format!("{}{}.{}", package_prefix, service_name, field_name.name());
+                let method = field_name.id();
 
                 cfg_field.grpc = Some(Grpc {
                     base_url: None,
