@@ -66,15 +66,18 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
             };
         }
 
-        println!("path: {:?}", path.iter().map(|v|v.as_ref()).collect::<Vec<&str>>());
+        println!(
+            "path: {:?}",
+            path.iter().map(|v| v.as_ref()).collect::<Vec<&str>>()
+        );
 
         path.split_first()
             .and_then(move |(head, tail)| match head.as_ref() {
                 "value" => {
                     let value = convert_value(ctx.path_value(tail)?);
-                    println!("{:?}",value);
+                    println!("{:?}", value);
                     value
-                },
+                }
                 "args" => convert_value(ctx.path_arg(tail)?),
                 "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
                 "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),

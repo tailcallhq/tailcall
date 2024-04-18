@@ -57,14 +57,14 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
         // TODO: add unit tests for this
         if let Some(args) = self.graphql_ctx_args.as_ref() {
-            get_path_value(args.as_ref(), path).map(|a| Cow::Owned(a.clone()))
+            get_path_value(args.as_ref(), path).map(Cow::Owned)
         } else if path.is_empty() {
             self.graphql_ctx
                 .args()
                 .map(|a| Cow::Owned(Value::Object(a.clone())))
         } else {
             let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
-            get_path_value(arg, &path[1..]).map(Cow::Borrowed)
+            get_path_value(arg, &path[1..]).map(Cow::Owned)
         }
     }
 
@@ -73,7 +73,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         if let Some(value) = self.graphql_ctx_value.as_ref() {
             get_path_value(value.as_ref(), path).map(|a| Cow::Owned(a.clone()))
         } else {
-            get_path_value(self.graphql_ctx.value()?, path).map(Cow::Borrowed)
+            get_path_value(self.graphql_ctx.value()?, path).map(Cow::Owned)
         }
     }
 
@@ -165,23 +165,26 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
 }
 
 // TODO: this is the same code as src/json/json_like.rs::get_path
-pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {
+pub fn get_path_value<T: AsRef<str>>(input: &Value, path: &[T]) -> Option<Value> {
+    let val = jaq_interpret::Val::from(input.clone().into_json().ok()?); // TODO
+
     let mut defs = ParseCtx::new(vec![]);
 
-    let (filter, _) = jaq_parse::parse(get_jq_qry(path).as_str(), jaq_parse::main());
+    let qry = format!(
+        ".{}",
+        path.iter()
+            .map(|v| v.as_ref())
+            .collect::<Vec<_>>()
+            .join(".")
+    );
+
+    let (filter, _) = jaq_parse::parse(qry.as_str(), jaq_parse::main());
     let filter = defs.compile(filter?);
     let iter = RcIter::new(vec![].into_iter());
-    let val = jaq_interpret::Val::from(input.clone().into_json().ok()?); // TODO
     let mut iter = filter.run((Ctx::new(vec![], &iter), val));
-    let value= iter.next()?;
-    let value = serde_json::from_str::<serde_json::Value>(&value.ok()?.to_string()).ok()?;
-    println!("{}",value);
+    let value = iter.next()?.ok()?;
 
-    Some(input)
-}
-
-fn get_jq_qry<T: AsRef<str>>(path: &[T]) -> String {
-    format!(".{}", path.iter().map(|v|v.as_ref()).collect::<Vec<_>>().join("."))
+    Value::from_json(serde_json::Value::from(value)).ok()
 }
 
 #[cfg(test)]
@@ -207,7 +210,7 @@ mod tests {
         let path = vec!["a".to_string(), "b".to_string(), "c".to_string()];
         let result = get_path_value(&async_value, &path);
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), &Value::String("d".to_string()));
+        assert_eq!(result.unwrap(), Value::String("d".to_string()));
     }
 
     #[test]
@@ -240,6 +243,6 @@ mod tests {
         let path = vec!["a".to_string(), "0".to_string(), "b".to_string()];
         let result = get_path_value(&async_value, &path);
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), &Value::String("c".to_string()));
+        assert_eq!(result.unwrap(), Value::String("c".to_string()));
     }
 }

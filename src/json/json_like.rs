@@ -186,6 +186,71 @@ impl JsonLike for async_graphql::Value {
     }
 }
 
+/*impl JsonLike for Val {
+    type Output = Val;
+
+    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+        todo!()
+    }
+
+    fn as_str_ok(&self) -> Result<&str, &str> {
+        todo!()
+    }
+
+    fn as_string_ok(&self) -> Result<&String, &str> {
+        todo!()
+    }
+
+    fn as_i64_ok(&self) -> Result<i64, &str> {
+        todo!()
+    }
+
+    fn as_u64_ok(&self) -> Result<u64, &str> {
+        todo!()
+    }
+
+    fn as_f64_ok(&self) -> Result<f64, &str> {
+        todo!()
+    }
+
+    fn as_bool_ok(&self) -> Result<bool, &str> {
+        todo!()
+    }
+
+    fn as_null_ok(&self) -> Result<(), &str> {
+        todo!()
+    }
+
+    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+        todo!()
+    }
+
+    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
+        let mut defs = ParseCtx::new(vec![]);
+
+        let qry = format!(".{}", path.iter().map(|v| v.as_ref()).collect::<Vec<_>>().join("."));
+
+        let (filter, _) = jaq_parse::parse(qry.as_str(), jaq_parse::main());
+        let filter = defs.compile(filter?);
+        let iter = RcIter::new(vec![].into_iter());
+        let mut iter = filter.run((Ctx::new(vec![], &iter), self.clone()));
+        let _Zvalue = iter.next()?.ok()?;
+        Some(self)
+    }
+
+    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+        todo!()
+    }
+
+    fn new(value: &Self::Output) -> &Self {
+        todo!()
+    }
+
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+        todo!()
+    }
+}
+*/
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
 pub fn gather_path_matches<'a, J: JsonLike>(
@@ -232,7 +297,6 @@ pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String
 
 #[cfg(test)]
 mod tests {
-
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
