@@ -48,7 +48,7 @@ impl ResourceReader<Cached> {
 #[async_trait::async_trait]
 impl<A: Reader + Send + Sync> Reader for ResourceReader<A> {
     async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
-        self.read(file).await
+        self.0.read(file).await
     }
 }
 
