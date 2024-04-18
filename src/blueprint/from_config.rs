@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::dynamic::SchemaBuilder;
 
@@ -89,11 +89,7 @@ where
     let schema = match type_ {
         Some(type_) => {
             if let Some(variants) = type_.variants.clone() {
-                let mut map: HashMap<i32, HashSet<String>> = HashMap::new();
-                for (i, variant) in variants.into_iter().enumerate() {
-                    map.entry(i as i32).or_default().insert(variant);
-                }
-                JsonSchema::Enum(map)
+                JsonSchema::Enum(variants.into_iter().map(|x| BTreeSet::from([x])).collect())
             } else {
                 let mut schema_fields = HashMap::new();
                 for (name, field) in type_.fields.iter() {

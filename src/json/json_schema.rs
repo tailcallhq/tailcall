@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
@@ -12,7 +12,7 @@ pub enum JsonSchema {
     Obj(HashMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
-    Enum(HashMap<i32, HashSet<String>>),
+    Enum(BTreeSet<BTreeSet<String>>),
     Str,
     Num,
     Bool,
@@ -136,18 +136,16 @@ impl JsonSchema {
             }
             JsonSchema::Enum(a) => {
                 if let JsonSchema::Enum(b) = other {
-                    if a.len() != b.len() {
-                        return Valid::fail("expected proper Enum type".to_string()).trace(name);
-                    } else {
-                        let keys: HashSet<_> = a.keys().collect();
-                        for key in keys {
-                            let mut small = &b[key];
-                            let mut large = &a[key];
-                            if a[key].len() < b[key].len() {
-                                small = &a[key];
-                                large = &b[key];
+                    let mut matched = HashSet::new();
+                    for ai in a {
+                        for (i, bi) in b.iter().enumerate() {
+                            if !matched.contains(&i) {
+                                continue;
                             }
-                            if !small.is_subset(large) {
+                            if ai.intersection(bi).count() != 0 {
+                                matched.insert(i);
+                                break;
+                            } else {
                                 return Valid::fail("expected proper Enum type".to_string())
                                     .trace(name);
                             }
@@ -196,13 +194,13 @@ impl TryFrom<&EnumDescriptor> for JsonSchema {
     type Error = crate::valid::ValidationError<String>;
 
     fn try_from(value: &EnumDescriptor) -> Result<Self, Self::Error> {
-        let mut map: HashMap<i32, HashSet<String>> = HashMap::new();
+        let mut map: HashMap<i32, BTreeSet<String>> = HashMap::new();
         for value in value.values() {
             map.entry(value.number())
                 .or_default()
                 .insert(value.name().to_string());
         }
-        Ok(JsonSchema::Enum(map))
+        Ok(JsonSchema::Enum(map.into_values().collect()))
     }
 }
 
