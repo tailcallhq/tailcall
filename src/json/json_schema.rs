@@ -347,8 +347,8 @@ mod tests {
     #[test]
     fn test_compare_enum() {
         let mut en = BTreeSet::new();
-        en.insert("A".to_string());
-        en.insert("B".to_string());
+        en.insert(BTreeSet::from(["A".to_string()]));
+        en.insert(BTreeSet::from(["B".to_string()]));
         let value = JsonSchema::Arr(Box::new(JsonSchema::Enum(en.clone())));
         let schema = JsonSchema::Enum(en);
         let name = "foo";
@@ -362,13 +362,13 @@ mod tests {
     #[test]
     fn test_compare_enum_value() {
         let mut en = BTreeSet::new();
-        en.insert("A".to_string());
-        en.insert("B".to_string());
+        en.insert(BTreeSet::from(["A".to_string()]));
+        en.insert(BTreeSet::from(["B".to_string()]));
 
         let mut en1 = BTreeSet::new();
-        en1.insert("A".to_string());
-        en1.insert("B".to_string());
-        en1.insert("C".to_string());
+        en1.insert(BTreeSet::from(["A".to_string()]));
+        en1.insert(BTreeSet::from(["B".to_string()]));
+        en1.insert(BTreeSet::from(["C".to_string()]));
 
         let value = JsonSchema::Enum(en1.clone());
         let schema = JsonSchema::Enum(en.clone());
