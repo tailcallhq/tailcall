@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{SelectionField, ServerError, Value};
-use jaq_interpret::{Ctx, FilterT, ParseCtx, RcIter};
+use jaq_interpret::{Ctx, FilterT, ParseCtx, RcIter, Val};
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
@@ -183,6 +183,9 @@ pub fn get_path_value<T: AsRef<str>>(input: &Value, path: &[T]) -> Option<Value>
     let iter = RcIter::new(vec![].into_iter());
     let mut iter = filter.run((Ctx::new(vec![], &iter), val));
     let value = iter.next()?.ok()?;
+    if value.eq(&Val::Null) {
+        return None;
+    }
 
     Value::from_json(serde_json::Value::from(value)).ok()
 }
@@ -240,7 +243,7 @@ mod tests {
 
         let async_value = Value::from_json(json).unwrap();
 
-        let path = vec!["a".to_string(), "0".to_string(), "b".to_string()];
+        let path = vec!["a".to_string(), "[0]".to_string(), "b".to_string()];
         let result = get_path_value(&async_value, &path);
         assert!(result.is_some());
         assert_eq!(result.unwrap(), Value::String("c".to_string()));
