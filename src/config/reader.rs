@@ -10,7 +10,7 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
-use crate::resource_reader::{Cached, ResourceReader, ResourceReaderHandler};
+use crate::resource_reader::{Cached, ResourceReader};
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 
@@ -253,7 +253,7 @@ mod reader_tests {
         cfg = cfg.types([("Test", Type::default())].to_vec());
 
         let server = start_mock_server();
-        let header_serv = server.mock(|when, then| {
+        let header_server = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/bar.graphql");
             then.status(200).body(cfg.to_sdl());
         });
@@ -291,7 +291,7 @@ mod reader_tests {
                 .collect::<Vec<String>>()
         );
         foo_json_server.assert(); // checks if the request was actually made
-        header_serv.assert();
+        header_server.assert();
     }
 
     #[tokio::test]
