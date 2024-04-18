@@ -32,7 +32,7 @@ pub struct Upstream {
 impl Upstream {
     pub fn is_batching_enabled(&self) -> bool {
         if let Some(batch) = self.batch.as_ref() {
-            batch.delay >= 1 || batch.max_size >= 1
+            batch.delay >= 1 || batch.max_size.unwrap_or_default() >= 1
         } else {
             false
         }
@@ -88,7 +88,7 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
         || Valid::succeed(None),
         |batch| {
             Valid::succeed(Some(Batch {
-                max_size: (upstream).get_max_size(),
+                max_size: Some((upstream).get_max_size()),
                 delay: (upstream).get_delay(),
                 headers: batch.headers.clone(),
             }))

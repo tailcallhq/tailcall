@@ -103,18 +103,24 @@
         },
         "platform": {
           "description": "Setting `platform` for Apollo.",
-          "default": "platform",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "userVersion": {
           "description": "Setting `userVersion` for Apollo.",
-          "default": "1.0",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "version": {
           "description": "Setting `version` for Apollo.",
-          "default": "1.0",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
@@ -170,8 +176,10 @@
           "uniqueItems": true
         },
         "maxSize": {
-          "default": 100,
-          "type": "integer",
+          "type": [
+            "integer",
+            "null"
+          ],
           "format": "uint",
           "minimum": 0.0
         }
