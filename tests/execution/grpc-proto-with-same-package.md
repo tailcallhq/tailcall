@@ -74,7 +74,7 @@ type Bar {
     body: \0\0\0\0\n\n\x08test-bar
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:
