@@ -81,13 +81,7 @@ impl ConfigReader {
                 LinkType::Protobuf => {
                     let path = Self::resolve_path(&link.src, parent_dir);
                     let meta = self.proto_reader.read(path).await?;
-                    config_module
-                        .extensions
-                        .grpc_file_descriptors
-                        .push(Content {
-                            id: link.id.clone(),
-                            content: meta.descriptor_set.clone(),
-                        });
+                    config_module.extensions.add_proto(meta);
                 }
                 LinkType::Script => {
                     config_module.extensions.script = Some(content);

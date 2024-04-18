@@ -7,10 +7,10 @@ use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::blueprint::GrpcMethod;
 use crate::config::Config;
 use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
+use crate::proto_reader::ProtoMetadata;
 use crate::rest::{EndpointSet, Unchecked};
 use crate::scalar;
 
@@ -42,8 +42,8 @@ impl<A> Deref for Content<A> {
 /// an IO operation, i.e., reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default, MergeRight)]
 pub struct Extensions {
-    /// Contains the file descriptor sets resolved from the links
-    pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
+    /// Contains the file descriptor set resolved from the links to proto files
+    pub grpc_file_descriptor_set: Option<FileDescriptorSet>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -63,20 +63,30 @@ pub struct Extensions {
 }
 
 impl Extensions {
-    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
-        self.grpc_file_descriptors
-            .iter()
-            .find(|content| {
-                content
-                    .file
-                    .iter()
-                    .any(|file| file.package == Some(grpc.package.to_owned()))
-            })
-            .map(|a| &a.content)
+    pub fn add_proto(&mut self, metadata: ProtoMetadata) {
+        if let Some(set) = self.grpc_file_descriptor_set.as_mut() {
+            set.file.extend(metadata.descriptor_set.file);
+        } else {
+            let _ = self
+                .grpc_file_descriptor_set
+                .insert(metadata.descriptor_set);
+        }
+    }
+
+    pub fn get_file_descriptor_set(&self) -> Option<&FileDescriptorSet> {
+        self.grpc_file_descriptor_set.as_ref()
     }
 
     pub fn has_auth(&self) -> bool {
         !self.htpasswd.is_empty() || !self.jwks.is_empty()
+    }
+}
+
+impl MergeRight for FileDescriptorSet {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.file.extend(other.file);
+
+        self
     }
 }
 
@@ -151,5 +161,95 @@ impl From<Config> for ConfigModule {
         let output_types = get_output_types(&config, &input_types);
 
         ConfigModule { config, input_types, output_types, ..Default::default() }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    mod extensions {
+        mod merge_right {
+            use std::path::Path;
+
+            use prost_reflect::prost_types::FileDescriptorSet;
+
+            use crate::config::Extensions;
+            use crate::merge_right::MergeRight;
+
+            #[test]
+            fn grpc_file_descriptor_set_none() {
+                let extensions1 = Extensions::default();
+                let extensions2 = Extensions::default();
+
+                assert_eq!(
+                    extensions1
+                        .merge_right(extensions2)
+                        .grpc_file_descriptor_set,
+                    None
+                );
+            }
+
+            #[test]
+            fn grpc_file_descriptor_set_single() {
+                let greetings_path = Path::new("src/grpc/tests/proto/greetings.proto");
+
+                let file_descriptor_set = protox::compile([greetings_path], ["."]).unwrap();
+                let extensions1 = Extensions {
+                    grpc_file_descriptor_set: Some(file_descriptor_set.clone()),
+                    ..Default::default()
+                };
+                let extensions2 = Extensions::default();
+
+                assert_eq!(
+                    extensions1
+                        .merge_right(extensions2)
+                        .grpc_file_descriptor_set,
+                    Some(file_descriptor_set.clone())
+                );
+
+                let extensions1 = Extensions::default();
+                let extensions2 = Extensions {
+                    grpc_file_descriptor_set: Some(file_descriptor_set.clone()),
+                    ..Default::default()
+                };
+
+                assert_eq!(
+                    extensions1
+                        .merge_right(extensions2)
+                        .grpc_file_descriptor_set,
+                    Some(file_descriptor_set)
+                );
+            }
+
+            #[test]
+            fn grpc_file_descriptor_set_both() {
+                let greetings_path = Path::new("src/grpc/tests/proto/greetings.proto");
+                let news_path = Path::new("src/grpc/tests/proto/news.proto");
+
+                let file_descriptor_set_greetings =
+                    protox::compile([greetings_path], ["."]).unwrap();
+                let file_descriptor_set_news = protox::compile([news_path], ["."]).unwrap();
+                let extensions1 = Extensions {
+                    grpc_file_descriptor_set: Some(file_descriptor_set_greetings.clone()),
+                    ..Default::default()
+                };
+                let extensions2 = Extensions {
+                    grpc_file_descriptor_set: Some(file_descriptor_set_news.clone()),
+                    ..Default::default()
+                };
+
+                assert_eq!(
+                    extensions1
+                        .merge_right(extensions2)
+                        .grpc_file_descriptor_set,
+                    Some(FileDescriptorSet {
+                        file: file_descriptor_set_greetings
+                            .file
+                            .into_iter()
+                            .chain(file_descriptor_set_news.file)
+                            .collect()
+                    })
+                );
+            }
+        }
     }
 }

@@ -166,8 +166,8 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
             Valid::from_option(
-                config_module.extensions.get_file_descriptor_set(&method),
-                format!("File descriptor not found for method: {}", grpc.method),
+                config_module.extensions.get_file_descriptor_set(),
+                "Protobuf files were not specified in the config".to_string(),
             )
             .and_then(|file_descriptor_set| to_operation(&method, file_descriptor_set.clone()))
             .fuse(to_url(grpc, &method, config_module))
