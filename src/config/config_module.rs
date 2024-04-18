@@ -7,10 +7,10 @@ use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::FileDescriptorSet;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::blueprint::GrpcMethod;
 use crate::config::Config;
 use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
+use crate::proto_reader::ProtoMetadata;
 use crate::rest::{EndpointSet, Unchecked};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
@@ -41,8 +41,8 @@ impl<A> Deref for Content<A> {
 /// an IO operation, i.e., reading a file, making an HTTP call, etc.
 #[derive(Clone, Debug, Default, MergeRight)]
 pub struct Extensions {
-    /// Contains the file descriptor sets resolved from the links
-    pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
+    /// Contains the file descriptor set resolved from the links to proto files
+    pub grpc_file_descriptor_set: Option<FileDescriptorSet>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -62,20 +62,30 @@ pub struct Extensions {
 }
 
 impl Extensions {
-    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
-        self.grpc_file_descriptors
-            .iter()
-            .find(|content| {
-                content
-                    .file
-                    .iter()
-                    .any(|file| file.package == Some(grpc.package.to_owned()))
-            })
-            .map(|a| &a.content)
+    pub fn add_proto(&mut self, metadata: ProtoMetadata) {
+        if let Some(set) = self.grpc_file_descriptor_set.as_mut() {
+            set.file.extend(metadata.descriptor_set.file);
+        } else {
+            let _ = self
+                .grpc_file_descriptor_set
+                .insert(metadata.descriptor_set);
+        }
+    }
+
+    pub fn get_file_descriptor_set(&self) -> Option<&FileDescriptorSet> {
+        self.grpc_file_descriptor_set.as_ref()
     }
 
     pub fn has_auth(&self) -> bool {
         !self.htpasswd.is_empty() || !self.jwks.is_empty()
+    }
+}
+
+impl MergeRight for FileDescriptorSet {
+    fn merge_right(mut self, other: Self) -> Self {
+        self.file.extend(other.file);
+
+        self
     }
 }
 
