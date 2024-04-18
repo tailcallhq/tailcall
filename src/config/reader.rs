@@ -19,7 +19,7 @@ use crate::runtime::TargetRuntime;
 pub struct ConfigReader {
     runtime: TargetRuntime,
     resource_reader: ResourceReader<Cached>,
-    proto_reader: ProtoReader<Cached>,
+    proto_reader: ProtoReader,
 }
 
 impl ConfigReader {

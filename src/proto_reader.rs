@@ -5,10 +5,10 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::resource_reader::{ResourceReader, ResourceReaderHandler};
+use crate::resource_reader::{Cached, ResourceReader, ResourceReaderHandler};
 
-pub struct ProtoReader<A: ResourceReaderHandler> {
-    resource_reader: ResourceReader<A>,
+pub struct ProtoReader {
+    resource_reader: ResourceReader<Cached>,
 }
 
 pub struct ProtoMetadata {
@@ -16,8 +16,8 @@ pub struct ProtoMetadata {
     pub path: String,
 }
 
-impl<A: ResourceReaderHandler> ProtoReader<A> {
-    pub fn init(resource_reader: ResourceReader<A>) -> Self {
+impl ProtoReader {
+    pub fn init(resource_reader: ResourceReader<Cached>) -> Self {
         Self { resource_reader }
     }
 

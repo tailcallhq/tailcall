@@ -9,12 +9,12 @@ use crate::resource_reader::{Direct, ResourceReader};
 use crate::runtime::TargetRuntime;
 
 pub struct Generator {
-    proto_reader: ProtoReader<Direct>,
+    proto_reader: ProtoReader,
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
-            proto_reader: ProtoReader::init(ResourceReader::<Direct>::direct(runtime)),
+            proto_reader: ProtoReader::init(ResourceReader::cached(runtime)),
         }
     }
 

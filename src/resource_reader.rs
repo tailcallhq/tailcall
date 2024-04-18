@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
@@ -18,34 +17,49 @@ pub struct FileRead {
 #[derive(Clone)]
 pub struct ResourceReader<A>(A);
 
-impl<A> ResourceReader<A> {
-    pub fn direct(runtime: TargetRuntime) -> ResourceReader<Direct> {
-        ResourceReader::<Direct>(Direct::init(runtime))
-    }
-
-    pub fn cached(runtime: TargetRuntime) -> ResourceReader<Cached> {
-        ResourceReader::<Cached>(Cached::init(runtime))
+impl<A: ResourceReaderHandler + Send + Sync> ResourceReader<A> {
+    /// Reads all the files in parallel
+    pub async fn read_files<T: ToString + Send + Sync>(
+        &self,
+        files: &[T],
+    ) -> anyhow::Result<Vec<FileRead>> {
+        let files = files.iter().map(|x| {
+            self.read_file(x.to_string())
+                .map_err(|e| e.context(x.to_string()))
+        });
+        let content = join_all(files)
+            .await
+            .into_iter()
+            .collect::<anyhow::Result<Vec<_>>>()?;
+        Ok(content)
     }
 }
 
-impl<A> Deref for ResourceReader<A> {
-    type Target = A;
+impl ResourceReader<Direct> {
+    pub fn direct(runtime: TargetRuntime) -> Self {
+        ResourceReader(Direct::init(runtime))
+    }
+}
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl ResourceReader<Cached> {
+    pub fn cached(runtime: TargetRuntime) -> Self {
+        ResourceReader(Cached::init(runtime))
+    }
+}
+
+#[async_trait::async_trait]
+impl<A: ResourceReaderHandler + Send + Sync> ResourceReaderHandler for ResourceReader<A> {
+    async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+        self.read_file(file).await
     }
 }
 
 #[async_trait::async_trait]
 pub trait ResourceReaderHandler {
     async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
-
-    async fn read_files<T: ToString + Send + Sync>(
-        &self,
-        files: &[T],
-    ) -> anyhow::Result<Vec<FileRead>>;
 }
 
+/// Reads the files directly from the filesystem or from an HTTP URL
 #[derive(Clone)]
 pub struct Direct {
     runtime: TargetRuntime,
@@ -83,28 +97,13 @@ impl ResourceReaderHandler for Direct {
         };
         Ok(FileRead { content, path: file.to_string() })
     }
-
-    /// Reads all the files in parallel
-    async fn read_files<T: ToString + Send + Sync>(
-        &self,
-        files: &[T],
-    ) -> anyhow::Result<Vec<FileRead>> {
-        let files = files.iter().map(|x| {
-            self.read_file(x.to_string())
-                .map_err(|e| e.context(x.to_string()))
-        });
-        let content = join_all(files)
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(content)
-    }
 }
 
+/// Reads the files from the filesystem or from an HTTP URL with cache
 #[derive(Clone)]
 pub struct Cached {
     direct: Direct,
-    // Cache file content, path->content
+    // Cache file content, path -> content
     cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
@@ -140,21 +139,5 @@ impl ResourceReaderHandler for Cached {
         };
 
         Ok(FileRead { content, path: file_path })
-    }
-
-    /// Reads all the files in parallel with cache
-    async fn read_files<T: ToString + Send + Sync>(
-        &self,
-        files: &[T],
-    ) -> anyhow::Result<Vec<FileRead>> {
-        let files = files.iter().map(|x| {
-            self.read_file(x.to_string())
-                .map_err(|e| e.context(x.to_string()))
-        });
-        let content = join_all(files)
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(content)
     }
 }
