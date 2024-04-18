@@ -136,6 +136,9 @@ impl JsonSchema {
             }
             JsonSchema::Enum(a) => {
                 if let JsonSchema::Enum(b) = other {
+                    if a.len() != b.len() {
+                        return Valid::fail(format!("expected {a:?} but found {b:?}")).trace(name);
+                    }
                     let mut matched = HashSet::new();
                     for ai in a {
                         for (i, bi) in b.iter().enumerate() {
@@ -146,7 +149,7 @@ impl JsonSchema {
                                 matched.insert(i);
                                 break;
                             } else {
-                                return Valid::fail("expected proper Enum type".to_string())
+                                return Valid::fail("expected {a:?} but found {b:?}".to_string())
                                     .trace(name);
                             }
                         }
@@ -355,7 +358,7 @@ mod tests {
         let result = schema.compare(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected Enum got: Arr(Enum({\"A\", \"B\"}))".to_string()).trace(name)
+            Valid::fail("expected Enum got: Arr(Enum({{\"A\"}, {\"B\"}}))".to_string()).trace(name)
         );
     }
 
@@ -376,8 +379,10 @@ mod tests {
         let result = schema.compare(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected {\"A\", \"B\"} but found {\"A\", \"B\", \"C\"}".to_string())
-                .trace(name)
+            Valid::fail(
+                "expected {{\"A\"}, {\"B\"}} but found {{\"A\"}, {\"B\"}, {\"C\"}}".to_string()
+            )
+            .trace(name)
         );
     }
 }
