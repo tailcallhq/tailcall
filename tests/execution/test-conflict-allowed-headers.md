@@ -6,7 +6,7 @@ schema @server @upstream(allowedHeaders: ["a", "b", "c"]) {
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```
 
@@ -16,6 +16,6 @@ schema @server @upstream(allowedHeaders: ["b", "c", "d"]) {
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```

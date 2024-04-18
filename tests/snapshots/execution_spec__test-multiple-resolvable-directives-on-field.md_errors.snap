@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "Multiple resolvers detected [@http, @const]",
+    "message": "Multiple resolvers detected [@http, @expr]",
     "trace": [
       "Query",
       "user1"

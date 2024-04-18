@@ -6,7 +6,7 @@ schema @server @upstream(batch: {delay: 0, maxSize: 1000, headers: ["a", "b"]}) 
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```
 
@@ -16,7 +16,7 @@ schema @server @upstream(batch: {delay: 5, maxSize: 100, headers: ["b", "c"]}) {
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```
 
@@ -26,6 +26,6 @@ schema @server @upstream {
 }
 
 type Query {
-  hello: String @const(data: "world")
+  hello: String @expr(body: "world")
 }
 ```

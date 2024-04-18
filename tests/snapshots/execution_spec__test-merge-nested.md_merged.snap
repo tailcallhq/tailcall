@@ -18,5 +18,5 @@ type Foo {
 }
 
 type Query {
-  hi: Foo @const(data: {a: "world"})
+  hi: Foo @expr(body: {a: "world"})
 }

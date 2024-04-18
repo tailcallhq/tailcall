@@ -67,7 +67,7 @@ mod tests {
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 
-    async fn get_protobuf_op() -> ProtobufOperation {
+    pub async fn get_protobuf_op() -> ProtobufOperation {
         let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let mut test_file = root_dir.join(file!());
 
@@ -95,13 +95,9 @@ mod tests {
         let reader = ConfigReader::init(runtime);
         let config_module = reader.resolve(config, None).await.unwrap();
 
-        let protobuf_set = ProtobufSet::from_proto_file(
-            config_module
-                .extensions
-                .get_file_descriptor_set(&method)
-                .unwrap(),
-        )
-        .unwrap();
+        let protobuf_set =
+            ProtobufSet::from_proto_file(config_module.extensions.get_file_descriptor_set())
+                .unwrap();
 
         let service = protobuf_set.find_service(&method).unwrap();
 

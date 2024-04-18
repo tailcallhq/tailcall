@@ -26,7 +26,7 @@ input D {
 }
 
 type Query {
-  a(a: A!): X @const(data: {a: "hello"})
+  a(a: A!): X @expr(body: {a: "hello"})
 }
 
 type X {

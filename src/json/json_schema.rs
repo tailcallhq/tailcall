@@ -151,6 +151,8 @@ impl JsonSchema {
                             }
                         }
                     }
+                } else {
+                    return Valid::fail(format!("expected Enum got: {:?}", other)).trace(name);
                 }
             }
         }
@@ -247,7 +249,7 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::{BTreeSet, HashMap};
 
     use async_graphql::Name;
     use indexmap::IndexMap;
@@ -321,7 +323,7 @@ mod tests {
     async fn test_from_protobuf_conversion() -> anyhow::Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
-        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("news.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -341,5 +343,41 @@ mod tests {
         );
 
         Ok(())
+    }
+    #[test]
+    fn test_compare_enum() {
+        let mut en = BTreeSet::new();
+        en.insert("A".to_string());
+        en.insert("B".to_string());
+        let value = JsonSchema::Arr(Box::new(JsonSchema::Enum(en.clone())));
+        let schema = JsonSchema::Enum(en);
+        let name = "foo";
+        let result = schema.compare(&value, name);
+        assert_eq!(
+            result,
+            Valid::fail("expected Enum got: Arr(Enum({\"A\", \"B\"}))".to_string()).trace(name)
+        );
+    }
+
+    #[test]
+    fn test_compare_enum_value() {
+        let mut en = BTreeSet::new();
+        en.insert("A".to_string());
+        en.insert("B".to_string());
+
+        let mut en1 = BTreeSet::new();
+        en1.insert("A".to_string());
+        en1.insert("B".to_string());
+        en1.insert("C".to_string());
+
+        let value = JsonSchema::Enum(en1.clone());
+        let schema = JsonSchema::Enum(en.clone());
+        let name = "foo";
+        let result = schema.compare(&value, name);
+        assert_eq!(
+            result,
+            Valid::fail("expected {\"A\", \"B\"} but found {\"A\", \"B\", \"C\"}".to_string())
+                .trace(name)
+        );
     }
 }

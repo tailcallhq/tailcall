@@ -25,8 +25,8 @@
       "fields": {
         "greet": {
           "type": "String",
-          "const": {
-            "data": "Hello World!"
+          "expr": {
+            "body": "Hello World!"
           },
           "cache": null
         }

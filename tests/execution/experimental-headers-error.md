@@ -10,6 +10,6 @@ schema @server(headers: {experimental: ["non-experimental", "foo", "bar", "tailc
 }
 
 type Query {
-  hello: String @const(data: "World!")
+  hello: String @expr(body: "World!")
 }
 ```

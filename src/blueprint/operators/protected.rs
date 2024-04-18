@@ -10,8 +10,14 @@ pub fn update_protected<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
-            if field.protected.is_some() || type_.protected.is_some() {
-                if config.input_types().contains(&type_name.to_string()) {
+            if field.protected.is_some() // check the field itself has marked as protected
+                || type_.protected.is_some() // check the type that contains current field
+                || config // check that output type of the field is protected
+                    .find_type(&field.type_of)
+                    .and_then(|type_| type_.protected.as_ref())
+                    .is_some()
+            {
+                if config.input_types.contains(type_name) {
                     return Valid::fail("Input types can not be protected".to_owned());
                 }
 
