@@ -10,7 +10,7 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
-use crate::resource_reader::ResourceReader;
+use crate::resource_reader::{Cached, ResourceReader};
 use crate::rest::EndpointSet;
 use crate::runtime::TargetRuntime;
 
@@ -18,16 +18,17 @@ use crate::runtime::TargetRuntime;
 /// linked extensions to create a ConfigModule.
 pub struct ConfigReader {
     runtime: TargetRuntime,
-    resource_reader: ResourceReader,
+    resource_reader: ResourceReader<Cached>,
     proto_reader: ProtoReader,
 }
 
 impl ConfigReader {
     pub fn init(runtime: TargetRuntime) -> Self {
+        let resource_reader = ResourceReader::<Cached>::cached(runtime.clone());
         Self {
             runtime: runtime.clone(),
-            resource_reader: ResourceReader::init(runtime.clone()),
-            proto_reader: ProtoReader::init(runtime),
+            resource_reader: resource_reader.clone(),
+            proto_reader: ProtoReader::init(resource_reader),
         }
     }
 
@@ -151,12 +152,15 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString>(&self, file: T) -> anyhow::Result<ConfigModule> {
+    pub async fn read<T: ToString + Send + Sync>(&self, file: T) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
+    pub async fn read_all<T: ToString + Send + Sync>(
+        &self,
+        files: &[T],
+    ) -> anyhow::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
 
@@ -243,7 +247,7 @@ mod reader_tests {
         cfg = cfg.types([("Test", Type::default())].to_vec());
 
         let server = start_mock_server();
-        let header_serv = server.mock(|when, then| {
+        let header_server = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/bar.graphql");
             then.status(200).body(cfg.to_sdl());
         });
@@ -281,7 +285,7 @@ mod reader_tests {
                 .collect::<Vec<String>>()
         );
         foo_json_server.assert(); // checks if the request was actually made
-        header_serv.assert();
+        header_server.assert();
     }
 
     #[tokio::test]
