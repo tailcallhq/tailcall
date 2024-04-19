@@ -75,11 +75,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             a => {
                                                 if a == ConstValue::Null && is_list {
-                                                     FieldValue::NONE
+                                                    FieldValue::NONE
                                                 } else {
-                                                    FieldValue::try_from(a).ok()
+                                                    Some(FieldValue::from(a))
                                                 }
-                                            },
+                                            }
                                         };
                                         Ok(p)
                                     }
