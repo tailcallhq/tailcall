@@ -2,5 +2,5 @@ syntax = "proto3";
 
 package nested1;
 
-import "src/grpc/tests/proto/news.proto";
-import "src/grpc/tests/proto/cycle.proto";
+import "news.proto";
+import "cycle.proto";

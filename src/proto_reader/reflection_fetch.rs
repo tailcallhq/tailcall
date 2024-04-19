@@ -166,98 +166,96 @@ async fn request_proto(response: CustomResponse) -> Result<FileDescriptorProto> 
 
 #[cfg(test)]
 mod grpc_fetch {
-    
+    use std::path::PathBuf;
 
     use anyhow::Result;
 
     use super::*;
 
-    // fn get_fake_descriptor() -> Vec<u8> {
-    //     let mut path = PathBuf::from(file!());
-    //     path.pop();
-    //     path.push("fixtures/descriptor_b64.txt");
-    //
-    //     let bytes = std::fs::read(path).unwrap();
-    //
-    //     BASE64_STANDARD.decode(bytes).unwrap()
-    // }
+    fn get_fake_descriptor() -> Vec<u8> {
+        let mut path = PathBuf::from(file!());
+        path.pop();
+        path.push("fixtures/descriptor_b64.txt");
 
-    // fn get_fake_resp() -> Vec<u8> {
-    //     let mut path = PathBuf::from(file!());
-    //     path.pop();
-    //     path.push("fixtures/response_b64.txt");
-    //
-    //     let bytes = std::fs::read(path).unwrap();
-    //
-    //     BASE64_STANDARD.decode(bytes).unwrap()
-    // }
+        let bytes = std::fs::read(path).unwrap();
+
+        BASE64_STANDARD.decode(bytes).unwrap()
+    }
+
+    fn get_fake_resp() -> Vec<u8> {
+        let mut path = PathBuf::from(file!());
+        path.pop();
+        path.push("fixtures/response_b64.txt");
+
+        let bytes = std::fs::read(path).unwrap();
+
+        BASE64_STANDARD.decode(bytes).unwrap()
+    }
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
     }
 
-    // #[tokio::test]
-    // async fn test_resp_service() -> Result<()> {
-    //     let server = start_mock_server();
-    //
-    //     let http_reflection_file_mock = server.mock(|when, then| {
-    //         when.method(httpmock::Method::POST)
-    //
-    // .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
-    //             .body("\0\0\0\0\x12\"\x10news.NewsService");
-    //         then.status(200).body(get_fake_descriptor());
-    //     });
-    //     let runtime = crate::runtime::test::init(None);
-    //     let resp = get_by_service(
-    //         &format!("http://localhost:{}", server.port()),
-    //         &runtime,
-    //         "news.NewsService",
-    //     )
-    //     .await?;
-    //     let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    //     news_proto.push("src");
-    //     news_proto.push("grpc");
-    //     news_proto.push("tests");
-    //     news_proto.push("proto");
-    //     news_proto.push("news.proto");
-    //
-    //     let content = runtime.file.read(news_proto.to_str().unwrap()).await?;
-    //     let expected = protox_parse::parse("news.proto", &content)?;
-    //
-    //     assert_eq!(expected.name(), resp.name());
-    //
-    //     http_reflection_file_mock.assert();
-    //     Ok(())
-    // }
+    #[tokio::test]
+    async fn test_resp_service() -> Result<()> {
+        let server = start_mock_server();
 
-    // #[tokio::test]
-    // async fn test_resp_list_all() -> Result<()> {
-    //     let server = start_mock_server();
-    //
-    //     let http_reflection_list_all = server.mock(|when, then| {
-    //         when.method(httpmock::Method::POST)
-    //
-    // .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
-    //             .body("\0\0\0\0\x02:\0");
-    //         then.status(200).body(get_fake_resp());
-    //     });
-    //
-    //     let runtime = crate::runtime::test::init(None);
-    //     let resp = list_all_files(&format!("http://localhost:{}", server.port()), &runtime).await?;
-    //
-    //     assert_eq!(
-    //         [
-    //             "news.NewsService".to_string(),
-    //             "grpc.reflection.v1alpha.ServerReflection".to_string()
-    //         ]
-    //         .to_vec(),
-    //         resp
-    //     );
-    //
-    //     http_reflection_list_all.assert();
-    //
-    //     Ok(())
-    // }
+        let http_reflection_file_mock = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .body("\0\0\0\0\x12\"\x10news.NewsService");
+            then.status(200).body(get_fake_descriptor());
+        });
+        let runtime = crate::runtime::test::init(None);
+        let resp = get_by_service(
+            &format!("http://localhost:{}", server.port()),
+            &runtime,
+            "news.NewsService",
+        )
+        .await?;
+        let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        news_proto.push("src");
+        news_proto.push("grpc");
+        news_proto.push("tests");
+        news_proto.push("proto");
+        news_proto.push("news.proto");
+
+        let content = runtime.file.read(news_proto.to_str().unwrap()).await?;
+        let expected = protox_parse::parse("news.proto", &content)?;
+
+        assert_eq!(expected.name(), resp.name());
+
+        http_reflection_file_mock.assert();
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_resp_list_all() -> Result<()> {
+        let server = start_mock_server();
+
+        let http_reflection_list_all = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .body("\0\0\0\0\x02:\0");
+            then.status(200).body(get_fake_resp());
+        });
+
+        let runtime = crate::runtime::test::init(None);
+        let resp = list_all_files(&format!("http://localhost:{}", server.port()), &runtime).await?;
+
+        assert_eq!(
+            [
+                "news.NewsService".to_string(),
+                "grpc.reflection.v1alpha.ServerReflection".to_string()
+            ]
+            .to_vec(),
+            resp
+        );
+
+        http_reflection_list_all.assert();
+
+        Ok(())
+    }
     #[tokio::test]
     async fn test_list_all_files_empty_response() -> Result<()> {
         let server = start_mock_server();
