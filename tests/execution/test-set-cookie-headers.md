@@ -46,7 +46,7 @@ type User {
       name: bar
 ```
 
-```yaml @assert
+```yaml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

@@ -47,7 +47,7 @@ type Query {
     body: dsjfsjdfjdsfjkdskjfjkds
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql
   body:

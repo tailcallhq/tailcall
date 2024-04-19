@@ -68,7 +68,7 @@ type TypeCache @cache(maxAge: 1000) {
       - id: 33
 ```
 
-```yml @assert
+```yml @test
 # the same request to validate caching
 - method: POST
   url: http://localhost:8080/graphql
