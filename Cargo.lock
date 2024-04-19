@@ -297,8 +297,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-extension-apollo-tracing"
-version = "3.2.14"
-source = "git+https://github.com/tailcallhq/async_graphql_apollo_studio_extension/#b7537c56bef0ae0152d879f98c3676b82506f4cb"
+version = "3.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64c4d3cc0bb90e426ddedb5a0b30bd9c0a9aaec1351d0e96556d5919a18ff954"
 dependencies = [
  "anyhow",
  "async-graphql",
