@@ -30,7 +30,7 @@ type D {
 }
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8000/graphql
   body:

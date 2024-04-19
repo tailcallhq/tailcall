@@ -33,7 +33,7 @@ type Post {
         userId: 2
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8000/graphql
   headers:

@@ -18,7 +18,7 @@ type Query {
 }
 ```
 
-```yml @assert
+```yml @test
 # Valid value tests
 - method: POST
   url: http://localhost:8000/graphql
