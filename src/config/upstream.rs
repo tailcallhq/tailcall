@@ -4,35 +4,47 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 use crate::is_default;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema)]
+const DEFAULT_MAX_SIZE: usize = 100;
+
+#[derive(
+    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, MergeRight,
+)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
     pub delay: usize,
     pub headers: BTreeSet<String>,
-    pub max_size: usize,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub max_size: Option<usize>,
 }
-
 impl Default for Batch {
     fn default() -> Self {
-        Batch { max_size: 100, delay: 0, headers: BTreeSet::new() }
+        Batch {
+            max_size: Some(DEFAULT_MAX_SIZE),
+            delay: 0,
+            headers: BTreeSet::new(),
+        }
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
 pub struct Proxy {
     pub url: String,
 }
 
-impl MergeRight for Proxy {
-    fn merge_right(self, other: Self) -> Self {
-        other
-    }
-}
-
 #[derive(
-    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, Default, schemars::JsonSchema,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Clone,
+    Debug,
+    Setters,
+    Default,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
@@ -166,50 +178,13 @@ impl Upstream {
     }
 
     pub fn get_max_size(&self) -> usize {
-        self.batch.clone().unwrap_or_default().max_size
+        self.batch
+            .as_ref()
+            .map_or(DEFAULT_MAX_SIZE, |b| b.max_size.unwrap_or(DEFAULT_MAX_SIZE))
     }
 
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only.unwrap_or(false)
-    }
-}
-
-impl MergeRight for Upstream {
-    // TODO: add unit tests for merge
-    fn merge_right(mut self, other: Self) -> Self {
-        self.allowed_headers = self.allowed_headers.merge_right(other.allowed_headers);
-        self.base_url = self.base_url.merge_right(other.base_url);
-        self.connect_timeout = self.connect_timeout.merge_right(other.connect_timeout);
-        self.http_cache = self.http_cache.merge_right(other.http_cache);
-        self.keep_alive_interval = self
-            .keep_alive_interval
-            .merge_right(other.keep_alive_interval);
-        self.keep_alive_timeout = self
-            .keep_alive_timeout
-            .merge_right(other.keep_alive_timeout);
-        self.keep_alive_while_idle = self
-            .keep_alive_while_idle
-            .merge_right(other.keep_alive_while_idle);
-        self.pool_idle_timeout = self.pool_idle_timeout.merge_right(other.pool_idle_timeout);
-        self.pool_max_idle_per_host = self
-            .pool_max_idle_per_host
-            .merge_right(other.pool_max_idle_per_host);
-        self.proxy = self.proxy.merge_right(other.proxy);
-        self.tcp_keep_alive = self.tcp_keep_alive.merge_right(other.tcp_keep_alive);
-        self.timeout = self.timeout.merge_right(other.timeout);
-        self.user_agent = self.user_agent.merge_right(other.user_agent);
-
-        if let Some(other) = other.batch {
-            let mut batch = self.batch.unwrap_or_default();
-            batch.max_size = other.max_size;
-            batch.delay = other.delay;
-            batch.headers = batch.headers.merge_right(other.headers);
-
-            self.batch = Some(batch);
-        }
-
-        self.http2_only = self.http2_only.merge_right(other.http2_only);
-        self
     }
 }
 

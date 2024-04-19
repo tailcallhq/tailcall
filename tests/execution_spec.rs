@@ -773,7 +773,7 @@ impl HttpIO for MockHttpClient {
             response.body = Bytes::from_iter(body);
         } else if is_grpc {
             // Special Handling for GRPC
-            let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
+            let body = string_to_bytes(mock_response.0.body.as_str().unwrap_or_default());
             response.body = Bytes::from_iter(body);
         } else {
             let body = serde_json::to_vec(&mock_response.0.body)?;
@@ -889,9 +889,25 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 // \r is added automatically in windows, it's safe to replace it with \n
                 let content = content.replace("\r\n", "\n");
 
+                let path_str = spec.path.display().to_string();
+
+                let identity = tailcall_prettier::format(
+                    identity,
+                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
+                )
+                .await
+                .unwrap();
+
+                let content = tailcall_prettier::format(
+                    content,
+                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
+                )
+                .await
+                .unwrap();
+
                 pretty_assertions::assert_eq!(
                     identity,
-                    content.as_ref(),
+                    content,
                     "Identity check failed for {:#?}",
                     spec.path,
                 );

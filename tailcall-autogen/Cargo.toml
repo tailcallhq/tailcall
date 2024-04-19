@@ -1,5 +1,5 @@
 [package]
-name = "autogen"
+name = "tailcall-autogen"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,8 +10,8 @@ edition = "2021"
 anyhow = "1.0.82"
 lazy_static = "1.4.0"
 schemars = "0.8.16"
-serde = "1.0.197"
-serde_json = "1.0.115"
+serde = "1.0.198"
+serde_json = "1.0.116"
 tailcall = { path = "../" }
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
