@@ -9,9 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "name": null
-      }
+      "user": null
     },
     "errors": [
       {
