@@ -126,7 +126,7 @@ impl ConfigReader {
                         content: serde_path_to_error::deserialize(de)?,
                     })
                 }
-                LinkType::GrpcReflection => {
+                LinkType::Grpc => {
                     let meta = self
                         .proto_reader
                         .reflection_fetch(link.src.as_str())

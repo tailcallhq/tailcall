@@ -793,7 +793,7 @@
         "Operation",
         "Htpasswd",
         "Jwks",
-        "GrpcReflection"
+        "Grpc"
       ]
     },
     "Method": {
