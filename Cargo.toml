@@ -148,10 +148,6 @@ tailcall-macros = { path = "tailcall-macros" }
 tonic-types = "0.11.0"
 base64 = "0.22.0"
 
-[build-dependencies]
-tonic-build = "0.11.0"
-protoc-bin-vendored = "3.0.0"
-
 
 [dev-dependencies]
 tailcall-prettier = {path = "tailcall-prettier"}
