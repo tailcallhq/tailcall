@@ -103,7 +103,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             let next_dir_const = next_field
                 .const_field
                 .as_ref()
-                .map(|_| config::Const::directive_name());
+                .map(|_| config::Expr::directive_name());
             return path_resolver_error_handler(
                 next_dir_http
                     .or(next_dir_const)
@@ -327,9 +327,9 @@ pub fn fix_dangling_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, _, name), mut b_field| {
+        move |(config, field, ty, name), mut b_field| {
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types).is_succeed()
+                && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
             {
                 b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
@@ -505,7 +505,7 @@ pub fn to_field_definition(
     update_args()
         .and(update_http().trace(config::Http::trace_name().as_str()))
         .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
-        .and(update_const_field().trace(config::Const::trace_name().as_str()))
+        .and(update_const_field().trace(config::Expr::trace_name().as_str()))
         .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
         .and(update_modify().trace(config::Modify::trace_name().as_str()))
         .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))
@@ -520,8 +520,9 @@ pub fn to_field_definition(
 
 pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String> {
     TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_module, _| {
-        let output_types = config_module.output_types();
-        let input_types = config_module.input_types();
+        let output_types = &config_module.output_types;
+        let input_types = &config_module.input_types;
+
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if let Some(variants) = &type_.variants {
@@ -539,7 +540,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
                         Definition::Object(object_type_definition) => {
-                            if config_module.input_types().contains(name) {
+                            if config_module.input_types.contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
                             } else if type_.interface {
                                 to_interface_type_definition(object_type_definition).trace(name)

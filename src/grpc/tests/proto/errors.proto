@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package greetings;
+
+// The error message definition.
+message ErrValidation {
+  string error = 1;
+}

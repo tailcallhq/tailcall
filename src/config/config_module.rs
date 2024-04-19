@@ -1,21 +1,27 @@
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
 use derive_setters::Setters;
 use jsonwebtoken::jwk::JwkSet;
-use prost_reflect::prost_types::FileDescriptorSet;
+use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::blueprint::GrpcMethod;
 use crate::config::Config;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
+use crate::proto_reader::ProtoMetadata;
 use crate::rest::{EndpointSet, Unchecked};
+use crate::scalar;
 
-/// A wrapper on top of Config that contains all the resolved extensions.
-#[derive(Clone, Debug, Default, Setters)]
+/// A wrapper on top of Config that contains all the resolved extensions and
+/// computed values.
+#[derive(Clone, Debug, Default, Setters, MergeRight)]
 pub struct ConfigModule {
     pub config: Config,
     pub extensions: Extensions,
+    pub input_types: HashSet<String>,
+    pub output_types: HashSet<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -34,10 +40,10 @@ impl<A> Deref for Content<A> {
 /// Extensions are meta-information required before we can generate the
 /// blueprint. Typically, this information cannot be inferred without performing
 /// an IO operation, i.e., reading a file, making an HTTP call, etc.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, MergeRight)]
 pub struct Extensions {
-    /// Contains the file descriptor sets resolved from the links
-    pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
+    /// Contains the file descriptor set resolved from the links to proto files
+    pub grpc_file_descriptors: HashMap<String, FileDescriptorProto>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -57,16 +63,15 @@ pub struct Extensions {
 }
 
 impl Extensions {
-    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
-        self.grpc_file_descriptors
-            .iter()
-            .find(|content| {
-                content
-                    .file
-                    .iter()
-                    .any(|file| file.package == Some(grpc.package.to_owned()))
-            })
-            .map(|a| &a.content)
+    pub fn add_proto(&mut self, metadata: ProtoMetadata) {
+        for file in metadata.descriptor_set.file {
+            self.grpc_file_descriptors
+                .insert(file.name().to_string(), file);
+        }
+    }
+
+    pub fn get_file_descriptor_set(&self) -> FileDescriptorSet {
+        FileDescriptorSet { file: self.grpc_file_descriptors.values().cloned().collect() }
     }
 
     pub fn has_auth(&self) -> bool {
@@ -74,29 +79,10 @@ impl Extensions {
     }
 }
 
-impl MergeRight for Extensions {
-    fn merge_right(mut self, mut other: Self) -> Self {
-        self.grpc_file_descriptors = self
-            .grpc_file_descriptors
-            .merge_right(other.grpc_file_descriptors);
-        self.script = self.script.merge_right(other.script.take());
-        self.cert = self.cert.merge_right(other.cert);
-        self.keys = if !other.keys.is_empty() {
-            other.keys
-        } else {
-            self.keys
-        };
-        self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set);
-        self.htpasswd = self.htpasswd.merge_right(other.htpasswd);
-        self.jwks = self.jwks.merge_right(other.jwks);
-        self
-    }
-}
-
-impl MergeRight for ConfigModule {
+impl MergeRight for FileDescriptorSet {
     fn merge_right(mut self, other: Self) -> Self {
-        self.config = self.config.merge_right(other.config);
-        self.extensions = self.extensions.merge_right(other.extensions);
+        self.file.extend(other.file);
+
         self
     }
 }
@@ -108,8 +94,69 @@ impl Deref for ConfigModule {
     }
 }
 
+fn recurse_type(config: &Config, type_of: &str, types: &mut HashSet<String>) {
+    if let Some(type_) = config.find_type(type_of) {
+        for (_, field) in type_.fields.iter() {
+            if !types.contains(&field.type_of) {
+                types.insert(field.type_of.clone());
+                recurse_type(config, &field.type_of, types);
+            }
+        }
+    }
+}
+
+fn get_input_types(config: &Config) -> HashSet<String> {
+    let mut types = HashSet::new();
+
+    for (_, type_of) in config.types.iter() {
+        if !type_of.interface {
+            for (_, field) in type_of.fields.iter() {
+                for (_, arg) in field
+                    .args
+                    .iter()
+                    .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
+                {
+                    if let Some(t) = config.find_type(&arg.type_of) {
+                        t.fields.iter().for_each(|(_, f)| {
+                            types.insert(f.type_of.clone());
+                            recurse_type(config, &f.type_of, &mut types)
+                        })
+                    }
+                    types.insert(arg.type_of.clone());
+                }
+            }
+        }
+    }
+    types
+}
+
+fn get_output_types(config: &Config, input_types: &HashSet<String>) -> HashSet<String> {
+    let mut types = HashSet::new();
+
+    if let Some(ref query) = &config.schema.query {
+        types.insert(query.clone());
+    }
+
+    if let Some(ref mutation) = &config.schema.mutation {
+        types.insert(mutation.clone());
+    }
+
+    for (type_name, type_of) in config.types.iter() {
+        if (type_of.interface || !type_of.fields.is_empty()) && !input_types.contains(type_name) {
+            for (_, field) in type_of.fields.iter() {
+                types.insert(field.type_of.clone());
+            }
+        }
+    }
+
+    types
+}
+
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        ConfigModule { config, ..Default::default() }
+        let input_types = get_input_types(&config);
+        let output_types = get_output_types(&config, &input_types);
+
+        ConfigModule { config, input_types, output_types, ..Default::default() }
     }
 }

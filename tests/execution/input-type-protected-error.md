@@ -11,11 +11,11 @@ schema {
 }
 
 type Query {
-  data: String @const(data: "value")
+  data: String @expr(body: "value")
 }
 
 type Mutation {
-  data(input: Input): String @const(data: "value")
+  data(input: Input): String @expr(body: "value")
   newPost(post: NewPost): Post @http(baseURL: "", path: "/posts", method: POST, body: "{{args.post}}")
 }
 

@@ -5,8 +5,12 @@ use serde::{Deserialize, Serialize};
 use crate::config::cors::Cors;
 use crate::config::KeyValue;
 use crate::is_default;
+use crate::macros::MergeRight;
+use crate::merge_right::MergeRight;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 #[serde(rename_all = "camelCase")]
 pub struct Headers {
     #[serde(default, skip_serializing_if = "is_default")]
@@ -46,22 +50,4 @@ impl Headers {
     pub fn get_cors(&self) -> Option<Cors> {
         self.cors.clone()
     }
-}
-
-pub fn merge_headers(current: Option<Headers>, other: Option<Headers>) -> Option<Headers> {
-    let mut headers = current.clone();
-
-    if let Some(other_headers) = other {
-        if let Some(mut self_headers) = current.clone() {
-            self_headers.cache_control = other_headers.cache_control.or(self_headers.cache_control);
-            self_headers.custom.extend(other_headers.custom);
-            self_headers.cors = other_headers.cors.or(self_headers.cors);
-
-            headers = Some(self_headers);
-        } else {
-            headers = Some(other_headers);
-        }
-    }
-
-    headers
 }

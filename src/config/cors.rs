@@ -3,15 +3,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::http::Method;
 use crate::is_default;
+use crate::macros::MergeRight;
+use crate::merge_right::MergeRight;
 
 /// Type to configure Cross-Origin Resource Sharing (CORS) for a server.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 #[serde(rename_all = "camelCase")]
 pub struct Cors {
     /// Indicates whether the server allows credentials (e.g., cookies,
     /// authorization headers) to be sent in cross-origin requests.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub allow_credentials: bool,
+    pub allow_credentials: Option<bool>,
 
     /// A list of allowed headers in cross-origin requests.
     /// This can be used to specify custom headers that are allowed to be
@@ -35,7 +39,7 @@ pub struct Cors {
     /// cross-origin requests. Private network addresses typically include
     /// IP addresses reserved for internal networks.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub allow_private_network: bool,
+    pub allow_private_network: Option<bool>,
 
     /// A list of headers that the server exposes to the browser in cross-origin
     /// responses. Exposing certain headers allows the client-side code to

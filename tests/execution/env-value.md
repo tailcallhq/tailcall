@@ -104,7 +104,7 @@ POST_ID: "2"
 NESTED_POST_ID: "3"
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

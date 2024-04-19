@@ -25,8 +25,8 @@
       "fields": {
         "greet": {
           "type": "String",
-          "const": {
-            "data": "Hello World!"
+          "expr": {
+            "body": "Hello World!"
           },
           "cache": null
         }
@@ -37,7 +37,7 @@
 }
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

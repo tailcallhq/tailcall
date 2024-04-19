@@ -1,0 +1,21 @@
+#> server-sdl
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type User {
+  name: String
+  age: Int
+}
+
+type Query {
+  user: User @expr(body: {name: "John"})
+}
+
+#> client-query
+query @expect(json: {data: {user: {age: null, name: "John"}}}) {
+  user {
+    age
+    name
+  }
+}

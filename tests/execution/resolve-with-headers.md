@@ -32,7 +32,7 @@ type Query {
       title: post title
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   headers:

@@ -1,4 +1,4 @@
-# Auth with JWT loaded from const
+# Auth with JWT loaded from expr
 
 ```graphql @server
 schema @server(port: 8000, graphiql: true) @link(id: "jwks", type: Jwks, src: "jwks.json") {
@@ -7,10 +7,10 @@ schema @server(port: 8000, graphiql: true) @link(id: "jwks", type: Jwks, src: "j
 }
 
 type Query {
-  scalar: String! @const(data: "data from public scalar")
-  protectedScalar: String! @protected @const(data: "data from protected scalar")
-  nested: Nested! @const(data: {name: "nested name", protected: "protected nested"})
-  protectedType: ProtectedType @const(data: {name: "protected type name", nested: "protected type nested"})
+  scalar: String! @expr(body: "data from public scalar")
+  protectedScalar: String! @protected @expr(body: "data from protected scalar")
+  nested: Nested! @expr(body: {name: "nested name", protected: "protected nested"})
+  protectedType: ProtectedType @expr(body: {name: "protected type name", nested: "protected type nested"})
 }
 
 type Mutation {
@@ -56,7 +56,7 @@ type ProtectedType @protected {
       nested: mutation nested
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -112,5 +112,14 @@ type ProtectedType @protected {
           name
           nested
         }
+      }
+- method: POST
+  url: http://localhost:8080/graphql
+  headers:
+    Authorization: Bearer abc.def
+  body:
+    query: |
+      query {
+        protectedScalar
       }
 ```

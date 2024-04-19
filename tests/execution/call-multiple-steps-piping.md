@@ -6,13 +6,13 @@ schema {
 }
 
 type Query {
-  a_input(input: JSON): JSON @const(data: {input: "{{args.input.a}}"})
-  b_input(input: JSON): JSON @const(data: {input: "{{args.input.b}}"})
-  a(input: JSON): JSON @const(data: "{{args.input.a}}")
-  b(input: JSON): JSON @const(data: "{{args.input.b}}")
-  c(input: JSON): JSON @const(data: "{{args.input.c}}")
-  wrap_args: JSON @const(data: {input: "{{args}}"})
-  wrap_input(input: JSON): JSON @const(data: {input: "{{args.input}}"})
+  a_input(input: JSON): JSON @expr(body: {input: "{{args.input.a}}"})
+  b_input(input: JSON): JSON @expr(body: {input: "{{args.input.b}}"})
+  a(input: JSON): JSON @expr(body: "{{args.input.a}}")
+  b(input: JSON): JSON @expr(body: "{{args.input.b}}")
+  c(input: JSON): JSON @expr(body: "{{args.input.c}}")
+  wrap_args: JSON @expr(body: {input: "{{args}}"})
+  wrap_input(input: JSON): JSON @expr(body: {input: "{{args.input}}"})
 
   abc_input(input: JSON): JSON
     @call(
@@ -38,7 +38,7 @@ type Query {
 }
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

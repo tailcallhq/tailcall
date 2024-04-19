@@ -20,4 +20,4 @@ cloudflare/pkg
 
 .wrangler/
 
-/tests/snapshots/*.new
+*.snap.new

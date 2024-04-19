@@ -175,26 +175,28 @@ fn to_scalar_type() -> config::Type {
     config::Type { scalar: true, ..Default::default() }
 }
 fn to_union_types(
-    type_definitions: &Vec<&Positioned<TypeDefinition>>,
+    type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Union>, String> {
-    let mut unions = BTreeMap::new();
-    for type_definition in type_definitions {
-        let type_name = pos_name_to_string(&type_definition.node.name);
-        let type_opt = match type_definition.node.kind.clone() {
-            TypeKind::Union(union_type) => to_union(
-                union_type,
-                &type_definition
-                    .node
-                    .description
-                    .to_owned()
-                    .map(|pos| pos.node),
-            ),
-            _ => continue,
-        };
-        unions.insert(type_name, type_opt);
-    }
-
-    Valid::succeed(unions)
+    Valid::succeed(
+        type_definitions
+            .iter()
+            .filter_map(|type_definition| {
+                let type_name = pos_name_to_string(&type_definition.node.name);
+                let type_opt = match type_definition.node.kind.clone() {
+                    TypeKind::Union(union_type) => to_union(
+                        union_type,
+                        &type_definition
+                            .node
+                            .description
+                            .to_owned()
+                            .map(|pos| pos.node),
+                    ),
+                    _ => return None,
+                };
+                Some((type_name, type_opt))
+            })
+            .collect(),
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -375,10 +377,10 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
         .collect();
     Union { types, doc: doc.clone() }
 }
-fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Const> {
+fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {
-        if directive.node.name.node == config::Const::directive_name() {
-            config::Const::from_directive(&directive.node)
+        if directive.node.name.node == config::Expr::directive_name() {
+            config::Expr::from_directive(&directive.node)
                 .to_result()
                 .ok()
         } else {

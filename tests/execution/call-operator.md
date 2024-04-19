@@ -45,7 +45,7 @@ schema
 }
 
 type Query {
-  userId: Int! @const(data: 2)
+  userId: Int! @expr(body: 2)
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{args.id}}")
   userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
@@ -168,7 +168,7 @@ type Post {
     body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

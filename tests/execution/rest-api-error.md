@@ -37,7 +37,7 @@ type User {
     body: {}
 ```
 
-```yml @assert
+```yml @test
 - method: GET
   url: http://localhost:8080/api/user/1
 ```

@@ -25,6 +25,7 @@ pub mod lambda;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;
+pub mod primitive;
 pub mod print_schema;
 mod proto_reader;
 mod resource_reader;
@@ -37,12 +38,14 @@ pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 
+// Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 use http::Response;
+pub use tailcall_macros as macros;
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;

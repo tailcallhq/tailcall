@@ -6,7 +6,7 @@ schema @server @upstream(baseURL: "http://abc.com") {
 }
 
 type Query {
-  hi: Foo @const(data: "world")
+  hi: Foo @expr(body: "world")
 }
 
 type Foo {
@@ -23,7 +23,7 @@ schema @server {
 }
 
 type Query {
-  hi: Foo @const(data: {a: "world"})
+  hi: Foo @expr(body: {a: "world"})
 }
 
 type Foo {

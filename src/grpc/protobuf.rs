@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use anyhow::{anyhow, bail, Context, Result};
+use async_graphql::Value;
 use prost::bytes::BufMut;
 use prost::Message;
 use prost_reflect::prost_types::FileDescriptorSet;
@@ -72,26 +73,35 @@ impl ProtobufSet {
     // TODO: load definitions from proto file for now, but in future
     // it could be more convenient to load FileDescriptorSet instead
     // either from file or server reflection
-    pub fn from_proto_file(file_descriptor_set: &FileDescriptorSet) -> Result<Self> {
-        let descriptor_pool =
-            DescriptorPool::from_file_descriptor_set(file_descriptor_set.clone())?;
+    pub fn from_proto_file(file_descriptor_set: FileDescriptorSet) -> Result<Self> {
+        let descriptor_pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)?;
         Ok(Self { descriptor_pool })
     }
 
     pub fn find_service(&self, grpc_method: &GrpcMethod) -> Result<ProtobufService> {
+        let service_name = format!("{}.{}", grpc_method.package, grpc_method.service);
+
         let service_descriptor = self
             .descriptor_pool
-            .get_service_by_name(
-                format!("{}.{}", grpc_method.package, grpc_method.service).as_str(),
-            )
-            .with_context(|| {
-                format!(
-                    "Couldn't find definitions for service {}",
-                    grpc_method.service
-                )
-            })?;
+            .get_service_by_name(&service_name)
+            .with_context(|| format!("Couldn't find definitions for service {service_name}"))?;
 
         Ok(ProtobufService { service_descriptor })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ProtobufMessage {
+    pub message_descriptor: MessageDescriptor,
+}
+
+impl ProtobufMessage {
+    pub fn decode(&self, bytes: &[u8]) -> Result<Value> {
+        let message = DynamicMessage::decode(self.message_descriptor.clone(), bytes)?;
+
+        let json = serde_json::to_value(message)?;
+
+        Ok(async_graphql::Value::from_json(json)?)
     }
 }
 
@@ -117,7 +127,7 @@ impl ProtobufService {
 
 #[derive(Debug, Clone)]
 pub struct ProtobufOperation {
-    method: MethodDescriptor,
+    pub method: MethodDescriptor,
     pub input_type: MessageDescriptor,
     pub output_type: MessageDescriptor,
     serialize_options: SerializeOptions,
@@ -222,6 +232,12 @@ impl ProtobufOperation {
         let json = serde_json::from_slice::<T>(ser.into_inner().as_ref())?;
         Ok(json)
     }
+
+    pub fn find_message(&self, name: &str) -> Option<ProtobufMessage> {
+        let message_descriptor = self.method.parent_pool().get_message_by_name(name)?;
+
+        Some(ProtobufMessage { message_descriptor })
+    }
 }
 
 #[cfg(test)]
@@ -283,9 +299,7 @@ pub mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor_set(&method)
-            .unwrap()
-            .to_owned())
+            .get_file_descriptor_set())
     }
 
     #[test]
@@ -327,12 +341,12 @@ pub mod tests {
     #[tokio::test]
     async fn service_not_found() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings._unknown.foo").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("greetings.proto").await?)?;
         let error = file.find_service(&grpc_method).unwrap_err();
 
         assert_eq!(
             error.to_string(),
-            "Couldn't find definitions for service _unknown"
+            "Couldn't find definitions for service greetings._unknown"
         );
 
         Ok(())
@@ -341,7 +355,7 @@ pub mod tests {
     #[tokio::test]
     async fn method_not_found() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter._unknown").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("greetings.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let error = service.find_operation(&grpc_method).unwrap_err();
 
@@ -353,7 +367,7 @@ pub mod tests {
     #[tokio::test]
     async fn greetings_proto_file() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("greetings.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("greetings.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -375,7 +389,7 @@ pub mod tests {
     async fn news_proto_file() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
-        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("news.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -400,7 +414,7 @@ pub mod tests {
     #[tokio::test]
     async fn news_proto_file_multiple_messages() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetMultipleNews").unwrap();
-        let file = ProtobufSet::from_proto_file(&get_proto_file("news.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file("news.proto").await?)?;
         let service = file.find_service(&grpc_method)?;
         let multiple_operation = service.find_operation(&grpc_method)?;
 

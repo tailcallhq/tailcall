@@ -35,7 +35,7 @@ type Query @addField(name: "user1", path: ["person1", "name"]) @addField(name: "
       name: Ervin Howell
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:
