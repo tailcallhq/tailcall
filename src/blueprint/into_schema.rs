@@ -41,6 +41,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
+                let is_list = field.of_type.is_list();
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
@@ -70,12 +71,17 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                                         let const_value =
                                             expr.eval(ctx, &Concurrent::Sequential).await?;
-
                                         let p = match const_value {
-                                            ConstValue::List(a) => FieldValue::list(a),
-                                            a => FieldValue::from(a),
+                                            ConstValue::List(a) => Some(FieldValue::list(a)),
+                                            a => {
+                                                if a == ConstValue::Null && is_list {
+                                                     FieldValue::NONE
+                                                } else {
+                                                    FieldValue::try_from(a).ok()
+                                                }
+                                            },
                                         };
-                                        Ok(Some(p))
+                                        Ok(p)
                                     }
                                     .instrument(span)
                                     .inspect_err(|err| tracing::error!(?err)),
