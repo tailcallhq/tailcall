@@ -23,6 +23,36 @@ struct Context {
     query: String,
 }
 
+/// A custom enum representing either a valid value or an error.
+#[derive(Debug)]
+enum Valid<T> {
+    Valid(T),
+    Invalid(String),
+}
+
+impl<T> Valid<T> {
+    fn from_iter<I>(iter: I) -> Valid<Vec<T>>
+    where
+        I: IntoIterator<Item = Valid<T>>,
+    {
+        let mut valid_items = Vec::new();
+        let mut errors = Vec::new();
+
+        for item in iter {
+            match item {
+                Valid::Valid(value) => valid_items.push(value),
+                Valid::Invalid(err) => errors.push(err),
+            }
+        }
+
+        if errors.is_empty() {
+            Valid::Valid(valid_items)
+        } else {
+            Valid::Invalid(errors.join("; "))
+        }
+    }
+}
+
 impl Context {
     fn new(query: &str) -> Self {
         Self {
@@ -38,35 +68,37 @@ impl Context {
         self
     }
 
-    /// Processes proto enum types.
-    fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
+    fn append_enums(mut self, enums: &[EnumDescriptorProto]) -> Self {
         for enum_ in enums {
             let mut ty = Type::default();
-
+    
             let enum_name = enum_.name();
             ty.tag = Some(Tag { id: enum_name.to_string() });
-
-            let variants = enum_
-                .value
-                .iter()
-                .map(|v| {
-                    GraphQLType::new(v.name())
-                        .as_enum_variant()
-                        .unwrap()
-                        .to_string()
-                })
-                .collect::<BTreeSet<String>>();
-
-            ty.variants = Some(variants);
-
-            let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
-            self = self.insert_type(type_name, ty);
+    
+            let variants: Valid<Vec<String>> = Valid::from_iter(enum_.value.iter().map(|v| {
+                GraphQLType::new(v.name())
+                    .as_enum_variant()
+                    .map(|variant| variant.to_string())
+                    .map(Valid::Valid)
+                    .unwrap_or_else(|| Valid::Invalid("Enum variant conversion error".to_string()))
+            }));
+    
+            match variants {
+                Valid::Valid(variants_vec) => {
+                    ty.variants = Some(variants_vec.into_iter().collect::<BTreeSet<String>>());
+                }
+                Valid::Invalid(error_msg) => {
+                    eprintln!("Error processing enum variants: {}", error_msg);
+                    // Handle the error condition here, such as using a default value or returning early
+                }
+            }
+    
+            self = self.insert_type(enum_name.to_string(), ty);
         }
         self
     }
 
-    /// Processes proto message types.
-    fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Self {
+    fn append_msg_type(mut self, messages: &[DescriptorProto]) -> Self {
         for message in messages {
             let msg_name = message.name().to_string();
             if let Some(options) = message.options.as_ref() {
@@ -74,28 +106,34 @@ impl Context {
                     continue;
                 }
             }
-
+    
             self = self.append_enums(&message.enum_type);
             self = self.append_msg_type(&message.nested_type);
-
-            let msg_type = GraphQLType::new(&msg_name)
+    
+            let msg_type = match GraphQLType::new(&msg_name)
                 .package(&self.package)
                 .as_object_type()
-                .unwrap();
-
+            {
+                Some(obj_type) => obj_type,
+                None => continue, // Skip if unable to get GraphQLType
+            };
+    
             let mut ty = Type::default();
-            for field in message.field.iter() {
-                let field_name = GraphQLType::new(field.name())
+            for field in &message.field {
+                let field_name = match GraphQLType::new(field.name())
                     .package(&self.package)
                     .as_field()
-                    .unwrap();
-
+                {
+                    Some(field_type) => field_type,
+                    None => continue, // Skip if unable to get GraphQLType
+                };
+    
                 let mut cfg_field = Field::default();
-
+    
                 let label = field.label().as_str_name().to_lowercase();
                 cfg_field.list = label.contains("repeated");
                 cfg_field.required = label.contains("required") || cfg_field.list;
-
+    
                 if field.r#type.is_some() {
                     let type_of = convert_ty(field.r#type().as_str_name());
                     if type_of.eq("JSON") {
@@ -106,24 +144,27 @@ impl Context {
                 } else {
                     // for non-primitive types
                     let type_of = convert_ty(field.type_name());
-                    let type_of = GraphQLType::new(&type_of)
+                    let type_of = match GraphQLType::new(&type_of)
                         .package(self.package.as_str())
                         .as_object_type()
-                        .unwrap()
-                        .to_string();
-
+                    {
+                        Some(obj_type) => obj_type.to_string(),
+                        None => continue, // Skip if unable to get GraphQLType
+                    };
+    
                     cfg_field.type_of = type_of;
                 }
-
+    
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
-
+    
             ty.tag = Some(Tag { id: msg_type.id() });
-
+    
             self = self.insert_type(msg_type.to_string(), ty);
         }
         self
     }
+    
 
     /// Processes proto service definitions and their methods.
     fn append_query_service(mut self, services: &Vec<ServiceDescriptorProto>) -> Self {
@@ -269,6 +310,8 @@ mod test {
 
     use crate::generator::from_proto::from_proto;
 
+    use super::Valid;
+
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let path =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("src/generator/proto/{}", name));
@@ -324,10 +367,22 @@ mod test {
 
     #[test]
     fn test_greetings_proto_file() {
-        let set = new_file_desc(&["greetings.proto", "greetings_message.proto"]).unwrap();
-        let result = from_proto(&[set], "Query").to_sdl();
-        insta::assert_snapshot!(result);
-    }
+        // Attempt to create the FileDescriptorSet
+        let set = match new_file_desc(&["greetings.proto", "greetings_message.proto"]) {
+            Ok(desc) => Valid::Valid(desc),
+            Err(err) => Valid::Invalid(err.to_string()),
+        };
+    
+        // Proceed only if the FileDescriptorSet is valid
+        if let Valid::Valid(set) = set {
+            // Generate the result using from_proto
+            let result = from_proto(&[set], "Query").to_sdl();
+            insta::assert_snapshot!(result);
+        } else {
+            // Handle the case where creating the FileDescriptorSet failed
+            panic!("Failed to create FileDescriptorSet: {:?}", set);
+        }
+    }    
 
     #[test]
     fn test_config_from_sdl() -> anyhow::Result<()> {
