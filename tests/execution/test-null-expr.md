@@ -1,6 +1,5 @@
 # Test Null expr
 
-
 ```graphql @server
 schema {
   query: Query

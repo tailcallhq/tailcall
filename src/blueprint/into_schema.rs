@@ -41,7 +41,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-                let is_list = field.of_type.is_list();
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
