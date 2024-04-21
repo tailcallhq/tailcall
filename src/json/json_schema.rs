@@ -18,6 +18,42 @@ pub enum JsonSchema {
     Bool,
 }
 
+impl From<async_graphql::Value> for JsonSchema {
+    fn from(value: async_graphql::Value) -> Self {
+        match value {
+            async_graphql::Value::String(_) => JsonSchema::Str,
+            async_graphql::Value::Number(_) => JsonSchema::Num,
+            async_graphql::Value::Boolean(_) => JsonSchema::Bool,
+            async_graphql::Value::List(list) => {
+                let schema = list.into_iter().fold(JsonSchema::default(), |acc, item| {
+                    let item_schema = JsonSchema::from(item);
+                    if acc == JsonSchema::default() {
+                        item_schema
+                    } else {
+                        JsonSchema::Arr(Box::new(acc))
+                    }
+                });
+                JsonSchema::Arr(Box::new(schema))
+            }
+            async_graphql::Value::Object(map) => {
+                let schema = map
+                    .into_iter()
+                    .fold(JsonSchema::default(), |acc, (name, item)| {
+                        let item_schema = JsonSchema::from(item);
+                        if acc == JsonSchema::default() {
+                            item_schema
+                        } else {
+                            JsonSchema::Obj(HashMap::from_iter([(name.to_string(), acc)]))
+                        }
+                    });
+                JsonSchema::Obj(HashMap::from_iter([("root".to_string(), schema)]))
+            }
+            async_graphql::Value::Null => JsonSchema::Opt(Box::new(JsonSchema::Str)),
+            _ => JsonSchema::Str,
+        }
+    }
+}
+
 impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
     fn from(fields: [(&'static str, JsonSchema); L]) -> Self {
         let mut map = HashMap::new();
@@ -87,6 +123,19 @@ impl JsonSchema {
                 _ => schema.validate(value),
             },
             JsonSchema::Enum(_) => Valid::succeed(()),
+        }
+    }
+
+    pub fn path(&self, path: &[String]) -> Option<&JsonSchema> {
+        if let Some((next, tail)) = path.split_first() {
+            match self {
+                JsonSchema::Obj(map) => map.get(next)?.path(tail),
+                JsonSchema::Opt(schema) => schema.path(path),
+                JsonSchema::Arr(schema) => schema.path(path),
+                _ => None,
+            }
+        } else {
+            Some(self)
         }
     }
 

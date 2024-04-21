@@ -9,7 +9,7 @@ use nom::{Finish, IResult};
 use crate::path::{PathGraphql, PathString};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
-pub struct Mustache(Vec<Segment>);
+pub struct Mustache(pub Vec<Segment>);
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Segment {
@@ -56,6 +56,18 @@ impl Mustache {
                         .path_string(parts)
                         .map(|a| a.to_string())
                         .unwrap_or_default(),
+                })
+                .collect(),
+        }
+    }
+
+    pub fn render_option(&self, value: &impl PathString) -> Option<String> {
+        match self {
+            Mustache(segments) => segments
+                .iter()
+                .map(|segment| match segment {
+                    Segment::Literal(text) => Some(text.clone()),
+                    Segment::Expression(parts) => value.path_string(parts).map(|a| a.to_string()),
                 })
                 .collect(),
         }

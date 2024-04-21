@@ -16,8 +16,11 @@ impl ValueExt for DynamicValue {
         match self {
             DynamicValue::Value(value) => Ok(value.to_owned()),
             DynamicValue::Mustache(m) => {
-                let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
-
+                let rendered: Option<Cow<'a, str>> = m.render_option(ctx).map(Cow::Owned);
+                if rendered.is_none() {
+                    return Ok(GraphQLValue::Null);
+                }
+                let rendered = rendered.unwrap_or_default();
                 serde_json::from_str::<GraphQLValue>(rendered.as_ref())
                     // parsing can fail when Mustache::render returns bare string and since
                     // that string is not wrapped with quotes serde_json will fail to parse it
