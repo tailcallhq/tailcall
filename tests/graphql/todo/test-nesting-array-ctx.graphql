@@ -4,7 +4,7 @@ schema {
 }
 
 type Bar {
-  value: Int @http(path: "/withNestingArrayCtxValue", query: {data: "{{value}}"}, baseURL: "https://foo.com")
+  value: Int @http(path: "/withNestingArrayCtxValue", query: {data: "{{.value}}"}, baseURL: "https://foo.com")
 }
 
 type Foo {

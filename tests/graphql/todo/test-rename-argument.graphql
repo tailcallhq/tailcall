@@ -9,7 +9,7 @@ type Bar {
 
 type Query {
   foo(input: Int @modify(name: "data")): Bar
-    @http(path: "/renameArgument", query: {data: "{{args.data}}"}, baseURL: "https://foo.com")
+    @http(path: "/renameArgument", query: {data: "{{.args.data}}"}, baseURL: "https://foo.com")
 }
 
 #> client-query

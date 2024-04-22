@@ -7,7 +7,7 @@ schema @server @upstream(baseURL: "http://example.com", batch: {delay: 1, header
 }
 
 type Bar {
-  foo: Foo @http(path: "/foo?id={{value.id}}") @cache(maxAge: 300)
+  foo: Foo @http(path: "/foo?id={{.value.id}}") @cache(maxAge: 300)
   id: String!
 }
 

@@ -19,7 +19,7 @@ type User {
   email: String!
   phone: String
   website: String
-  todos: [Todo] @http(path: "/users/{{value.id}}/todos")
+  todos: [Todo] @http(path: "/users/{{.value.id}}/todos")
 }
 
 type Post {
@@ -27,7 +27,7 @@ type Post {
   title: String
   userId: Int!
   body: String
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```
 

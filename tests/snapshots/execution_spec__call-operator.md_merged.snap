@@ -23,29 +23,29 @@ type Post {
   news: NewsData! @call(steps: [{query: "news"}])
   newsWithPortArg: NewsData! @call(steps: [{query: "news", args: {port: 50051}}])
   title: String
-  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
   user1: User @call(steps: [{query: "user1"}])
   userFromValue: User @call(steps: [{query: "userFromValue"}])
-  userGraphQL: User @call(steps: [{query: "userGraphQL", args: {id: "{{value.userId}}"}}])
-  userGraphQLHeaders: User @call(steps: [{query: "userGraphQLHeaders", args: {id: "{{value.userId}}"}}])
-  userHttpHeaders: User @call(steps: [{query: "userHttpHeaders", args: {id: "{{value.userId}}"}}])
-  userHttpQuery: User @call(steps: [{query: "userHttpQuery", args: {id: "{{value.userId}}"}}])
+  userGraphQL: User @call(steps: [{query: "userGraphQL", args: {id: "{{.value.userId}}"}}])
+  userGraphQLHeaders: User @call(steps: [{query: "userGraphQLHeaders", args: {id: "{{.value.userId}}"}}])
+  userHttpHeaders: User @call(steps: [{query: "userHttpHeaders", args: {id: "{{.value.userId}}"}}])
+  userHttpQuery: User @call(steps: [{query: "userHttpQuery", args: {id: "{{.value.userId}}"}}])
   userId: Int!
 }
 
 type Query {
   news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
-  newsWithPortArg(port: Int!): NewsData! @grpc(baseURL: "http://localhost:{{args.port}}", method: "news.NewsService.GetAllNews")
+  newsWithPortArg(port: Int!): NewsData! @grpc(baseURL: "http://localhost:{{.args.port}}", method: "news.NewsService.GetAllNews")
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
   user1: User @http(path: "/users/1")
-  userFromValue: User @http(path: "/users/{{value.userId}}")
-  userGraphQL(id: Int): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
-  userGraphQLHeaders(id: Int!): User @graphQL(baseURL: "http://upstream/graphql", headers: [{key: "id", value: "{{args.id}}"}], name: "user")
-  userHttpHeaders(id: ID!): User @http(headers: [{key: "id", value: "{{args.id}}"}], path: "/users")
-  userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}])
+  userFromValue: User @http(path: "/users/{{.value.userId}}")
+  userGraphQL(id: Int): User @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+  userGraphQLHeaders(id: Int!): User @graphQL(baseURL: "http://upstream/graphql", headers: [{key: "id", value: "{{.args.id}}"}], name: "user")
+  userHttpHeaders(id: ID!): User @http(headers: [{key: "id", value: "{{.args.id}}"}], path: "/users")
+  userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
   userId: Int! @expr(body: 2)
-  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
+  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{.args.id}}"}])
   userWithPosts: UserWithPosts @http(path: "/users/1")
 }
 
@@ -61,5 +61,5 @@ type User {
 type UserWithPosts {
   id: Int!
   name: String!
-  posts: [Post] @call(steps: [{query: "userPosts", args: {id: "{{value.id}}"}}])
+  posts: [Post] @call(steps: [{query: "userPosts", args: {id: "{{.value.id}}"}}])
 }

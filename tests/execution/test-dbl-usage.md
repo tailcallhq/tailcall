@@ -15,6 +15,6 @@ type User {
 }
 
 type Query {
-  user(input: User!): User @http(path: "/user/{{args.input.id}}", baseURL: "http://localhost:8080")
+  user(input: User!): User @http(path: "/user/{{.args.input.id}}", baseURL: "http://localhost:8080")
 }
 ```

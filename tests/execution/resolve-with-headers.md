@@ -13,7 +13,7 @@ type Post {
 }
 
 type Query {
-  post1: Post @http(path: "/posts/{{headers.authorization}}", baseURL: "http://jsonplaceholder.typicode.com")
+  post1: Post @http(path: "/posts/{{.headers.authorization}}", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 

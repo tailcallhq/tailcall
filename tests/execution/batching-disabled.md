@@ -27,7 +27,7 @@
             }
           },
           "http": {
-            "path": "/users/{{args.id}}"
+            "path": "/users/{{.args.id}}"
           },
           "cache": null
         }

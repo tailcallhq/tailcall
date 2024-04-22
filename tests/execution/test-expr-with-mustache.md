@@ -15,7 +15,7 @@ type A {
   c: String @modify(omit: true)
   g: Boolean @modify(omit: true)
   d: D @modify(omit: true)
-  bc: BC @expr(body: {b: "{{value.b}}", c: "{{value.c}}", d: "{{value.d.e}}", f: "{{value.d}}", g: "{{value.g}}"})
+  bc: BC @expr(body: {b: "{{.value.b}}", c: "{{.value.c}}", d: "{{.value.d.e}}", f: "{{.value.d}}", g: "{{.value.g}}"})
 }
 
 type BC {
