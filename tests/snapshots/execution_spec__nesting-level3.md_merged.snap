@@ -10,7 +10,7 @@ type Post {
   body: String
   id: Int
   title: String
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
   userId: Int!
 }
 
@@ -27,7 +27,7 @@ type User {
   id: Int!
   name: String!
   phone: String
-  todos: [Todo] @http(path: "/users/{{value.id}}/todos")
+  todos: [Todo] @http(path: "/users/{{.value.id}}/todos")
   username: String!
   website: String
 }

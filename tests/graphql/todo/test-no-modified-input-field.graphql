@@ -13,7 +13,7 @@ type Identity {
 
 type Query {
   identity(input: IdentityInput): Identity
-    @http(path: "/noModifiedInputField", query: {data: "{{args.input.a}}"}, baseURL: "https://foo.com")
+    @http(path: "/noModifiedInputField", query: {data: "{{.args.input.a}}"}, baseURL: "https://foo.com")
 }
 
 #> client-query

@@ -17,7 +17,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @graphQL(name: "user", args: [{key: "id", value: "{{value.userId}}"}])
+  user: User @graphQL(name: "user", args: [{key: "id", value: "{{.value.userId}}"}])
 }
 
 type User {

@@ -12,7 +12,7 @@ type Query {
 type A {
   a: Int
   d: D @modify(omit: true)
-  bc: BC @expr(body: {d: "{{value.d}}", f: "{{value.f}}"})
+  bc: BC @expr(body: {d: "{{.value.d}}", f: "{{.value.f}}"})
 }
 
 type BC {

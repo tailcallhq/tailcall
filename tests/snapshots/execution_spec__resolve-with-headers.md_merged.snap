@@ -14,5 +14,5 @@ type Post {
 }
 
 type Query {
-  post1: Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{headers.authorization}}")
+  post1: Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{.headers.authorization}}")
 }
