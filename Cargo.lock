@@ -321,7 +321,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "tokio",
- "tonic-build",
+ "tonic-build 0.10.2",
  "tracing",
  "uname",
  "uuid",
@@ -4298,6 +4298,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
 
 [[package]]
+name = "rust-grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "http-body-util",
+ "hyper 0.14.28",
+ "hyper-util",
+ "once_cell",
+ "opentelemetry 0.22.0",
+ "opentelemetry-http",
+ "opentelemetry-otlp",
+ "opentelemetry-semantic-conventions",
+ "opentelemetry_sdk",
+ "prost",
+ "prost-types",
+ "tokio",
+ "tonic",
+ "tonic-build 0.11.0",
+ "tonic-reflection",
+ "tonic-tracing-opentelemetry",
+ "tower",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5541,6 +5568,51 @@ dependencies = [
  "prost-build",
  "quote",
  "syn 2.0.60",
+]
+
+[[package]]
+name = "tonic-build"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be4ef6dd70a610078cb4e338a0f79d06bc759ff1b22d2120c2ff02ae264ba9c2"
+dependencies = [
+ "prettyplease",
+ "proc-macro2",
+ "prost-build",
+ "quote",
+ "syn 2.0.60",
+]
+
+[[package]]
+name = "tonic-reflection"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "548c227bd5c0fae5925812c4ec6c66ffcfced23ea370cb823f4d18f0fc1cb6a7"
+dependencies = [
+ "prost",
+ "prost-types",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "tonic-tracing-opentelemetry"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d84d512c5d647751ec9444ea3d364be81b1f0b2de6edb88fe02e2cb9e133fa2"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "http 0.2.12",
+ "http-body 0.4.6",
+ "hyper 0.14.28",
+ "opentelemetry 0.22.0",
+ "pin-project-lite",
+ "tonic",
+ "tower",
+ "tracing",
+ "tracing-opentelemetry",
 ]
 
 [[package]]

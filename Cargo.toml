@@ -201,6 +201,7 @@ members = [
     "tailcall-macros",
     "tailcall-prettier",
     "tailcall-query-plan",
+    "examples-upstream/*"
 ]
 
 # Boost execution_spec snapshot diffing performance
