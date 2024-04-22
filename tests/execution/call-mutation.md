@@ -55,8 +55,8 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/posts
-    body: '{"body":"post-body","title":"post-title","userId":1}'
-  expected_hits: 2
+    body: {"body": "post-body", "title": "post-title", "userId": 1}
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -66,7 +66,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -75,7 +74,7 @@ type User {
 - request:
     method: PATCH
     url: http://jsonplaceholder.typicode.com/users/1
-    body: '{"postId":1}'
+    body: {"postId": 1}
   response:
     status: 200
     body:
@@ -84,7 +83,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?userId=1
-    body: null
   response:
     status: 200
     body:
@@ -103,7 +101,7 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users/1/posts
-    body: '{"body":"post-body","title":"post-title"}'
+    body: {"body": "post-body", "title": "post-title"}
   response:
     status: 200
     body:

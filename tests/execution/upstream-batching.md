@@ -62,7 +62,6 @@
     url: http://jsonplaceholder.typicode.com/users?id=1&id=2
     headers:
       test: test
-    body: null
   response:
     status: 200
     body:

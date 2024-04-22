@@ -39,7 +39,7 @@ type B {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '[{"query": "a {id, bid, cid}"}]'
+    textBody: '[{"query": "a {id, bid, cid}"}]'
   response:
     status: 200
     body:
@@ -60,7 +60,7 @@ type B {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '[{"query": "b {y}"},{"query": "c {x}"}]'
+    textBody: '[{"query": "b {y}"},{"query": "c {x}"}]'
   response:
     status: 200
     body:
@@ -73,7 +73,7 @@ type B {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '[{"query": "c {x}"},{"query": "b {y}"}]'
+    textBody: '[{"query": "c {x}"},{"query": "b {y}"}]'
   response:
     status: 200
     body:

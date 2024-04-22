@@ -27,7 +27,6 @@ type Bar {
 - request:
     method: GET
     url: http://example.com/foos
-    body: null
   response:
     status: 200
     body:
@@ -38,7 +37,6 @@ type Bar {
 - request:
     method: GET
     url: http://example.com/bars?fooId=1&fooId=2
-    body: null
   response:
     status: 200
     body:

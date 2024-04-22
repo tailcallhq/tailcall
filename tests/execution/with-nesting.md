@@ -31,7 +31,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -42,7 +41,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1/posts
-    body: null
   response:
     status: 200
     body:

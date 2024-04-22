@@ -31,7 +31,7 @@ type UserInput {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "mutation { createUser(user: {name: \"Test Name\", email: \"test@email\"}) { name } }" }'
+    textBody: {"query": 'mutation { createUser(user: {name: "Test Name", email: "test@email"}) { name } }'}
   response:
     status: 200
     body:

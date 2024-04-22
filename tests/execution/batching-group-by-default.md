@@ -30,7 +30,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
-    body: null
   response:
     status: 200
     body:
@@ -45,7 +44,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1&foo=bar&id=2&foo=bar
-    body: null
   response:
     status: 200
     body:
