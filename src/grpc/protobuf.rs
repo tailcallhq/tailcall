@@ -404,7 +404,7 @@ pub mod tests {
         assert_eq!(
             serde_json::to_value(parsed)?,
             json!({
-              "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1"
+              "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED"
             })
         );
 
@@ -432,7 +432,7 @@ pub mod tests {
             vec!["3".to_owned(), "5".to_owned(), "1".to_owned()]
         );
 
-        let output = b"\0\0\0\0o\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n#\x08\x05\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5";
+        let output = b"\0\0\0\0s\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n%\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3(\x01\n%\x08\x05\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5(\x02";
 
         let parsed = multiple_operation.convert_output::<serde_json::Value>(output)?;
 
@@ -440,9 +440,9 @@ pub mod tests {
             serde_json::to_value(parsed)?,
             json!({
               "news": [
-                { "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1" },
-                { "id": 3, "title": "Note 3", "body": "Content 3", "postImage": "Post image 3" },
-                { "id": 5, "title": "Note 5", "body": "Content 5", "postImage": "Post image 5" },
+                { "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED" },
+                { "id": 3, "title": "Note 3", "body": "Content 3", "postImage": "Post image 3", "status": "DRAFT" },
+                { "id": 5, "title": "Note 5", "body": "Content 5", "postImage": "Post image 5", "status": "DELETED" },
               ]
             })
         );

@@ -326,6 +326,17 @@ mod tests {
                 ("title".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
                 ("id".to_owned(), JsonSchema::Opt(JsonSchema::Num.into())),
                 ("body".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+                (
+                    "status".to_owned(),
+                    JsonSchema::Opt(
+                        JsonSchema::Enum(BTreeSet::from_iter([
+                            "DELETED".to_owned(),
+                            "DRAFT".to_owned(),
+                            "PUBLISHED".to_owned()
+                        ]))
+                        .into()
+                    )
+                )
             ]))
         );
 
