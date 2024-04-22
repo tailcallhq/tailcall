@@ -17,9 +17,9 @@ type Post {
 
 type Query {
   user(id: Int): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
   post(id: Int): Post
-    @graphQL(baseURL: "http://upstream/graphql", name: "post", args: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "post", args: [{key: "id", value: "{{.args.id}}"}])
 }
 ```
 

@@ -10,13 +10,13 @@ type Post {
   body: String!
   id: Int!
   title: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
   userId: Int!
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @graphQL(args: [{key: "id", value: "{{args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+  user(id: Int!): User @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
 }
 
 type User {

@@ -19,6 +19,6 @@ type User implements IUser {
 }
 
 type Query {
-  user: User @http(path: "/user/{{args.input.id}}", baseURL: "http://localhost:8080")
+  user: User @http(path: "/user/{{.args.input.id}}", baseURL: "http://localhost:8080")
 }
 ```

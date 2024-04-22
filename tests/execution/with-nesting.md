@@ -16,7 +16,7 @@ type User {
   email: String!
   phone: String
   website: String
-  posts: [Post] @http(path: "/users/{{value.id}}/posts")
+  posts: [Post] @http(path: "/users/{{.value.id}}/posts")
 }
 
 type Post {

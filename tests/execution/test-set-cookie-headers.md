@@ -8,7 +8,7 @@ schema
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 type User {
   id: Int!

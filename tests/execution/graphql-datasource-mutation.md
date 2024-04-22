@@ -17,7 +17,7 @@ type Query {
 
 type Mutation {
   createUser(user: UserInput!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "createUser", args: [{key: "user", value: "{{args.user}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "createUser", args: [{key: "user", value: "{{.args.user}}"}])
 }
 
 type UserInput {

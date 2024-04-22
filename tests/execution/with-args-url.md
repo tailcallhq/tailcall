@@ -21,7 +21,7 @@
             }
           },
           "http": {
-            "path": "/users/{{args.id}}",
+            "path": "/users/{{.args.id}}",
             "baseURL": "http://jsonplaceholder.typicode.com"
           },
           "cache": null

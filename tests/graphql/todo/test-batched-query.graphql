@@ -14,8 +14,10 @@ type User {
   email: String!
   phone: String
   website: String
-  postsBatched: [Post] @http(path: "/posts", query: {userId: "{{parent.value.id}}"}) @batch(key: "id", path: ["userId"])
-  firstPost: Post @http(path: "/firstPost", query: {userId: "{{parent.value.id}}"}) @batch(key: "id", path: ["userId"])
+  postsBatched: [Post]
+    @http(path: "/posts", query: {userId: "{{.parent.value.id}}"})
+    @batch(key: "id", path: ["userId"])
+  firstPost: Post @http(path: "/firstPost", query: {userId: "{{.parent.value.id}}"}) @batch(key: "id", path: ["userId"])
 }
 
 type Post {

@@ -28,7 +28,7 @@
             "query": [
               {
                 "key": "id",
-                "value": "{{args.id}}"
+                "value": "{{.args.id}}"
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com",

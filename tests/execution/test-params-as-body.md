@@ -6,7 +6,7 @@ schema @server(port: 8000, graphiql: true) @upstream(baseURL: "http://jsonplaceh
 }
 
 type Query {
-  firstUser(id: Int, name: String): User @http(method: POST, path: "/users", body: "{{args}}")
+  firstUser(id: Int, name: String): User @http(method: POST, path: "/users", body: "{{.args}}")
 }
 
 type User {

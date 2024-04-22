@@ -7,7 +7,7 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: 
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
