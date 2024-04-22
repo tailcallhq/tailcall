@@ -4,11 +4,18 @@ import "google/protobuf/empty.proto";
 
 package news;
 
+enum Status {
+  PUBLISHED = 0;
+  DRAFT = 1;
+  DELETED = 2;
+}
+
 message News {
     int32 id = 1;
     string title = 2;
     string body = 3;
     string post_image = 4;
+    Status status = 5;
 }
 
 service NewsService {

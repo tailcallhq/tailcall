@@ -131,14 +131,10 @@ impl ConfigReader {
                         .proto_reader
                         .reflection_fetch(link.src.as_str())
                         .await?;
-                    config_module.extensions.grpc_file_descriptors.extend(
-                        meta.into_iter().flat_map(|m| {
-                            m.descriptor_set
-                                .file
-                                .into_iter()
-                                .map(|file| (link.id.clone().unwrap(), file))
-                        }),
-                    );
+
+                    for m in meta {
+                        config_module.extensions.add_proto(m);
+                    }
                 }
             }
         }

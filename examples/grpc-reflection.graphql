@@ -18,6 +18,13 @@ type News {
   title: String
   body: String
   postImage: String
+  status: Status
+}
+
+enum Status {
+  PUBLISHED
+  DRAFT
+  DELETED
 }
 
 input NewsInput {
