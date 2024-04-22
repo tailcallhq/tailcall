@@ -79,17 +79,12 @@ impl ProtobufSet {
     }
 
     pub fn find_service(&self, grpc_method: &GrpcMethod) -> Result<ProtobufService> {
+        let service_name = format!("{}.{}", grpc_method.package, grpc_method.service);
+
         let service_descriptor = self
             .descriptor_pool
-            .get_service_by_name(
-                format!("{}.{}", grpc_method.package, grpc_method.service).as_str(),
-            )
-            .with_context(|| {
-                format!(
-                    "Couldn't find definitions for service {}",
-                    grpc_method.service
-                )
-            })?;
+            .get_service_by_name(&service_name)
+            .with_context(|| format!("Couldn't find definitions for service {service_name}"))?;
 
         Ok(ProtobufService { service_descriptor })
     }
@@ -304,9 +299,7 @@ pub mod tests {
             .resolve(config, None)
             .await?
             .extensions
-            .get_file_descriptor_set(&method)
-            .unwrap()
-            .to_owned())
+            .get_file_descriptor_set())
     }
 
     #[test]
@@ -353,7 +346,7 @@ pub mod tests {
 
         assert_eq!(
             error.to_string(),
-            "Couldn't find definitions for service _unknown"
+            "Couldn't find definitions for service greetings._unknown"
         );
 
         Ok(())

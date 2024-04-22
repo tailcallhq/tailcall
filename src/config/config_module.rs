@@ -1,21 +1,22 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
 use derive_setters::Setters;
 use jsonwebtoken::jwk::JwkSet;
-use prost_reflect::prost_types::FileDescriptorSet;
+use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::blueprint::GrpcMethod;
 use crate::config::Config;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
+use crate::proto_reader::ProtoMetadata;
 use crate::rest::{EndpointSet, Unchecked};
 use crate::scalar;
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, Setters)]
+#[derive(Clone, Debug, Default, Setters, MergeRight)]
 pub struct ConfigModule {
     pub config: Config,
     pub extensions: Extensions,
@@ -39,10 +40,10 @@ impl<A> Deref for Content<A> {
 /// Extensions are meta-information required before we can generate the
 /// blueprint. Typically, this information cannot be inferred without performing
 /// an IO operation, i.e., reading a file, making an HTTP call, etc.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, MergeRight)]
 pub struct Extensions {
-    /// Contains the file descriptor sets resolved from the links
-    pub grpc_file_descriptors: Vec<Content<FileDescriptorSet>>,
+    /// Contains the file descriptor set resolved from the links to proto files
+    pub grpc_file_descriptors: HashMap<String, FileDescriptorProto>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -62,16 +63,15 @@ pub struct Extensions {
 }
 
 impl Extensions {
-    pub fn get_file_descriptor_set(&self, grpc: &GrpcMethod) -> Option<&FileDescriptorSet> {
-        self.grpc_file_descriptors
-            .iter()
-            .find(|content| {
-                content
-                    .file
-                    .iter()
-                    .any(|file| file.package == Some(grpc.package.to_owned()))
-            })
-            .map(|a| &a.content)
+    pub fn add_proto(&mut self, metadata: ProtoMetadata) {
+        for file in metadata.descriptor_set.file {
+            self.grpc_file_descriptors
+                .insert(file.name().to_string(), file);
+        }
+    }
+
+    pub fn get_file_descriptor_set(&self) -> FileDescriptorSet {
+        FileDescriptorSet { file: self.grpc_file_descriptors.values().cloned().collect() }
     }
 
     pub fn has_auth(&self) -> bool {
@@ -79,31 +79,10 @@ impl Extensions {
     }
 }
 
-impl MergeRight for Extensions {
-    fn merge_right(mut self, mut other: Self) -> Self {
-        self.grpc_file_descriptors = self
-            .grpc_file_descriptors
-            .merge_right(other.grpc_file_descriptors);
-        self.script = self.script.merge_right(other.script.take());
-        self.cert = self.cert.merge_right(other.cert);
-        self.keys = if !other.keys.is_empty() {
-            other.keys
-        } else {
-            self.keys
-        };
-        self.endpoint_set = self.endpoint_set.merge_right(other.endpoint_set);
-        self.htpasswd = self.htpasswd.merge_right(other.htpasswd);
-        self.jwks = self.jwks.merge_right(other.jwks);
-        self
-    }
-}
-
-impl MergeRight for ConfigModule {
+impl MergeRight for FileDescriptorSet {
     fn merge_right(mut self, other: Self) -> Self {
-        self.config = self.config.merge_right(other.config);
-        self.extensions = self.extensions.merge_right(other.extensions);
-        self.input_types = self.input_types.merge_right(other.input_types);
-        self.output_types = self.output_types.merge_right(other.output_types);
+        self.file.extend(other.file);
+
         self
     }
 }

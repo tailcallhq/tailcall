@@ -5,13 +5,14 @@ use super::partial_request::PartialRequest;
 use super::Request;
 use crate::blueprint::Blueprint;
 use crate::http::RequestContext;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::rest::operation::OperationQuery;
 use crate::runtime::TargetRuntime;
 use crate::valid::Validator;
 
 /// Collection of endpoints
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, MergeRight)]
 pub struct EndpointSet<Status> {
     endpoints: Vec<Endpoint>,
     marker: std::marker::PhantomData<Status>,
@@ -78,13 +79,6 @@ impl EndpointSet<Unchecked> {
             marker: std::marker::PhantomData::<Checked>,
             endpoints: self.endpoints,
         })
-    }
-}
-
-impl MergeRight for EndpointSet<Unchecked> {
-    fn merge_right(mut self, other: Self) -> Self {
-        self.extend(other);
-        self
     }
 }
 

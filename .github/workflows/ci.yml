@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
-        uses: Wandalen/wretry.action@v2
+        uses: Wandalen/wretry.action@v3
         with:
           action: codecov/codecov-action@v4
           attempt_limit: 3
