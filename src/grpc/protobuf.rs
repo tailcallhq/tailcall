@@ -246,7 +246,7 @@ pub mod tests {
     use anyhow::Result;
     use prost_reflect::Value;
     use serde_json::json;
-    use test_utils::fixture::get_fixture_path;
+    use tailcall_fixtures::get_fixture_path;
 
     use super::*;
     use crate::blueprint::GrpcMethod;

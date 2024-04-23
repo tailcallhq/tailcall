@@ -121,7 +121,7 @@ mod test_proto_config {
 
     use anyhow::Result;
     use pretty_assertions::assert_eq;
-    use test_utils::fixture::get_fixture_path;
+    use tailcall_fixtures::get_fixture_path;
 
     use crate::proto_reader::ProtoReader;
     use crate::resource_reader::{Cached, ResourceReader};

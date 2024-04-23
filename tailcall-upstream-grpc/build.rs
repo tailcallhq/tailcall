@@ -1,7 +1,7 @@
 use std::env::var;
 use std::path::PathBuf;
 
-use test_utils::fixture::get_fixture_path;
+use tailcall_fixtures::get_fixture_path;
 
 fn main() {
     let news = get_fixture_path("grpc/proto/news.proto");

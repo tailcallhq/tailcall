@@ -49,7 +49,7 @@ mod tests {
     use reqwest::header::HeaderMap;
     use reqwest::{Method, Request, StatusCode};
     use serde_json::json;
-    use test_utils::fixture::get_fixture_path;
+    use tailcall_fixtures::get_fixture_path;
     use tonic::{Code, Status};
 
     use crate::blueprint::GrpcMethod;

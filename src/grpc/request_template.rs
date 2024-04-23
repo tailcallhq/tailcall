@@ -124,7 +124,7 @@ mod tests {
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::{HeaderMap, Method};
     use pretty_assertions::assert_eq;
-    use test_utils::fixture::get_fixture_path;
+    use tailcall_fixtures::get_fixture_path;
 
     use super::RequestTemplate;
     use crate::blueprint::GrpcMethod;

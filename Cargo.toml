@@ -159,7 +159,7 @@ insta = { workspace = true }
 tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
-test-utils = { path = "./test-utils" }
+tailcall-fixtures = { path = "./tailcall-fixtures" }
 
 [features]
 
@@ -202,7 +202,7 @@ members = [
     "tailcall-macros",
     "tailcall-prettier",
     "tailcall-query-plan",
-    "test-utils",
+    "tailcall-fixtures",
     "tailcall-upstream-grpc"
 ]
 
