@@ -90,9 +90,9 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
             .and_then(|(head, tail)| match head.as_ref() {
                 "value" => Some(ctx.path_value(tail)?.to_string()),
                 "args" => Some(ctx.path_arg(tail)?.to_string()),
-                "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
+                "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#"{v}"#)),
+                "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#"{v}"#)),
+                "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#"{v}"#)),
                 _ => None,
             })
     }
