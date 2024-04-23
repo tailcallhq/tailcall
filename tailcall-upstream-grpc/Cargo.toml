@@ -1,5 +1,5 @@
 [package]
-name = "rust-grpc"
+name = "tailcall-upstream-grpc"
 version = "0.1.0"
 edition = "2021"
 publish = false

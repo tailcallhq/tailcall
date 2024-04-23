@@ -4348,35 +4348,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
 
 [[package]]
-name = "rust-grpc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "http-body-util",
- "hyper 0.14.28",
- "hyper-util",
- "once_cell",
- "opentelemetry 0.22.0",
- "opentelemetry-http",
- "opentelemetry-otlp",
- "opentelemetry-semantic-conventions",
- "opentelemetry_sdk",
- "prost",
- "prost-types",
- "protoc-bin-vendored",
- "tailcall-fixtures",
- "tokio",
- "tonic",
- "tonic-build 0.11.0",
- "tonic-reflection",
- "tonic-tracing-opentelemetry",
- "tower",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5320,6 +5291,35 @@ dependencies = [
  "lazy_static",
  "strum_macros 0.26.2",
  "tokio",
+]
+
+[[package]]
+name = "tailcall-upstream-grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "http-body-util",
+ "hyper 0.14.28",
+ "hyper-util",
+ "once_cell",
+ "opentelemetry 0.22.0",
+ "opentelemetry-http",
+ "opentelemetry-otlp",
+ "opentelemetry-semantic-conventions",
+ "opentelemetry_sdk",
+ "prost",
+ "prost-types",
+ "protoc-bin-vendored",
+ "tailcall-fixtures",
+ "tokio",
+ "tonic",
+ "tonic-build 0.11.0",
+ "tonic-reflection",
+ "tonic-tracing-opentelemetry",
+ "tower",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
 ]
 
 [[package]]
