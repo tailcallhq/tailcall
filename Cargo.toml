@@ -203,7 +203,7 @@ members = [
     "tailcall-prettier",
     "tailcall-query-plan",
     "test-utils",
-    "examples-upstream/*"
+    "tailcall-upstream-grpc"
 ]
 
 # Boost execution_spec snapshot diffing performance
