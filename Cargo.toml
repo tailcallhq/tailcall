@@ -31,7 +31,7 @@ rustls = { version = "0.23.5", optional = true, features = [
     "std",
 ], default-features = false }
 rustls-pki-types = "1.4.1"
-inquire = { version = "0.7.4", optional = true }
+inquire = { version = "0.7.5", optional = true }
 opentelemetry-otlp = { version = "0.15.0", features = [
     "trace",
     "logs",
