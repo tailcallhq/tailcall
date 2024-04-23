@@ -353,6 +353,19 @@ mod tests {
                 Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())])
             );
         }
+
+        #[test]
+        fn test_optional_dot_expression() {
+            let s = r"{{.foo.bar}}";
+            let mustache: Mustache = Mustache::parse(s).unwrap();
+            assert_eq!(
+                mustache,
+                Mustache::from(vec![Segment::Expression(vec![
+                    "foo".to_string(),
+                    "bar".to_string(),
+                ])])
+            );
+        }
     }
 
     mod render {
