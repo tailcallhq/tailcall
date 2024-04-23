@@ -18,7 +18,7 @@ impl TryFrom<&DynamicValue> for ConstValue {
     fn try_from(value: &DynamicValue) -> Result<Self, Self::Error> {
         match value {
             DynamicValue::Value(v) => Ok(v.to_owned()),
-            DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
+            DynamicValue::Mustache(..) => Err(anyhow::anyhow!(
                 "mustache cannot be converted to const value"
             )),
             DynamicValue::Object(obj) => {

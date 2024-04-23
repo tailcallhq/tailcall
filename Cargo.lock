@@ -5180,6 +5180,7 @@ dependencies = [
  "jaq-core",
  "jaq-interpret",
  "jaq-parse",
+ "jaq-syn",
  "jsonwebtoken",
  "lazy_static",
  "lru 0.12.3",
