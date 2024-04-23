@@ -243,34 +243,15 @@ impl ProtobufOperation {
 #[cfg(test)]
 pub mod tests {
     // TODO: Rewrite protobuf tests
-    use std::path::PathBuf;
-
     use anyhow::Result;
-    use once_cell::sync::Lazy;
     use prost_reflect::Value;
     use serde_json::json;
+    use test_utils::fixture::get_fixture_path;
 
     use super::*;
     use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
-
-    static TEST_DIR: Lazy<PathBuf> = Lazy::new(|| {
-        let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut test_dir = root_dir.join(file!());
-
-        test_dir.pop();
-        test_dir.push("tests");
-
-        test_dir
-    });
-
-    fn get_test_file(name: &str) -> PathBuf {
-        let mut test_file = TEST_DIR.clone();
-
-        test_file.push(name);
-        test_file
-    }
 
     pub async fn get_proto_file(name: &str) -> Result<FileDescriptorSet> {
         let runtime = crate::runtime::test::init(None);
@@ -278,14 +259,11 @@ pub mod tests {
 
         let id = name.replace(".proto", "");
 
-        let name = format!("proto/{name}");
+        let path = get_fixture_path(format!("grpc/proto/{name}"));
 
         let mut config = Config::default().links(vec![Link {
             id: Some(id.clone()),
-            src: get_test_file(&name)
-                .to_str()
-                .context("Failed to parse or load proto file")?
-                .to_string(),
+            src: path.to_string_lossy().to_string(),
             type_of: LinkType::Protobuf,
         }]);
 
@@ -404,7 +382,7 @@ pub mod tests {
         assert_eq!(
             serde_json::to_value(parsed)?,
             json!({
-              "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1"
+              "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED"
             })
         );
 
@@ -432,18 +410,18 @@ pub mod tests {
             vec!["3".to_owned(), "5".to_owned(), "1".to_owned()]
         );
 
-        let output = b"\0\0\0\0o\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n#\x08\x05\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5";
+        let output = b"\0\0\0\0s\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n%\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3(\x01\n%\x08\x05\x12\x06Note 5\x1a\tContent 5\"\x0cPost image 5(\x02";
 
         let parsed = multiple_operation.convert_output::<serde_json::Value>(output)?;
 
         assert_eq!(
             serde_json::to_value(parsed)?,
             json!({
-              "news": [
-                { "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1" },
-                { "id": 3, "title": "Note 3", "body": "Content 3", "postImage": "Post image 3" },
-                { "id": 5, "title": "Note 5", "body": "Content 5", "postImage": "Post image 5" },
-              ]
+                "news": [
+                    { "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED" },
+                    { "id": 3, "title": "Note 3", "body": "Content 3", "postImage": "Post image 3", "status": "DRAFT" },
+                    { "id": 5, "title": "Note 5", "body": "Content 5", "postImage": "Post image 5", "status": "DELETED" },
+                  ]
             })
         );
 

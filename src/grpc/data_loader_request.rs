@@ -53,11 +53,11 @@ impl DataLoaderRequest {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
-    use std::path::PathBuf;
 
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
+    use test_utils::fixture::get_fixture_path;
     use url::Url;
 
     use super::DataLoaderRequest;
@@ -68,16 +68,10 @@ mod tests {
     use crate::grpc::request_template::RenderedRequestTemplate;
 
     pub async fn get_protobuf_op() -> ProtobufOperation {
-        let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut test_file = root_dir.join(file!());
-
-        test_file.pop();
-        test_file.push("tests");
-        test_file.push("proto");
-        test_file.push("greetings.proto");
+        let test_file = get_fixture_path("grpc/proto/greetings.proto");
         let mut config = Config::default().links(vec![Link {
             id: None,
-            src: test_file.to_str().unwrap().to_string(),
+            src: test_file.to_string_lossy().to_string(),
             type_of: LinkType::Protobuf,
         }]);
         let method = GrpcMethod {

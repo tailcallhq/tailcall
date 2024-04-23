@@ -3840,6 +3840,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "project-root"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bccbff07d5ed689c4087d20d7307a52ab6141edeedf487c3876a55b86cf63df"
+
+[[package]]
 name = "prometheus"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4313,6 +4319,7 @@ dependencies = [
  "opentelemetry_sdk",
  "prost",
  "prost-types",
+ "test-utils",
  "tokio",
  "tonic",
  "tonic-build 0.11.0",
@@ -5179,6 +5186,7 @@ dependencies = [
  "tailcall-prettier",
  "temp-env",
  "tempfile",
+ "test-utils",
  "thiserror",
  "tokio",
  "tonic",
@@ -5326,6 +5334,14 @@ dependencies = [
  "dirs-next",
  "rustversion",
  "winapi",
+]
+
+[[package]]
+name = "test-utils"
+version = "0.1.0"
+dependencies = [
+ "once_cell",
+ "project-root",
 ]
 
 [[package]]

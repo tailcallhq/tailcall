@@ -1,21 +1,21 @@
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
-use hyper::{
-    header::{HeaderName, HeaderValue},
-    HeaderMap,
-};
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::HeaderMap;
+use news::news_service_server::{NewsService, NewsServiceServer};
+use news::{MultipleNewsId, News, NewsId, NewsList};
 use once_cell::sync::Lazy;
-use opentelemetry::{global, trace::TraceError, trace::TracerProvider, KeyValue};
+use opentelemetry::trace::{TraceError, TracerProvider};
+use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{propagation::TraceContextPropagator, runtime, Resource};
-use tonic::{metadata::MetadataMap, transport::Server as TonicServer, Response, Status};
+use opentelemetry_sdk::propagation::TraceContextPropagator;
+use opentelemetry_sdk::{runtime, Resource};
+use tonic::metadata::MetadataMap;
+use tonic::transport::Server as TonicServer;
+use tonic::{Response, Status};
 use tonic_tracing_opentelemetry::middleware::server;
 use tower::make::Shared;
-
-use news::news_service_server::NewsService;
-use news::news_service_server::NewsServiceServer;
-use news::{MultipleNewsId, News, NewsId, NewsList};
 use tracing_subscriber::layer::SubscriberExt;
 
 pub mod news {
@@ -68,9 +68,7 @@ impl MyNewsService {
                 status: 1,
             },
         ];
-        MyNewsService {
-            news: Arc::new(Mutex::new(news)),
-        }
+        MyNewsService { news: Arc::new(Mutex::new(news)) }
     }
 }
 
