@@ -1,7 +1,5 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    path::PathBuf,
-};
+use std::collections::{BTreeMap, HashMap};
+use std::path::PathBuf;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};

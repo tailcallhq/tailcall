@@ -1,4 +1,4 @@
+mod model;
 mod parse;
 mod runtime;
-mod model;
 pub mod spec;

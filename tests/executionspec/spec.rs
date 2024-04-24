@@ -4,9 +4,9 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::{fs, panic};
-use colored::Colorize;
 
 use anyhow::Context;
+use colored::Colorize;
 use futures_util::future::join_all;
 use hyper::{Body, Request};
 use serde::{Deserialize, Serialize};
