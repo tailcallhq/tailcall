@@ -8,6 +8,7 @@ use prost_reflect::prost_types::{
 use crate::blueprint::GrpcMethod;
 use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
 use crate::generator::GraphQLType;
+use crate::valid::{Valid, ValidationError, Validator};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -21,36 +22,6 @@ struct Context {
 
     /// Root GraphQL query type
     query: String,
-}
-
-/// A custom enum representing either a valid value or an error.
-#[derive(Debug)]
-enum Valid<T> {
-    Valid(T),
-    Invalid(String),
-}
-
-impl<T> Valid<T> {
-    fn from_iter<I>(iter: I) -> Valid<Vec<T>>
-    where
-        I: IntoIterator<Item = Valid<T>>,
-    {
-        let mut valid_items = Vec::new();
-        let mut errors = Vec::new();
-
-        for item in iter {
-            match item {
-                Valid::Valid(value) => valid_items.push(value),
-                Valid::Invalid(err) => errors.push(err),
-            }
-        }
-
-        if errors.is_empty() {
-            Valid::Valid(valid_items)
-        } else {
-            Valid::Invalid(errors.join("; "))
-        }
-    }
 }
 
 impl Context {
@@ -68,37 +39,56 @@ impl Context {
         self
     }
 
-    fn append_enums(mut self, enums: &[EnumDescriptorProto]) -> Self {
+    /// Processes proto enum types.
+    fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
             let mut ty = Type::default();
-    
+
             let enum_name = enum_.name();
             ty.tag = Some(Tag { id: enum_name.to_string() });
-    
-            let variants: Valid<Vec<String>> = Valid::from_iter(enum_.value.iter().map(|v| {
-                GraphQLType::new(v.name())
-                    .as_enum_variant()
-                    .map(|variant| variant.to_string())
-                    .map(Valid::Valid)
-                    .unwrap_or_else(|| Valid::Invalid("Enum variant conversion error".to_string()))
-            }));
-    
-            match variants {
-                Valid::Valid(variants_vec) => {
-                    ty.variants = Some(variants_vec.into_iter().collect::<BTreeSet<String>>());
+
+            let variants_result = Valid::from_iter(enum_.value.iter(), |v| {
+                let graphql_type = GraphQLType::new(v.name());
+                match graphql_type.as_enum_variant() {
+                    Some(gt) => Valid::succeed(gt.to_string()),
+                    None => Valid::fail_with(
+                        format!(
+                            "Error converting GraphQLType to enum variant: {:?}",
+                            graphql_type
+                        ),
+                        "Invalid enum variant".to_string(),
+                    ),
                 }
-                Valid::Invalid(error_msg) => {
-                    eprintln!("Error processing enum variants: {}", error_msg);
-                    // Handle the error condition here, such as using a default value or returning early
+            });
+
+            if variants_result.is_succeed() {
+                ty.variants = Some(
+                    variants_result
+                        .to_result()
+                        .unwrap()
+                        .into_iter()
+                        .collect::<BTreeSet<String>>(),
+                );
+            }
+
+            let type_name = match GraphQLType::new(enum_name).as_enum() {
+                Some(enum_value) => Valid::succeed(enum_value.to_string()).to_result(),
+                None => {
+                    eprintln!("Error: Enum value not found");
+                    Err(ValidationError::new("Enum value not found"))
                 }
             }
-    
-            self = self.insert_type(enum_name.to_string(), ty);
+            .unwrap_or_else(|err| {
+                eprintln!("Error converting enum to string: {:?}", err);
+                "DefaultTypeName".to_string()
+            });
+            self = self.insert_type(type_name, ty);
         }
         self
     }
 
-    fn append_msg_type(mut self, messages: &[DescriptorProto]) -> Self {
+    /// Processes proto message types.
+    fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Self {
         for message in messages {
             let msg_name = message.name().to_string();
             if let Some(options) = message.options.as_ref() {
@@ -106,34 +96,47 @@ impl Context {
                     continue;
                 }
             }
-    
+
             self = self.append_enums(&message.enum_type);
             self = self.append_msg_type(&message.nested_type);
-    
-            let msg_type = match GraphQLType::new(&msg_name)
+
+            let msg_type_result = match GraphQLType::new(&msg_name)
                 .package(&self.package)
                 .as_object_type()
             {
-                Some(obj_type) => obj_type,
-                None => continue, // Skip if unable to get GraphQLType
+                Some(object_type) => Valid::succeed(object_type).to_result(),
+                None => Err(ValidationError::new("Error: Unable to create object type")),
             };
-    
+
+            let msg_type = match msg_type_result {
+                Ok(msg_type) => msg_type,
+                Err(err) => {
+                    eprintln!("Error: {:?}", err);
+                    panic!("Failed to create object type");
+                }
+            };
+
             let mut ty = Type::default();
-            for field in &message.field {
+            for field in message.field.iter() {
                 let field_name = match GraphQLType::new(field.name())
                     .package(&self.package)
                     .as_field()
                 {
-                    Some(field_type) => field_type,
-                    None => continue, // Skip if unable to get GraphQLType
+                    Some(field) => Valid::succeed(field),
+                    None => Valid::fail_with("Error: Unable to create field", "Field is None"),
                 };
-    
+
+                let field_name = field_name.to_result().unwrap_or_else(|err| {
+                    eprintln!("Error: {:?}", err);
+                    panic!("Failed to create field");
+                });
+
                 let mut cfg_field = Field::default();
-    
+
                 let label = field.label().as_str_name().to_lowercase();
                 cfg_field.list = label.contains("repeated");
                 cfg_field.required = label.contains("required") || cfg_field.list;
-    
+
                 if field.r#type.is_some() {
                     let type_of = convert_ty(field.r#type().as_str_name());
                     if type_of.eq("JSON") {
@@ -148,23 +151,30 @@ impl Context {
                         .package(self.package.as_str())
                         .as_object_type()
                     {
-                        Some(obj_type) => obj_type.to_string(),
-                        None => continue, // Skip if unable to get GraphQLType
+                        Some(object_type) => Valid::succeed(object_type.to_string()),
+                        None => Valid::fail_with(
+                            "Error: Unable to create object type",
+                            "Object type is None",
+                        ),
                     };
-    
+
+                    let type_of = type_of.to_result().unwrap_or_else(|err| {
+                        eprintln!("Error: {:?}", err);
+                        panic!("Failed to create object type");
+                    });
+
                     cfg_field.type_of = type_of;
                 }
-    
+
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
-    
+
             ty.tag = Some(Tag { id: msg_type.id() });
-    
+
             self = self.insert_type(msg_type.to_string(), ty);
         }
         self
     }
-    
 
     /// Processes proto service definitions and their methods.
     fn append_query_service(mut self, services: &Vec<ServiceDescriptorProto>) -> Self {
@@ -178,23 +188,37 @@ impl Context {
         for service in services {
             let service_name = service.name().to_string();
             for method in &service.method {
-                let field_name = GraphQLType::new(method.name())
+                let field_name = match GraphQLType::new(method.name())
                     .package(&self.package)
                     .as_method()
-                    .unwrap();
+                {
+                    Some(method) => Valid::succeed(method),
+                    None => Valid::fail_with("Error: Unable to create method", "Method is None"),
+                };
+
+                let field_name = field_name.to_result().unwrap_or_else(|err| {
+                    eprintln!("Error: {:?}", err);
+                    panic!("Failed to create method");
+                });
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
                     let key = GraphQLType::new(&arg_type)
                         .package(&self.package)
                         .as_field()
-                        .unwrap()
-                        .to_string();
+                        .map(|field| field.to_string())
+                        .unwrap_or_else(|| {
+                            eprintln!("Error: Unable to create field for key");
+                            panic!("Failed to create field for key");
+                        });
                     let type_of = GraphQLType::new(&arg_type)
                         .package(&self.package)
                         .as_object_type()
-                        .unwrap()
-                        .to_string();
+                        .map(|object_type| object_type.to_string())
+                        .unwrap_or_else(|| {
+                            eprintln!("Error: Unable to create object type for type_of");
+                            panic!("Failed to create object type for type_of");
+                        });
                     let val = Arg {
                         type_of,
                         list: false,
@@ -210,11 +234,22 @@ impl Context {
                 }
 
                 let output_ty = get_output_ty(method.output_type());
-                let output_ty = GraphQLType::new(&output_ty)
+                let output_ty = match GraphQLType::new(&output_ty)
                     .package(&self.package)
                     .as_object_type()
-                    .unwrap()
-                    .to_string();
+                {
+                    Some(object_type) => Valid::succeed(object_type.to_string()),
+                    None => Valid::fail_with(
+                        "Error: Unable to create object type",
+                        "Object type is None",
+                    ),
+                };
+
+                let output_ty = output_ty.to_result().unwrap_or_else(|err| {
+                    eprintln!("Error: {:?}", err);
+                    panic!("Failed to create object type");
+                });
+
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
@@ -310,8 +345,6 @@ mod test {
 
     use crate::generator::from_proto::from_proto;
 
-    use super::Valid;
-
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let path =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("src/generator/proto/{}", name));
@@ -367,22 +400,18 @@ mod test {
 
     #[test]
     fn test_greetings_proto_file() {
-        // Attempt to create the FileDescriptorSet
-        let set = match new_file_desc(&["greetings.proto", "greetings_message.proto"]) {
-            Ok(desc) => Valid::Valid(desc),
-            Err(err) => Valid::Invalid(err.to_string()),
+        let set = new_file_desc(&["greetings.proto", "greetings_message.proto"]);
+
+        let set = match set {
+            Ok(desc) => desc,
+            Err(err) => {
+                eprintln!("Error: {:?}", err);
+                panic!("Failed to create file descriptor set");
+            }
         };
-    
-        // Proceed only if the FileDescriptorSet is valid
-        if let Valid::Valid(set) = set {
-            // Generate the result using from_proto
-            let result = from_proto(&[set], "Query").to_sdl();
-            insta::assert_snapshot!(result);
-        } else {
-            // Handle the case where creating the FileDescriptorSet failed
-            panic!("Failed to create FileDescriptorSet: {:?}", set);
-        }
-    }    
+        let result = from_proto(&[set], "Query").to_sdl();
+        insta::assert_snapshot!(result);
+    }
 
     #[test]
     fn test_config_from_sdl() -> anyhow::Result<()> {
