@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+use super::lint::Lint;
 use super::merge_key_value_vecs;
 use crate::config::headers::Headers;
 use crate::config::KeyValue;
@@ -99,6 +100,9 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub lint: Option<Lint>,
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {

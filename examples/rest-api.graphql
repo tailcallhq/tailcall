@@ -1,14 +1,17 @@
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(lint: {autoFix: true}, port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
   @link(type: Operation, src: "operations/routes.graphql") {
   query: Query
 }
 
+union Foobar = example | User
+
 type Query {
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  userse: [example] @http(path: "/userse")
 }
 
 type User {
@@ -24,6 +27,10 @@ type Post {
   id: Int!
   userId: Int!
   title: String!
-  body: String!
+  Body: String!
   user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+}
+
+type example {
+  id: Foobar!
 }

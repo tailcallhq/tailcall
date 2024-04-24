@@ -795,6 +795,63 @@
         "Jwks"
       ]
     },
+    "Lint": {
+      "description": "The @lint directive allows you to configure linting.",
+      "type": "object",
+      "properties": {
+        "autoFix": {
+          "description": "To autoFix the lint. Example Usage lint:{autoFix:true}",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "enum": {
+          "description": "This enum is provided with appropriate TextCase. Example Usage: lint:{enum:Pascal}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enumValue": {
+          "description": "This enumValue is provided with appropriate TextCase. Example Usage: lint:{enumValue:ScreamingSnake}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field": {
+          "description": "This field is provided with appropriate TextCase. Example Usage: lint:{field:Camel}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "description": "This type is provided with appropriate TextCase. Example Usage: lint:{type:Pascal}",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TextCase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "Method": {
       "type": "string",
       "enum": [
@@ -990,6 +1047,16 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "lint": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Lint"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "pipelineFlush": {
@@ -1193,6 +1260,15 @@
           },
           "additionalProperties": false
         }
+      ]
+    },
+    "TextCase": {
+      "type": "string",
+      "enum": [
+        "Camel",
+        "Pascal",
+        "Snake",
+        "ScreamingSnake"
       ]
     },
     "Type": {

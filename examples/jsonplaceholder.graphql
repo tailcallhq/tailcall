@@ -1,28 +1,50 @@
 schema
-  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
+  @server(
+    graphiql: true
+    lint: {autoFix: true, type: Pascal, enum: Pascal, field: Camel, enum_value: ScreamingSnake}
+    port: 8000
+    headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}}
+  )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
   query: Query
+}
+
+union FooBar = Example | Post | NewsInput
+
+input NewsInput {
+  id: FooBar
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user(id: String!): User @http(path: "/users/{{.args.id}}")
+  example: [Example] @http(path: "/")
+  enumexample: [enum1] @http(path: "/enum")
 }
 
 type User {
   id: Int!
-  name: String!
-  username: String!
-  email: String!
+  nameN: String!
+  UsernameN: Example!
+  Email: String!
   phone: String
   website: String
 }
 
 type Post {
-  id: Int!
+  id: Enum1!
   userId: Int!
   title: String!
-  body: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  Body: String!
+  #user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+}
+
+type Example {
+  id: FooBar!
+}
+
+enum enum1 {
+  ENUM1
+  enum2
 }

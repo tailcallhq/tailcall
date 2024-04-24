@@ -8,6 +8,7 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::lint::Lint;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
@@ -704,7 +705,10 @@ impl Config {
     pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
-            Ok(doc) => from_document(doc),
+            Ok(mut doc) => {
+                Lint::lint(&mut doc);
+                from_document(doc)
+            }
             Err(e) => Valid::fail(e.to_string()),
         }
     }
