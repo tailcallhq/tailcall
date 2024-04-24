@@ -40,6 +40,8 @@
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: query { greet }
 ```

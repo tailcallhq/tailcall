@@ -98,6 +98,7 @@ mod tests {
         let req = Request::builder()
             .method("POST")
             .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
+            .header("Accept", "application/graphql-response+json")
             .body(hyper::Body::from(
                 json!({
                     "query": "query { user { name } }"

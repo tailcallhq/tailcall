@@ -85,6 +85,8 @@ type News {
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "query { newsById2: newsById(news: {id: 2}) { title }, newsById3: newsById(news: {id: 3}) { title } }"
 ```

@@ -37,6 +37,7 @@ type Post {
 - method: POST
   url: http://localhost:8000/graphql
   headers:
+    Accept: application/graphql-response+json
     X-foo: bar
     X-bar: baz
   body:

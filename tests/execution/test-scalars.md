@@ -22,20 +22,28 @@ type Query {
 # Valid value tests
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ email(value: "alo@valid.com") }'
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ phone(value: "+1 (614) 1234567") }'
 
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ date(value: "2023-03-08T12:45:26-05:00") }'
 
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ url(value: "https://tailcall.run/") }'
 
@@ -43,23 +51,33 @@ type Query {
 
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ email(value: "alo@invalid") }'
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ phone(value: "0") }'
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ phone(value: "1234567890") }'
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ date(value: "2023-03-08T12:45") }'
 
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: '{ url(value: "invalidhost") }'
 ```

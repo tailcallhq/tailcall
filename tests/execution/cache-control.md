@@ -114,18 +114,26 @@
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "query { u1: user(id: 1) { id } u2: user(id: 2) { id } }"
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "query { u1: user(id: 1) { id } u3: user(id: 3) { id } }"
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "query { u1: user(id: 1) { id } u4: user(id: 4) { id } }"
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "query { u3: user(id: 3) { id } u4: user(id: 4) { id } }"
 ```

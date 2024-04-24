@@ -36,6 +36,7 @@ type Query {
 - method: POST
   url: http://localhost:8080/graphql
   headers:
+    Accept: application/graphql-response+json
     authorization: "1"
   body:
     query: query { post1 { title } }

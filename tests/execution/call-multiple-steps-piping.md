@@ -41,10 +41,14 @@ type Query {
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "query { abc_input(input: {a: {b: {c: 3}}})}"
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "query { abc(input: {a: {b: {c: 3}}}) }"
 ```

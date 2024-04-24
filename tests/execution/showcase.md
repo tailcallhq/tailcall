@@ -54,6 +54,8 @@ type Query {
     query: query { user { name } }
 - method: POST
   url: http://localhost:8080/showcase/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: query { user { name } }
 - method: POST

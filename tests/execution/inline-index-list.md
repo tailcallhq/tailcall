@@ -29,6 +29,8 @@ type Query @addField(name: "username", path: ["username", "0", "name"]) {
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: query { username }
 ```

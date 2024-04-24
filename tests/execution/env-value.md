@@ -107,6 +107,8 @@ NESTED_POST_ID: "3"
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: query { post1 {id title body userId} post2 {id title body userId} post3 {id title body userId} }
 ```

@@ -6,6 +6,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
+use chrono::{Local, NaiveDate};
 use hyper::header::{self, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -13,6 +14,7 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
+use serde_json::json;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -22,6 +24,7 @@ use super::{showcase, telemetry, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
+
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -264,6 +267,59 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
+            // if Accept not present
+            // then throw error response
+            // if Accept is present
+            // then check if it is supported, if not
+            // throw error response if the date is >= "1st Jan 2025",
+            // otherwise just warn untill then.
+            if !req.headers().contains_key("Accept") {
+                // throw error
+                tracing::error!("Missing 'Accept' Header");
+                return Ok(Response::builder()
+                    .status(StatusCode::NOT_ACCEPTABLE)
+                    .body(Body::from(
+                        json!({
+                            "message":"Missing the 'Accept' header in the request"
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap());
+            } else {
+                // on/after 1/1/2025, Accept header must contain
+                // "application/graphql-response+json"
+
+                let count = req
+                    .headers()
+                    .get("Accept")
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .split(';')
+                    .filter(|i| i.trim() == "application/graphql-response+json")
+                    .count();
+                if count == 0 {
+                    let error_message = "Unsupported 'Accept' Header value in the request, required 'application/graphql-response+json'";
+
+                    // enforce this only on/after 1/1/2025, just warn until then.
+                    if NaiveDate::from_ymd_opt(2025, 1, 1) <= Some(Local::now().date_naive()) {
+                        // throw error
+                        tracing::error!(error_message);
+                        return Ok(Response::builder()
+                            .status(StatusCode::NOT_ACCEPTABLE)
+                            .body(Body::from(
+                                json!({
+                                    "message":error_message
+                                })
+                                .to_string(),
+                            ))
+                            .unwrap());
+                    } else {
+                        tracing::warn!(error_message);
+                    }
+                }
+            }
+
             graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
         hyper::Method::POST

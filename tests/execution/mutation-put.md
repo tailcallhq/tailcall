@@ -48,6 +48,8 @@ type User {
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: 'mutation { insertPost(input: { body: "abc", id: 100 , title: "bar", userId: 1}) { body } }'
 ```

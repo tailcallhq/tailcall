@@ -72,6 +72,8 @@ type TypeCache @cache(maxAge: 1000) {
 # the same request to validate caching
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: >
       query {
@@ -80,6 +82,8 @@ type TypeCache @cache(maxAge: 1000) {
 
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: >
       query {
@@ -91,6 +95,8 @@ type TypeCache @cache(maxAge: 1000) {
 # the same request to validate caching
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: >
       query {

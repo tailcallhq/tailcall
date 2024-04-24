@@ -50,6 +50,8 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: |
       query {
@@ -60,6 +62,8 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
       }
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: |
       query {
@@ -68,6 +72,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
+    Accept: application/graphql-response+json
     Authorization: Basic dGVzdHVzZXIxOnJhbmRvbV9wYXNzd29yZA==
   body:
     query: |
@@ -77,6 +82,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
+    Accept: application/graphql-response+json
     Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
   body:
     query: |
@@ -93,6 +99,8 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
       }
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: |
       mutation {
@@ -104,6 +112,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
+    Accept: application/graphql-response+json
     Authorization: Basic dGVzdHVzZXIxOnBhc3N3b3JkMTIz
   body:
     query: |
@@ -116,6 +125,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 - method: POST
   url: http://localhost:8080/graphql
   headers:
+    Accept: application/graphql-response+json
     Authorization: Basic dGVzdHVzZXIxOnJhbmRvbV9wYXNzd29yZA=
   body:
     query: |

@@ -73,6 +73,8 @@
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: query { user { name id friend { name id friend { name id } } } }
 ```

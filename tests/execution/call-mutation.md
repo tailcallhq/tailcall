@@ -115,22 +115,32 @@ type User {
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: 'mutation { insertPost(input: { body: "post-body", title: "post-title", userId: 1 }) { body } }'
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: query { firstUser { posts { title } } }
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "mutation { attachPostToFirstUser(postId: 1) { name } }"
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: 'mutation { insertPostToFirstUser(input: { body: "post-body", title: "post-title" }) { body } }'
 - method: POST
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: "mutation { insertMockedPost { body } }"
 ```

@@ -40,6 +40,8 @@ type D {
 ```yml @test
 - method: POST
   url: http://localhost:8000/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     query: query { a  { bc {d {e}, f } }}
 ```

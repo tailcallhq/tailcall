@@ -26,6 +26,8 @@ type Query {
 # the same request to validate caching
 - method: OPTIONS
   url: http://localhost:8080/graphql
+  headers:
+    Accept: application/graphql-response+json
   body:
     headers:
       access-control-allow-method: "POST, OPTIONS"
