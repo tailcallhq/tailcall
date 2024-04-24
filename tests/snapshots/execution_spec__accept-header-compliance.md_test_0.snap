@@ -1,0 +1,11 @@
+---
+source: tests/execution_spec.rs
+expression: response
+---
+{
+  "status": 406,
+  "headers": {},
+  "body": {
+    "message": "Missing the 'Accept' header in the request"
+  }
+}
