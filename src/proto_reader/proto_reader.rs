@@ -6,7 +6,7 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::proto_reader::reflection_fetch::{get_by_service, list_all_files};
+use crate::proto_reader::reflection_fetch::GrpcReflection;
 use crate::resource_reader::{Cached, ResourceReader};
 use crate::runtime::TargetRuntime;
 
@@ -29,14 +29,15 @@ impl ProtoReader {
         &self,
         url: T,
     ) -> anyhow::Result<Vec<ProtoMetadata>> {
+        let grpc_reflection = GrpcReflection::new(url.as_ref(), self.runtime.clone());
+
         let mut proto_metadata = vec![];
-        let service_list = list_all_files(url.as_ref(), &self.runtime).await?;
+        let service_list = grpc_reflection.list_all_files().await?;
         for service in service_list {
             if service.eq("grpc.reflection.v1alpha.ServerReflection") {
                 continue;
             }
-            let file_descriptor_proto =
-                get_by_service(url.as_ref(), &self.runtime, &service).await?;
+            let file_descriptor_proto = grpc_reflection.get_by_service(&service).await?;
             Self::check_package(&file_descriptor_proto)?;
             let descriptors = self
                 .resolve_descriptors(file_descriptor_proto, None)

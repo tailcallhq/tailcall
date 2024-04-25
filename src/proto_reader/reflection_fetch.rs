@@ -71,13 +71,13 @@ struct CustomResponse {
 impl CustomResponse {
     async fn execute(
         url: &str,
-        grpc_method: GrpcMethod,
+        grpc_method: &GrpcMethod,
         body: serde_json::Value,
         target_runtime: &TargetRuntime,
     ) -> Result<CustomResponse> {
         let protobuf_set = get_protobuf_set()?;
-        let reflection_service = protobuf_set.find_service(&grpc_method)?;
-        let operation = reflection_service.find_operation(&grpc_method)?;
+        let reflection_service = protobuf_set.find_service(grpc_method)?;
+        let operation = reflection_service.find_operation(grpc_method)?;
         let mut url: url::Url = url.parse()?;
         url.set_path(
             format!(
@@ -113,44 +113,66 @@ impl CustomResponse {
     }
 }
 
-/// Makes `ListService` request to the grpc reflection server
-pub async fn list_all_files(url: &str, target_runtime: &TargetRuntime) -> Result<Vec<String>> {
-    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
-
-    // Extracting names from services
-    let methods: Vec<String> = CustomResponse::execute(
-        url,
-        grpc_method,
-        json!({"list_services": ""}),
-        target_runtime,
-    )
-    .await?
-    .list_services_response
-    .context("Couldn't find definitions for service ServerReflection")?
-    .service
-    .iter()
-    .map(|s| s.name.clone())
-    .collect();
-
-    Ok(methods)
+pub struct GrpcReflection {
+    list_all_method: GrpcMethod,
+    get_service_method: GrpcMethod,
+    url: String,
+    target_runtime: TargetRuntime,
 }
 
-/// Makes `Get Service` request to the grpc reflection server
-pub async fn get_by_service(
-    url: &str,
-    target_runtime: &TargetRuntime,
-    service: &str,
-) -> Result<FileDescriptorProto> {
-    let grpc_method = "grpc.reflection.v1alpha.ServerReflection.ServerReflectionInfo".try_into()?;
-    let resp = CustomResponse::execute(
-        url,
-        grpc_method,
-        json!({"file_containing_symbol": service}),
-        target_runtime,
-    )
-    .await?;
+impl GrpcReflection {
+    pub fn new<T: AsRef<str>>(url: T, target_runtime: TargetRuntime) -> Self {
+        let list_all_method = GrpcMethod {
+            package: "grpc.reflection.v1alpha".to_string(),
+            service: "ServerReflection".to_string(),
+            name: "ServerReflectionInfo".to_string(),
+        };
 
-    request_proto(resp).await
+        let get_service_method = GrpcMethod {
+            package: "grpc.reflection.v1alpha".to_string(),
+            service: "ServerReflection".to_string(),
+            name: "ServerReflectionInfo".to_string(),
+        };
+
+        Self {
+            list_all_method,
+            get_service_method,
+            url: url.as_ref().to_string(),
+            target_runtime,
+        }
+    }
+    /// Makes `ListService` request to the grpc reflection server
+    pub async fn list_all_files(&self) -> Result<Vec<String>> {
+        // Extracting names from services
+        let methods: Vec<String> = CustomResponse::execute(
+            self.url.as_str(),
+            &self.list_all_method,
+            json!({"list_services": ""}),
+            &self.target_runtime,
+        )
+        .await?
+        .list_services_response
+        .context("Couldn't find definitions for service ServerReflection")?
+        .service
+        .iter()
+        .map(|s| s.name.clone())
+        .collect();
+
+        Ok(methods)
+    }
+
+    /// Makes `Get Service` request to the grpc reflection server
+    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto> {
+        let resp = CustomResponse::execute(
+            self.url.as_str(),
+            &self.get_service_method,
+            json!({"file_containing_symbol": service}),
+            &self.target_runtime,
+        )
+        .await?;
+
+        request_proto(resp).await
+    }
 }
 
 /// For extracting `FileDescriptorProto` from `CustomResponse`
@@ -206,13 +228,14 @@ mod grpc_fetch {
                 .body("\0\0\0\0\x12\"\x10news.NewsService");
             then.status(200).body(get_fake_descriptor());
         });
+
+        let grpc_reflection = GrpcReflection::new(
+            format!("http://localhost:{}", server.port()),
+            crate::runtime::test::init(None),
+        );
+
         let runtime = crate::runtime::test::init(None);
-        let resp = get_by_service(
-            &format!("http://localhost:{}", server.port()),
-            &runtime,
-            "news.NewsService",
-        )
-        .await?;
+        let resp = grpc_reflection.get_by_service("news.NewsService").await?;
         let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         news_proto.push("src");
         news_proto.push("grpc");
@@ -241,7 +264,11 @@ mod grpc_fetch {
         });
 
         let runtime = crate::runtime::test::init(None);
-        let resp = list_all_files(&format!("http://localhost:{}", server.port()), &runtime).await?;
+
+        let grpc_reflection =
+            GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
+
+        let resp = grpc_reflection.list_all_files().await?;
 
         assert_eq!(
             [
@@ -256,6 +283,7 @@ mod grpc_fetch {
 
         Ok(())
     }
+
     #[tokio::test]
     async fn test_list_all_files_empty_response() -> Result<()> {
         let server = start_mock_server();
@@ -268,7 +296,11 @@ mod grpc_fetch {
         });
 
         let runtime = crate::runtime::test::init(None);
-        let resp = list_all_files(&format!("http://localhost:{}", server.port()), &runtime).await;
+
+        let grpc_reflection =
+            GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
+
+        let resp = grpc_reflection.list_all_files().await;
 
         assert_eq!(
             "Couldn't find definitions for service ServerReflection",
@@ -291,13 +323,11 @@ mod grpc_fetch {
         });
 
         let runtime = crate::runtime::test::init(None);
-        let result = get_by_service(
-            &format!("http://localhost:{}", server.port()),
-            &runtime,
-            "nonexistent.Service",
-        )
-        .await;
 
+        let grpc_reflection =
+            GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
+
+        let result = grpc_reflection.get_by_service("nonexistent.Service").await;
         assert!(result.is_err());
 
         http_reflection_service_not_found.assert();
