@@ -11,11 +11,11 @@ schema {
 
 type Post {
   id: Int!
-  user: User @graphQL(name: "user", args: [{key: "id", value: "{{value.userId}}"}])
+  user: User @graphQL(name: "user", args: [{key: "id", value: "{{.value.userId}}"}])
 }
 
 type Query {
-  post(id: Int!): Post @http(baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}")
+  post(id: Int!): Post @http(baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{.args.id}}")
 }
 
 type User {

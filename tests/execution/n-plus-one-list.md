@@ -13,13 +13,13 @@ type Query {
 type Foo {
   id: Int!
   name: String!
-  bar: Bar @http(path: "/bars", query: [{key: "fooId", value: "{{value.id}}"}], batchKey: ["fooId"])
+  bar: Bar @http(path: "/bars", query: [{key: "fooId", value: "{{.value.id}}"}], batchKey: ["fooId"])
 }
 
 type Bar {
   id: Int!
   fooId: Int!
-  foo: [Foo] @http(path: "/foos", query: [{key: "id", value: "{{value.fooId}}"}], batchKey: ["id"])
+  foo: [Foo] @http(path: "/foos", query: [{key: "id", value: "{{.value.fooId}}"}], batchKey: ["id"])
 }
 ```
 

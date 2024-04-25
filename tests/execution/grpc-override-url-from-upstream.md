@@ -47,7 +47,7 @@ schema
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:50051")
   newsById(news: NewsInput!): News!
-    @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}", baseURL: "http://localhost:50051")
+    @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}", baseURL: "http://localhost:50051")
 }
 input NewsInput {
   id: Int

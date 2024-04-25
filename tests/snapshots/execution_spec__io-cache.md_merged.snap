@@ -10,7 +10,7 @@ type Post {
   body: String!
   id: Int!
   title: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
   userId: Int!
 }
 
