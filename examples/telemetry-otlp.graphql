@@ -2,7 +2,7 @@ schema
   @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
   @link(type: Operation, src: "operations/routes.graphql")
-  @link(id: "news", src: "../tailcall-fixtures/fixtures/grpc/proto/news.proto", type: Protobuf)
+  @link(id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf)
   @telemetry(
     export: {
       otlp: {

@@ -248,7 +248,7 @@ pub mod tests {
     use anyhow::Result;
     use prost_reflect::Value;
     use serde_json::json;
-    use tailcall_fixtures::grpc::proto;
+    use tailcall_fixtures::protobuf;
 
     use super::*;
     use crate::blueprint::GrpcMethod;
@@ -322,7 +322,7 @@ pub mod tests {
     #[tokio::test]
     async fn service_not_found() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings._unknown.foo").unwrap();
-        let file = ProtobufSet::from_proto_file(get_proto_file(proto::GREETINGS).await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let error = file.find_service(&grpc_method).unwrap_err();
 
         assert_eq!(
@@ -336,7 +336,7 @@ pub mod tests {
     #[tokio::test]
     async fn method_not_found() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter._unknown").unwrap();
-        let file = ProtobufSet::from_proto_file(get_proto_file(proto::GREETINGS).await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let service = file.find_service(&grpc_method)?;
         let error = service.find_operation(&grpc_method).unwrap_err();
 
@@ -348,7 +348,7 @@ pub mod tests {
     #[tokio::test]
     async fn greetings_proto_file() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
-        let file = ProtobufSet::from_proto_file(get_proto_file(proto::GREETINGS).await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -370,7 +370,7 @@ pub mod tests {
     async fn news_proto_file() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
-        let file = ProtobufSet::from_proto_file(get_proto_file(proto::NEWS).await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -395,7 +395,7 @@ pub mod tests {
     #[tokio::test]
     async fn news_proto_file_multiple_messages() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetMultipleNews").unwrap();
-        let file = ProtobufSet::from_proto_file(get_proto_file(proto::NEWS).await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
         let service = file.find_service(&grpc_method)?;
         let multiple_operation = service.find_operation(&grpc_method)?;
 

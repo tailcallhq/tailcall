@@ -57,7 +57,7 @@ mod tests {
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
-    use tailcall_fixtures::grpc::proto;
+    use tailcall_fixtures::protobuf;
     use url::Url;
 
     use super::DataLoaderRequest;
@@ -68,7 +68,7 @@ mod tests {
     use crate::grpc::request_template::RenderedRequestTemplate;
 
     pub async fn get_protobuf_op() -> ProtobufOperation {
-        let test_file = proto::GREETINGS;
+        let test_file = protobuf::GREETINGS;
         let mut config = Config::default().links(vec![Link {
             id: None,
             src: test_file.to_string(),

@@ -121,7 +121,7 @@ mod test_proto_config {
 
     use anyhow::Result;
     use pretty_assertions::assert_eq;
-    use tailcall_fixtures::grpc::proto;
+    use tailcall_fixtures::protobuf;
 
     use crate::proto_reader::ProtoReader;
     use crate::resource_reader::{Cached, ResourceReader};
@@ -140,8 +140,8 @@ mod test_proto_config {
 
     #[tokio::test]
     async fn test_nested_imports() -> Result<()> {
-        let test_dir = Path::new(proto::SELF);
-        let test_file = proto::NESTED_0;
+        let test_dir = Path::new(protobuf::SELF);
+        let test_file = protobuf::NESTED_0;
 
         let runtime = crate::runtime::test::init(None);
         let file_rt = runtime.file.clone();

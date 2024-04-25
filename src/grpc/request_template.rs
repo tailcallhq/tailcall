@@ -124,7 +124,7 @@ mod tests {
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::{HeaderMap, Method};
     use pretty_assertions::assert_eq;
-    use tailcall_fixtures::grpc::proto;
+    use tailcall_fixtures::protobuf;
 
     use super::RequestTemplate;
     use crate::blueprint::GrpcMethod;
@@ -135,7 +135,7 @@ mod tests {
     use crate::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
-        let test_file = proto::GREETINGS;
+        let test_file = protobuf::GREETINGS;
 
         let id = "greetings".to_string();
 
