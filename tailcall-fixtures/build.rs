@@ -14,7 +14,7 @@ fn write_mod(path: &Path, f: &mut CodeFormatter<String>, dir_name: Option<&str>)
             f,
             r#"
 			pub mod {dir_name} {{
-				pub const SELF: &str = "{}";
+				pub const SELF: &str = r"{}";
 				"#,
             path.display()
         )?;
