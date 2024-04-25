@@ -19,7 +19,6 @@ use markdown::mdast::Node;
 use markdown::ParseOptions;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::blueprint::{self, Blueprint};
 use tailcall::cache::InMemoryCache;
@@ -144,26 +143,53 @@ struct APIRequest {
     url: Url,
     #[serde(default)]
     headers: BTreeMap<String, String>,
-    #[serde(default)]
-    body: serde_json::Value,
+    #[serde(flatten, default)]
+    body: Option<ApiBody>,
     #[serde(default)]
     assert_traces: bool,
     #[serde(default)]
     assert_metrics: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+enum ApiBody {
+    #[serde(rename = "textBody")]
+    Text(String),
+    #[serde(rename = "fileBody")]
+    File(String),
+    #[serde(rename = "body")]
+    Value(serde_json::Value),
+}
+
+impl ApiBody {
+    pub fn resolve(&self) -> Vec<u8> {
+        match self {
+            ApiBody::Value(value) => {
+                serde_json::to_vec(value).unwrap_or_else(|_| panic!("Failed to convert value: {value:?}"))
+            }
+            ApiBody::Text(text) => string_to_bytes(text),
+            ApiBody::File(file) => {
+                let root_dir = env!("CARGO_MANIFEST_DIR");
+                let root_dir = Path::new(root_dir).join("tests/fixtures");
+                let path = root_dir.join(file);
+                
+
+                std::fs::read(&path)
+                    .unwrap_or_else(|_| panic!("Failed to read file by path: {}", path.display()))
+            }
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 struct APIResponse {
-    #[serde(default = "default_status")]
+    #[serde(default = "default::status")]
     status: u16,
     #[serde(default)]
     headers: BTreeMap<String, String>,
-    #[serde(default)]
-    body: serde_json::Value,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    text_body: Option<String>,
+    #[serde(flatten, default)]
+    body: Option<ApiBody>,
 }
 
 pub struct Env {
@@ -182,12 +208,18 @@ impl Env {
     }
 }
 
-fn default_status() -> u16 {
-    200
-}
+mod default {
+    pub fn status() -> u16 {
+        200
+    }
 
-fn default_expected_hits() -> usize {
-    1
+    pub fn expected_hits() -> usize {
+        1
+    }
+
+    pub fn assert_hits() -> bool {
+        true
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -198,16 +230,12 @@ struct UpstreamResponse(APIResponse);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-enum ConfigSource {
-    File(String),
-    Inline(Config),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Mock {
     request: UpstreamRequest,
     response: UpstreamResponse,
-    #[serde(default = "default_expected_hits")]
+    #[serde(default = "default::assert_hits")]
+    assert_hits: bool,
+    #[serde(default = "default::expected_hits")]
     expected_hits: usize,
 }
 
@@ -592,23 +620,8 @@ struct ExecutionMock {
 impl ExecutionMock {
     fn assert_hits(&self, path: impl AsRef<Path>) {
         let url = &self.mock.request.0.url;
-        let is_batch_graphql = url.path().starts_with("/graphql")
-            && self
-                .mock
-                .request
-                .0
-                .body
-                .as_str()
-                .map(|s| s.contains(','))
-                .unwrap_or_default();
 
-        // do not assert hits for mocks for batch graphql requests
-        // since that requires having 2 mocks with different order of queries in
-        // single request and only one of that mocks is actually called during run.
-        // for other protocols there is no issues right now, because:
-        // - for http the keys are always sorted https://github.com/tailcallhq/tailcall/blob/51d8b7aff838f0f4c362d4ee9e39492ae1f51fdb/src/http/data_loader.rs#L71
-        // - for grpc body is not used for matching the mock and grpc will use grouping based on id https://github.com/tailcallhq/tailcall/blob/733b641c41f17c60b15b36b025b4db99d0f9cdcd/tests/execution_spec.rs#L769
-        if is_batch_graphql {
+        if !self.mock.assert_hits {
             return;
         }
 
@@ -694,9 +707,6 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        // Determine if the request is a GRPC request based on PORT
-        let is_grpc = req.url().as_str().contains("50051");
-
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
             .mocks
@@ -705,21 +715,19 @@ impl HttpIO for MockHttpClient {
                 let mock_req = &mock.mock.request;
                 let method_match = req.method() == mock_req.0.method.clone().to_hyper();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-                let req_body = match req.body() {
-                    Some(body) => {
-                        if let Some(bytes) = body.as_bytes() {
-                            if let Ok(body_str) = std::str::from_utf8(bytes) {
-                                Value::from(body_str)
-                            } else {
-                                Value::Null
-                            }
-                        } else {
-                            Value::Null
-                        }
-                    }
-                    None => Value::Null,
-                };
-                let body_match = req_body == mock_req.0.body;
+                let body_match = mock_req
+                    .0
+                    .body
+                    .as_ref()
+                    .map(|body| {
+                        let mock_body = body.resolve();
+
+                        req.body()
+                            .and_then(|body| body.as_bytes().map(|req_body| req_body == mock_body))
+                            .unwrap_or(false)
+                    })
+                    .unwrap_or(true);
+
                 let headers_match = req
                     .headers()
                     .iter()
@@ -736,7 +744,7 @@ impl HttpIO for MockHttpClient {
                             .unwrap_or(&mock_header_value);
                         header_value == mock_header_value
                     });
-                method_match && url_match && headers_match && (body_match || is_grpc)
+                method_match && url_match && headers_match && body_match
             })
             .ok_or(anyhow!(
                 "No mock found for request: {:?} {} in {}",
@@ -766,18 +774,8 @@ impl HttpIO for MockHttpClient {
             response.headers.insert(header_name, header_value);
         }
 
-        // Special Handling for GRPC
-        if let Some(body) = mock_response.0.text_body {
-            // Return plaintext body if specified
-            let body = string_to_bytes(&body);
-            response.body = Bytes::from_iter(body);
-        } else if is_grpc {
-            // Special Handling for GRPC
-            let body = string_to_bytes(mock_response.0.body.as_str().unwrap_or_default());
-            response.body = Bytes::from_iter(body);
-        } else {
-            let body = serde_json::to_vec(&mock_response.0.body)?;
-            response.body = Bytes::from_iter(body);
+        if let Some(body) = mock_response.0.body {
+            response.body = Bytes::from(body.resolve());
         }
 
         Ok(response)
@@ -999,11 +997,12 @@ async fn test_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             let response: APIResponse = APIResponse {
                 status: response.status().clone().as_u16(),
                 headers,
-                body: serde_json::from_slice(
-                    &hyper::body::to_bytes(response.into_body()).await.unwrap(),
-                )
-                .unwrap_or(serde_json::Value::Null),
-                text_body: None,
+                body: Some(ApiBody::Value(
+                    serde_json::from_slice(
+                        &hyper::body::to_bytes(response.into_body()).await.unwrap(),
+                    )
+                    .unwrap_or_default(),
+                )),
             };
 
             let snapshot_name = format!("{}_test_{}", spec.safe_name, i);
@@ -1076,7 +1075,11 @@ async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<hyper::Response<Body>> {
-    let query_string = serde_json::to_string(&request.body).expect("body is required");
+    let body = request
+        .body
+        .as_ref()
+        .map(|body| Body::from(body.resolve()))
+        .unwrap_or_default();
     let method = request.method.clone();
     let headers = request.headers.clone();
     let url = request.url.clone();
@@ -1088,7 +1091,7 @@ async fn run_test(
                 .uri(url.as_str()),
             |acc, (key, value)| acc.header(key, value),
         )
-        .body(Body::from(query_string))?;
+        .body(body)?;
 
     // TODO: reuse logic from server.rs to select the correct handler
     if app_ctx.blueprint.server.enable_batch_requests {

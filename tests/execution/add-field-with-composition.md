@@ -30,8 +30,7 @@ type Query
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
-  expected_hits: 2
+  expectedHits: 2
   response:
     status: 200
     body:
