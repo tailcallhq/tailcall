@@ -35,7 +35,8 @@ fn write_mod(path: &Path, f: &mut CodeFormatter<String>, dir_name: Option<&str>)
                 .to_string_lossy();
             let name = name.as_ref().to_case(Case::UpperSnake);
             let path = file.path();
-            let path = path.display();
+			let path = path.display().to_string();
+            let path = path.escape_default();
 
             writeln!(
                 f,
