@@ -7,13 +7,7 @@ use super::request_filter::{Command, Event};
 use super::JsRequest;
 use crate::{blueprint, WorkerIO};
 
-struct LocalRuntime {
-    context: Context,
-
-    // NOTE: This doesn't need to be accessed directly right now but context holds a
-    // reference to it, so make sure that this is not dropped
-    _js_runtime: rquickjs::Runtime,
-}
+struct LocalRuntime(Context);
 
 thread_local! {
     // Practically only one JS runtime is created because CHANNEL_RUNTIME is single threaded.
@@ -57,7 +51,7 @@ impl LocalRuntime {
         })?;
 
         tracing::debug!("JS Runtime created: {:?}", thread::current().name());
-        Ok(Self { context, _js_runtime: js_runtime })
+        Ok(Self(context)) 
     }
 }
 
@@ -110,7 +104,7 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
         let runtime = cell
             .get_mut()
             .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
-        runtime.context.with(|ctx| match event {
+        runtime.0.with(|ctx| match event {
             Event::Request(req) => {
                 let fn_as_value = ctx
                     .globals()
