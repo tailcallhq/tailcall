@@ -3,3 +3,8 @@ name = "tailcall-fixtures"
 version = "0.1.0"
 edition = "2021"
 publish = false
+
+[build-dependencies]
+anyhow = { workspace = true }
+convert_case = "0.6.0"
+indenter = { version = "0.3.3", features = ["std"] }

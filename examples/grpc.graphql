@@ -2,7 +2,7 @@
 schema
   @server(port: 8000, graphiql: true)
   @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
-  @link(id: "news", src: "../tailcall-fixtures/grpc/proto/news.proto", type: Protobuf) {
+  @link(id: "news", src: "../tailcall-fixtures/fixtures/grpc/proto/news.proto", type: Protobuf) {
   query: Query
 }
 

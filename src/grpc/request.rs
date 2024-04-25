@@ -49,7 +49,7 @@ mod tests {
     use reqwest::header::HeaderMap;
     use reqwest::{Method, Request, StatusCode};
     use serde_json::json;
-    use tailcall_fixtures::get_fixture_path;
+    use tailcall_fixtures::grpc::proto;
     use tonic::{Code, Status};
 
     use crate::blueprint::GrpcMethod;
@@ -107,13 +107,7 @@ mod tests {
         let mut runtime = crate::runtime::test::init(None);
         runtime.http2_only = Arc::new(test_http);
 
-        let file_descriptor_set = protox::compile(
-            [
-                get_fixture_path("grpc/proto/greetings.proto"),
-                get_fixture_path("grpc/proto/errors.proto"),
-            ],
-            [get_fixture_path("grpc/proto")],
-        );
+        let file_descriptor_set = protox::compile([proto::GREETINGS, proto::ERRORS], [proto::SELF]);
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
         let file = ProtobufSet::from_proto_file(file_descriptor_set.unwrap())?;
         let service = file.find_service(&grpc_method)?;

@@ -5273,6 +5273,11 @@ dependencies = [
 [[package]]
 name = "tailcall-fixtures"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "convert_case",
+ "indenter",
+]
 
 [[package]]
 name = "tailcall-macros"

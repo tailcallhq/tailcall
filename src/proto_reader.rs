@@ -117,11 +117,11 @@ impl ProtoReader {
 
 #[cfg(test)]
 mod test_proto_config {
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     use anyhow::Result;
     use pretty_assertions::assert_eq;
-    use tailcall_fixtures::get_fixture_path;
+    use tailcall_fixtures::grpc::proto;
 
     use crate::proto_reader::ProtoReader;
     use crate::resource_reader::{Cached, ResourceReader};
@@ -140,18 +140,15 @@ mod test_proto_config {
 
     #[tokio::test]
     async fn test_nested_imports() -> Result<()> {
-        let test_dir = get_fixture_path("grpc/proto");
-        let test_file = get_fixture_path("grpc/proto/nested0.proto");
-
-        assert!(test_file.exists());
-        let test_file = test_file.to_string_lossy().to_string();
+        let test_dir = Path::new(proto::SELF);
+        let test_file = proto::NESTED_0;
 
         let runtime = crate::runtime::test::init(None);
         let file_rt = runtime.file.clone();
 
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime));
         let helper_map = reader
-            .resolve_descriptors(reader.read_proto(&test_file, None).await?, Some(&test_dir))
+            .resolve_descriptors(reader.read_proto(&test_file, None).await?, Some(test_dir))
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {

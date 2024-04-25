@@ -124,7 +124,7 @@ mod tests {
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::{HeaderMap, Method};
     use pretty_assertions::assert_eq;
-    use tailcall_fixtures::get_fixture_path;
+    use tailcall_fixtures::grpc::proto;
 
     use super::RequestTemplate;
     use crate::blueprint::GrpcMethod;
@@ -135,7 +135,7 @@ mod tests {
     use crate::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
-        let test_file = get_fixture_path("grpc/proto/greetings.proto");
+        let test_file = proto::GREETINGS;
 
         let id = "greetings".to_string();
 
@@ -143,7 +143,7 @@ mod tests {
         let reader = ConfigReader::init(runtime);
         let mut config = Config::default().links(vec![Link {
             id: Some(id.clone()),
-            src: test_file.to_string_lossy().to_string(),
+            src: test_file.to_string(),
             type_of: LinkType::Protobuf,
         }]);
         let method = GrpcMethod {
