@@ -1,4 +1,5 @@
 use core::future::Future;
+use std::collections::hash_map::DefaultHasher;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -76,7 +77,12 @@ impl IO {
         Box::pin(async move {
             match self {
                 IO::Http { req_template, dl_id, .. } => {
-                    let req = req_template.to_request(&ctx)?;
+                    let req = req_template
+                        .rendered_request
+                        .lock()
+                        .unwrap()
+                        .take()
+                        .unwrap_or(req_template.to_request(&ctx, None::<DefaultHasher>))?;
                     let is_get = req.method() == reqwest::Method::GET;
 
                     let res = if is_get && ctx.request_ctx.is_batching_enabled() {
