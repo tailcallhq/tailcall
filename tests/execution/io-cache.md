@@ -53,14 +53,14 @@ type Post {
         userId: 2
 - request:
     url: http://jsonplaceholder.typicode.com/users/1
-  expected_hits: 1
+  expected_hits: 2
   response:
     status: 200
     body:
       name: Leanne Graham
 - request:
     url: http://jsonplaceholder.typicode.com/users/2
-  expected_hits: 1
+  expected_hits: 4
   response:
     status: 200
     body:
