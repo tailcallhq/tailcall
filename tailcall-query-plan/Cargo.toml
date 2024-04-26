@@ -10,10 +10,11 @@ futures-util = { workspace = true }
 indexmap = { workspace = true }
 tokio = { workspace = true }
 
-async-recursion = "1.1.0"
+async-recursion = "1.1.1"
 indenter = "0.3.3"
 dashmap = "5.5.3"
 tailcall = { path = ".." }
 
 [dev-dependencies]
 insta = { workspace = true }
+tailcall-fixtures = { path = "../tailcall-fixtures"}

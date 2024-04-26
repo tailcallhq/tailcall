@@ -44,7 +44,6 @@
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:

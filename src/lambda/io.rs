@@ -50,8 +50,8 @@ impl Eval for IO {
         ctx: super::EvaluationContext<'a, Ctx>,
         _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
-        let key = self.cache_key(&ctx);
         Box::pin(async move {
+            let key = self.cache_key(&ctx);
             ctx.request_ctx
                 .cache
                 .get_or_eval(key, move || {
@@ -62,6 +62,8 @@ impl Eval for IO {
                     })
                 })
                 .await
+                .as_ref()
+                .clone()
                 .map_err(|err| anyhow::anyhow!(err))
         })
     }

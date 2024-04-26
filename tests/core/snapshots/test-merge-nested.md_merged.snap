@@ -1,0 +1,22 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server @upstream(baseURL: "http://abc.com") {
+  query: Query
+}
+
+type Foo {
+  """
+  test2
+  """
+  a: String
+  """
+  test1
+  """
+  b: String
+}
+
+type Query {
+  hi: Foo @expr(body: {a: "world"})
+}

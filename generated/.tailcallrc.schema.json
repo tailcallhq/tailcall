@@ -792,7 +792,8 @@
         "Key",
         "Operation",
         "Htpasswd",
-        "Jwks"
+        "Jwks",
+        "Grpc"
       ]
     },
     "Method": {
