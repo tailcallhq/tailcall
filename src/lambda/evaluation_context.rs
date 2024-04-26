@@ -16,7 +16,7 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
 
     // Async GraphQL Context
     // Contains current value and arguments
-    graphql_ctx: &'a Ctx,
+    pub graphql_ctx: &'a Ctx,
 
     // Overridden Value for Async GraphQL Context
     graphql_ctx_value: Option<Arc<Value>>,

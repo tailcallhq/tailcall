@@ -9,6 +9,9 @@ pub trait ResolverContextLike<'a>: Clone {
     fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
     fn field(&'a self) -> Option<SelectionField>;
     fn add_error(&'a self, error: ServerError);
+    fn requires_batching(&'a self) -> bool {
+        false
+    }
 }
 
 #[derive(Clone)]
@@ -33,11 +36,18 @@ impl<'a> ResolverContextLike<'a> for EmptyResolverContext {
 #[derive(Clone)]
 pub struct ResolverContext<'a> {
     inner: Arc<async_graphql::dynamic::ResolverContext<'a>>,
+    requires_batching: bool,
 }
 
 impl<'a> From<async_graphql::dynamic::ResolverContext<'a>> for ResolverContext<'a> {
     fn from(value: async_graphql::dynamic::ResolverContext<'a>) -> Self {
-        ResolverContext { inner: Arc::new(value) }
+        ResolverContext { inner: Arc::new(value), requires_batching: false }
+    }
+}
+
+impl<'a> ResolverContext<'a> {
+    pub fn enable_batching(&mut self) {
+        self.requires_batching = true;
     }
 }
 
@@ -56,5 +66,9 @@ impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
 
     fn add_error(&'a self, error: ServerError) {
         self.inner.ctx.add_error(error)
+    }
+
+    fn requires_batching(&'a self) -> bool {
+        self.requires_batching
     }
 }
