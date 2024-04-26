@@ -63,6 +63,7 @@
     method: GET
     url: https://jsonplaceholder.typicode.com/friends/1
     body: null
+  expected_hits: 2
   response:
     status: 200
     body:
