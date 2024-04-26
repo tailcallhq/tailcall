@@ -68,11 +68,13 @@ impl Display for Uri {
             .collect::<Vec<String>>()
             .join("&");
 
+        write!(f, "{}://{}{}{}", scheme, host, port, path)?;
+
         if !query.is_empty() {
-            write!(f, "{}://{}:{}{}?{}", scheme, host, port, path, query)
-        } else {
-            write!(f, "{}://{}{}{}", scheme, host, port, path)
+            write!(f, "?{}", query)?;
         }
+
+        Ok(())
     }
 }
 
@@ -118,6 +120,7 @@ impl TryFrom<&reqwest::Request> for JsRequest {
 
 #[cfg(test)]
 mod tests {
+    use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -152,6 +155,23 @@ mod tests {
             .and_then(|body| body.as_bytes())
             .map(|a| String::from_utf8_lossy(a).to_string());
         assert_eq!(body_out, Some(body.to_string()));
+    }
+
+    #[test]
+    fn test_js_request_to_reqwest_request_with_port_and_query() {
+        let js_request = JsRequest {
+            uri: Uri::parse("http://localhost:3000/?test=abc").unwrap(),
+            method: "GET".to_string(),
+            headers: BTreeMap::default(),
+            body: None,
+        };
+        let reqwest_request: reqwest::Request = js_request.try_into().unwrap();
+        assert_eq!(reqwest_request.method(), reqwest::Method::GET);
+        assert_eq!(
+            reqwest_request.url().as_str(),
+            "http://localhost:3000/?test=abc"
+        );
+        assert_eq!(reqwest_request.headers(), &HeaderMap::default());
     }
 
     #[test]
