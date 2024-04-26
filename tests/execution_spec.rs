@@ -164,15 +164,13 @@ enum ApiBody {
 impl ApiBody {
     pub fn resolve(&self) -> Vec<u8> {
         match self {
-            ApiBody::Value(value) => {
-                serde_json::to_vec(value).unwrap_or_else(|_| panic!("Failed to convert value: {value:?}"))
-            }
+            ApiBody::Value(value) => serde_json::to_vec(value)
+                .unwrap_or_else(|_| panic!("Failed to convert value: {value:?}")),
             ApiBody::Text(text) => string_to_bytes(text),
             ApiBody::File(file) => {
                 let root_dir = env!("CARGO_MANIFEST_DIR");
                 let root_dir = Path::new(root_dir).join("tests/fixtures");
                 let path = root_dir.join(file);
-                
 
                 std::fs::read(&path)
                     .unwrap_or_else(|_| panic!("Failed to read file by path: {}", path.display()))
