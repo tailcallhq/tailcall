@@ -50,20 +50,26 @@ impl Eval for IO {
         ctx: super::EvaluationContext<'a, Ctx>,
         _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
-        let key = self.cache_key(&ctx);
-        Box::pin(async move {
-            ctx.request_ctx
-                .cache
-                .get_or_eval(key, move || {
-                    Box::pin(async {
-                        self.eval_inner(ctx, _conc)
-                            .await
-                            .map_err(|err| err.to_string())
+        if ctx.graphql_ctx.requires_batching() {
+            Box::pin(async move {
+                let key = self.cache_key(&ctx);
+                ctx.request_ctx
+                    .cache
+                    .get_or_eval(key, move || {
+                        Box::pin(async {
+                            self.eval_inner(ctx, _conc)
+                                .await
+                                .map_err(|err| err.to_string())
+                        })
                     })
-                })
-                .await
-                .map_err(|err| anyhow::anyhow!(err))
-        })
+                    .await
+                    .as_ref()
+                    .clone()
+                    .map_err(|err| anyhow::anyhow!(err))
+            })
+        } else {
+            Box::pin(self.eval_inner(ctx, _conc))
+        }
     }
 }
 
