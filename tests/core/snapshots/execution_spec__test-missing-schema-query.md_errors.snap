@@ -1,0 +1,11 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "schema definition is missing query root",
+    "trace": [],
+    "description": null
+  }
+]

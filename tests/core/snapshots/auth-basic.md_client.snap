@@ -1,0 +1,41 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+type Mutation {
+  protectedType: ProtectedType
+}
+
+type Nested {
+  name: String!
+  protected: String!
+}
+
+scalar PhoneNumber
+
+type ProtectedType {
+  name: String!
+  nested: String!
+}
+
+type Query {
+  nested: Nested!
+  protectedScalar: String!
+  protectedType: ProtectedType
+  scalar: String!
+}
+
+scalar Url
+
+schema {
+  query: Query
+  mutation: Mutation
+}

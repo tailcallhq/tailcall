@@ -1,0 +1,28 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+type Company {
+  id: ID
+  name: String
+}
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  hi(id: ID!): [Company]
+}
+
+scalar Url
+
+schema {
+  query: Query
+}

@@ -1,0 +1,11 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server @upstream(allowedHeaders: ["a", "b", "c", "d"]) {
+  query: Query
+}
+
+type Query {
+  hello: String @expr(body: "world")
+}
