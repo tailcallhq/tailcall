@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use jaq_interpret::Filter;
 
 use crate::path::PathString;
 use crate::EnvIO;
@@ -22,6 +23,10 @@ impl<'a> PathString for ConfigReaderContext<'a> {
                 "env" => self.env.get(tail[0].as_ref()),
                 _ => None,
             })
+    }
+
+    fn evaluate(&self, _filter: &Filter) -> Option<Cow<'_, str>> {
+        todo!()
     }
 }
 

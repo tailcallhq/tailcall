@@ -146,7 +146,11 @@ convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tonic-types = "0.11.0"
-
+jaq-core = "1.2.1"
+jaq-parse = "1.0.2"
+jaq-interpret = {version = "1.2.1",features = ["serde_json"]}
+jaq-syn = "1.1.0"
+jaq-std = "1.2.1"
 
 [dev-dependencies]
 tailcall-prettier = {path = "tailcall-prettier"}
@@ -160,6 +164,7 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
+
 
 [features]
 

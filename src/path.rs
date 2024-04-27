@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use jaq_interpret::{Filter, FilterT};
 
 use serde_json::json;
 
@@ -15,6 +16,7 @@ use crate::lambda::{EvaluationContext, ResolverContextLike};
 /// This is typically used in evaluating mustache templates.
 pub trait PathString {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
+    fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>>;
 }
 
 ///
@@ -30,6 +32,14 @@ impl PathString for serde_json::Value {
             serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
             _ => Cow::Owned(a.to_string()),
         })
+    }
+
+    fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>> {
+        let iter = jaq_interpret::RcIter::new(vec![].into_iter());
+        let mut result = filter.run((jaq_interpret::Ctx::new(vec![], &iter), jaq_interpret::Val::from(self.clone())));
+        let result = result.next()?;
+        let result = result.ok()?;
+        Some(Cow::Owned(result.to_string()))
     }
 }
 
@@ -51,6 +61,7 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
 
 impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+        println!("hxt");
         let ctx = self;
 
         if path.is_empty() {
@@ -75,6 +86,14 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
                 "env" => ctx.env_var(tail[0].as_ref()),
                 _ => None,
             })
+    }
+
+    fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>> {
+        let iter = jaq_interpret::RcIter::new(vec![].into_iter());
+        let mut result = filter.run((jaq_interpret::Ctx::new(vec![], &iter), jaq_interpret::Val::from(serde_json::to_value(self.value()?).ok()?)));
+        let result = result.next()?;
+        let result = result.ok()?;
+        Some(Cow::Owned(result.to_string()))
     }
 }
 

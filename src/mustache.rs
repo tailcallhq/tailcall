@@ -10,8 +10,11 @@ use nom::{Finish, IResult};
 
 use crate::path::{PathGraphql, PathString};
 
-#[derive(Debug, Clone, PartialEq, Hash)]
-pub struct Mustache(Vec<Segment>);
+#[derive(Debug, Clone)]
+pub struct Mustache {
+    segments: Vec<Segment>,
+    jacques: jaq_interpret::Filter,
+}
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Segment {
@@ -21,22 +24,43 @@ pub enum Segment {
 
 impl From<Vec<Segment>> for Mustache {
     fn from(segments: Vec<Segment>) -> Self {
-        Mustache(segments)
+        Mustache {
+            segments,
+            jacques: jaq_interpret::Filter::default(),
+        }
     }
 }
 
+/*impl<T: AsRef<str>> TryFrom<T> for Mustache {
+    type Error = anyhow::Error;
+
+    fn try_from(filter_str: T) -> Result<Self, Self::Error> {
+        let mustache = Mustache::parse(filter_str.as_ref())?;
+
+        let mut defs = jaq_interpret::ParseCtx::new(vec![]);
+        defs.insert_natives(jaq_core::core());
+        defs.insert_defs(jaq_std::std());
+
+        let (filter, _) = jaq_parse::parse(filter_str.as_ref(), jaq_parse::main());
+        let filter = filter.context("failed to parse filter")?;
+        let filter = defs.compile(filter);
+        Ok(
+            Self {
+                segments: mustache.segments,
+                jacques: filter,
+            }
+        )
+    }
+}*/
+
 impl Mustache {
     pub fn is_const(&self) -> bool {
-        match self {
-            Mustache(segments) => {
-                for s in segments {
-                    if let Segment::Expression(_) = s {
-                        return false;
-                    }
-                }
-                true
+        for s in &self.segments {
+            if let Segment::Expression(_) = s {
+                return false;
             }
         }
+        true
     }
 
     // TODO: infallible function, no need to return Result
@@ -49,63 +73,62 @@ impl Mustache {
     }
 
     pub fn render(&self, value: &impl PathString) -> String {
-        match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.clone(),
-                    Segment::Expression(parts) => value
-                        .path_string(parts)
-                        .map(|a| a.to_string())
-                        .unwrap_or_default(),
-                })
-                .collect(),
-        }
+        self.segments
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => {
+                    println!("hx(txt): {}", text);
+
+                    text.clone() },
+                Segment::Expression(parts) => value
+                    .path_string(parts)
+                    .map(|a| a.to_string())
+                    .unwrap_or_default(),
+            })
+            .collect()
+    }
+
+    pub fn evaluate(&self, value: &impl PathString) -> String {
+        let val = value.evaluate(&self.jacques).unwrap_or_default().to_string();
+        println!("ise: {}", val.is_empty());
+        val
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
-        match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.to_string(),
-                    Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
-                })
-                .collect(),
-        }
+        self.segments
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.to_string(),
+                Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
+            })
+            .collect()
     }
 
     pub fn get_segments(&self) -> Vec<&Segment> {
-        match self {
-            Mustache(segments) => segments.iter().collect(),
-        }
+        self.segments.iter().collect()
     }
 
     pub fn expression_segments(&self) -> Vec<&Vec<String>> {
-        match self {
-            Mustache(segments) => segments
-                .iter()
-                .filter_map(|seg| match seg {
-                    Segment::Expression(parts) => Some(parts),
-                    _ => None,
-                })
-                .collect(),
-        }
+        self.segments
+            .iter()
+            .filter_map(|seg| match seg {
+                Segment::Expression(parts) => Some(parts),
+                _ => None,
+            })
+            .collect()
     }
 }
 
 impl Display for Mustache {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.clone(),
-                    Segment::Expression(parts) => format!("{{{{{}}}}}", parts.join(".")),
-                })
-                .collect::<Vec<String>>()
-                .join(""),
-        };
+        let str = self.segments
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.clone(),
+                Segment::Expression(parts) => format!("{{{{{}}}}}", parts.join(".")),
+            })
+            .collect::<Vec<String>>()
+            .join("");
         write!(f, "{}", str)
     }
 }
@@ -162,17 +185,49 @@ fn parse_segment(input: &str) -> IResult<&str, Vec<Segment>> {
 }
 
 fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
-    map(parse_segment, |segments| {
-        Mustache(
-            segments
-                .into_iter()
-                .filter(|seg| match seg {
-                    Segment::Literal(s) => (!s.is_empty()) && s != "\"",
-                    _ => true,
-                })
-                .collect(),
+    let result = map(parse_segment, |segments| {
+        let segs = segments
+            .into_iter()
+            .filter(|seg| match seg {
+                Segment::Literal(s) => (!s.is_empty()) && s != "\"",
+                _ => true,
+            })
+            .collect::<Vec<Segment>>();
+        segs
+    })(input);
+    let (_res, segments) = result?;
+    let (res, jacques) = parse_jq(input).unwrap_or((input, jaq_interpret::Filter::default()));
+
+    Ok(
+        (
+            res,
+            Mustache {
+                segments,
+                jacques,
+            }
         )
-    })(input)
+    )
+}
+
+fn parse_jq(input: &str) -> IResult<&str, jaq_interpret::Filter> {
+    let (input, _) = tag("{{")(input)?;
+    let (input, filter) = take_until("}}")(input)?;
+    let (input, _) = tag("}}")(input)?;
+    let filter = filter.trim();
+    let mut defs = jaq_interpret::ParseCtx::new(vec![]);
+    defs.insert_natives(jaq_core::core());
+    defs.insert_defs(jaq_std::std());
+
+    let (filter, errs) = jaq_parse::parse(filter, jaq_parse::main());
+    if !errs.is_empty() {
+        return Err(nom::Err::Error(nom::error::Error::new("failed to parse filter", nom::error::ErrorKind::Tag)));
+    }
+    let filter = filter;
+    if filter.is_none() {
+        return Err(nom::Err::Error(nom::error::Error::new("failed to parse filter", nom::error::ErrorKind::Tag)));
+    }
+    let filter = defs.compile(filter.unwrap());
+    Ok((input, filter))
 }
 
 #[cfg(test)]
@@ -288,17 +343,23 @@ mod tests {
         #[test]
         fn test_parse_segments_only_literal() {
             let result = Mustache::parse("just a string").unwrap();
-            let expected = Mustache(vec![Segment::Literal("just a string".to_string())]);
+            let expected = Mustache{
+                segments: vec![Segment::Literal("just a string".to_string())],
+                jacques: jaq_interpret::Filter::default(),
+            };
             assert_eq!(result, expected);
         }
 
         #[test]
         fn test_parse_segments_only_expression() {
             let result = Mustache::parse("{{foo.bar}}").unwrap();
-            let expected = Mustache(vec![Segment::Expression(vec![
-                "foo".to_string(),
-                "bar".to_string(),
-            ])]);
+            let expected = Mustache {
+                segments: vec![Segment::Expression(vec![
+                    "foo".to_string(),
+                    "bar".to_string(),
+                ])],
+                jacques: jaq_interpret::Filter::default(),
+            };
             assert_eq!(result, expected);
         }
 
@@ -370,6 +431,7 @@ mod tests {
 
     mod render {
         use std::borrow::Cow;
+        use jaq_interpret::Filter;
 
         use serde_json::json;
 
@@ -401,6 +463,10 @@ mod tests {
                         None
                     }
                 }
+
+                fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>> {
+                    None // TODO
+                }
             }
 
             let mustache = Mustache::from(vec![
@@ -424,6 +490,10 @@ mod tests {
             impl PathString for DummyPath {
                 fn path_string<T: AsRef<str>>(&self, _: &[T]) -> Option<Cow<'_, str>> {
                     None
+                }
+
+                fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>> {
+                    todo!()
                 }
             }
 
@@ -466,6 +536,10 @@ mod tests {
                     } else {
                         None
                     }
+                }
+
+                fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>> {
+                    todo!()
                 }
             }
 
