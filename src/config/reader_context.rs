@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use jaq_interpret::Filter;
+use serde::{Serialize, Serializer};
 
 use crate::path::PathString;
 use crate::EnvIO;
@@ -10,6 +10,15 @@ use crate::EnvIO;
 pub struct ConfigReaderContext<'a> {
     pub env: Arc<dyn EnvIO>,
     pub vars: &'a BTreeMap<String, String>,
+}
+
+impl<'a> Serialize for ConfigReaderContext<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_none()
+    }
 }
 
 impl<'a> PathString for ConfigReaderContext<'a> {
@@ -24,10 +33,6 @@ impl<'a> PathString for ConfigReaderContext<'a> {
                 "env" => self.env.get(tail[0].as_ref()),
                 _ => None,
             })
-    }
-
-    fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
-        None
     }
 }
 

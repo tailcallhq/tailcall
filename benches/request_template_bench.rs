@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
+use serde::{Serialize, Serializer};
 use serde_json::json;
 use tailcall::endpoint::Endpoint;
 use tailcall::has_headers::HasHeaders;
@@ -20,13 +21,20 @@ impl Default for Context {
         Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
 }
+
+impl Serialize for Context {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_none()
+        // self.value.serialize(serializer)
+    }
+}
+
 impl PathString for Context {
     fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
         self.value.path_string(parts)
-    }
-
-    fn evaluate(&self, _filter: &jaq_interpret::Filter) -> Option<async_graphql::Value> {
-        None
     }
 }
 impl HasHeaders for Context {

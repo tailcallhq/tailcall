@@ -263,6 +263,7 @@ mod tests {
     use hyper::header::HeaderName;
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
+    use serde::{Serialize, Serializer};
     use serde_json::json;
 
     use super::RequestTemplate;
@@ -282,13 +283,19 @@ mod tests {
         }
     }
 
-    impl crate::path::PathString for Context {
+    impl Serialize for Context {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            serializer.serialize_none()
+            // self.value.serialize(serializer)
+        }
+    }
+
+    impl PathString for Context {
         fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
-        }
-
-        fn evaluate(&self, _filter: &jaq_interpret::Filter) -> Option<async_graphql::Value> {
-            None
         }
     }
 

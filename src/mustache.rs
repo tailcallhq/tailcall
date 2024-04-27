@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use jaq_interpret::FilterT;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::char;
@@ -7,6 +8,7 @@ use nom::combinator::map;
 use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
+use serde::Serialize;
 
 use crate::path::{PathGraphql, PathString};
 
@@ -61,17 +63,33 @@ impl Mustache {
             .collect();
 
         if val.is_empty() {
-            self.evaluate(value)
+            self.evaluate_inner(value)
+                .map(|v| v.to_string())
+                .unwrap_or_default()
         } else {
             val
         }
     }
 
-    fn evaluate(&self, value: &impl PathString) -> String {
-        value
-            .evaluate(&self.jacques)
-            .map(|v| v.to_string())
-            .unwrap_or_default()
+    // TODO: Null converts to "null" as string but it should be empty string
+    // fn evaluate<T: Serialize>(&self, value: &T) -> async_graphql::Value {
+    //     self.evaluate_inner(value).unwrap_or_default()
+    // }
+
+    fn evaluate_inner<T: Serialize>(&self, value: &T) -> Option<async_graphql::Value> {
+        let iter = jaq_interpret::RcIter::new(vec![].into_iter());
+        let value = serde_json::to_value(value).ok()?;
+        if value.is_null() {
+            return None;
+        }
+        let mut result = self.jacques.run((
+            jaq_interpret::Ctx::new(vec![], &iter),
+            jaq_interpret::Val::from(value),
+        ));
+        let result = result.next()?;
+        let result = result.ok()?;
+        let result = async_graphql::Value::from(result.to_string());
+        Some(result)
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
@@ -416,7 +434,7 @@ mod tests {
     mod render {
         use std::borrow::Cow;
 
-        use jaq_interpret::Filter;
+        use serde::{Serialize, Serializer};
         use serde_json::json;
 
         use crate::mustache::{Mustache, Segment};
@@ -435,6 +453,14 @@ mod tests {
         fn test_render_mixed() {
             struct DummyPath;
 
+            impl Serialize for DummyPath {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    serializer.serialize_str("")
+                }
+            }
             impl PathString for DummyPath {
                 fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
                     let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
@@ -446,10 +472,6 @@ mod tests {
                     } else {
                         None
                     }
-                }
-
-                fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
-                    None // TODO
                 }
             }
 
@@ -471,12 +493,16 @@ mod tests {
         fn test_render_with_missing_path() {
             struct DummyPath;
 
+            impl Serialize for DummyPath {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    serializer.serialize_str("")
+                }
+            }
             impl PathString for DummyPath {
                 fn path_string<T: AsRef<str>>(&self, _: &[T]) -> Option<Cow<'_, str>> {
-                    None
-                }
-
-                fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
                     None
                 }
             }
@@ -511,6 +537,14 @@ mod tests {
         fn test_render_preserves_spaces() {
             struct DummyPath;
 
+            impl Serialize for DummyPath {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    serializer.serialize_str("")
+                }
+            }
             impl PathString for DummyPath {
                 fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
                     let parts: Vec<&str> = parts.iter().map(AsRef::as_ref).collect();
@@ -520,10 +554,6 @@ mod tests {
                     } else {
                         None
                     }
-                }
-
-                fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
-                    todo!()
                 }
             }
 

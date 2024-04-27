@@ -124,6 +124,7 @@ mod tests {
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::{HeaderMap, Method};
     use pretty_assertions::assert_eq;
+    use serde::{Serialize, Serializer};
     use tailcall_fixtures::protobuf;
 
     use super::RequestTemplate;
@@ -185,13 +186,19 @@ mod tests {
         }
     }
 
+    impl Serialize for Context {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            serializer.serialize_none()
+            // self.value.serialize(serializer)
+        }
+    }
+
     impl crate::path::PathString for Context {
         fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
-        }
-
-        fn evaluate(&self, _filter: &jaq_interpret::Filter) -> Option<async_graphql::Value> {
-            todo!()
         }
     }
 

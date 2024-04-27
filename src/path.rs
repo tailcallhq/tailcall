@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use jaq_interpret::{Filter, FilterT};
+use serde::{Serialize, Serializer};
 use serde_json::json;
 
 use crate::json::JsonLike;
@@ -14,9 +14,8 @@ use crate::lambda::{EvaluationContext, ResolverContextLike};
 /// The PathString trait provides a method for accessing values from a JSON-like
 /// structure. The returned value is encoded as a plain string.
 /// This is typically used in evaluating mustache templates.
-pub trait PathString {
+pub trait PathString: Serialize {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
-    fn evaluate(&self, filter: &Filter) -> Option<async_graphql::Value>;
 }
 
 ///
@@ -33,18 +32,6 @@ impl PathString for serde_json::Value {
             _ => Cow::Owned(a.to_string()),
         })
     }
-
-    fn evaluate(&self, filter: &Filter) -> Option<async_graphql::Value> {
-        let iter = jaq_interpret::RcIter::new(vec![].into_iter());
-        let mut result = filter.run((
-            jaq_interpret::Ctx::new(vec![], &iter),
-            jaq_interpret::Val::from(self.clone()),
-        ));
-        let result = result.next()?;
-        let result = result.ok()?;
-        let result = async_graphql::Value::from(result.to_string());
-        Some(result)
-    }
 }
 
 fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
@@ -60,6 +47,18 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
         Cow::Borrowed(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
         Cow::Borrowed(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
         _ => None,
+    }
+}
+
+impl<'a, Ctx: ResolverContextLike<'a>> Serialize for EvaluationContext<'a, Ctx> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.value()
+            .cloned()
+            .unwrap_or_default()
+            .serialize(serializer)
     }
 }
 
@@ -89,18 +88,6 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
                 "env" => ctx.env_var(tail[0].as_ref()),
                 _ => None,
             })
-    }
-
-    fn evaluate(&self, filter: &Filter) -> Option<async_graphql::Value> {
-        let iter = jaq_interpret::RcIter::new(vec![].into_iter());
-        let mut result = filter.run((
-            jaq_interpret::Ctx::new(vec![], &iter),
-            jaq_interpret::Val::from(serde_json::to_value(self.value()?).ok()?),
-        ));
-        let result = result.next()?;
-        let result = result.ok()?;
-        let result = async_graphql::Value::from(result.to_string());
-        Some(result)
     }
 }
 
