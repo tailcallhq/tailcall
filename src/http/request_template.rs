@@ -289,7 +289,6 @@ mod tests {
             S: Serializer,
         {
             serializer.serialize_none()
-            // self.value.serialize(serializer)
         }
     }
 

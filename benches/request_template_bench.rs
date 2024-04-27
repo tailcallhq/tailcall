@@ -28,7 +28,6 @@ impl Serialize for Context {
         S: Serializer,
     {
         serializer.serialize_none()
-        // self.value.serialize(serializer)
     }
 }
 
