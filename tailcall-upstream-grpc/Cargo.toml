@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 hyper = { version = "0.14.28", features = ["full"] }
-tokio = { version = "1.36.0", features = ["full"] }
+tokio = { version = "1.37.0", features = ["full"] }
 tonic = "0.11.0"
 tonic-reflection = "0.11.0"
 prost = "0.12.3"
