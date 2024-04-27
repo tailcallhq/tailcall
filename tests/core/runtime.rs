@@ -12,9 +12,9 @@ use tailcall::cli::javascript;
 use tailcall::config::Source;
 use tailcall::runtime::TargetRuntime;
 
-use super::env::TestEnvIO;
+use super::env::Env;
 use super::file::TestFileIO;
-use super::http::MockHttpClient;
+use super::http::Http;
 use super::model::*;
 
 #[derive(Clone, Setters)]
@@ -78,7 +78,7 @@ impl ExecutionMock {
 }
 
 pub fn create_runtime(
-    http_client: Arc<MockHttpClient>,
+    http_client: Arc<Http>,
     env: Option<HashMap<String, String>>,
     script: Option<blueprint::Script>,
 ) -> TargetRuntime {
@@ -95,7 +95,7 @@ pub fn create_runtime(
     };
 
     let file = TestFileIO::init();
-    let env = TestEnvIO::init(env);
+    let env = Env::init(env);
 
     TargetRuntime {
         http,

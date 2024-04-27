@@ -16,12 +16,12 @@ use tailcall::HttpIO;
 use super::runtime::{ExecutionMock, ExecutionSpec};
 
 #[derive(Clone, Debug)]
-pub struct MockHttpClient {
+pub struct Http {
     mocks: Vec<ExecutionMock>,
     spec_path: String,
 }
 
-impl MockHttpClient {
+impl Http {
     pub fn new(spec: &ExecutionSpec) -> Self {
         let mocks = spec
             .mock
@@ -44,7 +44,7 @@ impl MockHttpClient {
             .to_string_lossy()
             .into_owned();
 
-        MockHttpClient { mocks, spec_path }
+        Http { mocks, spec_path }
     }
 
     pub fn test_hits(&self, path: impl AsRef<Path>) {
@@ -83,7 +83,7 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 }
 
 #[async_trait::async_trait]
-impl HttpIO for MockHttpClient {
+impl HttpIO for Http {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         // Determine if the request is a GRPC request based on PORT
         let is_grpc = req.url().as_str().contains("50051");

@@ -6,17 +6,17 @@ use std::collections::HashMap;
 use tailcall::EnvIO;
 
 #[derive(Clone)]
-pub struct TestEnvIO {
+pub struct Env {
     vars: HashMap<String, String>,
 }
 
-impl EnvIO for TestEnvIO {
+impl EnvIO for Env {
     fn get(&self, key: &str) -> Option<Cow<'_, str>> {
         self.vars.get(key).map(Cow::from)
     }
 }
 
-impl TestEnvIO {
+impl Env {
     pub fn init(vars: Option<HashMap<String, String>>) -> Self {
         Self { vars: vars.unwrap_or_default() }
     }

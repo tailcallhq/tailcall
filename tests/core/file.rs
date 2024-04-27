@@ -7,18 +7,18 @@ use tailcall::FileIO;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::runtime::ExecutionSpec;
-pub struct MockFileSystem {
+pub struct File {
     spec: ExecutionSpec,
 }
 
-impl MockFileSystem {
-    pub fn new(spec: ExecutionSpec) -> MockFileSystem {
-        MockFileSystem { spec }
+impl File {
+    pub fn new(spec: ExecutionSpec) -> File {
+        File { spec }
     }
 }
 
 #[async_trait::async_trait]
-impl FileIO for MockFileSystem {
+impl FileIO for File {
     async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> anyhow::Result<()> {
         Err(anyhow!("Cannot write to a file in an execution spec"))
     }

@@ -18,8 +18,8 @@ use tailcall::http::AppContext;
 use tailcall::runtime::TargetRuntime;
 use tailcall::EnvIO;
 
-use super::file::MockFileSystem;
-use super::http::MockHttpClient;
+use super::file::File;
+use super::http::Http;
 use super::model::*;
 use super::runtime::ExecutionSpec;
 
@@ -273,7 +273,7 @@ impl ExecutionSpec {
         &self,
         config: &ConfigModule,
         env: HashMap<String, String>,
-        http_client: Arc<MockHttpClient>,
+        http_client: Arc<Http>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
         let http = if let Some(script) = blueprint.server.script.clone() {
@@ -287,7 +287,7 @@ impl ExecutionSpec {
         let runtime = TargetRuntime {
             http,
             http2_only,
-            file: Arc::new(MockFileSystem::new(self.clone())),
+            file: Arc::new(File::new(self.clone())),
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),

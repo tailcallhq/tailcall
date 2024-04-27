@@ -19,8 +19,8 @@ use tailcall::merge_right::MergeRight;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 
-use super::file::MockFileSystem;
-use super::http::MockHttpClient;
+use super::file::File;
+use super::http::Http;
 use super::model::*;
 use super::runtime::ExecutionSpec;
 use crate::core::runtime;
@@ -52,7 +52,7 @@ impl From<Cause<String>> for SDLError {
     }
 }
 
-async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<MockHttpClient>) -> bool {
+async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool {
     if spec.sdl_error {
         // errors: errors are expected, make sure they match
         let (source, content) = &spec.server[0];
@@ -66,7 +66,7 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<MockHttpClient>
         let config = match config {
             Ok(config) => {
                 let mut runtime = runtime::create_runtime(mock_http_client, spec.env.clone(), None);
-                runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
+                runtime.file = Arc::new(File::new(spec.clone()));
                 let reader = ConfigReader::init(runtime);
                 match reader.resolve(config, spec.path.parent()).await {
                     Ok(config) => Blueprint::try_from(&config),
@@ -165,7 +165,7 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
 async fn run_query_tests_on_spec(
     spec: ExecutionSpec,
     server: Vec<ConfigModule>,
-    mock_http_client: Arc<MockHttpClient>,
+    mock_http_client: Arc<Http>,
 ) {
     if let Some(tests) = spec.test.as_ref() {
         let app_ctx = spec
@@ -215,7 +215,7 @@ async fn test_spec(spec: ExecutionSpec) {
     insta_settings.set_prepend_module_to_snapshot(false);
     let _guard = insta::Settings::bind_to_scope(&insta_settings);
 
-    let mock_http_client = Arc::new(MockHttpClient::new(&spec));
+    let mock_http_client = Arc::new(Http::new(&spec));
 
     // check sdl error if any
     if is_sdl_error(spec.clone(), mock_http_client.clone()).await {
@@ -237,7 +237,7 @@ async fn test_spec(spec: ExecutionSpec) {
 
     // Resolve all configs
     let mut runtime = runtime::create_runtime(mock_http_client.clone(), spec.env.clone(), None);
-    runtime.file = Arc::new(MockFileSystem::new(spec.clone()));
+    runtime.file = Arc::new(File::new(spec.clone()));
     let reader = ConfigReader::init(runtime);
 
     let server: Vec<ConfigModule> = join_all(
