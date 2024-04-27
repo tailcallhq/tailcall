@@ -119,8 +119,9 @@ impl ProtoReader {
 mod test_proto_config {
     use std::path::{Path, PathBuf};
 
-    use anyhow::{Context, Result};
+    use anyhow::Result;
     use pretty_assertions::assert_eq;
+    use tailcall_fixtures::protobuf;
 
     use crate::proto_reader::ProtoReader;
     use crate::resource_reader::{Cached, ResourceReader};
@@ -139,39 +140,22 @@ mod test_proto_config {
 
     #[tokio::test]
     async fn test_nested_imports() -> Result<()> {
-        let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut test_dir = root_dir.join(file!());
-        test_dir.pop(); // src
-
-        let mut root = test_dir.clone();
-        root.pop();
-
-        test_dir.push("grpc"); // grpc
-        test_dir.push("tests"); // tests
-        test_dir.push("proto"); // proto
-
-        let mut test_file = test_dir.clone();
-
-        test_file.push("nested0.proto"); // nested0.proto
-        assert!(test_file.exists());
-        let test_file = test_file.to_str().unwrap().to_string();
+        let test_dir = Path::new(protobuf::SELF);
+        let test_file = protobuf::NESTED_0;
 
         let runtime = crate::runtime::test::init(None);
         let file_rt = runtime.file.clone();
 
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime));
-        let pathbuf = PathBuf::from(&test_file);
         let helper_map = reader
-            .resolve_descriptors(reader.read_proto(&test_file, None).await?, pathbuf.parent())
+            .resolve_descriptors(reader.read_proto(&test_file, None).await?, Some(test_dir))
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {
-            let file = file?;
-            let path = file.path();
-            let path_str =
-                path_to_file_name(path.as_path()).context("It must be able to extract path")?;
-            let source = file_rt.read(&path_str).await?;
-            let expected = protox_parse::parse(&path_str, &source)?;
+            let path = file?.path();
+            let path = path.to_string_lossy();
+            let source = file_rt.read(&path).await?;
+            let expected = protox_parse::parse(&path, &source)?;
             let actual = helper_map
                 .iter()
                 .find(|v| v.package.eq(&expected.package))
@@ -183,24 +167,6 @@ mod test_proto_config {
         Ok(())
     }
 
-    fn path_to_file_name(path: &Path) -> Option<String> {
-        let components: Vec<_> = path.components().collect();
-
-        // Find the index of the "src" component
-        if let Some(src_index) = components.iter().position(|&c| c.as_os_str() == "src") {
-            // Reconstruct the path from the "src" component onwards
-            let after_src_components = &components[src_index..];
-            let result = after_src_components
-                .iter()
-                .fold(PathBuf::new(), |mut acc, comp| {
-                    acc.push(comp);
-                    acc
-                });
-            Some(result.to_str().unwrap().to_string())
-        } else {
-            None
-        }
-    }
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
         let runtime = crate::runtime::test::init(None);
