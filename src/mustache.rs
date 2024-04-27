@@ -70,8 +70,8 @@ impl Mustache {
     fn evaluate(&self, value: &impl PathString) -> String {
         value
             .evaluate(&self.jacques)
+            .map(|v| v.to_string())
             .unwrap_or_default()
-            .to_string()
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
