@@ -23,7 +23,7 @@ use super::file::MockFileSystem;
 use super::http::MockHttpClient;
 use super::model::*;
 use super::runtime::ExecutionSpec;
-use crate::executionspec::runtime;
+use crate::core::runtime;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
 struct SDLError {
@@ -200,7 +200,7 @@ async fn run_query_tests_on_spec(
                 text_body: None,
             };
 
-            let snapshot_name = format!("execution_spec__{}_test_{}", spec.safe_name, i);
+            let snapshot_name = format!("{}_{}", spec.safe_name, i);
 
             insta::assert_json_snapshot!(snapshot_name, response);
         }
@@ -231,7 +231,7 @@ async fn test_spec(spec: ExecutionSpec) {
         .fold(Config::default(), |acc, c| acc.merge_right(c.clone()))
         .to_sdl();
 
-    let snapshot_name = format!("execution_spec__{}_merged", spec.safe_name);
+    let snapshot_name = format!("{}_merged", spec.safe_name);
 
     insta::assert_snapshot!(snapshot_name, merged);
 
@@ -270,7 +270,7 @@ async fn test_spec(spec: ExecutionSpec) {
                 .unwrap())
             .to_schema(),
         );
-        let snapshot_name = format!("execution_spec__{}_client", spec.safe_name);
+        let snapshot_name = format!("{}_client", spec.safe_name);
 
         insta::assert_snapshot!(snapshot_name, client);
     }
