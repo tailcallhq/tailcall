@@ -16,11 +16,7 @@ impl ValueExt for DynamicValue {
         match self {
             DynamicValue::Value(value) => Ok(value.to_owned()),
             DynamicValue::Mustache(m) => {
-                let rendered: Cow<'a, str> = Cow::Owned({
-                    let v = m.evaluate(ctx);
-                    println!("{}",v);
-                    v
-                });
+                let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
 
                 serde_json::from_str::<GraphQLValue>(rendered.as_ref())
                     // parsing can fail when Mustache::render returns bare string and since
@@ -55,7 +51,7 @@ mod tests {
 
     #[test]
     fn test_render_value() {
-        let value = json!({"a": "{{foo}}"});
+        let value = json!({"a": "{{.foo}}"});
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": "baz"}});
         let result = value.render_value(&ctx);
@@ -65,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_render_value_nested() {
-        let value = json!({"a": "{{foo.bar.baz}}"});
+        let value = json!({"a": "{{.foo.bar.baz}}"});
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": 1}}});
         let result = value.render_value(&ctx);
@@ -75,7 +71,7 @@ mod tests {
 
     #[test]
     fn test_render_value_nested_str() {
-        let value = json!({"a": "{{foo.bar.baz}}"});
+        let value = json!({"a": "{{.foo.bar.baz}}"});
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": "foo"}}});
         let result = value.render_value(&ctx);
@@ -85,7 +81,7 @@ mod tests {
 
     #[test]
     fn test_render_value_null() {
-        let value = json!("{{foo.bar.baz}}");
+        let value = json!("{{.foo.bar.baz}}");
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": null}}});
         let result = value.render_value(&ctx);
@@ -95,7 +91,7 @@ mod tests {
 
     #[test]
     fn test_render_value_nested_bool() {
-        let value = json!({"a": "{{foo.bar.baz}}"});
+        let value = json!({"a": "{{.foo.bar.baz}}"});
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": true}}});
         let result = value.render_value(&ctx);
@@ -105,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_render_value_nested_float() {
-        let value = json!({"a": "{{foo.bar.baz}}"});
+        let value = json!({"a": "{{.foo.bar.baz}}"});
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": 1.1}}});
         let result = value.render_value(&ctx);
@@ -115,7 +111,7 @@ mod tests {
 
     #[test]
     fn test_render_value_arr() {
-        let value = json!({"a": "{{foo.bar.baz}}"});
+        let value = json!({"a": "{{.foo.bar.baz}}"});
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": [1,2,3]}}});
         let result = value.render_value(&ctx);
@@ -125,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_render_value_arr_template() {
-        let value = json!({"a": ["{{foo.bar.baz}}", "{{foo.bar.qux}}"]});
+        let value = json!({"a": ["{{.foo.bar.baz}}", "{{.foo.bar.qux}}"]});
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
         let result = value.render_value(&ctx);
@@ -135,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_mustache_or_value_is_const() {
-        let value = json!("{{foo}}");
+        let value = json!("{{.foo}}");
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": "bar"});
         let result = value.render_value(&ctx).unwrap();
@@ -145,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_mustache_arr_obj() {
-        let value = json!([{"a": "{{foo.bar.baz}}"}, {"a": "{{foo.bar.qux}}"}]);
+        let value = json!([{"a": "{{.foo.bar.baz}}"}, {"a": "{{.foo.bar.qux}}"}]);
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
         let result = value.render_value(&ctx);
@@ -155,7 +151,8 @@ mod tests {
 
     #[test]
     fn test_mustache_arr_obj_arr() {
-        let value = json!([{"a": [{"aa": "{{foo.bar.baz}}"}]}, {"a": [{"aa": "{{foo.bar.qux}}"}]}]);
+        let value =
+            json!([{"a": [{"aa": "{{.foo.bar.baz}}"}]}, {"a": [{"aa": "{{.foo.bar.qux}}"}]}]);
         let value = DynamicValue::try_from(&value).unwrap();
         let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
         let result = value.render_value(&ctx);

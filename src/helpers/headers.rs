@@ -41,12 +41,22 @@ mod tests {
         )?;
 
         let headers = to_mustache_headers(&input).to_result()?;
+        let headers = headers
+            .into_iter()
+            .map(|(k, v)| (k, v.to_string()))
+            .collect::<Vec<_>>();
 
         assert_eq!(
             headers,
             vec![
-                (HeaderName::from_bytes(b"a")?, Mustache::parse("str")?),
-                (HeaderName::from_bytes(b"b")?, Mustache::parse("123")?)
+                (
+                    HeaderName::from_bytes(b"a")?,
+                    Mustache::parse("str")?.to_string()
+                ),
+                (
+                    HeaderName::from_bytes(b"b")?,
+                    Mustache::parse("123")?.to_string()
+                )
             ]
         );
 

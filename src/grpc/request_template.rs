@@ -189,6 +189,10 @@ mod tests {
         fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
         }
+
+        fn evaluate(&self, _filter: &jaq_interpret::Filter) -> Option<Cow<'_, str>> {
+            todo!()
+        }
     }
 
     impl crate::has_headers::HasHeaders for Context {

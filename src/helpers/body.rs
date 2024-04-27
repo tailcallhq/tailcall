@@ -17,11 +17,11 @@ pub fn to_body(body: Option<&str>) -> Valid<Option<Mustache>, String> {
 mod tests {
     use super::to_body;
     use crate::mustache::Mustache;
-    use crate::valid::Valid;
+    use crate::valid::{Valid, Validator};
 
     #[test]
     fn no_body() {
-        let result = to_body(None);
+        let result = to_body(None).map(|v| v.map(|v| v.to_string()));
 
         assert_eq!(result, Valid::succeed(None));
     }
@@ -31,8 +31,8 @@ mod tests {
         let result = to_body(Some("content"));
 
         assert_eq!(
-            result,
-            Valid::succeed(Some(Mustache::parse("content").unwrap()))
+            result.map(|v| v.map(|v| v.to_string())),
+            Valid::succeed(Some(Mustache::parse("content").unwrap().to_string()))
         );
     }
 }

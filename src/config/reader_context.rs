@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+
 use jaq_interpret::Filter;
 
 use crate::path::PathString;
@@ -26,7 +27,7 @@ impl<'a> PathString for ConfigReaderContext<'a> {
     }
 
     fn evaluate(&self, _filter: &Filter) -> Option<Cow<'_, str>> {
-        todo!()
+        None
     }
 }
 

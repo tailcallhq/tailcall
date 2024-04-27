@@ -8,6 +8,7 @@ pub fn to_url(url: &str) -> Valid<Mustache, String> {
 #[cfg(test)]
 mod tests {
     use super::to_url;
+    use crate::valid::Validator;
 
     #[test]
     fn parse_url() {
@@ -17,8 +18,9 @@ mod tests {
         let url = to_url("http://localhost:3000");
 
         assert_eq!(
-            url,
+            url.map(|v| v.to_string()),
             Valid::succeed(Mustache::parse("http://localhost:3000").unwrap())
+                .map(|v| v.to_string())
         );
     }
 }
