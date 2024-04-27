@@ -19,8 +19,10 @@ use tailcall::merge_right::MergeRight;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 
+use super::file::MockFileSystem;
+use super::http::MockHttpClient;
 use super::model::*;
-use super::runtime::{ExecutionSpec, MockFileSystem, MockHttpClient};
+use super::runtime::ExecutionSpec;
 use crate::executionspec::runtime;
 
 #[derive(Debug, Default, Deserialize, Serialize, PartialEq)]

@@ -18,8 +18,10 @@ use tailcall::http::AppContext;
 use tailcall::runtime::TargetRuntime;
 use tailcall::EnvIO;
 
+use super::file::MockFileSystem;
+use super::http::MockHttpClient;
 use super::model::*;
-use super::runtime::{ExecutionSpec, MockFileSystem, MockHttpClient};
+use super::runtime::ExecutionSpec;
 
 struct Env {
     env: HashMap<String, String>,
