@@ -2,7 +2,7 @@
 schema
   @server(port: 8000, graphiql: true)
   @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
-  @link(id: "news", src: "../src/grpc/tests/proto/news.proto", type: Protobuf) {
+  @link(id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -18,6 +18,13 @@ type News {
   title: String
   body: String
   postImage: String
+  status: Status
+}
+
+enum Status {
+  PUBLISHED
+  DRAFT
+  DELETED
 }
 
 input NewsInput {

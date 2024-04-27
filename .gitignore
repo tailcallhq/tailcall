@@ -3,21 +3,16 @@
 /.vscode
 .DS_Store
 .bsp
-/cloudflare/node_modules
-/cloudflare/.wrangler
 # direnv
 .direnv
 .envrc
 .env
 
 npm/@tailcallhq
-npm/node_modules
+node_modules/
 
-cloudflare/.wrangler
-cloudflare/build
-cloudflare/node_modules
-cloudflare/pkg
-
+# cloudflare
 .wrangler/
+tailcall-/cloudflare/build
 
 *.snap.new
