@@ -9,69 +9,37 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
+use derive_setters::Setters;
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
-use tailcall::http::{Method, Response};
+use tailcall::config::Source;
+use tailcall::http::Response;
 use tailcall::runtime::TargetRuntime;
 use tailcall::{blueprint, EnvIO, FileIO, HttpIO};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use url::Url;
 
-use super::model::ExecutionSpec;
+use super::model::*;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct APIRequest {
-    #[serde(default)]
-    pub method: Method,
-    pub url: Url,
-    #[serde(default)]
-    pub headers: BTreeMap<String, String>,
-    #[serde(default)]
-    pub body: serde_json::Value,
-    #[serde(default)]
-    pub test_traces: bool,
-    #[serde(default)]
-    pub test_metrics: bool,
-}
+#[derive(Clone, Setters)]
+pub struct ExecutionSpec {
+    pub path: PathBuf,
+    pub name: String,
+    pub safe_name: String,
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct APIResponse {
-    #[serde(default = "default_status")]
-    pub status: u16,
-    #[serde(default)]
-    pub headers: BTreeMap<String, String>,
-    #[serde(default)]
-    pub body: serde_json::Value,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text_body: Option<String>,
-}
+    pub server: Vec<(Source, String)>,
+    pub mock: Option<Vec<Mock>>,
+    pub env: Option<HashMap<String, String>>,
+    pub test: Option<Vec<APIRequest>>,
+    pub files: BTreeMap<String, String>,
 
-fn default_status() -> u16 {
-    200
-}
+    // Annotations for the runner
+    pub runner: Option<Annotation>,
 
-fn default_expected_hits() -> usize {
-    1
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-struct UpstreamRequest(APIRequest);
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct UpstreamResponse(APIResponse);
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Mock {
-    request: UpstreamRequest,
-    response: UpstreamResponse,
-    #[serde(default = "default_expected_hits")]
-    expected_hits: usize,
+    pub check_identity: bool,
+    pub sdl_error: bool,
 }
 
 #[derive(Clone, Debug)]
