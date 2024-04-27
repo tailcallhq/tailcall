@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package nested1;
+
+import "news.proto";
+import "cycle.proto";

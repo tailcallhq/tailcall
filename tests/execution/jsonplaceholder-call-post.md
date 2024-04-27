@@ -10,7 +10,7 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
@@ -22,7 +22,7 @@ type Post {
   id: Int!
   userId: Int!
   title: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
 }
 ```
 
@@ -44,7 +44,7 @@ type Post {
       name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

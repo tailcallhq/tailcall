@@ -15,7 +15,11 @@ type Post {
   body: String
   userId: Int!
   user: User
-    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], batchKey: ["id"])
+    @http(
+      path: "/users"
+      query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
+      batchKey: ["id"]
+    )
 }
 
 type User {
@@ -47,7 +51,7 @@ type User {
       - id: 2
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

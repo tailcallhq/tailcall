@@ -247,7 +247,7 @@ struct ExecutionSpec {
     server: Vec<(Source, String)>,
     mock: Option<Vec<Mock>>,
     env: Option<HashMap<String, String>>,
-    assert: Option<Vec<APIRequest>>,
+    test: Option<Vec<APIRequest>>,
     files: BTreeMap<String, String>,
 
     // Annotations for the runner
@@ -329,7 +329,7 @@ impl ExecutionSpec {
         let mut mock: Option<Vec<Mock>> = None;
         let mut env: Option<HashMap<String, String>> = None;
         let mut files: BTreeMap<String, String> = BTreeMap::new();
-        let mut assert: Option<Vec<APIRequest>> = None;
+        let mut test: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut sdl_error = false;
@@ -475,15 +475,15 @@ impl ExecutionSpec {
                                         return Err(anyhow!("Unexpected number of env blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
-                                "assert" => {
-                                    if assert.is_none() {
-                                        assert = match source {
+                                "test" => {
+                                    if test.is_none() {
+                                        test = match source {
                                             Source::Json => Ok(serde_json::from_str(&content)?),
                                             Source::Yml => Ok(serde_yaml::from_str(&content)?),
-                                            _ => Err(anyhow!("Unexpected language in assert block in {:?} (only JSON and YAML are supported)", path)),
+                                            _ => Err(anyhow!("Unexpected language in test block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
-                                        return Err(anyhow!("Unexpected number of assert blocks in {:?} (only one is allowed)", path));
+                                        return Err(anyhow!("Unexpected number of test blocks in {:?} (only one is allowed)", path));
                                     }
                                 }
                                 _ => {
@@ -533,7 +533,7 @@ impl ExecutionSpec {
             server,
             mock,
             env,
-            assert,
+            test,
             files,
 
             runner,
@@ -773,7 +773,7 @@ impl HttpIO for MockHttpClient {
             response.body = Bytes::from_iter(body);
         } else if is_grpc {
             // Special Handling for GRPC
-            let body = string_to_bytes(mock_response.0.body.as_str().unwrap());
+            let body = string_to_bytes(mock_response.0.body.as_str().unwrap_or_default());
             response.body = Bytes::from_iter(body);
         } else {
             let body = serde_json::to_vec(&mock_response.0.body)?;
@@ -814,7 +814,7 @@ impl FileIO for MockFileSystem {
     }
 }
 
-async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
+async fn test_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
     let mock_http_client = Arc::new(MockHttpClient::new(&spec));
     // Parse and validate all server configs + check for identity
 
@@ -889,9 +889,25 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 // \r is added automatically in windows, it's safe to replace it with \n
                 let content = content.replace("\r\n", "\n");
 
+                let path_str = spec.path.display().to_string();
+
+                let identity = tailcall_prettier::format(
+                    identity,
+                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
+                )
+                .await
+                .unwrap();
+
+                let content = tailcall_prettier::format(
+                    content,
+                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
+                )
+                .await
+                .unwrap();
+
                 pretty_assertions::assert_eq!(
                     identity,
-                    content.as_ref(),
+                    content,
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
@@ -956,7 +972,7 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
         insta::assert_snapshot!(snapshot_name, client);
     }
 
-    if let Some(assert_spec) = spec.assert.as_ref() {
+    if let Some(test_spec) = spec.test.as_ref() {
         let app_ctx = spec
             .app_context(
                 server.first().unwrap(),
@@ -965,11 +981,11 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
             )
             .await;
 
-        // assert: Run assert specs
-        for (i, assertion) in assert_spec.iter().enumerate() {
+        // test: Run test specs
+        for (i, test) in test_spec.iter().enumerate() {
             opentelemetry.reset();
 
-            let response = run_assert(app_ctx.clone(), assertion)
+            let response = run_test(app_ctx.clone(), test)
                 .await
                 .context(spec.path.to_str().unwrap().to_string())
                 .unwrap();
@@ -990,16 +1006,16 @@ async fn assert_spec(spec: ExecutionSpec, opentelemetry: &InMemoryTelemetry) {
                 text_body: None,
             };
 
-            let snapshot_name = format!("{}_assert_{}", spec.safe_name, i);
+            let snapshot_name = format!("{}_test_{}", spec.safe_name, i);
 
             insta::assert_json_snapshot!(snapshot_name, response);
 
-            if assertion.assert_traces {
+            if test.assert_traces {
                 let snapshot_name = format!("{}_assert_traces_{}", spec.safe_name, i);
                 insta::assert_json_snapshot!(snapshot_name, opentelemetry.get_traces().unwrap());
             }
 
-            if assertion.assert_metrics {
+            if test.assert_metrics {
                 let snapshot_name = format!("{}_assert_metrics_{}", spec.safe_name, i);
                 insta::assert_json_snapshot!(
                     snapshot_name,
@@ -1050,13 +1066,13 @@ async fn test() -> anyhow::Result<()> {
     };
 
     for spec in spec.into_iter() {
-        assert_spec(spec, &opentelemetry).await;
+        test_spec(spec, &opentelemetry).await;
     }
 
     Ok(())
 }
 
-async fn run_assert(
+async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<hyper::Response<Body>> {

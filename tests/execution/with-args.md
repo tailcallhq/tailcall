@@ -11,7 +11,7 @@ type User {
 
 type Query {
   user(id: Int!): [User]
-    @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
+    @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 
@@ -27,7 +27,7 @@ type Query {
         name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

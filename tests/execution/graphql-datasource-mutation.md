@@ -17,7 +17,7 @@ type Query {
 
 type Mutation {
   createUser(user: UserInput!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "createUser", args: [{key: "user", value: "{{args.user}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "createUser", args: [{key: "user", value: "{{.args.user}}"}])
 }
 
 type UserInput {
@@ -40,7 +40,7 @@ type UserInput {
           name: Test Name
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

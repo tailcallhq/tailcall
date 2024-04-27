@@ -27,7 +27,7 @@
             }
           },
           "http": {
-            "path": "/users/{{args.id}}"
+            "path": "/users/{{.args.id}}"
           },
           "cache": null
         }
@@ -76,7 +76,7 @@
       name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

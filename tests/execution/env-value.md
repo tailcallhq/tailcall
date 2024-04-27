@@ -37,21 +37,21 @@
         "post1": {
           "type": "Post",
           "http": {
-            "path": "/posts/{{env.ID}}"
+            "path": "/posts/{{.env.ID}}"
           },
           "cache": null
         },
         "post2": {
           "type": "Post",
           "http": {
-            "path": "/posts/{{env.POST_ID}}"
+            "path": "/posts/{{.env.POST_ID}}"
           },
           "cache": null
         },
         "post3": {
           "type": "Post",
           "http": {
-            "path": "/posts/{{env.NESTED_POST_ID}}"
+            "path": "/posts/{{.env.NESTED_POST_ID}}"
           },
           "cache": null
         }
@@ -104,7 +104,7 @@ POST_ID: "2"
 NESTED_POST_ID: "3"
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

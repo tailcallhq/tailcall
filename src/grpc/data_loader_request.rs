@@ -53,11 +53,11 @@ impl DataLoaderRequest {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
-    use std::path::PathBuf;
 
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::HeaderMap;
     use pretty_assertions::assert_eq;
+    use tailcall_fixtures::protobuf;
     use url::Url;
 
     use super::DataLoaderRequest;
@@ -67,17 +67,11 @@ mod tests {
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
 
-    async fn get_protobuf_op() -> ProtobufOperation {
-        let root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut test_file = root_dir.join(file!());
-
-        test_file.pop();
-        test_file.push("tests");
-        test_file.push("proto");
-        test_file.push("greetings.proto");
+    pub async fn get_protobuf_op() -> ProtobufOperation {
+        let test_file = protobuf::GREETINGS;
         let mut config = Config::default().links(vec![Link {
             id: None,
-            src: test_file.to_str().unwrap().to_string(),
+            src: test_file.to_string(),
             type_of: LinkType::Protobuf,
         }]);
         let method = GrpcMethod {
@@ -95,13 +89,9 @@ mod tests {
         let reader = ConfigReader::init(runtime);
         let config_module = reader.resolve(config, None).await.unwrap();
 
-        let protobuf_set = ProtobufSet::from_proto_file(
-            config_module
-                .extensions
-                .get_file_descriptor_set(&method)
-                .unwrap(),
-        )
-        .unwrap();
+        let protobuf_set =
+            ProtobufSet::from_proto_file(config_module.extensions.get_file_descriptor_set())
+                .unwrap();
 
         let service = protobuf_set.find_service(&method).unwrap();
 

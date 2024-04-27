@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package cycle;
+
+import "nested0.proto";
+import "duplicate.proto";

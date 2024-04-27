@@ -22,7 +22,7 @@ type Query {
 }
 ```
 
-```yml @assert
+```yml @test
 # the same request to validate caching
 - method: POST
   url: http://localhost:8080/graphql

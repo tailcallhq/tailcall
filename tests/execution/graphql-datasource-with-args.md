@@ -17,9 +17,9 @@ type Post {
 
 type Query {
   user(id: Int): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
   post(id: Int): Post
-    @graphQL(baseURL: "http://upstream/graphql", name: "post", args: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "post", args: [{key: "id", value: "{{.args.id}}"}])
 }
 ```
 
@@ -48,7 +48,7 @@ type Query {
             name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

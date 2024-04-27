@@ -11,7 +11,7 @@ type Post {
   userId: Int
   user: User
     @graphQL(
-      args: [{key: "id", value: "{{value.userId}}"}]
+      args: [{key: "id", value: "{{.value.userId}}"}]
       baseURL: "http://upstream/graphql"
       batch: true
       name: "user"
@@ -76,7 +76,7 @@ type Query {
             name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

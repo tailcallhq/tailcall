@@ -15,11 +15,11 @@ enum Foo {
 }
 
 type Query {
-  foo(val: String!): Foo @expr(body: "{{args.val}}")
+  foo(val: String!): Foo @expr(body: "{{.args.val}}")
 }
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

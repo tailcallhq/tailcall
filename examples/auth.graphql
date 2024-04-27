@@ -9,11 +9,11 @@ schema
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type Mutation {
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User @protected {
@@ -30,5 +30,5 @@ type Post {
   userId: Int!
   title: String!
   body: String! @protected
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }

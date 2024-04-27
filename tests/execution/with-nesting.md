@@ -16,7 +16,7 @@ type User {
   email: String!
   phone: String
   website: String
-  posts: [Post] @http(path: "/users/{{value.id}}/posts")
+  posts: [Post] @http(path: "/users/{{.value.id}}/posts")
 }
 
 type Post {
@@ -51,7 +51,7 @@ type Post {
       - title: title3
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

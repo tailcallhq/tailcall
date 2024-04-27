@@ -15,7 +15,7 @@ type Foo {
 
 type Bar {
   id: String!
-  foo: Foo @http(path: "/foo?id={{value.id}}") @cache(maxAge: 300)
+  foo: Foo @http(path: "/foo?id={{.value.id}}") @cache(maxAge: 300)
 }
 ```
 
@@ -929,7 +929,7 @@ type Bar {
       id: 99
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

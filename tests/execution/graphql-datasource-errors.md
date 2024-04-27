@@ -12,7 +12,7 @@ type User {
 
 type Query {
   user(id: Int): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
 }
 ```
 
@@ -50,7 +50,7 @@ type Query {
           message: Failed to resolve name
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

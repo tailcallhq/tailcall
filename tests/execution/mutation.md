@@ -13,7 +13,7 @@ input PostInput {
 }
 
 type Mutation {
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
 }
 
 type Post {
@@ -46,7 +46,7 @@ type User {
       userId: 1
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

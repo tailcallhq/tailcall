@@ -21,7 +21,7 @@
             }
           },
           "http": {
-            "path": "/users/{{args.id}}",
+            "path": "/users/{{.args.id}}",
             "baseURL": "http://jsonplaceholder.typicode.com"
           },
           "cache": null
@@ -60,7 +60,7 @@
       name: foo
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

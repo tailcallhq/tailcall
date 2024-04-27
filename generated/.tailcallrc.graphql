@@ -421,20 +421,20 @@ input Apollo {
   """
   Setting `platform` for Apollo.
   """
-  platform: String!
+  platform: String
   """
   Setting `userVersion` for Apollo.
   """
-  userVersion: String!
+  userVersion: String
   """
   Setting `version` for Apollo.
   """
-  version: String!
+  version: String
 }
 input Batch {
   delay: Int!
   headers: [String!]
-  maxSize: Int!
+  maxSize: Int
 }
 """
 The @cache operator enables caching for the query, field or type it is applied to.

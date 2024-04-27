@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package duplicate;
+
+import "greetings.proto";
+import "news.proto";

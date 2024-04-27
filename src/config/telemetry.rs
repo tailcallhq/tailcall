@@ -5,6 +5,7 @@ use super::KeyValue;
 use crate::config::{Apollo, ConfigReaderContext};
 use crate::helpers::headers::to_mustache_headers;
 use crate::is_default;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::mustache::Mustache;
 use crate::valid::Validator;
@@ -18,7 +19,7 @@ mod defaults {
 }
 
 /// Output the opentelemetry data to the stdout. Mostly used for debug purposes
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub struct StdoutExporter {
     /// Output to stdout in pretty human-readable format
@@ -26,28 +27,13 @@ pub struct StdoutExporter {
     pub pretty: bool,
 }
 
-impl MergeRight for StdoutExporter {
-    fn merge_right(self, other: Self) -> Self {
-        Self { pretty: other.pretty || self.pretty }
-    }
-}
-
 /// Output the opentelemetry data to otlp collector
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub struct OtlpExporter {
     pub url: String,
     #[serde(default, skip_serializing_if = "is_default")]
     pub headers: Vec<KeyValue>,
-}
-
-impl MergeRight for OtlpExporter {
-    fn merge_right(self, other: Self) -> Self {
-        let mut headers = self.headers;
-        headers.extend(other.headers.iter().cloned());
-
-        Self { url: other.url, headers }
-    }
 }
 
 /// Output format for prometheus data
@@ -72,36 +58,13 @@ pub struct PrometheusExporter {
     pub format: PrometheusFormat,
 }
 
-impl PrometheusExporter {
-    fn merge_right(&self, other: Self) -> Self {
-        other
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub enum TelemetryExporter {
     Stdout(StdoutExporter),
     Otlp(OtlpExporter),
     Prometheus(PrometheusExporter),
     Apollo(Apollo),
-}
-
-impl MergeRight for TelemetryExporter {
-    fn merge_right(self, other: Self) -> Self {
-        match (self, other) {
-            (TelemetryExporter::Stdout(left), TelemetryExporter::Stdout(right)) => {
-                TelemetryExporter::Stdout(left.merge_right(right))
-            }
-            (TelemetryExporter::Otlp(left), TelemetryExporter::Otlp(right)) => {
-                TelemetryExporter::Otlp(left.merge_right(right))
-            }
-            (TelemetryExporter::Prometheus(left), TelemetryExporter::Prometheus(right)) => {
-                TelemetryExporter::Prometheus(left.merge_right(right))
-            }
-            (_, other) => other,
-        }
-    }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
@@ -225,10 +188,7 @@ mod tests {
             Telemetry {
                 export: Some(TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url-2".to_owned(),
-                    headers: vec![
-                        KeyValue { key: "header_a".to_owned(), value: "a".to_owned() },
-                        KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }
-                    ]
+                    headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }]
                 })),
                 request_headers: vec!["Api-Key-A".to_string(), "Api-Key-B".to_string(),]
             }
