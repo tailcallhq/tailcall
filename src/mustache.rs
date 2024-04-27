@@ -28,28 +28,6 @@ impl From<Vec<Segment>> for Mustache {
     }
 }
 
-/*impl<T: AsRef<str>> TryFrom<T> for Mustache {
-    type Error = anyhow::Error;
-
-    fn try_from(filter_str: T) -> Result<Self, Self::Error> {
-        let mustache = Mustache::parse(filter_str.as_ref())?;
-
-        let mut defs = jaq_interpret::ParseCtx::new(vec![]);
-        defs.insert_natives(jaq_core::core());
-        defs.insert_defs(jaq_std::std());
-
-        let (filter, _) = jaq_parse::parse(filter_str.as_ref(), jaq_parse::main());
-        let filter = filter.context("failed to parse filter")?;
-        let filter = defs.compile(filter);
-        Ok(
-            Self {
-                segments: mustache.segments,
-                jacques: filter,
-            }
-        )
-    }
-}*/
-
 impl Mustache {
     pub fn is_const(&self) -> bool {
         for s in &self.segments {
@@ -90,11 +68,10 @@ impl Mustache {
     }
 
     fn evaluate(&self, value: &impl PathString) -> String {
-        let val = value
+        value
             .evaluate(&self.jacques)
             .unwrap_or_default()
-            .to_string();
-        val
+            .to_string()
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
@@ -471,7 +448,7 @@ mod tests {
                     }
                 }
 
-                fn evaluate(&self, _filter: &Filter) -> Option<Cow<'_, str>> {
+                fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
                     None // TODO
                 }
             }
@@ -499,7 +476,7 @@ mod tests {
                     None
                 }
 
-                fn evaluate(&self, _filter: &Filter) -> Option<Cow<'_, str>> {
+                fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
                     None
                 }
             }
@@ -545,7 +522,7 @@ mod tests {
                     }
                 }
 
-                fn evaluate(&self, _filter: &Filter) -> Option<Cow<'_, str>> {
+                fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
                     todo!()
                 }
             }

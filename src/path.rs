@@ -16,7 +16,7 @@ use crate::lambda::{EvaluationContext, ResolverContextLike};
 /// This is typically used in evaluating mustache templates.
 pub trait PathString {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
-    fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>>;
+    fn evaluate(&self, filter: &Filter) -> Option<async_graphql::Value>;
 }
 
 ///
@@ -34,7 +34,7 @@ impl PathString for serde_json::Value {
         })
     }
 
-    fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>> {
+    fn evaluate(&self, filter: &Filter) -> Option<async_graphql::Value> {
         let iter = jaq_interpret::RcIter::new(vec![].into_iter());
         let mut result = filter.run((
             jaq_interpret::Ctx::new(vec![], &iter),
@@ -42,7 +42,8 @@ impl PathString for serde_json::Value {
         ));
         let result = result.next()?;
         let result = result.ok()?;
-        Some(Cow::Owned(result.to_string()))
+        let result = async_graphql::Value::from(result.to_string());
+        Some(result)
     }
 }
 
@@ -90,7 +91,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
             })
     }
 
-    fn evaluate(&self, filter: &Filter) -> Option<Cow<'_, str>> {
+    fn evaluate(&self, filter: &Filter) -> Option<async_graphql::Value> {
         let iter = jaq_interpret::RcIter::new(vec![].into_iter());
         let mut result = filter.run((
             jaq_interpret::Ctx::new(vec![], &iter),
@@ -98,7 +99,8 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
         ));
         let result = result.next()?;
         let result = result.ok()?;
-        Some(Cow::Owned(result.to_string()))
+        let result = async_graphql::Value::from(result.to_string());
+        Some(result)
     }
 }
 

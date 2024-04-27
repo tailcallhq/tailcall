@@ -25,7 +25,7 @@ impl PathString for Context {
         self.value.path_string(parts)
     }
 
-    fn evaluate(&self, _filter: &jaq_interpret::Filter) -> Option<Cow<'_, str>> {
+    fn evaluate(&self, _filter: &jaq_interpret::Filter) -> Option<async_graphql::Value> {
         None
     }
 }

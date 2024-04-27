@@ -26,7 +26,7 @@ impl<'a> PathString for ConfigReaderContext<'a> {
             })
     }
 
-    fn evaluate(&self, _filter: &Filter) -> Option<Cow<'_, str>> {
+    fn evaluate(&self, _filter: &Filter) -> Option<async_graphql::Value> {
         None
     }
 }
