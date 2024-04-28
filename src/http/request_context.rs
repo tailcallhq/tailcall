@@ -180,7 +180,7 @@ impl RequestContext {
     }
 }
 
-impl<'a> From<&'a AppContext> for RequestContext {
+impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
         let cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
             Some(Arc::new(Mutex::new(HeaderMap::new())))
