@@ -235,7 +235,8 @@ fn request_context() -> RequestContext {
 
     //TODO: default is used only in tests. Drop default and move it to test.
     let upstream = Upstream::try_from(&config_module).unwrap();
-    let server = Server::try_from(config_module).unwrap();
+    let mut server = Server::try_from(config_module).unwrap();
+    server.vars = TEST_VARS.clone();
     let http = Arc::new(Http::init(&upstream));
     let http2 = Arc::new(Http::init(&upstream.clone().http2_only(true)));
     let runtime = TargetRuntime {
@@ -252,10 +253,7 @@ fn request_context() -> RequestContext {
 }
 
 fn bench_main(c: &mut Criterion) {
-    let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
-    let mut server = req_ctx.server.as_ref().clone();
-    server.vars = TEST_VARS.clone();
-    req_ctx.server = Arc::new(server);
+    let req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
     let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
 
     assert_test(&eval_ctx);
