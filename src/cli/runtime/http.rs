@@ -5,7 +5,6 @@ use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaMana
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
-use opentelemetry::trace::SpanKind;
 use opentelemetry::KeyValue;
 use opentelemetry_http::HeaderInjector;
 use opentelemetry_semantic_conventions::trace::{
@@ -155,8 +154,6 @@ impl HttpIO for NativeHttp {
         tracing::debug!("request: {:?}", request);
         let response = self.client.execute(request).await;
         tracing::debug!("response: {:?}", response);
-
-
 
         if self.enable_telemetry {
             req_counter.update(&response);

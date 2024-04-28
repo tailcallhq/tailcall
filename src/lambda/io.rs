@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
-use futures_util::TryFutureExt;
 use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};

@@ -15,7 +15,6 @@ use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FO
 use serde::de::DeserializeOwned;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-use hyper::body::Buf;
 
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
@@ -122,8 +121,8 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let body = hyper::body::aggregate(req).await?;
-    let graphql_request: Result<T>  = Ok(serde_json::from_reader(body.reader())?);
+    let bytes = hyper::body::to_bytes(req.into_body()).await?;
+    let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
@@ -136,7 +135,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
         Err(err) => {
             tracing::error!(
                 "Failed to parse request: {}",
-                err
+                String::from_utf8(bytes.to_vec()).unwrap()
             );
 
             let mut response = async_graphql::Response::default();
@@ -304,7 +303,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
-    let is_telemetry_enabled = app_ctx.blueprint.telemetry.export.is_some().clone();
+    let is_telemetry_enabled = app_ctx.blueprint.telemetry.export.is_some();
     let response = if app_ctx.blueprint.server.cors.is_some() {
         handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
     } else {
