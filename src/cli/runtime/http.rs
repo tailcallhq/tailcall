@@ -94,7 +94,8 @@ impl NativeHttp {
             .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
             .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
             .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
-            .user_agent(upstream.user_agent.clone());
+            .user_agent(upstream.user_agent.clone())
+            .tcp_nodelay(true);
 
         // Add Http2 Prior Knowledge
         if upstream.http2_only {
@@ -129,18 +130,6 @@ impl NativeHttp {
 #[async_trait::async_trait]
 impl HttpIO for NativeHttp {
     #[allow(clippy::blocks_in_conditions)]
-    // because of the issue with tracing and clippy - https://github.com/rust-lang/rust-clippy/issues/12281
-    #[tracing::instrument(
-        skip_all,
-        err,
-        fields(
-            otel.name = "upstream_request",
-            otel.kind = ?SpanKind::Client,
-            url.full = %request.url(),
-            http.request.method = %request.method(),
-            network.protocol.version = ?request.version()
-        )
-    )]
     async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
@@ -167,9 +156,10 @@ impl HttpIO for NativeHttp {
         let response = self.client.execute(request).await;
         tracing::debug!("response: {:?}", response);
 
-        req_counter.update(&response);
+
 
         if self.enable_telemetry {
+            req_counter.update(&response);
             let status_code = get_response_status(&response);
             tracing::Span::current().set_attribute(status_code.key, status_code.value);
         }
