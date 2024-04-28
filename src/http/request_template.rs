@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::sync::{Arc, Mutex};
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
@@ -29,7 +28,6 @@ pub struct RequestTemplate {
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
-    pub rendered_request: Arc<Mutex<Option<anyhow::Result<reqwest::Request>>>>,
 }
 
 impl RequestTemplate {
@@ -99,19 +97,13 @@ impl RequestTemplate {
     pub fn to_request<C: PathString + HasHeaders>(
         &self,
         ctx: &C,
-        mut hasher: Option<impl Hasher>,
     ) -> anyhow::Result<reqwest::Request> {
         // Create url
         let url = self.create_url(ctx)?;
         let method = self.method.clone();
-        if let Some(hasher) = hasher.as_mut() {
-            url.hash(hasher);
-            method.hash(hasher);
-        }
         let mut req = reqwest::Request::new(method, url);
-
-        req = self.set_headers(req, ctx, hasher.as_mut());
-        req = self.set_body(req, ctx, hasher.as_mut())?;
+        req = self.set_headers(req, ctx);
+        req = self.set_body(req, ctx)?;
 
         Ok(req)
     }
@@ -121,16 +113,11 @@ impl RequestTemplate {
         &self,
         mut req: reqwest::Request,
         ctx: &C,
-        mut hasher: Option<impl Hasher>,
     ) -> anyhow::Result<reqwest::Request> {
         if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
-                    let body = body_path.render(ctx);
-                    if let Some(hasher) = hasher.as_mut() {
-                        body.hash(hasher);
-                    }
-                    req.body_mut().replace(body.into());
+                    req.body_mut().replace(body_path.render(ctx).into());
                 }
                 Encoding::ApplicationXWwwFormUrlencoded => {
                     // TODO: this is a performance bottleneck
@@ -141,9 +128,6 @@ impl RequestTemplate {
                         Err(_) => body,
                     };
 
-                    if let Some(hasher) = hasher.as_mut() {
-                        form_data.hash(hasher);
-                    }
                     req.body_mut().replace(form_data.into());
                 }
             }
@@ -156,7 +140,6 @@ impl RequestTemplate {
         &self,
         mut req: reqwest::Request,
         ctx: &C,
-        mut hasher: Option<impl Hasher>,
     ) -> reqwest::Request {
         let headers = self.create_headers(ctx);
         if !headers.is_empty() {
@@ -189,14 +172,6 @@ impl RequestTemplate {
         );
 
         headers.extend(ctx.headers().to_owned());
-
-        if let Some(hasher) = hasher.as_mut() {
-            for (key, value) in headers.iter() {
-                key.hash(hasher);
-                value.hash(hasher);
-            }
-        }
-
         req
     }
 
@@ -209,7 +184,6 @@ impl RequestTemplate {
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
             encoding: Default::default(),
-            rendered_request: Default::default(),
         })
     }
 
@@ -255,7 +229,6 @@ impl TryFrom<Endpoint> for RequestTemplate {
             body_path: body,
             endpoint,
             encoding,
-            rendered_request: Default::default(),
         })
     }
 }
@@ -265,8 +238,27 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
         let mut hasher = DefaultHasher::new();
         let state = &mut hasher;
 
-        let request = self.to_request(ctx, Some(state));
-        self.rendered_request.lock().unwrap().replace(request);
+        self.method.hash(state);
+
+        let mut headers = vec![];
+        for (name, mustache) in self.headers.iter() {
+            name.hash(state);
+            mustache.render(ctx).hash(state);
+            headers.push((name.to_string(), mustache.render(ctx)));
+        }
+
+        for (name, value) in ctx.headers().iter() {
+            name.hash(state);
+            value.hash(state);
+            headers.push((name.to_string(), value.to_str().unwrap().to_string()));
+        }
+
+        if let Some(body) = self.body_path.as_ref() {
+            body.render(ctx).hash(state)
+        }
+
+        let url = self.create_url(ctx).unwrap();
+        url.hash(state);
 
         hasher.finish()
     }
@@ -275,7 +267,6 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
-    use std::collections::hash_map::DefaultHasher;
 
     use derive_setters::Setters;
     use hyper::header::HeaderName;
@@ -315,7 +306,7 @@ mod tests {
     impl RequestTemplate {
         fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
             let body = self
-                .to_request(ctx, None::<DefaultHasher>)?
+                .to_request(ctx)?
                 .body()
                 .and_then(|a| a.as_bytes())
                 .map(|a| a.to_vec())
@@ -329,7 +320,7 @@ mod tests {
     fn test_url() {
         let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap();
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.url().to_string(), "http://localhost:3000/");
     }
 
@@ -337,7 +328,7 @@ mod tests {
     fn test_url_path() {
         let tmpl = RequestTemplate::new("http://localhost:3000/foo/bar").unwrap();
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
     }
 
@@ -350,7 +341,7 @@ mod tests {
           }
         }));
 
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.url().to_string(), "http://localhost:3000/foo/bar");
     }
 
@@ -365,7 +356,7 @@ mod tests {
             "booz": 1
           }
         }));
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/foo/bar/boozes/1"
@@ -383,7 +374,7 @@ mod tests {
             .unwrap()
             .query(query);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/?foo=0&bar=1&baz=2"
@@ -408,7 +399,7 @@ mod tests {
             "id": 2
           }
         }));
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/?foo=0&bar=1&baz=2"
@@ -435,7 +426,7 @@ mod tests {
             .unwrap()
             .headers(headers);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.headers().get("foo").unwrap(), "foo");
         assert_eq!(req.headers().get("bar").unwrap(), "bar");
         assert_eq!(req.headers().get("baz").unwrap(), "baz");
@@ -468,7 +459,7 @@ mod tests {
             "id": 2
           }
         }));
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.headers().get("foo").unwrap(), "0");
         assert_eq!(req.headers().get("bar").unwrap(), "1");
         assert_eq!(req.headers().get("baz").unwrap(), "2");
@@ -481,7 +472,7 @@ mod tests {
             .method(reqwest::Method::POST)
             .encoding(crate::config::Encoding::ApplicationJson);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
             req.headers().get("Content-Type").unwrap(),
             "application/json"
@@ -495,7 +486,7 @@ mod tests {
             .method(reqwest::Method::POST)
             .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
             req.headers().get("Content-Type").unwrap(),
             "application/x-www-form-urlencoded"
@@ -508,7 +499,7 @@ mod tests {
             .unwrap()
             .method(reqwest::Method::POST);
         let ctx = Context::default();
-        let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+        let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(req.method(), reqwest::Method::POST);
     }
 
@@ -552,8 +543,6 @@ mod tests {
     }
 
     mod endpoint {
-        use std::collections::hash_map::DefaultHasher;
-
         use hyper::HeaderMap;
         use serde_json::json;
 
@@ -570,7 +559,7 @@ mod tests {
                 .body(Some("foo".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
-            let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+            let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "bar");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
@@ -595,7 +584,7 @@ mod tests {
                 "header": "abc"
               }
             }));
-            let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+            let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(req.method(), reqwest::Method::POST);
             assert_eq!(req.headers().get("foo").unwrap(), "abc");
             let body = req.body().unwrap().as_bytes().unwrap().to_owned();
@@ -609,7 +598,7 @@ mod tests {
                 crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
-            let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+            let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(req.url().to_string(), "http://localhost:3000/");
         }
 
@@ -624,7 +613,7 @@ mod tests {
             ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
-            let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+            let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
         }
 
@@ -640,7 +629,7 @@ mod tests {
                 "d": "bar"
               }
             }));
-            let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+            let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(
                 req.url().to_string(),
                 "http://localhost:3000/foo?b=foo&d=bar"
@@ -664,7 +653,7 @@ mod tests {
                 "f": "baz"
               }
             }));
-            let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+            let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(
                 req.url().to_string(),
                 "http://localhost:3000/foo?b=foo&d=bar&f=baz"
@@ -678,7 +667,7 @@ mod tests {
             let mut headers = HeaderMap::new();
             headers.insert("baz", "qux".parse().unwrap());
             let ctx = Context::default().headers(headers);
-            let req = tmpl.to_request(&ctx, None::<DefaultHasher>).unwrap();
+            let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(req.headers().get("baz").unwrap(), "qux");
         }
     }
