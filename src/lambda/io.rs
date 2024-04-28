@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql_value::ConstValue;
+use futures_util::TryFutureExt;
 use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
@@ -187,6 +188,9 @@ fn set_experimental_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
+    if ctx.request_ctx.server.get_experimental_headers().is_empty() {
+        return;
+    }
     ctx.request_ctx.add_x_headers(&res.headers);
 }
 
@@ -194,7 +198,7 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
-    if res.status.is_success() {
+    if ctx.request_ctx.server.get_enable_set_cookies() && res.status.is_success() {
         ctx.request_ctx.set_cookie_headers(&res.headers);
     }
 }

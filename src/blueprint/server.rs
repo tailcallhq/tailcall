@@ -70,6 +70,10 @@ impl Server {
         self.enable_cache_control_header
     }
 
+    pub fn get_enable_set_cookies(&self) -> bool {
+        self.enable_set_cookie_header
+    }
+
     pub fn get_enable_introspection(&self) -> bool {
         self.enable_introspection
     }

@@ -179,6 +179,15 @@ impl RequestTemplate {
             );
         }
 
+        headers.insert(
+            reqwest::header::ACCEPT,
+            HeaderValue::from_static("application/json"),
+        );
+        headers.insert(
+            reqwest::header::CONNECTION,
+            HeaderValue::from_static("keep-alive"),
+        );
+
         headers.extend(ctx.headers().to_owned());
 
         if let Some(hasher) = hasher.as_mut() {

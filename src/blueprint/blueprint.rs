@@ -27,6 +27,17 @@ pub struct Blueprint {
     pub telemetry: Telemetry,
 }
 
+impl Blueprint {
+    pub fn get_server(&self) -> &Server {
+        &self.server
+    }
+
+    pub fn get_upstream(&self) -> &Upstream {
+        &self.upstream
+    }
+
+}
+
 #[derive(Clone, Debug)]
 pub enum Type {
     NamedType { name: String, non_null: bool },

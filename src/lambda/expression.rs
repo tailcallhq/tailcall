@@ -131,7 +131,6 @@ impl Expression {
 }
 
 impl Eval for Expression {
-    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,

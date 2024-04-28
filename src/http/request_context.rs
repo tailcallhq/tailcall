@@ -19,8 +19,8 @@ use crate::runtime::TargetRuntime;
 
 #[derive(Setters)]
 pub struct RequestContext {
-    pub server: Server,
-    pub upstream: Upstream,
+    pub server: Arc<Server>,
+    pub upstream: Arc<Upstream>,
     pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     // A subset of all the headers received in the GraphQL Request that will be sent to the
@@ -179,16 +179,18 @@ impl RequestContext {
     }
 }
 
-impl From<&AppContext> for RequestContext {
+impl<'a> From<&'a AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
         let cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
             Some(Arc::new(Mutex::new(HeaderMap::new())))
         } else {
             None
         };
+        let server = app_ctx.server.clone();
+        let upstream = app_ctx.upstream.clone();
         Self {
-            server: app_ctx.blueprint.server.clone(),
-            upstream: app_ctx.blueprint.upstream.clone(),
+            server,
+            upstream,
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
             allowed_headers: HeaderMap::new(),
