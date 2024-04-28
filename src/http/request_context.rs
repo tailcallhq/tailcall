@@ -209,6 +209,8 @@ impl<'a> From<&'a AppContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use cache_control::Cachability;
 
     use crate::blueprint::{Server, Upstream};
@@ -219,8 +221,8 @@ mod test {
         fn default() -> Self {
             let config_module = crate::config::ConfigModule::default();
 
-            let upstream = Upstream::try_from(&config_module).unwrap();
-            let server = Server::try_from(config_module).unwrap();
+            let upstream = Arc::new(Upstream::try_from(&config_module).unwrap());
+            let server = Arc::new(Server::try_from(config_module).unwrap());
             RequestContext::new(crate::runtime::test::init(None))
                 .upstream(upstream)
                 .server(server)
@@ -269,9 +271,11 @@ mod test {
         // create ctx with default batch
         let config_module = config::ConfigModule::default();
         let mut upstream = Upstream::try_from(&config_module).unwrap();
-        let server = Server::try_from(config_module).unwrap();
+        let server = Arc::new(Server::try_from(config_module).unwrap());
         upstream.batch = Some(Batch::default());
-        let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
+        let req_ctx: RequestContext = RequestContext::default()
+            .upstream(Arc::new(upstream))
+            .server(server);
 
         assert!(req_ctx.is_batching_enabled());
     }

@@ -35,7 +35,6 @@ impl Blueprint {
     pub fn get_upstream(&self) -> &Upstream {
         &self.upstream
     }
-
 }
 
 #[derive(Clone, Debug)]
