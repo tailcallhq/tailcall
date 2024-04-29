@@ -63,26 +63,67 @@ impl FileDescriptorProtoResponse {
 /// Used for serializing all kinds of GRPC Reflection responses
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct CustomResponse {
+struct ReflectionResponse {
     list_services_response: Option<ListServicesResponse>,
     file_descriptor_response: Option<FileDescriptorProtoResponse>,
 }
 
-impl CustomResponse {
-    async fn execute(
-        url: &str,
-        grpc_method: &GrpcMethod,
-        body: serde_json::Value,
-        target_runtime: &TargetRuntime,
-    ) -> Result<CustomResponse> {
+pub struct GrpcReflection {
+    server_reflection_method: GrpcMethod,
+    url: String,
+    target_runtime: TargetRuntime,
+}
+
+impl GrpcReflection {
+    pub fn new<T: AsRef<str>>(url: T, target_runtime: TargetRuntime) -> Self {
+        let server_reflection_method = GrpcMethod {
+            package: "grpc.reflection.v1alpha".to_string(),
+            service: "ServerReflection".to_string(),
+            name: "ServerReflectionInfo".to_string(),
+        };
+        Self {
+            server_reflection_method,
+            url: url.as_ref().to_string(),
+            target_runtime,
+        }
+    }
+    /// Makes `ListService` request to the grpc reflection server
+    pub async fn list_all_files(&self) -> Result<Vec<String>> {
+        // Extracting names from services
+        let methods: Vec<String> = self
+            .execute(json!({"list_services": ""}))
+            .await?
+            .list_services_response
+            .context("Couldn't find definitions for service ServerReflection")?
+            .service
+            .iter()
+            .map(|s| s.name.clone())
+            .collect();
+
+        Ok(methods)
+    }
+
+    /// Makes `Get Service` request to the grpc reflection server
+    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto> {
+        let resp = self
+            .execute(json!({"file_containing_symbol": service}))
+            .await?;
+
+        request_proto(resp).await
+    }
+
+    async fn execute(&self, body: serde_json::Value) -> Result<ReflectionResponse> {
+        let server_reflection_method = &self.server_reflection_method;
         let protobuf_set = get_protobuf_set()?;
-        let reflection_service = protobuf_set.find_service(grpc_method)?;
-        let operation = reflection_service.find_operation(grpc_method)?;
-        let mut url: url::Url = url.parse()?;
+        let reflection_service = protobuf_set.find_service(server_reflection_method)?;
+        let operation = reflection_service.find_operation(server_reflection_method)?;
+        let mut url: url::Url = self.url.parse()?;
         url.set_path(
             format!(
                 "{}.{}/{}",
-                grpc_method.package, grpc_method.service, grpc_method.name
+                server_reflection_method.package,
+                server_reflection_method.service,
+                server_reflection_method.name
             )
             .as_str(),
         );
@@ -98,85 +139,23 @@ impl CustomResponse {
         };
 
         let ctx = ConfigReaderContext {
-            runtime: target_runtime,
+            runtime: &self.target_runtime,
             vars: &Default::default(),
             headers: Default::default(),
         };
 
         let req = req_template.render(&ctx)?.to_request()?;
 
-        let resp = target_runtime.http.execute(req).await?;
+        let resp = self.target_runtime.http.execute(req).await?;
         let body = resp.body.as_bytes();
 
-        let response: CustomResponse = operation.convert_output(body)?;
+        let response: ReflectionResponse = operation.convert_output(body)?;
         Ok(response)
     }
 }
 
-pub struct GrpcReflection {
-    list_all_method: GrpcMethod,
-    get_service_method: GrpcMethod,
-    url: String,
-    target_runtime: TargetRuntime,
-}
-
-impl GrpcReflection {
-    pub fn new<T: AsRef<str>>(url: T, target_runtime: TargetRuntime) -> Self {
-        let list_all_method = GrpcMethod {
-            package: "grpc.reflection.v1alpha".to_string(),
-            service: "ServerReflection".to_string(),
-            name: "ServerReflectionInfo".to_string(),
-        };
-
-        let get_service_method = GrpcMethod {
-            package: "grpc.reflection.v1alpha".to_string(),
-            service: "ServerReflection".to_string(),
-            name: "ServerReflectionInfo".to_string(),
-        };
-
-        Self {
-            list_all_method,
-            get_service_method,
-            url: url.as_ref().to_string(),
-            target_runtime,
-        }
-    }
-    /// Makes `ListService` request to the grpc reflection server
-    pub async fn list_all_files(&self) -> Result<Vec<String>> {
-        // Extracting names from services
-        let methods: Vec<String> = CustomResponse::execute(
-            self.url.as_str(),
-            &self.list_all_method,
-            json!({"list_services": ""}),
-            &self.target_runtime,
-        )
-        .await?
-        .list_services_response
-        .context("Couldn't find definitions for service ServerReflection")?
-        .service
-        .iter()
-        .map(|s| s.name.clone())
-        .collect();
-
-        Ok(methods)
-    }
-
-    /// Makes `Get Service` request to the grpc reflection server
-    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto> {
-        let resp = CustomResponse::execute(
-            self.url.as_str(),
-            &self.get_service_method,
-            json!({"file_containing_symbol": service}),
-            &self.target_runtime,
-        )
-        .await?;
-
-        request_proto(resp).await
-    }
-}
-
 /// For extracting `FileDescriptorProto` from `CustomResponse`
-async fn request_proto(response: CustomResponse) -> Result<FileDescriptorProto> {
+async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
     let file_descriptor_resp = response
         .file_descriptor_response
         .context("Expected fileDescriptorResponse but found none")?;
