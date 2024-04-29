@@ -59,7 +59,7 @@ impl FieldPlan {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
     ) -> Result<Value> {
-        self.resolver.eval(ctx, &Concurrent::Sequential).await
+        Ok(self.resolver.eval(ctx, &Concurrent::Sequential).await?)
     }
 }
 

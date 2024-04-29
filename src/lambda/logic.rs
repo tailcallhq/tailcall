@@ -1,10 +1,11 @@
 use core::future::Future;
 use std::pin::Pin;
 
-use anyhow::Result;
 use async_graphql_value::ConstValue;
 
-use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
+use super::{
+    Concurrent, Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike,
+};
 
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum Logic {
@@ -26,7 +27,7 @@ impl Eval for Logic {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Logic::Or(list) => {

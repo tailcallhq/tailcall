@@ -1,7 +1,6 @@
 use core::future::Future;
 use std::pin::Pin;
 
-use anyhow::Result;
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
 
@@ -19,7 +18,7 @@ impl Eval for List {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 List::Concat(list) => {
@@ -52,7 +51,7 @@ where
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<C>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<C, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             let future_iter = self
                 .as_ref()
@@ -62,7 +61,7 @@ where
                 Concurrent::Parallel => join_all(future_iter)
                     .await
                     .into_iter()
-                    .collect::<Result<C>>(),
+                    .collect::<Result<C, _>>(),
                 Concurrent::Sequential => {
                     let mut results = Vec::with_capacity(self.as_ref().len());
                     for future in future_iter {

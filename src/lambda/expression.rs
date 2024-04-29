@@ -3,12 +3,12 @@ use std::fmt::{Debug, Display};
 use std::pin::Pin;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
 use super::{Concurrent, Eval, EvaluationContext, ResolverContextLike, IO};
+use crate::auth;
 use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
@@ -67,10 +67,19 @@ pub enum EvaluationError {
     #[error("APIValidationError: {0:?}")]
     APIValidationError(Vec<String>),
 
-    #[error("ExprEvalError: {0:?}")]
+    #[error("ExprEvalError: {0}")]
     ExprEvalError(String),
+
+    #[error("DeserializeError: {0}")]
+    DeserializeError(String),
+
+    #[error("Authentication Failure: {0}")]
+    AuthError(auth::error::Error),
 }
 
+// TODO: remove conversion from anyhow and don't use anyhow to pass errors
+// since it loses potentially valuable information that could be later provided
+// in the error extensions
 impl From<anyhow::Error> for EvaluationError {
     fn from(value: anyhow::Error) -> Self {
         match value.downcast::<EvaluationError>() {
@@ -109,14 +118,20 @@ impl ErrorExtensions for EvaluationError {
 }
 
 impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
-    fn from(_value: crate::valid::ValidationError<&'a str>) -> Self {
+    fn from(value: crate::valid::ValidationError<&'a str>) -> Self {
         EvaluationError::APIValidationError(
-            _value
+            value
                 .as_vec()
                 .iter()
                 .map(|e| e.message.to_owned())
                 .collect(),
         )
+    }
+}
+
+impl From<auth::error::Error> for EvaluationError {
+    fn from(value: auth::error::Error) -> Self {
+        EvaluationError::AuthError(value)
     }
 }
 
@@ -136,7 +151,7 @@ impl Eval for Expression {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 Expression::Context(op) => match op {
@@ -165,14 +180,13 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Dynamic(value) => value.render_value(&ctx),
+                Expression::Dynamic(value) => Ok(value.render_value(&ctx)),
                 Expression::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx
                         .validate(ctx.request_ctx)
                         .await
-                        .to_result()
-                        .map_err(|e| anyhow!("Authentication Failure: {}", e.to_string()))?;
+                        .to_result()?;
                     expr.eval(ctx, conc).await
                 }
                 Expression::IO(operation) => operation.eval(ctx, conc).await,

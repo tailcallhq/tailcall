@@ -2,7 +2,6 @@ use core::future::Future;
 use std::ops;
 use std::pin::Pin;
 
-use anyhow::Result;
 use async_graphql_value::ConstValue;
 
 use super::{
@@ -29,7 +28,7 @@ impl Eval for Math {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Math::Mod(lhs, rhs) => {

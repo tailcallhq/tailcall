@@ -3,7 +3,6 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::pin::Pin;
 
-use anyhow::Result;
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
 
@@ -35,7 +34,7 @@ impl Eval for Relation {
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
         conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             Ok(match self {
                 Relation::Intersection(exprs) => {
@@ -290,7 +289,7 @@ async fn set_operation<'a, 'b, Ctx: ResolverContextLike<'a> + Sync + Send, F>(
     lhs: &'a [Expression],
     rhs: &'a [Expression],
     operation: F,
-) -> Result<ConstValue>
+) -> Result<ConstValue, EvaluationError>
 where
     F: Fn(HashSet<HashableConstValue>, HashSet<HashableConstValue>) -> Vec<ConstValue>,
 {
