@@ -217,8 +217,7 @@ mod grpc_fetch {
         let resp = grpc_reflection.get_by_service("news.NewsService").await?;
         let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         news_proto.push("src");
-        news_proto.push("grpc");
-        news_proto.push("tests");
+        news_proto.push("generator");
         news_proto.push("proto");
         news_proto.push("news.proto");
 
