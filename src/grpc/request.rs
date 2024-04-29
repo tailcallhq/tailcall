@@ -41,7 +41,6 @@ pub async fn execute_grpc_request(
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use std::sync::Arc;
 
     use anyhow::Result;
@@ -50,6 +49,7 @@ mod tests {
     use reqwest::header::HeaderMap;
     use reqwest::{Method, Request, StatusCode};
     use serde_json::json;
+    use tailcall_fixtures::protobuf;
     use tonic::{Code, Status};
 
     use crate::blueprint::GrpcMethod;
@@ -107,12 +107,10 @@ mod tests {
         let mut runtime = crate::runtime::test::init(None);
         runtime.http2_only = Arc::new(test_http);
 
-        let greetings_path = PathBuf::from("src/grpc/tests/proto/greetings.proto");
-        let error_path = PathBuf::from("src/grpc/tests/proto/errors.proto");
-
-        let file_descriptor_set = protox::compile([greetings_path, error_path], ["."]);
+        let file_descriptor_set =
+            protox::compile([protobuf::GREETINGS, protobuf::ERRORS], [protobuf::SELF]);
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
-        let file = ProtobufSet::from_proto_file(file_descriptor_set.unwrap_or_default())?;
+        let file = ProtobufSet::from_proto_file(file_descriptor_set.unwrap())?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 

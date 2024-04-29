@@ -240,6 +240,7 @@ mod tests {
 
     use async_graphql::Name;
     use indexmap::IndexMap;
+    use tailcall_fixtures::protobuf;
 
     use crate::blueprint::GrpcMethod;
     use crate::grpc::protobuf::tests::get_proto_file;
@@ -310,7 +311,7 @@ mod tests {
     async fn test_from_protobuf_conversion() -> anyhow::Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
-        let file = ProtobufSet::from_proto_file(get_proto_file("news.proto").await?)?;
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
@@ -326,6 +327,17 @@ mod tests {
                 ("title".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
                 ("id".to_owned(), JsonSchema::Opt(JsonSchema::Num.into())),
                 ("body".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+                (
+                    "status".to_owned(),
+                    JsonSchema::Opt(
+                        JsonSchema::Enum(BTreeSet::from_iter([
+                            "DELETED".to_owned(),
+                            "DRAFT".to_owned(),
+                            "PUBLISHED".to_owned()
+                        ]))
+                        .into()
+                    )
+                )
             ]))
         );
 
