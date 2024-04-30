@@ -16,6 +16,7 @@ fn log_launch_and_open_browser(sc: &ServerConfig) {
     );
     if sc.graphiql() {
         let url = sc.graphiql_url();
+        let url = format!("https://tailcall.run/playground/?u={}/graphql", url);
         tracing::info!("🌍 Playground: {}", url);
 
         let _ = webbrowser::open(url.as_str());
