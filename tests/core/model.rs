@@ -8,7 +8,6 @@ use url::Url;
 #[serde(rename_all = "camelCase")]
 pub enum Annotation {
     Skip,
-    Only,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -32,6 +31,7 @@ mod default {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Mock {
     pub request: UpstreamRequest,
     pub response: UpstreamResponse,

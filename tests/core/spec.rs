@@ -290,7 +290,6 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
         Some(Annotation::Skip) => {
             println!("{} ... {}", spec.path.display(), "skipped".blue());
         }
-        Some(Annotation::Only) => {}
         None => test_spec(spec).await,
     }
 
