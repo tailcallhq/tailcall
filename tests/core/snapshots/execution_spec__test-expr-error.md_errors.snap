@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "expected field to be non-nullable",
+    "trace": [
+      "Query",
+      "user",
+      "@expr",
+      "age"
+    ],
+    "description": null
+  }
+]

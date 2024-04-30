@@ -1,0 +1,32 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+type Bar {
+  bar: String
+}
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+type Foo {
+  foo: String
+}
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  bar: Bar!
+  foo: Foo!
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
