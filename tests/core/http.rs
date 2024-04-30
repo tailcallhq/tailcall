@@ -9,11 +9,40 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::http::Response;
 use tailcall::HttpIO;
 
 use super::runtime::{ExecutionMock, ExecutionSpec};
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum ApiBody {
+    #[serde(rename = "textBody")]
+    Text(String),
+    #[serde(rename = "fileBody")]
+    File(String),
+    #[serde(rename = "body")]
+    Value(Value),
+}
+
+impl ApiBody {
+    pub fn resolve(&self) -> Vec<u8> {
+        match self {
+            ApiBody::Value(value) => serde_json::to_vec(value)
+                .unwrap_or_else(|_| core::panic!("Failed to convert value: {value:?}")),
+            ApiBody::Text(text) => string_to_bytes(text),
+            ApiBody::File(file) => {
+                let root_dir = env!("CARGO_MANIFEST_DIR");
+                let root_dir = Path::new(root_dir).join("tests/fixtures");
+                let path = root_dir.join(file);
+
+                std::fs::read(&path)
+                    .unwrap_or_else(|_| core::panic!("Failed to read file by path: {}", path.display()))
+            }
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Http {
@@ -54,7 +83,7 @@ impl Http {
     }
 }
 
-fn string_to_bytes(input: &str) -> Vec<u8> {
+pub fn string_to_bytes(input: &str) -> Vec<u8> {
     let mut bytes = Vec::new();
     let mut chars = input.chars().peekable();
 
@@ -85,9 +114,6 @@ fn string_to_bytes(input: &str) -> Vec<u8> {
 #[async_trait::async_trait]
 impl HttpIO for Http {
     async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
-        // Determine if the request is a GRPC request based on PORT
-        let is_grpc = req.url().as_str().contains("50051");
-
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
             .mocks
@@ -96,21 +122,19 @@ impl HttpIO for Http {
                 let mock_req = &mock.mock.request;
                 let method_match = req.method() == mock_req.0.method.clone().to_hyper();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
-                let req_body = match req.body() {
-                    Some(body) => {
-                        if let Some(bytes) = body.as_bytes() {
-                            if let Ok(body_str) = std::str::from_utf8(bytes) {
-                                Value::from(body_str)
-                            } else {
-                                Value::Null
-                            }
-                        } else {
-                            Value::Null
-                        }
-                    }
-                    None => Value::Null,
-                };
-                let body_match = req_body == mock_req.0.body;
+                let body_match = mock_req
+                    .0
+                    .body
+                    .as_ref()
+                    .map(|body| {
+                        let mock_body = body.resolve();
+
+                        req.body()
+                            .and_then(|body| body.as_bytes().map(|req_body| req_body == mock_body))
+                            .unwrap_or(false)
+                    })
+                    .unwrap_or(true);
+
                 let headers_match = req
                     .headers()
                     .iter()
@@ -127,7 +151,7 @@ impl HttpIO for Http {
                             .unwrap_or(&mock_header_value);
                         header_value == mock_header_value
                     });
-                method_match && url_match && headers_match && (body_match || is_grpc)
+                method_match && url_match && headers_match && body_match
             })
             .ok_or(anyhow!(
                 "No mock found for request: {:?} {} in {}",
@@ -158,17 +182,8 @@ impl HttpIO for Http {
         }
 
         // Special Handling for GRPC
-        if let Some(body) = mock_response.0.text_body {
-            // Return plaintext body if specified
-            let body = string_to_bytes(&body);
-            response.body = Bytes::from_iter(body);
-        } else if is_grpc {
-            // Special Handling for GRPC
-            let body = string_to_bytes(mock_response.0.body.as_str().unwrap_or_default());
-            response.body = Bytes::from_iter(body);
-        } else {
-            let body = serde_json::to_vec(&mock_response.0.body)?;
-            response.body = Bytes::from_iter(body);
+        if let Some(body) = mock_response.0.body {
+            response.body = Bytes::from(body.resolve());
         }
 
         Ok(response)

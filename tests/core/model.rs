@@ -17,11 +17,27 @@ pub struct UpstreamRequest(pub APIRequest);
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UpstreamResponse(pub APIResponse);
 
+mod default {
+    pub fn status() -> u16 {
+        200
+    }
+
+    pub fn expected_hits() -> usize {
+        1
+    }
+
+    pub fn assert_hits() -> bool {
+        true
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Mock {
     pub request: UpstreamRequest,
     pub response: UpstreamResponse,
-    #[serde(default = "default_expected_hits")]
+    #[serde(default = "default::assert_hits")]
+    pub assert_hits: bool,
+    #[serde(default = "default::expected_hits")]
     pub expected_hits: usize,
 }
 
@@ -32,8 +48,8 @@ pub struct APIRequest {
     pub url: Url,
     #[serde(default)]
     pub headers: BTreeMap<String, String>,
-    #[serde(default)]
-    pub body: serde_json::Value,
+    #[serde(flatten, default)]
+    pub body: Option<crate::core::http::ApiBody>,
     #[serde(default)]
     pub test_traces: bool,
     #[serde(default)]
@@ -43,21 +59,10 @@ pub struct APIRequest {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct APIResponse {
-    #[serde(default = "default_status")]
+    #[serde(default = "default::status")]
     pub status: u16,
     #[serde(default)]
     pub headers: BTreeMap<String, String>,
-    #[serde(default)]
-    pub body: serde_json::Value,
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text_body: Option<String>,
-}
-
-fn default_status() -> u16 {
-    200
-}
-
-fn default_expected_hits() -> usize {
-    1
+    #[serde(flatten, default)]
+    pub body: Option<crate::core::http::ApiBody>,
 }
