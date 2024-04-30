@@ -13,6 +13,7 @@ Useful links that can help with implementation:
 
 - [Protobuf spec](https://protobuf.dev/programming-guides/proto3/)
 - [graphql-mesh conversion from GRPC to graphQL](https://github.com/ardatan/graphql-mesh/tree/master/packages/legacy/handlers/grpc) - repo with implementation in typescript and test suites for different input protobuf files that Tailcall can borrow to test its implementation
+- [Apollo schema-driven-grpc](https://github.com/apollosolutions/directive-driven-grpc) - experimental implementation for grpc including conversion from protobuf to graphQL and grpc directive implementation
 
 ### Scalar types
 
@@ -27,7 +28,7 @@ Will require to implement scalars for:
 - BigInt to represent integers more than 32 bit length
 - UnsignedInt to represent unsigned integers
 - Bytes to represent list of bytes
-- Void to represent empty message
+- Empty to represent empty message
 
 How to convert:
 
@@ -45,7 +46,7 @@ Message Type basically represents complex type that consist of fields. To repres
 How to convert:
 
 - to prevent name clashes the name of generated type should be `<package_name>__<...parent_message>__<message_name>` where `<package_name>` is package of the message with `.` replaced with `__` and `<parent_message>` is the names of parent messages for this messages if any separated by `__`
-- if message doesn't contain fields replace it with scalar type `Void`
+- if message doesn't contain fields replace it with scalar type `Empty`
 - when message is used as output type in method than add new `type` in graphql with the name defined above
 - when message is used as argument in method than add new `input` in graphql with the name with additional postfix `__Input`
 
@@ -56,7 +57,8 @@ Fields are the parts of Message Type and should be converted to fields of the ou
 How to convert:
 
 - the name of the field should be converted to `camelCase` according to graphQL style guide and the way protobuf is converted from/to JSON
-- `optional` fields should be marked as nullable in graphql and non-nullable otherwise
+- since protobuf allows to omit values in most cases all of the generated fields should be nullable except for only of cases for scalars of output types since they would be populated on parsing from grpc in any case
+- `optional` doesn't affect output because of above
 - `repeated` should be converted as list
 - `map` see [Maps](#maps)
 
@@ -92,7 +94,7 @@ Some predefined external types like with prefix `google.` could be imported and 
 How to convert:
 
 - when google types are found load its definition as usual and add input or output type depending on its usage
-- for `google.protobuf.Empty` define new scalar `Void` to define null output for methods that return nothing
+- for `google.protobuf.Empty` use scalar `Empty` to define null output for methods that return nothing
 
 ### Maps
 
