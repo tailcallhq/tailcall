@@ -1,0 +1,39 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+type Mutation {
+  createUser(user: UserInput!): User
+}
+
+scalar PhoneNumber
+
+type Query {
+  users: [User]
+}
+
+scalar Url
+
+type User {
+  id: Int
+  name: String
+}
+
+input UserInput {
+  email: String!
+  name: String!
+  phone: String
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}

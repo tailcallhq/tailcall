@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Invalid CORS configuration: Cannot combine `Access-Control-Allow-Credentials: true` with `Access-Control-Allow-Methods: *`",
+    "trace": [
+      "schema",
+      "@server",
+      "headers",
+      "cors"
+    ],
+    "description": null
+  }
+]
