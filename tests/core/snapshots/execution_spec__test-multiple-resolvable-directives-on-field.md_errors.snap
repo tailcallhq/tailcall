@@ -1,0 +1,22 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Multiple resolvers detected [@http, @expr]",
+    "trace": [
+      "Query",
+      "user1"
+    ],
+    "description": null
+  },
+  {
+    "message": "Multiple resolvers detected [@http, @call]",
+    "trace": [
+      "Query",
+      "user2"
+    ],
+    "description": null
+  }
+]

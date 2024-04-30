@@ -146,6 +146,8 @@ convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tonic-types = "0.11.0"
+datatest-stable = "0.2.7"
+tokio-test = "0.4.4"
 
 
 [dev-dependencies]
@@ -244,3 +246,8 @@ harness = false
 [[bench]]
 name = "protobuf_convert_output"
 harness = false
+
+[[test]]
+name = "execution_spec"
+harness = false
+
