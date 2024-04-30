@@ -1,0 +1,46 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+type Mutation {
+  insertPost(input: PostInput): Post
+}
+
+scalar PhoneNumber
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+input PostInput {
+  body: String
+  title: String
+  userId: Int
+}
+
+type Query {
+  firstUser: User
+}
+
+scalar Url
+
+type User {
+  id: Int
+  name: String
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}

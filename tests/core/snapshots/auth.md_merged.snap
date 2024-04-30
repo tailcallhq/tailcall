@@ -1,0 +1,11 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
+  query: Query
+}
+
+type Query {
+  data: String @expr(body: "data") @protected
+}
