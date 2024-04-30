@@ -1,9 +1,8 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
-use async_graphql::SelectionField;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
@@ -37,9 +36,8 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
 
 fn to_type(
     def: &Definition,
-    type_map: HashMap<String, HashMap<String, FieldDefinition>>,
+    fields_require_batching: &HashMap<String, HashSet<String>>,
 ) -> dynamic::Type {
-    let type_map = Arc::new(type_map);
     match def {
         Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
@@ -47,7 +45,10 @@ fn to_type(
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-                let type_map = type_map.clone();
+                let enable_batching = fields_require_batching
+                    .get(&def.name)
+                    .map(|fields| fields.contains(field_name))
+                    .unwrap_or_default();
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
@@ -70,25 +71,8 @@ fn to_type(
                                     otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
                                 );
                                 let expr = expr.to_owned();
-                                let type_map = type_map.clone();
-                                let of_type = field
-                                    .of_type
-                                    .is_list()
-                                    .then_some(field.of_type.name())
-                                    .map(String::from);
                                 FieldFuture::new(
                                     async move {
-                                        let mut enable_batching = false;
-                                        if let Some(typ) = of_type {
-                                            if check_field_has_io_resolver(
-                                                &typ,
-                                                ctx.field().selection_set(),
-                                                type_map.as_ref(),
-                                            ) {
-                                                enable_batching = true;
-                                            }
-                                        }
-
                                         let mut ctx: ResolverContext = ctx.into();
                                         if enable_batching {
                                             ctx.enable_batching();
@@ -175,44 +159,50 @@ fn to_type(
     }
 }
 
-fn check_field_has_io_resolver<'a>(
+fn get_type_fields_with_resolver(
     type_name: &str,
-    selection_fields: impl Iterator<Item = SelectionField<'a>>,
-    type_map: &HashMap<String, HashMap<String, FieldDefinition>>,
-) -> bool {
-    for field in selection_fields {
-        if let Some(typ) = type_map.get(type_name) {
-            if let Some(fld) = typ.get(field.name()) {
-                if fld.resolver.is_some()
-                    || check_field_has_io_resolver(
-                        fld.of_type.name(),
-                        field.selection_set(),
-                        type_map,
-                    )
-                {
-                    return true;
-                }
-            }
+    type_fields: &HashMap<String, &Vec<FieldDefinition>>,
+    visited: &mut HashSet<String>,
+) -> HashMap<String, HashSet<String>> {
+    if visited.contains(type_name) {
+        return HashMap::new();
+    }
+    visited.insert(type_name.to_string());
+
+    let mut result = HashMap::new();
+    for fld in type_fields.get(type_name).iter().flat_map(|x| x.iter()) {
+        if fld.resolver.is_some() {
+            result
+                .entry(type_name.to_string())
+                .or_insert(HashSet::new())
+                .insert(fld.name.to_string());
+        } else {
+            let of_type = fld.of_type.name();
+            let res = get_type_fields_with_resolver(of_type, type_fields, visited);
+            result.extend(res.into_iter());
         }
     }
 
-    false
+    result
 }
 
-fn create_type_map(defs: &[Definition]) -> HashMap<String, HashMap<String, FieldDefinition>> {
-    defs.iter()
+fn fields_require_batching(defs: &[Definition]) -> HashMap<String, HashSet<String>> {
+    let mut results = HashMap::new();
+
+    let type_fields = defs
+        .iter()
         .filter_map(|def| match def {
-            Definition::Object(obj) => {
-                let fld_map = obj
-                    .fields
-                    .iter()
-                    .map(|fld| (fld.name.clone(), fld.clone()))
-                    .collect();
-                Some((obj.name.clone(), fld_map))
-            }
+            Definition::Object(obj) => Some((obj.name.clone(), &obj.fields)),
             _ => None,
         })
-        .collect()
+        .collect();
+
+    for def in defs {
+        let result = get_type_fields_with_resolver(def.name(), &type_fields, &mut HashSet::new());
+        results.extend(result.into_iter());
+    }
+
+    results
 }
 
 impl From<&Blueprint> for SchemaBuilder {
@@ -221,16 +211,16 @@ impl From<&Blueprint> for SchemaBuilder {
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
 
-        let type_map = create_type_map(&blueprint.definitions);
-
         for (k, v) in CUSTOM_SCALARS.iter() {
             schema = schema.register(dynamic::Type::Scalar(
                 dynamic::Scalar::new(k.clone()).validator(v.validate()),
             ));
         }
 
+        let fields_require_batching = fields_require_batching(&blueprint.definitions);
+
         for def in blueprint.definitions.iter() {
-            schema = schema.register(to_type(def, type_map.clone()));
+            schema = schema.register(to_type(def, &fields_require_batching));
         }
 
         schema

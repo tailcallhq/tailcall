@@ -56,7 +56,7 @@ impl Eval for IO {
                 let key = self.cache_key(&ctx);
                 ctx.request_ctx
                     .cache
-                    .get_or_eval(key, move || {
+                    .get_or_eval(dbg!(key), move || {
                         Box::pin(async {
                             self.eval_inner(ctx, _conc)
                                 .await
