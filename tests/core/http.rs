@@ -37,8 +37,9 @@ impl ApiBody {
                 let root_dir = Path::new(root_dir).join("tests/fixtures");
                 let path = root_dir.join(file);
 
-                std::fs::read(&path)
-                    .unwrap_or_else(|_| core::panic!("Failed to read file by path: {}", path.display()))
+                std::fs::read(&path).unwrap_or_else(|_| {
+                    core::panic!("Failed to read file by path: {}", path.display())
+                })
             }
         }
     }

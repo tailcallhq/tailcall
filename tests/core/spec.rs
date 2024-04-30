@@ -197,7 +197,7 @@ async fn run_query_tests_on_spec(
                     serde_json::from_slice(
                         &hyper::body::to_bytes(response.into_body()).await.unwrap(),
                     )
-                        .unwrap_or_default(),
+                    .unwrap_or_default(),
                 )),
             };
 
