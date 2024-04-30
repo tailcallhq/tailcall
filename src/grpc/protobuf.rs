@@ -430,4 +430,38 @@ pub mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn optional_proto_file() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("type.TypeService.Get").unwrap();
+
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::OPTIONAL).await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        let input = operation.convert_input(r#"{ }"#)?;
+
+        assert_eq!(input, b"\0\0\0\0\0");
+
+        let output = b"\0\0\0\0\0";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({"id": 0, "str": "", "num": [], "nestedRep": []})
+        );
+
+        let output = b"\0\0\0\0\x03\x92\x03\0";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({"id": 0, "str": "", "num": [], "nestedRep": [], "nested": {"id": 0, "str": "", "num": []}})
+        );
+
+
+        Ok(())
+    }
 }
