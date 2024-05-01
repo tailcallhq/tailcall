@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::hash_map::DefaultHasher;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use derive_setters::Setters;
@@ -50,21 +49,13 @@ fn benchmark_to_request(c: &mut Criterion) {
 
     c.bench_function("with_mustache_literal", |b| {
         b.iter(|| {
-            black_box(
-                tmpl_literal
-                    .to_request(&ctx, None::<DefaultHasher>)
-                    .unwrap(),
-            );
+            black_box(tmpl_literal.to_request(&ctx).unwrap());
         })
     });
 
     c.bench_function("with_mustache_expressions", |b| {
         b.iter(|| {
-            black_box(
-                tmpl_mustache
-                    .to_request(&ctx, None::<DefaultHasher>)
-                    .unwrap(),
-            );
+            black_box(tmpl_mustache.to_request(&ctx).unwrap());
         })
     });
 }
