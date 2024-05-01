@@ -1,6 +1,5 @@
 extern crate core;
 
-
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -9,8 +8,6 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
-
-
 use tailcall::http::Response;
 use tailcall::HttpIO;
 
@@ -54,8 +51,6 @@ impl Http {
         }
     }
 }
-
-
 
 #[async_trait::async_trait]
 impl HttpIO for Http {

@@ -1,8 +1,9 @@
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::panic;
 use std::path::Path;
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tailcall::http::Method;
 use url::Url;
 
@@ -86,13 +87,21 @@ impl APIBody {
                 .unwrap_or_else(|_| core::panic!("Failed to convert value: {value:?}")),
             APIBody::Text(text) => string_to_bytes(text),
             APIBody::File(file) => {
-                let root_dir = env!("CARGO_MANIFEST_DIR");
-                let root_dir = Path::new(root_dir).join("tests/fixtures");
-                let path = root_dir.join(file);
-
-                std::fs::read(&path).unwrap_or_else(|_| {
-                    core::panic!("Failed to read file by path: {}", path.display())
-                })
+                let mut path: Vec<&str> = file.rsplitn(2, '/').collect();
+                path.reverse();
+                match &path[..] {
+                    &[prefix, file] => match prefix {
+                        "grpc/reflection" => {
+                            let path =
+                                Path::new(tailcall_fixtures::grpc::reflection::SELF).join(file);
+                            std::fs::read(&path).unwrap_or_else(|_| {
+                                core::panic!("Failed to read file by path: {}", path.display())
+                            })
+                        }
+                        _ => core::panic!("Invalid file path: {} {}", prefix, file),
+                    },
+                    _ => core::panic!("Invalid file path: {}", file),
+                }
             }
         }
     }
