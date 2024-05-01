@@ -343,6 +343,7 @@ mod reader_tests {
         let path_dir = Path::new("abc/xyz");
         let file_relative = "foo/bar/my.proto";
         let file_absolute = "/foo/bar/my.proto";
+        let remote_url_path = "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tailcall-fixtures/fixtures/protobuf/news.proto";
         assert_eq!(
             path_dir.to_path_buf().join(file_relative),
             PathBuf::from(ConfigReader::resolve_path(file_relative, Some(path_dir)))
@@ -350,6 +351,10 @@ mod reader_tests {
         assert_eq!(
             "/foo/bar/my.proto",
             ConfigReader::resolve_path(file_absolute, Some(path_dir))
+        );
+        assert_eq!(
+            remote_url_path,
+            ConfigReader::resolve_path(remote_url_path, Some(path_dir))
         );
     }
 }
