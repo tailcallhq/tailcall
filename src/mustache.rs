@@ -15,7 +15,7 @@ use crate::path::{PathGraphql, PathString};
 #[derive(Debug, Clone)]
 pub struct Mustache {
     segments: Vec<Segment>,
-    jacques: jaq_interpret::Filter,
+    jacques: Option<jaq_interpret::Filter>,
 }
 
 #[derive(Debug, Clone, PartialEq, Hash)]
@@ -26,12 +26,15 @@ pub enum Segment {
 
 impl From<Vec<Segment>> for Mustache {
     fn from(segments: Vec<Segment>) -> Self {
-        Mustache { segments, jacques: jaq_interpret::Filter::default() }
+        Mustache { segments, jacques: None }
     }
 }
 
 impl Mustache {
     pub fn is_const(&self) -> bool {
+        if self.jacques.is_some() {
+            return false;
+        }
         for s in &self.segments {
             if let Segment::Expression(_) = s {
                 return false;
@@ -76,20 +79,19 @@ impl Mustache {
     //     self.evaluate_inner(value).unwrap_or_default()
     // }
 
-    fn evaluate_inner<T: Serialize>(&self, value: &T) -> Option<async_graphql::Value> {
+    fn evaluate_inner<T: Serialize>(&self, value: &T) -> Option<serde_json::Value> {
         let iter = jaq_interpret::RcIter::new(vec![].into_iter());
         let value = serde_json::to_value(value).ok()?;
         if value.is_null() {
             return None;
         }
-        let mut result = self.jacques.run((
+        let mut result = self.jacques.as_ref()?.run((
             jaq_interpret::Ctx::new(vec![], &iter),
             jaq_interpret::Val::from(value),
         ));
         let result = result.next()?;
         let result = result.ok()?;
-        let result = async_graphql::Value::from(result.to_string());
-        Some(result)
+        Some(result.into())
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
@@ -193,37 +195,47 @@ fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
             })
             .collect::<Vec<Segment>>()
     })(input);
-    let (_res, segments) = result?;
-    let (res, jacques) = parse_jq(input).unwrap_or((input, jaq_interpret::Filter::default()));
+    let jq_result = parse_jq(input);
+    if jq_result.is_err() && result.is_err() {
+        return Err(
+            nom::Err::Error(nom::error::Error::new(
+                "failed to parse mustache",
+                nom::error::ErrorKind::Tag,
+            ))
+        );
+    }
 
-    Ok((res, Mustache { segments, jacques }))
+    let (res, jacques) = jq_result.unwrap_or((input, None));
+    if jacques.is_none() {
+        let (res, segments) = result.unwrap_or((input, vec![]));
+        Ok((res, Mustache { segments, jacques }))
+    }else {
+        Ok((res, Mustache { segments: vec![], jacques }))
+    }
 }
 
-fn parse_jq(input: &str) -> IResult<&str, jaq_interpret::Filter> {
+fn parse_jq(input: &str) -> IResult<&str, Option<jaq_interpret::Filter>> {
+    let (input, _) = nom::character::complete::multispace0(input)?;
     let (input, _) = tag("{{")(input)?;
+    let (input, _) = nom::character::complete::multispace0(input)?;
+    let (input, _) = tag("jq:")(input)?;
+    let (input, _) = nom::character::complete::multispace0(input)?;
     let (input, filter) = take_until("}}")(input)?;
-    let (input, _) = tag("}}")(input)?;
     let filter = filter.trim();
     let mut defs = jaq_interpret::ParseCtx::new(vec![]);
     defs.insert_natives(jaq_core::core());
     defs.insert_defs(jaq_std::std());
 
     let (filter, errs) = jaq_parse::parse(filter, jaq_parse::main());
-    if !errs.is_empty() {
+    let _err_str = errs.iter().map(|v| v.to_string()).collect::<Vec<String>>().join("\n");
+    if !errs.is_empty() || filter.is_none() {
         return Err(nom::Err::Error(nom::error::Error::new(
-            "failed to parse filter",
-            nom::error::ErrorKind::Tag,
-        )));
-    }
-    let filter = filter;
-    if filter.is_none() {
-        return Err(nom::Err::Error(nom::error::Error::new(
-            "failed to parse filter",
+            "failed to parse jq", // TODO: fix ownership issue and return _err_str
             nom::error::ErrorKind::Tag,
         )));
     }
     let filter = defs.compile(filter.unwrap());
-    Ok((input, filter))
+    Ok((input, if defs.errs.is_empty() { Some(filter) } else { None }))
 }
 
 #[cfg(test)]
@@ -274,7 +286,7 @@ mod tests {
                     "hello".to_string(),
                     "world".to_string(),
                 ])])
-                .segments
+                    .segments
             );
         }
 
@@ -291,7 +303,7 @@ mod tests {
                     Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
                     Segment::Literal("/end".to_string()),
                 ])
-                .segments
+                    .segments
             );
         }
 
@@ -305,7 +317,7 @@ mod tests {
                     "foo".to_string(),
                     "bar".to_string(),
                 ])])
-                .segments
+                    .segments
             );
         }
 
@@ -344,7 +356,7 @@ mod tests {
             let result = Mustache::parse("just a string").unwrap();
             let expected = Mustache {
                 segments: vec![Segment::Literal("just a string".to_string())],
-                jacques: jaq_interpret::Filter::default(),
+                jacques: None,
             };
             assert_eq!(result.segments, expected.segments);
         }
@@ -357,7 +369,7 @@ mod tests {
                     "foo".to_string(),
                     "bar".to_string(),
                 ])],
-                jacques: jaq_interpret::Filter::default(),
+                jacques: None,
             };
             assert_eq!(result.segments, expected.segments);
         }
@@ -390,7 +402,7 @@ mod tests {
                     "env".to_string(),
                     "FOO".to_string(),
                 ])])
-                .segments
+                    .segments
             );
         }
 
@@ -403,7 +415,7 @@ mod tests {
                     "env".to_string(),
                     "FOO_BAR".to_string(),
                 ])])
-                .segments
+                    .segments
             );
         }
 
@@ -426,7 +438,7 @@ mod tests {
                     "foo".to_string(),
                     "bar".to_string(),
                 ])])
-                .segments
+                    .segments
             );
         }
     }
@@ -455,8 +467,8 @@ mod tests {
 
             impl Serialize for DummyPath {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
+                    where
+                        S: Serializer,
                 {
                     serializer.serialize_str("")
                 }
@@ -495,8 +507,8 @@ mod tests {
 
             impl Serialize for DummyPath {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
+                    where
+                        S: Serializer,
                 {
                     serializer.serialize_str("")
                 }
@@ -539,8 +551,8 @@ mod tests {
 
             impl Serialize for DummyPath {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                where
-                    S: Serializer,
+                    where
+                        S: Serializer,
                 {
                     serializer.serialize_str("")
                 }
