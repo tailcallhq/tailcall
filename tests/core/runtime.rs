@@ -45,33 +45,16 @@ pub struct ExecutionMock {
 impl ExecutionMock {
     pub fn test_hits(&self, path: impl AsRef<Path>) {
         let url = &self.mock.request.0.url;
-        let is_batch_graphql = url.path().starts_with("/graphql")
-            && self
-                .mock
-                .request
-                .0
-                .body
-                .as_str()
-                .map(|s| s.contains(','))
-                .unwrap_or_default();
-
-        // do not test hits for mocks for batch graphql requests
-        // since that requires having 2 mocks with different order of queries in
-        // single request and only one of that mocks is actually called during run.
-        // for other protocols there is no issues right now, because:
-        // - for http the keys are always sorted https://github.com/tailcallhq/tailcall/blob/51d8b7aff838f0f4c362d4ee9e39492ae1f51fdb/src/http/data_loader.rs#L71
-        // - for grpc body is not used for matching the mock and grpc will use grouping based on id https://github.com/tailcallhq/tailcall/blob/733b641c41f17c60b15b36b025b4db99d0f9cdcd/tests/execution_spec.rs#L769
-        if is_batch_graphql {
+        if !self.mock.assert_hits {
             return;
         }
-
         let expected_hits = self.mock.expected_hits;
         let actual_hits = self.actual_hits.load(Ordering::Relaxed);
 
         assert_eq!(
             expected_hits,
             actual_hits,
-            "expected mock for {url} to be hit exactly {expected_hits} times, but it was hit {actual_hits} times for file: {:?}",
+            "expected mock for {} to be hit exactly {} times, but it was hit {} times for file: {:?}", url, expected_hits, actual_hits,
             path.as_ref()
         );
     }

@@ -19,7 +19,7 @@ type Query {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "query { users { name } }" }'
+    textBody: {"query": "query { users { name } }"}
   response:
     status: 200
     body:

@@ -109,7 +109,6 @@ impl ExecutionSpec {
                             if let Some(Node::Text(text)) = heading.children.first() {
                                 runner = Some(match text.value.as_str() {
                                     "skip" => Annotation::Skip,
-                                    "only" => Annotation::Only,
                                     _ => {
                                         return Err(anyhow!(
                                             "Unexpected runner annotation {:?} in {:?}",

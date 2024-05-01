@@ -1,6 +1,6 @@
 mod env;
 mod file;
-mod http;
+pub mod http;
 mod model;
 mod parse;
 mod runtime;
