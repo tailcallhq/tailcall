@@ -21,10 +21,12 @@ pub struct ProtoMetadata {
 }
 
 impl ProtoReader {
+    /// Initializes the proto reader with a resource reader and target runtime
     pub fn init(reader: ResourceReader<Cached>, runtime: TargetRuntime) -> Self {
         Self { reader, runtime }
     }
 
+    /// Fetches proto files from a grpc server (grpc reflection)
     pub async fn fetch<T: AsRef<str>>(&self, url: T) -> anyhow::Result<Vec<ProtoMetadata>> {
         let grpc_reflection = GrpcReflection::new(url.as_ref(), self.runtime.clone());
 
@@ -46,6 +48,7 @@ impl ProtoReader {
         Ok(proto_metadata)
     }
 
+    /// Asynchronously reads all proto files from a list of paths
     pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
         let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
             .await
@@ -54,6 +57,7 @@ impl ProtoReader {
         Ok(resolved_protos)
     }
 
+    /// Reads a proto file from a path
     pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
         let file_read = self.read_proto(path.as_ref(), None).await?;
         Self::check_package(&file_read)?;
