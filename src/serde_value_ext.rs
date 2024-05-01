@@ -212,23 +212,16 @@ mod tests {
 
         #[test]
         fn test_render_jq_sort() {
-            let value = json!({"a": "{{jq: sort_by(.age) }}"});
+            let value = json!({"a": "{{jq: sort_by(.age) | .[0].name }}"});
             let value = DynamicValue::try_from(&value).unwrap();
             let ctx = json!([
                 {"name": "Alice", "age": 25, "city": "New York"},
                 {"name": "Bob", "age": 30, "city": "Chicago"},
+                {"name": "Sandip", "age": 16, "city": "GoodQuestion"},
                 {"name": "Charlie", "age": 22, "city": "San Francisco"}
             ]);
             let result = value.render_value(&ctx);
-
-            let expected = json!({
-                "a": [
-                {"name": "Charlie", "age": 22, "city": "San Francisco"},
-                {"name": "Alice", "age": 25, "city": "New York"},
-                {"name": "Bob", "age": 30, "city": "Chicago"},
-            ]
-            });
-            let expected = async_graphql::Value::from_json(expected).unwrap();
+            let expected = async_graphql::Value::from_json(json!({"a": "Sandip"})).unwrap();
             assert_eq!(result.unwrap(), expected);
         }
 
