@@ -6,7 +6,7 @@ use std::time::Duration;
 use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
 use async_trait::async_trait;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use hyper::body::Bytes;
 use hyper::header::HeaderValue;
@@ -251,7 +251,7 @@ fn request_context() -> RequestContext {
         .upstream(upstream)
 }
 
-fn bench_main(c: &mut Criterion) {
+pub fn bench_main(c: &mut Criterion) {
     let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
 
     req_ctx.server.vars = TEST_VARS.clone();
@@ -271,6 +271,3 @@ fn bench_main(c: &mut Criterion) {
         });
     }
 }
-
-criterion_group!(benches, bench_main);
-criterion_main!(benches);

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
 use async_trait::async_trait;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::config::Batch;
@@ -68,7 +68,7 @@ impl tailcall::Cache for Cache {
     }
 }
 
-fn benchmark_data_loader(c: &mut Criterion) {
+pub fn benchmark_data_loader(c: &mut Criterion) {
     c.bench_function("test_data_loader", |b| {
         b.iter(|| {
             let client = Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
@@ -111,10 +111,3 @@ fn benchmark_data_loader(c: &mut Criterion) {
         })
     });
 }
-
-criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets = benchmark_data_loader
-}
-criterion_main!(benches);

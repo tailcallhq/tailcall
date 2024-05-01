@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use serde_json::json;
@@ -59,10 +59,3 @@ fn benchmark_to_request(c: &mut Criterion) {
         })
     });
 }
-
-criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets = benchmark_to_request
-}
-criterion_main!(benches);

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, Criterion};
 use rand::{thread_rng, Fill};
 use serde_json::{json, Value};
 use tailcall::blueprint::GrpcMethod;
@@ -65,6 +65,3 @@ fn benchmark_convert_output(c: &mut Criterion) {
         })
     });
 }
-
-criterion_group!(benches, benchmark_convert_output);
-criterion_main!(benches);

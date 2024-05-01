@@ -1,8 +1,8 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, Criterion};
 use serde_json::json;
 use tailcall::json::JsonLike;
 
-fn benchmark_batched_body(c: &mut Criterion) {
+pub fn benchmark_batched_body(c: &mut Criterion) {
     c.bench_function("test_batched_body", |b| {
         b.iter(|| {
             let input = json!({
@@ -47,6 +47,3 @@ fn benchmark_group_by(c: &mut Criterion) {
         })
     });
 }
-
-criterion_group!(benches, benchmark_batched_body, benchmark_group_by);
-criterion_main!(benches);
