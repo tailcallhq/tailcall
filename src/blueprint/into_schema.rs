@@ -164,12 +164,12 @@ fn get_type_fields_with_resolver(
     type_fields: &HashMap<String, &Vec<FieldDefinition>>,
     visited: &mut HashSet<String>,
 ) -> HashMap<String, HashSet<String>> {
+    let mut result = HashMap::new();
     if visited.contains(type_name) {
-        return HashMap::new();
+        return result;
     }
     visited.insert(type_name.to_string());
 
-    let mut result = HashMap::new();
     for fld in type_fields.get(type_name).iter().flat_map(|x| x.iter()) {
         if fld.resolver.is_some() {
             result
