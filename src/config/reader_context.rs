@@ -2,10 +2,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use headers::HeaderMap;
-
-use crate::has_headers::HasHeaders;
 use serde::{Serialize, Serializer};
 
+use crate::has_headers::HasHeaders;
 use crate::path::PathString;
 use crate::runtime::TargetRuntime;
 
