@@ -213,10 +213,9 @@ impl ConfigReader {
         Ok(config_module)
     }
 
-    /// Checks if path is absolute else it joins file path with relative dir
-    /// path
+    /// checks and returns valid path for caller function.
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
-        if Path::new(&src).is_absolute() {
+        if src.starts_with("http") || Path::new(&src).is_absolute() {
             src.to_string()
         } else {
             let path = root_dir.unwrap_or(Path::new(""));
