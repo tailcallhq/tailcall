@@ -60,18 +60,16 @@ type Bar {
 - request:
     method: POST
     url: http://localhost:50051/test.FooService/GetFoo
-    body: null
   response:
     status: 200
-    body: \0\0\0\0\n\n\x08test-foo
+    textBody: \0\0\0\0\n\n\x08test-foo
 
 - request:
     method: POST
     url: http://localhost:50051/test.BarService/GetBar
-    body: null
   response:
     status: 200
-    body: \0\0\0\0\n\n\x08test-bar
+    textBody: \0\0\0\0\n\n\x08test-bar
 ```
 
 ```yml @test

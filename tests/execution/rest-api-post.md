@@ -33,7 +33,6 @@ type User {
     url: http://jsonplaceholder.typicode.com/users/1
     headers:
       test: test
-    body: null
   response:
     status: 200
     body:

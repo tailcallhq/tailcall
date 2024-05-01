@@ -28,7 +28,7 @@ impl ConfigReader {
         Self {
             runtime: runtime.clone(),
             resource_reader: resource_reader.clone(),
-            proto_reader: ProtoReader::init(resource_reader),
+            proto_reader: ProtoReader::init(resource_reader, runtime),
         }
     }
 
@@ -59,12 +59,11 @@ impl ConfigReader {
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
 
-            let source = self.resource_reader.read_file(&path).await?;
-
-            let content = source.content;
-
             match link.type_of {
                 LinkType::Config => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
                     config_module = config_module.merge_right(ConfigModule::from(config.clone()));
@@ -80,39 +79,59 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
                     let meta = self.proto_reader.read(path).await?;
                     config_module.extensions.add_proto(meta);
                 }
                 LinkType::Script => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
                     config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
                     config_module
                         .extensions
                         .cert
-                        .extend(self.load_cert(content.clone()).await?);
+                        .extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
-                    config_module.extensions.keys =
-                        Arc::new(self.load_private_key(content.clone()).await?)
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+                    config_module.extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module
                         .extensions
                         .htpasswd
-                        .push(Content { id: link.id.clone(), content: content.clone() });
+                        .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     let de = &mut serde_json::Deserializer::from_str(&content);
 
                     config_module.extensions.jwks.push(Content {
                         id: link.id.clone(),
                         content: serde_path_to_error::deserialize(de)?,
                     })
+                }
+                LinkType::Grpc => {
+                    let meta = self.proto_reader.fetch(link.src.as_str()).await?;
+
+                    for m in meta {
+                        config_module.extensions.add_proto(m);
+                    }
                 }
             }
         }
@@ -197,12 +216,13 @@ impl ConfigReader {
 
         let server = &mut config_module.config.server;
         let reader_ctx = ConfigReaderContext {
-            env: self.runtime.env.clone(),
+            runtime: &self.runtime,
             vars: &server
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
+            headers: Default::default(),
         };
 
         config_module

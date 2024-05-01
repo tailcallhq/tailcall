@@ -5255,6 +5255,7 @@ dependencies = [
  "async-recursion",
  "async-std",
  "async-trait",
+ "base64 0.22.0",
  "cache_control",
  "chrono",
  "clap",
@@ -5472,6 +5473,7 @@ dependencies = [
  "indexmap 2.2.6",
  "insta",
  "tailcall",
+ "tailcall-fixtures",
  "tokio",
 ]
 
