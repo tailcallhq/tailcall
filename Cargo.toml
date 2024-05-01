@@ -148,7 +148,7 @@ tailcall-macros = { path = "tailcall-macros" }
 tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
-base64 = "0.22.0"
+base64 = "0.22.1"
 
 
 [dev-dependencies]
