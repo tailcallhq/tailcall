@@ -31,7 +31,7 @@
             "query": [
               {
                 "key": "id",
-                "value": "{{args.id}}"
+                "value": "{{.args.id}}"
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com",
@@ -65,7 +65,6 @@
     url: http://jsonplaceholder.typicode.com/users?id=1&id=2
     headers:
       test: test
-    body: null
   response:
     status: 200
     body:
@@ -75,7 +74,7 @@
         name: bar
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

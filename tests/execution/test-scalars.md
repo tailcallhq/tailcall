@@ -11,14 +11,14 @@ schema @server(port: 8000, graphiql: true, hostname: "localhost") {
 }
 
 type Query {
-  email(value: Email!): Email! @expr(body: "{{args.value}}")
-  phone(value: PhoneNumber!): PhoneNumber! @expr(body: "{{args.value}}")
-  date(value: Date!): Date! @expr(body: "{{args.value}}")
-  url(value: Url!): Url! @expr(body: "{{args.value}}")
+  email(value: Email!): Email! @expr(body: "{{.args.value}}")
+  phone(value: PhoneNumber!): PhoneNumber! @expr(body: "{{.args.value}}")
+  date(value: Date!): Date! @expr(body: "{{.args.value}}")
+  url(value: Url!): Url! @expr(body: "{{.args.value}}")
 }
 ```
 
-```yml @assert
+```yml @test
 # Valid value tests
 - method: POST
   url: http://localhost:8000/graphql

@@ -13,7 +13,7 @@ input PostInput {
 }
 
 type Mutation {
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
 }
 
 type Post {
@@ -37,7 +37,7 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/posts
-    body: '{"body":"post-body","title":"post-title","userId":1}'
+    body: {"body": "post-body", "title": "post-title", "userId": 1}
   response:
     status: 200
     body:
@@ -46,7 +46,7 @@ type User {
       userId: 1
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

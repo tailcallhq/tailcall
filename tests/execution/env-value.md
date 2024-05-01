@@ -37,21 +37,21 @@
         "post1": {
           "type": "Post",
           "http": {
-            "path": "/posts/{{env.ID}}"
+            "path": "/posts/{{.env.ID}}"
           },
           "cache": null
         },
         "post2": {
           "type": "Post",
           "http": {
-            "path": "/posts/{{env.POST_ID}}"
+            "path": "/posts/{{.env.POST_ID}}"
           },
           "cache": null
         },
         "post3": {
           "type": "Post",
           "http": {
-            "path": "/posts/{{env.NESTED_POST_ID}}"
+            "path": "/posts/{{.env.NESTED_POST_ID}}"
           },
           "cache": null
         }
@@ -66,7 +66,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/1
-    body: null
   response:
     status: 200
     body:
@@ -77,7 +76,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/2
-    body: null
   response:
     status: 200
     body:
@@ -88,7 +86,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/3
-    body: null
   response:
     status: 200
     body:
@@ -104,7 +101,7 @@ POST_ID: "2"
 NESTED_POST_ID: "3"
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

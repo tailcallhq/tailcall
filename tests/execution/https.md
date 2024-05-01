@@ -44,7 +44,6 @@
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -52,7 +51,7 @@
       name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

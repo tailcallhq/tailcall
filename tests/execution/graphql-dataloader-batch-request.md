@@ -11,7 +11,7 @@ type Post {
   userId: Int
   user: User
     @graphQL(
-      args: [{key: "id", value: "{{value.userId}}"}]
+      args: [{key: "id", value: "{{.value.userId}}"}]
       baseURL: "http://upstream/graphql"
       batch: true
       name: "user"
@@ -32,7 +32,6 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts
-    body: null
   response:
     status: 200
     body:
@@ -51,7 +50,8 @@ type Query {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '[{ "query": "query { user(id: 1) { name } }" },{ "query": "query { user(id: 2) { name } }" }]'
+    textBody: '[{ "query": "query { user(id: 1) { name } }" },{ "query": "query { user(id: 2) { name } }" }]'
+  assertHits: false
   response:
     status: 200
     body:
@@ -64,7 +64,8 @@ type Query {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '[{ "query": "query { user(id: 2) { name } }" },{ "query": "query { user(id: 1) { name } }" }]'
+    textBody: '[{ "query": "query { user(id: 2) { name } }" },{ "query": "query { user(id: 1) { name } }" }]'
+  assertHits: false
   response:
     status: 200
     body:
@@ -76,7 +77,7 @@ type Query {
             name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

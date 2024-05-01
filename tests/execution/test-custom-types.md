@@ -17,7 +17,7 @@ input PostInput {
 }
 
 type Mut {
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
 }
 
 type Post {

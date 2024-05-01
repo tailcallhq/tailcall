@@ -20,10 +20,10 @@ lambda_runtime = "0.11.1"
 tokio = { version = "1", features = ["macros", "fs"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
-dotenvy = "0.15"
+dotenvy = "0.15.7"
 
 anyhow = "1.0.82"
 async-trait = "0.1.80"
-hyper = { version = "0.14", default-features = false }
+hyper = { version = "0.14.28", default-features = false }
 reqwest = { version = "0.11", default-features = false }
 tailcall = { path = "..", default-features = false }

@@ -3,23 +3,14 @@ schema
     port: 8000
     graphiql: true
     hostname: "0.0.0.0"
-    headers: {cors: {allowOrigins: ["abc.xyz"], allowHeaders: ["Authorization"], allowMethods: [POST, GET, OPTIONS]}}
+    headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}}
   )
   @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-type Query @cache(maxAge: 30000) {
+type Query {
   posts: [Post] @http(path: "/posts")
-}
-
-type User {
-  id: Int!
-  name: String!
-  username: String!
-  email: String!
-  phone: String
-  website: String
 }
 
 type Post {
@@ -27,5 +18,4 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
 }

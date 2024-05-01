@@ -1,0 +1,37 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+type Address {
+  geo: Geo
+  street: String
+}
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  user: User
+}
+
+scalar Url
+
+type User {
+  address: Address
+}
+
+schema {
+  query: Query
+}

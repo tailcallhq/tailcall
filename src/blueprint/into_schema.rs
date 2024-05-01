@@ -70,12 +70,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                                         let const_value =
                                             expr.eval(ctx, &Concurrent::Sequential).await?;
-
                                         let p = match const_value {
-                                            ConstValue::List(a) => FieldValue::list(a),
-                                            a => FieldValue::from(a),
+                                            ConstValue::List(a) => Some(FieldValue::list(a)),
+                                            ConstValue::Null => FieldValue::NONE,
+                                            a => Some(FieldValue::from(a)),
                                         };
-                                        Ok(Some(p))
+                                        Ok(p)
                                     }
                                     .instrument(span)
                                     .inspect_err(|err| tracing::error!(?err)),

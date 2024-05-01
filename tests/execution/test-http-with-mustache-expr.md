@@ -12,7 +12,7 @@ type Query {
 type A {
   a: Int
   d: D @modify(omit: true)
-  bc: BC @expr(body: {d: "{{value.d}}", f: "{{value.f}}"})
+  bc: BC @expr(body: {d: "{{.value.d}}", f: "{{.value.f}}"})
 }
 
 type BC {
@@ -37,7 +37,7 @@ type D {
       f: true
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8000/graphql
   body:

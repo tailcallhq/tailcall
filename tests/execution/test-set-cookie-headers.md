@@ -8,7 +8,7 @@ schema
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 type User {
   id: Int!
@@ -46,7 +46,7 @@ type User {
       name: bar
 ```
 
-```yaml @assert
+```yaml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:
