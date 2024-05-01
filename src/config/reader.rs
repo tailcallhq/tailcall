@@ -214,7 +214,8 @@ impl ConfigReader {
         Ok(config_module)
     }
 
-    /// checks and returns valid path for caller function.
+    /// Checks if path is a URL or absolute path, returns directly if so.
+    /// Otherwise, it joins file path with relative dir path.
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if let Ok(url) = Url::parse(src) {
             url.to_string()
@@ -349,7 +350,7 @@ mod reader_tests {
             PathBuf::from(ConfigReader::resolve_path(file_relative, Some(path_dir)))
         );
         assert_eq!(
-            "/foo/bar/my.proto",
+            file_absolute,
             ConfigReader::resolve_path(file_absolute, Some(path_dir))
         );
         assert_eq!(
