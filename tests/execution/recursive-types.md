@@ -20,7 +20,6 @@ type Query {
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -29,8 +28,6 @@ type Query {
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/friends/1
-    body: null
-  expected_hits: 1
   response:
     status: 200
     body:

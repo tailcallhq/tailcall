@@ -19,7 +19,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
-    body: null
   response:
     status: 200
     headers:

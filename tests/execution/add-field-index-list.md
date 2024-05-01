@@ -18,7 +18,6 @@ type Query @addField(name: "username", path: ["users", "0", "name"]) {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
-    body: null
   response:
     status: 200
     body:

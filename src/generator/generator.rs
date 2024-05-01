@@ -14,7 +14,7 @@ pub struct Generator {
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
-            proto_reader: ProtoReader::init(ResourceReader::cached(runtime)),
+            proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
         }
     }
 
@@ -56,7 +56,7 @@ mod test {
     async fn test_read_all() {
         let server = start_mock_server();
         let runtime = crate::runtime::test::init(None);
-        let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/generator/proto");
+        let test_dir = PathBuf::from(tailcall_fixtures::generator::proto::SELF);
 
         let news_content = runtime
             .file
