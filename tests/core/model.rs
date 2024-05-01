@@ -87,10 +87,9 @@ impl APIBody {
                 .unwrap_or_else(|_| core::panic!("Failed to convert value: {value:?}")),
             APIBody::Text(text) => string_to_bytes(text),
             APIBody::File(file) => {
-                let mut path: Vec<&str> = file.rsplitn(2, '/').collect();
-                path.reverse();
+                let path: Vec<&str> = file.rsplitn(2, '/').collect();
                 match &path[..] {
-                    &[prefix, file] => match prefix {
+                    &[file, prefix] => match prefix {
                         "grpc/reflection" => {
                             let path =
                                 Path::new(tailcall_fixtures::grpc::reflection::SELF).join(file);
