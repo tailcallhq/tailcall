@@ -19,7 +19,7 @@ type User {
   email: String!
   phone: String
   website: String
-  todos: [Todo] @http(path: "/users/{{value.id}}/todos")
+  todos: [Todo] @http(path: "/users/{{.value.id}}/todos")
 }
 
 type Post {
@@ -27,7 +27,7 @@ type Post {
   title: String
   userId: Int!
   body: String
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```
 
@@ -35,7 +35,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/1
-    body: null
   response:
     status: 200
     body:
@@ -43,7 +42,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -52,7 +50,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1/todos
-    body: null
   response:
     status: 200
     body:
@@ -64,7 +61,7 @@ type Post {
       - completed: false
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

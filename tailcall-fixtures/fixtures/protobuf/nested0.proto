@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package nested0;
+
+import "greetings.proto";
+import "nested1.proto";
+import "news_no_pkg.proto";

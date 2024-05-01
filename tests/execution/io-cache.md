@@ -21,7 +21,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```
 
@@ -29,7 +29,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts
-    body: null
   response:
     status: 200
     body:
@@ -53,21 +52,21 @@ type Post {
         userId: 2
 - request:
     url: http://jsonplaceholder.typicode.com/users/1
-  expected_hits: 1
+  expectedHits: 1
   response:
     status: 200
     body:
       name: Leanne Graham
 - request:
     url: http://jsonplaceholder.typicode.com/users/2
-  expected_hits: 1
+  expectedHits: 1
   response:
     status: 200
     body:
       name: Ervin Howell
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

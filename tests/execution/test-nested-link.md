@@ -27,11 +27,11 @@ schema @server @upstream(baseURL: "http://localhost:8000/graphql") @link(src: "l
 type Post {
   id: Int!
   userId: Int!
-  user: User @graphQL(args: [{key: "id", value: "{{value.userId}}"}], name: "user")
+  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], name: "user")
 }
 
 type Query {
-  post(id: Int!): Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{args.id}}")
+  post(id: Int!): Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{.args.id}}")
 }
 
 type User {

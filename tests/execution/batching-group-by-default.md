@@ -17,7 +17,11 @@ type Post {
   body: String
   userId: Int!
   user: User
-    @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}])
+    @http(
+      batchKey: ["id"]
+      path: "/users"
+      query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
+    )
 }
 
 type User {
@@ -30,7 +34,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
-    body: null
   response:
     status: 200
     body:
@@ -45,7 +48,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1&foo=bar&id=2&foo=bar
-    body: null
   response:
     status: 200
     body:
@@ -55,7 +57,7 @@ type User {
         name: bar
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

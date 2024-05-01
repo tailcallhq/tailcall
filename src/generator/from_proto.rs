@@ -270,8 +270,7 @@ mod test {
     use crate::generator::from_proto::from_proto;
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
-        let path =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("src/generator/proto/{}", name));
+        let path = PathBuf::from(tailcall_fixtures::generator::proto::SELF).join(name);
         Ok(protox_parse::parse(
             name,
             std::fs::read_to_string(path)?.as_str(),

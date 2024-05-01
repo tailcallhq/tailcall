@@ -27,7 +27,7 @@
             }
           },
           "http": {
-            "path": "/users/{{args.id}}"
+            "path": "/users/{{.args.id}}"
           },
           "cache": null
         }
@@ -59,7 +59,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -68,7 +67,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/2
-    body: null
   response:
     status: 200
     body:
@@ -76,7 +74,7 @@
       name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

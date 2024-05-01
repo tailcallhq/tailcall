@@ -34,7 +34,14 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: DeserializeOwned>(self) -> Result<Response<T>> {
+    pub fn to_json<T: DeserializeOwned + Default>(self) -> Result<Response<T>> {
+        if self.body.is_empty() {
+            return Ok(Response {
+                status: self.status,
+                headers: self.headers,
+                body: Default::default(),
+            });
+        }
         let body = serde_json::from_slice::<T>(&self.body)?;
         Ok(Response { status: self.status, headers: self.headers, body })
     }

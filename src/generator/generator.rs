@@ -5,6 +5,7 @@ use crate::generator::from_proto::from_proto;
 use crate::generator::source::Source;
 use crate::merge_right::MergeRight;
 use crate::proto_reader::ProtoReader;
+use crate::resource_reader::ResourceReader;
 use crate::runtime::TargetRuntime;
 
 pub struct Generator {
@@ -12,7 +13,9 @@ pub struct Generator {
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self { proto_reader: ProtoReader::init(runtime) }
+        Self {
+            proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
+        }
     }
 
     pub async fn read_all<T: AsRef<str>>(
@@ -53,7 +56,7 @@ mod test {
     async fn test_read_all() {
         let server = start_mock_server();
         let runtime = crate::runtime::test::init(None);
-        let test_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/generator/proto");
+        let test_dir = PathBuf::from(tailcall_fixtures::generator::proto::SELF);
 
         let news_content = runtime
             .file

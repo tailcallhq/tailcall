@@ -47,7 +47,7 @@ schema
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:50051")
   newsById(news: NewsInput!): News!
-    @grpc(method: "news.NewsService.GetNews", baseURL: "http://localhost:50051", body: "{{args.news}}")
+    @grpc(method: "news.NewsService.GetNews", baseURL: "http://localhost:50051", body: "{{.args.news}}")
 }
 input NewsInput {
   id: Int
@@ -71,7 +71,6 @@ type News {
 - request:
     method: POST
     url: http://localhost:50051/news.NewsService/GetAllNews
-    body: null
   response:
     status: 200
     headers:
@@ -82,7 +81,7 @@ type News {
     body:
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

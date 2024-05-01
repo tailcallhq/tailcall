@@ -46,8 +46,7 @@
     url: http://jsonplaceholder.typicode.com/users/1
     headers:
       test: test
-    body: null
-  expected_hits: 2
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -55,7 +54,7 @@
       name: foo
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

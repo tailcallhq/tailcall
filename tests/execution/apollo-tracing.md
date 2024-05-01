@@ -16,13 +16,12 @@ type Query {
 - request:
     method: GET
     url: http://api.com
-    body: null
   response:
     status: 200
     body: hello
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8000/graphql
   body:
