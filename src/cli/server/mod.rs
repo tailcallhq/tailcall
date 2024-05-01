@@ -7,18 +7,15 @@ pub use server::Server;
 
 use self::server_config::ServerConfig;
 
-fn log_launch_and_open_browser(sc: &ServerConfig) {
+fn log_launch(sc: &ServerConfig) {
     let addr = sc.addr().to_string();
     tracing::info!(
         "🚀 Tailcall launched at [{}] over {}",
         addr,
         sc.http_version()
     );
-    if sc.graphiql() {
-        let url = sc.graphiql_url();
-        let url = format!("https://tailcall.run/playground/?u={}/graphql", url);
-        tracing::info!("🌍 Playground: {}", url);
 
-        let _ = webbrowser::open(url.as_str());
-    }
+    let url = sc.graphiql_url();
+    let url = format!("https://tailcall.run/playground/?u={}/graphql", url);
+    tracing::info!("🌍 Playground: {}", url);
 }

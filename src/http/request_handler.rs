@@ -4,11 +4,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::header::{self};
+use hyper::header::{self, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
+use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -17,8 +18,32 @@ use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, AppContext};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::blueprint::telemetry::TelemetryExporter;
+use crate::config::{PrometheusExporter, PrometheusFormat};
 
 pub const API_URL_PREFIX: &str = "/api";
+
+fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
+    let metric_families = prometheus::default_registry().gather();
+    let mut buffer = vec![];
+
+    match prometheus_exporter.format {
+        PrometheusFormat::Text => TextEncoder::new().encode(&metric_families, &mut buffer)?,
+        PrometheusFormat::Protobuf => {
+            ProtobufEncoder::new().encode(&metric_families, &mut buffer)?
+        }
+    };
+
+    let content_type = match prometheus_exporter.format {
+        PrometheusFormat::Text => TEXT_FORMAT,
+        PrometheusFormat::Protobuf => prometheus::PROTOBUF_FORMAT,
+    };
+
+    Ok(Response::builder()
+        .status(200)
+        .header(CONTENT_TYPE, content_type)
+        .body(Body::from(buffer))?)
+}
 
 fn not_found() -> Result<Response<Body>> {
     Ok(Response::builder()
@@ -234,6 +259,17 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
             graphql_request::<T>(req, &app_ctx, req_counter).await
         }
 
+        hyper::Method::GET => {
+            if let Some(TelemetryExporter::Prometheus(prometheus)) =
+                app_ctx.blueprint.telemetry.export.as_ref()
+            {
+                if req.uri().path() == prometheus.path {
+                    return prometheus_metrics(prometheus);
+                }
+            };
+
+            not_found()
+        }
         _ => not_found(),
     }
 }

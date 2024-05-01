@@ -1,7 +1,7 @@
 # Http with args as body
 
 ```graphql @server
-schema @server(port: 8000, graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
