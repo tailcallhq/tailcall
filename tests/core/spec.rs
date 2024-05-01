@@ -20,7 +20,7 @@ use tailcall::print_schema::print_schema;
 use tailcall::valid::{Cause, ValidationError, Validator as _};
 
 use super::file::File;
-use super::http::{ApiBody, Http};
+use super::http::Http;
 use super::model::*;
 use super::runtime::ExecutionSpec;
 use crate::core::runtime;
@@ -193,7 +193,7 @@ async fn run_query_tests_on_spec(
             let response: APIResponse = APIResponse {
                 status: response.status().clone().as_u16(),
                 headers,
-                body: Some(ApiBody::Value(
+                body: Some(APIBody::Value(
                     serde_json::from_slice(
                         &hyper::body::to_bytes(response.into_body()).await.unwrap(),
                     )

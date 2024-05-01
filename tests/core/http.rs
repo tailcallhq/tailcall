@@ -1,6 +1,6 @@
 extern crate core;
 
-use std::panic;
+
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -9,41 +9,12 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
+
 use tailcall::http::Response;
 use tailcall::HttpIO;
 
 use super::runtime::{ExecutionMock, ExecutionSpec};
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum ApiBody {
-    #[serde(rename = "textBody")]
-    Text(String),
-    #[serde(rename = "fileBody")]
-    File(String),
-    #[serde(rename = "body")]
-    Value(Value),
-}
-
-impl ApiBody {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        match self {
-            ApiBody::Value(value) => serde_json::to_vec(value)
-                .unwrap_or_else(|_| core::panic!("Failed to convert value: {value:?}")),
-            ApiBody::Text(text) => string_to_bytes(text),
-            ApiBody::File(file) => {
-                let root_dir = env!("CARGO_MANIFEST_DIR");
-                let root_dir = Path::new(root_dir).join("tests/fixtures");
-                let path = root_dir.join(file);
-
-                std::fs::read(&path).unwrap_or_else(|_| {
-                    core::panic!("Failed to read file by path: {}", path.display())
-                })
-            }
-        }
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct Http {
@@ -84,33 +55,7 @@ impl Http {
     }
 }
 
-pub fn string_to_bytes(input: &str) -> Vec<u8> {
-    let mut bytes = Vec::new();
-    let mut chars = input.chars().peekable();
 
-    while let Some(c) = chars.next() {
-        match c {
-            '\\' => match chars.next() {
-                Some('0') => bytes.push(0),
-                Some('n') => bytes.push(b'\n'),
-                Some('t') => bytes.push(b'\t'),
-                Some('r') => bytes.push(b'\r'),
-                Some('\\') => bytes.push(b'\\'),
-                Some('\"') => bytes.push(b'\"'),
-                Some('x') => {
-                    let mut hex = chars.next().unwrap().to_string();
-                    hex.push(chars.next().unwrap());
-                    let byte = u8::from_str_radix(&hex, 16).unwrap();
-                    bytes.push(byte);
-                }
-                _ => panic!("Unsupported escape sequence"),
-            },
-            _ => bytes.push(c as u8),
-        }
-    }
-
-    bytes
-}
 
 #[async_trait::async_trait]
 impl HttpIO for Http {
