@@ -30,7 +30,7 @@ pub fn benchmark_batched_body(c: &mut Criterion) {
     });
 }
 
-fn benchmark_group_by(c: &mut Criterion) {
+pub fn benchmark_group_by(c: &mut Criterion) {
     let input = json!({
         "data": [
             {"type": "A", "value": {"id": "1"}},

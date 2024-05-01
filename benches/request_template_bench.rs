@@ -30,7 +30,7 @@ impl HasHeaders for Context {
         &self.headers
     }
 }
-fn benchmark_to_request(c: &mut Criterion) {
+pub fn benchmark_to_request(c: &mut Criterion) {
     let tmpl_mustache = RequestTemplate::try_from(Endpoint::new(
         "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}".to_string(),
     ))

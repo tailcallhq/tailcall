@@ -42,7 +42,7 @@ fn create_dummy_value(n: usize, m: usize) -> Result<Value> {
     Ok(value)
 }
 
-fn benchmark_convert_output(c: &mut Criterion) {
+pub fn benchmark_convert_output(c: &mut Criterion) {
     let proto_file_path = Path::new(PROTO_DIR).join(PROTO_FILE);
     let file_descriptor_set = protox::compile([proto_file_path], ["."]).unwrap();
     let protobuf_set = ProtobufSet::from_proto_file(file_descriptor_set).unwrap();
