@@ -27,7 +27,7 @@ pub enum ApiBody {
 }
 
 impl ApiBody {
-    pub fn resolve(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             ApiBody::Value(value) => serde_json::to_vec(value)
                 .unwrap_or_else(|_| core::panic!("Failed to convert value: {value:?}")),
@@ -128,7 +128,7 @@ impl HttpIO for Http {
                     .body
                     .as_ref()
                     .map(|body| {
-                        let mock_body = body.resolve();
+                        let mock_body = body.to_bytes();
 
                         req.body()
                             .and_then(|body| body.as_bytes().map(|req_body| req_body == mock_body))
@@ -184,7 +184,7 @@ impl HttpIO for Http {
 
         // Special Handling for GRPC
         if let Some(body) = mock_response.0.body {
-            response.body = Bytes::from(body.resolve());
+            response.body = Bytes::from(body.to_bytes());
         }
 
         Ok(response)

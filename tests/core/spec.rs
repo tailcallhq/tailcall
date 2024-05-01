@@ -303,7 +303,7 @@ async fn run_test(
     let body = request
         .body
         .as_ref()
-        .map(|body| Body::from(body.resolve()))
+        .map(|body| Body::from(body.to_bytes()))
         .unwrap_or_default();
 
     let method = request.method.clone();
