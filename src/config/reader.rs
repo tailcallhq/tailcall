@@ -5,6 +5,7 @@ use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
+use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
@@ -215,7 +216,9 @@ impl ConfigReader {
 
     /// checks and returns valid path for caller function.
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
-        if src.starts_with("http") || Path::new(&src).is_absolute() {
+        if let Ok(url) = Url::parse(src) {
+            url.to_string()
+        } else if Path::new(&src).is_absolute() {
             src.to_string()
         } else {
             let path = root_dir.unwrap_or(Path::new(""));
