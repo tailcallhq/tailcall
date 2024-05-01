@@ -279,12 +279,12 @@ mod tests {
             let s = r"hello/world";
             let mustache: Mustache = Mustache::parse(s).unwrap();
             let Mustache::Segments(segments) = mustache else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) =
                 Mustache::from(vec![Segment::Literal("hello/world".to_string())])
             else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(segments, expected);
         }
@@ -294,13 +294,13 @@ mod tests {
             let s = r"{{hello.world}}";
             let mustache: Mustache = Mustache::parse(s).unwrap();
             let Mustache::Segments(segments) = mustache else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = Mustache::from(vec![Segment::Expression(vec![
                 "hello".to_string(),
                 "world".to_string(),
             ])]) else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(segments, expected);
         }
@@ -311,7 +311,7 @@ mod tests {
             let mustache: Mustache = Mustache::parse(s).unwrap();
 
             let Mustache::Segments(segments) = mustache else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = Mustache::from(vec![
                 Segment::Literal("http://localhost:8090/".to_string()),
@@ -320,7 +320,7 @@ mod tests {
                 Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
                 Segment::Literal("/end".to_string()),
             ]) else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(segments, expected);
         }
@@ -330,13 +330,13 @@ mod tests {
             let s = "{{ foo . bar }}";
             let mustache: Mustache = Mustache::parse(s).unwrap();
             let Mustache::Segments(segments) = mustache else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = Mustache::from(vec![Segment::Expression(vec![
                 "foo".to_string(),
                 "bar".to_string(),
             ])]) else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(segments, expected);
         }
@@ -349,10 +349,10 @@ mod tests {
                 Segment::Literal(" extra".to_string()),
             ]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -362,10 +362,10 @@ mod tests {
             let result = Mustache::parse("foo.bar }}").unwrap();
             let expected = Mustache::from(vec![Segment::Literal("foo.bar }}".to_string())]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -381,10 +381,10 @@ mod tests {
                 Segment::Literal(" suffix".to_string()),
             ]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -394,10 +394,10 @@ mod tests {
             let result = Mustache::parse("just a string").unwrap();
             let expected = Mustache::Segments(vec![Segment::Literal("just a string".to_string())]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -410,10 +410,10 @@ mod tests {
                 "bar".to_string(),
             ])]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -424,10 +424,10 @@ mod tests {
             let result: Mustache = Mustache::parse(s).unwrap();
             let expected = Mustache::from(vec![Segment::Literal("{{hello.world".to_string())]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -437,10 +437,10 @@ mod tests {
             let mustache = Mustache::parse("123").unwrap();
             let expected = Mustache::from(vec![Segment::Literal("123".to_string())]);
             let Mustache::Segments(result) = mustache else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -453,10 +453,10 @@ mod tests {
                 "FOO".to_string(),
             ])]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -469,10 +469,10 @@ mod tests {
                 "FOO_BAR".to_string(),
             ])]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -482,10 +482,10 @@ mod tests {
             let result = Mustache::parse("test:{SHA}string").unwrap();
             let expected = Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())]);
             let Mustache::Segments(result) = result else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = expected else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(result, expected);
         }
@@ -495,13 +495,13 @@ mod tests {
             let s = r"{{.foo.bar}}";
             let mustache: Mustache = Mustache::parse(s).unwrap();
             let Mustache::Segments(segments) = mustache else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             let Mustache::Segments(expected) = Mustache::from(vec![Segment::Expression(vec![
                 "foo".to_string(),
                 "bar".to_string(),
             ])]) else {
-                todo!()
+                panic!("Mustache must be a segment")
             };
             assert_eq!(segments, expected);
         }
