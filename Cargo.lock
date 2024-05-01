@@ -5384,6 +5384,7 @@ dependencies = [
  "indexmap 2.2.6",
  "insta",
  "tailcall",
+ "tailcall-fixtures",
  "tokio",
 ]
 

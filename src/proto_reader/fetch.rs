@@ -215,13 +215,8 @@ mod grpc_fetch {
 
         let runtime = crate::runtime::test::init(None);
         let resp = grpc_reflection.get_by_service("news.NewsService").await?;
-        let mut news_proto = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        news_proto.push("src");
-        news_proto.push("generator");
-        news_proto.push("proto");
-        news_proto.push("news.proto");
 
-        let content = runtime.file.read(news_proto.to_str().unwrap()).await?;
+        let content = runtime.file.read(tailcall_fixtures::protobuf::NEWS).await?;
         let expected = protox_parse::parse("news.proto", &content)?;
 
         assert_eq!(expected.name(), resp.name());
