@@ -129,7 +129,7 @@ impl ConfigReader {
                 LinkType::Grpc => {
                     let meta = self
                         .proto_reader
-                        .reflection_fetch(link.src.as_str())
+                        .fetch(link.src.as_str())
                         .await?;
 
                     for m in meta {

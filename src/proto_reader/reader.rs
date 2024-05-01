@@ -6,12 +6,12 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
-use crate::proto_reader::reflection_fetch::GrpcReflection;
+use crate::proto_reader::fetch::GrpcReflection;
 use crate::resource_reader::{Cached, ResourceReader};
 use crate::runtime::TargetRuntime;
 
 pub struct ProtoReader {
-    resource_reader: ResourceReader<Cached>,
+    reader: ResourceReader<Cached>,
     runtime: TargetRuntime,
 }
 
@@ -21,14 +21,11 @@ pub struct ProtoMetadata {
 }
 
 impl ProtoReader {
-    pub fn init(resource_reader: ResourceReader<Cached>, runtime: TargetRuntime) -> Self {
-        Self { resource_reader, runtime }
+    pub fn init(reader: ResourceReader<Cached>, runtime: TargetRuntime) -> Self {
+        Self { reader, runtime }
     }
 
-    pub async fn reflection_fetch<T: AsRef<str>>(
-        &self,
-        url: T,
-    ) -> anyhow::Result<Vec<ProtoMetadata>> {
+    pub async fn fetch<T: AsRef<str>>(&self, url: T) -> anyhow::Result<Vec<ProtoMetadata>> {
         let grpc_reflection = GrpcReflection::new(url.as_ref(), self.runtime.clone());
 
         let mut proto_metadata = vec![];
@@ -39,9 +36,7 @@ impl ProtoReader {
             }
             let file_descriptor_proto = grpc_reflection.get_by_service(&service).await?;
             Self::check_package(&file_descriptor_proto)?;
-            let descriptors = self
-                .resolve_descriptors(file_descriptor_proto, None)
-                .await?;
+            let descriptors = self.resolve(file_descriptor_proto, None).await?;
             let metadata = ProtoMetadata {
                 descriptor_set: FileDescriptorSet { file: descriptors },
                 path: url.as_ref().to_string(),
@@ -64,7 +59,7 @@ impl ProtoReader {
         Self::check_package(&file_read)?;
 
         let descriptors = self
-            .resolve_descriptors(file_read, PathBuf::from(path.as_ref()).parent())
+            .resolve(file_read, PathBuf::from(path.as_ref()).parent())
             .await?;
         let metadata = ProtoMetadata {
             descriptor_set: FileDescriptorSet { file: descriptors },
@@ -74,7 +69,7 @@ impl ProtoReader {
     }
 
     /// Performs BFS to import all nested proto files
-    async fn resolve_descriptors(
+    async fn resolve(
         &self,
         parent_proto: FileDescriptorProto,
         parent_path: Option<&Path>,
@@ -121,7 +116,7 @@ impl ProtoReader {
                 .to_string()
         } else {
             let path = Self::resolve_path(path.as_ref(), parent_dir);
-            self.resource_reader.read_file(path).await?.content
+            self.reader.read_file(path).await?.content
         };
         Ok(protox_parse::parse(path.as_ref(), &content)?)
     }
@@ -180,7 +175,7 @@ mod test_proto_config {
 
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         let helper_map = reader
-            .resolve_descriptors(reader.read_proto(&test_file, None).await?, Some(test_dir))
+            .resolve(reader.read_proto(&test_file, None).await?, Some(test_dir))
             .await?;
         let files = test_dir.read_dir()?;
         for file in files {
