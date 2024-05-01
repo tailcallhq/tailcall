@@ -11,7 +11,7 @@ path = "src/main.rs"
 anyhow = "1.0.82"
 async-graphql = { version = "7.0.3" }
 futures-util = { version = "0.3.30" }
-indexmap = "2.2"
+indexmap = "2.2.6"
 insta = { version = "1.38.0", features = ["json"] }
 tokio = { version = "1.37.0", features = ["rt", "time"] }
 
