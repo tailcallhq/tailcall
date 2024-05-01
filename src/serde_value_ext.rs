@@ -274,8 +274,7 @@ mod tests {
 
         #[test]
         fn test_mustache_arr_obj_arr() {
-            let value =
-                json!([{"a": [{"aa": "{{jq: .foo.bar.baz}}"}]}, {"a": [{"aa": "{{jq: .foo.bar.qux}}"}]}]);
+            let value = json!([{"a": [{"aa": "{{jq: .foo.bar.baz}}"}]}, {"a": [{"aa": "{{jq: .foo.bar.qux}}"}]}]);
             let value = DynamicValue::try_from(&value).unwrap();
             let ctx = json!({"foo": {"bar": {"baz": 1, "qux": 2}}});
             let result = value.render_value(&ctx);

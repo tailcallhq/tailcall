@@ -197,19 +197,17 @@ fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
     })(input);
     let jq_result = parse_jq(input);
     if jq_result.is_err() && result.is_err() {
-        return Err(
-            nom::Err::Error(nom::error::Error::new(
-                "failed to parse mustache",
-                nom::error::ErrorKind::Tag,
-            ))
-        );
+        return Err(nom::Err::Error(nom::error::Error::new(
+            "failed to parse mustache",
+            nom::error::ErrorKind::Tag,
+        )));
     }
 
     let (res, jacques) = jq_result.unwrap_or((input, None));
     if jacques.is_none() {
         let (res, segments) = result.unwrap_or((input, vec![]));
         Ok((res, Mustache { segments, jacques }))
-    }else {
+    } else {
         Ok((res, Mustache { segments: vec![], jacques }))
     }
 }
@@ -227,7 +225,11 @@ fn parse_jq(input: &str) -> IResult<&str, Option<jaq_interpret::Filter>> {
     defs.insert_defs(jaq_std::std());
 
     let (filter, errs) = jaq_parse::parse(filter, jaq_parse::main());
-    let _err_str = errs.iter().map(|v| v.to_string()).collect::<Vec<String>>().join("\n");
+    let _err_str = errs
+        .iter()
+        .map(|v| v.to_string())
+        .collect::<Vec<String>>()
+        .join("\n");
     if !errs.is_empty() || filter.is_none() {
         return Err(nom::Err::Error(nom::error::Error::new(
             "failed to parse jq", // TODO: fix ownership issue and return _err_str
@@ -235,7 +237,14 @@ fn parse_jq(input: &str) -> IResult<&str, Option<jaq_interpret::Filter>> {
         )));
     }
     let filter = defs.compile(filter.unwrap());
-    Ok((input, if defs.errs.is_empty() { Some(filter) } else { None }))
+    Ok((
+        input,
+        if defs.errs.is_empty() {
+            Some(filter)
+        } else {
+            None
+        },
+    ))
 }
 
 #[cfg(test)]
@@ -286,7 +295,7 @@ mod tests {
                     "hello".to_string(),
                     "world".to_string(),
                 ])])
-                    .segments
+                .segments
             );
         }
 
@@ -303,7 +312,7 @@ mod tests {
                     Segment::Expression(vec!["hello".to_string(), "world".to_string()]),
                     Segment::Literal("/end".to_string()),
                 ])
-                    .segments
+                .segments
             );
         }
 
@@ -317,7 +326,7 @@ mod tests {
                     "foo".to_string(),
                     "bar".to_string(),
                 ])])
-                    .segments
+                .segments
             );
         }
 
@@ -402,7 +411,7 @@ mod tests {
                     "env".to_string(),
                     "FOO".to_string(),
                 ])])
-                    .segments
+                .segments
             );
         }
 
@@ -415,7 +424,7 @@ mod tests {
                     "env".to_string(),
                     "FOO_BAR".to_string(),
                 ])])
-                    .segments
+                .segments
             );
         }
 
@@ -438,7 +447,7 @@ mod tests {
                     "foo".to_string(),
                     "bar".to_string(),
                 ])])
-                    .segments
+                .segments
             );
         }
     }
@@ -467,8 +476,8 @@ mod tests {
 
             impl Serialize for DummyPath {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                    where
-                        S: Serializer,
+                where
+                    S: Serializer,
                 {
                     serializer.serialize_str("")
                 }
@@ -507,8 +516,8 @@ mod tests {
 
             impl Serialize for DummyPath {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                    where
-                        S: Serializer,
+                where
+                    S: Serializer,
                 {
                     serializer.serialize_str("")
                 }
@@ -551,8 +560,8 @@ mod tests {
 
             impl Serialize for DummyPath {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                    where
-                        S: Serializer,
+                where
+                    S: Serializer,
                 {
                     serializer.serialize_str("")
                 }
