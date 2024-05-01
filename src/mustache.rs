@@ -104,10 +104,6 @@ impl Mustache {
             .collect()
     }
 
-    pub fn get_segments(&self) -> Vec<&Segment> {
-        self.segments.iter().collect()
-    }
-
     pub fn expression_segments(&self) -> Vec<&Vec<String>> {
         self.segments
             .iter()
@@ -237,14 +233,7 @@ fn parse_jq(input: &str) -> IResult<&str, Option<jaq_interpret::Filter>> {
         )));
     }
     let filter = defs.compile(filter.unwrap());
-    Ok((
-        input,
-        if defs.errs.is_empty() {
-            Some(filter)
-        } else {
-            None
-        },
-    ))
+    Ok((input, Some(filter)))
 }
 
 #[cfg(test)]
