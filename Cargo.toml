@@ -141,7 +141,7 @@ async-graphql = { workspace = true, features = [
     "apollo_tracing",
     "opentelemetry",
 ] }
-dotenvy = "0.15"
+dotenvy = "0.15.7"
 convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
