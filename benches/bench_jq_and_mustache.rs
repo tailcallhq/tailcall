@@ -6,7 +6,7 @@ use tailcall::serde_value_ext::ValueExt;
 fn test_data() -> serde_json::Value {
     json!({"foo": {"bar": {"baz": 1}}})
 }
-fn benchmark_mustache_bench(c: &mut Criterion) {
+fn bench_jq_and_mustache(c: &mut Criterion) {
     let data = test_data();
     let value = json!({"a": "{{.foo.bar.baz}}"});
     let dynamic_value = DynamicValue::try_from(&value).unwrap();
@@ -15,9 +15,6 @@ fn benchmark_mustache_bench(c: &mut Criterion) {
             black_box(dynamic_value.render_value(&data)).unwrap();
         })
     });
-}
-
-fn benchmark_jq_bench(c: &mut Criterion) {
     let data = test_data();
     let value = json!({"a": "{{jq: .foo.bar.baz}}"});
     let dynamic_value = DynamicValue::try_from(&value).unwrap();
@@ -28,5 +25,5 @@ fn benchmark_jq_bench(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, benchmark_jq_bench, benchmark_mustache_bench);
+criterion_group!(benches, bench_jq_and_mustache);
 criterion_main!(benches);
