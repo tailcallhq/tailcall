@@ -14,9 +14,10 @@ check_files() {
     local depth=1
     local -a extensions=("-name" "*.json" -o "-name" "*.yml" -o "-name" "*.yaml" -o "-name" "*.graphql" -o "-name" "*.gql")
     local command="./target/debug/tailcall check"
+    local -a ignore=("!" "-name" "grpc-reflection.graphql")
 
     # Execute find command with constructed options and extensions
-    find "$path" -maxdepth "$depth" \( "${extensions[@]}" \) -exec sh -c '
+    find "$path" -maxdepth "$depth" \( "${extensions[@]}" \) "${ignore[@]}" -exec sh -c '
         for file; do
             echo "Checking file: $file"
             '"$command"' "$file" || exit 255

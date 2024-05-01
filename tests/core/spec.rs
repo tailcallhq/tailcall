@@ -193,11 +193,12 @@ async fn run_query_tests_on_spec(
             let response: APIResponse = APIResponse {
                 status: response.status().clone().as_u16(),
                 headers,
-                body: serde_json::from_slice(
-                    &hyper::body::to_bytes(response.into_body()).await.unwrap(),
-                )
-                .unwrap_or(serde_json::Value::Null),
-                text_body: None,
+                body: Some(APIBody::Value(
+                    serde_json::from_slice(
+                        &hyper::body::to_bytes(response.into_body()).await.unwrap(),
+                    )
+                    .unwrap_or_default(),
+                )),
             };
 
             let snapshot_name = format!("{}_{}", spec.safe_name, i);
@@ -289,7 +290,6 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
         Some(Annotation::Skip) => {
             println!("{} ... {}", spec.path.display(), "skipped".blue());
         }
-        Some(Annotation::Only) => {}
         None => test_spec(spec).await,
     }
 
@@ -300,7 +300,12 @@ async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<hyper::Response<Body>> {
-    let query_string = serde_json::to_string(&request.body).expect("body is required");
+    let body = request
+        .body
+        .as_ref()
+        .map(|body| Body::from(body.to_bytes()))
+        .unwrap_or_default();
+
     let method = request.method.clone();
     let headers = request.headers.clone();
     let url = request.url.clone();
@@ -312,7 +317,7 @@ async fn run_test(
                 .uri(url.as_str()),
             |acc, (key, value)| acc.header(key, value),
         )
-        .body(Body::from(query_string))?;
+        .body(body)?;
 
     // TODO: reuse logic from server.rs to select the correct handler
     if app_ctx.blueprint.server.enable_batch_requests {

@@ -1,0 +1,22 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server(graphiql: true, port: 8000) @upstream(baseURL: "http://localhost:50051", httpCache: true) @link(src: "http://localhost:50051", type: Grpc) {
+  query: Query
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type Query {
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+}

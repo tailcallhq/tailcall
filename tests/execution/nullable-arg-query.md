@@ -20,7 +20,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
-    body: null
   response:
     status: 200
     body:
@@ -37,7 +36,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1
-    body: null
   response:
     status: 200
     body:

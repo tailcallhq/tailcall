@@ -19,7 +19,7 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users
-    body: '{"id":1,"name":"foo"}'
+    body: {"id": 1, "name": "foo"}
   response:
     status: 200
     body:

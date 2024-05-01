@@ -21,7 +21,6 @@ type Query {
     url: http://jsonplaceholder.typicode.com/users/1
     headers:
       test: test
-    body: null
   response:
     status: 200
     body:
@@ -30,8 +29,7 @@ type Query {
 - request:
     method: GET
     url: http://example.com/simple.graphql
-    body: null
-  expected_hits: 2
+  expectedHits: 2
   response:
     status: 200
     textBody: |2-
@@ -41,7 +39,6 @@ type Query {
 - request:
     method: GET
     url: http://example.com/invalid.graphql
-    body: null
   response:
     status: 200
     body: dsjfsjdfjdsfjkdskjfjkds

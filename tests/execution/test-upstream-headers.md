@@ -19,7 +19,6 @@ type Post {
     headers:
       x-foo: bar
       x-bar: baz
-    body: null
   response:
     status: 200
     body:
