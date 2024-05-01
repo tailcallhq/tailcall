@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  a(input: JSON): JSON
+  a_input(input: JSON): JSON
+  abc(input: JSON): JSON
+  abc_input(input: JSON): JSON
+  b(input: JSON): JSON
+  b_input(input: JSON): JSON
+  c(input: JSON): JSON
+  wrap_args: JSON
+  wrap_input(input: JSON): JSON
+}
+
+scalar Url
+
+schema {
+  query: Query
+}

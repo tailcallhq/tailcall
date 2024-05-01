@@ -1,0 +1,33 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+type Bar {
+  """
+  This is test2
+  """
+  baz: String
+}
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  """
+  This is test
+  """
+  foo: Bar
+}
+
+scalar Url
+
+schema {
+  query: Query
+}

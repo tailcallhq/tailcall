@@ -1,0 +1,38 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+type News {
+  foo: Status
+  id: Int
+}
+
+type NewsData {
+  news: [News]!
+}
+
+scalar PhoneNumber
+
+type Query {
+  news: NewsData!
+}
+
+enum Status {
+  DRAFT
+  ND
+  PUBLISHED
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
