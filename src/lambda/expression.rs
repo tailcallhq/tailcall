@@ -108,10 +108,10 @@ impl ErrorExtensions for EvaluationError {
                 grpc_status_details,
             } = self
             {
-                e.set("grpc_code", *grpc_code);
-                e.set("grpc_description", grpc_description);
-                e.set("grpc_status_message", grpc_status_message);
-                e.set("grpc_status_details", grpc_status_details.clone());
+                e.set("grpcCode", *grpc_code);
+                e.set("grpcDescription", grpc_description);
+                e.set("grpcStatusMessage", grpc_status_message);
+                e.set("grpcStatusDetails", grpc_status_details.clone());
             }
         })
     }

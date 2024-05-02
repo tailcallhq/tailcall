@@ -19,14 +19,14 @@ expression: response
           }
         ],
         "extensions": {
-          "grpc_code": 3,
-          "grpc_description": "Client specified an invalid argument",
-          "grpc_status_details": {
+          "grpcCode": 3,
+          "grpcDescription": "Client specified an invalid argument",
+          "grpcStatusDetails": {
             "code": 3,
             "message": "error message",
             "details": []
           },
-          "grpc_status_message": "grpc message"
+          "grpcStatusMessage": "grpc message"
         }
       }
     ]
