@@ -5,6 +5,7 @@ use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
+use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
@@ -233,10 +234,12 @@ impl ConfigReader {
         Ok(config_module)
     }
 
-    /// Checks if path is absolute else it joins file path with relative dir
-    /// path
+    /// Checks if path is a URL or absolute path, returns directly if so.
+    /// Otherwise, it joins file path with relative dir path.
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
-        if Path::new(&src).is_absolute() {
+        if let Ok(url) = Url::parse(src) {
+            url.to_string()
+        } else if Path::new(&src).is_absolute() {
             src.to_string()
         } else {
             let path = root_dir.unwrap_or(Path::new(""));
@@ -361,13 +364,18 @@ mod reader_tests {
         let path_dir = Path::new("abc/xyz");
         let file_relative = "foo/bar/my.proto";
         let file_absolute = "/foo/bar/my.proto";
+        let remote_url_path = "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tailcall-fixtures/fixtures/protobuf/news.proto";
         assert_eq!(
             path_dir.to_path_buf().join(file_relative),
             PathBuf::from(ConfigReader::resolve_path(file_relative, Some(path_dir)))
         );
         assert_eq!(
-            "/foo/bar/my.proto",
+            file_absolute,
             ConfigReader::resolve_path(file_absolute, Some(path_dir))
+        );
+        assert_eq!(
+            remote_url_path,
+            ConfigReader::resolve_path(remote_url_path, Some(path_dir))
         );
     }
 }
