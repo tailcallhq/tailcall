@@ -9,7 +9,7 @@ lazy_static::lazy_static! {
     static ref PRETTIER: Arc<Prettier> = Arc::new(Prettier::new());
 }
 
-pub async fn format<T: AsRef<str>>(source: T, parser: Parser) -> Result<String> {
+pub async fn format<T: AsRef<str>>(source: T, parser: &Parser) -> Result<String> {
     PRETTIER.format(source.as_ref().to_string(), parser).await
 }
 
@@ -19,7 +19,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_js() -> anyhow::Result<()> {
-        let prettier = format("const x={a:3};", Parser::Js).await?;
+        let prettier = format("const x={a:3};", &Parser::Js).await?;
         assert_eq!("const x = {a: 3}\n", prettier);
         Ok(())
     }
