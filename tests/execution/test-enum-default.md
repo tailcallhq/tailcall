@@ -8,23 +8,23 @@ import "google/protobuf/empty.proto";
 package news;
 
 enum Status {
-  PUBLISHED = 0;
-  DRAFT = 1;
-  ND = 2;
+    PUBLISHED = 0;
+    DRAFT = 1;
+    NOT_DEFINED = 2;
 }
 
 
 message News {
-  int32 id = 1;
-  Status foo = 5;
+    int32 id = 1;
+    Status foo = 5;
 }
 
 service NewsService {
-  rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
+    rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
 }
 
 message NewsList {
-  repeated News news = 1;
+    repeated News news = 1;
 }
 ```
 
@@ -44,7 +44,7 @@ type Query {
 enum Status {
   PUBLISHED
   DRAFT
-  ND
+  NOT_DEFINED
 }
 
 type News {
