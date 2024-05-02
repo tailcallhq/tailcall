@@ -5,7 +5,6 @@ mod evaluation_context;
 mod expression;
 mod graphql_operation_context;
 mod io;
-mod logic;
 mod modify;
 mod resolver_context_like;
 
@@ -16,5 +15,4 @@ pub use evaluation_context::EvaluationContext;
 pub use expression::*;
 pub use graphql_operation_context::GraphQLOperationContext;
 pub use io::*;
-pub use logic::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
