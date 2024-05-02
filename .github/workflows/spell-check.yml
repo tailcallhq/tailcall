@@ -1,4 +1,4 @@
-name: Build docs
+name: Spell check
 
 on:
   push:
@@ -7,12 +7,14 @@ on:
     paths:
       - "docs/**"
       - "**.md"
+      - "**.rs"
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
     paths:
       - "docs/**"
       - "**.md"
+      - "**.rs"
 
 jobs:
   check_spelling:
