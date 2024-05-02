@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::header::{self, CONTENT_TYPE};
+use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
@@ -140,6 +140,38 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
         }
     }
     new_headers
+}
+
+async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Body>,
+    app_ctx: Arc<AppContext>,
+    request_counter: &mut RequestCounter,
+) -> Result<Response<Body>> {
+    let method = req.method();
+    if method == Method::OPTIONS {
+        let mut res = Response::new(Body::default());
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            HeaderValue::from_static("https://tailcall.run"),
+        );
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_METHODS,
+            HeaderValue::from_static("GET, POST, OPTIONS"),
+        );
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_HEADERS,
+            HeaderValue::from_static("*"),
+        );
+        Ok(res)
+    } else {
+        let mut res = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            HeaderValue::from_static("https://tailcall.run"),
+        );
+
+        Ok(res)
+    }
 }
 
 async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
@@ -293,6 +325,12 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
     let response = if app_ctx.blueprint.server.cors.is_some() {
         handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
+    } else if let Some(origin) = req.headers().get(&header::ORIGIN) {
+        if origin == HeaderValue::from_static("https://tailcall.run") {
+            handle_origin_tailcall::<T>(req, app_ctx, &mut req_counter).await
+        } else {
+            handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
+        }
     } else {
         handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
     };
