@@ -122,30 +122,27 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
         // tests that were explicitly written with it in mind
         if spec.check_identity {
             if matches!(source, Source::GraphQL) {
-                let identity = config.to_sdl();
+                let actual = config.to_sdl();
 
                 // \r is added automatically in windows, it's safe to replace it with \n
                 let content = content.replace("\r\n", "\n");
 
                 let path_str = spec.path.display().to_string();
+                let context = format!("path: {}", path_str);
 
-                let identity = tailcall_prettier::format(
-                    identity,
-                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
-                )
-                .await
-                .unwrap();
+                let actual = tailcall_prettier::format(actual, &tailcall_prettier::Parser::Gql)
+                    .await
+                    .context(context.clone())
+                    .unwrap();
 
-                let content = tailcall_prettier::format(
-                    content,
-                    tailcall_prettier::Parser::detect(path_str.as_str()).unwrap(),
-                )
-                .await
-                .unwrap();
+                let expected = tailcall_prettier::format(content, &tailcall_prettier::Parser::Gql)
+                    .await
+                    .context(context)
+                    .unwrap();
 
                 pretty_assertions::assert_eq!(
-                    identity,
-                    content,
+                    actual,
+                    expected,
                     "Identity check failed for {:#?}",
                     spec.path,
                 );
