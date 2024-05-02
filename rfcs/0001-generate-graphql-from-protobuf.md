@@ -121,3 +121,136 @@ How to convert:
 ### Comments
 
 Comments for protobuf definitions should be preserved whenever possible in graphQL schema
+
+## Example
+
+Consider that protobuf file as an input:
+
+```protobuf
+syntax = "proto3";
+
+package io.xtech;
+
+import "google/protobuf/timestamp.proto";
+
+enum Genre {
+    UNSPECIFIED = 0;
+    ACTION = 1;
+    DRAMA = 2;
+}
+
+/**
+ * movie message payload
+ */
+message Movie {
+    string name = 1;
+    int32 year = 2;
+    float rating = 3;
+
+    /**
+     * list of cast
+     */
+    repeated string cast = 4;
+    google.protobuf.Timestamp time = 5;
+    Genre genre = 6;
+}
+
+message EmptyRequest {}
+
+message movieRequest {
+    Movie movie = 1;
+}
+
+message movie_request_by_ids {
+    repeated string movieIds = 1;
+}
+
+/**
+ * movie result message, contains list of movies
+ */
+message MoviesResult {
+    /**
+     * list of movies
+     */
+    repeated Movie result = 1;
+}
+
+service Example {
+  /**
+  * get all movies
+  */
+  rpc GetMovies (movieRequest) returns (MoviesResult) {}
+
+  /**
+  * get movies
+  */
+  rpc RetrieveMovies (movie_request_by_ids) returns (MoviesResult) {}
+}
+```
+
+Expected output for this file would be:
+
+```graphql
+schema {
+  query: Query
+}
+
+type Query {
+  """get all movies"""
+  io_xtech_Example_GetMovies(input: io__xtech__movie_request_Input): io__xtech__MoviesResult @grpcMethod(rootJsonName: "Root0", objPath: "io.xtech.Example", methodName: "GetMovies", responseStream: false)
+  """get movies"""
+  io_xtech_Example_RetrieveMovies(input: io__xtech__movie_request_by_ids_Input): io__xtech__MoviesResult @grpcMethod(rootJsonName: "Root0", objPath: "io.xtech.Example", methodName: "RetrieveMovies", responseStream: false)
+}
+
+"""movie result message, contains list of movies"""
+type io__xtech__MoviesResult {
+  """list of movies"""
+  result: [io__xtech__Movie]
+}
+
+"""movie message payload"""
+type io__xtech__Movie {
+  name: String
+  year: Int
+  rating: Float
+  """list of cast"""
+  cast: [String]
+  time: google__protobuf__Timestamp
+  genre: io__xtech__Genre
+}
+
+type google__protobuf__Timestamp {
+  seconds: BigInt
+  nanos: Int
+}
+
+enum io__xtech__Genre {
+  UNSPECIFIED
+  ACTION
+  DRAMA
+}
+
+input io__xtech__movieRequestInput {
+  movie: io__xtech__MovieInput
+}
+
+"""movie message payload"""
+input io__xtech__MovieInput {
+  name: String
+  year: Int
+  rating: Float
+  """list of cast"""
+  cast: [String]
+  time: google__protobuf__TimestampInput
+  genre: io__xtech__Genre
+}
+
+input google__protobuf__TimestampInput {
+  seconds: BigInt
+  nanos: Int
+}
+
+input io__xtech__movie_request_by_idsInput {
+  movieIds: [String]
+}
+```
