@@ -1,4 +1,4 @@
-use std::borrow::{Cow};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;

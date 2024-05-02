@@ -74,7 +74,7 @@ fn not_found() -> Result<Response<Body>> {
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
     let upstream = &app_ctx.blueprint.upstream;
     let allowed = &upstream.allowed_headers;
-    let allowed_headers = create_allowed_headers(req.headers(), &allowed);
+    let allowed_headers = create_allowed_headers(req.headers(), allowed);
 
     RequestContext::from(app_ctx).allowed_headers(allowed_headers)
 }
