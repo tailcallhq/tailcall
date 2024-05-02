@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::borrow::{Cow};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -247,14 +247,17 @@ fn request_context() -> RequestContext {
         extensions: Arc::new(vec![]),
     };
     RequestContext::new(runtime)
-        .server(server)
-        .upstream(upstream)
+        .server(Arc::new(server))
+        .upstream(Arc::new(upstream))
 }
 
 fn bench_main(c: &mut Criterion) {
     let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
+    let mut server = req_ctx.server.as_ref().clone();
 
-    req_ctx.server.vars = TEST_VARS.clone();
+    server.vars = TEST_VARS.clone();
+    req_ctx.server = Arc::new(server);
+
     let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
 
     assert_test(&eval_ctx);
