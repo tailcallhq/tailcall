@@ -38,7 +38,7 @@ message NewsList {
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
@@ -109,7 +109,7 @@ type Post {
 ```yml @mock
 - request:
     url: http://jsonplaceholder.typicode.com/users/1
-  expected_hits: 4
+  expectedHits: 4
   response:
     body:
       id: 1
@@ -124,7 +124,7 @@ type Post {
       name: "Leanne Graham http headers"
 - request:
     url: http://jsonplaceholder.typicode.com/posts
-  expected_hits: 9
+  expectedHits: 9
   response:
     body:
       - id: 1
@@ -138,10 +138,10 @@ type Post {
 - request:
     url: http://upstream/graphql
     method: POST
-    body: '{ "query": "query { user { name } }" }'
+    textBody: '{ "query": "query { user { name } }" }'
     headers:
       id: 1
-  expected_hits: 2
+  expectedHits: 2
   response:
     body:
       data:
@@ -149,7 +149,7 @@ type Post {
           name: "Leanne Graham"
 - request:
     url: http://jsonplaceholder.typicode.com/posts?userId=1
-  expected_hits: 2
+  expectedHits: 2
   response:
     body:
       - id: 1
@@ -163,9 +163,9 @@ type Post {
 - request:
     url: http://localhost:50051/news.NewsService/GetAllNews
     method: POST
-  expected_hits: 4
+  expectedHits: 4
   response:
-    body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
+    textBody: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
 ```yml @test

@@ -2,7 +2,7 @@
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
@@ -35,7 +35,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts
-    body: null
   response:
     status: 200
     body:
@@ -54,8 +53,8 @@ type Post {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "query { user(id: 1) { name } }" }'
-  expected_hits: 1
+    textBody: '{ "query": "query { user(id: 1) { name } }" }'
+  expectedHits: 1
   response:
     status: 200
     body:
@@ -65,8 +64,8 @@ type Post {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "query { user(id: 2) { name } }" }'
-  expected_hits: 1
+    textBody: '{ "query": "query { user(id: 2) { name } }" }'
+  expectedHits: 1
   response:
     status: 200
     body:

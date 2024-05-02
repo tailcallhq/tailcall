@@ -5,6 +5,7 @@ use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
 };
+use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::config::{Config, ConfigReaderContext, Source};
@@ -28,7 +29,7 @@ impl ConfigReader {
         Self {
             runtime: runtime.clone(),
             resource_reader: resource_reader.clone(),
-            proto_reader: ProtoReader::init(resource_reader),
+            proto_reader: ProtoReader::init(resource_reader, runtime),
         }
     }
 
@@ -59,12 +60,11 @@ impl ConfigReader {
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
 
-            let source = self.resource_reader.read_file(&path).await?;
-
-            let content = source.content;
-
             match link.type_of {
                 LinkType::Config => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
 
                     config_module = config_module.merge_right(ConfigModule::from(config.clone()));
@@ -80,39 +80,59 @@ impl ConfigReader {
                     }
                 }
                 LinkType::Protobuf => {
-                    let path = Self::resolve_path(&link.src, parent_dir);
                     let meta = self.proto_reader.read(path).await?;
                     config_module.extensions.add_proto(meta);
                 }
                 LinkType::Script => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
                     config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
                     config_module
                         .extensions
                         .cert
-                        .extend(self.load_cert(content.clone()).await?);
+                        .extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
-                    config_module.extensions.keys =
-                        Arc::new(self.load_private_key(content.clone()).await?)
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+                    config_module.extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     config_module
                         .extensions
                         .htpasswd
-                        .push(Content { id: link.id.clone(), content: content.clone() });
+                        .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
+                    let source = self.resource_reader.read_file(&path).await?;
+                    let content = source.content;
+
                     let de = &mut serde_json::Deserializer::from_str(&content);
 
                     config_module.extensions.jwks.push(Content {
                         id: link.id.clone(),
                         content: serde_path_to_error::deserialize(de)?,
                     })
+                }
+                LinkType::Grpc => {
+                    let meta = self.proto_reader.fetch(link.src.as_str()).await?;
+
+                    for m in meta {
+                        config_module.extensions.add_proto(m);
+                    }
                 }
             }
         }
@@ -197,12 +217,13 @@ impl ConfigReader {
 
         let server = &mut config_module.config.server;
         let reader_ctx = ConfigReaderContext {
-            env: self.runtime.env.clone(),
+            runtime: &self.runtime,
             vars: &server
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
+            headers: Default::default(),
         };
 
         config_module
@@ -213,10 +234,12 @@ impl ConfigReader {
         Ok(config_module)
     }
 
-    /// Checks if path is absolute else it joins file path with relative dir
-    /// path
+    /// Checks if path is a URL or absolute path, returns directly if so.
+    /// Otherwise, it joins file path with relative dir path.
     fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
-        if Path::new(&src).is_absolute() {
+        if let Ok(url) = Url::parse(src) {
+            url.to_string()
+        } else if Path::new(&src).is_absolute() {
             src.to_string()
         } else {
             let path = root_dir.unwrap_or(Path::new(""));
@@ -341,13 +364,18 @@ mod reader_tests {
         let path_dir = Path::new("abc/xyz");
         let file_relative = "foo/bar/my.proto";
         let file_absolute = "/foo/bar/my.proto";
+        let remote_url_path = "https://raw.githubusercontent.com/tailcallhq/tailcall/main/tailcall-fixtures/fixtures/protobuf/news.proto";
         assert_eq!(
             path_dir.to_path_buf().join(file_relative),
             PathBuf::from(ConfigReader::resolve_path(file_relative, Some(path_dir)))
         );
         assert_eq!(
-            "/foo/bar/my.proto",
+            file_absolute,
             ConfigReader::resolve_path(file_absolute, Some(path_dir))
+        );
+        assert_eq!(
+            remote_url_path,
+            ConfigReader::resolve_path(remote_url_path, Some(path_dir))
         );
     }
 }

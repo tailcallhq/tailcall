@@ -2,7 +2,7 @@
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
   query: Query
 }
@@ -29,7 +29,7 @@ type Post {
 ```yml @mock
 - request:
     url: http://jsonplaceholder.typicode.com/posts
-  expected_hits: 1
+  expectedHits: 1
   response:
     body:
       - id: 1
@@ -37,7 +37,7 @@ type Post {
         userId: 1
 - request:
     url: http://jsonplaceholder.typicode.com/users/1
-  expected_hits: 1
+  expectedHits: 1
   response:
     body:
       id: 1

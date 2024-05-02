@@ -6,7 +6,7 @@ scalar PhoneNumber
 scalar Date
 scalar Url
 
-schema @server(port: 8000, graphiql: true, hostname: "localhost") {
+schema @server(port: 8000, hostname: "localhost") {
   query: Query
 }
 

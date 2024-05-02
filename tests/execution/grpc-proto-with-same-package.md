@@ -35,7 +35,7 @@ service BarService {
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true)
+  @server(port: 8000)
   @upstream(baseURL: "http://localhost:50051")
   @link(src: "foo.proto", type: Protobuf)
   @link(src: "bar.proto", type: Protobuf) {
@@ -60,18 +60,16 @@ type Bar {
 - request:
     method: POST
     url: http://localhost:50051/test.FooService/GetFoo
-    body: null
   response:
     status: 200
-    body: \0\0\0\0\n\n\x08test-foo
+    textBody: \0\0\0\0\n\n\x08test-foo
 
 - request:
     method: POST
     url: http://localhost:50051/test.BarService/GetBar
-    body: null
   response:
     status: 200
-    body: \0\0\0\0\n\n\x08test-bar
+    textBody: \0\0\0\0\n\n\x08test-bar
 ```
 
 ```yml @test

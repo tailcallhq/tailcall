@@ -66,7 +66,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/1
-    body: null
   response:
     status: 200
     body:
@@ -77,7 +76,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/2
-    body: null
   response:
     status: 200
     body:
@@ -88,7 +86,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts/3
-    body: null
   response:
     status: 200
     body:

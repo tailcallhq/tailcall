@@ -1,0 +1,30 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "news": {
+        "news": [
+          {
+            "id": 1,
+            "foo": "PUBLISHED"
+          },
+          {
+            "id": 2,
+            "foo": "DRAFT"
+          },
+          {
+            "id": 3,
+            "foo": "ND"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -38,7 +38,7 @@ message NewsList {
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true)
+  @server(port: 8000)
   @upstream(httpCache: true, batch: {delay: 10})
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
@@ -71,7 +71,6 @@ type News {
 - request:
     method: POST
     url: http://localhost:50051/news.NewsService/GetAllNews
-    body: null
   response:
     status: 200
     headers:

@@ -38,7 +38,7 @@ message NewsList {
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true)
+  @server(port: 8000)
   @upstream(httpCache: true, batch: {delay: 10}, baseURL: "http://not-a-valid-grpc-url.com")
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
@@ -71,10 +71,9 @@ type News {
 - request:
     method: POST
     url: http://localhost:50051/news.NewsService/GetAllNews
-    body: null
   response:
     status: 200
-    body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
+    textBody: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
 ```yml @test
