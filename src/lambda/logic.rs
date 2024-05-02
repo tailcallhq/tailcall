@@ -1,86 +1,3 @@
-use core::future::Future;
-use std::pin::Pin;
-
-use anyhow::Result;
-use async_graphql_value::ConstValue;
-
-use super::{Concurrent, Eval, EvaluationContext, Expression, ResolverContextLike};
-
-#[derive(Clone, Debug, strum_macros::Display)]
-pub enum Logic {
-    If {
-        cond: Box<Expression>,
-        then: Box<Expression>,
-        els: Box<Expression>,
-    },
-    And(Vec<Expression>),
-    Or(Vec<Expression>),
-    Cond(Vec<(Box<Expression>, Box<Expression>)>),
-    DefaultTo(Box<Expression>, Box<Expression>),
-    IsEmpty(Box<Expression>),
-    Not(Box<Expression>),
-}
-
-impl Eval for Logic {
-    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
-        conc: &'a Concurrent,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
-        Box::pin(async move {
-            Ok(match self {
-                Logic::Or(list) => {
-                    let future_iter = list.iter().map(|expr| {
-                        let ctx = ctx.clone();
-                        async move { expr.eval(ctx.clone(), conc).await }
-                    });
-
-                    conc.fold(future_iter, false, |acc, val| Ok(acc || is_truthy(&val?)))
-                        .await
-                        .map(ConstValue::from)?
-                }
-                Logic::Cond(list) => {
-                    for (cond, expr) in list.iter() {
-                        if is_truthy(&cond.eval(ctx.clone(), conc).await?) {
-                            return expr.eval(ctx, conc).await;
-                        }
-                    }
-                    ConstValue::Null
-                }
-                Logic::DefaultTo(value, default) => {
-                    let result = value.eval(ctx.clone(), conc).await?;
-                    if is_empty(&result) {
-                        default.eval(ctx, conc).await?
-                    } else {
-                        result
-                    }
-                }
-                Logic::IsEmpty(expr) => is_empty(&expr.eval(ctx, conc).await?).into(),
-                Logic::Not(expr) => (!is_truthy(&expr.eval(ctx, conc).await?)).into(),
-
-                Logic::And(list) => {
-                    let future_iter = list.iter().map(|expr| {
-                        let ctx = ctx.clone();
-                        async move { expr.eval(ctx, conc).await }
-                    });
-
-                    conc.fold(future_iter, true, |acc, val| Ok(acc && is_truthy(&val?)))
-                        .await
-                        .map(ConstValue::from)?
-                }
-                Logic::If { cond, then, els } => {
-                    let cond = cond.eval(ctx.clone(), conc).await?;
-                    if is_truthy(&cond) {
-                        then.eval(ctx, conc).await?
-                    } else {
-                        els.eval(ctx, conc).await?
-                    }
-                }
-            })
-        })
-    }
-}
-
 /// Check if a value is truthy
 ///
 /// Special cases:
@@ -100,17 +17,6 @@ pub fn is_truthy(value: &async_graphql::Value) -> bool {
         &Value::Boolean(b) => b,
         Value::Number(n) => n != &Number::from(0),
         Value::Binary(b) => b != &Bytes::default(),
-    }
-}
-
-fn is_empty(value: &async_graphql::Value) -> bool {
-    match value {
-        ConstValue::Null => true,
-        ConstValue::Number(_) | ConstValue::Boolean(_) | ConstValue::Enum(_) => false,
-        ConstValue::Binary(bytes) => bytes.is_empty(),
-        ConstValue::List(list) => list.is_empty(),
-        ConstValue::Object(obj) => obj.is_empty(),
-        ConstValue::String(string) => string.is_empty(),
     }
 }
 
