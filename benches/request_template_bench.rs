@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use serde_json::json;
@@ -30,7 +30,7 @@ impl HasHeaders for Context {
         &self.headers
     }
 }
-fn benchmark_to_request(c: &mut Criterion) {
+pub fn benchmark_to_request(c: &mut Criterion) {
     let tmpl_mustache = RequestTemplate::try_from(Endpoint::new(
         "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}".to_string(),
     ))
@@ -59,10 +59,3 @@ fn benchmark_to_request(c: &mut Criterion) {
         })
     });
 }
-
-criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets = benchmark_to_request
-}
-criterion_main!(benches);

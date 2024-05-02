@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.82"
 lazy_static = "1.4.0"
 schemars = "0.8.17"
-serde = "1.0.199"
+serde = "1.0.200"
 serde_json = "1.0.116"
 tailcall = { path = "../" }
 tokio = { version = "1.37.0", features = ["full"] }

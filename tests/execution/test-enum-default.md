@@ -31,7 +31,7 @@ message NewsList {
 ```graphql @server
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
 schema
-  @server(port: 8080, graphiql: true)
+  @server(port: 8080)
   @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
   @link(id: "news", src: "./service.proto", type: Protobuf) {
   query: Query

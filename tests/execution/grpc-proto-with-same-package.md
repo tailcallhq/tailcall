@@ -35,7 +35,7 @@ service BarService {
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true)
+  @server(port: 8000)
   @upstream(baseURL: "http://localhost:50051")
   @link(src: "foo.proto", type: Protobuf)
   @link(src: "bar.proto", type: Protobuf) {
