@@ -5,7 +5,7 @@ use async_graphql::Response;
 
 use crate::auth::context::GlobalAuthContext;
 use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
+use crate::blueprint::{Blueprint, Definition, SchemaModifiers, Server, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
@@ -18,6 +18,8 @@ use crate::runtime::TargetRuntime;
 pub struct AppContext {
     pub schema: dynamic::Schema,
     pub runtime: TargetRuntime,
+    pub server: Arc<Server>,
+    pub upstream: Arc<Upstream>,
     pub blueprint: Blueprint,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
@@ -117,6 +119,8 @@ impl AppContext {
         AppContext {
             schema,
             runtime,
+            server: Arc::new(blueprint.server.clone()),
+            upstream: Arc::new(blueprint.upstream.clone()),
             blueprint,
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
