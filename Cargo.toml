@@ -51,7 +51,7 @@ anyhow = { workspace = true }
 derive_setters = "0.1.6"
 thiserror = "1.0.59"
 serde_json = { version = "1.0", features = ["preserve_order"] }
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.200", features = ["derive"] }
 serde_qs = "0.13"
 serde_yaml = "0.9"
 serde_urlencoded = "0.7.1"
