@@ -12,7 +12,7 @@ use tailcall_query_plan::plan::{GeneralPlan, OperationPlan};
 
 #[tokio::test]
 async fn test_simple() {
-    let root_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/config");
+    let root_dir = Path::new(tailcall_fixtures::configs::SELF);
     let config = fs::read_to_string(root_dir.join("user-posts.graphql")).unwrap();
     let config = Config::from_sdl(&config).to_result().unwrap();
     let config = ConfigModule::from(config);

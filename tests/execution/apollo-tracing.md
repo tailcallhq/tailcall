@@ -16,7 +16,6 @@ type Query {
 - request:
     method: GET
     url: http://api.com
-    body: null
   response:
     status: 200
     body: hello

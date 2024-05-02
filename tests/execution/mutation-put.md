@@ -38,7 +38,7 @@ type User {
 - request:
     method: PUT
     url: http://jsonplaceholder.typicode.com/posts/100
-    body: '{"body":"abc","id":100,"title":"bar","userId":1}'
+    body: {"body": "abc", "id": 100, "title": "bar", "userId": 1}
   response:
     status: 200
     body:

@@ -22,7 +22,6 @@ type User @addField(name: "address", path: ["address", "street"]) {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
