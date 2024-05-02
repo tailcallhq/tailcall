@@ -16,7 +16,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
-use super::{showcase, telemetry, AppContext};
+use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
@@ -326,7 +326,7 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     let response = if app_ctx.blueprint.server.cors.is_some() {
         handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
     } else if let Some(origin) = req.headers().get(&header::ORIGIN) {
-        if origin == HeaderValue::from_static("https://tailcall.run") {
+        if origin == TAILCALL_HTTPS_ORIGIN || origin == TAILCALL_HTTP_ORIGIN {
             handle_origin_tailcall::<T>(req, app_ctx, &mut req_counter).await
         } else {
             handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
