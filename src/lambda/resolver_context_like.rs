@@ -9,7 +9,7 @@ pub trait ResolverContextLike<'a>: Clone {
     fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
     fn field(&'a self) -> Option<SelectionField>;
     fn add_error(&'a self, error: ServerError);
-    fn requires_batching(&'a self) -> bool {
+    fn dedupe_io(&'a self) -> bool {
         false
     }
 }
@@ -68,7 +68,7 @@ impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
         self.inner.ctx.add_error(error)
     }
 
-    fn requires_batching(&'a self) -> bool {
+    fn dedupe_io(&'a self) -> bool {
         self.dedupe_io
     }
 }
