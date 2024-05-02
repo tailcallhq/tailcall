@@ -237,11 +237,6 @@ directive @server(
   """
   globalResponseTimeout: Int
   """
-  `graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for 
-  query development and testing. @default `false`.
-  """
-  graphiql: Boolean
-  """
   `headers` contains key-value pairs that are included as default headers in server 
   responses, allowing for consistent header management across all responses.
   """

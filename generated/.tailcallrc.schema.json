@@ -961,13 +961,6 @@
           ],
           "format": "int64"
         },
-        "graphiql": {
-          "description": "`graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "headers": {
           "description": "`headers` contains key-value pairs that are included as default headers in server responses, allowing for consistent header management across all responses.",
           "anyOf": [
