@@ -35,7 +35,7 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-  expected_hits: 1
+  expectedHits: 1
   response:
     status: 200
     body:

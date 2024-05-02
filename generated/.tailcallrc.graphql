@@ -232,6 +232,10 @@ directive @server(
   """
   batchRequests: Boolean
   """
+  `dedupe_io` if true, will use caching to prevent duplicate IO calls. @default `false`.
+  """
+  dedupeIo: Boolean
+  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """

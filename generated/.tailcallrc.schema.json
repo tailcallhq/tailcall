@@ -953,6 +953,13 @@
             "null"
           ]
         },
+        "dedupeIo": {
+          "description": "`dedupe_io` if true, will use caching to prevent duplicate IO calls. @default `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [

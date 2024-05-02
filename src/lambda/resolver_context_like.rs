@@ -36,18 +36,18 @@ impl<'a> ResolverContextLike<'a> for EmptyResolverContext {
 #[derive(Clone)]
 pub struct ResolverContext<'a> {
     inner: Arc<async_graphql::dynamic::ResolverContext<'a>>,
-    requires_batching: bool,
+    dedupe_io: bool,
 }
 
 impl<'a> From<async_graphql::dynamic::ResolverContext<'a>> for ResolverContext<'a> {
     fn from(value: async_graphql::dynamic::ResolverContext<'a>) -> Self {
-        ResolverContext { inner: Arc::new(value), requires_batching: false }
+        ResolverContext { inner: Arc::new(value), dedupe_io: false }
     }
 }
 
 impl<'a> ResolverContext<'a> {
-    pub fn enable_batching(&mut self) {
-        self.requires_batching = true;
+    pub fn dedupe_io(&mut self) {
+        self.dedupe_io = true;
     }
 }
 
@@ -69,6 +69,6 @@ impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
     }
 
     fn requires_batching(&'a self) -> bool {
-        self.requires_batching
+        self.dedupe_io
     }
 }

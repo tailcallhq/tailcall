@@ -99,6 +99,11 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// `dedupe_io` if true, will use caching to prevent
+    /// duplicate IO calls. @default `false`.
+    pub dedupe_io: Option<bool>,
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -213,6 +218,10 @@ impl Server {
 
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
+    }
+
+    pub fn get_dedupe_io(&self) -> bool {
+        self.dedupe_io.unwrap_or(false)
     }
 }
 

@@ -1,7 +1,9 @@
 # Async Cache Enabled
 
 ```graphql @server
-schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema
+  @server(port: 8000, queryValidation: false, dedupeIo: true)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
@@ -37,7 +39,7 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-  expected_hits: 1
+  expectedHits: 1
   response:
     status: 200
     body:
