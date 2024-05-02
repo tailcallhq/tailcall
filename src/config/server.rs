@@ -41,11 +41,6 @@ pub struct Server {
     pub global_response_timeout: Option<i64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `graphiql` activates the GraphiQL IDE at the root path within Tailcall,
-    /// a tool for query development and testing. @default `false`.
-    pub graphiql: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
     /// `hostname` sets the server hostname.
     pub hostname: Option<String>,
 
@@ -134,9 +129,7 @@ impl Server {
     pub fn enable_apollo_tracing(&self) -> bool {
         self.apollo_tracing.unwrap_or(false)
     }
-    pub fn enable_graphiql(&self) -> bool {
-        self.graphiql.unwrap_or(false)
-    }
+
     pub fn get_global_response_timeout(&self) -> i64 {
         self.global_response_timeout.unwrap_or(0)
     }
