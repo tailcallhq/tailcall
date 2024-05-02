@@ -45,6 +45,7 @@ where
     fn insert(&mut self, _key: Cow<'_, Self::Key>, _val: Cow<'_, Self::Value>) {}
 
     #[inline]
+    #[allow(dead_code)]
     fn remove(&mut self, _key: &K) {}
 
     #[inline]
