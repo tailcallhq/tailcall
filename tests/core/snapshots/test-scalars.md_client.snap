@@ -2,6 +2,8 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar AnyScalar
+
 scalar Date
 
 scalar Email
@@ -13,6 +15,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
+  any(value: AnyScalar!): AnyScalar
   date(value: Date!): Date!
   email(value: Email!): Email!
   phone(value: PhoneNumber!): PhoneNumber!
