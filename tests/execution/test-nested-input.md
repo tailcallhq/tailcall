@@ -1,7 +1,7 @@
 # test-nested-input
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

@@ -1,7 +1,7 @@
 # test-expr
 
 ```graphql @server
-schema @server @upstream {
+schema {
   query: Query
 }
 

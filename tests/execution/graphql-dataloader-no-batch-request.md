@@ -8,17 +8,17 @@ schema @upstream(batch: {delay: 1}) {
 type Post {
   id: Int
   title: String
+  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], baseURL: "http://upstream/graphql", name: "user")
   userId: Int
-  user: User @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.value.userId}}"}])
+}
+
+type Query {
+  posts: [Post] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts")
 }
 
 type User {
   id: Int
   name: String
-}
-
-type Query {
-  posts: [Post] @http(path: "/posts", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 

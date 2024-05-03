@@ -1,10 +1,16 @@
 # Call operator with GraphQL data source
 
 ```graphql @server
-schema
-  @server(port: 8000, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
+}
+
+type Post {
+  body: String!
+  id: Int!
+  title: String!
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
 }
 
 type Query {
@@ -14,14 +20,6 @@ type Query {
 type User {
   id: Int!
   name: String!
-}
-
-type Post {
-  id: Int!
-  userId: Int!
-  title: String!
-  body: String!
-  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```
 

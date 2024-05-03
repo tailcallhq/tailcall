@@ -5,9 +5,7 @@ expect_validation_error: true
 # Cors invalid allowOrigins
 
 ```graphql @server
-schema
-  @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000})
-  @server(headers: {cors: {allowCredentials: true, allowOrigins: ["*"], allowMethods: [POST, OPTIONS]}}) {
+schema @server(headers: {cors: {allowCredentials: true, allowMethods: ["POST", "OPTIONS"], allowOrigins: ["*"], vary: ["origin", "access-control-request-method", "access-control-request-headers"]}}) @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 

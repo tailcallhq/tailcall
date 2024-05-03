@@ -13,45 +13,36 @@ type NestedUser {
   id: ID
 }
 
+type Post {
+  id: Int!
+  nestedNonScalar: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.nonNullableUser.nonNullableNestedUser}}")
+  nestedNullable: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.nonNullableUser.nonNullableNestedUser.id}}")
+  nestedUndefinedValue: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.nonNullableUser.nonNullableNestedUser.userId}}")
+  nestedUserNullable: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.nonNullableUser.nestedUser.id}}")
+  nonNullableUser: User! @http(baseURL: "http://localhost:8080", path: "/users/{{.value.id}}")
+  user: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.id}}")
+  userArg: User @http(baseURL: "http://localhost:8080", path: "/users/{{.args.id}}")
+  userId: Int
+  userInvalidDirective: User @http(baseURL: "http://localhost:8080", path: "/users/{{.Vale.userId}}")
+  userNonScalar: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.nonNullableUser}}")
+  userNullValue: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.userId}}")
+  userNullValueQuery: User @http(baseURL: "http://localhost:8080", path: "/users", query: [{key: "id", value: "{{.value.id}}"}])
+  userNullable: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.user.id}}")
+  userUndefinedValue: User @http(baseURL: "http://localhost:8080", path: "/users/{{.value.userid}}")
+  userUndefinedValueQuery: User @http(baseURL: "http://localhost:8080", path: "/users", query: [{key: "id", value: "{{.value.userid}}"}])
+  userVars: User @http(baseURL: "http://localhost:8080", path: "/users/{{.vars.a}}")
+}
+
+type Query {
+  userAccessHeadersVars(id: ID!): User @http(baseURL: "http://localhost:8080", path: "/user/{{.args.id}}/{{.headers.garbage}}/{{.vars.garbage}}")
+  userListArg(id: [ID]): User @http(baseURL: "http://localhost:8080", path: "/user/{{.args.id}}")
+  userNullableArg(id: ID): User @http(baseURL: "http://localhost:8080", path: "/user/{{.args.id}}")
+  userUndefinedArg(id: ID): User @http(baseURL: "http://localhost:8080", path: "/user/{{.args.uid}}")
+}
+
 type User {
   id: ID!
   nestedUser: NestedUser
   nonNullableNestedUser: NestedUser!
-}
-
-type Query {
-  userAccessHeadersVars(id: ID!): User
-    @http(path: "/user/{{.args.id}}/{{.headers.garbage}}/{{.vars.garbage}}", baseURL: "http://localhost:8080")
-  userListArg(id: [ID]): User @http(path: "/user/{{.args.id}}", baseURL: "http://localhost:8080")
-  userNullableArg(id: ID): User @http(path: "/user/{{.args.id}}", baseURL: "http://localhost:8080")
-  userUndefinedArg(id: ID): User @http(path: "/user/{{.args.uid}}", baseURL: "http://localhost:8080")
-}
-
-type Post {
-  id: Int!
-  userId: Int
-  user: User @http(path: "/users/{{.value.id}}", baseURL: "http://localhost:8080")
-  nonNullableUser: User! @http(path: "/users/{{.value.id}}", baseURL: "http://localhost:8080")
-  userArg: User @http(path: "/users/{{.args.id}}", baseURL: "http://localhost:8080")
-  userInvalidDirective: User @http(path: "/users/{{.Vale.userId}}", baseURL: "http://localhost:8080")
-  userNonScalar: User @http(path: "/users/{{.value.nonNullableUser}}", baseURL: "http://localhost:8080")
-  userNullable: User @http(path: "/users/{{.value.user.id}}", baseURL: "http://localhost:8080")
-  nestedUserNullable: User
-    @http(path: "/users/{{.value.nonNullableUser.nestedUser.id}}", baseURL: "http://localhost:8080")
-  nestedNonScalar: User
-    @http(path: "/users/{{.value.nonNullableUser.nonNullableNestedUser}}", baseURL: "http://localhost:8080")
-  nestedUndefinedValue: User
-    @http(path: "/users/{{.value.nonNullableUser.nonNullableNestedUser.userId}}", baseURL: "http://localhost:8080")
-  nestedNullable: User
-    @http(path: "/users/{{.value.nonNullableUser.nonNullableNestedUser.id}}", baseURL: "http://localhost:8080")
-  userNullValue: User @http(path: "/users/{{.value.userId}}", baseURL: "http://localhost:8080")
-  # nullable values are allowed in queries
-  userNullValueQuery: User
-    @http(path: "/users", query: [{key: "id", value: "{{.value.id}}"}], baseURL: "http://localhost:8080")
-  userUndefinedValue: User @http(path: "/users/{{.value.userid}}", baseURL: "http://localhost:8080")
-  # but not undefined values
-  userUndefinedValueQuery: User
-    @http(path: "/users", query: [{key: "id", value: "{{.value.userid}}"}], baseURL: "http://localhost:8080")
-  userVars: User @http(path: "/users/{{.vars.a}}", baseURL: "http://localhost:8080")
 }
 ```

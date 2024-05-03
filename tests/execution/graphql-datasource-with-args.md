@@ -5,21 +5,19 @@ schema {
   query: Query
 }
 
-type User {
-  id: Int
-  name: String
-}
-
 type Post {
   id: Int
   user: User
 }
 
 type Query {
-  user(id: Int): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
-  post(id: Int): Post
-    @graphQL(baseURL: "http://upstream/graphql", name: "post", args: [{key: "id", value: "{{.args.id}}"}])
+  post(id: Int): Post @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "post")
+  user(id: Int): User @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+}
+
+type User {
+  id: Int
+  name: String
 }
 ```
 

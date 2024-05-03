@@ -1,16 +1,17 @@
 # Empty Object Response
 
 ```graphql @server
-schema @server {
+schema {
   query: Query
+}
+
+type Company {
+  id: ID
+  name: String
 }
 
 type Query {
   hi(id: ID!): Company @http(baseURL: "http://localhost:3000", path: "/hi")
-}
-type Company {
-  name: String
-  id: ID
 }
 ```
 

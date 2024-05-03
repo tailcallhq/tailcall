@@ -9,12 +9,12 @@ schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true
   query: Query
 }
 
+type Query {
+  user(id: Int!): User @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
+}
+
 type User {
   id: Int
   name: String
-}
-
-type Query {
-  user(id: Int!): User @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}], batchKey: ["id"])
 }
 ```

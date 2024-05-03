@@ -1,12 +1,8 @@
 # test-merge-nested
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://abc.com") {
+schema @upstream(baseURL: "http://abc.com") {
   query: Query
-}
-
-type Query {
-  hi: Foo @expr(body: "world")
 }
 
 type Foo {
@@ -15,15 +11,15 @@ type Foo {
   """
   b: String
 }
+
+type Query {
+  hi: Foo @expr(body: "world")
+}
 ```
 
 ```graphql @server
-schema @server {
+schema {
   query: Query
-}
-
-type Query {
-  hi: Foo @expr(body: {a: "world"})
 }
 
 type Foo {
@@ -31,5 +27,9 @@ type Foo {
   test2
   """
   a: String
+}
+
+type Query {
+  hi: Foo @expr(body: {a: "world"})
 }
 ```

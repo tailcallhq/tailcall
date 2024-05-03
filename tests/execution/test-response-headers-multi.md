@@ -9,12 +9,12 @@ schema @server(headers: {custom: [{key: "a b", value: "a \n b"}, {key: "a c", va
   query: Query
 }
 
-type User {
-  name: String
-  age: Int
-}
-
 type Query {
   user: User @expr(body: {name: "John"})
+}
+
+type User {
+  age: Int
+  name: String
 }
 ```

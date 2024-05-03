@@ -1,23 +1,21 @@
 # Async Cache Enabled
 
 ```graphql @server
-schema
-  @server(port: 8000, queryValidation: false)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", dedupe: true) {
+schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com", dedupe: true) {
   query: Query
+}
+
+type Post {
+  body: String
+  id: Int!
+  taggedUsers: [User] @http(path: "/taggedUsers/{{.value.id}}")
+  title: String
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
 }
 
 type Query {
   posts: [Post] @http(path: "/posts?id=1")
-}
-
-type Post {
-  id: Int!
-  title: String
-  body: String
-  userId: Int!
-  user: User @http(path: "/users/{{.value.userId}}")
-  taggedUsers: [User] @http(path: "/taggedUsers/{{.value.id}}")
 }
 
 type User {

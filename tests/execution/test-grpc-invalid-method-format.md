@@ -9,18 +9,18 @@ schema {
   query: Query
 }
 
-type Query {
-  news: NewsData @grpc(method: "abc.NewsService", baseURL: "http://localhost:4000")
+type News {
+  body: String!
+  id: Int!
+  postImage: String!
+  title: String!
 }
 
 type NewsData {
   news: [News]
 }
 
-type News {
-  id: Int!
-  title: String!
-  body: String!
-  postImage: String!
+type Query {
+  news: NewsData @grpc(baseURL: "http://localhost:4000", method: "abc.NewsService")
 }
 ```

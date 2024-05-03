@@ -5,10 +5,6 @@ schema {
   query: Query
 }
 
-type User @addField(name: "lat", path: ["address", "geo", "lat"]) {
-  address: Address
-}
-
 type Address {
   geo: Geo
 }
@@ -18,7 +14,11 @@ type Geo {
 }
 
 type Query {
-  user: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com")
+  user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
+}
+
+type User @addField(name: "lat", path: ["address", "geo", "lat"]) {
+  address: Address
 }
 ```
 

@@ -9,17 +9,17 @@ schema {
   query: Query
 }
 
+type Post {
+  id: ID
+}
+
 type Query {
-  user: [User]
   posts: [Post]!
+  user: [User]
 }
 
 type User {
   id: ID
   name: String
-}
-
-type Post {
-  id: ID
 }
 ```

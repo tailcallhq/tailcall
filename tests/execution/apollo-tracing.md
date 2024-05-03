@@ -1,14 +1,12 @@
 # Apollo Tracing
 
 ```graphql @server
-schema
-  @server(port: 8000, hostname: "0.0.0.0")
-  @telemetry(export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}) {
+schema @server(hostname: "0.0.0.0", port: 8000) {
   query: Query
 }
 
 type Query {
-  hello: String! @http(path: "/", baseURL: "http://api.com")
+  hello: String! @http(baseURL: "http://api.com", path: "/")
 }
 ```
 

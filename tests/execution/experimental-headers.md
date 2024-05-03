@@ -1,12 +1,12 @@
 # Experimental headers
 
 ```graphql @server
-schema @server(headers: {experimental: ["x-tailcall", "X-experimental"]}) {
+schema @server(headers: {experimental: ["X-experimental", "x-tailcall"]}) {
   query: Query
 }
 
 type Query {
-  users: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com")
+  users: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
 }
 
 type User {

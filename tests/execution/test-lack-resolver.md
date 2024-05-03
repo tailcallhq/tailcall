@@ -9,24 +9,24 @@ schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.c
   query: Query
 }
 
-type Query {
-  posts: InPost
-}
-
 type InPost {
   get: [Post]
 }
 
 type Post {
-  id: Int!
-  userId: Int!
-  title: String!
   body: String!
+  id: Int!
+  title: String!
   user: User @http(path: "/users/1")
+  userId: Int!
+}
+
+type Query {
+  posts: InPost
 }
 
 type User {
-  name: String
   id: Int
+  name: String
 }
 ```

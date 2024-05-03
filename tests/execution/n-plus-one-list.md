@@ -5,21 +5,21 @@ schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}
   query: Query
 }
 
-type Query {
-  foos: [Foo] @http(path: "/foos")
-  bars: [Bar] @http(path: "/bars")
+type Bar {
+  foo: [Foo] @http(batchKey: ["id"], path: "/foos", query: [{key: "id", value: "{{.value.fooId}}"}])
+  fooId: Int!
+  id: Int!
 }
 
 type Foo {
+  bar: Bar @http(batchKey: ["fooId"], path: "/bars", query: [{key: "fooId", value: "{{.value.id}}"}])
   id: Int!
   name: String!
-  bar: Bar @http(path: "/bars", query: [{key: "fooId", value: "{{.value.id}}"}], batchKey: ["fooId"])
 }
 
-type Bar {
-  id: Int!
-  fooId: Int!
-  foo: [Foo] @http(path: "/foos", query: [{key: "id", value: "{{.value.fooId}}"}], batchKey: ["id"])
+type Query {
+  bars: [Bar] @http(path: "/bars")
+  foos: [Foo] @http(path: "/foos")
 }
 ```
 

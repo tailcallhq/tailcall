@@ -5,22 +5,26 @@ expect_validation_error: true
 # test-all-blueprint-errors
 
 ```graphql @server
-schema @server {
+schema {
   query: Query
   mutation: Mutation
 }
-type Mutation {
+
+input B {
   a: String
 }
-type Query {
-  foo(inp: B): Foo
-  bar: String @expr @expr(body: {name: "John"})
-}
+
 type Foo {
   a: String @expr(body: "1")
   b: B
 }
-type B {
+
+type Mutation {
   a: String
+}
+
+type Query {
+  bar: String @expr(body: {name: "John"})
+  foo(inp: B): Foo
 }
 ```

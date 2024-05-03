@@ -6,7 +6,7 @@ schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.c
 }
 
 type Query {
-  firstUser(id: Int, name: String): User @http(method: POST, path: "/users", body: "{{.args}}")
+  firstUser(id: Int, name: String): User @http(body: "{{.args}}", method: "POST", path: "/users")
 }
 
 type User {

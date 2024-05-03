@@ -1,22 +1,20 @@
 # test-scalar-email
 
 ```graphql @server
-# this is already defined scalars in tailcall
-scalar Email
-
-# this is custom scalars in config
-scalar AnyScalar
-
-schema @server(port: 8000, hostname: "localhost") {
+schema @server(hostname: "localhost", port: 8000) {
   query: Query
 }
 
+scalar AnyScalar
+
+scalar Email
+
 type Query {
+  any(value: AnyScalar!): AnyScalar @expr(body: "{{.args.value}}")
+  date(value: Date!): Date! @expr(body: "{{.args.value}}")
   email(value: Email!): Email! @expr(body: "{{.args.value}}")
   phone(value: PhoneNumber!): PhoneNumber! @expr(body: "{{.args.value}}")
-  date(value: Date!): Date! @expr(body: "{{.args.value}}")
   url(value: Url!): Url! @expr(body: "{{.args.value}}")
-  any(value: AnyScalar!): AnyScalar @expr(body: "{{.args.value}}")
 }
 ```
 

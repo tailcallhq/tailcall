@@ -5,12 +5,13 @@ schema {
   query: Query
 }
 
+type Query {
+  person1: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1") @modify(name: "user1")
+  person2: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/2") @modify(name: "user2")
+}
+
 type User {
   name: String
-}
-type Query {
-  person1: User @http(path: "/users/1", baseURL: "http://jsonplaceholder.typicode.com") @modify(name: "user1")
-  person2: User @modify(name: "user2") @http(path: "/users/2", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 

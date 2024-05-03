@@ -5,16 +5,16 @@ schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://js
   query: Query
 }
 
-type Query {
-  posts: Post @http(path: "/post?id=1")
-}
-
 type Post {
+  body: String
   id: Int
   title: String
-  body: String
-  userId: Int!
   user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
+}
+
+type Query {
+  posts: Post @http(path: "/post?id=1")
 }
 
 type User {

@@ -1,33 +1,34 @@
 # Nesting level 3
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
 }
 
 type Query {
   post: Post @http(path: "/posts/1")
 }
+
 type Todo {
   completed: Boolean
 }
 
 type User {
+  email: String!
   id: Int!
   name: String!
-  username: String!
-  email: String!
   phone: String
-  website: String
   todos: [Todo] @http(path: "/users/{{.value.id}}/todos")
-}
-
-type Post {
-  id: Int
-  title: String
-  userId: Int!
-  body: String
-  user: User @http(path: "/users/{{.value.userId}}")
+  username: String!
+  website: String
 }
 ```
 

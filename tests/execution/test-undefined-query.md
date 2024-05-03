@@ -5,20 +5,8 @@ expect_validation_error: true
 # test-undefined-query
 
 ```graphql @server
-schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+schema @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
-}
-
-type Post {
-  id: Int
-  user: User! @http(path: "/users", query: [{key: "id", value: "{{.value.test.id}}"}])
-  nested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.test}}"}])
-  innerNested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.inner.test.id}}"}])
-  innerIdNested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.inner.id.test}}"}])
-}
-
-type Query {
-  posts: [Post] @http(path: "/posts")
 }
 
 type Inner {
@@ -27,8 +15,20 @@ type Inner {
 
 type NestedUser {
   id: Int!
-  name: String
   inner: Inner
+  name: String
+}
+
+type Post {
+  id: Int
+  innerIdNested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.inner.id.test}}"}])
+  innerNested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.inner.test.id}}"}])
+  nested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.test}}"}])
+  user: User! @http(path: "/users", query: [{key: "id", value: "{{.value.test.id}}"}])
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
 }
 
 type User {

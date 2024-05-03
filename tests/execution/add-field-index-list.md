@@ -5,12 +5,12 @@ schema {
   query: Query
 }
 
-type User {
-  name: String
+type Query @addField(name: "username", path: ["users", "0", "name"]) {
+  users: [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
 }
 
-type Query @addField(name: "username", path: ["users", "0", "name"]) {
-  users: [User] @http(path: "/users", baseURL: "http://jsonplaceholder.typicode.com")
+type User {
+  name: String
 }
 ```
 
