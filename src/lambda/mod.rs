@@ -1,5 +1,4 @@
 mod cache;
-mod concurrent;
 mod eval;
 mod evaluation_context;
 mod expression;
@@ -9,7 +8,7 @@ mod modify;
 mod resolver_context_like;
 
 pub use cache::*;
-pub use concurrent::*;
+
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
 pub use expression::*;
