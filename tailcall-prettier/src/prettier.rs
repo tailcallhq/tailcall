@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 
 pub use super::Parser;
 
@@ -21,10 +21,14 @@ impl Prettier {
 
     pub async fn format<'a>(&'a self, source: String, parser: &'a Parser) -> Result<String> {
         let parser = parser.clone();
+        let config = config()?;
+
         self.runtime
             .spawn_blocking(move || {
                 let mut command = command();
                 let mut child = command
+                    .arg("-c")
+                    .arg(config)
                     .arg("--stdin-filepath")
                     .arg(format!("file.{}", parser))
                     .stdin(Stdio::piped())
@@ -47,6 +51,13 @@ impl Prettier {
             })
             .await?
     }
+}
+
+fn config() -> Result<String> {
+    let mut root_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    root_dir.pop();
+    root_dir.push(".prettierrc");
+    Ok(root_dir.to_str().context("Unable to find .prettierrc please raise the issue at https://github.com/tailcallhq/tailcall/issues/")?.to_string())
 }
 
 fn command() -> Command {

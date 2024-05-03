@@ -15,6 +15,7 @@ const DEFAULT_MAX_SIZE: usize = 100;
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
     pub delay: usize,
+    #[serde(default, skip_serializing_if = "is_default")]
     pub headers: BTreeSet<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub max_size: Option<usize>,
