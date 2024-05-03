@@ -1,7 +1,6 @@
 {
   "server": {
-    "port": 8000,
-    "graphiql": true
+    "port": 8000
   },
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",

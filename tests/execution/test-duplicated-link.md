@@ -6,7 +6,7 @@ expect_validation_error: true
 
 ```graphql @file:jsonplaceholder.graphql
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
   query: Query
 }

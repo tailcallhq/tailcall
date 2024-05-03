@@ -200,7 +200,7 @@ mod tests {
 
         let header_serv = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/test");
-            then.status(200).body("Alo");
+            then.status(200).body("Hello");
         });
 
         let native_http = NativeHttp::init(&Default::default(), &Default::default());
@@ -216,7 +216,7 @@ mod tests {
         assert!(result.is_ok());
         let response = result.unwrap();
         assert_eq!(response.status, reqwest::StatusCode::OK);
-        assert_eq!(response.body, Bytes::from("Alo"));
+        assert_eq!(response.body, Bytes::from("Hello"));
 
         header_serv.assert();
     }

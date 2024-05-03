@@ -6,7 +6,7 @@ scalar PhoneNumber
 scalar Date
 scalar Url
 
-schema @server(port: 8000, graphiql: true, hostname: "localhost") {
+schema @server(port: 8000, hostname: "localhost") {
   query: Query
 }
 
@@ -23,7 +23,7 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ email(value: "alo@valid.com") }'
+    query: '{ email(value: "hello@valid.com") }'
 - method: POST
   url: http://localhost:8000/graphql
   body:
@@ -44,7 +44,7 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ email(value: "alo@invalid") }'
+    query: '{ email(value: "hello@invalid") }'
 - method: POST
   url: http://localhost:8000/graphql
   body:
@@ -61,5 +61,5 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ url(value: "invalidhost") }'
+    query: '{ url(value: "invalid_host") }'
 ```
