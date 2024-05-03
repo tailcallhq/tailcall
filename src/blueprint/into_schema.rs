@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
+use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
@@ -68,8 +69,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let ctx: ResolverContext = ctx.into();
                                         let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                                        let const_value =
-                                            expr.eval(ctx, &Concurrent::Sequential).await?;
+                                        let const_value = expr
+                                            .eval(ctx, &Concurrent::Sequential)
+                                            .await
+                                            .map_err(|err| err.extend())?;
                                         let p = match const_value {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             ConstValue::Null => FieldValue::NONE,
