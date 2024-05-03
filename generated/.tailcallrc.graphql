@@ -237,11 +237,6 @@ directive @server(
   """
   globalResponseTimeout: Int
   """
-  `graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for 
-  query development and testing. @default `false`.
-  """
-  graphiql: Boolean
-  """
   `headers` contains key-value pairs that are included as default headers in server 
   responses, allowing for consistent header management across all responses.
   """
@@ -354,6 +349,11 @@ directive @upstream(
   The time in seconds that the connection will wait for a response before timing out.
   """
   connectTimeout: Int
+  """
+  When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more 
+  than once within the context of a single GraphQL request.
+  """
+  dedupe: Boolean!
   """
   The `http2Only` setting allows you to specify whether the client should always issue 
   HTTP2 requests, without checking if the server supports it or not. By default it 
