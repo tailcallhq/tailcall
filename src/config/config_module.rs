@@ -117,6 +117,10 @@ fn get_input_types(config: &Config) -> HashSet<String> {
                     .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
                 {
                     if let Some(t) = config.find_type(&arg.type_of) {
+                        if t.scalar {
+                            continue;
+                        }
+
                         t.fields.iter().for_each(|(_, f)| {
                             types.insert(f.type_of.clone());
                             recurse_type(config, &f.type_of, &mut types)
