@@ -46,7 +46,7 @@
     url: http://jsonplaceholder.typicode.com/users/1
     headers:
       test: test
-  expectedHits: 2
+  expectedHits: 3
   response:
     status: 200
     body:
