@@ -953,13 +953,6 @@
             "null"
           ]
         },
-        "dedupeIo": {
-          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
@@ -1350,6 +1343,10 @@
           ],
           "format": "uint64",
           "minimum": 0.0
+        },
+        "dedupe": {
+          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
+          "type": "boolean"
         },
         "http2Only": {
           "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",

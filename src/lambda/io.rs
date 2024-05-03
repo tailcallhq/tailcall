@@ -50,7 +50,7 @@ impl Eval for IO {
         ctx: super::EvaluationContext<'a, Ctx>,
         _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
-        if ctx.request_ctx.server.dedupe_io {
+        if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
                 let key = self.cache_key(&ctx);
                 ctx.request_ctx

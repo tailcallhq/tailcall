@@ -94,11 +94,6 @@ pub struct Server {
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
     pub workers: Option<usize>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
-    /// is made more than once within the context of a single GraphQL request.
-    pub dedupe_io: Option<bool>,
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -211,10 +206,6 @@ impl Server {
 
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
-    }
-
-    pub fn get_dedupe_io(&self) -> bool {
-        self.dedupe_io.unwrap_or(false)
     }
 }
 
