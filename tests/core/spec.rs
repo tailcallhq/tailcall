@@ -113,45 +113,29 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
         });
 
         let config = Config::default().merge_right(config);
+        if matches!(source, Source::GraphQL) {
+            let identity = config.to_sdl();
 
-        // TODO: we should probably figure out a way to do this for every test
-        // but GraphQL identity checking is very hard, since a lot depends on the code
-        // style the re-serializing check gives us some of the advantages of the
-        // identity check too, but we are missing out on some by having it only
-        // enabled for either new tests that request it or old graphql_spec
-        // tests that were explicitly written with it in mind
-        if spec.check_identity {
-            if matches!(source, Source::GraphQL) {
-                let actual = config.to_sdl();
+            // \r is added automatically in windows, it's safe to replace it with \n
+            let content = content.replace("\r\n", "\n");
 
-                // \r is added automatically in windows, it's safe to replace it with \n
-                let content = content.replace("\r\n", "\n");
+            let path_str = spec.path.display().to_string();
+            let parser = tailcall_prettier::Parser::detect(path_str.as_str()).unwrap();
 
-                let path_str = spec.path.display().to_string();
-                let context = format!("path: {}", path_str);
+            let identity = tailcall_prettier::format(identity, &parser).await.unwrap();
 
-                let actual = tailcall_prettier::format(actual, &tailcall_prettier::Parser::Gql)
-                    .await
-                    .context(context.clone())
-                    .unwrap();
-
-                let expected = tailcall_prettier::format(content, &tailcall_prettier::Parser::Gql)
-                    .await
-                    .context(context)
-                    .unwrap();
-
-                pretty_assertions::assert_eq!(
-                    actual,
-                    expected,
-                    "Identity check failed for {:#?}",
-                    spec.path,
-                );
-            } else {
-                panic!(
-                    "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
-                    spec.path
-                );
-            }
+            let content = tailcall_prettier::format(content, &parser).await.unwrap();
+            pretty_assertions::assert_eq!(
+                identity,
+                content,
+                "Identity check failed for {:#?}",
+                spec.path,
+            );
+        } else {
+            tracing::warn!(
+                "Spec {:#?} has \"check identity\" enabled, but its config isn't in GraphQL.",
+                spec.path
+            );
         }
 
         server.push(config);

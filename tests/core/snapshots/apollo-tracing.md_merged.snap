@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream {
+schema @server(hostname: "0.0.0.0", port: 8000) {
   query: Query
 }
 

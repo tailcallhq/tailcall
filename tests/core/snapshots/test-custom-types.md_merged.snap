@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Que
   mutation: Mut
 }

@@ -15,7 +15,7 @@ input Input @protected {
 }
 
 input NewPost {
-  content: String@protected 
+  content: String @protected
 }
 
 type Mutation {

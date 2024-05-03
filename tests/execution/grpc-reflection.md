@@ -1,7 +1,27 @@
 # Grpc datasource
 
 ```graphql @server
-ERROR [3merror[0m[2m=[0mRequest error: error sending request for url (http://localhost:50051/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo): error trying to connect: tcp connect error: Connection refused (os error 61)
+schema
+  @server(port: 8000)
+  @upstream(httpCache: true, baseURL: "http://localhost:50051")
+  @link(src: "http://localhost:50051", type: Grpc) {
+  query: Query
+}
+
+type Query {
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type News {
+  id: Int
+  title: String
+  body: String
+  postImage: String
+}
 ```
 
 ```yml @mock

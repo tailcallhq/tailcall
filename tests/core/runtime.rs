@@ -32,7 +32,6 @@ pub struct ExecutionSpec {
     // Annotations for the runner
     pub runner: Option<Annotation>,
 
-    pub check_identity: bool,
     pub sdl_error: bool,
 }
 

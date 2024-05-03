@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server(batchRequests: true) @upstream {
+schema @server(batchRequests: true) {
   query: Query
 }
 

@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server @upstream(allowedHeaders: ["Authorization"]) @link(src: "stripe-types.graphql", type: Config) {
+schema @upstream(allowedHeaders: ["Authorization"]) @link(src: "stripe-types.graphql", type: Config) {
   query: Query
 }
 

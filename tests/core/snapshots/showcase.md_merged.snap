@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server(showcase: true) @upstream {
+schema @server(showcase: true) {
   query: Query
 }
 

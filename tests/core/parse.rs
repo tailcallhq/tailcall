@@ -55,7 +55,6 @@ impl ExecutionSpec {
         let mut files: BTreeMap<String, String> = BTreeMap::new();
         let mut test: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
-        let mut check_identity = false;
         let mut sdl_error = false;
 
         while let Some(node) = children.next() {
@@ -89,8 +88,6 @@ impl ExecutionSpec {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
                                 [a, b] => {
-                                    check_identity =
-                                        a.contains("check_identity") && b.ends_with("true");
                                     sdl_error = a.contains("expect_validation_error")
                                         && b.ends_with("true");
                                 }
@@ -260,8 +257,6 @@ impl ExecutionSpec {
             files,
 
             runner,
-
-            check_identity,
             sdl_error,
         };
 

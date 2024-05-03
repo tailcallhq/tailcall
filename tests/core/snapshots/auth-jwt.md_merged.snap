@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server(port: 8000) @upstream @link(id: "jwks", src: "jwks.json", type: Jwks) {
+schema @server(port: 8000) @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
   mutation: Mutation
 }

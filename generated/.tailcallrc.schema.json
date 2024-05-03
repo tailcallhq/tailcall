@@ -168,7 +168,6 @@
           "minimum": 0.0
         },
         "headers": {
-          "default": [],
           "type": "array",
           "items": {
             "type": "string"

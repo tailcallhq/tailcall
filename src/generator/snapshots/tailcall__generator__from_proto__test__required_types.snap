@@ -2,7 +2,7 @@
 source: src/generator/from_proto.rs
 expression: config
 ---
-schema @server @upstream {
+schema {
   query: Query
 }
 

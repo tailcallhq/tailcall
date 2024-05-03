@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server @upstream @link(src: "test.js", type: Script) {
+schema @link(src: "test.js", type: Script) {
   query: Query
 }
 

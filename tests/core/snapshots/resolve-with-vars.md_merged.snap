@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server(vars: [{key: "id", value: "1"}]) @upstream {
+schema @server(vars: [{key: "id", value: "1"}]) {
   query: Query
 }
 

@@ -1,7 +1,9 @@
 # Call operator with GraphQL data source
 
 ```graphql @server
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+schema
+  @server(hostname: "0.0.0.0", port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }
 
