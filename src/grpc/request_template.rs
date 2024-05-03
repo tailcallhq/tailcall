@@ -127,12 +127,15 @@ mod tests {
     use tailcall_fixtures::protobuf;
 
     use super::RequestTemplate;
-    use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::lambda::CacheKey;
     use crate::mustache::Mustache;
+    use crate::{
+        blueprint::GrpcMethod,
+        config::{ObjectType, TypeKind},
+    };
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
@@ -154,7 +157,13 @@ mod tests {
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Type {
+                kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                    "bar",
+                    Field::default().grpc(grpc),
+                )])),
+                ..Default::default()
+            },
         );
 
         let protobuf_set = ProtobufSet::from_proto_file(

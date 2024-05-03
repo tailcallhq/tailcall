@@ -251,9 +251,12 @@ pub mod tests {
     use tailcall_fixtures::protobuf;
 
     use super::*;
-    use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
+    use crate::{
+        blueprint::GrpcMethod,
+        config::{ObjectType, TypeKind},
+    };
 
     pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
         let runtime = crate::runtime::test::init(None);
@@ -274,7 +277,13 @@ pub mod tests {
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Type {
+                kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                    "bar",
+                    Field::default().grpc(grpc),
+                )])),
+                ..Default::default()
+            },
         );
         Ok(reader
             .resolve(config, None)

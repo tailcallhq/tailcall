@@ -52,7 +52,7 @@ impl DataLoaderRequest {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeSet;
+    use std::collections::{BTreeMap, BTreeSet};
 
     use hyper::header::{HeaderName, HeaderValue};
     use hyper::HeaderMap;
@@ -61,11 +61,14 @@ mod tests {
     use url::Url;
 
     use super::DataLoaderRequest;
-    use crate::blueprint::GrpcMethod;
     use crate::config::reader::ConfigReader;
     use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
     use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::grpc::request_template::RenderedRequestTemplate;
+    use crate::{
+        blueprint::GrpcMethod,
+        config::{ObjectType, TypeKind},
+    };
 
     pub async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
@@ -82,7 +85,13 @@ mod tests {
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Type {
+                kind: TypeKind::Object(ObjectType {
+                    fields: BTreeMap::from_iter([("bar".to_owned(), Field::default().grpc(grpc))]),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
         );
 
         let runtime = crate::runtime::test::init(None);

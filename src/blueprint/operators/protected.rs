@@ -6,15 +6,20 @@ use crate::valid::Valid;
 
 pub fn update_protected<'a>(
     type_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &'a str), FieldDefinition, String>::new(
         |(config, field, type_, _), mut b_field| {
             if field.protected.is_some() // check the field itself has marked as protected
                 || type_.protected.is_some() // check the type that contains current field
                 || config // check that output type of the field is protected
                     .find_type(&field.type_of)
-                    .and_then(|type_| type_.protected.as_ref())
+                    .and_then(|typ| typ.kind.as_object())
+                    .and_then(|obj| obj.protected.as_ref())
                     .is_some()
             {
                 if config.input_types.contains(type_name) {

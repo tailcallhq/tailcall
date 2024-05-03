@@ -12,8 +12,11 @@ fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
     let type_name = context.type_name;
     let path = context.path;
     let is_list = context.is_list;
-    match config.find_type(type_name) {
-        Some(type_) => type_
+    match config
+        .find_type(type_name)
+        .and_then(|typ| typ.kind.as_object())
+    {
+        Some(obj) => obj
             .fields
             .iter()
             .flat_map(|(field_name, field)| {
@@ -55,36 +58,46 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
 
 #[cfg(test)]
 mod tests {
-
-    use crate::config::{Config, Field, Http, Type};
+    use crate::config::{Config, Field, Http, ObjectType, Type, TypeKind};
 
     #[test]
     fn test_nplusone_resolvers() {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default()
-                        .type_of("F2".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f2",
+                        Field::default()
+                            .type_of("F2".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "ff",
+                        Field::default().type_of("String".to_string()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 
@@ -101,28 +114,39 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default()
-                        .type_of("F2".to_string())
-                        .to_list()
-                        .http(Http { group_by: vec!["id".into()], ..Default::default() }),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f2",
+                        Field::default()
+                            .type_of("F2".to_string())
+                            .to_list()
+                            .http(Http { group_by: vec!["id".into()], ..Default::default() }),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f3",
+                        Field::default().type_of("String".to_string()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 
@@ -136,36 +160,48 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).to_list(),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f2",
+                        Field::default().type_of("F2".to_string()).to_list(),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F2",
-                Type::default().fields(vec![(
-                    "f3",
-                    Field::default().type_of("F3".to_string()).to_list(),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f3",
+                        Field::default().type_of("F3".to_string()).to_list(),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F3",
-                Type::default().fields(vec![(
-                    "f4",
-                    Field::default()
-                        .type_of("String".to_string())
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f4",
+                        Field::default()
+                            .type_of("String".to_string())
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 
@@ -184,35 +220,47 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).to_list(),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f2",
+                        Field::default().type_of("F2".to_string()).to_list(),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F2",
-                Type::default().fields(vec![(
-                    "f3",
-                    Field::default().type_of("F3".to_string()).to_list(),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f3",
+                        Field::default().type_of("F3".to_string()).to_list(),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F3",
-                Type::default().fields(vec![(
-                    "f4",
-                    Field::default()
-                        .type_of("String".to_string())
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f4",
+                        Field::default()
+                            .type_of("String".to_string())
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 
@@ -231,25 +279,36 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).to_list(),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f2",
+                        Field::default().type_of("F2".to_string()).to_list(),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f3",
+                        Field::default().type_of("String".to_string()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 
@@ -263,25 +322,36 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F1",
-                Type::default().fields(vec![
-                    ("f1", Field::default().type_of("F1".to_string())),
-                    ("f2", Field::default().type_of("F2".to_string()).to_list()),
-                ]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![
+                        ("f1", Field::default().type_of("F1".to_string())),
+                        ("f2", Field::default().type_of("F2".to_string()).to_list()),
+                    ])),
+                    ..Default::default()
+                },
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f3",
+                        Field::default().type_of("String".to_string()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 
@@ -295,30 +365,41 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "F1",
-                Type::default().fields(vec![
-                    ("f1", Field::default().type_of("F1".to_string()).to_list()),
-                    (
-                        "f2",
-                        Field::default()
-                            .type_of("String".to_string())
-                            .http(Http::default()),
-                    ),
-                ]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![
+                        ("f1", Field::default().type_of("F1".to_string()).to_list()),
+                        (
+                            "f2",
+                            Field::default()
+                                .type_of("String".to_string())
+                                .http(Http::default()),
+                        ),
+                    ])),
+                    ..Default::default()
+                },
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "f3",
+                        Field::default().type_of("String".to_string()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 
@@ -345,20 +426,35 @@ mod tests {
             .http(Http::default());
 
         let config = Config::default().query("Query").types(vec![
-            ("Query", Type::default().fields(vec![("f", f_field)])),
+            (
+                "Query",
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![("f", f_field)])),
+                    ..Default::default()
+                },
+            ),
             (
                 "F",
-                Type::default().fields(vec![(
-                    "g",
-                    Field::default()
-                        .type_of("G".to_string())
-                        .to_list()
-                        .http(Http::default()),
-                )]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "g",
+                        Field::default()
+                            .type_of("G".to_string())
+                            .to_list()
+                            .http(Http::default()),
+                    )])),
+                    ..Default::default()
+                },
             ),
             (
                 "G",
-                Type::default().fields(vec![("e", Field::default().type_of("String".to_string()))]),
+                Type {
+                    kind: TypeKind::Object(ObjectType::with_fields(vec![(
+                        "e",
+                        Field::default().type_of("String".to_string()),
+                    )])),
+                    ..Default::default()
+                },
             ),
         ]);
 

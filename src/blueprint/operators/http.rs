@@ -72,9 +72,9 @@ pub fn compile_http(
 }
 
 pub fn update_http<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str), FieldDefinition, String>
 {
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &'a str), FieldDefinition, String>::new(
         |(config_module, field, type_of, _), b_field| {
             let Some(http) = &field.http else {
                 return Valid::succeed(b_field);

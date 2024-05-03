@@ -212,9 +212,9 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str), FieldDefinition, String>
 {
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &'a str), FieldDefinition, String>::new(
         |(config_module, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);

@@ -4,13 +4,13 @@ use async_graphql::dynamic::SchemaBuilder;
 
 use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
-use crate::blueprint::compress::compress;
 use crate::blueprint::*;
 use crate::config::{Arg, Batch, Config, ConfigModule, Field};
 use crate::json::JsonSchema;
 use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
+use crate::{blueprint::compress::compress, config};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
@@ -87,19 +87,20 @@ where
     let required = field.non_null();
     let type_ = config.find_type(type_of);
     let schema = match type_ {
-        Some(type_) => {
-            if let Some(variants) = type_.variants.clone() {
-                JsonSchema::Enum(variants)
-            } else {
+        Some(type_) => match &type_.kind {
+            config::TypeKind::Scalar => todo!(),
+            config::TypeKind::Enum(enum_) => JsonSchema::Enum(enum_.variants.clone()),
+            config::TypeKind::Object(obj) => {
                 let mut schema_fields = HashMap::new();
-                for (name, field) in type_.fields.iter() {
+                for (name, field) in obj.fields.iter() {
                     if field.script.is_none() && field.http.is_none() {
                         schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
                     }
                 }
                 JsonSchema::Obj(schema_fields)
             }
-        }
+            config::TypeKind::Union(_) => todo!(),
+        },
         None => match type_of {
             "String" => JsonSchema::Str {},
             "Int" => JsonSchema::Num {},

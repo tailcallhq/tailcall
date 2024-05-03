@@ -12,7 +12,7 @@ use super::telemetry::Telemetry;
 use super::{Tag, JS};
 use crate::config::{
     self, Cache, Call, Config, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema, Server,
-    Union, Upstream,
+    Upstream,
 };
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, Validator};
@@ -36,22 +36,19 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
         .collect();
 
     let types = to_types(&type_definitions);
-    let unions = to_union_types(&type_definitions);
     let schema = schema_definition(&doc).map(to_root_schema);
     schema_definition(&doc).and_then(|sd| {
         server(sd)
             .fuse(upstream(sd))
             .fuse(types)
-            .fuse(unions)
             .fuse(schema)
             .fuse(links(sd))
             .fuse(telemetry(sd))
             .map(
-                |(server, upstream, types, unions, schema, links, telemetry)| Config {
+                |(server, upstream, types, schema, links, telemetry)| Config {
                     server,
                     upstream,
                     types,
-                    unions,
                     schema,
                     links,
                     telemetry,
@@ -142,69 +139,45 @@ fn to_types(
 ) -> Valid<BTreeMap<String, config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
+        let description = &type_definition.node.description;
+        let doc = description.to_owned().map(|pos| pos.node);
+
         match type_definition.node.kind.clone() {
-            TypeKind::Object(object_type) => to_object_type(
-                &object_type,
-                &type_definition.node.description,
-                &type_definition.node.directives,
-            )
-            .some(),
-            TypeKind::Interface(interface_type) => to_object_type(
-                &interface_type,
-                &type_definition.node.description,
-                &type_definition.node.directives,
-            )
-            .some(),
-            TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
-            TypeKind::InputObject(input_object_type) => {
-                to_input_object(input_object_type, &type_definition.node.directives).some()
+            TypeKind::Object(object_type) => {
+                to_object_type(&object_type, &type_definition.node.directives)
             }
-            TypeKind::Union(_) => Valid::none(),
-            TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
+            TypeKind::Interface(interface_type) => {
+                to_object_type(&interface_type, &type_definition.node.directives)
+            }
+            TypeKind::Enum(enum_type) => Valid::succeed(to_enum(enum_type)),
+            TypeKind::InputObject(input_object_type) => {
+                to_input_object(input_object_type, &type_definition.node.directives)
+            }
+            TypeKind::Union(union_type) => Valid::succeed(to_union(union_type)),
+            TypeKind::Scalar => Valid::succeed(to_scalar_type()),
         }
-        .map(|option| (type_name, option))
+        .map(|kind| {
+            let type_ = config::Type {
+                doc,
+                // TODO: fix tag
+                tag: None,
+                kind,
+            };
+
+            (type_name, type_)
+        })
     })
-    .map(|vec| {
-        BTreeMap::from_iter(
-            vec.into_iter()
-                .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
-        )
-    })
-}
-fn to_scalar_type() -> config::Type {
-    config::Type { scalar: true, ..Default::default() }
-}
-fn to_union_types(
-    type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<BTreeMap<String, Union>, String> {
-    Valid::succeed(
-        type_definitions
-            .iter()
-            .filter_map(|type_definition| {
-                let type_name = pos_name_to_string(&type_definition.node.name);
-                let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Union(union_type) => to_union(
-                        union_type,
-                        &type_definition
-                            .node
-                            .description
-                            .to_owned()
-                            .map(|pos| pos.node),
-                    ),
-                    _ => return None,
-                };
-                Some((type_name, type_opt))
-            })
-            .collect(),
-    )
+    .map(BTreeMap::from_iter)
 }
 
-#[allow(clippy::too_many_arguments)]
+fn to_scalar_type() -> config::TypeKind {
+    config::TypeKind::Scalar
+}
+
 fn to_object_type<T>(
     object: &T,
-    description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
-) -> Valid<config::Type, String>
+) -> Valid<config::TypeKind, String>
 where
     T: ObjectLike,
 {
@@ -217,37 +190,38 @@ where
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(Tag::from_directives(directives.iter()))
         .map(|(cache, fields, protected, tag)| {
-            let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type {
+
+            config::TypeKind::Object(config::ObjectType {
                 fields,
                 added_fields,
-                doc,
-                interface,
                 implements,
                 cache,
                 protected,
-                tag,
-                ..Default::default()
-            }
+            })
         })
 }
-fn to_enum(enum_type: EnumType) -> config::Type {
+
+fn to_enum(enum_type: EnumType) -> config::TypeKind {
     let variants = enum_type
         .values
         .iter()
         .map(|value| value.node.value.to_string())
         .collect();
-    config::Type { variants: Some(variants), ..Default::default() }
+
+    config::TypeKind::Enum(config::EnumType { variants })
 }
+
 fn to_input_object(
     input_object_type: InputObjectType,
     directives: &[Positioned<ConstDirective>],
-) -> Valid<config::Type, String> {
+) -> Valid<config::TypeKind, String> {
     to_input_object_fields(&input_object_type.fields)
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(fields, protected)| config::Type { fields, protected, ..Default::default() })
+        .map(|(fields, protected)| {
+            config::TypeKind::Object(config::ObjectType { fields, protected, ..Default::default() })
+        })
 }
 
 fn to_fields_inner<T, F>(
@@ -369,13 +343,14 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of, list, required, doc, modify, default_value }
 }
 
-fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
+fn to_union(union_type: UnionType) -> config::TypeKind {
     let types = union_type
         .members
         .iter()
         .map(|member| member.node.to_string())
         .collect();
-    Union { types, doc: doc.clone() }
+
+    config::TypeKind::Union(config::UnionType { types })
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {

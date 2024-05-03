@@ -10,9 +10,13 @@ use crate::valid::{Valid, ValidationError, Validator};
 pub fn update_call<'a>(
     operation_type: &'a GraphQLOperationType,
     object_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), b_field| {
             let Some(ref calls) = field.call else {
                 return Valid::succeed(b_field);
@@ -144,14 +148,17 @@ fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
 fn get_field_and_field_name<'a>(
     call: &'a config::Step,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, &'a config::Type), String> {
+) -> Valid<(&'a Field, String, &'a config::ObjectType), String> {
     Valid::from_option(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config_module.config.find_type(&type_name),
+            config_module
+                .config
+                .find_type(&type_name)
+                .and_then(|typ| typ.kind.as_object()),
             format!("{} type not found on config", type_name),
         )
         .and_then(|query_type| {

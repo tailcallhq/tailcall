@@ -59,11 +59,6 @@ pub struct Config {
     pub types: BTreeMap<String, Type>,
 
     ///
-    /// A map of all the union types in the schema.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub unions: BTreeMap<String, Union>,
-
-    ///
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
@@ -79,10 +74,6 @@ impl Config {
 
     pub fn find_type(&self, name: &str) -> Option<&Type> {
         self.types.get(name)
-    }
-
-    pub fn find_union(&self, name: &str) -> Option<&Union> {
-        self.unions.get(name)
     }
 
     pub fn to_yaml(&self) -> Result<String> {
@@ -121,7 +112,7 @@ impl Config {
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name)
+        self.types.contains_key(name)
     }
 
     /// Gets all the type names used in the schema.
@@ -137,9 +128,16 @@ impl Config {
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
-                for field in typ.fields.values() {
-                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
-                    stack.push(field.type_of.clone());
+
+                match &typ.kind {
+                    TypeKind::Object(obj) => {
+                        for field in obj.fields.values() {
+                            stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
+                            stack.push(field.type_of.clone());
+                        }
+                    }
+                    TypeKind::Union(_) => todo!(),
+                    _ => {}
                 }
             }
         }
@@ -164,63 +162,115 @@ impl Config {
     }
 }
 
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
+pub enum TypeKind {
+    // TODO: replace scalar with empty object?
+    #[default]
+    Scalar,
+    Enum(EnumType),
+    Object(ObjectType),
+    Union(UnionType),
+}
+
+impl TypeKind {
+    pub fn as_object(&self) -> Option<&ObjectType> {
+        if let TypeKind::Object(obj) = self {
+            Some(obj)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_enum(&self) -> Option<&EnumType> {
+        if let TypeKind::Enum(en) = self {
+            Some(en)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_union(&self) -> Option<&UnionType> {
+        if let TypeKind::Union(un) = self {
+            Some(un)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
+pub struct ObjectType {
+    ///
+    /// A map of field name and its definition.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub fields: BTreeMap<String, Field>,
+    ///
+    /// Additional fields to be added to the type
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub added_fields: Vec<AddField>,
+    ///
+    /// Interfaces that the type implements.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub implements: BTreeSet<String>,
+    ///
+    /// Setting to indicate if the type can be cached.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth providers
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub protected: Option<Protected>,
+}
+
+impl ObjectType {
+    pub fn with_fields(fields: Vec<(&str, Field)>) -> Self {
+        Self {
+            fields: BTreeMap::from_iter(
+                fields
+                    .into_iter()
+                    .map(|(name, field)| (name.to_owned(), field)),
+            ),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
+pub struct EnumType {
+    ///
+    /// Variants for the type if it's an enum
+    #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
+    pub variants: BTreeSet<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+pub struct UnionType {
+    pub types: BTreeSet<String>,
+}
+
 ///
 /// Represents a GraphQL type.
-/// A type can be an object, interface, enum or scalar.
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
 )]
 pub struct Type {
     ///
-    /// A map of field name and its definition.
-    pub fields: BTreeMap<String, Field>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
-    /// Additional fields to be added to the type
-    pub added_fields: Vec<AddField>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
     /// Documentation for the type that is publicly visible.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
-    /// Flag to indicate if the type is an interface.
-    pub interface: bool,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
-    /// Interfaces that the type implements.
-    pub implements: BTreeSet<String>,
-    #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
-    ///
-    /// Variants for the type if it's an enum
-    pub variants: Option<BTreeSet<String>>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
-    /// Flag to indicate if the type is a scalar.
-    pub scalar: bool,
-    #[serde(default)]
-    ///
-    /// Setting to indicate if the type can be cached.
-    pub cache: Option<Cache>,
-    ///
-    /// Marks field as protected by auth providers
-    #[serde(default)]
-    pub protected: Option<Protected>,
-    #[serde(default, skip_serializing_if = "is_default")]
+
     ///
     /// Contains source information for the type.
+    #[serde(default, skip_serializing_if = "is_default")]
     pub tag: Option<Tag>,
-}
 
-impl Type {
-    pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
-        let mut graphql_fields = BTreeMap::new();
-        for (name, field) in fields {
-            graphql_fields.insert(name.to_string(), field);
-        }
-        self.fields = graphql_fields;
-        self
-    }
+    pub kind: TypeKind,
 }
 
 #[derive(
@@ -481,12 +531,6 @@ pub struct Arg {
     pub modify: Option<Modify>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
-pub struct Union {
-    pub types: BTreeSet<String>,
-    pub doc: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -767,7 +811,13 @@ mod tests {
         let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
         let expected = Config::default().types(vec![(
             "Foo",
-            Type::default().fields(vec![("a", Field::int())]),
+            Type {
+                kind: TypeKind::Object(ObjectType {
+                    fields: BTreeMap::from_iter(vec![("a".to_owned(), Field::int())]),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
         )]);
         assert_eq!(actual, expected);
     }

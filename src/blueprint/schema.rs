@@ -1,11 +1,14 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use async_graphql::parser::types::ConstDirective;
 
-use crate::blueprint::*;
-use crate::config::{Config, Field, Type};
+use crate::config::{Config, Field};
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, ValidationError, Validator};
+use crate::{
+    blueprint::*,
+    config::{ObjectType, TypeKind},
+};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
     Valid::from_option(
@@ -17,20 +20,20 @@ fn validate_query(config: &Config) -> Valid<(), String> {
             return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
         };
 
-        validate_type_has_resolvers(query_type_name, query, &config.types)
+        if let TypeKind::Object(query) = &query.kind {
+            validate_type_has_resolvers(query_type_name, query, &config)
+        } else {
+            return Valid::fail("Query is not an object type".to_owned()).trace(query_type_name);
+        }
     })
     .unit()
 }
 
 /// Validates that all the root type fields has resolver
 /// making into the account the nesting
-fn validate_type_has_resolvers(
-    name: &str,
-    ty: &Type,
-    types: &BTreeMap<String, Type>,
-) -> Valid<(), String> {
+fn validate_type_has_resolvers(name: &str, ty: &ObjectType, config: &Config) -> Valid<(), String> {
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
-        validate_field_has_resolver(name, field, types, ty)
+        validate_field_has_resolver(name, field, config, ty)
     })
     .trace(name)
     .unit()
@@ -39,29 +42,33 @@ fn validate_type_has_resolvers(
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
-    types: &BTreeMap<String, Type>,
-    parent_ty: &Type,
+    config: &Config,
+    parent_ty: &ObjectType,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
-            if types.get(&field.type_of).eq(&Some(parent_ty)) {
-                return true;
-            }
+            // TODO: type of the field is equal to parent type? is that recursive type? how should it work?
+            // if config.find_type(&field.type_of).eq(&Some(parent_ty)) {
+            //     return true;
+            // }
             if !field.has_resolver() {
                 let type_name = &field.type_of;
-                if let Some(ty) = types.get(type_name) {
-                    // It's an enum
-                    if ty.variants.is_some() {
-                        return true;
+                if let Some(ty) = config.find_type(type_name) {
+                    match &ty.kind {
+                        TypeKind::Scalar | TypeKind::Enum(_) => true,
+                        TypeKind::Object(ty) => {
+                            let res = validate_type_has_resolvers(type_name, ty, config);
+                            !res.is_succeed()
+                        }
+                        TypeKind::Union(_) => todo!(),
                     }
-                    let res = validate_type_has_resolvers(type_name, ty, types);
-                    return !res.is_succeed();
                 } else {
-                    // It's a Scalar
-                    return true;
+                    // It's a built-in Scalar
+                    true
                 }
+            } else {
+                false
             }
-            false
         })
         .trace(name)
 }
@@ -96,7 +103,12 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
                 .trace(mutation_type_name);
         };
 
-        validate_type_has_resolvers(mutation_type_name, mutation, &config.types)
+        if let TypeKind::Object(mutation) = &mutation.kind {
+            validate_type_has_resolvers(&mutation_type_name, mutation, &config)
+        } else {
+            return Valid::fail("Mutation is not an object type".to_owned())
+                .trace(mutation_type_name);
+        }
     } else {
         Valid::succeed(())
     }

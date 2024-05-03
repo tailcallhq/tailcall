@@ -5,9 +5,12 @@ use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use crate::blueprint::GrpcMethod;
-use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
+use crate::config::{Arg, Config, Field, Grpc, ObjectType, Tag, Type};
 use crate::generator::GraphQLType;
+use crate::{
+    blueprint::GrpcMethod,
+    config::{EnumType, TypeKind},
+};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -57,7 +60,7 @@ impl Context {
                 })
                 .collect::<BTreeSet<String>>();
 
-            ty.variants = Some(variants);
+            ty.kind = TypeKind::Enum(EnumType { variants });
 
             let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
             self = self.insert_type(type_name, ty);
@@ -84,6 +87,7 @@ impl Context {
                 .unwrap();
 
             let mut ty = Type::default();
+            let mut obj = ObjectType::default();
             for field in message.field.iter() {
                 let field_name = GraphQLType::new(field.name())
                     .package(&self.package)
@@ -115,9 +119,10 @@ impl Context {
                     cfg_field.type_of = type_of;
                 }
 
-                ty.fields.insert(field_name.to_string(), cfg_field);
+                obj.fields.insert(field_name.to_string(), cfg_field);
             }
 
+            ty.kind = TypeKind::Object(obj);
             ty.tag = Some(Tag { id: msg_type.id() });
 
             self = self.insert_type(msg_type.to_string(), ty);
@@ -197,7 +202,9 @@ impl Context {
                         Type::default()
                     });
 
-                ty.fields.insert(field_name.to_string(), cfg_field);
+                if let TypeKind::Object(obj) = &mut ty.kind {
+                    obj.fields.insert(field_name.to_string(), cfg_field);
+                }
             }
         }
         self

@@ -54,41 +54,11 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     for (type_name, type_def) in config.types.iter() {
-        let kind = if type_def.interface {
-            TypeKind::Interface(InterfaceType {
-                implements: type_def
-                    .implements
-                    .iter()
-                    .map(|name| pos(Name::new(name.clone())))
-                    .collect(),
-                fields: type_def
-                    .fields
-                    .clone()
-                    .iter()
-                    .map(|(name, field)| {
-                        let directives = get_directives(field);
-                        let base_type = if field.list {
-                            BaseType::List(Box::new(Type {
-                                nullable: !field.list_type_required,
-                                base: BaseType::Named(Name::new(field.type_of.clone())),
-                            }))
-                        } else {
-                            BaseType::Named(Name::new(field.type_of.clone()))
-                        };
-                        pos(FieldDefinition {
-                            description: field.doc.clone().map(pos),
-                            name: pos(Name::new(name.clone())),
-                            arguments: vec![],
-                            ty: pos(Type { nullable: !field.required, base: base_type }),
-
-                            directives,
-                        })
-                    })
-                    .collect::<Vec<Positioned<FieldDefinition>>>(),
-            })
-        } else if let Some(variants) = &type_def.variants {
-            TypeKind::Enum(EnumType {
-                values: variants
+        let kind = match &type_def.kind {
+            super::TypeKind::Scalar => TypeKind::Scalar,
+            super::TypeKind::Enum(en) => TypeKind::Enum(EnumType {
+                values: en
+                    .variants
                     .iter()
                     .map(|value| {
                         pos(EnumValueDefinition {
@@ -98,147 +68,176 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                         })
                     })
                     .collect(),
-            })
-        } else if config.input_types.contains(type_name) {
-            TypeKind::InputObject(InputObjectType {
-                fields: type_def
-                    .fields
-                    .clone()
-                    .iter()
-                    .map(|(name, field)| {
-                        let directives = get_directives(field);
-                        let base_type = if field.list {
-                            async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                nullable: !field.list_type_required,
-                                base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                    field.type_of.clone(),
-                                )),
-                            }))
-                        } else {
-                            async_graphql::parser::types::BaseType::Named(Name::new(
-                                field.type_of.clone(),
-                            ))
-                        };
+            }),
+            super::TypeKind::Object(obj) => {
+                // if type_def.interface {
+                //     TypeKind::Interface(InterfaceType {
+                //         implements: type_def
+                //             .implements
+                //             .iter()
+                //             .map(|name| pos(Name::new(name.clone())))
+                //             .collect(),
+                //         fields: type_def
+                //             .fields
+                //             .clone()
+                //             .iter()
+                //             .map(|(name, field)| {
+                //                 let directives = get_directives(field);
+                //                 let base_type = if field.list {
+                //                     BaseType::List(Box::new(Type {
+                //                         nullable: !field.list_type_required,
+                //                         base: BaseType::Named(Name::new(field.type_of.clone())),
+                //                     }))
+                //                 } else {
+                //                     BaseType::Named(Name::new(field.type_of.clone()))
+                //                 };
+                //                 pos(FieldDefinition {
+                //                     description: field.doc.clone().map(pos),
+                //                     name: pos(Name::new(name.clone())),
+                //                     arguments: vec![],
+                //                     ty: pos(Type { nullable: !field.required, base: base_type }),
 
-                        pos(async_graphql::parser::types::InputValueDefinition {
-                            description: field.doc.clone().map(pos),
-                            name: pos(Name::new(name.clone())),
-                            ty: pos(Type { nullable: !field.required, base: base_type }),
-
-                            default_value: None,
-                            directives,
-                        })
-                    })
-                    .collect::<Vec<Positioned<InputValueDefinition>>>(),
-            })
-        } else if type_def.fields.is_empty() {
-            TypeKind::Scalar
-        } else {
-            TypeKind::Object(ObjectType {
-                implements: type_def
-                    .implements
-                    .iter()
-                    .map(|name| pos(Name::new(name.clone())))
-                    .collect(),
-                fields: type_def
-                    .fields
-                    .clone()
-                    .iter()
-                    .map(|(name, field)| {
-                        let directives = get_directives(field);
-                        let base_type = if field.list {
-                            async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                nullable: !field.list_type_required,
-                                base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                    field.type_of.clone(),
-                                )),
-                            }))
-                        } else {
-                            async_graphql::parser::types::BaseType::Named(Name::new(
-                                field.type_of.clone(),
-                            ))
-                        };
-
-                        let args_map = field.args.clone();
-                        let args = args_map
+                //                     directives,
+                //                 })
+                //             })
+                //             .collect::<Vec<Positioned<FieldDefinition>>>(),
+                //     })
+                // }
+                if config.input_types.contains(type_name) {
+                    TypeKind::InputObject(InputObjectType {
+                        fields: obj
+                            .fields
+                            .clone()
                             .iter()
-                            .map(|(name, arg)| {
-                                let base_type = if arg.list {
+                            .map(|(name, field)| {
+                                let directives = get_directives(field);
+                                let base_type = if field.list {
                                     async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                        nullable: !arg.list_type_required(),
+                                        nullable: !field.list_type_required,
                                         base: async_graphql::parser::types::BaseType::Named(
-                                            Name::new(arg.type_of.clone()),
+                                            Name::new(field.type_of.clone()),
                                         ),
                                     }))
                                 } else {
                                     async_graphql::parser::types::BaseType::Named(Name::new(
-                                        arg.type_of.clone(),
+                                        field.type_of.clone(),
                                     ))
                                 };
-                                pos(async_graphql::parser::types::InputValueDefinition {
-                                    description: arg.doc.clone().map(pos),
-                                    name: pos(Name::new(name.clone())),
-                                    ty: pos(Type { nullable: !arg.required, base: base_type }),
 
-                                    default_value: arg
-                                        .default_value
-                                        .clone()
-                                        .map(|v| pos(ConstValue::String(v.to_string()))),
-                                    directives: Vec::new(),
+                                pos(async_graphql::parser::types::InputValueDefinition {
+                                    description: field.doc.clone().map(pos),
+                                    name: pos(Name::new(name.clone())),
+                                    ty: pos(Type { nullable: !field.required, base: base_type }),
+
+                                    default_value: None,
+                                    directives,
                                 })
                             })
-                            .collect::<Vec<Positioned<InputValueDefinition>>>();
-
-                        pos(async_graphql::parser::types::FieldDefinition {
-                            description: field.doc.clone().map(pos),
-                            name: pos(Name::new(name.clone())),
-                            arguments: args,
-                            ty: pos(Type { nullable: !field.required, base: base_type }),
-
-                            directives,
-                        })
+                            .collect::<Vec<Positioned<InputValueDefinition>>>(),
                     })
-                    .collect::<Vec<Positioned<FieldDefinition>>>(),
-            })
-        };
-        definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
-            extend: false,
-            description: None,
-            name: pos(Name::new(type_name.clone())),
-            directives: type_def
-                .added_fields
-                .iter()
-                .map(|added_field: &super::AddField| pos(added_field.to_directive()))
-                .chain(
-                    type_def
-                        .cache
-                        .as_ref()
-                        .map(|cache| pos(cache.to_directive())),
-                )
-                .chain(
-                    type_def
-                        .protected
-                        .as_ref()
-                        .map(|protected| pos(protected.to_directive())),
-                )
-                .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
-                .collect::<Vec<_>>(),
-            kind,
-        })));
-    }
-    for (name, union) in config.unions.iter() {
-        definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
-            extend: false,
-            description: None,
-            name: pos(Name::new(name)),
-            directives: Vec::new(),
-            kind: TypeKind::Union(UnionType {
-                members: union
+                } else {
+                    TypeKind::Object(ObjectType {
+                        implements: obj
+                            .implements
+                            .iter()
+                            .map(|name| pos(Name::new(name.clone())))
+                            .collect(),
+                        fields: obj
+                            .fields
+                            .clone()
+                            .iter()
+                            .map(|(name, field)| {
+                                let directives = get_directives(field);
+                                let base_type = if field.list {
+                                    async_graphql::parser::types::BaseType::List(Box::new(Type {
+                                        nullable: !field.list_type_required,
+                                        base: async_graphql::parser::types::BaseType::Named(Name::new(
+                                            field.type_of.clone(),
+                                        )),
+                                    }))
+                                } else {
+                                    async_graphql::parser::types::BaseType::Named(Name::new(
+                                        field.type_of.clone(),
+                                    ))
+                                };
+
+                                let args_map = field.args.clone();
+                                let args = args_map
+                                    .iter()
+                                    .map(|(name, arg)| {
+                                        let base_type = if arg.list {
+                                            async_graphql::parser::types::BaseType::List(Box::new(Type {
+                                                nullable: !arg.list_type_required(),
+                                                base: async_graphql::parser::types::BaseType::Named(
+                                                    Name::new(arg.type_of.clone()),
+                                                ),
+                                            }))
+                                        } else {
+                                            async_graphql::parser::types::BaseType::Named(Name::new(
+                                                arg.type_of.clone(),
+                                            ))
+                                        };
+                                        pos(async_graphql::parser::types::InputValueDefinition {
+                                            description: arg.doc.clone().map(pos),
+                                            name: pos(Name::new(name.clone())),
+                                            ty: pos(Type { nullable: !arg.required, base: base_type }),
+
+                                            default_value: arg
+                                                .default_value
+                                                .clone()
+                                                .map(|v| pos(ConstValue::String(v.to_string()))),
+                                            directives: Vec::new(),
+                                        })
+                                    })
+                                    .collect::<Vec<Positioned<InputValueDefinition>>>();
+
+                                pos(async_graphql::parser::types::FieldDefinition {
+                                    description: field.doc.clone().map(pos),
+                                    name: pos(Name::new(name.clone())),
+                                    arguments: args,
+                                    ty: pos(Type { nullable: !field.required, base: base_type }),
+
+                                    directives,
+                                })
+                            })
+                            .collect::<Vec<Positioned<FieldDefinition>>>(),
+                    })
+                }
+            }
+            super::TypeKind::Union(un) => TypeKind::Union(UnionType {
+                members: un
                     .types
                     .iter()
                     .map(|name| pos(Name::new(name.clone())))
                     .collect(),
             }),
+        };
+
+        definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
+            extend: false,
+            description: None,
+            name: pos(Name::new(type_name.clone())),
+            // TODO: back directives
+            directives: Vec::new(),
+            // directives: type_def
+            //     .added_fields
+            //     .iter()
+            //     .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+            //     .chain(
+            //         type_def
+            //             .cache
+            //             .as_ref()
+            //             .map(|cache| pos(cache.to_directive())),
+            //     )
+            //     .chain(
+            //         type_def
+            //             .protected
+            //             .as_ref()
+            //             .map(|protected| pos(protected.to_directive())),
+            //     )
+            //     .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
+            //     .collect::<Vec<_>>(),
+            kind,
         })));
     }
 

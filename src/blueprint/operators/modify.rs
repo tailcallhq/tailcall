@@ -5,17 +5,20 @@ use crate::lambda::{Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::Valid;
 
-pub fn update_modify<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+pub fn update_modify<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), mut b_field| {
             if let Some(modify) = field.modify.as_ref() {
                 if let Some(new_name) = &modify.name {
                     for name in type_of.implements.iter() {
                         let interface = config.find_type(name);
-                        if let Some(interface) = interface {
-                            if interface.fields.iter().any(|(name, _)| name == new_name) {
+                        if let Some(obj) = interface.and_then(|typ| typ.kind.as_object()) {
+                            if obj.fields.iter().any(|(name, _)| name == new_name) {
                                 return Valid::fail(
                                     "Field is already implemented from interface".to_string(),
                                 );

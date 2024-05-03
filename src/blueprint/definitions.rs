@@ -1,33 +1,68 @@
-use std::collections::BTreeSet;
-
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
-use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Config, Field, GraphQLOperationType, Protected, Union};
+use crate::config::{Config, Field, GraphQLOperationType, Protected, UnionType};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, Validator};
+use crate::{blueprint::Type::ListType, config::TypeKind};
 use crate::{config, scalar};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
         name: name.to_string(),
         directive: Vec::new(),
+        // TODO: add doc
         description: None,
         validator: scalar::get_scalar(name),
     }))
 }
 
-pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
-    Definition::Union(UnionTypeDefinition {
+fn to_enum_type_definition(name: &str, type_: &config::EnumType) -> Valid<Definition, String> {
+    let enum_type_definition = Definition::Enum(EnumTypeDefinition {
+        name: name.to_string(),
+        directives: Vec::new(),
+        // TODO: add doc
+        description: None,
+        enum_values: type_
+            .variants
+            .iter()
+            .map(|variant| EnumValueDefinition {
+                description: None,
+                name: variant.clone(),
+                directives: Vec::new(),
+            })
+            .collect(),
+    });
+    Valid::succeed(enum_type_definition)
+}
+
+fn to_object_type_definition(
+    name: &str,
+    type_of: &config::ObjectType,
+    config_module: &ConfigModule,
+) -> Valid<Definition, String> {
+    to_fields(name, type_of, config_module).map(|fields| {
+        Definition::Object(ObjectTypeDefinition {
+            name: name.to_string(),
+            // TODO: add doc
+            description: None,
+            fields,
+            implements: type_of.implements.clone(),
+        })
+    })
+}
+
+pub fn to_union_type_definition(name: &str, u: &UnionType) -> Valid<Definition, String> {
+    Valid::succeed(Definition::Union(UnionTypeDefinition {
         name: name.to_owned(),
-        description: u.doc.clone(),
+        // TODO: add doc
+        description: None,
         directives: Vec::new(),
         types: u.types.clone(),
-    })
+    }))
 }
 
 pub fn to_input_object_type_definition(
@@ -64,7 +99,7 @@ struct ProcessFieldWithinTypeContext<'a> {
     field: &'a config::Field,
     field_name: &'a str,
     remaining_path: &'a [String],
-    type_info: &'a config::Type,
+    type_info: &'a config::ObjectType,
     is_required: bool,
     config_module: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
@@ -76,7 +111,7 @@ struct ProcessFieldWithinTypeContext<'a> {
 struct ProcessPathContext<'a> {
     path: &'a [String],
     field: &'a config::Field,
-    type_info: &'a config::Type,
+    type_info: &'a config::ObjectType,
     is_required: bool,
     config_module: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
@@ -113,6 +148,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
                 field_name,
                 context.original_path,
             )
+            // TODO: what the point of `.and` if above call is always Valid::fail_with?
             .and(process_path(ProcessPathContext {
                 type_info,
                 is_required,
@@ -127,6 +163,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
 
         let next_is_required = is_required && next_field.required;
         if scalar::is_scalar(&next_field.type_of) {
+            // TODO: if it's a scalar what kind of processing we expect further?
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -139,24 +176,29 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             });
         }
 
-        if let Some(next_type_info) = config_module.find_type(&next_field.type_of) {
-            return process_path(ProcessPathContext {
-                config_module,
-                invalid_path_handler,
-                path_resolver_error_handler,
-                path: remaining_path,
-                field: next_field,
-                type_info: next_type_info,
-                is_required: next_is_required,
-                original_path: context.original_path,
-            })
-            .and_then(|of_type| {
-                if next_field.list {
-                    Valid::succeed(ListType { of_type: Box::new(of_type), non_null: is_required })
-                } else {
-                    Valid::succeed(of_type)
-                }
-            });
+        if let Some(type_) = config_module.find_type(&next_field.type_of) {
+            if let TypeKind::Object(next_type_info) = &type_.kind {
+                return process_path(ProcessPathContext {
+                    config_module,
+                    invalid_path_handler,
+                    path_resolver_error_handler,
+                    path: remaining_path,
+                    field: next_field,
+                    type_info: next_type_info,
+                    is_required: next_is_required,
+                    original_path: context.original_path,
+                })
+                .and_then(|of_type| {
+                    if next_field.list {
+                        Valid::succeed(ListType {
+                            of_type: Box::new(of_type),
+                            non_null: is_required,
+                        })
+                    } else {
+                        Valid::succeed(of_type)
+                    }
+                });
+            }
         }
     } else if let Some((head, tail)) = remaining_path.split_first() {
         if let Some(field) = type_info.fields.get(head) {
@@ -205,7 +247,11 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
             .fields
             .get(field_name)
             .map(|_| type_info)
-            .or_else(|| config_module.find_type(&field.type_of));
+            .or_else(|| {
+                config_module
+                    .find_type(&field.type_of)
+                    .and_then(|typ| typ.kind.as_object())
+            });
 
         if let Some(type_info) = target_type_info {
             return process_field_within_type(ProcessFieldWithinTypeContext {
@@ -225,47 +271,13 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
 
     Valid::succeed(to_type(field, Some(is_required)))
 }
-
-fn to_enum_type_definition(
-    name: &str,
-    type_: &config::Type,
-    variants: &BTreeSet<String>,
-) -> Valid<Definition, String> {
-    let enum_type_definition = Definition::Enum(EnumTypeDefinition {
-        name: name.to_string(),
-        directives: Vec::new(),
-        description: type_.doc.clone(),
-        enum_values: variants
-            .iter()
-            .map(|variant| EnumValueDefinition {
-                description: None,
-                name: variant.clone(),
-                directives: Vec::new(),
-            })
-            .collect(),
-    });
-    Valid::succeed(enum_type_definition)
-}
-
-fn to_object_type_definition(
-    name: &str,
-    type_of: &config::Type,
-    config_module: &ConfigModule,
-) -> Valid<Definition, String> {
-    to_fields(name, type_of, config_module).map(|fields| {
-        Definition::Object(ObjectTypeDefinition {
-            name: name.to_string(),
-            description: type_of.doc.clone(),
-            fields,
-            implements: type_of.implements.clone(),
-        })
-    })
-}
-
-fn update_args<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+fn update_args<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &str), FieldDefinition, String>::new(
         move |(_, field, _typ, name), _| {
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -312,6 +324,7 @@ fn update_resolver_from_path(
         }
         let resolver = match updated_base_field.resolver.clone() {
             None => resolver,
+            // TODO: resolver already using context.path why wrap it again in Expression::Path?
             Some(resolver) => Expression::Path(Box::new(resolver), context.path.to_owned()),
         };
         Valid::succeed(updated_base_field.resolver(Some(resolver)))
@@ -323,13 +336,16 @@ fn update_resolver_from_path(
 /// resolvers that cannot be resolved from the root of the schema. This function
 /// finds such dangling resolvers and creates a resolvable path from the root
 /// schema.
-pub fn fix_dangling_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn fix_dangling_resolvers<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &str), FieldDefinition, String>::new(
         move |(config, field, ty, name), mut b_field| {
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
+                && validate_field_has_resolver(name, field, config, ty).is_succeed()
             {
                 b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
@@ -343,10 +359,13 @@ pub fn fix_dangling_resolvers<'a>(
 
 /// Wraps the IO Expression with Expression::Cached
 /// if `Field::cache` is present for that field
-pub fn update_cache_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn update_cache_resolvers<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a config::ObjectType, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &config::ObjectType, &str), FieldDefinition, String>::new(
         move |(_config, field, typ, _name), mut b_field| {
             if let Some(config::Cache { max_age }) = field.cache.as_ref().or(typ.cache.as_ref()) {
                 b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
@@ -368,7 +387,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 
 fn to_fields(
     object_name: &str,
-    type_of: &config::Type,
+    type_of: &config::ObjectType,
     config_module: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, String> {
     let operation_type = if config_module
@@ -403,7 +422,7 @@ fn to_fields(
     );
 
     let to_added_field = |add_field: &config::AddField,
-                          type_of: &config::Type|
+                          type_of: &config::ObjectType|
      -> Valid<blueprint::FieldDefinition, String> {
         let source_field = type_of
             .fields
@@ -419,12 +438,10 @@ fn to_fields(
                 &add_field.name,
             )
             .and_then(|field_definition| {
+                // TODO: why only `.http` is checked and not any resolver?
                 let added_field_path = match source_field.http {
-                    Some(_) => add_field.path[1..]
-                        .iter()
-                        .map(|s| s.to_owned())
-                        .collect::<Vec<_>>(),
-                    None => add_field.path.clone(),
+                    Some(_) => &add_field.path[1..],
+                    None => &add_field.path,
                 };
                 let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],
@@ -490,7 +507,7 @@ pub fn to_field_definition(
     operation_type: &GraphQLOperationType,
     object_name: &str,
     config_module: &ConfigModule,
-    type_of: &config::Type,
+    type_of: &config::ObjectType,
     name: &String,
 ) -> Valid<FieldDefinition, String> {
     let directives = field.resolvable_directives();
@@ -524,37 +541,60 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         let input_types = &config_module.input_types;
 
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
-            let dbl_usage = input_types.contains(name) && output_types.contains(name);
-            if let Some(variants) = &type_.variants {
-                if !variants.is_empty() {
-                    to_enum_type_definition(name, type_, variants).trace(name)
-                } else {
-                    Valid::fail("No variants found for enum".to_string())
-                }
-            } else if type_.scalar {
-                to_scalar_type_definition(name).trace(name)
-            } else if dbl_usage {
-                Valid::fail("type is used in input and output".to_string()).trace(name)
-            } else {
-                to_object_type_definition(name, type_, config_module)
-                    .trace(name)
-                    .and_then(|definition| match definition.clone() {
-                        Definition::Object(object_type_definition) => {
-                            if config_module.input_types.contains(name) {
-                                to_input_object_type_definition(object_type_definition).trace(name)
-                            } else if type_.interface {
-                                to_interface_type_definition(object_type_definition).trace(name)
-                            } else {
-                                Valid::succeed(definition)
+            match &type_.kind {
+                config::TypeKind::Scalar => to_scalar_type_definition(name).trace(name),
+                config::TypeKind::Enum(enum_) => to_enum_type_definition(name, enum_).trace(name),
+                config::TypeKind::Object(type_of) => {
+                    to_object_type_definition(name, type_of, config_module)
+                        .trace(name)
+                        .and_then(|definition| match definition.clone() {
+                            Definition::Object(object_type_definition) => {
+                                if config_module.input_types.contains(name) {
+                                    to_input_object_type_definition(object_type_definition)
+                                        .trace(name)
+                                // } else if type_.interface {
+                                //     to_interface_type_definition(object_type_definition).trace(name)
+                                } else {
+                                    Valid::succeed(definition)
+                                }
                             }
-                        }
-                        _ => Valid::succeed(definition),
-                    })
+                            _ => Valid::succeed(definition),
+                        })
+                }
+                config::TypeKind::Union(union_) => to_union_type_definition(name, union_),
             }
+
+            // let dbl_usage = input_types.contains(name) && output_types.contains(name);
+            // if let Some(variants) = &type_.variants {
+            //     if !variants.is_empty() {
+            //         to_enum_type_definition(name, type_, variants).trace(name)
+            //     } else {
+            //         Valid::fail("No variants found for enum".to_string())
+            //     }
+            // } else if type_.scalar {
+            //     to_scalar_type_definition(name).trace(name)
+            // } else if dbl_usage {
+            //     Valid::fail("type is used in input and output".to_string()).trace(name)
+            // } else {
+            //     to_object_type_definition(name, type_, config_module)
+            //         .trace(name)
+            //         .and_then(|definition| match definition.clone() {
+            //             Definition::Object(object_type_definition) => {
+            //                 if config_module.input_types.contains(name) {
+            //                     to_input_object_type_definition(object_type_definition).trace(name)
+            //                 } else if type_.interface {
+            //                     to_interface_type_definition(object_type_definition).trace(name)
+            //                 } else {
+            //                     Valid::succeed(definition)
+            //                 }
+            //             }
+            //             _ => Valid::succeed(definition),
+            //         })
+            // }
         })
-        .map(|mut types| {
-            types.extend(config_module.unions.iter().map(to_union_type_definition));
-            types
-        })
+        // .map(|mut types| {
+        //     types.extend(config_module.unions.iter().map(to_union_type_definition));
+        //     types
+        // })
     })
 }

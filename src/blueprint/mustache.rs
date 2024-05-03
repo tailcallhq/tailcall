@@ -1,17 +1,17 @@
 use super::{to_type, FieldDefinition, Type};
-use crate::config::{self, Config};
+use crate::config::{self, Config, ObjectType};
 use crate::lambda::{Expression, IO};
 use crate::scalar;
 use crate::valid::{Valid, Validator};
 
 struct MustachePartsValidator<'a> {
-    type_of: &'a config::Type,
+    type_of: &'a ObjectType,
     config: &'a Config,
     field: &'a FieldDefinition,
 }
 
 impl<'a> MustachePartsValidator<'a> {
-    fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
+    fn new(type_of: &'a ObjectType, config: &'a Config, field: &'a FieldDefinition) -> Self {
         Self { type_of, config, field }
     }
 
@@ -38,6 +38,7 @@ impl<'a> MustachePartsValidator<'a> {
             type_of = self
                 .config
                 .find_type(&field.type_of)
+                .and_then(|typ| typ.kind.as_object())
                 .ok_or_else(|| format!("no type '{}' found", parts.join(".").as_str()))?;
 
             len -= 1;
@@ -102,7 +103,11 @@ impl<'a> MustachePartsValidator<'a> {
 }
 
 impl FieldDefinition {
-    pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<(), String> {
+    pub fn validate_field(
+        &self,
+        type_of: &config::ObjectType,
+        config: &Config,
+    ) -> Valid<(), String> {
         // XXX we could use `Mustache`'s `render` method with a mock
         // struct implementing the `PathString` trait encapsulating `validation_map`
         // but `render` simply falls back to the default value for a given
