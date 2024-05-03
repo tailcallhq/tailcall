@@ -33,7 +33,7 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
-fn to_type(def: &Definition, dedupe_io: bool) -> dynamic::Type {
+fn to_type(def: &Definition) -> dynamic::Type {
     match def {
         Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
@@ -65,10 +65,7 @@ fn to_type(def: &Definition, dedupe_io: bool) -> dynamic::Type {
                                 let expr = expr.to_owned();
                                 FieldFuture::new(
                                     async move {
-                                        let mut ctx: ResolverContext = ctx.into();
-                                        if dedupe_io {
-                                            ctx.dedupe_io();
-                                        }
+                                        let ctx: ResolverContext = ctx.into();
                                         let ctx = EvaluationContext::new(req_ctx, &ctx);
 
                                         let const_value =
@@ -164,7 +161,7 @@ impl From<&Blueprint> for SchemaBuilder {
         }
 
         for def in blueprint.definitions.iter() {
-            schema = schema.register(to_type(def, blueprint.server.dedupe_io));
+            schema = schema.register(to_type(def));
         }
 
         schema

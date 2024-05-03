@@ -9,9 +9,6 @@ pub trait ResolverContextLike<'a>: Clone {
     fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
     fn field(&'a self) -> Option<SelectionField>;
     fn add_error(&'a self, error: ServerError);
-    fn dedupe_io(&'a self) -> bool {
-        false
-    }
 }
 
 #[derive(Clone)]
@@ -36,18 +33,11 @@ impl<'a> ResolverContextLike<'a> for EmptyResolverContext {
 #[derive(Clone)]
 pub struct ResolverContext<'a> {
     inner: Arc<async_graphql::dynamic::ResolverContext<'a>>,
-    dedupe_io: bool,
 }
 
 impl<'a> From<async_graphql::dynamic::ResolverContext<'a>> for ResolverContext<'a> {
     fn from(value: async_graphql::dynamic::ResolverContext<'a>) -> Self {
-        ResolverContext { inner: Arc::new(value), dedupe_io: false }
-    }
-}
-
-impl<'a> ResolverContext<'a> {
-    pub fn dedupe_io(&mut self) {
-        self.dedupe_io = true;
+        ResolverContext { inner: Arc::new(value) }
     }
 }
 
@@ -66,9 +56,5 @@ impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
 
     fn add_error(&'a self, error: ServerError) {
         self.inner.ctx.add_error(error)
-    }
-
-    fn dedupe_io(&'a self) -> bool {
-        self.dedupe_io
     }
 }
