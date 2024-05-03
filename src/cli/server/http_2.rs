@@ -45,7 +45,7 @@ pub async fn start_http_2(
 
     let builder = Server::builder(acceptor).http2_only(true);
 
-    super::log_launch_and_open_browser(sc.as_ref());
+    super::log_launch(sc.as_ref());
 
     if let Some(sender) = server_up_sender {
         sender

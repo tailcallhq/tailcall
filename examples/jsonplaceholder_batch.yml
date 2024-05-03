@@ -1,6 +1,5 @@
 server:
   port: 8000
-  graphiql: true
 upstream:
   baseURL: http://jsonplaceholder.typicode.com
   httpCache: true

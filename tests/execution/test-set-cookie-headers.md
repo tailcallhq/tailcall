@@ -2,7 +2,7 @@
 
 ```graphql @server
 schema
-  @server(port: 8080, graphiql: true, hostname: "0.0.0.0", headers: {setCookies: true})
+  @server(port: 8080, hostname: "0.0.0.0", headers: {setCookies: true})
   @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }

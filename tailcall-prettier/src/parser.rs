@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 
-#[derive(strum_macros::Display)]
+#[derive(strum_macros::Display, Clone)]
 pub enum Parser {
     Gql,
     Yml,

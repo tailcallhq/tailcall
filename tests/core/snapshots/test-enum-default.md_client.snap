@@ -27,7 +27,7 @@ type Query {
 
 enum Status {
   DRAFT
-  ND
+  NOT_DEFINED
   PUBLISHED
 }
 

@@ -33,7 +33,7 @@ pub async fn start_http_1(
     let builder = hyper::Server::try_bind(&addr)
         .map_err(CLIError::from)?
         .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
-    super::log_launch_and_open_browser(sc.as_ref());
+    super::log_launch(sc.as_ref());
 
     if let Some(sender) = server_up_sender {
         sender
