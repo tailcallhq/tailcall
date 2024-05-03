@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # auth
 
 ```graphql @server

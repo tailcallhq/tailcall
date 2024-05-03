@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # test-add-link-to-empty-config
 
 ```graphql @file:link-expr.graphql

@@ -1,7 +1,3 @@
----
-check_identity: true
----
-
 # inline-many-list
 
 ```graphql @server
