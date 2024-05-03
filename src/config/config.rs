@@ -72,98 +72,6 @@ pub struct Config {
     pub telemetry: Telemetry,
 }
 
-impl Config {
-    pub fn port(&self) -> u16 {
-        self.server.port.unwrap_or(8000)
-    }
-
-    pub fn find_type(&self, name: &str) -> Option<&Type> {
-        self.types.get(name)
-    }
-
-    pub fn find_union(&self, name: &str) -> Option<&Union> {
-        self.unions.get(name)
-    }
-
-    pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(self)?)
-    }
-
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
-        if pretty {
-            Ok(serde_json::to_string_pretty(self)?)
-        } else {
-            Ok(serde_json::to_string(self)?)
-        }
-    }
-
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
-    pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::document::print(doc)
-    }
-
-    pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
-        self
-    }
-
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        let mut graphql_types = BTreeMap::new();
-        for (name, type_) in types {
-            graphql_types.insert(name.to_string(), type_);
-        }
-        self.types = graphql_types;
-        self
-    }
-
-    pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name)
-    }
-
-    /// Gets all the type names used in the schema.
-    pub fn get_all_used_type_names(&self) -> HashSet<String> {
-        let mut set = HashSet::new();
-        let mut stack = Vec::new();
-        if let Some(query) = &self.schema.query {
-            stack.push(query.clone());
-        }
-        if let Some(mutation) = &self.schema.mutation {
-            stack.push(mutation.clone());
-        }
-        while let Some(type_name) = stack.pop() {
-            if let Some(typ) = self.types.get(&type_name) {
-                set.insert(type_name);
-                for field in typ.fields.values() {
-                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
-                    stack.push(field.type_of.clone());
-                }
-            }
-        }
-
-        set
-    }
-
-    pub fn get_all_unused_types(&self) -> HashSet<String> {
-        let used_types = self.get_all_used_type_names();
-        let all_types: HashSet<String> = self.types.keys().cloned().collect();
-        all_types.difference(&used_types).cloned().collect()
-    }
-
-    /// Removes all types that are not used in the schema.
-    pub fn remove_unused_types(mut self) -> Self {
-        let unused_types = self.get_all_unused_types();
-        for unused_type in unused_types {
-            self.types.remove(&unused_type);
-        }
-
-        self
-    }
-}
-
 ///
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
@@ -835,6 +743,44 @@ impl Config {
             .flat_map(|(_, field)| field.args.iter())
             .collect::<Vec<_>>()
     }
+    /// Removes all types that are not used in the schema.
+    pub fn remove_unused_types(mut self) -> Self {
+        let unused_types = self.get_all_unused_types();
+        for unused_type in unused_types {
+            self.types.remove(&unused_type);
+        }
+
+        self
+    }
+
+    pub fn get_all_unused_types(&self) -> HashSet<String> {
+        let used_types = self.get_all_used_type_names();
+        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        all_types.difference(&used_types).cloned().collect()
+    }
+
+    /// Gets all the type names used in the schema.
+    pub fn get_all_used_type_names(&self) -> HashSet<String> {
+        let mut set = HashSet::new();
+        let mut stack = Vec::new();
+        if let Some(query) = &self.schema.query {
+            stack.push(query.clone());
+        }
+        if let Some(mutation) = &self.schema.mutation {
+            stack.push(mutation.clone());
+        }
+        while let Some(type_name) = stack.pop() {
+            if let Some(typ) = self.types.get(&type_name) {
+                set.insert(type_name);
+                for field in typ.fields.values() {
+                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
+                    stack.push(field.type_of.clone());
+                }
+            }
+        }
+
+        set
+    }
 }
 
 #[derive(
@@ -885,5 +831,109 @@ mod tests {
             Type::default().fields(vec![("a", Field::int())]),
         )]);
         assert_eq!(actual, expected);
+    }
+}
+#[cfg(test)]
+mod tests_ambiguous {
+    use crate::config::{Config, ConfigModule, Resolution, Type};
+    use crate::generator::Source;
+
+    fn build_qry(mut config: Config) -> Config {
+        let mut type1 = Type::default();
+        let mut field1 =
+            crate::config::Field { type_of: "Type1".to_string(), ..Default::default() };
+
+        let arg1 = crate::config::Arg { type_of: "Type1".to_string(), ..Default::default() };
+
+        field1.args.insert("arg1".to_string(), arg1);
+
+        let arg2 = crate::config::Arg { type_of: "Type2".to_string(), ..Default::default() };
+
+        let _field3 = crate::config::Field { type_of: "Type3".to_string(), ..Default::default() };
+        let arg3 = crate::config::Arg { type_of: "Type3".to_string(), ..Default::default() };
+
+        field1.args.insert("arg2".to_string(), arg2);
+        field1.args.insert("arg3".to_string(), arg3);
+
+        let mut field2 = field1.clone();
+        field2.type_of = "Type2".to_string();
+
+        type1.fields.insert("field1".to_string(), field1);
+        type1.fields.insert("field2".to_string(), field2);
+
+        config.types.insert("Query".to_string(), type1);
+        config = config.query("Query");
+
+        config
+    }
+
+    #[test]
+    fn test_resolve_ambiguous_types() {
+        // Create a ConfigModule instance with ambiguous types
+        let mut config = Config::default();
+
+        let mut type1 = Type::default();
+        let mut type2 = Type::default();
+        let mut type3 = Type::default();
+
+        type1.fields.insert(
+            "name".to_string(),
+            crate::config::Field::default().type_of("String".to_string()),
+        );
+
+        type2.fields.insert(
+            "ty1".to_string(),
+            crate::config::Field::default().type_of("Type1".to_string()),
+        );
+        type2.fields.insert(
+            "ty3".to_string(),
+            crate::config::Field::default().type_of("Type3".to_string()),
+        );
+
+        type3.fields.insert(
+            "ty1".to_string(),
+            crate::config::Field::default().type_of("Type1".to_string()),
+        );
+        type3.fields.insert(
+            "ty2".to_string(),
+            crate::config::Field::default().type_of("Type2".to_string()),
+        );
+
+        config.types.insert("Type1".to_string(), type1);
+        config.types.insert("Type2".to_string(), type2);
+        config.types.insert("Type3".to_string(), type3);
+
+        config = build_qry(config);
+
+        let mut config_module = ConfigModule::from(config);
+
+        let resolver = |type_name: &str| -> Resolution {
+            Resolution {
+                input: format!("{}Input", type_name),
+                output: format!("{}Output", type_name),
+            }
+        };
+
+        config_module = config_module.resolve_ambiguous_types(resolver);
+
+        assert!(config_module.config.types.contains_key("Type1Input"));
+        assert!(config_module.config.types.contains_key("Type1Output"));
+        assert!(config_module.config.types.contains_key("Type2Output"));
+        assert!(config_module.config.types.contains_key("Type2Input"));
+        assert!(config_module.config.types.contains_key("Type3"));
+    }
+    #[tokio::test]
+    async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
+        let gen = crate::generator::Generator::init(crate::runtime::test::init(None));
+        let news = tailcall_fixtures::protobuf::NEWS;
+        let config_module = gen
+            .read_all(Source::PROTO, &[news], "Query")
+            .await?;
+        assert!(config_module.types.contains_key("NEWS_NEWS"));
+        assert!(config_module.types.contains_key("INPUT_NEWS_NEWS"));
+        assert!(config_module.types.contains_key("NEWS_MULTIPLE_NEWS_ID"));
+        assert!(config_module.types.contains_key("NEWS_NEWS_ID"));
+        assert!(config_module.types.contains_key("NEWS_NEWS_LIST"));
+        Ok(())
     }
 }
