@@ -954,7 +954,7 @@
           ]
         },
         "dedupeIo": {
-          "description": "`dedupe_io` if true, will use caching to prevent duplicate IO calls. @default `false`.",
+          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
           "type": [
             "boolean",
             "null"

@@ -96,8 +96,8 @@ pub struct Server {
     pub workers: Option<usize>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `dedupe_io` if true, will use caching to prevent
-    /// duplicate IO calls. @default `false`.
+    /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
+    /// is made more than once within the context of a single GraphQL request.
     pub dedupe_io: Option<bool>,
 }
 
