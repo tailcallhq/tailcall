@@ -8,7 +8,7 @@ use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
-use super::{Concurrent, Eval, EvaluationContext, ResolverContextLike, IO};
+use super::{Eval, EvaluationContext, ResolverContextLike, IO};
 use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
@@ -135,7 +135,6 @@ impl Eval for Expression {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-        conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
@@ -148,18 +147,18 @@ impl Eval for Expression {
                         .map(|a| a.into_owned())
                         .unwrap_or(async_graphql::Value::Null)),
                     Context::PushArgs { expr, and_then } => {
-                        let args = expr.eval(ctx.clone(), conc).await?;
+                        let args = expr.eval(ctx.clone()).await?;
                         let ctx = ctx.with_args(args).clone();
-                        and_then.eval(ctx, conc).await
+                        and_then.eval(ctx).await
                     }
                     Context::PushValue { expr, and_then } => {
-                        let value = expr.eval(ctx.clone(), conc).await?;
+                        let value = expr.eval(ctx.clone()).await?;
                         let ctx = ctx.with_value(value);
-                        and_then.eval(ctx, conc).await
+                        and_then.eval(ctx).await
                     }
                 },
                 Expression::Path(input, path) => {
-                    let inp = &input.eval(ctx, conc).await?;
+                    let inp = &input.eval(ctx).await?;
                     Ok(inp
                         .get_path(path)
                         .unwrap_or(&async_graphql::Value::Null)
@@ -173,10 +172,10 @@ impl Eval for Expression {
                         .await
                         .to_result()
                         .map_err(|e| anyhow!("Authentication Failure: {}", e.to_string()))?;
-                    expr.eval(ctx, conc).await
+                    expr.eval(ctx).await
                 }
-                Expression::IO(operation) => operation.eval(ctx, conc).await,
-                Expression::Cache(cached) => cached.eval(ctx, conc).await,
+                Expression::IO(operation) => operation.eval(ctx).await,
+                Expression::Cache(cached) => cached.eval(ctx).await,
             }
         })
     }

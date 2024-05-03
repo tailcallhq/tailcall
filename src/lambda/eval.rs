@@ -3,7 +3,7 @@ use std::pin::Pin;
 
 use anyhow::Result;
 
-use super::{Concurrent, EvaluationContext, ResolverContextLike};
+use super::{EvaluationContext, ResolverContextLike};
 
 pub trait Eval<Output = async_graphql::Value>
 where
@@ -12,7 +12,6 @@ where
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-        conc: &'a Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<Output>> + 'a + Send>>
     where
         Output: 'a;

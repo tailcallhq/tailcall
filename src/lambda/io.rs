@@ -48,18 +48,13 @@ impl Eval for IO {
     fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
-        _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         let key = self.cache_key(&ctx);
         Box::pin(async move {
             ctx.request_ctx
                 .cache
                 .get_or_eval(key, move || {
-                    Box::pin(async {
-                        self.eval_inner(ctx, _conc)
-                            .await
-                            .map_err(|err| err.to_string())
-                    })
+                    Box::pin(async { self.eval_inner(ctx).await.map_err(|err| err.to_string()) })
                 })
                 .await
                 .map_err(|err| anyhow::anyhow!(err))
@@ -71,7 +66,6 @@ impl IO {
     fn eval_inner<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
-        _conc: &'a super::Concurrent,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
         Box::pin(async move {
             match self {
