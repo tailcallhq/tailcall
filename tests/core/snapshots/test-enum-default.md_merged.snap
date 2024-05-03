@@ -8,7 +8,7 @@ schema @server(port: 8080) @upstream(baseURL: "http://localhost:50051", batch: {
 
 enum Status {
   DRAFT
-  ND
+  NOT_DEFINED
   PUBLISHED
 }
 
