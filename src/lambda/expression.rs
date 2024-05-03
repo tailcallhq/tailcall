@@ -3,12 +3,12 @@ use std::fmt::{Debug, Display};
 use std::pin::Pin;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use thiserror::Error;
 
 use super::{Eval, EvaluationContext, ResolverContextLike, IO};
+use crate::auth;
 use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
@@ -67,10 +67,19 @@ pub enum EvaluationError {
     #[error("APIValidationError: {0:?}")]
     APIValidationError(Vec<String>),
 
-    #[error("ExprEvalError: {0:?}")]
+    #[error("ExprEvalError: {0}")]
     ExprEvalError(String),
+
+    #[error("DeserializeError: {0}")]
+    DeserializeError(String),
+
+    #[error("Authentication Failure: {0}")]
+    AuthError(auth::error::Error),
 }
 
+// TODO: remove conversion from anyhow and don't use anyhow to pass errors
+// since it loses potentially valuable information that could be later provided
+// in the error extensions
 impl From<anyhow::Error> for EvaluationError {
     fn from(value: anyhow::Error) -> Self {
         match value.downcast::<EvaluationError>() {
@@ -99,24 +108,30 @@ impl ErrorExtensions for EvaluationError {
                 grpc_status_details,
             } = self
             {
-                e.set("grpc_code", *grpc_code);
-                e.set("grpc_description", grpc_description);
-                e.set("grpc_status_message", grpc_status_message);
-                e.set("grpc_status_details", grpc_status_details.clone());
+                e.set("grpcCode", *grpc_code);
+                e.set("grpcDescription", grpc_description);
+                e.set("grpcStatusMessage", grpc_status_message);
+                e.set("grpcStatusDetails", grpc_status_details.clone());
             }
         })
     }
 }
 
 impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
-    fn from(_value: crate::valid::ValidationError<&'a str>) -> Self {
+    fn from(value: crate::valid::ValidationError<&'a str>) -> Self {
         EvaluationError::APIValidationError(
-            _value
+            value
                 .as_vec()
                 .iter()
                 .map(|e| e.message.to_owned())
                 .collect(),
         )
+    }
+}
+
+impl From<auth::error::Error> for EvaluationError {
+    fn from(value: auth::error::Error) -> Self {
+        EvaluationError::AuthError(value)
     }
 }
 
@@ -135,7 +150,7 @@ impl Eval for Expression {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 Expression::Context(op) => match op {
@@ -164,14 +179,13 @@ impl Eval for Expression {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Dynamic(value) => value.render_value(&ctx),
+                Expression::Dynamic(value) => Ok(value.render_value(&ctx)),
                 Expression::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx
                         .validate(ctx.request_ctx)
                         .await
-                        .to_result()
-                        .map_err(|e| anyhow!("Authentication Failure: {}", e.to_string()))?;
+                        .to_result()?;
                     expr.eval(ctx).await
                 }
                 Expression::IO(operation) => operation.eval(ctx).await,
