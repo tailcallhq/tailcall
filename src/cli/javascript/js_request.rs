@@ -254,12 +254,6 @@ mod tests {
 
     use super::*;
 
-    impl Uri {
-        pub fn parse(input: &str) -> anyhow::Result<Self> {
-            Ok(Self::from(&reqwest::Url::parse(input)?))
-        }
-    }
-
     #[test]
     fn test_reqwest_request_to_js_request() {
         let mut reqwest_request =
