@@ -531,7 +531,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                 } else {
                     Valid::fail("No variants found for enum".to_string())
                 }
-            } else if type_.scalar {
+            } else if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)

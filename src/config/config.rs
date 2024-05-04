@@ -104,10 +104,6 @@ pub struct Type {
     pub variants: Option<BTreeSet<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
-    /// Flag to indicate if the type is a scalar.
-    pub scalar: bool,
-    #[serde(default)]
-    ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
     ///
@@ -128,6 +124,10 @@ impl Type {
         }
         self.fields = graphql_fields;
         self
+    }
+
+    pub fn scalar(&self) -> bool {
+        self.fields.is_empty() && self.variants.is_none()
     }
 }
 
