@@ -8,30 +8,30 @@ import "google/protobuf/empty.proto";
 package news;
 
 enum Status {
-  PUBLISHED = 0;
-  DRAFT = 1;
-  ND = 2;
+    PUBLISHED = 0;
+    DRAFT = 1;
+    NOT_DEFINED = 2;
 }
 
 
 message News {
-  int32 id = 1;
-  Status foo = 5;
+    int32 id = 1;
+    Status foo = 5;
 }
 
 service NewsService {
-  rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
+    rpc GetAllNews (google.protobuf.Empty) returns (NewsList) {}
 }
 
 message NewsList {
-  repeated News news = 1;
+    repeated News news = 1;
 }
 ```
 
 ```graphql @server
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
 schema
-  @server(port: 8080, graphiql: true)
+  @server(port: 8080)
   @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
   @link(id: "news", src: "./service.proto", type: Protobuf) {
   query: Query
@@ -44,7 +44,7 @@ type Query {
 enum Status {
   PUBLISHED
   DRAFT
-  ND
+  NOT_DEFINED
 }
 
 type News {

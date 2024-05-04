@@ -21,7 +21,7 @@ expression: response
           },
           {
             "id": 3,
-            "foo": "ND"
+            "foo": "NOT_DEFINED"
           }
         ]
       }

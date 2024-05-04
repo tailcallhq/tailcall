@@ -15,6 +15,7 @@ use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
+use crate::lambda::EvaluationError;
 use crate::runtime::TargetRuntime;
 
 #[derive(Setters)]
@@ -33,7 +34,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<u64, ConstValue, String>,
+    pub cache: AsyncCache<u64, ConstValue, EvaluationError>,
 }
 
 impl RequestContext {

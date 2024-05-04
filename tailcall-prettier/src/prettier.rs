@@ -19,7 +19,8 @@ impl Prettier {
         Self { runtime }
     }
 
-    pub async fn format(&self, source: String, parser: Parser) -> Result<String> {
+    pub async fn format<'a>(&'a self, source: String, parser: &'a Parser) -> Result<String> {
+        let parser = parser.clone();
         self.runtime
             .spawn_blocking(move || {
                 let mut command = command();
@@ -38,7 +39,10 @@ impl Prettier {
                 if output.status.success() {
                     Ok(String::from_utf8(output.stdout)?)
                 } else {
-                    Err(anyhow!("Prettier formatting failed"))
+                    Err(anyhow!(
+                        "Prettier formatting failed: {}",
+                        String::from_utf8(output.stderr).unwrap()
+                    ))
                 }
             })
             .await?

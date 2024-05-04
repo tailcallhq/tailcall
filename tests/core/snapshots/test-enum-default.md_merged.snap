@@ -2,13 +2,13 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server(graphiql: true, port: 8080) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: true) @link(id: "news", src: "./service.proto", type: Protobuf) {
+schema @server(port: 8080) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: true) @link(id: "news", src: "./service.proto", type: Protobuf) {
   query: Query
 }
 
 enum Status {
   DRAFT
-  ND
+  NOT_DEFINED
   PUBLISHED
 }
 

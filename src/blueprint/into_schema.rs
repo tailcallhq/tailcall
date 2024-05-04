@@ -2,13 +2,14 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
+use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
 
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
-use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContext};
+use crate::lambda::{Eval, EvaluationContext, ResolverContext};
 use crate::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
@@ -69,7 +70,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let ctx = EvaluationContext::new(req_ctx, &ctx);
 
                                         let const_value =
-                                            expr.eval(ctx, &Concurrent::Sequential).await?;
+                                            expr.eval(ctx).await.map_err(|err| err.extend())?;
                                         let p = match const_value {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             ConstValue::Null => FieldValue::NONE,

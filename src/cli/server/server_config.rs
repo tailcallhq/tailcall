@@ -66,8 +66,4 @@ impl ServerConfig {
 
         format!("{}://{}", protocol, addr)
     }
-
-    pub fn graphiql(&self) -> bool {
-        self.blueprint.server.enable_graphiql
-    }
 }

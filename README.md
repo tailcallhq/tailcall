@@ -57,7 +57,7 @@ The below file is a standard `.graphQL` file, with a few additions such as `@ser
 
 ```graphql
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }

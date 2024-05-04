@@ -27,6 +27,7 @@ pub struct Upstream {
     pub http_cache: bool,
     pub batch: Option<Batch>,
     pub http2_only: bool,
+    pub dedupe: bool,
 }
 
 impl Upstream {
@@ -78,6 +79,7 @@ impl TryFrom<&ConfigModule> for Upstream {
                 http_cache: (config_upstream).get_enable_http_cache(),
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
+                dedupe: (config_upstream).get_dedupe(),
             })
             .to_result()
     }

@@ -1,4 +1,4 @@
-import {describe, test, expect} from "vitest"
+import {describe, expect, test} from "vitest"
 import {readFile} from "fs/promises"
 import {mf} from "./mf"
 
@@ -15,15 +15,6 @@ describe("fetch", () => {
     await bucket.put("tailcall-fixtures/fixtures/protobuf/news.proto", grpc)
     await bucket.put("examples/jsonplaceholder.graphql", placeholder)
     await bucket.put("examples/jsonplaceholder_batch.graphql", placeholder_batch)
-  })
-
-  test("ide", async () => {
-    let resp = await mf.dispatchFetch("https://fake.host/", {
-      method: "GET",
-    })
-    let body = await resp.text()
-    expect(body.includes("<title>Tailcall - GraphQL IDE</title>")).toBe(true)
-    expect(resp.status).toBe(200)
   })
 
   test("sample_resp", async () => {
