@@ -40,8 +40,8 @@ impl Generator {
         config.links = links;
         Ok(
             ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-                input: format!("INPUT_{}", v),
-                output: v.to_string(),
+                input: format!("IN_{}", v),
+                output: format!("OUT_{}", v),
             }),
         )
     }
