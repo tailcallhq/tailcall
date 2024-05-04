@@ -735,7 +735,7 @@ impl Config {
     }
 
     /// Returns a list of all the arguments in the configuration
-    pub fn arguments(&self) -> Vec<(&String, &Arg)> {
+    fn arguments(&self) -> Vec<(&String, &Arg)> {
         self.types
             .iter()
             .filter(|(_, value)| !value.interface)
@@ -743,17 +743,16 @@ impl Config {
             .flat_map(|(_, field)| field.args.iter())
             .collect::<Vec<_>>()
     }
-    /// Removes all types that are not used in the schema.
-    pub fn remove_unused_types(mut self) -> Self {
-        let unused_types = self.get_all_unused_types();
-        for unused_type in unused_types {
+    /// Removes all types that are passed in the set
+    pub fn remove_types(mut self, types: HashSet<String>) -> Self {
+        for unused_type in types {
             self.types.remove(&unused_type);
         }
 
         self
     }
 
-    pub fn get_all_unused_types(&self) -> HashSet<String> {
+    pub fn unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
         let all_types: HashSet<String> = self.types.keys().cloned().collect();
         all_types.difference(&used_types).cloned().collect()
