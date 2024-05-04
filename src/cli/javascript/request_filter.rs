@@ -72,12 +72,12 @@ impl RequestFilter {
                 }
                 Command::Response(js_response) => {
                     // Check if the response is a redirect
-                    if (js_response.status == 301 || js_response.status == 302)
-                        && js_response.headers.contains_key("location")
+                    if (js_response.status() == 301 || js_response.status() == 302)
+                        && js_response.headers().contains_key("location")
                     {
                         request
                             .url_mut()
-                            .set_path(js_response.headers["location"].as_str());
+                            .set_path(js_response.headers()["location"].as_str());
                         self.on_request(request).await
                     } else {
                         Ok(js_response.try_into()?)
@@ -101,12 +101,12 @@ impl HttpIO for RequestFilter {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-
+    use hyper::body::Bytes;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
     use crate::cli::javascript::request_filter::Command;
     use crate::cli::javascript::{JsRequest, JsResponse};
+    use crate::http::Response;
 
     #[test]
     fn test_command_from_invalid_object() {
@@ -139,7 +139,12 @@ mod tests {
         let runtime = Runtime::new().unwrap();
         let context = Context::base(&runtime).unwrap();
         context.with(|ctx| {
-            let js_response = JsResponse { status: 200, headers: BTreeMap::new(), body: None };
+            let js_response = JsResponse::try_from(Response {
+                status: reqwest::StatusCode::OK,
+                headers: reqwest::header::HeaderMap::default(),
+                body: Bytes::new(),
+            })
+            .unwrap();
             let value = Object::new(ctx.clone()).unwrap();
             value.set("response", js_response).unwrap();
             assert!(Command::from_js(&ctx, value.into_value()).is_ok());
