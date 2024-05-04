@@ -32,7 +32,7 @@ impl JsRequest {
 
     pub fn body(&self) -> Option<String> {
         if let Some(body) = self.0.body() {
-            let bytes = body.as_bytes().unwrap();
+            let bytes = body.as_bytes()?;
             Some(String::from_utf8_lossy(bytes).to_string())
         } else {
             None
