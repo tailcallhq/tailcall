@@ -8,7 +8,6 @@ mod modify;
 mod resolver_context_like;
 
 pub use cache::*;
-
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
 pub use expression::*;
