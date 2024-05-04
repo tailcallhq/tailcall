@@ -1216,7 +1216,6 @@
         },
         "cache": {
           "description": "Setting to indicate if the type can be cached.",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Cache"
@@ -1263,10 +1262,6 @@
               "type": "null"
             }
           ]
-        },
-        "scalar": {
-          "description": "Flag to indicate if the type is a scalar.",
-          "type": "boolean"
         },
         "tag": {
           "description": "Contains source information for the type.",

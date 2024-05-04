@@ -46,7 +46,9 @@ lazy_static! {
     };
 }
 
-pub fn is_scalar(type_name: &str) -> bool {
+///
+/// Check if the type is a predefined scalar
+pub fn is_predefined_scalar(type_name: &str) -> bool {
     SCALAR_TYPES.contains(type_name)
 }
 

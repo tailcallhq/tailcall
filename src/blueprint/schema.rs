@@ -50,7 +50,7 @@ pub fn validate_field_has_resolver(
             if !field.has_resolver() {
                 let type_name = &field.type_of;
                 if let Some(ty) = types.get(type_name) {
-                    if ty.scalar {
+                    if ty.scalar() {
                         return true;
                     }
                     let res = validate_type_has_resolvers(type_name, ty, types);
