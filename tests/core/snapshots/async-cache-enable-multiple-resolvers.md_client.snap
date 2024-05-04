@@ -2,8 +2,6 @@
 source: tests/core/spec.rs
 expression: client
 ---
-scalar AnyScalar
-
 scalar Date
 
 scalar Email
@@ -14,15 +12,25 @@ scalar JSON
 
 scalar PhoneNumber
 
+type Post {
+  body: String
+  id: Int!
+  taggedUsers: [User]
+  title: String
+  user: User
+  userId: Int!
+}
+
 type Query {
-  any(value: AnyScalar!): AnyScalar
-  date(value: Date!): Date!
-  email(value: Email!): Email!
-  phone(value: PhoneNumber!): PhoneNumber!
-  url(value: Url!): Url!
+  posts: [Post]
 }
 
 scalar Url
+
+type User {
+  id: Int
+  name: String
+}
 
 schema {
   query: Query

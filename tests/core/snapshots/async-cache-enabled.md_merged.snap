@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server(port: 8000, queryValidation: false) @upstream(baseURL: "http://jsonplaceholder.typicode.com", dedupe: true) {
+  query: Query
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts?id=1")
+}
+
+type User {
+  id: Int
+  name: String
+}

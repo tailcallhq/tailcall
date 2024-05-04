@@ -17,7 +17,17 @@ expression: response
             "line": 1,
             "column": 9
           }
-        ]
+        ],
+        "extensions": {
+          "grpcCode": 3,
+          "grpcDescription": "Client specified an invalid argument",
+          "grpcStatusDetails": {
+            "code": 3,
+            "message": "error message",
+            "details": []
+          },
+          "grpcStatusMessage": "grpc message"
+        }
       }
     ]
   }

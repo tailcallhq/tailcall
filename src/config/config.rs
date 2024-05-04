@@ -683,7 +683,7 @@ impl Config {
     ///
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
-    pub fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
+    fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
         if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
@@ -697,12 +697,20 @@ impl Config {
     }
 
     ///
+    /// Checks if a type is a scalar or not.
+    pub fn is_scalar(&self, type_name: &str) -> bool {
+        self.types
+            .get(type_name)
+            .map_or(scalar::is_predefined_scalar(type_name), |ty| ty.scalar())
+    }
+
+    ///
     /// Goes through the complete config and finds all the types that are used
     /// as inputs directly ot indirectly.
     pub fn input_types(&self) -> HashSet<String> {
         self.arguments()
             .iter()
-            .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
+            .filter(|(_, arg)| !self.is_scalar(&arg.type_of))
             .map(|(_, arg)| arg.type_of.as_str())
             .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of, types)

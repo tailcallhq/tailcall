@@ -14,8 +14,8 @@ pub struct AsyncCache<Key, Value, Error> {
 
 #[derive(Clone)]
 pub enum CacheValue<Value, Error> {
-    Pending(Sender<Result<Value, Error>>),
-    Ready(Result<Value, Error>),
+    Pending(Sender<Arc<Result<Value, Error>>>),
+    Ready(Arc<Result<Value, Error>>),
 }
 
 impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + Clone + Send>
@@ -41,7 +41,7 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
         &self,
         key: Key,
         or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
-    ) -> Result<Value, Error> {
+    ) -> Arc<Result<Value, Error>> {
         if let Some(cache_value) = self.get_cache_value(&key) {
             match cache_value {
                 CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
@@ -53,7 +53,7 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
                 .write()
                 .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
-            let result = or_else().await;
+            let result = Arc::new(or_else().await);
             let mut guard = self.cache.write().unwrap();
             if let Some(cache_value) = guard.get_mut(&key) {
                 *cache_value = CacheValue::Ready(result.clone())
@@ -76,6 +76,8 @@ mod tests {
         let actual = cache
             .get_or_eval(1, || Box::pin(async { Ok(1) }))
             .await
+            .as_ref()
+            .clone()
             .unwrap();
         assert_eq!(actual, 1);
     }
@@ -86,11 +88,15 @@ mod tests {
         cache
             .get_or_eval(1, || Box::pin(async { Ok(1) }))
             .await
+            .as_ref()
+            .clone()
             .unwrap();
 
         let actual = cache
             .get_or_eval(1, || Box::pin(async { Ok(2) }))
             .await
+            .as_ref()
+            .clone()
             .unwrap();
         assert_eq!(actual, 1);
     }
@@ -103,12 +109,16 @@ mod tests {
             cache
                 .get_or_eval(1, || Box::pin(async move { Ok(i) }))
                 .await
+                .as_ref()
+                .clone()
                 .unwrap();
         }
 
         let actual = cache
             .get_or_eval(1, || Box::pin(async { Ok(2) }))
             .await
+            .as_ref()
+            .clone()
             .unwrap();
         assert_eq!(actual, 0);
     }
@@ -155,7 +165,7 @@ mod tests {
         let results: Vec<_> = futures_util::future::join_all(handles)
             .await
             .into_iter()
-            .map(|res| res.unwrap().unwrap()) // Unwrap the Result from the join, and the Result from get_or_eval
+            .map(|res| res.unwrap().as_ref().clone().unwrap()) // Unwrap the Result from the join, and the Result from get_or_eval
             .collect();
 
         // Check that all tasks received the correct value.

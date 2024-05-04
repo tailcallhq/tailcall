@@ -5,15 +5,17 @@ mod tests {
     use serde_json::json;
     use tailcall::blueprint::{Blueprint, DynamicValue};
     use tailcall::http::RequestContext;
-    use tailcall::lambda::{Concurrent, EmptyResolverContext, Eval, EvaluationContext, Expression};
+    use tailcall::lambda::{
+        EmptyResolverContext, Eval, EvaluationContext, EvaluationError, Expression,
+    };
     use tailcall::mustache::Mustache;
 
-    async fn eval(expr: &Expression) -> anyhow::Result<Value> {
+    async fn eval(expr: &Expression) -> Result<Value, EvaluationError> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
         let eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx);
-        expr.eval(eval_ctx, &Concurrent::Parallel).await
+        expr.eval(eval_ctx).await
     }
 
     #[tokio::test]

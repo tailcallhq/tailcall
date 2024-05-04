@@ -9,10 +9,11 @@ expression: response
   },
   "body": {
     "data": {
-      "any1": {
-        "test": "abc"
-      },
-      "any2": "string-value"
+      "posts": {
+        "user": {
+          "name": "Leanne Graham"
+        }
+      }
     }
   }
 }
