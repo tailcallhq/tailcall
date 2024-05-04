@@ -51,7 +51,7 @@ impl LocalRuntime {
         })?;
 
         tracing::debug!("JS Runtime created: {:?}", thread::current().name());
-        Ok(Self(context)) 
+        Ok(Self(context))
     }
 }
 
