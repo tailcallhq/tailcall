@@ -2,20 +2,17 @@ use std::sync::Arc;
 
 use hyper::body::Bytes;
 use rquickjs::FromJs;
-use serde::{Deserialize, Serialize};
 
 use super::{JsRequest, JsResponse};
 use crate::http::Response;
 use crate::{HttpIO, WorkerIO};
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
 pub enum Event {
     Request(JsRequest),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
 pub enum Command {
     Request(JsRequest),
     Response(JsResponse),
@@ -70,7 +67,7 @@ impl RequestFilter {
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {
-                    let response = self.client.execute(js_request.try_into()?).await?;
+                    let response = self.client.execute(js_request.into()).await?;
                     Ok(response)
                 }
                 Command::Response(js_response) => {
