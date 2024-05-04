@@ -14,15 +14,15 @@ use crate::is_default;
 pub struct JsRequest(reqwest::Request);
 
 impl JsRequest {
-    pub fn uri(&self) -> Uri {
+    fn uri(&self) -> Uri {
         self.0.url().into()
     }
 
-    pub fn method(&self) -> String {
+    fn method(&self) -> String {
         self.0.method().to_string()
     }
 
-    pub fn headers(&self) -> anyhow::Result<BTreeMap<String, String>> {
+    fn headers(&self) -> anyhow::Result<BTreeMap<String, String>> {
         let headers = self.0.headers();
         let mut map = BTreeMap::new();
         for (k, v) in headers.iter() {
@@ -31,7 +31,7 @@ impl JsRequest {
         Ok(map)
     }
 
-    pub fn body(&self) -> Option<String> {
+    fn body(&self) -> Option<String> {
         if let Some(body) = self.0.body() {
             let bytes = body.as_bytes()?;
             Some(String::from_utf8_lossy(bytes).to_string())
@@ -40,6 +40,7 @@ impl JsRequest {
         }
     }
 }
+
 impl TryFrom<&reqwest::Request> for JsRequest {
     type Error = anyhow::Error;
 
@@ -56,6 +57,7 @@ impl From<JsRequest> for reqwest::Request {
         val.0
     }
 }
+
 impl<'js> IntoJs<'js> for JsRequest {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
         let object = rquickjs::Object::new(ctx.clone())?;
