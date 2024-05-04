@@ -226,9 +226,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn to_enum_type_definition(
-    (name, variants): (&String, &BTreeSet<String>)
-) -> Definition {
+fn to_enum_type_definition((name, variants): (&String, &BTreeSet<String>)) -> Definition {
     Definition::Enum(EnumTypeDefinition {
         name: name.to_owned(),
         directives: Vec::new(),

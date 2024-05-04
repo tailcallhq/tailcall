@@ -130,7 +130,9 @@ impl Config {
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name) || self.enums.contains_key(name)
+        self.types.contains_key(name)
+            || self.unions.contains_key(name)
+            || self.enums.contains_key(name)
     }
 
     /// Gets all the type names used in the schema.

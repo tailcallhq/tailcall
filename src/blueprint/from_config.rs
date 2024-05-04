@@ -95,7 +95,7 @@ where
             }
         }
         JsonSchema::Obj(schema_fields)
-    } else if let Some(type_enum_ ) = type_enum_ {
+    } else if let Some(type_enum_) = type_enum_ {
         JsonSchema::Enum(type_enum_.to_owned())
     } else {
         match type_of {

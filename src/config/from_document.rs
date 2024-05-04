@@ -211,9 +211,7 @@ fn to_enum_types(
             .filter_map(|type_definition| {
                 let type_name = pos_name_to_string(&type_definition.node.name);
                 let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Enum(enum_type) => to_enum(
-                        enum_type,
-                    ),
+                    TypeKind::Enum(enum_type) => to_enum(enum_type),
                     _ => return None,
                 };
                 Some((type_name, type_opt))

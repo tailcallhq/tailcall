@@ -236,12 +236,17 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             name: pos(Name::new(name)),
             directives: Vec::new(),
             kind: TypeKind::Enum(EnumType {
-                values: values.iter().map(|variant| pos(EnumValueDefinition {
-                    description: None,
-                    value: pos(Name::new(variant.to_owned())),
-                    directives: Vec::new(),
-                })).collect()
-            })
+                values: values
+                    .iter()
+                    .map(|variant| {
+                        pos(EnumValueDefinition {
+                            description: None,
+                            value: pos(Name::new(variant)),
+                            directives: Vec::new(),
+                        })
+                    })
+                    .collect(),
+            }),
         })));
     }
 

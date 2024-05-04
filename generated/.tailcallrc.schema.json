@@ -3,7 +3,6 @@
   "title": "Config",
   "type": "object",
   "required": [
-    "enums",
     "schema"
   ],
   "properties": {
