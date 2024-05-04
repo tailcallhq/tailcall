@@ -99,7 +99,7 @@ Head out to [docs] to learn about other powerful tailcall features.
 
 Your contributions are invaluable! Kindly go through our [contribution guidelines] if you are a first time contributor.
 
-[contribution guidelines]: https://tailcall.run/docs/contributors/guidelines/
+[contribution guidelines]: https://tailcall.run/docs/contributors/
 
 ### Support Us
 
