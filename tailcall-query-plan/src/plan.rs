@@ -6,7 +6,7 @@ use async_graphql::{Name, Value};
 use indenter::indented;
 use indexmap::IndexMap;
 use tailcall::blueprint::{Definition, Type};
-use tailcall::scalar::is_scalar;
+use tailcall::scalar::is_predefined_scalar;
 
 use super::execution::executor::{ExecutionResult, ResolvedEntry};
 use super::resolver::{FieldPlan, FieldPlanSelection, Id};
@@ -94,7 +94,7 @@ impl FieldTree {
                     None
                 };
 
-                let plan = if is_scalar(type_name) {
+                let plan = if is_predefined_scalar(type_name) {
                     Self { field_plan_id: id, entry: FieldTreeEntry::Scalar }
                 } else {
                     Self::from_operation(

@@ -126,7 +126,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
         }
 
         let next_is_required = is_required && next_field.required;
-        if scalar::is_scalar(&next_field.type_of) {
+        if scalar::is_predefined_scalar(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -359,7 +359,7 @@ pub fn update_cache_resolvers<'a>(
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
     let field_type = &field.type_of;
-    if !scalar::is_scalar(field_type) && !config.contains(field_type) {
+    if !scalar::is_predefined_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
     } else {
         Valid::succeed(())
@@ -531,7 +531,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                 } else {
                     Valid::fail("No variants found for enum".to_string())
                 }
-            } else if type_.scalar {
+            } else if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)

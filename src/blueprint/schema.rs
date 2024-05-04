@@ -51,7 +51,7 @@ pub fn validate_field_has_resolver(
                 let type_name = &field.type_of;
                 if let Some(ty) = types.get(type_name) {
                     // It's an enum
-                    if ty.variants.is_some() || ty.scalar {
+                    if ty.variants.is_some() || ty.scalar() {
                         return true;
                     }
                     let res = validate_type_has_resolvers(type_name, ty, types);
