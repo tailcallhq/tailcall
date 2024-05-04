@@ -227,14 +227,12 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
 }
 
 fn to_enum_type_definition(
-    name: &str,
-    type_: &config::Type,
-    variants: &BTreeSet<String>,
-) -> Valid<Definition, String> {
-    let enum_type_definition = Definition::Enum(EnumTypeDefinition {
-        name: name.to_string(),
+    (name, variants): (&String, &BTreeSet<String>)
+) -> Definition {
+    Definition::Enum(EnumTypeDefinition {
+        name: name.to_owned(),
         directives: Vec::new(),
-        description: type_.doc.clone(),
+        description: None,
         enum_values: variants
             .iter()
             .map(|variant| EnumValueDefinition {
@@ -243,8 +241,7 @@ fn to_enum_type_definition(
                 directives: Vec::new(),
             })
             .collect(),
-    });
-    Valid::succeed(enum_type_definition)
+    })
 }
 
 fn to_object_type_definition(
@@ -525,13 +522,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
 
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
-            if let Some(variants) = &type_.variants {
-                if !variants.is_empty() {
-                    to_enum_type_definition(name, type_, variants).trace(name)
-                } else {
-                    Valid::fail("No variants found for enum".to_string())
-                }
-            } else if type_.scalar {
+            // ShylockHg
+            if type_.scalar {
                 to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
@@ -554,6 +546,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         })
         .map(|mut types| {
             types.extend(config_module.unions.iter().map(to_union_type_definition));
+            types.extend(config_module.enums.iter().map(to_enum_type_definition));
             types
         })
     })

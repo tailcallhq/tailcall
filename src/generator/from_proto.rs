@@ -41,10 +41,7 @@ impl Context {
     /// Processes proto enum types.
     fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
-            let mut ty = Type::default();
-
             let enum_name = enum_.name();
-            ty.tag = Some(Tag { id: enum_name.to_string() });
 
             let variants = enum_
                 .value
@@ -57,10 +54,8 @@ impl Context {
                 })
                 .collect::<BTreeSet<String>>();
 
-            ty.variants = Some(variants);
-
             let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
-            self = self.insert_type(type_name, ty);
+            self.config.enums.insert(type_name, variants);
         }
         self
     }

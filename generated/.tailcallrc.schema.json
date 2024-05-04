@@ -3,9 +3,21 @@
   "title": "Config",
   "type": "object",
   "required": [
+    "enums",
     "schema"
   ],
   "properties": {
+    "enums": {
+      "description": "A map of all the enum types in the schema",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "uniqueItems": true
+      }
+    },
     "links": {
       "description": "A list of all links in the schema.",
       "type": "array",
@@ -1221,17 +1233,6 @@
             "string",
             "null"
           ]
-        },
-        "enum": {
-          "description": "Variants for the type if it's an enum",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
         },
         "fields": {
           "description": "A map of field name and its definition.",

@@ -86,19 +86,6 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
-        } else if let Some(variants) = &type_def.variants {
-            TypeKind::Enum(EnumType {
-                values: variants
-                    .iter()
-                    .map(|value| {
-                        pos(EnumValueDefinition {
-                            description: None,
-                            value: pos(Name::new(value.clone())),
-                            directives: Vec::new(),
-                        })
-                    })
-                    .collect(),
-            })
         } else if config.input_types.contains(type_name) {
             TypeKind::InputObject(InputObjectType {
                 fields: type_def
@@ -239,6 +226,22 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .map(|name| pos(Name::new(name.clone())))
                     .collect(),
             }),
+        })));
+    }
+
+    for (name, values) in config.enums.iter() {
+        definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
+            extend: false,
+            description: None,
+            name: pos(Name::new(name)),
+            directives: Vec::new(),
+            kind: TypeKind::Enum(EnumType {
+                values: values.iter().map(|variant| pos(EnumValueDefinition {
+                    description: None,
+                    value: pos(Name::new(variant.to_owned())),
+                    directives: Vec::new(),
+                })).collect()
+            })
         })));
     }
 

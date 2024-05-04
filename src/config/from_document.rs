@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
@@ -37,21 +37,24 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
 
     let types = to_types(&type_definitions);
     let unions = to_union_types(&type_definitions);
+    let enums = to_enum_types(&type_definitions);
     let schema = schema_definition(&doc).map(to_root_schema);
     schema_definition(&doc).and_then(|sd| {
         server(sd)
             .fuse(upstream(sd))
             .fuse(types)
             .fuse(unions)
+            .fuse(enums)
             .fuse(schema)
             .fuse(links(sd))
             .fuse(telemetry(sd))
             .map(
-                |(server, upstream, types, unions, schema, links, telemetry)| Config {
+                |(server, upstream, types, unions, enums, schema, links, telemetry)| Config {
                     server,
                     upstream,
                     types,
                     unions,
+                    enums,
                     schema,
                     links,
                     telemetry,
@@ -155,7 +158,7 @@ fn to_types(
                 &type_definition.node.directives,
             )
             .some(),
-            TypeKind::Enum(enum_type) => Valid::succeed(Some(to_enum(enum_type))),
+            TypeKind::Enum(_) => Valid::none(),
             TypeKind::InputObject(input_object_type) => {
                 to_input_object(input_object_type, &type_definition.node.directives).some()
             }
@@ -199,6 +202,26 @@ fn to_union_types(
     )
 }
 
+fn to_enum_types(
+    type_definitions: &[&Positioned<TypeDefinition>],
+) -> Valid<BTreeMap<String, BTreeSet<String>>, String> {
+    Valid::succeed(
+        type_definitions
+            .iter()
+            .filter_map(|type_definition| {
+                let type_name = pos_name_to_string(&type_definition.node.name);
+                let type_opt = match type_definition.node.kind.clone() {
+                    TypeKind::Enum(enum_type) => to_enum(
+                        enum_type,
+                    ),
+                    _ => return None,
+                };
+                Some((type_name, type_opt))
+            })
+            .collect(),
+    )
+}
+
 #[allow(clippy::too_many_arguments)]
 fn to_object_type<T>(
     object: &T,
@@ -232,14 +255,6 @@ where
                 ..Default::default()
             }
         })
-}
-fn to_enum(enum_type: EnumType) -> config::Type {
-    let variants = enum_type
-        .values
-        .iter()
-        .map(|value| value.node.value.to_string())
-        .collect();
-    config::Type { variants: Some(variants), ..Default::default() }
 }
 fn to_input_object(
     input_object_type: InputObjectType,
@@ -376,6 +391,14 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
         .map(|member| member.node.to_string())
         .collect();
     Union { types, doc: doc.clone() }
+}
+
+fn to_enum(enum_type: EnumType) -> BTreeSet<String> {
+    enum_type
+        .values
+        .iter()
+        .map(|member| member.node.value.node.as_str().to_owned())
+        .collect()
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {

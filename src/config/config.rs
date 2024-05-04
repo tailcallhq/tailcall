@@ -64,6 +64,11 @@ pub struct Config {
     pub unions: BTreeMap<String, Union>,
 
     ///
+    /// A map of all the enum types in the schema
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub enums: BTreeMap<String, BTreeSet<String>>,
+
+    ///
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
@@ -83,6 +88,10 @@ impl Config {
 
     pub fn find_union(&self, name: &str) -> Option<&Union> {
         self.unions.get(name)
+    }
+
+    pub fn find_enum(&self, name: &str) -> Option<&BTreeSet<String>> {
+        self.enums.get(name)
     }
 
     pub fn to_yaml(&self) -> Result<String> {
@@ -121,7 +130,7 @@ impl Config {
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name)
+        self.types.contains_key(name) || self.unions.contains_key(name) || self.enums.contains_key(name)
     }
 
     /// Gets all the type names used in the schema.
@@ -190,10 +199,6 @@ pub struct Type {
     ///
     /// Interfaces that the type implements.
     pub implements: BTreeSet<String>,
-    #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
-    ///
-    /// Variants for the type if it's an enum
-    pub variants: Option<BTreeSet<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Flag to indicate if the type is a scalar.
