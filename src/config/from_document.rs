@@ -250,7 +250,6 @@ where
                 cache,
                 protected,
                 tag,
-                ..Default::default()
             }
         })
 }

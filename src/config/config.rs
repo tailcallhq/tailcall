@@ -654,7 +654,9 @@ impl Config {
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name) || self.enums.contains_key(name)
+        self.types.contains_key(name)
+            || self.unions.contains_key(name)
+            || self.enums.contains_key(name)
     }
 
     pub fn from_json(json: &str) -> Result<Self> {
