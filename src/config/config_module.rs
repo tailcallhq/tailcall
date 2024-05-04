@@ -209,6 +209,11 @@ impl From<Config> for ConfigModule {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
+    use maplit::hashset;
+    use pretty_assertions::assert_eq;
+
     use crate::config::{Config, ConfigModule, Resolution, Type};
     use crate::generator::Source;
 
@@ -290,22 +295,45 @@ mod tests {
 
         config_module = config_module.resolve_ambiguous_types(resolver);
 
-        assert!(config_module.config.types.contains_key("Type1Input"));
-        assert!(config_module.config.types.contains_key("Type1Output"));
-        assert!(config_module.config.types.contains_key("Type2Output"));
-        assert!(config_module.config.types.contains_key("Type2Input"));
-        assert!(config_module.config.types.contains_key("Type3"));
+        let actual = config_module
+            .config
+            .types
+            .keys()
+            .map(|s| s.as_str())
+            .collect::<HashSet<_>>();
+
+        let expected = hashset![
+            "Query",
+            "Type1Input",
+            "Type1Output",
+            "Type2Output",
+            "Type2Input",
+            "Type3",
+        ];
+
+        assert_eq!(actual, expected);
     }
     #[tokio::test]
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let gen = crate::generator::Generator::init(crate::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
         let config_module = gen.read_all(Source::PROTO, &[news], "Query").await?;
-        assert!(config_module.types.contains_key("NEWS_NEWS"));
-        assert!(config_module.types.contains_key("INPUT_NEWS_NEWS"));
-        assert!(config_module.types.contains_key("NEWS_MULTIPLE_NEWS_ID"));
-        assert!(config_module.types.contains_key("NEWS_NEWS_ID"));
-        assert!(config_module.types.contains_key("NEWS_NEWS_LIST"));
+        let actual = config_module
+            .config
+            .types
+            .keys()
+            .map(|s| s.as_str())
+            .collect::<HashSet<_>>();
+
+        let expected = hashset![
+            "Query",
+            "OUT_NEWS_NEWS",
+            "IN_NEWS_NEWS",
+            "NEWS_MULTIPLE_NEWS_ID",
+            "NEWS_NEWS_ID",
+            "NEWS_NEWS_LIST",
+        ];
+        assert_eq!(actual, expected);
         Ok(())
     }
 }
