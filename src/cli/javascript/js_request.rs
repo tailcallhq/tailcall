@@ -22,12 +22,13 @@ impl JsRequest {
         self.0.method().to_string()
     }
 
-    pub fn headers(&self) -> BTreeMap<String, String> {
-        self.0
-            .headers()
-            .iter()
-            .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap().to_string()))
-            .collect()
+    pub fn headers(&self) -> anyhow::Result<BTreeMap<String, String>> {
+        let headers = self.0.headers();
+        let mut map = BTreeMap::new();
+        for (k, v) in headers.iter() {
+            map.insert(k.to_string(), v.to_str()?.to_string());
+        }
+        Ok(map)
     }
 
     pub fn body(&self) -> Option<String> {
@@ -60,7 +61,14 @@ impl<'js> IntoJs<'js> for JsRequest {
         let object = rquickjs::Object::new(ctx.clone())?;
         object.set("uri", self.uri())?;
         object.set("method", self.method())?;
-        object.set("headers", self.headers())?;
+        object.set(
+            "headers",
+            self.headers().map_err(|e| rquickjs::Error::FromJs {
+                from: "HeaderMap",
+                to: "BTreeMap<String, String>",
+                message: Some(e.to_string()),
+            })?,
+        )?;
         object.set("body", self.body())?;
         Ok(object.into_value())
     }
@@ -78,14 +86,26 @@ impl<'js> FromJs<'js> for JsRequest {
         let headers = object.get::<&str, BTreeMap<String, String>>("headers")?;
         let body = object.get::<&str, Option<String>>("body")?;
         let mut request = reqwest::Request::new(
-            reqwest::Method::from_bytes(method.as_bytes()).unwrap(),
-            uri.to_string().parse().unwrap(),
+            reqwest::Method::from_bytes(method.as_bytes()).map_err(|e| {
+                rquickjs::Error::FromJs {
+                    from: "string",
+                    to: "Method",
+                    message: Some(e.to_string()),
+                }
+            })?,
+            uri.to_string()
+                .parse()
+                .map_err(|_| rquickjs::Error::FromJs {
+                    from: "string",
+                    to: "Url",
+                    message: Some("unable to parse URL".to_string()),
+                })?,
         );
         for (k, v) in headers {
             request.headers_mut().insert(
                 HeaderName::from_str(&k).map_err(|e| rquickjs::Error::FromJs {
                     from: "string",
-                    to: "reqwest::header::HeaderName",
+                    to: "HeaderName",
                     message: Some(e.to_string()),
                 })?,
                 HeaderValue::from_str(v.as_str()).map_err(|e| rquickjs::Error::FromJs {
@@ -318,7 +338,7 @@ mod tests {
             assert_eq!(js_request.method(), "GET");
             assert_eq!(js_request.body(), Some("Hello, World!".to_string()));
             assert_eq!(
-                js_request.headers().get("content-type"),
+                js_request.headers().unwrap().get("content-type"),
                 Some(&"application/json".to_string())
             );
         });
