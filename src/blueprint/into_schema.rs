@@ -9,7 +9,7 @@ use tracing::Instrument;
 
 use crate::blueprint::{Blueprint, Definition, Type};
 use crate::http::RequestContext;
-use crate::lambda::{Concurrent, Eval, EvaluationContext, ResolverContext};
+use crate::lambda::{Eval, EvaluationContext, ResolverContext};
 use crate::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
@@ -69,10 +69,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let ctx: ResolverContext = ctx.into();
                                         let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                                        let const_value = expr
-                                            .eval(ctx, &Concurrent::Sequential)
-                                            .await
-                                            .map_err(|err| err.extend())?;
+                                        let const_value =
+                                            expr.eval(ctx).await.map_err(|err| err.extend())?;
                                         let p = match const_value {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             ConstValue::Null => FieldValue::NONE,
