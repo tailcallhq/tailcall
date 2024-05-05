@@ -66,7 +66,7 @@ pub struct Config {
     ///
     /// A map of all the enum types in the schema
     #[serde(default, skip_serializing_if = "is_default")]
-    pub enums: BTreeMap<String, BTreeSet<String>>,
+    pub enums: BTreeMap<String, Enum>,
 
     ///
     /// A list of all links in the schema.
@@ -398,6 +398,12 @@ pub struct Union {
     pub doc: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+pub struct Enum {
+    pub variants: BTreeSet<String>,
+    pub doc: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
@@ -614,7 +620,7 @@ impl Config {
         self.unions.get(name)
     }
 
-    pub fn find_enum(&self, name: &str) -> Option<&BTreeSet<String>> {
+    pub fn find_enum(&self, name: &str) -> Option<&Enum> {
         self.enums.get(name)
     }
 

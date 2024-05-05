@@ -237,6 +237,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             directives: Vec::new(),
             kind: TypeKind::Enum(EnumType {
                 values: values
+                    .variants
                     .iter()
                     .map(|variant| {
                         pos(EnumValueDefinition {

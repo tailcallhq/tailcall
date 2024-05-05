@@ -1,11 +1,9 @@
-use std::collections::BTreeSet;
-
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Config, Field, GraphQLOperationType, Protected, Union};
+use crate::config::{Config, Field, GraphQLOperationType, Protected, Union, Enum};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
@@ -226,12 +224,12 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn to_enum_type_definition((name, variants): (&String, &BTreeSet<String>)) -> Definition {
+fn to_enum_type_definition((name, variants): (&String, &Enum)) -> Definition {
     Definition::Enum(EnumTypeDefinition {
         name: name.to_owned(),
         directives: Vec::new(),
         description: None,
-        enum_values: variants
+        enum_values: variants.variants
             .iter()
             .map(|variant| EnumValueDefinition {
                 description: None,

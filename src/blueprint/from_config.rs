@@ -96,7 +96,7 @@ where
         }
         JsonSchema::Obj(schema_fields)
     } else if let Some(type_enum_) = type_enum_ {
-        JsonSchema::Enum(type_enum_.to_owned())
+        JsonSchema::Enum(type_enum_.variants.to_owned())
     } else {
         match type_of {
             "String" => JsonSchema::Str {},
