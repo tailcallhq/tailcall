@@ -6,9 +6,9 @@ use async_graphql::from_value;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
 
-use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
-use crate::config::group_by::GroupBy;
+use crate::{grpc, http};
 use crate::config::GraphQLOperationType;
+use crate::config::group_by::GroupBy;
 use crate::data_loader::{DataLoader, Loader};
 use crate::graphql::{self, GraphqlDataLoader};
 use crate::grpc::data_loader::GrpcDataLoader;
@@ -19,7 +19,8 @@ use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
 use crate::json::JsonLike;
 use crate::lambda::EvaluationError;
 use crate::valid::Validator;
-use crate::{grpc, http};
+
+use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
 
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {
@@ -56,8 +57,6 @@ impl Eval for IO {
                     .cache
                     .get_or_eval(key, move || Box::pin(async { self.eval_inner(ctx).await }))
                     .await
-                    .as_ref()
-                    .clone()
             })
         } else {
             Box::pin(self.eval_inner(ctx))
