@@ -50,7 +50,7 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 derive_setters = "0.1.6"
 thiserror = "1.0.59"
-serde_json = { version = "1.0.116", features = ["preserve_order"] }
+serde_json = { version = "1.0.116", features = ["preserve_order", "arbitrary_precision"] }
 serde = { version = "1.0.200", features = ["derive"] }
 serde_qs = "0.13"
 serde_yaml = "0.9.34"
@@ -146,7 +146,16 @@ tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
-
+jaq-core = {path = "../jaq/jaq-core"}
+jaq-parse = {path = "../jaq/jaq-parse"}
+jaq-interpret = {path = "../jaq/jaq-interpret", features = ["serde_json"]}
+jaq-std = {path = "../jaq/jaq-std"}
+jaq-syn = {path = "../jaq/jaq-syn"}
+#jaq-parse = "1.0.2"
+#jaq-interpret = {version = "1.2.1",features = ["serde_json"]}
+#jaq-syn = "1.1.0"
+#jaq-std = "1.2.1"
+num-bigint = "0.4.4"
 
 [dev-dependencies]
 tailcall-prettier = {path = "tailcall-prettier"}
@@ -227,6 +236,10 @@ opt-level = 'z'
 
 [[bench]]
 name = "tailcall_benches"
+harness = false
+
+[[bench]]
+name = "bench_jq"
 harness = false
 
 [[test]]

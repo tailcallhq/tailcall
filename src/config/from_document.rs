@@ -309,6 +309,7 @@ where
         .map(
             |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
                 let const_field = to_const_field(directives);
+                let jq = to_jq_field(directives);
                 config::Field {
                     type_of,
                     list,
@@ -322,6 +323,7 @@ where
                     grpc,
                     script,
                     const_field,
+                    jq,
                     graphql,
                     cache,
                     call,
@@ -381,6 +383,18 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::E
     directives.iter().find_map(|directive| {
         if directive.node.name.node == config::Expr::directive_name() {
             config::Expr::from_directive(&directive.node)
+                .to_result()
+                .ok()
+        } else {
+            None
+        }
+    })
+}
+
+fn to_jq_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Jq> {
+    directives.iter().find_map(|directive| {
+        if directive.node.name.node == config::Jq::directive_name() {
+            config::Jq::from_directive(&directive.node)
                 .to_result()
                 .ok()
         } else {

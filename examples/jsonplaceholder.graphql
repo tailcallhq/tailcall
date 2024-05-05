@@ -1,10 +1,10 @@
 schema
-  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
+@server(port: 8000)
+@upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-type Query {
+type Query @cache(maxAge: 60000) {
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
@@ -24,5 +24,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  curId: String! @jq(query: ".id")
 }

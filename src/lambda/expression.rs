@@ -2,9 +2,11 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 use std::sync::Arc;
+use anyhow::anyhow;
 
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
+use jaq_interpret::FilterT;
 use thiserror::Error;
 
 use super::{Eval, EvaluationContext, ResolverContextLike, IO};
@@ -12,6 +14,7 @@ use crate::auth;
 use crate::blueprint::DynamicValue;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
+use crate::lambda::evaluation_context::ConstVal;
 use crate::serde_value_ext::ValueExt;
 
 #[derive(Clone, Debug)]
@@ -22,6 +25,7 @@ pub enum Expression {
     Cache(Cache),
     Path(Box<Expression>, Vec<String>),
     Protect(Box<Expression>),
+    Jq(jaq_interpret::Filter<ConstVal>)
 }
 
 impl Display for Expression {
@@ -33,6 +37,7 @@ impl Display for Expression {
             Expression::Cache(_) => write!(f, "Cache"),
             Expression::Path(_, _) => write!(f, "Input"),
             Expression::Protect(expr) => write!(f, "Protected({expr})"),
+            Expression::Jq(_) => write!(f, "jq"),
         }
     }
 }
@@ -155,7 +160,7 @@ impl Eval for Expression {
             match self {
                 Expression::Context(op) => match op {
                     Context::Value => {
-                        Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
+                        Ok(ctx.value().cloned().map(|v|v.into()).unwrap_or(async_graphql::Value::Null))
                     }
                     Context::Path(path) => Ok(ctx
                         .path_value(path)
@@ -190,7 +195,24 @@ impl Eval for Expression {
                 }
                 Expression::IO(operation) => operation.eval(ctx).await,
                 Expression::Cache(cached) => cached.eval(ctx).await,
+                Expression::Jq(jq) => {
+                    execute_jq(jq, ctx).map_err(|e| EvaluationError::ExprEvalError(e.to_string()))
+                }
             }
         })
     }
+}
+
+fn execute_jq<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    filter: &jaq_interpret::Filter<ConstVal>,
+    ctx: EvaluationContext<'a, Ctx>,
+) -> anyhow::Result<ConstValue> {
+    let iter = jaq_interpret::RcIter::new(vec![].into_iter());
+    let mut result = filter.run((
+        jaq_interpret::Ctx::new(vec![], &iter),
+        ctx.value().unwrap().clone(),
+    ));
+    let result = result.next().ok_or(anyhow!("No result from jq"))?;
+    let result = result.map_err(|e| anyhow!("{}", e))?;
+    Ok(result.0)
 }

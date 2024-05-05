@@ -258,6 +258,11 @@ pub struct Field {
     pub const_field: Option<Expr>,
 
     ///
+    /// TODO.
+    #[serde(rename = "expr", default, skip_serializing_if = "is_default")]
+    pub jq: Option<Jq>,
+
+    ///
     /// Inserts a GraphQL resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
     pub graphql: Option<GraphQL>,
@@ -302,6 +307,9 @@ impl Field {
         }
         if self.const_field.is_some() {
             directives.push(Expr::trace_name());
+        }
+        if self.jq.is_some() {
+            directives.push(Jq::trace_name());
         }
         if self.grpc.is_some() {
             directives.push(Grpc::trace_name());
@@ -588,6 +596,13 @@ impl Display for GraphQLOperationType {
 /// template. schema.
 pub struct Expr {
     pub body: Value,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+/// TODO
+pub struct Jq {
+    pub query: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
