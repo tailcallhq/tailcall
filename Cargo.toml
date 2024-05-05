@@ -204,7 +204,7 @@ members = [
     "tailcall-query-plan",
     "tailcall-fixtures",
     "tailcall-upstream-grpc"
-]
+, "tailcall-jit"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]

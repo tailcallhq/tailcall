@@ -5176,6 +5176,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "tailcall-jit"
+version = "0.1.0"
+
+[[package]]
 name = "tailcall-macros"
 version = "0.1.0"
 dependencies = [
