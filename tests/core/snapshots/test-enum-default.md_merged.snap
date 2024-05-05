@@ -1,0 +1,30 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server(port: 8080) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: true) @link(id: "news", src: "./service.proto", type: Protobuf) {
+  query: Query
+}
+
+enum Status {
+  DRAFT
+  NOT_DEFINED
+  PUBLISHED
+}
+
+type News {
+  foo: Status
+  id: Int
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type NewsInput {
+  id: Int
+}
+
+type Query {
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+}

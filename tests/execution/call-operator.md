@@ -38,29 +38,29 @@ message NewsList {
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
-  userId: Int! @const(data: 2)
+  userId: Int! @expr(body: 2)
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
-  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{args.id}}"}])
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  userPosts(id: ID!): [Post] @http(path: "/posts", query: [{key: "userId", value: "{{.args.id}}"}])
   user1: User @http(path: "/users/1")
-  userFromValue: User @http(path: "/users/{{value.userId}}")
-  userHttpHeaders(id: ID!): User @http(path: "/users", headers: [{key: "id", value: "{{args.id}}"}])
-  userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}])
+  userFromValue: User @http(path: "/users/{{.value.userId}}")
+  userHttpHeaders(id: ID!): User @http(path: "/users", headers: [{key: "id", value: "{{.args.id}}"}])
+  userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
   userGraphQL(id: Int): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
   userGraphQLHeaders(id: Int!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", headers: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", headers: [{key: "id", value: "{{.args.id}}"}])
   userWithPosts: UserWithPosts @http(path: "/users/1")
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:50051")
   newsWithPortArg(port: Int!): NewsData!
-    @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:{{args.port}}")
+    @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:{{.args.port}}")
 }
 
 type NewsData {
@@ -77,7 +77,7 @@ type News {
 type UserWithPosts {
   id: Int!
   name: String!
-  posts: [Post] @call(query: "userPosts", args: {id: "{{value.id}}"})
+  posts: [Post] @call(steps: [{query: "userPosts", args: {id: "{{.value.id}}"}}])
 }
 
 type User {
@@ -94,22 +94,22 @@ type Post {
   userId: Int!
   title: String
   body: String
-  user1: User @call(query: "user1")
-  userFromValue: User @call(query: "userFromValue")
-  user: User @call(query: "user", args: {id: "{{value.userId}}"})
-  userHttpHeaders: User @call(query: "userHttpHeaders", args: {id: "{{value.userId}}"})
-  userHttpQuery: User @call(query: "userHttpQuery", args: {id: "{{value.userId}}"})
-  userGraphQL: User @call(query: "userGraphQL", args: {id: "{{value.userId}}"})
-  userGraphQLHeaders: User @call(query: "userGraphQLHeaders", args: {id: "{{value.userId}}"})
-  news: NewsData! @call(query: "news")
-  newsWithPortArg: NewsData! @call(query: "news", args: {port: 50051})
+  user1: User @call(steps: [{query: "user1"}])
+  userFromValue: User @call(steps: [{query: "userFromValue"}])
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  userHttpHeaders: User @call(steps: [{query: "userHttpHeaders", args: {id: "{{.value.userId}}"}}])
+  userHttpQuery: User @call(steps: [{query: "userHttpQuery", args: {id: "{{.value.userId}}"}}])
+  userGraphQL: User @call(steps: [{query: "userGraphQL", args: {id: "{{.value.userId}}"}}])
+  userGraphQLHeaders: User @call(steps: [{query: "userGraphQLHeaders", args: {id: "{{.value.userId}}"}}])
+  news: NewsData! @call(steps: [{query: "news"}])
+  newsWithPortArg: NewsData! @call(steps: [{query: "news", args: {port: 50051}}])
 }
 ```
 
 ```yml @mock
 - request:
     url: http://jsonplaceholder.typicode.com/users/1
-  expected_hits: 4
+  expectedHits: 4
   response:
     body:
       id: 1
@@ -124,7 +124,7 @@ type Post {
       name: "Leanne Graham http headers"
 - request:
     url: http://jsonplaceholder.typicode.com/posts
-  expected_hits: 9
+  expectedHits: 9
   response:
     body:
       - id: 1
@@ -138,10 +138,10 @@ type Post {
 - request:
     url: http://upstream/graphql
     method: POST
-    body: '{ "query": "query { user { name } }" }'
+    textBody: '{ "query": "query { user { name } }" }'
     headers:
       id: 1
-  expected_hits: 2
+  expectedHits: 2
   response:
     body:
       data:
@@ -149,7 +149,7 @@ type Post {
           name: "Leanne Graham"
 - request:
     url: http://jsonplaceholder.typicode.com/posts?userId=1
-  expected_hits: 2
+  expectedHits: 2
   response:
     body:
       - id: 1
@@ -163,12 +163,12 @@ type Post {
 - request:
     url: http://localhost:50051/news.NewsService/GetAllNews
     method: POST
-  expected_hits: 4
+  expectedHits: 4
   response:
-    body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
+    textBody: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

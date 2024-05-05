@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 
-use crate::config::{self, Batch};
+use crate::config::{self, Batch, ConfigModule};
 use crate::valid::{Valid, ValidationError, Validator};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
@@ -27,13 +27,14 @@ pub struct Upstream {
     pub http_cache: bool,
     pub batch: Option<Batch>,
     pub http2_only: bool,
-    pub on_request: Option<String>,
+    pub dedupe: bool,
+    pub on_request: Option<String>,    
 }
 
 impl Upstream {
     pub fn is_batching_enabled(&self) -> bool {
         if let Some(batch) = self.batch.as_ref() {
-            batch.delay >= 1 || batch.max_size >= 1
+            batch.delay >= 1 || batch.max_size.unwrap_or_default() >= 1
         } else {
             false
         }
@@ -43,14 +44,23 @@ impl Upstream {
 impl Default for Upstream {
     fn default() -> Self {
         // NOTE: Using unwrap because try_from default will never fail
-        Upstream::try_from(config::Upstream::default()).unwrap()
+        Upstream::try_from(&ConfigModule::default()).unwrap()
     }
 }
 
-impl TryFrom<crate::config::Upstream> for Upstream {
+impl TryFrom<&ConfigModule> for Upstream {
     type Error = ValidationError<String>;
 
-    fn try_from(config_upstream: config::Upstream) -> Result<Self, Self::Error> {
+    fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
+        let config_upstream = config_module.upstream.clone();
+
+        let mut allowed_headers = config_upstream.get_allowed_headers();
+
+        if config_module.extensions.has_auth() {
+            // force add auth specific headers to use it to make actual validation
+            allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
+        }
+
         get_batch(&config_upstream)
             .fuse(get_base_url(&config_upstream))
             .fuse(get_proxy(&config_upstream))
@@ -65,11 +75,12 @@ impl TryFrom<crate::config::Upstream> for Upstream {
                 timeout: (config_upstream).get_timeout(),
                 tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
                 user_agent: (config_upstream).get_user_agent(),
-                allowed_headers: (config_upstream).get_allowed_headers(),
+                allowed_headers,
                 base_url,
                 http_cache: (config_upstream).get_enable_http_cache(),
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
+                dedupe: (config_upstream).get_dedupe(),
                 on_request: (config_upstream).get_on_request(),
             })
             .to_result()
@@ -81,7 +92,7 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
         || Valid::succeed(None),
         |batch| {
             Valid::succeed(Some(Batch {
-                max_size: (upstream).get_max_size(),
+                max_size: Some((upstream).get_max_size()),
                 delay: (upstream).get_delay(),
                 headers: batch.headers.clone(),
             }))

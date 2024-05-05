@@ -7,21 +7,31 @@ edition = "2021"
 name = "tailcall"
 path = "src/main.rs"
 
+[workspace.dependencies]
+anyhow = "1.0.82"
+async-graphql = { version = "7.0.3" }
+futures-util = { version = "0.3.30" }
+indexmap = "2.2.6"
+insta = { version = "1.38.0", features = ["json"] }
+tokio = { version = "1.37.0", features = ["rt", "time"] }
+
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 
-mimalloc = { version = "0.1.39", default-features = false, optional = true }
+mimalloc = { version = "0.1.41", default-features = false, optional = true }
 http-cache-reqwest = { version = "0.13.0", features = [
     "manager-moka",
 ], default-features = false, optional = true }
-moka = { version = "0.12.5", default-features = false, features = [
+moka = { version = "0.12.7", default-features = false, features = [
     "future",
 ], optional = true }
 hyper-rustls = { version = "0.25.0", optional = true }
-rustls = { version = "0.23.3", optional = true, features = ["std"], default-features = false }
-rustls-pki-types = "1.3.1"
-inquire = { version = "0.7.2", optional = true }
+rustls = { version = "0.23.5", optional = true, features = [
+    "std",
+], default-features = false }
+rustls-pki-types = "1.5.0"
+inquire = { version = "0.7.5", optional = true }
 opentelemetry-otlp = { version = "0.15.0", features = [
     "trace",
     "logs",
@@ -34,29 +44,29 @@ opentelemetry-system-metrics = { version = "0.1.8", optional = true }
 # dependencies safe for wasm:
 
 rustls-pemfile = { version = "1.0.4" }
-schemars = { version = "0.8.16", features = ["derive"] }
-hyper = { version = "0.14", features = ["server"], default-features = false }
-tokio = { version = "1.36.0", features = ["rt", "time"] }
-anyhow = "1.0.81"
+schemars = { version = "0.8.17", features = ["derive"] }
+hyper = { version = "0.14.28", features = ["server"], default-features = false }
+tokio = { workspace = true }
+anyhow = { workspace = true }
 derive_setters = "0.1.6"
-thiserror = "1.0.58"
-serde_json = { version = "1.0", features = ["preserve_order"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_qs = "0.12"
-serde_yaml = "0.9"
+thiserror = "1.0.59"
+serde_json = { version = "1.0.116", features = ["preserve_order"] }
+serde = { version = "1.0.200", features = ["derive"] }
+serde_qs = "0.13"
+serde_yaml = "0.9.34"
 serde_urlencoded = "0.7.1"
-url = { version = "2", features = ["serde"] }
+url = { version = "2.5.0", features = ["serde"] }
 reqwest = { version = "0.11", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-indexmap = "2.2"
+indexmap = { workspace = true }
 once_cell = "1.19.0"
-clap = { version = "4.5.3", features = ["derive"] }
-colored = "2"
-regex = "1.10.3"
+clap = { version = "4.5.4", features = ["derive"] }
+colored = "2.1.0"
+regex = "1.10.4"
 reqwest-middleware = "0.2.5"
-async-trait = "0.1.78"
+async-trait = "0.1.80"
 serde_path_to_error = "0.1.16"
 cache_control = "0.2.0"
 nom = "7.1.3"
@@ -67,9 +77,8 @@ num_cpus = "1.16.0"
 fnv = "1.0.7"
 futures-channel = { version = "0.3.30" }
 futures-timer = { version = "3.0.3", features = ["wasm-bindgen"] }
-futures-util = { version = "0.3.30" }
+futures-util = { workspace = true }
 lru = { version = "0.12.3" }
-webbrowser = { version = "0.8.13", features = ["hardened", "disable-wsl"] }
 async-std = { version = "1.12.0", features = [
     "wasm-bindgen-futures",
     "unstable",
@@ -77,24 +86,28 @@ async-std = { version = "1.12.0", features = [
 ttl_cache = { version = "0.5.1", features = ["stats"] }
 protox = "0.6.0"
 protox-parse = "0.6.0"
-prost-reflect = { version = "0.13.0", features = ["serde"] }
-prost = "0.12.3"
+prost-reflect = { version = "0.13.1", features = ["serde"] }
+prost = "0.12.4"
 update-informer = { version = "1.1.0", default-features = false, features = [
     "github",
     "reqwest",
 ], optional = true }
 lazy_static = "1.4.0"
-which = { version = "6.0.0", optional = true }
-async-recursion = "1.1.0"
+which = { version = "6.0.1", optional = true }
+async-recursion = "1.1.1"
 tempfile = "3.10.1"
-deno_core = { version = "0.271.0", optional = true, features = ["v8_use_custom_libcxx"], default-features = false }
+rquickjs = { "version" = "0.5.1", optional = true, features = ["full"] }
 strum_macros = "0.26.2"
 # TODO: disable some levels with features?
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["default","fmt","env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = [
+    "default",
+    "fmt",
+    "env-filter",
+] }
 tracing-opentelemetry = "0.23.0"
-getrandom = { version = "0.2.12", features = ["js"] }
-prometheus = "0.13.3"
+getrandom = { version = "0.2.14", features = ["js"] }
+prometheus = "0.13.4"
 tonic = { version = "0.11.0", default-features = false }
 opentelemetry-semantic-conventions = "0.14.0"
 opentelemetry = { version = "0.22.0", features = ["trace", "logs", "metrics"] }
@@ -103,7 +116,7 @@ opentelemetry_sdk = { version = "0.22.1", features = [
     "logs",
     "metrics",
 ] }
-opentelemetry-http = "0.11.0"
+opentelemetry-http = "0.11.1"
 opentelemetry-stdout = { version = "0.3.0", features = [
     "trace",
     "logs",
@@ -111,35 +124,48 @@ opentelemetry-stdout = { version = "0.3.0", features = [
 ] }
 opentelemetry-appender-tracing = { version = "0.3.0" }
 opentelemetry-prometheus = "0.15.0"
-phonenumber = "0.3.3"
-chrono = "0.4.35"
-async-graphql-extension-apollo-tracing = { git = "https://github.com/tailcallhq/async_graphql_apollo_studio_extension/" }
+phonenumber = "0.3.4"
+chrono = "0.4.38"
+async-graphql-extension-apollo-tracing = { version = "3.2.15" }
+headers = "0.3.9" # previous version until hyper is updated to 1+
+mime = "0.3.17"
+htpasswd-verify = { version = "0.3.0", git = "https://github.com/twistedfall/htpasswd-verify", rev = "ff14703083cbd639f7d05622b398926f3e718d61" } # fork version that is wasm compatible
+jsonwebtoken = "9.3.0"
 async-graphql-value = "7.0.3"
-async-graphql = { version = "7.0.3", features = [
+async-graphql = { workspace = true, features = [
     "dynamic-schema",
     "dataloader",
     "apollo_tracing",
     "opentelemetry",
-]}
-dotenvy = "0.15"
+] }
+dotenvy = "0.15.7"
 convert_case = "0.6.0"
+rand = "0.8.5"
+tailcall-macros = { path = "tailcall-macros" }
+tonic-types = "0.11.0"
+datatest-stable = "0.2.9"
+tokio-test = "0.4.4"
+base64 = "0.22.1"
+
 
 [dev-dependencies]
+tailcall-prettier = {path = "tailcall-prettier"}
 criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
 stripmargin = "0.1.1"
-markdown = "1.0.0-alpha.16"
-insta = { version = "1.36.1", features = ["json"] }
+markdown = "1.0.0-alpha.17"
+insta = { workspace = true }
 tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
+tailcall-fixtures = { path = "./tailcall-fixtures" }
 
 [features]
 
 # Feature Flag to enable V8.
 # V8 currently is not support on all platforms so, we control it via this feature flag.
-js = ["dep:deno_core"]
+js = ["dep:rquickjs"]
 
 # Feature Flag to core CLI features.
 # This is created to control what we expose for WASM.
@@ -158,7 +184,7 @@ cli = [
     "opentelemetry_sdk/testing",
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
-    "dep:opentelemetry-system-metrics"
+    "dep:opentelemetry-system-metrics",
 ]
 
 # Feature flag to enable all default features.
@@ -168,7 +194,17 @@ default = ["cli", "js"]
 
 
 [workspace]
-members = [".", "autogen", "aws-lambda", "cloudflare"]
+members = [
+    ".",
+    "tailcall-autogen",
+    "tailcall-aws-lambda",
+    "tailcall-cloudflare",
+    "tailcall-macros",
+    "tailcall-prettier",
+    "tailcall-query-plan",
+    "tailcall-fixtures",
+    "tailcall-upstream-grpc"
+]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
@@ -184,23 +220,15 @@ debug = false
 incremental = false
 overflow-checks = false
 
-[profile.release.package.cloudflare]
+[profile.release.package.tailcall-cloudflare]
 strip = true
 codegen-units = 1
 opt-level = 'z'
 
 [[bench]]
-name = "json_like_bench"
+name = "tailcall_benches"
 harness = false
 
-[[bench]]
-name = "request_template_bench"
-harness = false
-
-[[bench]]
-name = "data_loader_bench"
-harness = false
-
-[[bench]]
-name = "impl_path_string_for_evaluation_context"
+[[test]]
+name = "execution_spec"
 harness = false

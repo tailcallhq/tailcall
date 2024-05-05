@@ -2,7 +2,7 @@
 
 ```graphql @server
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @telemetry(export: {apollo: {apiKey: "<api_key>", graphRef: "tailcall-demo-3@current"}}) {
   query: Query
 }
@@ -16,13 +16,12 @@ type Query {
 - request:
     method: GET
     url: http://api.com
-    body: null
   response:
     status: 200
     body: hello
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8000/graphql
   body:

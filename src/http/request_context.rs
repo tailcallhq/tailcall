@@ -8,28 +8,33 @@ use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::async_cache::AsyncCache;
+use crate::auth::context::AuthContext;
 use crate::blueprint::{Server, Upstream};
 use crate::data_loader::DataLoader;
 use crate::graphql::GraphqlDataLoader;
 use crate::grpc;
 use crate::grpc::data_loader::GrpcDataLoader;
 use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
+use crate::lambda::EvaluationError;
 use crate::runtime::TargetRuntime;
 
 #[derive(Setters)]
 pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
-    pub request_headers: HeaderMap,
     pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
+    // A subset of all the headers received in the GraphQL Request that will be sent to the
+    // upstream.
+    pub allowed_headers: HeaderMap,
+    pub auth_ctx: AuthContext,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<u64, ConstValue, String>,
+    pub cache: AsyncCache<u64, ConstValue, EvaluationError>,
 }
 
 impl RequestContext {
@@ -37,7 +42,6 @@ impl RequestContext {
         RequestContext {
             server: Default::default(),
             upstream: Default::default(),
-            request_headers: HeaderMap::new(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers: None,
             http_data_loaders: Arc::new(vec![]),
@@ -47,6 +51,8 @@ impl RequestContext {
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
             cache: AsyncCache::new(),
+            allowed_headers: HeaderMap::new(),
+            auth_ctx: AuthContext::default(),
         }
     }
     fn set_min_max_age_conc(&self, min_max_age: i32) {
@@ -184,9 +190,10 @@ impl From<&AppContext> for RequestContext {
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
-            request_headers: HeaderMap::new(),
             x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
+            allowed_headers: HeaderMap::new(),
+            auth_ctx: (&app_ctx.auth_ctx).into(),
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
@@ -210,9 +217,8 @@ mod test {
         fn default() -> Self {
             let config_module = crate::config::ConfigModule::default();
 
-            let crate::config::Config { upstream, .. } = config_module.config.clone();
+            let upstream = Upstream::try_from(&config_module).unwrap();
             let server = Server::try_from(config_module).unwrap();
-            let upstream = Upstream::try_from(upstream).unwrap();
             RequestContext::new(crate::runtime::test::init(None))
                 .upstream(upstream)
                 .server(server)
@@ -260,8 +266,8 @@ mod test {
     fn test_is_batching_enabled_default() {
         // create ctx with default batch
         let config_module = config::ConfigModule::default();
-        let server = Server::try_from(config_module.clone()).unwrap();
-        let mut upstream = Upstream::try_from(config_module.upstream.clone()).unwrap();
+        let mut upstream = Upstream::try_from(&config_module).unwrap();
+        let server = Server::try_from(config_module).unwrap();
         upstream.batch = Some(Batch::default());
         let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 

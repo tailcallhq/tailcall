@@ -53,7 +53,7 @@ impl HttpDataLoader {
     pub fn to_data_loader(self, batch: Batch) -> DataLoader<DataLoaderRequest, HttpDataLoader> {
         DataLoader::new(self)
             .delay(Duration::from_millis(batch.delay as u64))
-            .max_batch_size(batch.max_size)
+            .max_batch_size(batch.max_size.unwrap_or_default())
     }
 }
 
@@ -79,7 +79,12 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 first_url.query_pairs_mut().extend_pairs(url.query_pairs());
             }
 
-            let res = self.runtime.http.execute(request).await?.to_json()?;
+            let res = self
+                .runtime
+                .http
+                .execute(request)
+                .await?
+                .to_json::<ConstValue>()?;
             #[allow(clippy::mutable_key_type)]
             let mut hashmap = HashMap::with_capacity(keys.len());
             let path = &group_by.path();

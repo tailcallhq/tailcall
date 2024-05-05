@@ -17,7 +17,7 @@ input PostInput {
 }
 
 type Mut {
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
 }
 
 type Post {
@@ -28,6 +28,6 @@ type Post {
 }
 
 type Que {
-  posts: [Post] @const(data: [{id: 1}])
+  posts: [Post] @expr(body: [{id: 1}])
 }
 ```

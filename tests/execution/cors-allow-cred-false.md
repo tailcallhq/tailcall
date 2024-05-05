@@ -6,7 +6,6 @@ schema
   @server(
     headers: {
       cors: {
-        allowCredentials: false
         allowHeaders: ["Authorization"]
         allowMethods: [POST, OPTIONS]
         allowOrigins: ["abc.com", "xyz.com"]
@@ -19,11 +18,11 @@ schema
 }
 
 type Query {
-  val: Int @const(data: 1)
+  val: Int @expr(body: 1)
 }
 ```
 
-```yml @assert
+```yml @test
 # the same request to validate caching
 - method: OPTIONS
   url: http://localhost:8080/graphql

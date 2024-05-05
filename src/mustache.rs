@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::char;
@@ -92,9 +94,9 @@ impl Mustache {
     }
 }
 
-impl ToString for Mustache {
-    fn to_string(&self) -> String {
-        match self {
+impl Display for Mustache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
             Mustache(segments) => segments
                 .iter()
                 .map(|segment| match segment {
@@ -103,7 +105,8 @@ impl ToString for Mustache {
                 })
                 .collect::<Vec<String>>()
                 .join(""),
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
@@ -127,8 +130,11 @@ fn parse_expression(input: &str) -> IResult<&str, Segment> {
     delimited(
         tag("{{"),
         map(
-            nom::multi::separated_list1(char('.'), parse_name),
-            Segment::Expression,
+            nom::sequence::tuple((
+                nom::combinator::opt(char('.')), // Optional leading dot
+                nom::multi::separated_list1(char('.'), parse_name),
+            )),
+            |(_, expr_parts)| Segment::Expression(expr_parts),
         ),
         tag("}}"),
     )(input)
@@ -335,6 +341,28 @@ mod tests {
                 Mustache::from(vec![Segment::Expression(vec![
                     "env".to_string(),
                     "FOO_BAR".to_string(),
+                ])])
+            );
+        }
+
+        #[test]
+        fn single_curly_brackets() {
+            let result = Mustache::parse("test:{SHA}string").unwrap();
+            assert_eq!(
+                result,
+                Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())])
+            );
+        }
+
+        #[test]
+        fn test_optional_dot_expression() {
+            let s = r"{{.foo.bar}}";
+            let mustache: Mustache = Mustache::parse(s).unwrap();
+            assert_eq!(
+                mustache,
+                Mustache::from(vec![Segment::Expression(vec![
+                    "foo".to_string(),
+                    "bar".to_string(),
                 ])])
             );
         }

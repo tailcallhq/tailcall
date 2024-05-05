@@ -1,5 +1,5 @@
 schema
-  @server(port: 3000, graphiql: true, queryValidation: false, hostname: "0.0.0.0", version: HTTP2)
+  @server(port: 3000, queryValidation: false, hostname: "0.0.0.0", version: HTTP2)
   @link(type: Cert, src: "./example.crt")
   @link(type: Key, src: "./example.key")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
@@ -24,5 +24,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }

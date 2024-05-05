@@ -1,0 +1,34 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "gRPC Error: status: 3, description: `Client specified an invalid argument`, message: `grpc message`",
+        "locations": [
+          {
+            "line": 1,
+            "column": 9
+          }
+        ],
+        "extensions": {
+          "grpcCode": 3,
+          "grpcDescription": "Client specified an invalid argument",
+          "grpcStatusDetails": {
+            "code": 3,
+            "message": "error message",
+            "details": []
+          },
+          "grpcStatusMessage": "grpc message"
+        }
+      }
+    ]
+  }
+}

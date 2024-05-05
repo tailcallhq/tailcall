@@ -6,7 +6,7 @@ expect_validation_error: true
 
 ```graphql @file:jsonplaceholder.graphql
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
+  @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
   query: Query
 }
@@ -14,7 +14,7 @@ schema
 type Query {
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
@@ -31,7 +31,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```
 
@@ -47,7 +47,7 @@ schema
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
@@ -64,6 +64,6 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```

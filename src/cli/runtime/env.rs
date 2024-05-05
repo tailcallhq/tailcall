@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use crate::EnvIO;
@@ -8,8 +9,8 @@ pub struct EnvNative {
 }
 
 impl EnvIO for EnvNative {
-    fn get(&self, key: &str) -> Option<String> {
-        self.vars.get(key).cloned()
+    fn get(&self, key: &str) -> Option<Cow<'_, str>> {
+        self.vars.get(key).map(Cow::from)
     }
 }
 
@@ -35,7 +36,7 @@ mod tests {
         vars.insert("EXISTING_VAR".to_string(), "value".to_string());
         let test_env = EnvNative { vars };
         let result = test_env.get("EXISTING_VAR");
-        assert_eq!(result, Some("value".to_string()));
+        assert_eq!(result, Some("value".into()));
     }
 
     #[test]

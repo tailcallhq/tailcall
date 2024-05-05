@@ -1,0 +1,10 @@
+---
+source: query_plan/tests/execution.rs
+expression: result
+---
+{
+  "user": {
+    "name": "Leanne Graham",
+    "email": "Sincere@april.biz"
+  }
+}

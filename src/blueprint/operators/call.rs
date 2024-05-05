@@ -1,122 +1,137 @@
-use std::collections::btree_map::Iter;
-
 use serde_json::Value;
 
 use crate::blueprint::*;
 use crate::config;
-use crate::config::{Field, GraphQLOperationType, KeyValue};
+use crate::config::{Field, GraphQLOperationType};
 use crate::lambda::Expression;
-use crate::mustache::{Mustache, Segment};
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, Validator};
+use crate::valid::{Valid, ValidationError, Validator};
 
-fn find_value<'a>(args: &'a Iter<'a, String, Value>, key: &'a String) -> Option<&'a Value> {
-    args.clone()
-        .find_map(|(k, value)| if k == key { Some(value) } else { None })
-}
-
-pub fn update_call(
-    operation_type: &GraphQLOperationType,
-) -> TryFold<'_, (&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String> {
+pub fn update_call<'a>(
+    operation_type: &'a GraphQLOperationType,
+    object_name: &'a str,
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, _, _), b_field| {
-            let Some(call) = &field.call else {
+        move |(config, field, _, name), b_field| {
+            let Some(ref calls) = field.call else {
                 return Valid::succeed(b_field);
             };
 
-            compile_call(field, config, call, operation_type)
-                .map(|resolver| b_field.resolver(Some(resolver)))
+            compile_call(config, calls, operation_type, object_name).map(|field| {
+                let args = field
+                    .args
+                    .into_iter()
+                    .map(|mut arg_field| {
+                        arg_field.of_type = match &arg_field.of_type {
+                            Type::NamedType { name, .. } => {
+                                Type::NamedType { name: name.to_owned(), non_null: false }
+                            }
+                            Type::ListType { of_type, .. } => {
+                                Type::ListType { of_type: of_type.to_owned(), non_null: false }
+                            }
+                        };
+
+                        arg_field
+                    })
+                    .collect();
+
+                b_field
+                    .args(args)
+                    .resolver(field.resolver)
+                    .name(name.to_string())
+            })
         },
     )
 }
 
-pub fn compile_call(
-    field: &Field,
+fn compile_call(
     config_module: &ConfigModule,
     call: &config::Call,
     operation_type: &GraphQLOperationType,
-) -> Valid<Expression, String> {
-    get_field_and_field_name(call, config_module).and_then(|(_field, field_name, args)| {
-        let empties: Vec<(&String, &config::Arg)> = _field
-            .args
-            .iter()
-            .filter(|(k, _)| !args.clone().any(|(k1, _)| k1.eq(*k)))
-            .collect();
+    object_name: &str,
+) -> Valid<FieldDefinition, String> {
+    Valid::from_iter(call.steps.iter(), |step| {
+        get_field_and_field_name(step, config_module).and_then(|(field, field_name, type_of)| {
+            let args = step.args.iter();
 
-        if empties.len().gt(&0) {
-            return Valid::fail(format!(
-                "no argument {} found",
-                empties
-                    .iter()
-                    .map(|(k, _)| format!("'{}'", k))
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            ))
-            .trace(field_name.as_str());
-        }
+            let empties: Vec<&String> = field
+                .args
+                .iter()
+                .filter_map(|(k, arg)| {
+                    if arg.required && !args.clone().any(|(k1, _)| k1.eq(k)) {
+                        Some(k)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
 
-        let string_replacer = replace_string(&args);
-        let key_value_replacer = replace_key_values(&args);
+            if empties.len().gt(&0) {
+                return Valid::fail(format!(
+                    "no argument {} found",
+                    empties
+                        .into_iter()
+                        .map(|k| format!("'{}'", k))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                ))
+                .trace(field_name.as_str());
+            }
 
-        if let Some(mut http) = _field.http.clone() {
-            http.path = string_replacer(http.path.clone());
-            http.body = http.body.clone().map(string_replacer);
-            http.query = key_value_replacer(http.query);
-            http.headers = key_value_replacer(http.headers);
-
-            compile_http(config_module, field, &http)
-        } else if let Some(mut graphql) = _field.graphql.clone() {
-            graphql.headers = key_value_replacer(graphql.headers);
-            graphql.args = graphql.args.clone().map(key_value_replacer);
-
-            compile_graphql(config_module, operation_type, &graphql)
-        } else if let Some(mut grpc) = _field.grpc.clone() {
-            grpc.base_url = grpc.base_url.clone().map(&string_replacer);
-            grpc.headers = key_value_replacer(grpc.headers);
-            grpc.body = grpc.body.clone().map(string_replacer);
-
-            compile_grpc(CompileGrpc {
-                config_module,
-                operation_type,
+            to_field_definition(
                 field,
-                grpc: &grpc,
-                validate_with_schema: true,
-            })
-        } else if let Some(const_field) = _field.const_field.clone() {
-            compile_const(CompileConst {
+                operation_type,
+                object_name,
                 config_module,
-                field: _field,
-                value: &const_field.data,
-                validate: true,
+                type_of,
+                &field.type_of,
+            )
+            .and_then(|b_field| {
+                if b_field.resolver.is_none() {
+                    Valid::fail(format!("{} field has no resolver", field_name))
+                } else {
+                    Valid::succeed(b_field)
+                }
             })
-        } else {
-            Valid::fail(format!("{} field has no resolver", field_name))
-        }
+            .fuse(
+                Valid::from(
+                    DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
+                        .map_err(|e| ValidationError::new(e.to_string())),
+                )
+                .map(Expression::Dynamic),
+            )
+            .map(|(mut b_field, args_expr)| {
+                if !step.args.is_empty() {
+                    b_field.map_expr(|expr| args_expr.clone().and_then(expr));
+                }
+
+                b_field
+            })
+        })
+    })
+    .and_then(|b_fields| {
+        Valid::from_option(
+            b_fields.into_iter().reduce(|mut b_field, b_field_next| {
+                b_field.name = b_field_next.name;
+                b_field.args.extend(b_field_next.args);
+                b_field.of_type = b_field_next.of_type;
+                b_field.map_expr(|expr| {
+                    b_field_next
+                        .resolver
+                        .as_ref()
+                        .map(|other_expr| expr.clone().and_then(other_expr.clone()))
+                        .unwrap_or(expr)
+                });
+
+                b_field
+            }),
+            "Steps can't be empty".to_string(),
+        )
     })
 }
 
-fn replace_key_values<'a>(
-    args: &'a Iter<'a, String, Value>,
-) -> impl Fn(Vec<KeyValue>) -> Vec<KeyValue> + 'a {
-    |key_values| {
-        key_values
-            .iter()
-            .map(|kv| KeyValue { value: replace_string(args)(kv.value.clone()), ..kv.clone() })
-            .collect()
-    }
-}
-
-fn replace_string<'a>(args: &'a Iter<'a, String, Value>) -> impl Fn(String) -> String + 'a {
-    |str| {
-        let mustache = Mustache::parse(&str).unwrap();
-
-        let mustache = replace_mustache_value(&mustache, args);
-
-        mustache.to_string()
-    }
-}
-
-fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
+fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
     } else {
@@ -127,9 +142,9 @@ fn get_type_and_field(call: &config::Call) -> Option<(String, String)> {
 }
 
 fn get_field_and_field_name<'a>(
-    call: &'a config::Call,
+    call: &'a config::Step,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, Iter<'a, String, Value>), String> {
+) -> Valid<(&'a Field, String, &'a config::Type), String> {
     Valid::from_option(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),
@@ -144,32 +159,9 @@ fn get_field_and_field_name<'a>(
                 query_type.fields.get(&field_name),
                 format!("{} field not found", field_name),
             )
+            .fuse(Valid::succeed(field_name))
+            .fuse(Valid::succeed(query_type))
+            .into()
         })
-        .fuse(Valid::succeed(field_name))
-        .fuse(Valid::succeed(call.args.iter()))
-        .into()
     })
-}
-
-fn replace_mustache_value(value: &Mustache, args: &Iter<'_, String, Value>) -> Mustache {
-    value
-        .get_segments()
-        .iter()
-        .map(|segment| match segment {
-            Segment::Literal(literal) => Segment::Literal(literal.clone()),
-            Segment::Expression(expression) => {
-                if expression[0] == "args" {
-                    let value = find_value(args, &expression[1]).unwrap();
-                    let item = Mustache::parse(value.to_string().as_str()).unwrap();
-
-                    let expression = item.get_segments().first().unwrap().to_owned().to_owned();
-
-                    expression
-                } else {
-                    Segment::Expression(expression.clone())
-                }
-            }
-        })
-        .collect::<Vec<Segment>>()
-        .into()
 }

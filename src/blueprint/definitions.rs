@@ -5,7 +5,7 @@ use regex::Regex;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Config, Field, GraphQLOperationType, Union};
+use crate::config::{Config, Field, GraphQLOperationType, Protected, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
@@ -103,7 +103,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             let next_dir_const = next_field
                 .const_field
                 .as_ref()
-                .map(|_| config::Const::directive_name());
+                .map(|_| config::Expr::directive_name());
             return path_resolver_error_handler(
                 next_dir_http
                     .or(next_dir_const)
@@ -126,7 +126,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
         }
 
         let next_is_required = is_required && next_field.required;
-        if scalar::is_scalar(&next_field.type_of) {
+        if scalar::is_predefined_scalar(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -312,25 +312,26 @@ fn update_resolver_from_path(
         }
         let resolver = match updated_base_field.resolver.clone() {
             None => resolver,
-            Some(resolver) => Expression::Input(Box::new(resolver), context.path.to_owned()),
+            Some(resolver) => Expression::Path(Box::new(resolver), context.path.to_owned()),
         };
         Valid::succeed(updated_base_field.resolver(Some(resolver)))
     })
 }
 
-/// Sets empty resolver to fields that has
-/// nested resolvers for its fields.
-/// To solve the problem that by default such fields will be resolved to null
-/// value and nested resolvers won't be called
-pub fn update_nested_resolvers<'a>(
+/// This function iterates over all types and their fields identifying paths to
+/// fields with dangling resolvers and fixes them. Dangling resolvers are those
+/// resolvers that cannot be resolved from the root of the schema. This function
+/// finds such dangling resolvers and creates a resolvable path from the root
+/// schema.
+pub fn fix_dangling_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, _, name), mut b_field| {
+        move |(config, field, ty, name), mut b_field| {
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types).is_succeed()
+                && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
             {
-                b_field = b_field.resolver(Some(Expression::Literal(DynamicValue::Value(
+                b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
                 ))));
             }
@@ -358,7 +359,7 @@ pub fn update_cache_resolvers<'a>(
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
     let field_type = &field.type_of;
-    if !scalar::is_scalar(field_type) && !config.contains(field_type) {
+    if !scalar::is_predefined_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
     } else {
         Valid::succeed(())
@@ -381,32 +382,6 @@ fn to_fields(
         GraphQLOperationType::Query
     };
 
-    let to_field = move |name: &String, field: &Field| {
-        let directives = field.resolvable_directives();
-
-        if directives.len() > 1 {
-            return Valid::fail(format!(
-                "Multiple resolvers detected [{}]",
-                directives.join(", ")
-            ));
-        }
-
-        update_args()
-            .and(update_http().trace(config::Http::trace_name().as_str()))
-            .and(update_grpc(&operation_type).trace(config::Grpc::trace_name().as_str()))
-            .and(update_const_field().trace(config::Const::trace_name().as_str()))
-            .and(update_graphql(&operation_type).trace(config::GraphQL::trace_name().as_str()))
-            .and(update_expr(&operation_type).trace(config::Expr::trace_name().as_str()))
-            .and(update_modify().trace(config::Modify::trace_name().as_str()))
-            .and(update_call(&operation_type).trace(config::Call::trace_name().as_str()))
-            .and(update_nested_resolvers())
-            .and(update_cache_resolvers())
-            .try_fold(
-                &(config_module, field, type_of, name),
-                FieldDefinition::default(),
-            )
-    };
-
     // Process fields that are not marked as `omit`
     let fields = Valid::from_iter(
         type_of
@@ -415,7 +390,14 @@ fn to_fields(
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
             validate_field_type_exist(config_module, field)
-                .and(to_field(name, field))
+                .and(to_field_definition(
+                    field,
+                    &operation_type,
+                    object_name,
+                    config_module,
+                    type_of,
+                    name,
+                ))
                 .trace(name)
         },
     );
@@ -428,56 +410,63 @@ fn to_fields(
             .iter()
             .find(|&(field_name, _)| *field_name == add_field.path[0]);
         match source_field {
-            Some((_, source_field)) => to_field(&add_field.name, source_field)
-                .and_then(|field_definition| {
-                    let added_field_path = match source_field.http {
-                        Some(_) => add_field.path[1..]
-                            .iter()
-                            .map(|s| s.to_owned())
-                            .collect::<Vec<_>>(),
-                        None => add_field.path.clone(),
-                    };
-                    let invalid_path_handler = |field_name: &str,
-                                                _added_field_path: &[String],
-                                                original_path: &[String]|
-                     -> Valid<Type, String> {
-                        Valid::fail_with(
-                            "Cannot add field".to_string(),
-                            format!("Path [{}] does not exist", original_path.join(", ")),
-                        )
-                        .trace(field_name)
-                    };
-                    let path_resolver_error_handler = |resolver_name: &str,
-                                                       field_type: &str,
-                                                       field_name: &str,
-                                                       original_path: &[String]|
-                     -> Valid<Type, String> {
-                        Valid::<Type, String>::fail_with(
-                            "Cannot add field".to_string(),
-                            format!(
-                                "Path: [{}] contains resolver {} at [{}.{}]",
-                                original_path.join(", "),
-                                resolver_name,
-                                field_type,
-                                field_name
-                            ),
-                        )
-                    };
-                    update_resolver_from_path(
-                        &ProcessPathContext {
-                            path: &added_field_path,
-                            field: source_field,
-                            type_info: type_of,
-                            is_required: false,
-                            config_module,
-                            invalid_path_handler: &invalid_path_handler,
-                            path_resolver_error_handler: &path_resolver_error_handler,
-                            original_path: &add_field.path,
-                        },
-                        field_definition,
+            Some((_, source_field)) => to_field_definition(
+                source_field,
+                &operation_type,
+                object_name,
+                config_module,
+                type_of,
+                &add_field.name,
+            )
+            .and_then(|field_definition| {
+                let added_field_path = match source_field.http {
+                    Some(_) => add_field.path[1..]
+                        .iter()
+                        .map(|s| s.to_owned())
+                        .collect::<Vec<_>>(),
+                    None => add_field.path.clone(),
+                };
+                let invalid_path_handler = |field_name: &str,
+                                            _added_field_path: &[String],
+                                            original_path: &[String]|
+                 -> Valid<Type, String> {
+                    Valid::fail_with(
+                        "Cannot add field".to_string(),
+                        format!("Path [{}] does not exist", original_path.join(", ")),
                     )
-                })
-                .trace(config::AddField::trace_name().as_str()),
+                    .trace(field_name)
+                };
+                let path_resolver_error_handler = |resolver_name: &str,
+                                                   field_type: &str,
+                                                   field_name: &str,
+                                                   original_path: &[String]|
+                 -> Valid<Type, String> {
+                    Valid::<Type, String>::fail_with(
+                        "Cannot add field".to_string(),
+                        format!(
+                            "Path: [{}] contains resolver {} at [{}.{}]",
+                            original_path.join(", "),
+                            resolver_name,
+                            field_type,
+                            field_name
+                        ),
+                    )
+                };
+                update_resolver_from_path(
+                    &ProcessPathContext {
+                        path: &added_field_path,
+                        field: source_field,
+                        type_info: type_of,
+                        is_required: false,
+                        config_module,
+                        invalid_path_handler: &invalid_path_handler,
+                        path_resolver_error_handler: &path_resolver_error_handler,
+                        original_path: &add_field.path,
+                    },
+                    field_definition,
+                )
+            })
+            .trace(config::AddField::trace_name().as_str()),
             None => Valid::fail(format!(
                 "Could not find field {} in path {}",
                 add_field.path[0],
@@ -495,10 +484,45 @@ fn to_fields(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn to_field_definition(
+    field: &Field,
+    operation_type: &GraphQLOperationType,
+    object_name: &str,
+    config_module: &ConfigModule,
+    type_of: &config::Type,
+    name: &String,
+) -> Valid<FieldDefinition, String> {
+    let directives = field.resolvable_directives();
+
+    if directives.len() > 1 {
+        return Valid::fail(format!(
+            "Multiple resolvers detected [{}]",
+            directives.join(", ")
+        ));
+    }
+
+    update_args()
+        .and(update_http().trace(config::Http::trace_name().as_str()))
+        .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
+        .and(update_const_field().trace(config::Expr::trace_name().as_str()))
+        .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
+        .and(update_modify().trace(config::Modify::trace_name().as_str()))
+        .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))
+        .and(fix_dangling_resolvers())
+        .and(update_cache_resolvers())
+        .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
+        .try_fold(
+            &(config_module, field, type_of, name),
+            FieldDefinition::default(),
+        )
+}
+
 pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String> {
     TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_module, _| {
-        let output_types = config_module.output_types();
-        let input_types = config_module.input_types();
+        let output_types = &config_module.output_types;
+        let input_types = &config_module.input_types;
+
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if let Some(variants) = &type_.variants {
@@ -507,7 +531,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                 } else {
                     Valid::fail("No variants found for enum".to_string())
                 }
-            } else if type_.scalar {
+            } else if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
@@ -516,7 +540,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
                         Definition::Object(object_type_definition) => {
-                            if config_module.input_types().contains(name) {
+                            if config_module.input_types.contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
                             } else if type_.interface {
                                 to_interface_type_definition(object_type_definition).trace(name)

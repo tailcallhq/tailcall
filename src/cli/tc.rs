@@ -14,6 +14,7 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::config::reader::ConfigReader;
+use crate::generator::Generator;
 use crate::http::API_URL_PREFIX;
 use crate::print_schema;
 use crate::rest::{EndpointSet, Unchecked};
@@ -23,8 +24,8 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 pub async fn run() -> Result<()> {
-    if let Err(e) = dotenv() {
-        tracing::warn!("Failed to load .env file: {}", e);
+    if let Ok(path) = dotenv() {
+        tracing::info!("Env file: {:?} loaded", path);
     }
     let cli = Cli::parse();
     update_checker::check_for_update().await;
@@ -66,6 +67,16 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
+        Command::Gen { file_paths, input, output, query } => {
+            let generator = Generator::init(runtime);
+            let cfg = generator
+                .read_all(input, file_paths.as_ref(), query.as_str())
+                .await?;
+
+            let config = output.unwrap_or_default().encode(&cfg)?;
+            Fmt::display(config);
+            Ok(())
+        }
     }
 }
 

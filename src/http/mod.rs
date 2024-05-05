@@ -1,3 +1,15 @@
+pub use cache::*;
+pub use data_loader::*;
+pub use data_loader_request::*;
+use headers::HeaderValue;
+pub use method::Method;
+pub use request_context::RequestContext;
+pub use request_handler::{handle_request, API_URL_PREFIX};
+pub use request_template::RequestTemplate;
+pub use response::*;
+
+pub use crate::app_context::AppContext;
+
 mod data_loader;
 
 mod cache;
@@ -10,16 +22,8 @@ mod response;
 pub mod showcase;
 mod telemetry;
 
-pub use cache::*;
-pub use data_loader::*;
-pub use data_loader_request::*;
-pub use method::Method;
-pub use request_context::RequestContext;
-pub use request_handler::{graphiql, handle_request, API_URL_PREFIX};
-pub use request_template::RequestTemplate;
-pub use response::*;
-
-pub use crate::app_context::AppContext;
+pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
+pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
 
 #[derive(Default, Clone, Debug)]
 /// User can configure the filter/interceptor

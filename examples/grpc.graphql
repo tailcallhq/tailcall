@@ -1,16 +1,16 @@
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
 schema
-  @server(port: 8000, graphiql: true)
+  @server(port: 8000)
   @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
-  @link(id: "news", src: "../src/grpc/tests/proto/news.proto", type: Protobuf) {
+  @link(id: "news", src: "../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
+  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}")
   newsByIdBatch(news: NewsInput!): News!
-    @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.news}}", batchKey: ["news", "id"])
+    @grpc(method: "news.NewsService.GetMultipleNews", body: "{{.args.news}}", batchKey: ["news", "id"])
 }
 
 type News {
@@ -18,6 +18,13 @@ type News {
   title: String
   body: String
   postImage: String
+  status: Status
+}
+
+enum Status {
+  PUBLISHED
+  DRAFT
+  DELETED
 }
 
 input NewsInput {

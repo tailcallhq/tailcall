@@ -1,47 +1,27 @@
-use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::ServerError;
-use hyper::header::{self, CONTENT_TYPE};
+use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
-use prometheus::{Encoder, ProtobufEncoder, TextEncoder, PROTOBUF_FORMAT, TEXT_FORMAT};
+use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
-use super::{showcase, telemetry, AppContext};
+use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
 use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::config::{PrometheusExporter, PrometheusFormat};
 
 pub const API_URL_PREFIX: &str = "/api";
-
-pub fn graphiql(req: &Request<Body>) -> Result<Response<Body>> {
-    let query = req.uri().query();
-    let endpoint = "/graphql";
-    let endpoint = if let Some(query) = query {
-        if query.is_empty() {
-            Cow::Borrowed(endpoint)
-        } else {
-            Cow::Owned(format!("{}?{}", endpoint, query))
-        }
-    } else {
-        Cow::Borrowed(endpoint)
-    };
-
-    Ok(Response::new(Body::from(playground_source(
-        GraphQLPlaygroundConfig::new(&endpoint).title("Tailcall - GraphQL IDE"),
-    ))))
-}
 
 fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
     let metric_families = prometheus::default_registry().gather();
@@ -56,7 +36,7 @@ fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Respon
 
     let content_type = match prometheus_exporter.format {
         PrometheusFormat::Text => TEXT_FORMAT,
-        PrometheusFormat::Protobuf => PROTOBUF_FORMAT,
+        PrometheusFormat::Protobuf => prometheus::PROTOBUF_FORMAT,
     };
 
     Ok(Response::builder()
@@ -74,10 +54,10 @@ fn not_found() -> Result<Response<Body>> {
 fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
-    let req_headers = create_allowed_headers(req.headers(), &allowed);
+    let allowed_headers = create_allowed_headers(req.headers(), &allowed);
 
     let _allowed = app_ctx.blueprint.server.get_experimental_headers();
-    RequestContext::from(app_ctx).request_headers(req_headers)
+    RequestContext::from(app_ctx).allowed_headers(allowed_headers)
 }
 
 fn update_cache_control_header(
@@ -160,6 +140,38 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
         }
     }
     new_headers
+}
+
+async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Body>,
+    app_ctx: Arc<AppContext>,
+    request_counter: &mut RequestCounter,
+) -> Result<Response<Body>> {
+    let method = req.method();
+    if method == Method::OPTIONS {
+        let mut res = Response::new(Body::default());
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            HeaderValue::from_static("https://tailcall.run"),
+        );
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_METHODS,
+            HeaderValue::from_static("GET, POST, OPTIONS"),
+        );
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_HEADERS,
+            HeaderValue::from_static("*"),
+        );
+        Ok(res)
+    } else {
+        let mut res = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
+        res.headers_mut().insert(
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            HeaderValue::from_static("https://tailcall.run"),
+        );
+
+        Ok(res)
+    }
 }
 
 async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
@@ -288,10 +300,6 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                 }
             };
 
-            if app_ctx.blueprint.server.enable_graphiql {
-                return graphiql(&req);
-            }
-
             not_found()
         }
         _ => not_found(),
@@ -317,6 +325,12 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
 
     let response = if app_ctx.blueprint.server.cors.is_some() {
         handle_request_with_cors::<T>(req, app_ctx, &mut req_counter).await
+    } else if let Some(origin) = req.headers().get(&header::ORIGIN) {
+        if origin == TAILCALL_HTTPS_ORIGIN || origin == TAILCALL_HTTP_ORIGIN {
+            handle_origin_tailcall::<T>(req, app_ctx, &mut req_counter).await
+        } else {
+            handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
+        }
     } else {
         handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
     };

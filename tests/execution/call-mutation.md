@@ -20,16 +20,16 @@ input PostInputWithoutUserId {
 
 type Mutation {
   attachPostToFirstUser(postId: Int!): User
-    @call(mutation: "attachPostToUser", args: {postId: "{{args.postId}}", userId: 1})
+    @call(steps: [{mutation: "attachPostToUser", args: {postId: "{{.args.postId}}", userId: 1}}])
   attachPostToUser(userId: Int!, postId: Int!): User
-    @http(body: "{\"postId\":{{args.postId}}}", method: "PATCH", path: "/users/{{args.userId}}")
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+    @http(body: "{\"postId\":{{.args.postId}}}", method: "PATCH", path: "/users/{{.args.userId}}")
+  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
   insertPostToFirstUser(input: PostInputWithoutUserId): Post
-    @call(mutation: "insertPostToUser", args: {input: "{{args.input}}", userId: 1})
+    @call(steps: [{mutation: "insertPostToUser", args: {input: "{{.args.input}}", userId: 1}}])
   insertMockedPost: Post
-    @call(mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}})
+    @call(steps: [{mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}}}])
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
-    @http(body: "{{args.input}}", method: "POST", path: "/users/{{args.userId}}/posts")
+    @http(body: "{{.args.input}}", method: "POST", path: "/users/{{.args.userId}}/posts")
 }
 
 type Post {
@@ -41,13 +41,13 @@ type Post {
 
 type Query {
   firstUser: User @http(method: "GET", path: "/users/1")
-  postFromUser(userId: Int!): Post @http(path: "/posts?userId={{args.userId}}")
+  postFromUser(userId: Int!): Post @http(path: "/posts?userId={{.args.userId}}")
 }
 
 type User {
   id: Int
   name: String
-  posts: [Post] @call(query: "postFromUser", args: {userId: "{{value.id}}"})
+  posts: [Post] @call(steps: [{query: "postFromUser", args: {userId: "{{.value.id}}"}}])
 }
 ```
 
@@ -55,8 +55,8 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/posts
-    body: '{"body":"post-body","title":"post-title","userId":1}'
-  expected_hits: 2
+    body: {"body": "post-body", "title": "post-title", "userId": 1}
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -66,7 +66,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -75,7 +74,7 @@ type User {
 - request:
     method: PATCH
     url: http://jsonplaceholder.typicode.com/users/1
-    body: '{"postId":1}'
+    body: {"postId": 1}
   response:
     status: 200
     body:
@@ -84,7 +83,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?userId=1
-    body: null
   response:
     status: 200
     body:
@@ -103,7 +101,7 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users/1/posts
-    body: '{"body":"post-body","title":"post-title"}'
+    body: {"body": "post-body", "title": "post-title"}
   response:
     status: 200
     body:
@@ -112,7 +110,7 @@ type User {
       userId: 1
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

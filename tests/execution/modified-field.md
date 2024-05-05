@@ -18,7 +18,6 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -26,7 +25,7 @@ type Query {
       name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

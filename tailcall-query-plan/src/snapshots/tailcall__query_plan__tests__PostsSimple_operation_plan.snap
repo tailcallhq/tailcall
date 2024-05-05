@@ -1,0 +1,12 @@
+---
+source: src/query_plan/tests.rs
+expression: operation_plan
+---
+OperationPlan
+    fields:
+        [posts](by 3)
+            title
+
+    selections:
+        Resolver(3):
+                title

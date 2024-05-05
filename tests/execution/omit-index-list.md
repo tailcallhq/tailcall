@@ -18,7 +18,6 @@ type Query @addField(name: "username", path: ["username", "0", "name"]) {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
-    body: null
   response:
     status: 200
     body:
@@ -26,7 +25,7 @@ type Query @addField(name: "username", path: ["username", "0", "name"]) {
         name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

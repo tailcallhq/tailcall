@@ -1,15 +1,13 @@
 use std::cell::{OnceCell, RefCell};
 use std::thread;
 
-use deno_core::{extension, serde_v8, v8, FastString, JsRuntime, RuntimeOptions};
+use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use super::request_filter::{Command, Event};
+use super::JsRequest;
 use crate::{blueprint, WorkerIO};
 
-struct LocalRuntime {
-    js_runtime: JsRuntime,
-    global: v8::Global<v8::Value>,
-}
+struct LocalRuntime(Context);
 
 thread_local! {
     // Practically only one JS runtime is created because CHANNEL_RUNTIME is single threaded.
@@ -26,19 +24,34 @@ lazy_static::lazy_static! {
         .expect("JS runtime not initialized");
 }
 
+#[rquickjs::function]
+fn qjs_print(msg: String, is_err: bool) {
+    if is_err {
+        tracing::error!("{msg}");
+    } else {
+        tracing::info!("{msg}");
+    }
+}
+
+fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
+    ctx.globals().set("__qjs_print", js_qjs_print)?;
+    let _: Value = ctx.eval_file("src/cli/javascript/shim/console.js")?;
+
+    Ok(())
+}
+
 impl LocalRuntime {
     fn try_new(script: blueprint::Script) -> anyhow::Result<Self> {
         let source = script.source;
-        extension!(console, js = ["src/cli/javascript/shim/console.js",]);
-        let mut js_runtime = JsRuntime::new(RuntimeOptions {
-            extensions: vec![console::init_ops_and_esm()],
-            ..Default::default()
-        });
-        let global = js_runtime.execute_script("<anon>", FastString::from_static("globalThis"))?;
-        js_runtime.execute_script("<anon>", FastString::from(source))?;
-        tracing::debug!("JS Runtime created: {:?}", thread::current().name());
+        let js_runtime = rquickjs::Runtime::new()?;
+        let context = Context::full(&js_runtime)?;
+        context.with(|ctx| {
+            setup_builtins(&ctx)?;
+            ctx.eval(source)
+        })?;
 
-        Ok(Self { js_runtime, global })
+        tracing::debug!("JS Runtime created: {:?}", thread::current().name());
+        Ok(Self(context))
     }
 }
 
@@ -58,10 +71,21 @@ impl WorkerIO<Event, Command> for Runtime {
         let script = self.script.clone();
         CHANNEL_RUNTIME
             .spawn(async move {
+                // initialize runtime if this is the first call
+                // exit if failed to initialize
                 LOCAL_RUNTIME.with(move |cell| {
-                    cell.borrow()
-                        .get_or_init(|| LocalRuntime::try_new(script).unwrap());
-                });
+                    if cell.borrow().get().is_none() {
+                        LocalRuntime::try_new(script).and_then(|runtime| {
+                            cell.borrow().set(runtime).map_err(|_| {
+                                anyhow::anyhow!(
+                                    "trying to reinitialize an already initialized QuickJS runtime"
+                                )
+                            })
+                        })
+                    } else {
+                        Ok(())
+                    }
+                })?;
 
                 call(name, event)
             })
@@ -69,30 +93,35 @@ impl WorkerIO<Event, Command> for Runtime {
     }
 }
 
+fn prepare_args<'js>(ctx: &Ctx<'js>, req: JsRequest) -> rquickjs::Result<(Value<'js>,)> {
+    let object = rquickjs::Object::new(ctx.clone())?;
+    object.set("request", req.into_js(ctx)?)?;
+    Ok((object.into_value(),))
+}
+
 fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell
             .get_mut()
             .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
-        let js_runtime = &mut runtime.js_runtime;
-        let scope = &mut js_runtime.handle_scope();
-        let global = v8::Local::<v8::Object>::try_from(v8::Local::new(scope, &runtime.global))?;
-        let args = serde_v8::to_v8(scope, event)?;
+        runtime.0.with(|ctx| match event {
+            Event::Request(req) => {
+                let fn_as_value = ctx
+                    .globals()
+                    .get::<&str, Function>(name.as_str())
+                    .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
 
-        // NOTE: unwrap is safe here
-        // We receive a `None` only if the name of the function is more than the set
-        // kMaxLength. kMaxLength is set to a very high value ~ 1 Billion, so we
-        // don't expect to hit this limit.
-        let fn_server_emit = v8::String::new(scope, name.as_str()).unwrap();
-        let fn_server_emit = global
-            .get(scope, fn_server_emit.into())
-            .ok_or(anyhow::anyhow!("globalThis not initialized"))?;
+                let function = fn_as_value
+                    .as_function()
+                    .ok_or(anyhow::anyhow!("`{name}` is not a function"))?;
 
-        let fn_server_emit = v8::Local::<v8::Function>::try_from(fn_server_emit)?;
-        let command = fn_server_emit.call(scope, global.into(), &[args]);
-
-        command
-            .map(|output| Ok(serde_v8::from_v8(scope, output)?))
-            .transpose()
+                let args = prepare_args(&ctx, req)?;
+                let command: Option<Value> = function.call(args).ok();
+                command
+                    .map(|output| Command::from_js(&ctx, output))
+                    .transpose()
+                    .map_err(|e| anyhow::anyhow!("deserialize failed: {e}"))
+            }
+        })
     })
 }

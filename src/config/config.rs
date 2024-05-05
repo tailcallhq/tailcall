@@ -9,18 +9,28 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{Expr, KeyValue, Link, Server, Upstream};
+use super::{KeyValue, Link, Server, Upstream};
 use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
 use crate::json::JsonSchema;
+use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
 use crate::{is_default, scalar};
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -62,138 +72,12 @@ pub struct Config {
     pub telemetry: Telemetry,
 }
 
-impl Config {
-    pub fn port(&self) -> u16 {
-        self.server.port.unwrap_or(8000)
-    }
-
-    pub fn output_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        let input_types = self.input_types();
-
-        if let Some(ref query) = &self.schema.query {
-            types.insert(query);
-        }
-
-        if let Some(ref mutation) = &self.schema.mutation {
-            types.insert(mutation);
-        }
-        for (type_name, type_of) in self.types.iter() {
-            if (type_of.interface || !type_of.fields.is_empty())
-                && !input_types.contains(&type_name)
-            {
-                for (_, field) in type_of.fields.iter() {
-                    types.insert(&field.type_of);
-                }
-            }
-        }
-        types
-    }
-
-    pub fn recurse_type<'a>(&'a self, type_of: &str, types: &mut HashSet<&'a String>) {
-        if let Some(type_) = self.find_type(type_of) {
-            for (_, field) in type_.fields.iter() {
-                if !types.contains(&field.type_of) {
-                    types.insert(&field.type_of);
-                    self.recurse_type(&field.type_of, types);
-                }
-            }
-        }
-    }
-
-    pub fn input_types(&self) -> HashSet<&String> {
-        let mut types = HashSet::new();
-        for (_, type_of) in self.types.iter() {
-            if !type_of.interface {
-                for (_, field) in type_of.fields.iter() {
-                    for (_, arg) in field
-                        .args
-                        .iter()
-                        .filter(|(_, arg)| !scalar::is_scalar(&arg.type_of))
-                    {
-                        if let Some(t) = self.find_type(&arg.type_of) {
-                            t.fields.iter().for_each(|(_, f)| {
-                                types.insert(&f.type_of);
-                                self.recurse_type(&f.type_of, &mut types)
-                            })
-                        }
-                        types.insert(&arg.type_of);
-                    }
-                }
-            }
-        }
-        types
-    }
-    pub fn find_type(&self, name: &str) -> Option<&Type> {
-        self.types.get(name)
-    }
-
-    pub fn find_union(&self, name: &str) -> Option<&Union> {
-        self.unions.get(name)
-    }
-
-    pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(self)?)
-    }
-
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
-        if pretty {
-            Ok(serde_json::to_string_pretty(self)?)
-        } else {
-            Ok(serde_json::to_string(self)?)
-        }
-    }
-
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
-    pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::document::print(doc)
-    }
-
-    pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
-        self
-    }
-
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        let mut graphql_types = BTreeMap::new();
-        for (name, type_) in types {
-            graphql_types.insert(name.to_string(), type_);
-        }
-        self.types = graphql_types;
-        self
-    }
-
-    pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name)
-    }
-}
-
-impl MergeRight for Config {
-    fn merge_right(self, other: Self) -> Self {
-        let server = self.server.merge_right(other.server);
-        let types = merge_types(self.types, other.types);
-        let unions = merge_unions(self.unions, other.unions);
-        let schema = self.schema.merge_right(other.schema);
-        let upstream = self.upstream.merge_right(other.upstream);
-        let links = merge_links(self.links, other.links);
-        let telemetry = self.telemetry.merge_right(other.telemetry);
-
-        Self { server, upstream, types, schema, unions, links, telemetry }
-    }
-}
-
-fn merge_links(self_links: Vec<Link>, other_links: Vec<Link>) -> Vec<Link> {
-    self_links.merge_right(other_links)
-}
-
 ///
 /// Represents a GraphQL type.
 /// A type can be an object, interface, enum or scalar.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Type {
     ///
     /// A map of field name and its definition.
@@ -220,12 +104,16 @@ pub struct Type {
     pub variants: Option<BTreeSet<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
-    /// Flag to indicate if the type is a scalar.
-    pub scalar: bool,
-    #[serde(default)]
-    ///
     /// Setting to indicate if the type can be cached.
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth providers
+    #[serde(default)]
+    pub protected: Option<Protected>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    ///
+    /// Contains source information for the type.
+    pub tag: Option<Tag>,
 }
 
 impl Type {
@@ -237,24 +125,24 @@ impl Type {
         self.fields = graphql_fields;
         self
     }
-}
 
-impl MergeRight for Type {
-    fn merge_right(mut self, other: Self) -> Self {
-        let fields = self.fields.merge_right(other.fields);
-        self.implements = self.implements.merge_right(other.implements);
-        if let Some(ref variants) = self.variants {
-            if let Some(ref other) = other.variants {
-                self.variants = Some(variants.union(other).cloned().collect());
-            }
-        } else {
-            self.variants = other.variants;
-        }
-        Self { fields, ..self }
+    pub fn scalar(&self) -> bool {
+        self.fields.is_empty() && self.variants.is_none()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[derive(
+    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+)]
+#[serde(deny_unknown_fields)]
+/// Used to represent an identifier for a type. Typically used via only by the
+/// configuration generators to provide additional information about the type.
+pub struct Tag {
+    /// A unique identifier for the type.
+    pub id: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
 #[serde(rename_all = "camelCase")]
@@ -265,35 +153,22 @@ pub struct Cache {
     pub max_age: NonZeroU64,
 }
 
-fn merge_types(
-    mut self_types: BTreeMap<String, Type>,
-    other_types: BTreeMap<String, Type>,
-) -> BTreeMap<String, Type> {
-    for (name, mut other_type) in other_types {
-        if let Some(self_type) = self_types.remove(&name) {
-            other_type = self_type.merge_right(other_type);
-        }
-
-        self_types.insert(name, other_type);
-    }
-    self_types
-}
-
-fn merge_unions(
-    mut self_unions: BTreeMap<String, Union>,
-    other_unions: BTreeMap<String, Union>,
-) -> BTreeMap<String, Union> {
-    for (name, mut other_union) in other_unions {
-        if let Some(self_union) = self_unions.remove(&name) {
-            other_union = self_union.merge_right(other_union);
-        }
-        self_unions.insert(name, other_union);
-    }
-    self_unions
-}
+#[derive(
+    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+)]
+pub struct Protected {}
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
 )]
 #[setters(strip_option)]
 pub struct RootSchema {
@@ -302,17 +177,6 @@ pub struct RootSchema {
     pub mutation: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub subscription: Option<String>,
-}
-
-impl MergeRight for RootSchema {
-    // TODO: add unit-tests
-    fn merge_right(self, other: Self) -> Self {
-        Self {
-            query: self.query.merge_right(other.query),
-            mutation: self.mutation.merge_right(other.mutation),
-            subscription: self.subscription.merge_right(other.subscription),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -390,8 +254,8 @@ pub struct Field {
 
     ///
     /// Inserts a constant resolver for the field.
-    #[serde(rename = "const", default, skip_serializing_if = "is_default")]
-    pub const_field: Option<Const>,
+    #[serde(rename = "expr", default, skip_serializing_if = "is_default")]
+    pub const_field: Option<Expr>,
 
     ///
     /// Inserts a GraphQL resolver for the field.
@@ -399,12 +263,19 @@ pub struct Field {
     pub graphql: Option<GraphQL>,
 
     ///
-    /// Inserts an Expression resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub expr: Option<Expr>,
-    ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+    ///
+    /// Marks field as protected by auth provider
+    #[serde(default)]
+    pub protected: Option<Protected>,
+}
+
+// It's a terminal implementation of MergeRight
+impl MergeRight for Field {
+    fn merge_right(self, other: Self) -> Self {
+        other
+    }
 }
 
 impl Field {
@@ -414,7 +285,6 @@ impl Field {
             || self.const_field.is_some()
             || self.graphql.is_some()
             || self.grpc.is_some()
-            || self.expr.is_some()
             || self.call.is_some()
     }
 
@@ -431,7 +301,7 @@ impl Field {
             directives.push(JS::trace_name());
         }
         if self.const_field.is_some() {
-            directives.push(Const::trace_name());
+            directives.push(Expr::trace_name());
         }
         if self.grpc.is_some() {
             directives.push(Grpc::trace_name());
@@ -505,7 +375,7 @@ pub struct Inline {
     pub path: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Arg {
     #[serde(rename = "type")]
     pub type_of: String,
@@ -521,17 +391,10 @@ pub struct Arg {
     pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
-}
-
-impl MergeRight for Union {
-    fn merge_right(mut self, other: Self) -> Self {
-        self.types = self.types.merge_right(other.types);
-        self
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -606,23 +469,30 @@ pub struct Http {
 }
 
 ///
+/// Provides the ability to refer to multiple fields in the Query or
+/// Mutation root.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+pub struct Call {
+    /// Steps are composed together to form a call.
+    /// If you have multiple steps, the output of the previous step is passed as
+    /// input to the next step.
+    pub steps: Vec<Step>,
+}
+
+///
 /// Provides the ability to refer to a field defined in the root Query or
 /// Mutation.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Call {
+pub struct Step {
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Query` type that you want to call. For
-    /// instance `user`.
+    /// The name of the field on the `Query` type that you want to call.
     pub query: Option<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The name of the field on the `Mutation` type that you want to call. For
-    /// instance `createUser`.
+    /// The name of the field on the `Mutation` type that you want to call.
     pub mutation: Option<String>,
 
-    /// The arguments of the field on the `Query` or `Mutation` type that you
-    /// want to call. For instance `{id: "{{value.userId}}"}`.
+    /// The arguments that will override the actual arguments of the field.
     #[serde(default, skip_serializing_if = "is_default")]
     pub args: BTreeMap<String, Value>,
 }
@@ -718,10 +588,11 @@ impl Display for GraphQLOperationType {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-/// The `@const` operators allows us to embed a constant response for the
-/// schema.
-pub struct Const {
-    pub data: Value,
+/// The `@expr` operators allows you to specify an expression that can evaluate
+/// to a value. The expression can be a static value or built form a Mustache
+/// template. schema.
+pub struct Expr {
+    pub body: Value,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
@@ -735,6 +606,57 @@ pub struct AddField {
 }
 
 impl Config {
+    pub fn port(&self) -> u16 {
+        self.server.port.unwrap_or(8000)
+    }
+
+    pub fn find_type(&self, name: &str) -> Option<&Type> {
+        self.types.get(name)
+    }
+
+    pub fn find_union(&self, name: &str) -> Option<&Union> {
+        self.unions.get(name)
+    }
+
+    pub fn to_yaml(&self) -> Result<String> {
+        Ok(serde_yaml::to_string(self)?)
+    }
+
+    pub fn to_json(&self, pretty: bool) -> Result<String> {
+        if pretty {
+            Ok(serde_json::to_string_pretty(self)?)
+        } else {
+            Ok(serde_json::to_string(self)?)
+        }
+    }
+
+    pub fn to_document(&self) -> ServiceDocument {
+        self.clone().into()
+    }
+
+    pub fn to_sdl(&self) -> String {
+        let doc = self.to_document();
+        crate::document::print(doc)
+    }
+
+    pub fn query(mut self, query: &str) -> Self {
+        self.schema.query = Some(query.to_string());
+        self
+    }
+
+    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
+        let mut graphql_types = BTreeMap::new();
+        for (name, type_) in types {
+            graphql_types.insert(name.to_string(), type_);
+        }
+        self.types = graphql_types;
+        self
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        self.types.contains_key(name) || self.unions.contains_key(name)
+    }
+
     pub fn from_json(json: &str) -> Result<Self> {
         Ok(serde_json::from_str(json)?)
     }
@@ -761,6 +683,115 @@ impl Config {
 
     pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
         super::n_plus_one::n_plus_one(self)
+    }
+
+    ///
+    /// Given a starting type, this function searches for all the unique types
+    /// that this type can be connected to via it's fields
+    fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
+        if let Some(type_) = self.find_type(type_of) {
+            types.insert(type_of.into());
+            for (_, field) in type_.fields.iter() {
+                if !types.contains(&field.type_of) {
+                    types.insert(field.type_of.clone());
+                    types = self.find_connections(&field.type_of, types);
+                }
+            }
+        }
+        types
+    }
+
+    ///
+    /// Checks if a type is a scalar or not.
+    pub fn is_scalar(&self, type_name: &str) -> bool {
+        self.types
+            .get(type_name)
+            .map_or(scalar::is_predefined_scalar(type_name), |ty| ty.scalar())
+    }
+
+    ///
+    /// Goes through the complete config and finds all the types that are used
+    /// as inputs directly ot indirectly.
+    pub fn input_types(&self) -> HashSet<String> {
+        self.arguments()
+            .iter()
+            .filter(|(_, arg)| !self.is_scalar(&arg.type_of))
+            .map(|(_, arg)| arg.type_of.as_str())
+            .fold(HashSet::new(), |types, type_of| {
+                self.find_connections(type_of, types)
+            })
+    }
+
+    /// Returns a list of all the types that are not used as inputs
+    pub fn output_types(&self) -> HashSet<String> {
+        let mut types = HashSet::new();
+        let input_types = self.input_types();
+
+        if let Some(ref query) = &self.schema.query {
+            types.insert(query.clone());
+        }
+
+        if let Some(ref mutation) = &self.schema.mutation {
+            types.insert(mutation.clone());
+        }
+
+        for (type_name, type_of) in self.types.iter() {
+            if (type_of.interface || !type_of.fields.is_empty()) && !input_types.contains(type_name)
+            {
+                for (_, field) in type_of.fields.iter() {
+                    types.insert(field.type_of.clone());
+                }
+            }
+        }
+
+        types
+    }
+
+    /// Returns a list of all the arguments in the configuration
+    fn arguments(&self) -> Vec<(&String, &Arg)> {
+        self.types
+            .iter()
+            .filter(|(_, value)| !value.interface)
+            .flat_map(|(_, type_of)| type_of.fields.iter())
+            .flat_map(|(_, field)| field.args.iter())
+            .collect::<Vec<_>>()
+    }
+    /// Removes all types that are passed in the set
+    pub fn remove_types(mut self, types: HashSet<String>) -> Self {
+        for unused_type in types {
+            self.types.remove(&unused_type);
+        }
+
+        self
+    }
+
+    pub fn unused_types(&self) -> HashSet<String> {
+        let used_types = self.get_all_used_type_names();
+        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        all_types.difference(&used_types).cloned().collect()
+    }
+
+    /// Gets all the type names used in the schema.
+    pub fn get_all_used_type_names(&self) -> HashSet<String> {
+        let mut set = HashSet::new();
+        let mut stack = Vec::new();
+        if let Some(query) = &self.schema.query {
+            stack.push(query.clone());
+        }
+        if let Some(mutation) = &self.schema.mutation {
+            stack.push(mutation.clone());
+        }
+        while let Some(type_name) = stack.pop() {
+            if let Some(typ) = self.types.get(&type_name) {
+                set.insert(type_name);
+                for field in typ.fields.values() {
+                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
+                    stack.push(field.type_of.clone());
+                }
+            }
+        }
+
+        set
     }
 }
 

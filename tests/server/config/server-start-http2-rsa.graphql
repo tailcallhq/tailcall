@@ -6,5 +6,5 @@ schema
 }
 
 type Query {
-  greet: String @const(data: "Hello World!")
+  greet: String @expr(body: "Hello World!")
 }
