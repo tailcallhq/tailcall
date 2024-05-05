@@ -73,9 +73,10 @@ mod tests {
 
     #[async_trait]
     impl HttpIO for TestHttp {
-        async fn execute_with<'a>(&self,
-            _request: reqwest::Request,
-            _http_filter: &'a http::HttpFilter,
+        async fn execute_with<'a>(
+            &'a self,
+            request: reqwest::Request,
+            http_filter: &'a http::HttpFilter,
         ) -> anyhow::Result<Response<hyper::body::Bytes>> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");
