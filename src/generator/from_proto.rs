@@ -54,7 +54,11 @@ impl Context {
                 })
                 .collect::<BTreeSet<String>>();
 
-            let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
+            let type_name = GraphQLType::new(enum_name)
+                .package(&self.package)
+                .as_enum()
+                .unwrap()
+                .to_string();
             self.config
                 .enums
                 .insert(type_name, Enum { variants, doc: None });
