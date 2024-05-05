@@ -11,8 +11,8 @@ use async_graphql::Name;
 use super::telemetry::Telemetry;
 use super::{Tag, JS};
 use crate::config::{
-    self, Cache, Call, Config, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema, Server,
-    Union, Upstream, Enum
+    self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
+    Server, Union, Upstream,
 };
 use crate::directive::DirectiveCodec;
 use crate::valid::{Valid, Validator};
@@ -211,7 +211,14 @@ fn to_enum_types(
             .filter_map(|type_definition| {
                 let type_name = pos_name_to_string(&type_definition.node.name);
                 let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Enum(enum_type) => to_enum(enum_type, type_definition.node.description.to_owned().map(|pos| pos.node)),
+                    TypeKind::Enum(enum_type) => to_enum(
+                        enum_type,
+                        type_definition
+                            .node
+                            .description
+                            .to_owned()
+                            .map(|pos| pos.node),
+                    ),
                     _ => return None,
                 };
                 Some((type_name, type_opt))
@@ -396,10 +403,7 @@ fn to_enum(enum_type: EnumType, doc: Option<String>) -> Enum {
         .iter()
         .map(|member| member.node.value.node.as_str().to_owned())
         .collect();
-    Enum {
-        variants,
-        doc,
-    }
+    Enum { variants, doc }
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {

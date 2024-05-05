@@ -6,7 +6,7 @@ use prost_reflect::prost_types::{
 };
 
 use crate::blueprint::GrpcMethod;
-use crate::config::{Arg, Config, Field, Grpc, Tag, Type, Enum};
+use crate::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
 use crate::generator::GraphQLType;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
@@ -55,7 +55,9 @@ impl Context {
                 .collect::<BTreeSet<String>>();
 
             let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
-            self.config.enums.insert(type_name, Enum {variants, doc: None});
+            self.config
+                .enums
+                .insert(type_name, Enum { variants, doc: None });
         }
         self
     }

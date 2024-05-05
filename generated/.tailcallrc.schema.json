@@ -10,11 +10,7 @@
       "description": "A map of all the enum types in the schema",
       "type": "object",
       "additionalProperties": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        },
-        "uniqueItems": true
+        "$ref": "#/definitions/Enum"
       }
     },
     "links": {
@@ -343,6 +339,27 @@
         "ApplicationJson",
         "ApplicationXWwwFormUrlencoded"
       ]
+    },
+    "Enum": {
+      "type": "object",
+      "required": [
+        "variants"
+      ],
+      "properties": {
+        "doc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
     },
     "Expr": {
       "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",

@@ -3,7 +3,7 @@ use regex::Regex;
 
 use crate::blueprint::Type::ListType;
 use crate::blueprint::*;
-use crate::config::{Config, Field, GraphQLOperationType, Protected, Union, Enum};
+use crate::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::directive::DirectiveCodec;
 use crate::lambda::{Cache, Context, Expression};
 use crate::try_fold::TryFold;
@@ -229,7 +229,8 @@ fn to_enum_type_definition((name, variants): (&String, &Enum)) -> Definition {
         name: name.to_owned(),
         directives: Vec::new(),
         description: None,
-        enum_values: variants.variants
+        enum_values: variants
+            .variants
             .iter()
             .map(|variant| EnumValueDefinition {
                 description: None,
