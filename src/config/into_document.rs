@@ -232,7 +232,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     for (name, values) in config.enums.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
-            description: None,
+            description: values.doc.clone().map(pos),
             name: pos(Name::new(name)),
             directives: Vec::new(),
             kind: TypeKind::Enum(EnumType {
