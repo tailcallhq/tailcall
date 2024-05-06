@@ -57,6 +57,7 @@ impl Server {
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
+        let _ = tailcall_events::PostData::alive_event_poll(&runtime).await;
 
         let result = runtime.spawn(async { self.start().await }).await?;
         runtime.shutdown_background();
