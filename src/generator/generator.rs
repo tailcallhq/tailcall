@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::config::{Config, Link, LinkType};
+use crate::config::{Config, ConfigModule, Link, LinkType, Resolution};
 use crate::generator::from_proto::from_proto;
 use crate::generator::source::Source;
 use crate::merge_right::MergeRight;
@@ -23,7 +23,7 @@ impl Generator {
         input_source: Source,
         files: &[T],
         query: &str,
-    ) -> Result<Config> {
+    ) -> Result<ConfigModule> {
         let mut links = vec![];
         let proto_metadata = self.proto_reader.read_all(files).await?;
 
@@ -38,7 +38,12 @@ impl Generator {
         }
 
         config.links = links;
-        Ok(config)
+        Ok(
+            ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
+                input: format!("IN_{}", v),
+                output: format!("OUT_{}", v),
+            }),
+        )
     }
 }
 

@@ -266,7 +266,8 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Config 
         }
     }
 
-    ctx.config = ctx.config.remove_unused_types();
+    let unused_types = ctx.config.unused_types();
+    ctx.config = ctx.config.remove_types(unused_types);
 
     ctx.config
 }

@@ -6,7 +6,7 @@ mod tests {
     use tailcall::blueprint::{Blueprint, DynamicValue};
     use tailcall::http::RequestContext;
     use tailcall::lambda::{
-        Concurrent, EmptyResolverContext, Eval, EvaluationContext, EvaluationError, Expression,
+        EmptyResolverContext, Eval, EvaluationContext, EvaluationError, Expression,
     };
     use tailcall::mustache::Mustache;
 
@@ -15,7 +15,7 @@ mod tests {
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
         let eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx);
-        expr.eval(eval_ctx, &Concurrent::Parallel).await
+        expr.eval(eval_ctx).await
     }
 
     #[tokio::test]

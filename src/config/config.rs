@@ -14,11 +14,11 @@ use crate::config::from_document::from_document;
 use crate::config::source::Source;
 use crate::directive::DirectiveCodec;
 use crate::http::Method;
-use crate::is_default;
 use crate::json::JsonSchema;
 use crate::macros::MergeRight;
 use crate::merge_right::MergeRight;
 use crate::valid::{Valid, Validator};
+use crate::{is_default, scalar};
 
 #[derive(
     Serialize,
@@ -65,101 +65,6 @@ pub struct Config {
     #[serde(default, skip_serializing_if = "is_default")]
     /// Enable [opentelemetry](https://opentelemetry.io) support
     pub telemetry: Telemetry,
-}
-
-impl Config {
-    pub fn port(&self) -> u16 {
-        self.server.port.unwrap_or(8000)
-    }
-
-    pub fn find_type(&self, name: &str) -> Option<&Type> {
-        self.types.get(name)
-    }
-
-    pub fn to_yaml(&self) -> Result<String> {
-        Ok(serde_yaml::to_string(self)?)
-    }
-
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
-        if pretty {
-            Ok(serde_json::to_string_pretty(self)?)
-        } else {
-            Ok(serde_json::to_string(self)?)
-        }
-    }
-
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
-    pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::document::print(doc)
-    }
-
-    pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
-        self
-    }
-
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
-        let mut graphql_types = BTreeMap::new();
-        for (name, type_) in types {
-            graphql_types.insert(name.to_string(), type_);
-        }
-        self.types = graphql_types;
-        self
-    }
-
-    pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name)
-    }
-
-    /// Gets all the type names used in the schema.
-    pub fn get_all_used_type_names(&self) -> HashSet<String> {
-        let mut set = HashSet::new();
-        let mut stack = Vec::new();
-        if let Some(query) = &self.schema.query {
-            stack.push(query.clone());
-        }
-        if let Some(mutation) = &self.schema.mutation {
-            stack.push(mutation.clone());
-        }
-        while let Some(type_name) = stack.pop() {
-            if let Some(typ) = self.types.get(&type_name) {
-                set.insert(type_name);
-
-                match &typ.kind {
-                    TypeKind::Object(obj) => {
-                        for field in obj.fields.values() {
-                            stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
-                            stack.push(field.type_of.clone());
-                        }
-                    }
-                    TypeKind::Union(_) => todo!(),
-                    _ => {}
-                }
-            }
-        }
-
-        set
-    }
-
-    pub fn get_all_unused_types(&self) -> HashSet<String> {
-        let used_types = self.get_all_used_type_names();
-        let all_types: HashSet<String> = self.types.keys().cloned().collect();
-        all_types.difference(&used_types).cloned().collect()
-    }
-
-    /// Removes all types that are not used in the schema.
-    pub fn remove_unused_types(mut self) -> Self {
-        let unused_types = self.get_all_unused_types();
-        for unused_type in unused_types {
-            self.types.remove(&unused_type);
-        }
-
-        self
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -312,6 +217,14 @@ impl Type {
             .into_iter()
             .chain(self.tag.as_ref().map(|tag| tag.to_directive()))
             .collect()
+    }
+
+    pub fn scalar(&self) -> bool {
+        match &self.kind {
+            TypeKind::Scalar => true,
+            TypeKind::Object(obj) => obj.fields.is_empty(),
+            _ => false,
+        }
     }
 }
 
@@ -559,7 +472,7 @@ pub struct Inline {
     pub path: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Arg {
     #[serde(rename = "type")]
     pub type_of: String,
@@ -779,6 +692,99 @@ pub struct AddField {
 }
 
 impl Config {
+    pub fn port(&self) -> u16 {
+        self.server.port.unwrap_or(8000)
+    }
+
+    pub fn find_type(&self, name: &str) -> Option<&Type> {
+        self.types.get(name)
+    }
+
+    pub fn to_yaml(&self) -> Result<String> {
+        Ok(serde_yaml::to_string(self)?)
+    }
+
+    pub fn to_json(&self, pretty: bool) -> Result<String> {
+        if pretty {
+            Ok(serde_json::to_string_pretty(self)?)
+        } else {
+            Ok(serde_json::to_string(self)?)
+        }
+    }
+
+    pub fn to_document(&self) -> ServiceDocument {
+        self.clone().into()
+    }
+
+    pub fn to_sdl(&self) -> String {
+        let doc = self.to_document();
+        crate::document::print(doc)
+    }
+
+    pub fn query(mut self, query: &str) -> Self {
+        self.schema.query = Some(query.to_string());
+        self
+    }
+
+    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
+        let mut graphql_types = BTreeMap::new();
+        for (name, type_) in types {
+            graphql_types.insert(name.to_string(), type_);
+        }
+        self.types = graphql_types;
+        self
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        self.types.contains_key(name)
+    }
+
+    /// Gets all the type names used in the schema.
+    pub fn get_all_used_type_names(&self) -> HashSet<String> {
+        let mut set = HashSet::new();
+        let mut stack = Vec::new();
+        if let Some(query) = &self.schema.query {
+            stack.push(query.clone());
+        }
+        if let Some(mutation) = &self.schema.mutation {
+            stack.push(mutation.clone());
+        }
+        while let Some(type_name) = stack.pop() {
+            if let Some(typ) = self.types.get(&type_name) {
+                set.insert(type_name);
+
+                match &typ.kind {
+                    TypeKind::Object(obj) => {
+                        for field in obj.fields.values() {
+                            stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
+                            stack.push(field.type_of.clone());
+                        }
+                    }
+                    TypeKind::Union(_) => todo!(),
+                    _ => {}
+                }
+            }
+        }
+
+        set
+    }
+
+    pub fn get_all_unused_types(&self) -> HashSet<String> {
+        let used_types = self.get_all_used_type_names();
+        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        all_types.difference(&used_types).cloned().collect()
+    }
+
+    /// Removes all types that are not used in the schema.
+    pub fn remove_unused_types(mut self) -> Self {
+        let unused_types = self.get_all_unused_types();
+        for unused_type in unused_types {
+            self.types.remove(&unused_type);
+        }
+
+        self
+    }
+
     pub fn from_json(json: &str) -> Result<Self> {
         Ok(serde_json::from_str(json)?)
     }
@@ -805,6 +811,105 @@ impl Config {
 
     pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
         super::n_plus_one::n_plus_one(self)
+    }
+
+    ///
+    /// Given a starting type, this function searches for all the unique types
+    /// that this type can be connected to via it's fields
+    fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
+        if let Some(type_) = self.find_type(type_of) {
+            types.insert(type_of.into());
+            if let TypeKind::Object(obj) = &type_.kind {
+                for field in obj.fields.values() {
+                    if !types.contains(&field.type_of) {
+                        types.insert(field.type_of.clone());
+                        types = self.find_connections(&field.type_of, types);
+                    }
+                }
+            }
+        }
+        types
+    }
+
+    ///
+    /// Checks if a type is a scalar or not.
+    pub fn is_scalar(&self, type_name: &str) -> bool {
+        self.types
+            .get(type_name)
+            .map_or(scalar::is_predefined_scalar(type_name), |ty| ty.scalar())
+    }
+
+    ///
+    /// Goes through the complete config and finds all the types that are used
+    /// as inputs directly ot indirectly.
+    pub fn input_types(&self) -> HashSet<String> {
+        self.arguments()
+            .iter()
+            .filter(|(_, arg)| !self.is_scalar(&arg.type_of))
+            .map(|(_, arg)| arg.type_of.as_str())
+            .fold(HashSet::new(), |types, type_of| {
+                self.find_connections(type_of, types)
+            })
+    }
+
+    /// Returns a list of all the types that are not used as inputs
+    pub fn output_types(&self) -> HashSet<String> {
+        let mut types = HashSet::new();
+        let input_types = self.input_types();
+
+        if let Some(ref query) = &self.schema.query {
+            types.insert(query.clone());
+        }
+
+        if let Some(ref mutation) = &self.schema.mutation {
+            types.insert(mutation.clone());
+        }
+
+        for (type_name, type_of) in self.types.iter() {
+            if !input_types.contains(type_name) {
+                match &type_of.kind {
+                    TypeKind::Object(obj) => {
+                        for field in obj.fields.values() {
+                            types.insert(field.type_of.clone());
+                        }
+                    }
+                    TypeKind::Union(_) => todo!(),
+                    _ => {}
+                }
+            }
+        }
+
+        types
+    }
+
+    /// Returns a list of all the arguments in the configuration
+    fn arguments(&self) -> Vec<(&String, &Arg)> {
+        self.types
+            .iter()
+            .filter_map(|(_, type_of)| {
+                match &type_of.kind {
+                    TypeKind::Object(obj) => Some(obj.fields.iter()),
+                    TypeKind::Union(_) => todo!(),
+                    _ => None
+                }
+            })
+            .flatten()
+            .flat_map(|(_, field)| field.args.iter())
+            .collect::<Vec<_>>()
+    }
+    /// Removes all types that are passed in the set
+    pub fn remove_types(mut self, types: HashSet<String>) -> Self {
+        for unused_type in types {
+            self.types.remove(&unused_type);
+        }
+
+        self
+    }
+
+    pub fn unused_types(&self) -> HashSet<String> {
+        let used_types = self.get_all_used_type_names();
+        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        all_types.difference(&used_types).cloned().collect()
     }
 }
 

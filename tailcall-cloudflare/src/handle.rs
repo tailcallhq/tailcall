@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
@@ -53,7 +52,7 @@ async fn get_app_ctx(
 
     if let Some(file_path) = &file_path {
         if let Some(app_ctx) = read_app_ctx() {
-            if app_ctx.0 == file_path.borrow() {
+            if app_ctx.0.eq(file_path) {
                 tracing::info!("Using cached application context");
                 return Ok(Ok(app_ctx.clone().1));
             }
