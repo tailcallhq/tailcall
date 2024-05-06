@@ -247,15 +247,7 @@ where
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type {
-                fields,
-                added_fields,
-                doc,
-                implements,
-                cache,
-                protected,
-                tag,
-            }
+            config::Type { fields, added_fields, doc, implements, cache, protected, tag }
         })
 }
 fn to_input_object(

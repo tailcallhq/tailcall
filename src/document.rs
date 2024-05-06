@@ -170,13 +170,13 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                     .collect::<Vec<String>>()
                     .join("\n")
             );
-            let enum_def = if let Some(desc) = &type_def.description {
+            
+            if let Some(desc) = &type_def.description {
                 let ds = format!("\"\"\"\n{}\n\"\"\"\n", desc.node.as_str());
                 ds + &enum_def
             } else {
                 enum_def
-            };
-            enum_def
+            }
         } // Handle other type kinds...
     }
 }
