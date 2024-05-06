@@ -210,7 +210,6 @@ where
 {
     let fields = object.fields();
     let implements = object.implements();
-    let interface = object.is_interface();
 
     Cache::from_directives(directives.iter())
         .fuse(to_fields(fields))
@@ -224,7 +223,6 @@ where
                 fields,
                 added_fields,
                 doc,
-                interface,
                 implements,
                 cache,
                 protected,
@@ -451,7 +449,6 @@ impl Fieldlike for InputValueDefinition {
 trait ObjectLike {
     fn fields(&self) -> &Vec<Positioned<FieldDefinition>>;
     fn implements(&self) -> &Vec<Positioned<Name>>;
-    fn is_interface(&self) -> bool;
 }
 impl ObjectLike for ObjectType {
     fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
@@ -460,9 +457,6 @@ impl ObjectLike for ObjectType {
     fn implements(&self) -> &Vec<Positioned<Name>> {
         &self.implements
     }
-    fn is_interface(&self) -> bool {
-        false
-    }
 }
 impl ObjectLike for InterfaceType {
     fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
@@ -470,8 +464,5 @@ impl ObjectLike for InterfaceType {
     }
     fn implements(&self) -> &Vec<Positioned<Name>> {
         &self.implements
-    }
-    fn is_interface(&self) -> bool {
-        true
     }
 }
