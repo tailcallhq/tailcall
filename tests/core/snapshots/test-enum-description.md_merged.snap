@@ -1,0 +1,20 @@
+---
+source: tests/core/spec.rs
+assertion_line: 234
+expression: merged
+---
+schema @server @upstream(baseURL: "http://localhost:8080") {
+  query: Query
+}
+
+"""
+Description of enum Foo
+"""
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Query {
+  foo(val: String!): Foo @expr(body: "{{.args.val}}")
+}
