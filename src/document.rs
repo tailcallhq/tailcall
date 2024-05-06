@@ -170,7 +170,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                     .collect::<Vec<String>>()
                     .join("\n")
             );
-            
+
             if let Some(desc) = &type_def.description {
                 let ds = format!("\"\"\"\n{}\n\"\"\"\n", desc.node.as_str());
                 ds + &enum_def
