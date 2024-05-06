@@ -224,12 +224,12 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn to_enum_type_definition((name, variants): (&String, &Enum)) -> Definition {
+fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
     Definition::Enum(EnumTypeDefinition {
         name: name.to_owned(),
         directives: Vec::new(),
-        description: None,
-        enum_values: variants
+        description: eu.doc.to_owned(),
+        enum_values: eu
             .variants
             .iter()
             .map(|variant| EnumValueDefinition {
