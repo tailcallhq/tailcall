@@ -97,10 +97,6 @@ pub struct Type {
     pub doc: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
-    /// Flag to indicate if the type is an interface.
-    pub interface: bool,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
     /// Interfaces that the type implements.
     pub implements: BTreeSet<String>,
     #[serde(default, skip_serializing_if = "is_default")]
@@ -745,11 +741,23 @@ impl Config {
         }
 
         for (type_name, type_of) in self.types.iter() {
-            if (type_of.interface || !type_of.fields.is_empty()) && !input_types.contains(type_name)
-            {
-                for (_, field) in type_of.fields.iter() {
+            if !input_types.contains(type_name) {
+                for field in type_of.fields.values() {
                     types.insert(field.type_of.clone());
                 }
+            }
+        }
+
+        types
+    }
+
+    /// Returns a list of all the types that are used as interface
+    pub fn interface_types(&self) -> HashSet<String> {
+        let mut types = HashSet::new();
+
+        for ty in self.types.values() {
+            for interface in ty.implements.iter() {
+                types.insert(interface.clone());
             }
         }
 
@@ -760,7 +768,6 @@ impl Config {
     fn arguments(&self) -> Vec<(&String, &Arg)> {
         self.types
             .iter()
-            .filter(|(_, value)| !value.interface)
             .flat_map(|(_, type_of)| type_of.fields.iter())
             .flat_map(|(_, field)| field.args.iter())
             .collect::<Vec<_>>()
