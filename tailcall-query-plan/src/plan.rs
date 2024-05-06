@@ -5,8 +5,8 @@ use async_graphql::parser::types::{Selection, SelectionSet};
 use async_graphql::{Name, Value};
 use indenter::indented;
 use indexmap::IndexMap;
-use tailcall::blueprint::{Definition, Type};
-use tailcall::scalar::is_predefined_scalar;
+use tailcall::core::blueprint::{Definition, Type};
+use tailcall::core::scalar::is_predefined_scalar;
 
 use super::execution::executor::{ExecutionResult, ResolvedEntry};
 use super::resolver::{FieldPlan, FieldPlanSelection, Id};
