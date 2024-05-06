@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
@@ -193,7 +194,7 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
-pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow::Result<()> {
+pub fn init_opentelemetry(config: Arc<Telemetry>, runtime: &TargetRuntime) -> anyhow::Result<()> {
     if let Some(export) = &config.export {
         global::set_error_handler(|error| {
             if !matches!(

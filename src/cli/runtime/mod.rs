@@ -42,7 +42,7 @@ fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
 // Provides access to http in native rust environment
 fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     let http_io = http::NativeHttp::init(
-        &blueprint.upstream.clone().http2_only(true),
+        &blueprint.upstream.as_ref().clone().http2_only(true),
         &blueprint.telemetry,
     );
     init_hook_http(Arc::new(http_io), blueprint.server.script.clone())

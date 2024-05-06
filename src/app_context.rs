@@ -18,7 +18,7 @@ use crate::runtime::TargetRuntime;
 pub struct AppContext {
     pub schema: dynamic::Schema,
     pub runtime: TargetRuntime,
-    pub blueprint: Blueprint,
+    pub blueprint: Arc<Blueprint>,
     pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
     pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
@@ -117,7 +117,7 @@ impl AppContext {
         AppContext {
             schema,
             runtime,
-            blueprint,
+            blueprint: Arc::new(blueprint),
             http_data_loaders: Arc::new(http_data_loaders),
             gql_data_loaders: Arc::new(gql_data_loaders),
             grpc_data_loaders: Arc::new(grpc_data_loaders),
