@@ -21,6 +21,7 @@ pub struct ConfigModule {
     pub extensions: Extensions,
     pub input_types: HashSet<String>,
     pub output_types: HashSet<String>,
+    pub interface_types: HashSet<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -202,8 +203,15 @@ impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
         let input_types = config.input_types();
         let output_types = config.output_types();
+        let interface_types = config.interface_types();
 
-        ConfigModule { config, input_types, output_types, ..Default::default() }
+        ConfigModule {
+            config,
+            input_types,
+            output_types,
+            interface_types,
+            ..Default::default()
+        }
     }
 }
 

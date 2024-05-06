@@ -54,7 +54,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     for (type_name, type_def) in config.types.iter() {
-        let kind = if type_def.interface {
+        let kind = if config.interface_types.contains(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
                     .implements
