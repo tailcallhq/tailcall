@@ -162,9 +162,8 @@ impl Config {
     }
 }
 
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
-)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[serde(untagged)]
 pub enum TypeKind {
     // TODO: replace scalar with empty object?
     #[default]
@@ -200,13 +199,29 @@ impl TypeKind {
     }
 }
 
+impl MergeRight for TypeKind {
+    fn merge_right(self, other: Self) -> Self {
+        match (self, other) {
+            (TypeKind::Object(left), TypeKind::Object(right)) => {
+                TypeKind::Object(left.merge_right(right))
+            }
+            (TypeKind::Enum(left), TypeKind::Enum(right)) => {
+                TypeKind::Enum(left.merge_right(right))
+            }
+            (TypeKind::Union(left), TypeKind::Union(right)) => {
+                TypeKind::Union(left.merge_right(right))
+            }
+            (_, other) => other,
+        }
+    }
+}
+
 #[derive(
     Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
 )]
 pub struct ObjectType {
     ///
     /// A map of field name and its definition.
-    #[serde(default, skip_serializing_if = "is_default")]
     pub fields: BTreeMap<String, Field>,
     ///
     /// Additional fields to be added to the type
@@ -245,7 +260,6 @@ impl ObjectType {
 pub struct EnumType {
     ///
     /// Variants for the type if it's an enum
-    #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
     pub variants: BTreeSet<String>,
 }
 
@@ -270,6 +284,7 @@ pub struct Type {
     #[serde(default, skip_serializing_if = "is_default")]
     pub tag: Option<Tag>,
 
+    #[serde(flatten)]
     pub kind: TypeKind,
 }
 

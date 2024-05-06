@@ -218,7 +218,12 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             description: None,
             name: pos(Name::new(type_name.clone())),
             // TODO: back directives
-            directives: Vec::new(),
+            directives: type_def
+                .tag
+                .as_ref()
+                .map(|tag| pos(tag.to_directive()))
+                .into_iter()
+                .collect::<Vec<_>>(),
             // directives: type_def
             //     .added_fields
             //     .iter()

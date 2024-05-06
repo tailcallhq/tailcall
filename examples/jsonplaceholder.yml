@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../generated/.tailcallrc.schema.json
 server:
   hostname: 0.0.0.0
   port: 8000

@@ -46,13 +46,6 @@
         "$ref": "#/definitions/Type"
       }
     },
-    "unions": {
-      "description": "A map of all the union types in the schema.",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/Union"
-      }
-    },
     "upstream": {
       "description": "Dictates how tailcall should handle upstream requests/responses. Tuning upstream can improve performance and reliability for connections.",
       "default": {},
@@ -332,6 +325,19 @@
         "ApplicationJson",
         "ApplicationXWwwFormUrlencoded"
       ]
+    },
+    "EnumType": {
+      "type": "object",
+      "properties": {
+        "enum": {
+          "description": "Variants for the type if it's an enum",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
     },
     "Expr": {
       "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",
@@ -828,6 +834,55 @@
       },
       "additionalProperties": false
     },
+    "ObjectType": {
+      "type": "object",
+      "properties": {
+        "added_fields": {
+          "description": "Additional fields to be added to the type",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AddField"
+          }
+        },
+        "cache": {
+          "description": "Setting to indicate if the type can be cached.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Cache"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fields": {
+          "description": "A map of field name and its definition.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Field"
+          }
+        },
+        "implements": {
+          "description": "Interfaces that the type implements.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "protected": {
+          "description": "Marks field as protected by auth providers",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Protected"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "Omit": {
       "description": "Used to omit a field from public consumption.",
       "type": "object",
@@ -1190,83 +1245,29 @@
       ]
     },
     "Type": {
-      "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
+      "description": "Represents a GraphQL type.",
       "type": "object",
-      "required": [
-        "fields"
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/definitions/EnumType"
+        },
+        {
+          "$ref": "#/definitions/ObjectType"
+        },
+        {
+          "$ref": "#/definitions/UnionType"
+        }
       ],
       "properties": {
-        "added_fields": {
-          "description": "Additional fields to be added to the type",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AddField"
-          }
-        },
-        "cache": {
-          "description": "Setting to indicate if the type can be cached.",
-          "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Cache"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "doc": {
           "description": "Documentation for the type that is publicly visible.",
           "type": [
             "string",
             "null"
           ]
-        },
-        "enum": {
-          "description": "Variants for the type if it's an enum",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        },
-        "fields": {
-          "description": "A map of field name and its definition.",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/Field"
-          }
-        },
-        "implements": {
-          "description": "Interfaces that the type implements.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        },
-        "interface": {
-          "description": "Flag to indicate if the type is an interface.",
-          "type": "boolean"
-        },
-        "protected": {
-          "description": "Marks field as protected by auth providers",
-          "default": null,
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Protected"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "scalar": {
-          "description": "Flag to indicate if the type is a scalar.",
-          "type": "boolean"
         },
         "tag": {
           "description": "Contains source information for the type.",
@@ -1281,18 +1282,12 @@
         }
       }
     },
-    "Union": {
+    "UnionType": {
       "type": "object",
       "required": [
         "types"
       ],
       "properties": {
-        "doc": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "types": {
           "type": "array",
           "items": {

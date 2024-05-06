@@ -199,7 +199,10 @@ impl Context {
                     .entry(self.query.clone())
                     .or_insert_with(|| {
                         self.config.schema.query = Some(self.query.clone());
-                        Type::default()
+                        Type {
+                            kind: TypeKind::Object(ObjectType::default()),
+                            ..Default::default()
+                        }
                     });
 
                 if let TypeKind::Object(obj) = &mut ty.kind {
