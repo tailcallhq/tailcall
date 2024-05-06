@@ -399,6 +399,7 @@ pub struct Union {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+/// Definition of GraphQL enum type
 pub struct Enum {
     pub variants: BTreeSet<String>,
     pub doc: Option<String>,
