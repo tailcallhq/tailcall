@@ -542,8 +542,22 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         })
         .map(|mut types| {
             types.extend(config_module.unions.iter().map(to_union_type_definition));
-            types.extend(config_module.enums.iter().map(to_enum_type_definition));
             types
+        })
+        .fuse(Valid::from_iter(
+            config_module.enums.iter(),
+            |(name, type_)| {
+                if type_.variants.is_empty() {
+                    Valid::fail("No variants found for enum".to_string())
+                } else {
+                    Valid::succeed(to_enum_type_definition((name, type_)))
+                }
+            },
+        ))
+        .map(|tp| {
+            let mut v = tp.0;
+            v.extend(tp.1);
+            v
         })
     })
 }

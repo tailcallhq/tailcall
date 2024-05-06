@@ -341,6 +341,7 @@
       ]
     },
     "Enum": {
+      "description": "Definition of GraphQL enum type",
       "type": "object",
       "required": [
         "variants"
