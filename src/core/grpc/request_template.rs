@@ -127,19 +127,19 @@ mod tests {
     use tailcall_fixtures::protobuf;
 
     use super::RequestTemplate;
-    use crate::blueprint::GrpcMethod;
-    use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
-    use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::lambda::CacheKey;
-    use crate::mustache::Mustache;
+    use crate::core::blueprint::GrpcMethod;
+    use crate::core::config::reader::ConfigReader;
+    use crate::core::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
+    use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+    use crate::core::lambda::CacheKey;
+    use crate::core::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
 
         let id = "greetings".to_string();
 
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let mut config = Config::default().links(vec![Link {
             id: Some(id.clone()),
@@ -185,13 +185,13 @@ mod tests {
         }
     }
 
-    impl crate::path::PathString for Context {
+    impl crate::core::path::PathString for Context {
         fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
         }
     }
 
-    impl crate::has_headers::HasHeaders for Context {
+    impl crate::core::has_headers::HasHeaders for Context {
         fn headers(&self) -> &HeaderMap {
             &self.headers
         }

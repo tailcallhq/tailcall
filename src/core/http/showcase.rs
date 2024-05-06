@@ -75,9 +75,9 @@ mod tests {
     use hyper::Request;
     use serde_json::json;
 
-    use crate::async_graphql_hyper::GraphQLRequest;
-    use crate::http::handle_request;
-    use crate::http::showcase::create_app_ctx;
+    use crate::core::async_graphql_hyper::GraphQLRequest;
+    use crate::core::http::handle_request;
+    use crate::core::http::showcase::create_app_ctx;
 
     #[tokio::test]
     async fn works_with_file() {
@@ -89,7 +89,7 @@ mod tests {
             }).to_string()))
             .unwrap();
 
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
         let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
             .await
             .unwrap()

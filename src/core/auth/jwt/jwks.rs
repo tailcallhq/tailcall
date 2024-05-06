@@ -68,10 +68,10 @@ impl Jwks {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::auth::jwt::jwt_verify::tests::{
+    use crate::core::auth::jwt::jwt_verify::tests::{
         JWK_SET, JWT_VALID_TOKEN_NO_KID, JWT_VALID_TOKEN_WITH_KID,
     };
-    use crate::auth::jwt::jwt_verify::OneOrMany;
+    use crate::core::auth::jwt::jwt_verify::OneOrMany;
 
     #[test]
     fn test_decode_required_kid() {

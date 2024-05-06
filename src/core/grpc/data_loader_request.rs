@@ -61,11 +61,11 @@ mod tests {
     use url::Url;
 
     use super::DataLoaderRequest;
-    use crate::blueprint::GrpcMethod;
-    use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Field, Grpc, Link, LinkType, Type};
-    use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::grpc::request_template::RenderedRequestTemplate;
+    use crate::core::blueprint::GrpcMethod;
+    use crate::core::config::reader::ConfigReader;
+    use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
+    use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+    use crate::core::grpc::request_template::RenderedRequestTemplate;
 
     pub async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
@@ -85,7 +85,7 @@ mod tests {
             Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
         );
 
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
         let config_module = reader.resolve(config, None).await.unwrap();
 

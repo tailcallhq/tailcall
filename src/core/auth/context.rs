@@ -62,13 +62,13 @@ impl From<&Arc<GlobalAuthContext>> for AuthContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
-    use crate::auth::basic::BasicVerifier;
-    use crate::auth::error::Error;
-    use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
-    use crate::auth::jwt::jwt_verify::JwtVerifier;
-    use crate::auth::verify::Verifier;
-    use crate::blueprint;
+    use crate::core::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
+    use crate::core::auth::basic::BasicVerifier;
+    use crate::core::auth::error::Error;
+    use crate::core::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
+    use crate::core::auth::jwt::jwt_verify::JwtVerifier;
+    use crate::core::auth::verify::Verifier;
+    use crate::core::blueprint;
 
     #[tokio::test]
     async fn validate_request_missing_credentials() {

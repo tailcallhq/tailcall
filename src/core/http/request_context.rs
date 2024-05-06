@@ -209,17 +209,17 @@ impl From<&AppContext> for RequestContext {
 mod test {
     use cache_control::Cachability;
 
-    use crate::blueprint::{Server, Upstream};
-    use crate::config::{self, Batch};
-    use crate::http::RequestContext;
+    use crate::core::blueprint::{Server, Upstream};
+    use crate::core::config::{self, Batch};
+    use crate::core::http::RequestContext;
 
     impl Default for RequestContext {
         fn default() -> Self {
-            let config_module = crate::config::ConfigModule::default();
+            let config_module = crate::core::config::ConfigModule::default();
 
             let upstream = Upstream::try_from(&config_module).unwrap();
             let server = Server::try_from(config_module).unwrap();
-            RequestContext::new(crate::runtime::test::init(None))
+            RequestContext::new(crate::core::runtime::test::init(None))
                 .upstream(upstream)
                 .server(server)
         }

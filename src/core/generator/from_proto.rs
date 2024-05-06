@@ -268,7 +268,7 @@ mod test {
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 
-    use crate::generator::from_proto::from_proto;
+    use crate::core::generator::from_proto::from_proto;
 
     fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
         let path = PathBuf::from(tailcall_fixtures::generator::proto::SELF).join(name);

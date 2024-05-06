@@ -113,9 +113,9 @@ mod tests {
     use async_graphql_value::Name;
     use pretty_assertions::assert_eq;
 
-    use crate::blueprint::Directive;
-    use crate::directive::{pos, to_const_directive};
-    use crate::valid::Validator;
+    use crate::core::blueprint::Directive;
+    use crate::core::directive::{pos, to_const_directive};
+    use crate::core::valid::Validator;
 
     #[test]
     fn test_to_const_directive() {

@@ -16,8 +16,8 @@ pub fn to_body(body: Option<&str>) -> Valid<Option<Mustache>, String> {
 #[cfg(test)]
 mod tests {
     use super::to_body;
-    use crate::mustache::Mustache;
-    use crate::valid::Valid;
+    use crate::core::mustache::Mustache;
+    use crate::core::valid::Valid;
 
     #[test]
     fn no_body() {

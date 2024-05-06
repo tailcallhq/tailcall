@@ -187,7 +187,7 @@ mod tests {
     use async_graphql::Value;
     use serde_json::json;
 
-    use crate::lambda::evaluation_context::get_path_value;
+    use crate::core::lambda::evaluation_context::get_path_value;
 
     #[test]
     fn test_path_value() {

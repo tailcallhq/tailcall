@@ -247,7 +247,7 @@ pub mod tests {
 
     mod iss {
         use super::*;
-        use crate::blueprint::Jwt;
+        use crate::core::blueprint::Jwt;
 
         #[test]
         fn validate_iss_not_defined() {
@@ -282,7 +282,7 @@ pub mod tests {
         use std::collections::HashSet;
 
         use super::*;
-        use crate::blueprint::Jwt;
+        use crate::core::blueprint::Jwt;
 
         #[test]
         fn validate_aud_not_defined() {

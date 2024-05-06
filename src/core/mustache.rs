@@ -180,7 +180,7 @@ mod tests {
     mod parse {
         use pretty_assertions::assert_eq;
 
-        use crate::mustache::{Mustache, Segment};
+        use crate::core::mustache::{Mustache, Segment};
 
         #[test]
         fn test_to_string() {
@@ -373,8 +373,8 @@ mod tests {
 
         use serde_json::json;
 
-        use crate::mustache::{Mustache, Segment};
-        use crate::path::PathString;
+        use crate::core::mustache::{Mustache, Segment};
+        use crate::core::path::PathString;
 
         #[test]
         fn test_query_params_template() {
@@ -480,8 +480,8 @@ mod tests {
     }
 
     mod render_graphql {
-        use crate::mustache::{Mustache, Segment};
-        use crate::path::PathGraphql;
+        use crate::core::mustache::{Mustache, Segment};
+        use crate::core::path::PathGraphql;
 
         #[test]
         fn test_render_mixed() {

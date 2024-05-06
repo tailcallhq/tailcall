@@ -52,13 +52,13 @@ mod tests {
     use tailcall_fixtures::protobuf;
     use tonic::{Code, Status};
 
-    use crate::blueprint::GrpcMethod;
-    use crate::grpc::execute_grpc_request;
-    use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::http::Response;
-    use crate::lambda::EvaluationError;
-    use crate::runtime::TargetRuntime;
-    use crate::HttpIO;
+    use crate::core::blueprint::GrpcMethod;
+    use crate::core::grpc::execute_grpc_request;
+    use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+    use crate::core::http::Response;
+    use crate::core::lambda::EvaluationError;
+    use crate::core::runtime::TargetRuntime;
+    use crate::core::HttpIO;
 
     enum TestScenario {
         SuccessWithoutGrpcStatus,
@@ -104,7 +104,7 @@ mod tests {
     async fn prepare_args(
         test_http: TestHttp,
     ) -> Result<(TargetRuntime, ProtobufOperation, Request)> {
-        let mut runtime = crate::runtime::test::init(None);
+        let mut runtime = crate::core::runtime::test::init(None);
         runtime.http2_only = Arc::new(test_http);
 
         let file_descriptor_set =

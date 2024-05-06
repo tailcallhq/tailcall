@@ -166,7 +166,7 @@ mod tests {
     use std::cell::RefCell;
 
     use super::TryFold;
-    use crate::valid::{Valid, ValidationError, Validator};
+    use crate::core::valid::{Valid, ValidationError, Validator};
 
     #[test]
     fn test_and() {

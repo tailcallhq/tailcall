@@ -39,11 +39,11 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use crate::tests::TestEnvIO;
+    use crate::core::tests::TestEnvIO;
 
     #[test]
     fn path_string() {
-        let mut runtime = crate::runtime::test::init(None);
+        let mut runtime = crate::core::runtime::test::init(None);
         runtime.env = Arc::new(TestEnvIO::from_iter([(
             "ENV_1".to_owned(),
             "ENV_VAL".to_owned(),

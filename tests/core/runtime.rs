@@ -6,11 +6,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use derive_setters::Setters;
-use tailcall::blueprint;
-use tailcall::cache::InMemoryCache;
+use tailcall::core::blueprint;
+use tailcall::core::cache::InMemoryCache;
 use tailcall::cli::javascript;
-use tailcall::config::Source;
-use tailcall::runtime::TargetRuntime;
+use tailcall::core::config::Source;
+use tailcall::core::runtime::TargetRuntime;
 
 use super::env::Env;
 use super::file::TestFileIO;

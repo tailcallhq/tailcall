@@ -212,7 +212,7 @@ impl Server {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::ScriptOptions;
+    use crate::core::config::ScriptOptions;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
         Server { script: Some(so), ..Default::default() }

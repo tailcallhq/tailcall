@@ -236,7 +236,7 @@ mod tests {
     use stripmargin::StripMargin;
 
     use super::*;
-    use crate::valid::Cause;
+    use crate::core::valid::Cause;
 
     #[test]
     fn test_no_newline() {

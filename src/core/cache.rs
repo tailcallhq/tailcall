@@ -58,12 +58,12 @@ mod tests {
     use std::num::NonZeroU64;
     use std::time::Duration;
 
-    use crate::Cache;
+    use crate::core::Cache;
 
     #[tokio::test]
     async fn test_native_chrono_cache_set_get() {
-        let cache: crate::cache::InMemoryCache<u64, String> =
-            crate::cache::InMemoryCache::default();
+        let cache: crate::core::cache::InMemoryCache<u64, String> =
+            crate::core::cache::InMemoryCache::default();
         let ttl = NonZeroU64::new(100).unwrap();
         assert_eq!(cache.get(&10).await.ok(), Some(None));
 

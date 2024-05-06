@@ -266,9 +266,9 @@ mod tests {
     use serde_json::json;
 
     use super::RequestTemplate;
-    use crate::has_headers::HasHeaders;
-    use crate::mustache::Mustache;
-    use crate::path::PathString;
+    use crate::core::has_headers::HasHeaders;
+    use crate::core::mustache::Mustache;
+    use crate::core::path::PathString;
 
     #[derive(Setters)]
     struct Context {
@@ -282,13 +282,13 @@ mod tests {
         }
     }
 
-    impl crate::path::PathString for Context {
+    impl crate::core::path::PathString for Context {
         fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
         }
     }
 
-    impl crate::has_headers::HasHeaders for Context {
+    impl crate::core::has_headers::HasHeaders for Context {
         fn headers(&self) -> &HeaderMap {
             &self.headers
         }
@@ -461,7 +461,7 @@ mod tests {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .method(reqwest::Method::POST)
-            .encoding(crate::config::Encoding::ApplicationJson);
+            .encoding(crate::core::config::Encoding::ApplicationJson);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
@@ -475,7 +475,7 @@ mod tests {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .method(reqwest::Method::POST)
-            .encoding(crate::config::Encoding::ApplicationXWwwFormUrlencoded);
+            .encoding(crate::core::config::Encoding::ApplicationXWwwFormUrlencoded);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
@@ -522,7 +522,7 @@ mod tests {
     fn test_body_encoding_application_json() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .encoding(crate::config::Encoding::ApplicationJson)
+            .encoding(crate::core::config::Encoding::ApplicationJson)
             .body_path(Some(Mustache::parse("{{foo.bar}}").unwrap()));
         let ctx = Context::default().value(json!({
           "foo": {
@@ -537,15 +537,15 @@ mod tests {
         use hyper::HeaderMap;
         use serde_json::json;
 
-        use crate::http::request_template::tests::Context;
-        use crate::http::RequestTemplate;
+        use crate::core::http::request_template::tests::Context;
+        use crate::core::http::RequestTemplate;
 
         #[test]
         fn test_from_endpoint() {
             let mut headers = HeaderMap::new();
             headers.insert("foo", "bar".parse().unwrap());
-            let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string())
-                .method(crate::http::Method::POST)
+            let endpoint = crate::core::endpoint::Endpoint::new("http://localhost:3000/".to_string())
+                .method(crate::core::http::Method::POST)
                 .headers(headers)
                 .body(Some("foo".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
@@ -563,8 +563,8 @@ mod tests {
             let mut headers = HeaderMap::new();
             headers.insert("foo", "{{foo.header}}".parse().unwrap());
             let endpoint =
-                crate::endpoint::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
-                    .method(crate::http::Method::POST)
+                crate::core::endpoint::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
+                    .method(crate::core::http::Method::POST)
                     .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
                     .headers(headers)
                     .body(Some("{{foo.bar}}".into()));
@@ -586,7 +586,7 @@ mod tests {
         #[test]
         fn test_from_endpoint_template_null_value() {
             let endpoint =
-                crate::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
+                crate::core::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
@@ -595,7 +595,7 @@ mod tests {
 
         #[test]
         fn test_from_endpoint_template_with_query_null_value() {
-            let endpoint = crate::endpoint::Endpoint::new(
+            let endpoint = crate::core::endpoint::Endpoint::new(
                 "http://localhost:3000/?a={{args.a}}&q=1".to_string(),
             )
             .query(vec![
@@ -610,7 +610,7 @@ mod tests {
 
         #[test]
         fn test_from_endpoint_template_few_null_value() {
-            let endpoint = crate::endpoint::Endpoint::new(
+            let endpoint = crate::core::endpoint::Endpoint::new(
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             );
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
@@ -629,7 +629,7 @@ mod tests {
 
         #[test]
         fn test_from_endpoint_template_few_null_value_mixed() {
-            let endpoint = crate::endpoint::Endpoint::new(
+            let endpoint = crate::core::endpoint::Endpoint::new(
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             )
                 .query(vec![
@@ -653,7 +653,7 @@ mod tests {
 
         #[test]
         fn test_headers_forward() {
-            let endpoint = crate::endpoint::Endpoint::new("http://localhost:3000/".to_string());
+            let endpoint = crate::core::endpoint::Endpoint::new("http://localhost:3000/".to_string());
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let mut headers = HeaderMap::new();
             headers.insert("baz", "qux".parse().unwrap());
@@ -666,9 +666,9 @@ mod tests {
     mod form_encoded_url {
         use serde_json::json;
 
-        use crate::http::request_template::tests::Context;
-        use crate::http::RequestTemplate;
-        use crate::mustache::Mustache;
+        use crate::core::http::request_template::tests::Context;
+        use crate::core::http::RequestTemplate;
+        use crate::core::mustache::Mustache;
 
         #[test]
         fn test_with_string() {
@@ -730,10 +730,10 @@ mod tests {
         use hyper::HeaderMap;
         use serde_json::json;
 
-        use crate::http::request_template::tests::Context;
-        use crate::http::RequestTemplate;
-        use crate::lambda::CacheKey;
-        use crate::mustache::Mustache;
+        use crate::core::http::request_template::tests::Context;
+        use crate::core::http::RequestTemplate;
+        use crate::core::lambda::CacheKey;
+        use crate::core::mustache::Mustache;
 
         fn assert_no_duplicate<const N: usize>(arr: [u64; N]) {
             let set = HashSet::from(arr);

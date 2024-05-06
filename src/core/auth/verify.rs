@@ -74,13 +74,13 @@ impl Verify for AuthVerifier {
 #[cfg(test)]
 mod tests {
     use super::AuthVerifier;
-    use crate::auth::basic::tests::create_basic_auth_request;
-    use crate::auth::error::Error;
-    use crate::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
-    use crate::auth::verification::Verification;
-    use crate::auth::verify::Verify;
-    use crate::blueprint::{Auth, Basic, Jwt, Provider};
-    use crate::http::RequestContext;
+    use crate::core::auth::basic::tests::create_basic_auth_request;
+    use crate::core::auth::error::Error;
+    use crate::core::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
+    use crate::core::auth::verification::Verification;
+    use crate::core::auth::verify::Verify;
+    use crate::core::blueprint::{Auth, Basic, Jwt, Provider};
+    use crate::core::http::RequestContext;
 
     #[tokio::test]
     async fn verify_wrong_password() {

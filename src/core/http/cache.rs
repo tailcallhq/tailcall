@@ -51,7 +51,7 @@ mod tests {
 
     use hyper::HeaderMap;
 
-    use crate::http::Response;
+    use crate::core::http::Response;
 
     fn cache_control_header(i: i32) -> HeaderMap {
         let mut headers = reqwest::header::HeaderMap::default();

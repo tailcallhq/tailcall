@@ -75,7 +75,7 @@ pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
 mod test {
     use schemars::schema::Schema;
 
-    use crate::scalar::CUSTOM_SCALARS;
+    use crate::core::scalar::CUSTOM_SCALARS;
 
     fn get_name(v: Schema) -> String {
         serde_json::to_value(v)

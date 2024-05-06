@@ -48,8 +48,8 @@ impl ValueExt for DynamicValue {
 mod tests {
     use serde_json::json;
 
-    use crate::blueprint::DynamicValue;
-    use crate::serde_value_ext::ValueExt;
+    use crate::core::blueprint::DynamicValue;
+    use crate::core::serde_value_ext::ValueExt;
 
     #[test]
     fn test_render_value() {

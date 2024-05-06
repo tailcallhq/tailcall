@@ -242,7 +242,7 @@ mod tests {
     use std::convert::TryFrom;
 
     use super::GrpcMethod;
-    use crate::valid::ValidationError;
+    use crate::core::valid::ValidationError;
 
     #[test]
     fn try_from_grpc_method() {

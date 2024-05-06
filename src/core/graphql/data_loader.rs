@@ -120,7 +120,7 @@ mod tests {
     use reqwest::Url;
 
     use super::*;
-    use crate::http::DataLoaderRequest;
+    use crate::core::http::DataLoaderRequest;
 
     #[test]
     fn test_collect_request_bodies() {

@@ -43,7 +43,7 @@ mod test {
     use anyhow::Result;
     use async_graphql_value::ConstValue;
 
-    use crate::scalar::{Email, Scalar};
+    use crate::core::scalar::{Email, Scalar};
 
     #[tokio::test]
     async fn test_email_valid_req_resp() -> Result<()> {

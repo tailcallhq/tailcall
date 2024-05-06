@@ -254,8 +254,8 @@ mod reader_tests {
 
     use pretty_assertions::assert_eq;
 
-    use crate::config::reader::ConfigReader;
-    use crate::config::{Config, Type};
+    use crate::core::config::reader::ConfigReader;
+    use crate::core::config::{Config, Type};
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
@@ -263,7 +263,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -313,7 +313,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -339,7 +339,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
         let file_rt = runtime.file.clone();
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();

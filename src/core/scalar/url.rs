@@ -31,7 +31,7 @@ mod test {
     use async_graphql_value::ConstValue;
 
     use super::*;
-    use crate::scalar::Scalar;
+    use crate::core::scalar::Scalar;
 
     #[test]
     fn test_url() {

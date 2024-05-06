@@ -106,7 +106,7 @@ mod tests {
 
     use crate::cli::javascript::request_filter::Command;
     use crate::cli::javascript::{JsRequest, JsResponse};
-    use crate::http::Response;
+    use crate::core::http::Response;
 
     #[test]
     fn test_command_from_invalid_object() {

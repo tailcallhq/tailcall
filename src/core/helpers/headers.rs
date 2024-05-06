@@ -30,9 +30,9 @@ mod tests {
     use hyper::header::HeaderName;
 
     use super::to_mustache_headers;
-    use crate::config::KeyValue;
-    use crate::mustache::Mustache;
-    use crate::valid::Validator;
+    use crate::core::config::KeyValue;
+    use crate::core::mustache::Mustache;
+    use crate::core::valid::Validator;
 
     #[test]
     fn valid_headers() -> Result<()> {
