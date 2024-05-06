@@ -42,7 +42,8 @@ impl Response<Bytes> {
                 body: Default::default(),
             });
         }
-        let body = serde_json::from_slice::<T>(&self.body)?;
+        let mut bytes = self.body.to_vec();
+        let body = simd_json::from_slice::<T>(bytes.as_mut_slice())?;
         Ok(Response { status: self.status, headers: self.headers, body })
     }
 

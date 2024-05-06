@@ -78,8 +78,8 @@ impl From<GraphQLQuery> for GraphQLRequest {
             request = request.operation_name(operation_name);
         }
 
-        if let Some(variables) = query.variables {
-            let value = serde_json::from_str(&variables).unwrap_or_default();
+        if let Some(mut variables) = query.variables {
+            let value = unsafe { simd_json::from_str(&mut variables).unwrap_or_default() };
             let variables = async_graphql::Variables::from_json(value);
             request = request.variables(variables);
         }
@@ -129,7 +129,7 @@ impl GraphQLResponse {
     }
 
     fn default_body(&self) -> Result<Body> {
-        Ok(Body::from(serde_json::to_string(&self.0)?))
+        Ok(Body::from(simd_json::to_string(&self.0)?))
     }
 
     pub fn to_response(self) -> Result<Response<hyper::Body>> {
@@ -154,7 +154,7 @@ impl GraphQLResponse {
         match self.0 {
             BatchResponse::Single(ref res) => {
                 let item = Self::flatten_response(&res.data);
-                let data = serde_json::to_string(item)?;
+                let data = simd_json::to_string(item)?;
 
                 self.build_response(StatusCode::OK, Body::from(data))
             }
@@ -163,7 +163,7 @@ impl GraphQLResponse {
                     .iter()
                     .map(|res| Self::flatten_response(&res.data))
                     .collect::<Vec<&Value>>();
-                let data = serde_json::to_string(&item)?;
+                let data = simd_json::to_string(&item)?;
 
                 self.build_response(StatusCode::OK, Body::from(data))
             }

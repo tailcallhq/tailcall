@@ -102,8 +102,8 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    let graphql_request = serde_json::from_slice::<T>(&bytes);
+    let mut bytes = hyper::body::to_bytes(req.into_body()).await?.to_vec();
+    let graphql_request = simd_json::from_slice::<T>(bytes.as_mut_slice());
     match graphql_request {
         Ok(request) => {
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
