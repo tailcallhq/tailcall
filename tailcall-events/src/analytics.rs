@@ -55,7 +55,7 @@ impl PostData {
 
     pub async fn send_event(command_name: &str) -> Result<(), anyhow::Error> {
         let post_data = PostData::prepare_event(command_name)?;
-        tracing::info!("Sending event: {:?}", post_data);
+        tracing::debug!("Sending event: {:?}", post_data);
         let request = reqwest::Request::try_from(post_data)?;
         let client = reqwest::Client::new();
         let response = client.execute(request).await?;
