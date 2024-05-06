@@ -3,7 +3,6 @@ use std::sync::Arc;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
-
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};

@@ -236,7 +236,8 @@ mod tests {
 
         let arg2 = crate::core::config::Arg { type_of: "Type2".to_string(), ..Default::default() };
 
-        let _field3 = crate::core::config::Field { type_of: "Type3".to_string(), ..Default::default() };
+        let _field3 =
+            crate::core::config::Field { type_of: "Type3".to_string(), ..Default::default() };
         let arg3 = crate::core::config::Arg { type_of: "Type3".to_string(), ..Default::default() };
 
         field1.args.insert("arg2".to_string(), arg2);

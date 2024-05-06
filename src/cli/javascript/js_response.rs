@@ -151,8 +151,11 @@ mod test {
             HeaderName::from_static("x-unusual-header"),
             HeaderValue::from_str("🚀").unwrap(),
         );
-        let response =
-            crate::core::http::Response { status: reqwest::StatusCode::OK, headers, body: body.into() };
+        let response = crate::core::http::Response {
+            status: reqwest::StatusCode::OK,
+            headers,
+            body: body.into(),
+        };
         let js_response = JsResponse(response);
 
         let response: Result<crate::core::http::Response<Bytes>, _> = js_response.try_into();

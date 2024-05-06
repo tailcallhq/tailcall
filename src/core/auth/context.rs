@@ -65,7 +65,9 @@ mod tests {
     use crate::core::auth::basic::tests::{create_basic_auth_request, HTPASSWD_TEST};
     use crate::core::auth::basic::BasicVerifier;
     use crate::core::auth::error::Error;
-    use crate::core::auth::jwt::jwt_verify::tests::{create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID};
+    use crate::core::auth::jwt::jwt_verify::tests::{
+        create_jwt_auth_request, JWT_VALID_TOKEN_WITH_KID,
+    };
     use crate::core::auth::jwt::jwt_verify::JwtVerifier;
     use crate::core::auth::verify::Verifier;
     use crate::core::blueprint;

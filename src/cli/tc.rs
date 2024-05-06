@@ -9,10 +9,10 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::core::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
+use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;

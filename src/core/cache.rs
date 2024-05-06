@@ -25,7 +25,9 @@ impl<K: Hash + Eq, V: Clone> InMemoryCache<K, V> {
 }
 
 #[async_trait::async_trait]
-impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> crate::core::Cache for InMemoryCache<K, V> {
+impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> crate::core::Cache
+    for InMemoryCache<K, V>
+{
     type Key = K;
     type Value = V;
     #[allow(clippy::too_many_arguments)]

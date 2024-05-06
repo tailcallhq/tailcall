@@ -4,16 +4,15 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::panic;
 use std::path::Path;
-use std::sync::Arc;
-
 use std::str::FromStr;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
+use tailcall::cli::javascript;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
-use tailcall::cli::javascript;
 use tailcall::core::config::{ConfigModule, Source};
 use tailcall::core::http::AppContext;
 use tailcall::core::runtime::TargetRuntime;

@@ -9,10 +9,10 @@ use gen_gql_schema::update_gql;
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
-use tailcall::core::scalar::CUSTOM_SCALARS;
-use tailcall::core::tracing::default_tracing_for_name;
 use tailcall::cli;
 use tailcall::core::config;
+use tailcall::core::scalar::CUSTOM_SCALARS;
+use tailcall::core::tracing::default_tracing_for_name;
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 

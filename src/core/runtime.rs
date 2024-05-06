@@ -48,9 +48,9 @@ pub mod test {
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+    use crate::cli::javascript;
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
-    use crate::cli::javascript;
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};

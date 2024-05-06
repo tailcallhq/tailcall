@@ -24,8 +24,8 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
-use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::cli::CLIError;
+use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::core::runtime::TargetRuntime;
 use crate::core::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
 

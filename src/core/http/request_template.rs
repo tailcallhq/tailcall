@@ -544,10 +544,11 @@ mod tests {
         fn test_from_endpoint() {
             let mut headers = HeaderMap::new();
             headers.insert("foo", "bar".parse().unwrap());
-            let endpoint = crate::core::endpoint::Endpoint::new("http://localhost:3000/".to_string())
-                .method(crate::core::http::Method::POST)
-                .headers(headers)
-                .body(Some("foo".into()));
+            let endpoint =
+                crate::core::endpoint::Endpoint::new("http://localhost:3000/".to_string())
+                    .method(crate::core::http::Method::POST)
+                    .headers(headers)
+                    .body(Some("foo".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
@@ -562,12 +563,13 @@ mod tests {
         fn test_from_endpoint_template() {
             let mut headers = HeaderMap::new();
             headers.insert("foo", "{{foo.header}}".parse().unwrap());
-            let endpoint =
-                crate::core::endpoint::Endpoint::new("http://localhost:3000/{{foo.bar}}".to_string())
-                    .method(crate::core::http::Method::POST)
-                    .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
-                    .headers(headers)
-                    .body(Some("{{foo.bar}}".into()));
+            let endpoint = crate::core::endpoint::Endpoint::new(
+                "http://localhost:3000/{{foo.bar}}".to_string(),
+            )
+            .method(crate::core::http::Method::POST)
+            .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
+            .headers(headers)
+            .body(Some("{{foo.bar}}".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
               "foo": {
@@ -585,8 +587,9 @@ mod tests {
 
         #[test]
         fn test_from_endpoint_template_null_value() {
-            let endpoint =
-                crate::core::endpoint::Endpoint::new("http://localhost:3000/?a={{args.a}}".to_string());
+            let endpoint = crate::core::endpoint::Endpoint::new(
+                "http://localhost:3000/?a={{args.a}}".to_string(),
+            );
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
@@ -653,7 +656,8 @@ mod tests {
 
         #[test]
         fn test_headers_forward() {
-            let endpoint = crate::core::endpoint::Endpoint::new("http://localhost:3000/".to_string());
+            let endpoint =
+                crate::core::endpoint::Endpoint::new("http://localhost:3000/".to_string());
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let mut headers = HeaderMap::new();
             headers.insert("baz", "qux".parse().unwrap());

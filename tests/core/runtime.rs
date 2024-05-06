@@ -6,9 +6,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use derive_setters::Setters;
+use tailcall::cli::javascript;
 use tailcall::core::blueprint;
 use tailcall::core::cache::InMemoryCache;
-use tailcall::cli::javascript;
 use tailcall::core::config::Source;
 use tailcall::core::runtime::TargetRuntime;
 
