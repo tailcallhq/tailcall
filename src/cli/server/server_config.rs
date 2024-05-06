@@ -11,7 +11,7 @@ use crate::rest::{EndpointSet, Unchecked};
 use crate::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
-    pub blueprint: Blueprint,
+    pub blueprint: Arc<Blueprint>,
     pub app_ctx: Arc<AppContext>,
 }
 
@@ -39,7 +39,7 @@ impl ServerConfig {
         let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;
         let app_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
 
-        Ok(Self { app_ctx: app_context, blueprint })
+        Ok(Self { app_ctx: app_context, blueprint: Arc::new(blueprint) })
     }
 
     pub fn addr(&self) -> SocketAddr {

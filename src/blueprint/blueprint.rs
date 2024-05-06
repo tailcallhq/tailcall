@@ -21,10 +21,10 @@ use crate::schema_extension::SchemaExtension;
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Blueprint {
     pub definitions: Vec<Definition>,
-    pub schema: SchemaDefinition,
-    pub server: Server,
-    pub upstream: Upstream,
-    pub telemetry: Telemetry,
+    pub schema: Arc<SchemaDefinition>,
+    pub server: Arc<Server>,
+    pub upstream: Arc<Upstream>,
+    pub telemetry: Arc<Telemetry>,
 }
 
 #[derive(Clone, Debug)]
