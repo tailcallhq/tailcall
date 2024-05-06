@@ -1,5 +1,6 @@
 pub mod http_1;
 pub mod http_2;
+#[allow(clippy::module_inception)]
 pub mod server;
 pub mod server_config;
 
