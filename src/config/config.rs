@@ -3,7 +3,7 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
+use async_graphql::parser::types::{ConstDirective, ServiceDocument};
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -197,6 +197,23 @@ impl TypeKind {
             None
         }
     }
+
+    pub fn directives(&self) -> Vec<ConstDirective> {
+        match self {
+            TypeKind::Object(obj) => obj
+                .added_fields
+                .iter()
+                .map(|added_field: &super::AddField| added_field.to_directive())
+                .chain(obj.cache.as_ref().map(|cache| cache.to_directive()))
+                .chain(
+                    obj.protected
+                        .as_ref()
+                        .map(|protected| protected.to_directive()),
+                )
+                .collect(),
+            _ => Vec::default(),
+        }
+    }
 }
 
 impl MergeRight for TypeKind {
@@ -286,6 +303,16 @@ pub struct Type {
 
     #[serde(flatten)]
     pub kind: TypeKind,
+}
+
+impl Type {
+    pub fn directives(&self) -> Vec<ConstDirective> {
+        self.kind
+            .directives()
+            .into_iter()
+            .chain(self.tag.as_ref().map(|tag| tag.to_directive()))
+            .collect()
+    }
 }
 
 #[derive(

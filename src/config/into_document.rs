@@ -217,31 +217,11 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             extend: false,
             description: None,
             name: pos(Name::new(type_name.clone())),
-            // TODO: back directives
             directives: type_def
-                .tag
-                .as_ref()
-                .map(|tag| pos(tag.to_directive()))
+                .directives()
                 .into_iter()
-                .collect::<Vec<_>>(),
-            // directives: type_def
-            //     .added_fields
-            //     .iter()
-            //     .map(|added_field: &super::AddField| pos(added_field.to_directive()))
-            //     .chain(
-            //         type_def
-            //             .cache
-            //             .as_ref()
-            //             .map(|cache| pos(cache.to_directive())),
-            //     )
-            //     .chain(
-            //         type_def
-            //             .protected
-            //             .as_ref()
-            //             .map(|protected| pos(protected.to_directive())),
-            //     )
-            //     .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
-            //     .collect::<Vec<_>>(),
+                .map(|directive| pos(directive))
+                .collect(),
             kind,
         })));
     }
