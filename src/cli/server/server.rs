@@ -34,16 +34,15 @@ impl Server {
     pub async fn start(self) -> Result<()> {
         let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
         let server_config = Arc::new(
-            ServerConfig::new(
-                blueprint.clone(),
-                self.config_module.extensions.endpoint_set,
-            )
-            .await?,
+            ServerConfig::new(blueprint, self.config_module.extensions.endpoint_set).await?,
         );
 
-        init_opentelemetry(blueprint.telemetry.clone(), &server_config.app_ctx.runtime)?;
+        init_opentelemetry(
+            server_config.blueprint.telemetry.clone(),
+            &server_config.app_ctx.runtime,
+        )?;
 
-        match blueprint.server.http.clone() {
+        match server_config.blueprint.server.http.clone() {
             Http::HTTP2 { cert, key } => {
                 start_http_2(server_config, cert, key, self.server_up_sender).await
             }

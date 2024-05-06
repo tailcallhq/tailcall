@@ -37,9 +37,10 @@ impl ServerConfig {
         rt.add_extensions(extensions);
 
         let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;
-        let app_context = Arc::new(AppContext::new(blueprint.clone(), rt, endpoints));
+        let app_context = Arc::new(AppContext::new(blueprint, rt, endpoints));
+        let blueprint = app_context.blueprint.clone();
 
-        Ok(Self { app_ctx: app_context, blueprint: Arc::new(blueprint) })
+        Ok(Self { app_ctx: app_context, blueprint })
     }
 
     pub fn addr(&self) -> SocketAddr {
