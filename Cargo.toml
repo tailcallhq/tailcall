@@ -7,10 +7,6 @@ edition = "2021"
 name = "tailcall"
 path = "src/main.rs"
 
-[lib]
-name = "tailcall"
-path = "src/lib.rs"
-
 [workspace.dependencies]
 anyhow = "1.0.82"
 async-graphql = { version = "7.0.3" }
