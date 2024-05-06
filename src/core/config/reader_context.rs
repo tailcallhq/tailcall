@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 
 use headers::HeaderMap;
 
-use crate::has_headers::HasHeaders;
-use crate::path::PathString;
-use crate::runtime::TargetRuntime;
+use crate::core::has_headers::HasHeaders;
+use crate::core::path::PathString;
+use crate::core::runtime::TargetRuntime;
 
 pub struct ConfigReaderContext<'a> {
     pub runtime: &'a TargetRuntime,

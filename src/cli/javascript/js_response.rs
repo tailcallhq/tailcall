@@ -4,7 +4,7 @@ use hyper::body::Bytes;
 use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
-use crate::http::Response;
+use crate::core::http::Response;
 
 #[derive(Debug)]
 pub struct JsResponse(Response<String>);

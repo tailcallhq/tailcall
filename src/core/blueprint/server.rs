@@ -10,9 +10,9 @@ use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use super::Auth;
-use crate::blueprint::Cors;
-use crate::config::{self, ConfigModule, HttpVersion};
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::blueprint::Cors;
+use crate::core::config::{self, ConfigModule, HttpVersion};
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(Clone, Debug, Setters)]
 pub struct Server {
@@ -82,7 +82,7 @@ impl Server {
     }
 }
 
-impl TryFrom<crate::config::ConfigModule> for Server {
+impl TryFrom<crate::core::config::ConfigModule> for Server {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
@@ -157,7 +157,7 @@ impl TryFrom<crate::config::ConfigModule> for Server {
     }
 }
 
-fn to_script(config_module: &crate::config::ConfigModule) -> Valid<Option<Script>, String> {
+fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<Script>, String> {
     config_module.extensions.script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
@@ -237,7 +237,7 @@ fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<HashSet<Heade
 
 #[cfg(test)]
 mod tests {
-    use crate::config::ConfigModule;
+    use crate::core::config::ConfigModule;
 
     #[test]
     fn test_try_from_default() {

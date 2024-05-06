@@ -3,8 +3,8 @@ use std::fmt::Debug;
 
 use jsonwebtoken::jwk::JwkSet;
 
-use crate::config::ConfigModule;
-use crate::valid::Valid;
+use crate::core::config::ConfigModule;
+use crate::core::valid::Valid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Basic {

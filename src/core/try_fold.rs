@@ -1,4 +1,4 @@
-use crate::valid::{Valid, Validator};
+use crate::core::valid::{Valid, Validator};
 
 /// Trait for types that support a "try fold" operation.
 ///

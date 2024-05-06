@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::core::config::Config;
 
 struct FindFanOutContext<'a> {
     config: &'a Config,
@@ -56,7 +56,7 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
 #[cfg(test)]
 mod tests {
 
-    use crate::config::{Config, Field, Http, Type};
+    use crate::core::config::{Config, Field, Http, Type};
 
     #[test]
     fn test_nplusone_resolvers() {

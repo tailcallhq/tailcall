@@ -11,7 +11,7 @@ use prost_reflect::{
 };
 use serde_json::Deserializer;
 
-use crate::blueprint::GrpcMethod;
+use crate::core::blueprint::GrpcMethod;
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);

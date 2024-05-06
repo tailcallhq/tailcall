@@ -10,13 +10,13 @@ use async_graphql_value::ConstValue;
 use super::data_loader_request::DataLoaderRequest;
 use super::protobuf::ProtobufOperation;
 use super::request::execute_grpc_request;
-use crate::config::group_by::GroupBy;
-use crate::config::Batch;
-use crate::data_loader::{DataLoader, Loader};
-use crate::grpc::request::create_grpc_request;
-use crate::http::Response;
-use crate::json::JsonLike;
-use crate::runtime::TargetRuntime;
+use crate::core::config::group_by::GroupBy;
+use crate::core::config::Batch;
+use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::grpc::request::create_grpc_request;
+use crate::core::http::Response;
+use crate::core::json::JsonLike;
+use crate::core::runtime::TargetRuntime;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {

@@ -1,12 +1,12 @@
 use async_graphql_value::ConstValue;
 
-use crate::blueprint::*;
-use crate::config;
-use crate::config::Field;
-use crate::lambda::Expression;
-use crate::lambda::Expression::Dynamic;
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::blueprint::*;
+use crate::core::config;
+use crate::core::config::Field;
+use crate::core::lambda::Expression;
+use crate::core::lambda::Expression::Dynamic;
+use crate::core::try_fold::TryFold;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 fn validate_data_with_schema(
     config: &config::Config,

@@ -7,13 +7,13 @@ use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
 
-use crate::config::Encoding;
-use crate::endpoint::Endpoint;
-use crate::has_headers::HasHeaders;
-use crate::helpers::headers::MustacheHeaders;
-use crate::lambda::CacheKey;
-use crate::mustache::Mustache;
-use crate::path::PathString;
+use crate::core::config::Encoding;
+use crate::core::endpoint::Endpoint;
+use crate::core::has_headers::HasHeaders;
+use crate::core::helpers::headers::MustacheHeaders;
+use crate::core::lambda::CacheKey;
+use crate::core::mustache::Mustache;
+use crate::core::path::PathString;
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.

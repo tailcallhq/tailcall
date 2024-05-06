@@ -1,12 +1,12 @@
 use anyhow::Result;
 
-use crate::config::{Config, ConfigModule, Link, LinkType, Resolution};
-use crate::generator::from_proto::from_proto;
-use crate::generator::source::Source;
-use crate::merge_right::MergeRight;
-use crate::proto_reader::ProtoReader;
-use crate::resource_reader::ResourceReader;
-use crate::runtime::TargetRuntime;
+use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
+use crate::core::generator::from_proto::from_proto;
+use crate::core::generator::source::Source;
+use crate::core::merge_right::MergeRight;
+use crate::core::proto_reader::ProtoReader;
+use crate::core::resource_reader::ResourceReader;
+use crate::core::runtime::TargetRuntime;
 
 pub struct Generator {
     proto_reader: ProtoReader,

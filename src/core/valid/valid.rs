@@ -1,6 +1,6 @@
 use super::append::Append;
 use super::ValidationError;
-use crate::valid::Cause;
+use crate::core::valid::Cause;
 
 #[derive(Debug, PartialEq)]
 pub struct Valid<A, E>(Result<A, ValidationError<E>>);

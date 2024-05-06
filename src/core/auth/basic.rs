@@ -5,8 +5,8 @@ use htpasswd_verify::Htpasswd;
 use super::error::Error;
 use super::verification::Verification;
 use super::verify::Verify;
-use crate::blueprint;
-use crate::http::RequestContext;
+use crate::core::blueprint;
+use crate::core::http::RequestContext;
 
 pub struct BasicVerifier {
     verifier: Htpasswd<'static>,

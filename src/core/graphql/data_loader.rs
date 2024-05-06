@@ -6,10 +6,10 @@ use std::time::Duration;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 
-use crate::config::Batch;
-use crate::data_loader::{DataLoader, Loader};
-use crate::http::{DataLoaderRequest, Response};
-use crate::runtime::TargetRuntime;
+use crate::core::config::Batch;
+use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::http::{DataLoaderRequest, Response};
+use crate::core::runtime::TargetRuntime;
 
 pub struct GraphqlDataLoader {
     pub runtime: TargetRuntime,

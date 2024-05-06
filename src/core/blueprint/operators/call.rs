@@ -1,11 +1,11 @@
 use serde_json::Value;
 
-use crate::blueprint::*;
-use crate::config;
-use crate::config::{Field, GraphQLOperationType};
-use crate::lambda::Expression;
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::blueprint::*;
+use crate::core::config;
+use crate::core::config::{Field, GraphQLOperationType};
+use crate::core::lambda::Expression;
+use crate::core::try_fold::TryFold;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub fn update_call<'a>(
     operation_type: &'a GraphQLOperationType,

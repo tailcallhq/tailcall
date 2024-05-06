@@ -7,10 +7,10 @@ use tokio::sync::oneshot::{self};
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
-use crate::blueprint::{Blueprint, Http};
+use crate::core::blueprint::{Blueprint, Http};
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
-use crate::config::ConfigModule;
+use crate::core::config::ConfigModule;
 
 pub struct Server {
     config_module: ConfigModule,

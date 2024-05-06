@@ -3,8 +3,8 @@ use hyper::header;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::http::request::Parts;
 
-use crate::config;
-use crate::valid::ValidationError;
+use crate::core::config;
+use crate::core::valid::ValidationError;
 
 #[derive(Clone, Debug, Setters, Default)]
 pub struct Cors {

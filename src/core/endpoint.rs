@@ -1,9 +1,9 @@
 use derive_setters::Setters;
 use hyper::HeaderMap;
 
-use crate::config::Encoding;
-use crate::http::Method;
-use crate::json::JsonSchema;
+use crate::core::config::Encoding;
+use crate::core::http::Method;
+use crate::core::json::JsonSchema;
 
 #[derive(Clone, Debug, Setters)]
 pub struct Endpoint {

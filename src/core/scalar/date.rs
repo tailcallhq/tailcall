@@ -3,7 +3,7 @@ use chrono::DateTime;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 
-use crate::json::JsonLike;
+use crate::core::json::JsonLike;
 
 #[derive(JsonSchema, Default)]
 pub struct Date {

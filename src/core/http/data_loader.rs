@@ -6,12 +6,12 @@ use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
 
-use crate::config::group_by::GroupBy;
-use crate::config::Batch;
-use crate::data_loader::{DataLoader, Loader};
-use crate::http::{DataLoaderRequest, Response};
-use crate::json::JsonLike;
-use crate::runtime::TargetRuntime;
+use crate::core::config::group_by::GroupBy;
+use crate::core::config::Batch;
+use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::http::{DataLoaderRequest, Response};
+use crate::core::json::JsonLike;
+use crate::core::runtime::TargetRuntime;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value

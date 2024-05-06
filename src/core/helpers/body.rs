@@ -1,5 +1,5 @@
-use crate::mustache::Mustache;
-use crate::valid::{Valid, ValidationError};
+use crate::core::mustache::Mustache;
+use crate::core::valid::{Valid, ValidationError};
 
 pub fn to_body(body: Option<&str>) -> Valid<Option<Mustache>, String> {
     let Some(body) = body else {

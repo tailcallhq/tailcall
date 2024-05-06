@@ -8,11 +8,11 @@ use async_graphql_value::ConstValue;
 use thiserror::Error;
 
 use super::{Eval, EvaluationContext, ResolverContextLike, IO};
-use crate::auth;
-use crate::blueprint::DynamicValue;
-use crate::json::JsonLike;
-use crate::lambda::cache::Cache;
-use crate::serde_value_ext::ValueExt;
+use crate::core::auth;
+use crate::core::blueprint::DynamicValue;
+use crate::core::json::JsonLike;
+use crate::core::lambda::cache::Cache;
+use crate::core::serde_value_ext::ValueExt;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -117,8 +117,8 @@ impl ErrorExtensions for EvaluationError {
     }
 }
 
-impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
-    fn from(value: crate::valid::ValidationError<&'a str>) -> Self {
+impl<'a> From<crate::core::valid::ValidationError<&'a str>> for EvaluationError {
+    fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
         EvaluationError::APIValidationError(
             value
                 .as_vec()

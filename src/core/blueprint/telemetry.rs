@@ -5,10 +5,10 @@ use hyper::HeaderMap;
 use url::Url;
 
 use super::TryFoldConfig;
-use crate::config::{self, Apollo, ConfigModule, KeyValue, PrometheusExporter, StdoutExporter};
-use crate::directive::DirectiveCodec;
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::config::{self, Apollo, ConfigModule, KeyValue, PrometheusExporter, StdoutExporter};
+use crate::core::directive::DirectiveCodec;
+use crate::core::try_fold::TryFold;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(Debug, Clone)]
 pub struct OtlpExporter {

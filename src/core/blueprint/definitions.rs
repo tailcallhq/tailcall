@@ -3,14 +3,14 @@ use std::collections::BTreeSet;
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
-use crate::blueprint::Type::ListType;
-use crate::blueprint::*;
-use crate::config::{Config, Field, GraphQLOperationType, Protected, Union};
-use crate::directive::DirectiveCodec;
-use crate::lambda::{Cache, Context, Expression};
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, Validator};
-use crate::{config, scalar};
+use crate::core::blueprint::Type::ListType;
+use crate::core::blueprint::*;
+use crate::core::config::{Config, Field, GraphQLOperationType, Protected, Union};
+use crate::core::directive::DirectiveCodec;
+use crate::core::lambda::{Cache, Context, Expression};
+use crate::core::try_fold::TryFold;
+use crate::core::valid::{Valid, Validator};
+use crate::core::{config, scalar};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     Valid::succeed(Definition::Scalar(ScalarTypeDefinition {

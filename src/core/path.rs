@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use serde_json::json;
 
-use crate::json::JsonLike;
-use crate::lambda::{EvaluationContext, ResolverContextLike};
+use crate::core::json::JsonLike;
+use crate::core::lambda::{EvaluationContext, ResolverContextLike};
 
 ///
 /// The path module provides a trait for accessing values from a JSON-like

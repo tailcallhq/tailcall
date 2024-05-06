@@ -7,19 +7,19 @@ use async_graphql_value::ConstValue;
 use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
-use crate::config::group_by::GroupBy;
-use crate::config::GraphQLOperationType;
-use crate::data_loader::{DataLoader, Loader};
-use crate::graphql::{self, GraphqlDataLoader};
-use crate::grpc::data_loader::GrpcDataLoader;
-use crate::grpc::protobuf::ProtobufOperation;
-use crate::grpc::request::execute_grpc_request;
-use crate::grpc::request_template::RenderedRequestTemplate;
-use crate::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
-use crate::json::JsonLike;
-use crate::lambda::EvaluationError;
-use crate::valid::Validator;
-use crate::{grpc, http};
+use crate::core::config::group_by::GroupBy;
+use crate::core::config::GraphQLOperationType;
+use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::graphql::{self, GraphqlDataLoader};
+use crate::core::grpc::data_loader::GrpcDataLoader;
+use crate::core::grpc::protobuf::ProtobufOperation;
+use crate::core::grpc::request::execute_grpc_request;
+use crate::core::grpc::request_template::RenderedRequestTemplate;
+use crate::core::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::core::json::JsonLike;
+use crate::core::lambda::EvaluationError;
+use crate::core::valid::Validator;
+use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {
@@ -256,7 +256,7 @@ async fn execute_request_with_dl<
         .clone()
         .map(|s| s.headers)
         .unwrap_or_default();
-    let endpoint_key = crate::http::DataLoaderRequest::new(req, headers);
+    let endpoint_key = crate::core::http::DataLoaderRequest::new(req, headers);
 
     Ok(data_loader
         .unwrap()

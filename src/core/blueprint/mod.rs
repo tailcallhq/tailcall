@@ -28,8 +28,8 @@ pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
-use crate::config::{Arg, ConfigModule, Field};
-use crate::try_fold::TryFold;
+use crate::core::config::{Arg, ConfigModule, Field};
+use crate::core::try_fold::TryFold;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
 

@@ -7,13 +7,13 @@ use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
-use crate::config::{GraphQLOperationType, KeyValue};
-use crate::has_headers::HasHeaders;
-use crate::helpers::headers::MustacheHeaders;
-use crate::http::Method::POST;
-use crate::lambda::{CacheKey, GraphQLOperationContext};
-use crate::mustache::Mustache;
-use crate::path::PathGraphql;
+use crate::core::config::{GraphQLOperationType, KeyValue};
+use crate::core::has_headers::HasHeaders;
+use crate::core::helpers::headers::MustacheHeaders;
+use crate::core::http::Method::POST;
+use crate::core::lambda::{CacheKey, GraphQLOperationContext};
+use crate::core::mustache::Mustache;
+use crate::core::path::PathGraphql;
 
 /// RequestTemplate for GraphQL requests (See RequestTemplate documentation)
 #[derive(Setters, Debug, Clone)]
@@ -144,12 +144,12 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    use crate::config::GraphQLOperationType;
-    use crate::graphql::RequestTemplate;
-    use crate::has_headers::HasHeaders;
-    use crate::json::JsonLike;
-    use crate::lambda::{CacheKey, GraphQLOperationContext};
-    use crate::path::PathGraphql;
+    use crate::core::config::GraphQLOperationType;
+    use crate::core::graphql::RequestTemplate;
+    use crate::core::has_headers::HasHeaders;
+    use crate::core::json::JsonLike;
+    use crate::core::lambda::{CacheKey, GraphQLOperationContext};
+    use crate::core::path::PathGraphql;
 
     struct Context {
         pub value: Value,

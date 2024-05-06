@@ -17,9 +17,9 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
-use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::blueprint::telemetry::TelemetryExporter;
-use crate::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::core::blueprint::telemetry::TelemetryExporter;
+use crate::core::config::{PrometheusExporter, PrometheusFormat};
 
 pub const API_URL_PREFIX: &str = "/api";
 

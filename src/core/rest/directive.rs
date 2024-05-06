@@ -6,8 +6,8 @@ use async_graphql_value::Value;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::http::Method;
-use crate::is_default;
+use crate::core::http::Method;
+use crate::core::is_default;
 
 /// A structure that represents the REST directive.
 /// It allows easy parsing of the GraphQL query and extracting the REST

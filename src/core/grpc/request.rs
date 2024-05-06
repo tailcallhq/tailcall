@@ -4,8 +4,8 @@ use reqwest::Request;
 use url::Url;
 
 use super::protobuf::ProtobufOperation;
-use crate::http::Response;
-use crate::runtime::TargetRuntime;
+use crate::core::http::Response;
+use crate::core::runtime::TargetRuntime;
 
 pub static GRPC_STATUS: &str = "grpc-status";
 

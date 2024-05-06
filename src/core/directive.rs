@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
 
-use crate::blueprint;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::blueprint;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())

@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::config::UnsupportedConfigFormat;
+use crate::core::config::UnsupportedConfigFormat;
 
 ///
 /// A list of sources from which a configuration can be created

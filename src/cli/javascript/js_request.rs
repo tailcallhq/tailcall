@@ -8,7 +8,7 @@ use reqwest::Request;
 use rquickjs::{FromJs, IntoJs};
 use serde::{Deserialize, Serialize};
 
-use crate::is_default;
+use crate::core::is_default;
 
 #[derive(Debug)]
 pub struct JsRequest(reqwest::Request);

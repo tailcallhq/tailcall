@@ -4,7 +4,7 @@ use async_graphql_value::ConstValue;
 
 use super::path::Path;
 use super::Request;
-use crate::async_graphql_hyper::GraphQLRequest;
+use crate::core::async_graphql_hyper::GraphQLRequest;
 
 /// A partial GraphQLRequest that contains a parsed executable GraphQL document.
 #[derive(Debug)]

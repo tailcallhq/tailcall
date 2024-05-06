@@ -7,11 +7,11 @@ use serde::de::DeserializeOwned;
 use url::Url;
 
 use super::AppContext;
-use crate::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
-use crate::blueprint::Blueprint;
-use crate::config::reader::ConfigReader;
-use crate::rest::EndpointSet;
-use crate::runtime::TargetRuntime;
+use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::core::blueprint::Blueprint;
+use crate::core::config::reader::ConfigReader;
+use crate::core::rest::EndpointSet;
+use crate::core::runtime::TargetRuntime;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,

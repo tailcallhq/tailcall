@@ -3,17 +3,18 @@ use std::sync::Arc;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
-use crate::auth::context::GlobalAuthContext;
-use crate::blueprint::Type::ListType;
-use crate::blueprint::{Blueprint, Definition, SchemaModifiers};
-use crate::data_loader::DataLoader;
-use crate::graphql::GraphqlDataLoader;
-use crate::grpc;
-use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::{DataLoaderRequest, HttpDataLoader};
-use crate::lambda::{DataLoaderId, Expression, IO};
-use crate::rest::{Checked, EndpointSet};
-use crate::runtime::TargetRuntime;
+
+use crate::core::auth::context::GlobalAuthContext;
+use crate::core::blueprint::Type::ListType;
+use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
+use crate::core::data_loader::DataLoader;
+use crate::core::graphql::GraphqlDataLoader;
+use crate::core::grpc;
+use crate::core::grpc::data_loader::GrpcDataLoader;
+use crate::core::http::{DataLoaderRequest, HttpDataLoader};
+use crate::core::lambda::{DataLoaderId, Expression, IO};
+use crate::core::rest::{Checked, EndpointSet};
+use crate::core::runtime::TargetRuntime;
 
 pub struct AppContext {
     pub schema: dynamic::Schema,

@@ -1,8 +1,8 @@
 use hyper::header::HeaderName;
 
-use crate::config::KeyValue;
-use crate::mustache::Mustache;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::config::KeyValue;
+use crate::core::mustache::Mustache;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub type MustacheHeaders = Vec<(HeaderName, Mustache)>;
 

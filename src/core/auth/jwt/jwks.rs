@@ -6,7 +6,7 @@ use jsonwebtoken::jwk::{Jwk, JwkSet};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 
 use super::jwt_verify::JwtClaim;
-use crate::auth::error::Error;
+use crate::core::auth::error::Error;
 
 #[derive(Setters)]
 pub struct Jwks {

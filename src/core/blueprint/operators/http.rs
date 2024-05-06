@@ -1,12 +1,12 @@
-use crate::blueprint::*;
-use crate::config::group_by::GroupBy;
-use crate::config::Field;
-use crate::endpoint::Endpoint;
-use crate::http::{Method, RequestTemplate};
-use crate::lambda::{Expression, IO};
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
-use crate::{config, helpers};
+use crate::core::blueprint::*;
+use crate::core::config::group_by::GroupBy;
+use crate::core::config::Field;
+use crate::core::endpoint::Endpoint;
+use crate::core::http::{Method, RequestTemplate};
+use crate::core::lambda::{Expression, IO};
+use crate::core::try_fold::TryFold;
+use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::{config, helpers};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,

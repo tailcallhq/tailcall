@@ -2,13 +2,13 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use super::KeyValue;
-use crate::config::{Apollo, ConfigReaderContext};
-use crate::helpers::headers::to_mustache_headers;
-use crate::is_default;
-use crate::macros::MergeRight;
-use crate::merge_right::MergeRight;
-use crate::mustache::Mustache;
-use crate::valid::Validator;
+use crate::core::config::{Apollo, ConfigReaderContext};
+use crate::core::helpers::headers::to_mustache_headers;
+use crate::core::is_default;
+use crate::core::macros::MergeRight;
+use crate::core::merge_right::MergeRight;
+use crate::core::mustache::Mustache;
+use crate::core::valid::Validator;
 
 mod defaults {
     pub mod prometheus {

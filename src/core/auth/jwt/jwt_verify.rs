@@ -3,11 +3,11 @@ use headers::{Authorization, HeaderMapExt};
 use serde::Deserialize;
 
 use super::jwks::Jwks;
-use crate::auth::error::Error;
-use crate::auth::verification::Verification;
-use crate::auth::verify::Verify;
-use crate::blueprint;
-use crate::http::RequestContext;
+use crate::core::auth::error::Error;
+use crate::core::auth::verification::Verification;
+use crate::core::auth::verify::Verify;
+use crate::core::blueprint;
+use crate::core::http::RequestContext;
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]

@@ -3,9 +3,9 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
-use crate::is_default;
-use crate::macros::MergeRight;
-use crate::merge_right::MergeRight;
+use crate::core::is_default;
+use crate::core::macros::MergeRight;
+use crate::core::merge_right::MergeRight;
 
 const DEFAULT_MAX_SIZE: usize = 100;
 

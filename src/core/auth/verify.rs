@@ -3,8 +3,8 @@ use futures_util::join;
 use super::basic::BasicVerifier;
 use super::jwt::jwt_verify::JwtVerifier;
 use super::verification::Verification;
-use crate::blueprint;
-use crate::http::RequestContext;
+use crate::core::blueprint;
+use crate::core::http::RequestContext;
 
 #[async_trait::async_trait]
 pub(crate) trait Verify {

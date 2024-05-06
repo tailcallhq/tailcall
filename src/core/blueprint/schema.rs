@@ -2,10 +2,10 @@ use std::collections::{BTreeMap, HashMap};
 
 use async_graphql::parser::types::ConstDirective;
 
-use crate::blueprint::*;
-use crate::config::{Config, Field, Type};
-use crate::directive::DirectiveCodec;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::blueprint::*;
+use crate::core::config::{Config, Field, Type};
+use crate::core::directive::DirectiveCodec;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
     Valid::from_option(

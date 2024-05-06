@@ -7,16 +7,16 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
-use crate::async_cache::AsyncCache;
-use crate::auth::context::AuthContext;
-use crate::blueprint::{Server, Upstream};
-use crate::data_loader::DataLoader;
-use crate::graphql::GraphqlDataLoader;
-use crate::grpc;
-use crate::grpc::data_loader::GrpcDataLoader;
-use crate::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::lambda::EvaluationError;
-use crate::runtime::TargetRuntime;
+use crate::core::async_cache::AsyncCache;
+use crate::core::auth::context::AuthContext;
+use crate::core::blueprint::{Server, Upstream};
+use crate::core::data_loader::DataLoader;
+use crate::core::graphql::GraphqlDataLoader;
+use crate::core::grpc;
+use crate::core::grpc::data_loader::GrpcDataLoader;
+use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
+use crate::core::lambda::EvaluationError;
+use crate::core::runtime::TargetRuntime;
 
 #[derive(Setters)]
 pub struct RequestContext {

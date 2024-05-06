@@ -4,7 +4,7 @@ use colored::Colorize;
 use derive_setters::Setters;
 use thiserror::Error;
 
-use crate::valid::ValidationError;
+use crate::core::valid::ValidationError;
 
 #[derive(Debug, Error, Setters, PartialEq, Clone)]
 pub struct CLIError {

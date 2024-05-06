@@ -3,8 +3,8 @@ use std::borrow::Cow;
 use async_graphql::{Name, Value as GraphQLValue};
 use indexmap::IndexMap;
 
-use crate::blueprint::DynamicValue;
-use crate::path::PathString;
+use crate::core::blueprint::DynamicValue;
+use crate::core::path::PathString;
 
 pub trait ValueExt {
     fn render_value(&self, ctx: &impl PathString) -> GraphQLValue;

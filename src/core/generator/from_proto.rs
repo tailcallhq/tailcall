@@ -5,9 +5,9 @@ use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use crate::blueprint::GrpcMethod;
-use crate::config::{Arg, Config, Field, Grpc, Tag, Type};
-use crate::generator::GraphQLType;
+use crate::core::blueprint::GrpcMethod;
+use crate::core::config::{Arg, Config, Field, Grpc, Tag, Type};
+use crate::core::generator::GraphQLType;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.

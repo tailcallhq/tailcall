@@ -1,10 +1,10 @@
-use crate::blueprint::FieldDefinition;
-use crate::config::{self, ConfigModule, Field, GraphQLOperationType};
-use crate::graphql::RequestTemplate;
-use crate::helpers;
-use crate::lambda::{Expression, IO};
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::blueprint::FieldDefinition;
+use crate::core::config::{self, ConfigModule, Field, GraphQLOperationType};
+use crate::core::graphql::RequestTemplate;
+use crate::core::helpers;
+use crate::core::lambda::{Expression, IO};
+use crate::core::try_fold::TryFold;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub fn compile_graphql(
     config: &config::Config,

@@ -10,15 +10,15 @@ use serde_json::Value;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
-use crate::config::from_document::from_document;
-use crate::config::source::Source;
-use crate::directive::DirectiveCodec;
-use crate::http::Method;
-use crate::json::JsonSchema;
-use crate::macros::MergeRight;
-use crate::merge_right::MergeRight;
-use crate::valid::{Valid, Validator};
-use crate::{is_default, scalar};
+use crate::core::config::from_document::from_document;
+use crate::core::config::source::Source;
+use crate::core::directive::DirectiveCodec;
+use crate::core::http::Method;
+use crate::core::json::JsonSchema;
+use crate::core::macros::MergeRight;
+use crate::core::merge_right::MergeRight;
+use crate::core::valid::{Valid, Validator};
+use crate::core::{is_default, scalar};
 
 #[derive(
     Serialize,
@@ -631,7 +631,7 @@ impl Config {
 
     pub fn to_sdl(&self) -> String {
         let doc = self.to_document();
-        crate::document::print(doc)
+        crate::core::document::print(doc)
     }
 
     pub fn query(mut self, query: &str) -> Self {

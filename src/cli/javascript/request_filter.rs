@@ -4,8 +4,8 @@ use hyper::body::Bytes;
 use rquickjs::FromJs;
 
 use super::{JsRequest, JsResponse};
-use crate::http::Response;
-use crate::{HttpIO, WorkerIO};
+use crate::core::http::Response;
+use crate::core::{HttpIO, WorkerIO};
 
 #[derive(Debug)]
 pub enum Event {

@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::num::NonZeroU64;
 
-use crate::merge_right::MergeRight;
+use crate::core::merge_right::MergeRight;
 
 pub trait Primitive {}
 

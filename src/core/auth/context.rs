@@ -2,8 +2,8 @@ use std::sync::{Arc, RwLock};
 
 use super::verification::Verification;
 use super::verify::{AuthVerifier, Verify};
-use crate::blueprint::Auth;
-use crate::http::RequestContext;
+use crate::core::blueprint::Auth;
+use crate::core::http::RequestContext;
 
 #[derive(Default)]
 pub struct GlobalAuthContext {

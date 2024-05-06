@@ -5,11 +5,11 @@ edition = "2021"
 
 [[bin]]
 name = "tailcall"
-path = "src/cli/main.rs"
+path = "src/main.rs"
 
 [lib]
 name = "tailcall"
-path = "src/core/lib.rs"
+path = "src/lib.rs"
 
 [workspace.dependencies]
 anyhow = "1.0.82"

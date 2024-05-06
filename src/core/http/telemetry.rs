@@ -9,7 +9,7 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::blueprint::telemetry::Telemetry;
+use crate::core::blueprint::telemetry::Telemetry;
 
 static HTTP_SERVER_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");

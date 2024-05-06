@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
-use crate::schema_extension::SchemaExtension;
-use crate::{Cache, EnvIO, FileIO, HttpIO};
+use crate::core::schema_extension::SchemaExtension;
+use crate::core::{Cache, EnvIO, FileIO, HttpIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
 /// IO implementations. This is used to reduce piping IO structs all
@@ -48,12 +48,12 @@ pub mod test {
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::blueprint::Upstream;
-    use crate::cache::InMemoryCache;
+    use crate::core::blueprint::Upstream;
+    use crate::core::cache::InMemoryCache;
     use crate::cli::javascript;
-    use crate::http::Response;
-    use crate::runtime::TargetRuntime;
-    use crate::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::core::http::Response;
+    use crate::core::runtime::TargetRuntime;
+    use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {

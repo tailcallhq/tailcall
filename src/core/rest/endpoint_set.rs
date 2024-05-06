@@ -3,13 +3,13 @@ use std::sync::Arc;
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
 use super::Request;
-use crate::blueprint::Blueprint;
-use crate::http::RequestContext;
-use crate::macros::MergeRight;
-use crate::merge_right::MergeRight;
-use crate::rest::operation::OperationQuery;
-use crate::runtime::TargetRuntime;
-use crate::valid::Validator;
+use crate::core::blueprint::Blueprint;
+use crate::core::http::RequestContext;
+use crate::core::macros::MergeRight;
+use crate::core::merge_right::MergeRight;
+use crate::core::rest::operation::OperationQuery;
+use crate::core::runtime::TargetRuntime;
+use crate::core::valid::Validator;
 
 /// Collection of endpoints
 #[derive(Default, Clone, Debug, MergeRight)]

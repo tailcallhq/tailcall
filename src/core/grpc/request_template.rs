@@ -9,13 +9,13 @@ use reqwest::header::HeaderValue;
 use url::Url;
 
 use super::request::create_grpc_request;
-use crate::config::GraphQLOperationType;
-use crate::grpc::protobuf::ProtobufOperation;
-use crate::has_headers::HasHeaders;
-use crate::helpers::headers::MustacheHeaders;
-use crate::lambda::CacheKey;
-use crate::mustache::Mustache;
-use crate::path::PathString;
+use crate::core::config::GraphQLOperationType;
+use crate::core::grpc::protobuf::ProtobufOperation;
+use crate::core::has_headers::HasHeaders;
+use crate::core::helpers::headers::MustacheHeaders;
+use crate::core::lambda::CacheKey;
+use crate::core::mustache::Mustache;
+use crate::core::path::PathString;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 

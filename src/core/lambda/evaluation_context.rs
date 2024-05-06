@@ -6,7 +6,7 @@ use async_graphql::{SelectionField, ServerError, Value};
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
-use crate::http::RequestContext;
+use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
 #[derive(Clone)]

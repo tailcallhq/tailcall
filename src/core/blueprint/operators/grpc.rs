@@ -3,17 +3,17 @@ use std::fmt::Display;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
-use crate::blueprint::{FieldDefinition, TypeLike};
-use crate::config::group_by::GroupBy;
-use crate::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
-use crate::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-use crate::grpc::request_template::RequestTemplate;
-use crate::json::JsonSchema;
-use crate::lambda::{Expression, IO};
-use crate::mustache::Mustache;
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
-use crate::{config, helpers};
+use crate::core::blueprint::{FieldDefinition, TypeLike};
+use crate::core::config::group_by::GroupBy;
+use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
+use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+use crate::core::grpc::request_template::RequestTemplate;
+use crate::core::json::JsonSchema;
+use crate::core::lambda::{Expression, IO};
+use crate::core::mustache::Mustache;
+use crate::core::try_fold::TryFold;
+use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::{config, helpers};
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
     Valid::from_option(
@@ -55,8 +55,8 @@ fn to_operation(
 }
 
 fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
-    let field_schema = crate::blueprint::to_json_schema_for_field(field, config);
-    let args_schema = crate::blueprint::to_json_schema_for_args(&field.args, config);
+    let field_schema = crate::core::blueprint::to_json_schema_for_field(field, config);
+    let args_schema = crate::core::blueprint::to_json_schema_for_args(&field.args, config);
     FieldSchema { args: args_schema, field: field_schema }
 }
 pub struct FieldSchema {

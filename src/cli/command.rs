@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::{config, generator};
+use crate::core::{config, generator};
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,

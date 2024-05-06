@@ -1,6 +1,6 @@
-use crate::config::{Link, LinkType};
-use crate::directive::DirectiveCodec;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::core::config::{Link, LinkType};
+use crate::core::directive::DirectiveCodec;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub struct Links;
 

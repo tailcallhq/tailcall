@@ -8,8 +8,8 @@ use serde::de::DeserializeOwned;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
-use crate::grpc::protobuf::ProtobufOperation;
-use crate::lambda::EvaluationError;
+use crate::core::grpc::protobuf::ProtobufOperation;
+use crate::core::lambda::EvaluationError;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {

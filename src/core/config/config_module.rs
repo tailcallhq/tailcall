@@ -7,11 +7,11 @@ use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::config::Config;
-use crate::macros::MergeRight;
-use crate::merge_right::MergeRight;
-use crate::proto_reader::ProtoMetadata;
-use crate::rest::{EndpointSet, Unchecked};
+use crate::core::config::Config;
+use crate::core::macros::MergeRight;
+use crate::core::merge_right::MergeRight;
+use crate::core::proto_reader::ProtoMetadata;
+use crate::core::rest::{EndpointSet, Unchecked};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
@@ -214,22 +214,22 @@ mod tests {
     use maplit::hashset;
     use pretty_assertions::assert_eq;
 
-    use crate::config::{Config, ConfigModule, Resolution, Type};
-    use crate::generator::Source;
+    use crate::core::config::{Config, ConfigModule, Resolution, Type};
+    use crate::core::generator::Source;
 
     fn build_qry(mut config: Config) -> Config {
         let mut type1 = Type::default();
         let mut field1 =
-            crate::config::Field { type_of: "Type1".to_string(), ..Default::default() };
+            crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() };
 
-        let arg1 = crate::config::Arg { type_of: "Type1".to_string(), ..Default::default() };
+        let arg1 = crate::core::config::Arg { type_of: "Type1".to_string(), ..Default::default() };
 
         field1.args.insert("arg1".to_string(), arg1);
 
-        let arg2 = crate::config::Arg { type_of: "Type2".to_string(), ..Default::default() };
+        let arg2 = crate::core::config::Arg { type_of: "Type2".to_string(), ..Default::default() };
 
-        let _field3 = crate::config::Field { type_of: "Type3".to_string(), ..Default::default() };
-        let arg3 = crate::config::Arg { type_of: "Type3".to_string(), ..Default::default() };
+        let _field3 = crate::core::config::Field { type_of: "Type3".to_string(), ..Default::default() };
+        let arg3 = crate::core::config::Arg { type_of: "Type3".to_string(), ..Default::default() };
 
         field1.args.insert("arg2".to_string(), arg2);
         field1.args.insert("arg3".to_string(), arg3);
@@ -257,25 +257,25 @@ mod tests {
 
         type1.fields.insert(
             "name".to_string(),
-            crate::config::Field::default().type_of("String".to_string()),
+            crate::core::config::Field::default().type_of("String".to_string()),
         );
 
         type2.fields.insert(
             "ty1".to_string(),
-            crate::config::Field::default().type_of("Type1".to_string()),
+            crate::core::config::Field::default().type_of("Type1".to_string()),
         );
         type2.fields.insert(
             "ty3".to_string(),
-            crate::config::Field::default().type_of("Type3".to_string()),
+            crate::core::config::Field::default().type_of("Type3".to_string()),
         );
 
         type3.fields.insert(
             "ty1".to_string(),
-            crate::config::Field::default().type_of("Type1".to_string()),
+            crate::core::config::Field::default().type_of("Type1".to_string()),
         );
         type3.fields.insert(
             "ty2".to_string(),
-            crate::config::Field::default().type_of("Type2".to_string()),
+            crate::core::config::Field::default().type_of("Type2".to_string()),
         );
 
         config.types.insert("Type1".to_string(), type1);
@@ -315,7 +315,7 @@ mod tests {
     }
     #[tokio::test]
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
-        let gen = crate::generator::Generator::init(crate::runtime::test::init(None));
+        let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
         let config_module = gen.read_all(Source::PROTO, &[news], "Query").await?;
         let actual = config_module

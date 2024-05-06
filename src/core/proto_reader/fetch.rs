@@ -8,12 +8,12 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::blueprint::GrpcMethod;
-use crate::config::ConfigReaderContext;
-use crate::grpc::protobuf::ProtobufSet;
-use crate::grpc::RequestTemplate;
-use crate::mustache::Mustache;
-use crate::runtime::TargetRuntime;
+use crate::core::blueprint::GrpcMethod;
+use crate::core::config::ConfigReaderContext;
+use crate::core::grpc::protobuf::ProtobufSet;
+use crate::core::grpc::RequestTemplate;
+use crate::core::mustache::Mustache;
+use crate::core::runtime::TargetRuntime;
 
 ///
 /// Loading reflection proto
@@ -210,10 +210,10 @@ mod grpc_fetch {
 
         let grpc_reflection = GrpcReflection::new(
             format!("http://localhost:{}", server.port()),
-            crate::runtime::test::init(None),
+            crate::core::runtime::test::init(None),
         );
 
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
         let resp = grpc_reflection.get_by_service("news.NewsService").await?;
 
         let content = runtime.file.read(tailcall_fixtures::protobuf::NEWS).await?;
@@ -236,7 +236,7 @@ mod grpc_fetch {
             then.status(200).body(get_fake_resp());
         });
 
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
 
         let grpc_reflection =
             GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
@@ -268,7 +268,7 @@ mod grpc_fetch {
             then.status(200).body("\0\0\0\0\x02:\0"); // Mock an empty response
         });
 
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
 
         let grpc_reflection =
             GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
@@ -295,7 +295,7 @@ mod grpc_fetch {
             then.status(404); // Mock a 404 not found response
         });
 
-        let runtime = crate::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init(None);
 
         let grpc_reflection =
             GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);

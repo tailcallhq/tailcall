@@ -3,10 +3,10 @@ use std::sync::Arc;
 use anyhow::{anyhow, Error, Result};
 use async_graphql::dynamic::Schema;
 
-use crate::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
-use crate::blueprint::{Blueprint, SchemaModifiers};
-use crate::http::RequestContext;
-use crate::valid::{Cause, Valid, Validator};
+use crate::core::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
+use crate::core::blueprint::{Blueprint, SchemaModifiers};
+use crate::core::http::RequestContext;
+use crate::core::valid::{Cause, Valid, Validator};
 
 #[derive(Debug)]
 pub struct OperationQuery {

@@ -1,5 +1,5 @@
-use crate::mustache::Mustache;
-use crate::valid::{Valid, ValidationError};
+use crate::core::mustache::Mustache;
+use crate::core::valid::{Valid, ValidationError};
 
 pub fn to_url(url: &str) -> Valid<Mustache, String> {
     Valid::from(Mustache::parse(url).map_err(|e| ValidationError::new(e.to_string())))
@@ -11,8 +11,8 @@ mod tests {
 
     #[test]
     fn parse_url() {
-        use crate::mustache::Mustache;
-        use crate::valid::Valid;
+        use crate::core::mustache::Mustache;
+        use crate::core::valid::Valid;
 
         let url = to_url("http://localhost:3000");
 

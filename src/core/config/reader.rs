@@ -8,12 +8,12 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
-use crate::config::{Config, ConfigReaderContext, Source};
-use crate::merge_right::MergeRight;
-use crate::proto_reader::ProtoReader;
-use crate::resource_reader::{Cached, ResourceReader};
-use crate::rest::EndpointSet;
-use crate::runtime::TargetRuntime;
+use crate::core::config::{Config, ConfigReaderContext, Source};
+use crate::core::merge_right::MergeRight;
+use crate::core::proto_reader::ProtoReader;
+use crate::core::resource_reader::{Cached, ResourceReader};
+use crate::core::rest::EndpointSet;
+use crate::core::runtime::TargetRuntime;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.

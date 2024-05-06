@@ -5,7 +5,7 @@ use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use super::request_filter::{Command, Event};
 use super::JsRequest;
-use crate::{blueprint, WorkerIO};
+use crate::core::{blueprint, WorkerIO};
 
 struct LocalRuntime(Context);
 

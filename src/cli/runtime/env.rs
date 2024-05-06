@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use crate::EnvIO;
+use crate::core::EnvIO;
 
 #[derive(Clone)]
 pub struct EnvNative {

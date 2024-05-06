@@ -10,12 +10,12 @@ use async_graphql::Name;
 
 use super::telemetry::Telemetry;
 use super::{Tag, JS};
-use crate::config::{
+use crate::core::config::{
     self, Cache, Call, Config, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema, Server,
     Union, Upstream,
 };
-use crate::directive::DirectiveCodec;
-use crate::valid::{Valid, Validator};
+use crate::core::directive::DirectiveCodec;
+use crate::core::valid::{Valid, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,

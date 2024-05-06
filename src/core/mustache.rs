@@ -8,7 +8,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
-use crate::path::{PathGraphql, PathString};
+use crate::core::path::{PathGraphql, PathString};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);

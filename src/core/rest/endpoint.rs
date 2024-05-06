@@ -11,10 +11,10 @@ use super::path::{Path, Segment};
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
 use super::Request;
-use crate::async_graphql_hyper::GraphQLRequest;
-use crate::directive::DirectiveCodec;
-use crate::http::Method;
-use crate::rest::typed_variables::{UrlParamType, N};
+use crate::core::async_graphql_hyper::GraphQLRequest;
+use crate::core::directive::DirectiveCodec;
+use crate::core::http::Method;
+use crate::core::rest::typed_variables::{UrlParamType, N};
 
 /// An executable Http Endpoint created from a GraphQL query
 #[derive(Debug, Setters, Clone)]
@@ -191,8 +191,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
-    use crate::rest::path::Segment;
-    use crate::rest::typed_variables::TypedVariable;
+    use crate::core::rest::path::Segment;
+    use crate::core::rest::typed_variables::TypedVariable;
 
     const TEST_QUERY: &str = r#"
         query ($a: Int, $b: String, $c: Boolean, $d: Float, $v: String)
@@ -288,8 +288,8 @@ mod tests {
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
 
-        use crate::rest::endpoint::tests::TEST_QUERY;
-        use crate::rest::endpoint::Endpoint;
+        use crate::core::rest::endpoint::tests::TEST_QUERY;
+        use crate::core::rest::endpoint::Endpoint;
 
         fn test_request(method: Method, uri: &str) -> anyhow::Result<hyper::Request<Body>> {
             Ok(Request::builder()
