@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
 
 use async_graphql::dynamic::SchemaBuilder;
 
@@ -15,13 +14,12 @@ use crate::valid::{Valid, ValidationError, Validator};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
-        Valid::from(Server::try_from(config_module.clone()))
-            .map(|server| blueprint.server(Arc::new(server)))
+        Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
     });
 
     let schema = to_schema().transform::<Blueprint>(
-        |schema, blueprint| blueprint.schema(Arc::new(schema)),
-        |blueprint| blueprint.schema.as_ref().clone(),
+        |schema, blueprint| blueprint.schema(schema),
+        |blueprint| blueprint.schema,
     );
 
     let definitions = to_definitions().transform::<Blueprint>(
@@ -30,8 +28,7 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     );
 
     let upstream = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
-        Valid::from(Upstream::try_from(config_module))
-            .map(|upstream| blueprint.upstream(Arc::new(upstream)))
+        Valid::from(Upstream::try_from(config_module)).map(|upstream| blueprint.upstream(upstream))
     });
 
     let links = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
@@ -39,8 +36,8 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     });
 
     let opentelemetry = to_opentelemetry().transform::<Blueprint>(
-        |opentelemetry, blueprint| blueprint.telemetry(Arc::new(opentelemetry)),
-        |blueprint| blueprint.telemetry.as_ref().clone(),
+        |opentelemetry, blueprint| blueprint.telemetry(opentelemetry),
+        |blueprint| blueprint.telemetry,
     );
 
     server
@@ -62,9 +59,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
                 if let Some(Expression::IO(IO::Http { group_by: Some(_), .. })) =
                     field.resolver.clone()
                 {
-                    let mut upstream = blueprint.upstream.as_ref().clone();
-                    upstream.batch = upstream.batch.or(Some(Batch::default()));
-                    blueprint.upstream = Arc::new(upstream);
+                    blueprint.upstream.batch = blueprint.upstream.batch.or(Some(Batch::default()));
                     return blueprint;
                 }
             }

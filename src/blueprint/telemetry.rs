@@ -24,7 +24,7 @@ pub enum TelemetryExporter {
     Apollo(Apollo),
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Telemetry {
     pub export: Option<TelemetryExporter>,
     pub request_headers: Vec<String>,

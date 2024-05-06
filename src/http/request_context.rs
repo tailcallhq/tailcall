@@ -20,8 +20,8 @@ use crate::runtime::TargetRuntime;
 
 #[derive(Setters)]
 pub struct RequestContext {
-    pub server: Arc<Server>,
-    pub upstream: Arc<Upstream>,
+    pub server: Server,
+    pub upstream: Upstream,
     pub x_response_headers: Arc<Mutex<HeaderMap>>,
     pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
     // A subset of all the headers received in the GraphQL Request that will be sent to the
@@ -207,8 +207,6 @@ impl From<&AppContext> for RequestContext {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
-
     use cache_control::Cachability;
 
     use crate::blueprint::{Server, Upstream};
@@ -222,8 +220,8 @@ mod test {
             let upstream = Upstream::try_from(&config_module).unwrap();
             let server = Server::try_from(config_module).unwrap();
             RequestContext::new(crate::runtime::test::init(None))
-                .upstream(Arc::new(upstream))
-                .server(Arc::new(server))
+                .upstream(upstream)
+                .server(server)
         }
     }
 
@@ -271,9 +269,7 @@ mod test {
         let mut upstream = Upstream::try_from(&config_module).unwrap();
         let server = Server::try_from(config_module).unwrap();
         upstream.batch = Some(Batch::default());
-        let req_ctx: RequestContext = RequestContext::default()
-            .upstream(Arc::new(upstream))
-            .server(Arc::new(server));
+        let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 
         assert!(req_ctx.is_batching_enabled());
     }
