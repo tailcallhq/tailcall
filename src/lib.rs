@@ -3,7 +3,6 @@ mod core;
 #[cfg(feature = "cli")]
 pub mod cli;
 
-
 // export only what's requried outside.
 pub use core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 pub use core::blueprint::{
