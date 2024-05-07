@@ -17,7 +17,7 @@ use tailcall::config::{Config, ConfigModule, Source};
 use tailcall::http::{handle_request, AppContext};
 use tailcall::merge_right::MergeRight;
 use tailcall::print_schema::print_schema;
-use tailcall::valid::{Cause, ValidationError, Validator as _};
+use tailcall::valid::{Cause, ValidationError};
 
 use super::file::File;
 use super::http::Http;
@@ -57,11 +57,7 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
         // errors: errors are expected, make sure they match
         let (source, content) = &spec.server[0];
 
-        if !matches!(source, Source::GraphQL) {
-            panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
-        }
-
-        let config = Config::from_sdl(content).to_result();
+        let config = source.decode(content);
 
         let config = match config {
             Ok(config) => {

@@ -1,0 +1,11 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "No variants found for enum",
+    "trace": [],
+    "description": null
+  }
+]
