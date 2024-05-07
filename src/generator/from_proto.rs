@@ -265,16 +265,17 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Config 
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
+    use std::path::Path;
 
     use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
+    use tailcall_fixtures::protobuf;
 
     use crate::generator::from_proto::from_proto;
 
-    fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
-        let path = PathBuf::from(tailcall_fixtures::generator::proto::SELF).join(name);
+    fn get_proto_file_descriptor(path: &str) -> anyhow::Result<FileDescriptorProto> {
+        let path = Path::new(path);
         Ok(protox_parse::parse(
-            name,
+            path.file_name().unwrap().to_str().unwrap(),
             std::fs::read_to_string(path)?.as_str(),
         )?)
     }
@@ -299,7 +300,7 @@ mod test {
         // test for a type used as both input and output
         // test for two types having same name in different packages
 
-        let set = new_file_desc(&["news.proto", "greetings_a.proto", "greetings_b.proto"])?;
+        let set = new_file_desc(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
         let result = from_proto(&[set], "Query").to_sdl();
         insta::assert_snapshot!(result);
 
@@ -308,7 +309,7 @@ mod test {
 
     #[test]
     fn test_from_proto_no_pkg_file() -> anyhow::Result<()> {
-        let set = new_file_desc(&["no_pkg.proto"])?;
+        let set = new_file_desc(&[protobuf::NEWS_NO_PKG])?;
         let result = from_proto(&[set], "Query").to_sdl();
         insta::assert_snapshot!(result);
         Ok(())
@@ -316,7 +317,7 @@ mod test {
 
     #[test]
     fn test_from_proto_no_service_file() -> anyhow::Result<()> {
-        let set = new_file_desc(&["news_no_service.proto"])?;
+        let set = new_file_desc(&[protobuf::NEWS_NO_SERVICE])?;
         let result = from_proto(&[set], "Query").to_sdl();
         insta::assert_snapshot!(result);
 
@@ -325,18 +326,18 @@ mod test {
 
     #[test]
     fn test_greetings_proto_file() {
-        let set = new_file_desc(&["greetings.proto", "greetings_message.proto"]).unwrap();
+        let set = new_file_desc(&[protobuf::GREETINGS, protobuf::GREETINGS_MESSAGE]).unwrap();
         let result = from_proto(&[set], "Query").to_sdl();
         insta::assert_snapshot!(result);
     }
 
     #[test]
     fn test_config_from_sdl() -> anyhow::Result<()> {
-        let set = new_file_desc(&["news.proto", "greetings_a.proto", "greetings_b.proto"])?;
+        let set = new_file_desc(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
 
-        let set1 = new_file_desc(&["news.proto"])?;
-        let set2 = new_file_desc(&["greetings_a.proto"])?;
-        let set3 = new_file_desc(&["greetings_b.proto"])?;
+        let set1 = new_file_desc(&[protobuf::NEWS])?;
+        let set2 = new_file_desc(&[protobuf::GREETINGS_A])?;
+        let set3 = new_file_desc(&[protobuf::GREETINGS_B])?;
 
         let actual = from_proto(&[set.clone()], "Query").to_sdl();
         let expected = from_proto(&[set1, set2, set3], "Query").to_sdl();
@@ -353,7 +354,7 @@ mod test {
         // and our implementation (https://github.com/tailcallhq/tailcall/pull/1537) supports default values by default.
         // so we do not need to explicitly mark fields as required.
 
-        let set = new_file_desc(&["person.proto"])?;
+        let set = new_file_desc(&[protobuf::PERSON])?;
         let config = from_proto(&[set], "Query").to_sdl();
         insta::assert_snapshot!(config);
         Ok(())

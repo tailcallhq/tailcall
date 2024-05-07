@@ -51,6 +51,8 @@ impl Generator {
 mod test {
     use std::path::PathBuf;
 
+    use tailcall_fixtures::protobuf;
+
     use super::*;
 
     fn start_mock_server() -> httpmock::MockServer {
@@ -61,18 +63,10 @@ mod test {
     async fn test_read_all() {
         let server = start_mock_server();
         let runtime = crate::runtime::test::init(None);
-        let test_dir = PathBuf::from(tailcall_fixtures::generator::proto::SELF);
+        let test_dir = PathBuf::from(tailcall_fixtures::protobuf::SELF);
 
-        let news_content = runtime
-            .file
-            .read(test_dir.join("news.proto").to_str().unwrap())
-            .await
-            .unwrap();
-        let greetings_a = runtime
-            .file
-            .read(test_dir.join("greetings_a.proto").to_str().unwrap())
-            .await
-            .unwrap();
+        let news_content = runtime.file.read(protobuf::NEWS).await.unwrap();
+        let greetings_a = runtime.file.read(protobuf::GREETINGS_A).await.unwrap();
 
         server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/news.proto");

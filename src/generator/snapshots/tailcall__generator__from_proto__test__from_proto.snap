@@ -14,21 +14,15 @@ input GREETINGS_B_C_HELLO_REQUEST @tag(id: "greetings_b.c.HelloRequest") {
   name: String
 }
 
-input NEWS_AUTHOR @tag(id: "news.Author") {
-  email: String
-  name: String
-}
-
 input NEWS_MULTIPLE_NEWS_ID @tag(id: "news.MultipleNewsId") {
   ids: [NEWS_NEWS_ID]!
 }
 
 input NEWS_NEWS @tag(id: "news.News") {
-  author: NEWS_AUTHOR
   body: String
-  foo: NEWS_STATUS
   id: Int
   post_image: String
+  status: NEWS_STATUS
   title: String
 }
 
@@ -37,6 +31,7 @@ input NEWS_NEWS_ID @tag(id: "news.NewsId") {
 }
 
 enum NEWS_STATUS {
+  DELETED
   DRAFT
   PUBLISHED
 }

@@ -178,21 +178,19 @@ mod test_proto_config {
         let file_rt = runtime.file.clone();
 
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
-        let helper_map = reader
+        let file_descriptors = reader
             .resolve(reader.read_proto(&test_file, None).await?, Some(test_dir))
             .await?;
-        let files = test_dir.read_dir()?;
-        for file in files {
-            let path = file?.path();
+        for file in file_descriptors
+            .iter()
+            .filter(|desc| !desc.name.as_ref().unwrap().starts_with("google/protobuf/"))
+        {
+            let path = test_dir.join(file.name.as_ref().unwrap());
             let path = path.to_string_lossy();
             let source = file_rt.read(&path).await?;
             let expected = protox_parse::parse(&path, &source)?;
-            let actual = helper_map
-                .iter()
-                .find(|v| v.package.eq(&expected.package))
-                .unwrap();
 
-            assert_eq!(&expected.dependency, &actual.dependency);
+            assert_eq!(&expected.dependency, &file.dependency, "for file {path}");
         }
 
         Ok(())
