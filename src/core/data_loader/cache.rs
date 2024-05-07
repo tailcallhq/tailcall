@@ -61,13 +61,6 @@ pub struct HashMapCache<S = RandomState> {
     _mark: PhantomData<S>,
 }
 
-impl<S: Send + Sync + BuildHasher + Default + 'static> HashMapCache<S> {
-    /// Use specified `S: BuildHasher` to create a `HashMap` cache.
-    pub fn new() -> Self {
-        Self { _mark: PhantomData }
-    }
-}
-
 impl Default for HashMapCache<RandomState> {
     fn default() -> Self {
         Self { _mark: PhantomData }
@@ -171,5 +164,20 @@ where
 
     fn iter(&self) -> Box<dyn Iterator<Item = (&'_ Self::Key, &'_ Self::Value)> + '_> {
         Box::new(self.0.iter())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::hash::BuildHasher;
+    use std::marker::PhantomData;
+
+    use super::HashMapCache;
+
+    impl<S: Send + Sync + BuildHasher + Default + 'static> HashMapCache<S> {
+        /// Use specified `S: BuildHasher` to create a `HashMap` cache.
+        pub fn new() -> Self {
+            Self { _mark: PhantomData }
+        }
     }
 }
