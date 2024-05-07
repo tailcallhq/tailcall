@@ -84,7 +84,7 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                let snapshot_name = format!("execution_spec__{}_errors", spec.safe_name);
+                let snapshot_name = format!("{}_error", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
             }
