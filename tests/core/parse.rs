@@ -12,11 +12,10 @@ use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::blueprint::Blueprint;
 use tailcall::cache::InMemoryCache;
-use tailcall::cli::javascript;
 use tailcall::config::{ConfigModule, Source};
 use tailcall::http::AppContext;
 use tailcall::runtime::TargetRuntime;
-use tailcall::EnvIO;
+use tailcall::{javascript, EnvIO};
 
 use super::file::File;
 use super::http::Http;

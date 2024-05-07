@@ -13,8 +13,8 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cache::InMemoryCache;
-    use tailcall::cli::javascript;
     use tailcall::http::Response;
+    use tailcall::javascript;
     use tailcall::runtime::TargetRuntime;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 

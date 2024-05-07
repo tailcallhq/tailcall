@@ -8,11 +8,12 @@ use async_graphql_value::ConstValue;
 use thiserror::Error;
 
 use super::{Eval, EvaluationContext, ResolverContextLike, IO};
-use crate::auth;
 use crate::blueprint::DynamicValue;
+use crate::javascript::Runtime;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
+use crate::{auth, WorkerIO};
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -22,6 +23,7 @@ pub enum Expression {
     Cache(Cache),
     Path(Box<Expression>, Vec<String>),
     Protect(Box<Expression>),
+    Js(Arc<Runtime>),
 }
 
 impl Display for Expression {
@@ -33,6 +35,7 @@ impl Display for Expression {
             Expression::Cache(_) => write!(f, "Cache"),
             Expression::Path(_, _) => write!(f, "Input"),
             Expression::Protect(expr) => write!(f, "Protected({expr})"),
+            Expression::Js(_) => write!(f, "Js"),
         }
     }
 }
@@ -190,6 +193,10 @@ impl Eval for Expression {
                 }
                 Expression::IO(operation) => operation.eval(ctx).await,
                 Expression::Cache(cached) => cached.eval(ctx).await,
+                Expression::Js(js) => {
+                    let val = js.call(ctx.value().cloned()).await?;
+                    Ok(val.unwrap_or(async_graphql::Value::Null))
+                }
             }
         })
     }

@@ -50,10 +50,9 @@ pub mod test {
 
     use crate::blueprint::Upstream;
     use crate::cache::InMemoryCache;
-    use crate::cli::javascript;
     use crate::http::Response;
     use crate::runtime::TargetRuntime;
-    use crate::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::{blueprint, javascript, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {

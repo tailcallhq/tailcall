@@ -63,7 +63,7 @@ impl RequestFilter {
     async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        let command = self.worker.call("onRequest".to_string(), event).await?;
+        let command = self.worker.call(event).await?;
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {
@@ -104,9 +104,9 @@ mod tests {
     use hyper::body::Bytes;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
-    use crate::cli::javascript::request_filter::Command;
-    use crate::cli::javascript::{JsRequest, JsResponse};
     use crate::http::Response;
+    use crate::javascript::request_filter::Command;
+    use crate::javascript::{JsRequest, JsResponse};
 
     #[test]
     fn test_command_from_invalid_object() {

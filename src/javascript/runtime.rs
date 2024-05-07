@@ -1,6 +1,8 @@
 use std::cell::{OnceCell, RefCell};
+use std::fmt::{Debug, Formatter};
 use std::thread;
 
+use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use super::request_filter::{Command, Event};
@@ -25,7 +27,7 @@ fn qjs_print(msg: String, is_err: bool) {
 
 fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
     ctx.globals().set("__qjs_print", js_qjs_print)?;
-    let _: Value = ctx.eval_file("src/cli/javascript/shim/console.js")?;
+    let _: Value = ctx.eval_file("src/javascript/shim/console.js")?;
 
     Ok(())
 }
@@ -47,18 +49,33 @@ impl LocalRuntime {
 
 pub struct Runtime {
     script: blueprint::Script,
+    function_name: String,
     // Single threaded JS runtime, that's shared across all tokio workers.
     tokio_runtime: Option<tokio::runtime::Runtime>,
 }
 
+impl Debug for Runtime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Runtime {{ script: {:?}, function_name: {} }}",
+            self.script, self.function_name
+        )
+    }
+}
+
 impl Runtime {
-    pub fn new(script: blueprint::Script) -> Self {
+    pub fn new(name: String, script: blueprint::Script) -> Self {
         let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .build()
             .expect("JS runtime not initialized");
 
-        Self { script, tokio_runtime: Some(tokio_runtime) }
+        Self {
+            script,
+            function_name: name,
+            tokio_runtime: Some(tokio_runtime),
+        }
     }
 }
 
@@ -75,27 +92,13 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(&self, name: String, event: Event) -> anyhow::Result<Option<Command>> {
+    async fn call(&self, event: Event) -> anyhow::Result<Option<Command>> {
         let script = self.script.clone();
+        let name = self.function_name.clone();
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
-                    // initialize runtime if this is the first call
-                    // exit if failed to initialize
-                    LOCAL_RUNTIME.with(move |cell| {
-                        if cell.borrow().get().is_none() {
-                            LocalRuntime::try_new(script).and_then(|runtime| {
-                                cell.borrow().set(runtime).map_err(|_| {
-                                    anyhow::anyhow!(
-                                    "trying to reinitialize an already initialized QuickJS runtime"
-                                )
-                                })
-                            })
-                        } else {
-                            Ok(())
-                        }
-                    })?;
-
+                    init_rt(script)?;
                     call(name, event)
                 })
                 .await?
@@ -103,6 +106,40 @@ impl WorkerIO<Event, Command> for Runtime {
             anyhow::bail!("JS Runtime is stopped")
         }
     }
+}
+
+#[async_trait::async_trait]
+impl WorkerIO<Option<ConstValue>, ConstValue> for Runtime {
+    async fn call(&self, input: Option<ConstValue>) -> anyhow::Result<Option<ConstValue>> {
+        let script = self.script.clone();
+        let name = self.function_name.clone();
+        if let Some(runtime) = &self.tokio_runtime {
+            runtime
+                .spawn(async move {
+                    init_rt(script)?;
+                    execute_inner(name, input).map(Some)
+                })
+                .await?
+        } else {
+            anyhow::bail!("JS Runtime is stopped")
+        }
+    }
+}
+
+fn init_rt(script: blueprint::Script) -> anyhow::Result<()> {
+    // initialize runtime if this is the first call
+    // exit if failed to initialize
+    LOCAL_RUNTIME.with(move |cell| {
+        if cell.borrow().get().is_none() {
+            LocalRuntime::try_new(script).and_then(|runtime| {
+                cell.borrow().set(runtime).map_err(|_| {
+                    anyhow::anyhow!("trying to reinitialize an already initialized QuickJS runtime")
+                })
+            })
+        } else {
+            Ok(())
+        }
+    })
 }
 
 fn prepare_args<'js>(ctx: &Ctx<'js>, req: JsRequest) -> rquickjs::Result<(Value<'js>,)> {
@@ -134,6 +171,31 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
                     .transpose()
                     .map_err(|e| anyhow::anyhow!("deserialize failed: {e}"))
             }
+        })
+    })
+}
+
+fn execute_inner(name: String, value: Option<ConstValue>) -> anyhow::Result<ConstValue> {
+    let value = value
+        .map(|v| serde_json::to_string(&v))
+        .ok_or(anyhow::anyhow!("No graphql value found"))??;
+
+    LOCAL_RUNTIME.with_borrow_mut(|cell| {
+        let runtime = cell
+            .get_mut()
+            .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
+        runtime.0.with(|ctx| {
+            let fn_as_value = ctx
+                .globals()
+                .get::<_, rquickjs::Function>(&name)
+                .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
+
+            let function = fn_as_value
+                .as_function()
+                .ok_or(anyhow::anyhow!("`hello` is not a function"))?;
+            let val: String = function.call((value, ))
+                .map_err(|_| anyhow::anyhow!("unable to parse value from js function: {} maybe because it's not returning a string?", name,))?;
+            Ok::<_, anyhow::Error>(serde_json::from_str(&val)?)
         })
     })
 }

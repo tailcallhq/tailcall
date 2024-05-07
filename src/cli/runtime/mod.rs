@@ -23,7 +23,7 @@ fn init_file() -> Arc<dyn FileIO> {
 fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     #[cfg(feature = "js")]
     if let Some(script) = script {
-        return crate::cli::javascript::init_http(http, script);
+        return crate::javascript::init_http(http, script);
     }
 
     #[cfg(not(feature = "js"))]

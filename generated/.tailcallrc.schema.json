@@ -749,10 +749,10 @@
     "JS": {
       "type": "object",
       "required": [
-        "script"
+        "name"
       ],
       "properties": {
-        "script": {
+        "name": {
           "type": "string"
         }
       }
