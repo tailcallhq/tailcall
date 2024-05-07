@@ -1,4 +1,4 @@
-use tailcall::core::{blueprint, EnvIO, FileIO, HttpIO};
+use tailcall::{EnvIO, FileIO, HttpIO, Upstream};
 
 #[cfg(test)]
 pub mod test {
@@ -13,13 +13,10 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript;
-    use tailcall::core::cache::InMemoryCache;
-    use tailcall::core::http::Response;
-    use tailcall::core::runtime::TargetRuntime;
+    use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::blueprint::Upstream;
-    use crate::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::{EnvIO, FileIO, HttpIO, Upstream};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -130,7 +127,7 @@ pub mod test {
         }
     }
 
-    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+    pub fn init(script: Option<Script>) -> TargetRuntime {
         let http = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
         } else {
@@ -165,7 +162,7 @@ mod server_spec {
     use reqwest::Client;
     use serde_json::json;
     use tailcall::cli::server::Server;
-    use tailcall::core::config::reader::ConfigReader;
+    use tailcall::ConfigReader;
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = crate::test::init(None);

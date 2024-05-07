@@ -3,7 +3,7 @@ extern crate core;
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use tailcall::core::EnvIO;
+use tailcall::EnvIO;
 
 #[derive(Clone)]
 pub struct Env {

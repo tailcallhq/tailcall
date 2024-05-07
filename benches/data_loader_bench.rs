@@ -10,10 +10,9 @@ use async_trait::async_trait;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall::core::config::Batch;
-use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
-use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::{EnvIO, FileIO, HttpIO};
+use tailcall::{
+    Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime,
+};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -51,7 +50,7 @@ impl FileIO for File {
 
 struct Cache;
 #[async_trait]
-impl tailcall::core::Cache for Cache {
+impl tailcall::Cache for Cache {
     type Key = u64;
     type Value = ConstValue;
 

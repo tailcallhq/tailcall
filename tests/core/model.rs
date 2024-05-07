@@ -4,7 +4,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::http::Method;
+use tailcall::Method;
 use url::Url;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

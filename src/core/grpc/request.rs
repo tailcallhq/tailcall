@@ -53,8 +53,8 @@ mod tests {
     use tonic::{Code, Status};
 
     use crate::core::blueprint::GrpcMethod;
-    use crate::core::grpc::execute_grpc_request;
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
+    use crate::core::grpc::request::execute_grpc_request;
     use crate::core::http::Response;
     use crate::core::lambda::EvaluationError;
     use crate::core::runtime::TargetRuntime;

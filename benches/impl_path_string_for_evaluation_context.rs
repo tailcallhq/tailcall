@@ -15,13 +15,10 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::core::blueprint::{Server, Upstream};
-use tailcall::core::cache::InMemoryCache;
-use tailcall::core::http::{RequestContext, Response};
-use tailcall::core::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::core::path::PathString;
-use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::{EnvIO, FileIO, HttpIO};
+use tailcall::{
+    EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
+    ResolverContextLike, Response, Server, TargetRuntime, Upstream,
+};
 
 struct Http {
     client: ClientWithMiddleware,
@@ -231,7 +228,7 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-    let config_module = tailcall::core::config::ConfigModule::default();
+    let config_module = tailcall::ConfigModule::default();
 
     //TODO: default is used only in tests. Drop default and move it to test.
     let upstream = Upstream::try_from(&config_module).unwrap();
