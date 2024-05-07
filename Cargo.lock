@@ -2914,7 +2914,7 @@ dependencies = [
  "serde_json",
  "sha-1 0.10.1",
  "sha2 0.10.8",
- "sysinfo",
+ "sysinfo 0.29.11",
  "uuid",
  "whoami",
  "winreg 0.11.0",
@@ -3442,7 +3442,7 @@ dependencies = [
  "indexmap 1.9.3",
  "nvml-wrapper",
  "opentelemetry 0.22.0",
- "sysinfo",
+ "sysinfo 0.29.11",
  "tracing",
 ]
 
@@ -5128,6 +5128,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "sysinfo"
+version = "0.30.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "732ffa00f53e6b2af46208fba5718d9662a421049204e156328b66791ffa15ae"
+dependencies = [
+ "cfg-if",
+ "core-foundation-sys",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "rayon",
+ "windows 0.52.0",
+]
+
+[[package]]
 name = "system-configuration"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5318,6 +5333,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "sysinfo 0.30.12",
  "tokio",
  "tracing",
 ]
@@ -6317,6 +6333,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "windows"
+version = "0.52.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e48a53791691ab099e5e2ad123536d0fff50652600abaf43bbf952894110d0be"
+dependencies = [
+ "windows-core",
+ "windows-targets 0.52.5",
+]
+
+[[package]]
 name = "windows-core"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6532,7 +6558,7 @@ dependencies = [
  "log",
  "serde",
  "thiserror",
- "windows",
+ "windows 0.48.0",
 ]
 
 [[package]]

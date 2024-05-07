@@ -2,17 +2,19 @@ use lazy_static::lazy_static;
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
+use sysinfo::System;
 
 lazy_static! {
     static ref API_SECRET: String = "GVaEzXFeRkCI9YBIylbEjQ".to_string();
     static ref MEASUREMENT_ID: String = "G-JEP3QDWT0G".to_string();
     static ref BASE_URL: String = "https://www.google-analytics.com".to_string();
+    static ref PARAPHRASE: String = "tc_key".to_string();
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Params {
-    #[serde(rename = "command_name")]
-    pub command_name: String,
+    pub cpu_cores: String,
+    pub os_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,17 +40,20 @@ impl PostData {
             .add_component(HWIDComponent::SystemID)
             .add_component(HWIDComponent::CPUCores);
 
-        Ok(builder.build("tc_key")?)
+        Ok(builder.build(PARAPHRASE.as_str())?)
     }
     fn prepare_event(command_name: &str) -> anyhow::Result<PostData> {
+        let sys = System::new_all();
+        let cores = sys.physical_core_count().unwrap_or(2).to_string();
+        let os_name = System::long_os_version().unwrap_or("Unknown".to_string());
         Ok(PostData {
             base_url: BASE_URL.to_string(),
             api_secret: API_SECRET.to_string(),
             measurement_id: MEASUREMENT_ID.to_string(),
             client_id: PostData::create_client_id()?,
             events: vec![Event {
-                name: "track_cli_usage".to_string(),
-                params: Params { command_name: command_name.to_string() },
+                name: command_name.to_string(),
+                params: Params { cpu_cores: cores, os_name },
             }],
         })
     }
