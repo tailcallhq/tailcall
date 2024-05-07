@@ -53,11 +53,7 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
         // errors: errors are expected, make sure they match
         let (source, content) = &spec.server[0];
 
-        if !matches!(source, Source::GraphQL) {
-            panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
-        }
-
-        let config = Config::from_sdl(content).to_result();
+        let config = source.decode(content);
 
         let config = match config {
             Ok(config) => {
@@ -84,7 +80,7 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                let snapshot_name = format!("execution_spec__{}_errors", spec.safe_name);
+                let snapshot_name = format!("{}_error", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
             }

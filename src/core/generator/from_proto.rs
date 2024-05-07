@@ -6,7 +6,7 @@ use prost_reflect::prost_types::{
 };
 
 use crate::core::blueprint::GrpcMethod;
-use crate::core::config::{Arg, Config, Field, Grpc, Tag, Type};
+use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
 use crate::core::generator::GraphQLType;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
@@ -41,10 +41,7 @@ impl Context {
     /// Processes proto enum types.
     fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
         for enum_ in enums {
-            let mut ty = Type::default();
-
             let enum_name = enum_.name();
-            ty.tag = Some(Tag { id: enum_name.to_string() });
 
             let variants = enum_
                 .value
@@ -57,10 +54,14 @@ impl Context {
                 })
                 .collect::<BTreeSet<String>>();
 
-            ty.variants = Some(variants);
-
-            let type_name = GraphQLType::new(enum_name).as_enum().unwrap().to_string();
-            self = self.insert_type(type_name, ty);
+            let type_name = GraphQLType::new(enum_name)
+                .package(&self.package)
+                .as_enum()
+                .unwrap()
+                .to_string();
+            self.config
+                .enums
+                .insert(type_name, Enum { variants, doc: None });
         }
         self
     }
@@ -177,7 +178,7 @@ impl Context {
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
-                grpc_method.service = service_name.clone();
+                grpc_method.service.clone_from(&service_name);
                 grpc_method.name = field_name.to_string();
 
                 cfg_field.grpc = Some(Grpc {

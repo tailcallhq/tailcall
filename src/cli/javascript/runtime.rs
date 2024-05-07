@@ -10,18 +10,8 @@ use crate::core::{blueprint, WorkerIO};
 struct LocalRuntime(Context);
 
 thread_local! {
-    // Practically only one JS runtime is created because CHANNEL_RUNTIME is single threaded.
-    // TODO: that is causing issues in `execution_spec` tests because the runtime
-    // is initialized only once and that implementation will be reused by all the tests
+    // Practically only one JS runtime is created for every Runtime because tokio_runtime is single threaded.
   static LOCAL_RUNTIME: RefCell<OnceCell<LocalRuntime>> = const { RefCell::new(OnceCell::new()) };
-}
-
-// Single threaded JS runtime, that's shared across all tokio workers.
-lazy_static::lazy_static! {
-    static ref CHANNEL_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(1)
-        .build()
-        .expect("JS runtime not initialized");
 }
 
 #[rquickjs::function]
@@ -57,11 +47,29 @@ impl LocalRuntime {
 
 pub struct Runtime {
     script: blueprint::Script,
+    // Single threaded JS runtime, that's shared across all tokio workers.
+    tokio_runtime: Option<tokio::runtime::Runtime>,
 }
 
 impl Runtime {
     pub fn new(script: blueprint::Script) -> Self {
-        Self { script }
+        let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .build()
+            .expect("JS runtime not initialized");
+
+        Self { script, tokio_runtime: Some(tokio_runtime) }
+    }
+}
+
+impl Drop for Runtime {
+    fn drop(&mut self) {
+        // implicit call implementation to shutdown the tokio runtime
+        // without blocking. Otherwise it will panic on an attempt to
+        // drop AppContext in async runtime (e.g. in tests at least)
+        if let Some(runtime) = self.tokio_runtime.take() {
+            runtime.shutdown_background();
+        }
     }
 }
 
@@ -69,27 +77,31 @@ impl Runtime {
 impl WorkerIO<Event, Command> for Runtime {
     async fn call(&self, name: String, event: Event) -> anyhow::Result<Option<Command>> {
         let script = self.script.clone();
-        CHANNEL_RUNTIME
-            .spawn(async move {
-                // initialize runtime if this is the first call
-                // exit if failed to initialize
-                LOCAL_RUNTIME.with(move |cell| {
-                    if cell.borrow().get().is_none() {
-                        LocalRuntime::try_new(script).and_then(|runtime| {
-                            cell.borrow().set(runtime).map_err(|_| {
-                                anyhow::anyhow!(
+        if let Some(runtime) = &self.tokio_runtime {
+            runtime
+                .spawn(async move {
+                    // initialize runtime if this is the first call
+                    // exit if failed to initialize
+                    LOCAL_RUNTIME.with(move |cell| {
+                        if cell.borrow().get().is_none() {
+                            LocalRuntime::try_new(script).and_then(|runtime| {
+                                cell.borrow().set(runtime).map_err(|_| {
+                                    anyhow::anyhow!(
                                     "trying to reinitialize an already initialized QuickJS runtime"
                                 )
+                                })
                             })
-                        })
-                    } else {
-                        Ok(())
-                    }
-                })?;
+                        } else {
+                            Ok(())
+                        }
+                    })?;
 
-                call(name, event)
-            })
-            .await?
+                    call(name, event)
+                })
+                .await?
+        } else {
+            anyhow::bail!("JS Runtime is stopped")
+        }
     }
 }
 

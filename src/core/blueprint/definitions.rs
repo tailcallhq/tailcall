@@ -1,11 +1,9 @@
-use std::collections::BTreeSet;
-
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
-use crate::core::config::{Config, Field, GraphQLOperationType, Protected, Union};
+use crate::core::config::{Config,Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
 use crate::core::lambda::{Cache, Context, Expression};
 use crate::core::try_fold::TryFold;
@@ -226,16 +224,13 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn to_enum_type_definition(
-    name: &str,
-    type_: &config::Type,
-    variants: &BTreeSet<String>,
-) -> Valid<Definition, String> {
-    let enum_type_definition = Definition::Enum(EnumTypeDefinition {
-        name: name.to_string(),
+fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
+    Definition::Enum(EnumTypeDefinition {
+        name: name.to_owned(),
         directives: Vec::new(),
-        description: type_.doc.clone(),
-        enum_values: variants
+        description: eu.doc.to_owned(),
+        enum_values: eu
+            .variants
             .iter()
             .map(|variant| EnumValueDefinition {
                 description: None,
@@ -243,8 +238,7 @@ fn to_enum_type_definition(
                 directives: Vec::new(),
             })
             .collect(),
-    });
-    Valid::succeed(enum_type_definition)
+    })
 }
 
 fn to_object_type_definition(
@@ -525,13 +519,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
 
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
-            if let Some(variants) = &type_.variants {
-                if !variants.is_empty() {
-                    to_enum_type_definition(name, type_, variants).trace(name)
-                } else {
-                    Valid::fail("No variants found for enum".to_string())
-                }
-            } else if type_.scalar() {
+            if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
@@ -555,6 +543,21 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         .map(|mut types| {
             types.extend(config_module.unions.iter().map(to_union_type_definition));
             types
+        })
+        .fuse(Valid::from_iter(
+            config_module.enums.iter(),
+            |(name, type_)| {
+                if type_.variants.is_empty() {
+                    Valid::fail("No variants found for enum".to_string())
+                } else {
+                    Valid::succeed(to_enum_type_definition((name, type_)))
+                }
+            },
+        ))
+        .map(|tp| {
+            let mut v = tp.0;
+            v.extend(tp.1);
+            v
         })
     })
 }

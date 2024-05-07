@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 use super::Config;
+use crate::core::valid::{ValidationError, Validator};
 
 #[derive(Clone, Default)]
 pub enum Source {
@@ -33,6 +34,7 @@ impl std::str::FromStr for Source {
 }
 
 impl Source {
+    /// Get the file extension for the given format
     pub fn ext(&self) -> &'static str {
         match self {
             Source::Json => JSON_EXT,
@@ -45,17 +47,30 @@ impl Source {
         file.ends_with(&format!(".{}", self.ext()))
     }
 
+    /// Detect the config format from the file name
     pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
         ALL.into_iter()
             .find(|format| format.ends_with(name))
             .ok_or(UnsupportedConfigFormat(name.to_string()))
     }
 
+    /// Encode the config to the given format
     pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
         match self {
             Source::Yml => Ok(config.to_yaml()?),
             Source::GraphQL => Ok(config.to_sdl()),
             Source::Json => Ok(config.to_json(true)?),
+        }
+    }
+
+    /// Decode the config from the given data
+    pub fn decode(&self, data: &str) -> Result<Config, ValidationError<String>> {
+        match self {
+            Source::Yml => Config::from_yaml(data).map_err(|e| ValidationError::new(e.to_string())),
+            Source::GraphQL => Config::from_sdl(data).to_result(),
+            Source::Json => {
+                Config::from_json(data).map_err(|e| ValidationError::new(e.to_string()))
+            }
         }
     }
 }

@@ -64,6 +64,11 @@ pub struct Config {
     pub unions: BTreeMap<String, Union>,
 
     ///
+    /// A map of all the enum types in the schema
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub enums: BTreeMap<String, Enum>,
+
+    ///
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
     pub links: Vec<Link>,
@@ -94,10 +99,6 @@ pub struct Type {
     ///
     /// Interfaces that the type implements.
     pub implements: BTreeSet<String>,
-    #[serde(rename = "enum", default, skip_serializing_if = "is_default")]
-    ///
-    /// Variants for the type if it's an enum
-    pub variants: Option<BTreeSet<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Setting to indicate if the type can be cached.
@@ -123,7 +124,7 @@ impl Type {
     }
 
     pub fn scalar(&self) -> bool {
-        self.fields.is_empty() && self.variants.is_none()
+        self.fields.is_empty()
     }
 }
 
@@ -393,6 +394,13 @@ pub struct Union {
     pub doc: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+/// Definition of GraphQL enum type
+pub struct Enum {
+    pub variants: BTreeSet<String>,
+    pub doc: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
@@ -609,6 +617,10 @@ impl Config {
         self.unions.get(name)
     }
 
+    pub fn find_enum(&self, name: &str) -> Option<&Enum> {
+        self.enums.get(name)
+    }
+
     pub fn to_yaml(&self) -> Result<String> {
         Ok(serde_yaml::to_string(self)?)
     }
@@ -645,7 +657,9 @@ impl Config {
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.types.contains_key(name) || self.unions.contains_key(name)
+        self.types.contains_key(name)
+            || self.unions.contains_key(name)
+            || self.enums.contains_key(name)
     }
 
     pub fn from_json(json: &str) -> Result<Self> {

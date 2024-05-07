@@ -93,7 +93,7 @@ impl ProtoReader {
 
             for result in results {
                 let proto = result?;
-                if descriptors.get(proto.name()).is_none() {
+                if !descriptors.contains_key(proto.name()) {
                     queue.push_back(proto.clone());
                     descriptors.insert(proto.name().to_string(), proto);
                 }

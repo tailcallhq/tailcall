@@ -53,7 +53,7 @@ pub struct RequestFilter {
 
 impl RequestFilter {
     pub fn new(
-        client: Arc<impl HttpIO + Send + Sync + 'static>,
+        client: Arc<impl HttpIO + 'static>,
         worker: Arc<impl WorkerIO<Event, Command>>,
     ) -> Self {
         Self { worker, client }

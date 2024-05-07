@@ -6,6 +6,13 @@
     "schema"
   ],
   "properties": {
+    "enums": {
+      "description": "A map of all the enum types in the schema",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Enum"
+      }
+    },
     "links": {
       "description": "A list of all links in the schema.",
       "type": "array",
@@ -332,6 +339,28 @@
         "ApplicationJson",
         "ApplicationXWwwFormUrlencoded"
       ]
+    },
+    "Enum": {
+      "description": "Definition of GraphQL enum type",
+      "type": "object",
+      "required": [
+        "variants"
+      ],
+      "properties": {
+        "doc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
     },
     "Expr": {
       "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",
@@ -1220,17 +1249,6 @@
             "string",
             "null"
           ]
-        },
-        "enum": {
-          "description": "Variants for the type if it's an enum",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
         },
         "fields": {
           "description": "A map of field name and its definition.",

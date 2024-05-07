@@ -86,27 +86,25 @@ where
     let list = field.list();
     let required = field.non_null();
     let type_ = config.find_type(type_of);
-    let schema = match type_ {
-        Some(type_) => {
-            if let Some(variants) = type_.variants.clone() {
-                JsonSchema::Enum(variants)
-            } else {
-                let mut schema_fields = HashMap::new();
-                for (name, field) in type_.fields.iter() {
-                    if field.script.is_none() && field.http.is_none() {
-                        schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
-                    }
-                }
-                JsonSchema::Obj(schema_fields)
+    let type_enum_ = config.find_enum(type_of);
+    let schema = if let Some(type_) = type_ {
+        let mut schema_fields = HashMap::new();
+        for (name, field) in type_.fields.iter() {
+            if field.script.is_none() && field.http.is_none() {
+                schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
             }
         }
-        None => match type_of {
+        JsonSchema::Obj(schema_fields)
+    } else if let Some(type_enum_) = type_enum_ {
+        JsonSchema::Enum(type_enum_.variants.to_owned())
+    } else {
+        match type_of {
             "String" => JsonSchema::Str {},
             "Int" => JsonSchema::Num {},
             "Boolean" => JsonSchema::Bool {},
             "JSON" => JsonSchema::Obj(HashMap::new()),
             _ => JsonSchema::Str {},
-        },
+        }
     };
 
     if !required {
