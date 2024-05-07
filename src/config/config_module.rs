@@ -181,14 +181,14 @@ impl ConfigModule {
                 for field in ty.fields.values_mut() {
                     if let Some(resolution) = resolution_map.get(&field.type_of) {
                         if self.output_types.contains(&k) {
-                            field.type_of = resolution.output.clone();
+                            field.type_of.clone_from(&resolution.output);
                         } else if self.input_types.contains(&k) {
-                            field.type_of = resolution.input.clone();
+                            field.type_of.clone_from(&resolution.input);
                         }
                     }
                     for arg in field.args.values_mut() {
                         if let Some(resolution) = resolution_map.get(&arg.type_of) {
-                            arg.type_of = resolution.input.clone();
+                            arg.type_of.clone_from(&resolution.input);
                         }
                     }
                 }
