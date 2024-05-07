@@ -26,7 +26,7 @@ const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 lazy_static! {
-    pub static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::new();
+    static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
 }
 pub async fn run() -> Result<()> {
     if let Ok(path) = dotenv() {
@@ -37,7 +37,9 @@ pub async fn run() -> Result<()> {
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
 
-    let _ = TRACKER.init_ping().await;
+    let _ = TRACKER
+        .init_ping(tokio::time::Duration::from_secs(60))
+        .await;
     let _ = TRACKER
         .dispatch(cli.command.to_string().to_case(Case::Snake).as_str())
         .await;
