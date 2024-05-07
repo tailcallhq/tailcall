@@ -1,3 +1,3 @@
-mod analytics;
+mod tracker;
 
-pub use analytics::Tracker;
+pub use tracker::Tracker;
