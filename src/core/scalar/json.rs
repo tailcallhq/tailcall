@@ -3,6 +3,7 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 
 #[derive(JsonSchema, Default)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct JSON {
     #[serde(rename = "JSON")]
     /// The JSON scalar type represents JSON values as specified by
