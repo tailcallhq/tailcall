@@ -52,12 +52,14 @@ impl Server {
     }
 
     /// Starts the server in its own multithreaded Runtime
-    pub async fn fork_start(self) -> Result<()> {
+    pub async fn fork_start(self, usage_tracking: bool) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
-        let _ = tailcall_events::PostData::alive_event_poll(&runtime).await;
+        if usage_tracking {
+            let _ = tailcall_events::PostData::alive_event_poll(&runtime).await;
+        }
 
         let result = runtime.spawn(async { self.start().await }).await?;
         runtime.shutdown_background();

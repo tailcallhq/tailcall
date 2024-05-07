@@ -4,8 +4,8 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 
 lazy_static! {
-    static ref API_SECRET: String = "secret".to_string();
-    static ref MEASUREMENT_ID: String = "G-NCQKBRNVDW".to_string();
+    static ref API_SECRET: String = "GVaEzXFeRkCI9YBIylbEjQ".to_string();
+    static ref MEASUREMENT_ID: String = "G-JEP3QDWT0G".to_string();
     static ref BASE_URL: String = "https://www.google-analytics.com".to_string();
 }
 
@@ -59,7 +59,10 @@ impl PostData {
         let request = reqwest::Request::try_from(post_data)?;
         let client = reqwest::Client::new();
         let response = client.execute(request).await?;
-        let _ = response.text().await?;
+        tracing::debug!("{:?}", response);
+        let text = response.text().await?;
+        tracing::debug!("{:?}", text);
+
         Ok(())
     }
 
@@ -87,10 +90,14 @@ impl TryFrom<PostData> for reqwest::Request {
         let header_name = HeaderName::from_static("content-type");
         let header_value = HeaderValue::from_str("application/json")?;
         request.headers_mut().insert(header_name, header_value);
+        let event = serde_json::json!({
+            "client_id": value.client_id,
+            "events": value.events,
+        });
 
         let _ = request
             .body_mut()
-            .insert(reqwest::Body::from(serde_json::to_string(&value)?));
+            .insert(reqwest::Body::from(serde_json::to_string(&event)?));
         Ok(request)
     }
 }
