@@ -1,11 +1,10 @@
 ---
 source: tests/core/spec.rs
-assertion_line: 93
 expression: errors
 ---
 [
   {
-    "message": " --> 6:1\n  |\n6 | }\n  | ^---\n  |\n  = expected enum_value_definition",
+    "message": "No variants found for enum",
     "trace": [],
     "description": null
   }
