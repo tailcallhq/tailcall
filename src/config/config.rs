@@ -266,6 +266,11 @@ pub struct Field {
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+
+    ///
+    /// Inserts a validation resolver for the field.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub validate: Option<Validate>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -283,6 +288,7 @@ impl Field {
             || self.graphql.is_some()
             || self.grpc.is_some()
             || self.call.is_some()
+            || self.validate.is_some()
     }
 
     /// Returns a list of resolvable directives for the field.
@@ -305,6 +311,9 @@ impl Field {
         }
         if self.call.is_some() {
             directives.push(Call::trace_name());
+        }
+        if self.validate.is_some() {
+            directives.push(Validate::trace_name());
         }
         directives
     }
@@ -592,6 +601,12 @@ impl Display for GraphQLOperationType {
 /// template. schema.
 pub struct Expr {
     pub body: Value,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+pub struct Validate {
+    /// Name of the JS function
+    pub js: JS,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
