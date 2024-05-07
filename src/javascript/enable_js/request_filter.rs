@@ -105,7 +105,7 @@ mod tests {
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
     use crate::http::Response;
-    use crate::javascript::request_filter::Command;
+    use crate::javascript::enable_js::request_filter::Command;
     use crate::javascript::{JsRequest, JsResponse};
 
     #[test]

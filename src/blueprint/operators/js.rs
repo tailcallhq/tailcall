@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
 use crate::blueprint::*;
 use crate::config;
 use crate::config::Field;
-use crate::javascript::Runtime;
 use crate::lambda::Expression;
 use crate::try_fold::TryFold;
-use crate::valid::{Valid, ValidationError, Validator};
+use crate::valid::{Valid, Validator};
 
 pub struct CompileJs<'a> {
     pub name: &'a str,
@@ -14,6 +11,20 @@ pub struct CompileJs<'a> {
 }
 
 pub fn compile_js(inputs: CompileJs) -> Valid<Expression, String> {
+    #[cfg(not(feature = "js"))]
+    return js_disabled(inputs);
+
+    #[cfg(feature = "js")]
+    js_enabled(inputs)
+}
+
+#[cfg(not(feature = "js"))]
+fn js_disabled(_: CompileJs) -> Valid<Expression, String> {
+    Valid::fail("js is disabled or unsupported on this platform".to_string())
+}
+
+#[cfg(feature = "js")]
+fn js_enabled(inputs: CompileJs) -> Valid<Expression, String> {
     let name = inputs.name;
     let quickjs = rquickjs::Runtime::new().unwrap();
     let ctx = rquickjs::Context::full(&quickjs).unwrap();
@@ -25,10 +36,10 @@ pub fn compile_js(inputs: CompileJs) -> Valid<Expression, String> {
                     ctx.eval::<(), &str>(script)?;
                     Ok::<_, anyhow::Error>(())
                 })
-                .map_err(|e| ValidationError::new(e.to_string())),
+                .map_err(|e| crate::valid::ValidationError::new(e.to_string())),
             )
             .map(|_| {
-                Expression::Js(Arc::new(Runtime::new(
+                Expression::Js(std::sync::Arc::new(crate::javascript::Runtime::new(
                     name.to_string(),
                     Script { source: script.clone(), timeout: None },
                 )))

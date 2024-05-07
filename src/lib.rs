@@ -20,7 +20,6 @@ pub mod grpc;
 pub mod has_headers;
 pub mod helpers;
 pub mod http;
-#[cfg(feature = "js")]
 pub mod javascript;
 pub mod json;
 pub mod lambda;
