@@ -8,6 +8,7 @@ use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::blueprint::{Blueprint, Http};
+use crate::cli::tc::TRACKER;
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
 use crate::config::ConfigModule;
@@ -52,14 +53,13 @@ impl Server {
     }
 
     /// Starts the server in its own multithreaded Runtime
-    pub async fn fork_start(self, usage_tracking: bool) -> Result<()> {
+    pub async fn fork_start(self) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
-        if usage_tracking {
-            let _ = tailcall_tracker::EventRequest::alive_event_poll(&runtime).await;
-        }
+
+        let _ = TRACKER.check_alive(&runtime).await;
 
         let result = runtime.spawn(async { self.start().await }).await?;
         runtime.shutdown_background();

@@ -1,13 +1,14 @@
+use std::fs;
 use std::path::Path;
-use std::{env, fs};
 
 use anyhow::Result;
 use clap::Parser;
 use dotenvy::dotenv;
 use inquire::Confirm;
+use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
-use super::command::{Cli, Command, VERSION};
+use super::command::{Cli, Command};
 use super::update_checker;
 use crate::blueprint::Blueprint;
 use crate::cli::fmt::Fmt;
@@ -23,24 +24,8 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
-fn get_usage_tracking() -> bool {
-    const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_TRACKER";
-    const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_TRACKER";
-
-    let is_prod = VERSION.ne("0.1.0-dev");
-    let usage_enabled = env::var(LONG_ENV_FILTER_VAR_NAME)
-        .or(env::var(SHORT_ENV_FILTER_VAR_NAME))
-        .map(|v| !v.eq_ignore_ascii_case("false"))
-        .ok();
-    usage_tracking_inner(is_prod, usage_enabled)
-}
-
-fn usage_tracking_inner(is_prod: bool, usage_enabled: Option<bool>) -> bool {
-    if let Some(usage_enabled) = usage_enabled {
-        usage_enabled
-    } else {
-        is_prod
-    }
+lazy_static! {
+    pub static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::new();
 }
 pub async fn run() -> Result<()> {
     if let Ok(path) = dotenv() {
@@ -48,20 +33,18 @@ pub async fn run() -> Result<()> {
     }
     let cli = Cli::parse();
     update_checker::check_for_update().await;
-    let usage_tracking = get_usage_tracking();
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
-    if usage_tracking {
-        tailcall_tracker::EventRequest::send_event(cli.command.to_string().to_lowercase().as_str())
-            .await?;
-    }
+    let _ = TRACKER
+        .dispatch(cli.command.to_string().to_lowercase())
+        .await;
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
             Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
-            server.fork_start(usage_tracking).await?;
+            server.fork_start().await?;
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
@@ -216,31 +199,4 @@ pub fn display_schema(blueprint: &Blueprint) {
     Fmt::display(Fmt::heading("GraphQL Schema:\n"));
     let sdl = blueprint.to_schema();
     Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn usage_enabled_true() {
-        assert!(usage_tracking_inner(true, Some(true)));
-        assert!(usage_tracking_inner(false, Some(true)));
-    }
-
-    #[test]
-    fn usage_enabled_false() {
-        assert!(!usage_tracking_inner(true, Some(false)));
-        assert!(!usage_tracking_inner(false, Some(false)));
-    }
-
-    #[test]
-    fn usage_enabled_none_is_prod_true() {
-        assert!(usage_tracking_inner(true, None));
-    }
-
-    #[test]
-    fn usage_enabled_none_is_prod_false() {
-        assert!(!usage_tracking_inner(false, None));
-    }
 }

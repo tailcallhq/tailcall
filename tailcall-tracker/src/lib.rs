@@ -1,3 +1,3 @@
 mod analytics;
 
-pub use analytics::EventRequest;
+pub use analytics::Tracker;
