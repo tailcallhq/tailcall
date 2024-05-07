@@ -51,11 +51,12 @@ pub async fn run() -> Result<()> {
     let usage_tracking = get_usage_tracking();
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
+    if usage_tracking {
+        tailcall_events::EventRequest::send_event(cli.command.to_string().to_lowercase().as_str())
+            .await?;
+    }
     match cli.command {
         Command::Start { file_paths } => {
-            if usage_tracking {
-                tailcall_events::EventRequest::send_event("start").await?;
-            }
             let config_module = config_reader.read_all(&file_paths).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
             Fmt::log_n_plus_one(false, &config_module.config);
@@ -64,9 +65,6 @@ pub async fn run() -> Result<()> {
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
-            if usage_tracking {
-                tailcall_events::EventRequest::send_event("check").await?;
-            }
             let config_module = (config_reader.read_all(&file_paths)).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
             if let Some(format) = format {
@@ -92,16 +90,8 @@ pub async fn run() -> Result<()> {
                 Err(e) => Err(e.into()),
             }
         }
-        Command::Init { folder_path } => {
-            if usage_tracking {
-                tailcall_events::EventRequest::send_event("init").await?;
-            }
-            init(&folder_path).await
-        }
+        Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_paths, input, output, query } => {
-            if usage_tracking {
-                tailcall_events::EventRequest::send_event("gen").await?;
-            }
             let generator = Generator::init(runtime);
             let cfg = generator
                 .read_all(input, file_paths.as_ref(), query.as_str())
