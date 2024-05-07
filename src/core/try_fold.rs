@@ -101,37 +101,12 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
         self.transform(move |o, _| f(o), |o| o)
     }
 
-    /// Create a `TryFold` that always succeeds with the provided state.
-    ///
-    /// # Parameters
-    /// - `state`: The state to succeed with.
-    ///
-    /// # Returns
-    /// Returns a `TryFold` that always succeeds with the provided state.
-    pub fn succeed(f: impl Fn(&I, O) -> O + 'a) -> Self {
-        TryFold(Box::new(move |i, o| Valid::succeed(f(i, o))))
-    }
-
     /// Create a `TryFold` that doesn't do anything.
     ///
     /// # Returns
     /// Returns a `TryFold` that doesn't do anything.
     pub fn empty() -> Self {
         TryFold::new(|_, o| Valid::succeed(o))
-    }
-
-    /// Create a `TryFold` that always fails with the provided error.
-    ///
-    /// # Parameters
-    /// - `e`: The error to fail with.
-    ///
-    /// # Returns
-    /// Returns a `TryFold` that always fails with the provided error.
-    pub fn fail(e: E) -> Self
-    where
-        E: Clone,
-    {
-        TryFold::new(move |_, _| Valid::fail(e.clone()))
     }
 
     /// Add trace logging to the fold operation.
@@ -167,6 +142,19 @@ mod tests {
 
     use super::TryFold;
     use crate::core::valid::{Valid, ValidationError, Validator};
+
+    impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
+        /// Create a `TryFold` that always succeeds with the provided state.
+        ///
+        /// # Parameters
+        /// - `state`: The state to succeed with.
+        ///
+        /// # Returns
+        /// Returns a `TryFold` that always succeeds with the provided state.
+        pub fn succeed(f: impl Fn(&I, O) -> O + 'a) -> Self {
+            TryFold(Box::new(move |i, o| Valid::succeed(f(i, o))))
+        }
+    }
 
     #[test]
     fn test_and() {
