@@ -28,6 +28,7 @@ fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective,
 pub trait DirectiveCodec<A> {
     fn directive_name() -> String;
     fn from_directive(directive: &ConstDirective) -> Valid<A, String>;
+    #[allow(dead_code)]
     fn from_blueprint_directive(directive: &blueprint::Directive) -> Valid<A, String> {
         to_const_directive(directive).and_then(|a| Self::from_directive(&a))
     }
