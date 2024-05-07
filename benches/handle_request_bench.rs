@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::anyhow;
-use criterion::Criterion;
+use criterion::{Criterion, criterion_main};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use hyper::body::Bytes;
 use hyper::Request;
@@ -160,12 +160,14 @@ pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
 }
 pub fn benchmark_handle_request(c: &mut Criterion) {
     c.bench_function("test_handle_request", |b| {
+        let runtime = init(None);
+
         b.iter(|| {
-            let runtime = init(None);
+            let runtime = runtime.clone();
 
             let req = Request::builder()
                 .method("POST")
-                .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
+                .uri("http://upstream/graphql?config=.%2Fci-benchmark%2Fbenchmark.graphql")
                 .body(hyper::Body::from(
                     json!({
                         "query": "query { user { name } }"
