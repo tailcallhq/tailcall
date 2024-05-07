@@ -127,12 +127,6 @@ pub struct LruCache {
     cap: usize,
 }
 
-impl LruCache {
-    /// Creates a new LRU Cache that holds at most `cap` items.
-    pub fn new(cap: usize) -> Self {
-        Self { cap }
-    }
-}
 
 impl<K, V> CacheFactory<K, V> for LruCache
 where
