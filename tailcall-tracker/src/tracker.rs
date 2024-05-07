@@ -1,34 +1,28 @@
 use std::env;
 
-use lazy_static::lazy_static;
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use sysinfo::System;
 
-lazy_static! {
-    static ref API_SECRET: String = "GVaEzXFeRkCI9YBIylbEjQ".to_string();
-    static ref MEASUREMENT_ID: String = "G-JEP3QDWT0G".to_string();
-    static ref BASE_URL: String = "https://www.google-analytics.com".to_string();
-    static ref PARAPHRASE: String = "tc_key".to_string();
-}
+const API_SECRET: &'static str = "GVaEzXFeRkCI9YBIylbEjQ";
+const MEASUREMENT_ID: &'static str = "G-JEP3QDWT0G";
+const BASE_URL: &'static str = "https://www.google-analytics.com";
+const PARAPHRASE: &'static str = "tc_key";
+
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
     _ => "0.1.0-dev",
 };
 
+///
+/// Base structure to track usage of the CLI application
 #[derive(Debug, Clone)]
 pub struct Tracker {
     base_url: String,
     api_secret: String,
     measurement_id: String,
     is_tracking: bool,
-}
-
-impl Default for Tracker {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Tracker {
@@ -41,7 +35,7 @@ impl Tracker {
         }
     }
 
-    pub async fn init(&'static self) {
+    pub async fn init_ping(&'static self) {
         if self.is_tracking {
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
             tokio::task::spawn(async move {
@@ -54,7 +48,7 @@ impl Tracker {
     }
 
     fn create_request(&self, event_name: String) -> anyhow::Result<reqwest::Request> {
-        let event = EventRequest::prepare_event(event_name)?;
+        let event = EventList::prepare_event(event_name)?;
         tracing::debug!("Sending event: {:?}", event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
         url.set_path("/mp/collect");
@@ -117,38 +111,38 @@ impl Tracker {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Params {
+struct Params {
     pub cpu_cores: String,
     pub os_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Event {
+struct Event {
     pub name: String,
     pub params: Params,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct EventRequest {
+struct EventList {
     pub client_id: String,
     pub events: Vec<Event>,
 }
 
-impl EventRequest {
+impl EventList {
     fn create_client_id() -> anyhow::Result<String> {
         let mut builder = IdBuilder::new(Encryption::SHA256);
         builder
             .add_component(HWIDComponent::SystemID)
             .add_component(HWIDComponent::CPUCores);
 
-        Ok(builder.build(PARAPHRASE.as_str())?)
+        Ok(builder.build(PARAPHRASE)?)
     }
-    fn prepare_event(command_name: String) -> anyhow::Result<EventRequest> {
+    fn prepare_event(command_name: String) -> anyhow::Result<EventList> {
         let sys = System::new_all();
         let cores = sys.physical_core_count().unwrap_or(2).to_string();
         let os_name = System::long_os_version().unwrap_or("Unknown".to_string());
-        Ok(EventRequest {
-            client_id: EventRequest::create_client_id()?,
+        Ok(EventList {
+            client_id: EventList::create_client_id()?,
             events: vec![Event {
                 name: command_name,
                 params: Params { cpu_cores: cores, os_name },

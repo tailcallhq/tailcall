@@ -36,7 +36,7 @@ pub async fn run() -> Result<()> {
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
 
-    let _ = TRACKER.init().await;
+    let _ = TRACKER.init_ping().await;
     let _ = TRACKER
         .dispatch(cli.command.to_string().to_lowercase())
         .await;
