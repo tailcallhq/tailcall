@@ -37,9 +37,12 @@ pub async fn run() -> Result<()> {
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
 
+    // Initialize ping event every 60 seconds
     let _ = TRACKER
         .init_ping(tokio::time::Duration::from_secs(60))
         .await;
+
+    // Dispatch the command as an event
     let _ = TRACKER
         .dispatch(cli.command.to_string().to_case(Case::Snake).as_str())
         .await;

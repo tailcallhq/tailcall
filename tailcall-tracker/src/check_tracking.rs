@@ -7,6 +7,7 @@ const VERSION: &str = match option_env!("APP_VERSION") {
     _ => "0.1.0-dev",
 };
 
+/// Checks if tracking is enabled
 pub fn check_tracking() -> bool {
     let is_prod = !VERSION.contains("dev");
     let usage_enabled = env::var(LONG_ENV_FILTER_VAR_NAME)
