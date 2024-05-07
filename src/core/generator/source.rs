@@ -5,7 +5,7 @@ use thiserror::Error;
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum Source {
     #[default]
-    PROTO,
+    Proto,
 }
 
 #[derive(Debug, Error, PartialEq)]
@@ -17,7 +17,7 @@ impl std::str::FromStr for Source {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "proto" => Ok(Source::PROTO),
+            "proto" => Ok(Source::Proto),
             _ => Err(UnsupportedFileFormat(s.to_string())),
         }
     }
@@ -30,13 +30,13 @@ mod tests {
     use super::*;
     use crate::core::config::UnsupportedConfigFormat;
 
-    const ALL: &[Source] = &[Source::PROTO];
+    const ALL: &[Source] = &[Source::Proto];
 
     const PROTO_EXT: &str = "proto";
     impl Source {
         pub fn ext(&self) -> &'static str {
             match self {
-                Source::PROTO => PROTO_EXT,
+                Source::Proto => PROTO_EXT,
             }
         }
 
@@ -54,25 +54,25 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(Source::from_str("proto"), Ok(Source::PROTO));
+        assert_eq!(Source::from_str("proto"), Ok(Source::Proto));
         assert!(Source::from_str("foo").is_err());
     }
 
     #[test]
     fn test_ext() {
-        assert_eq!(Source::PROTO.ext(), "proto");
+        assert_eq!(Source::Proto.ext(), "proto");
     }
 
     #[test]
     fn test_ends_with() {
-        let proto = Source::PROTO;
+        let proto = Source::Proto;
         assert!(proto.ends_with("foo.proto"));
         assert!(!proto.ends_with("foo.xml"));
     }
 
     #[test]
     fn test_detect() {
-        assert_eq!(Source::detect("foo.proto"), Ok(Source::PROTO));
+        assert_eq!(Source::detect("foo.proto"), Ok(Source::Proto));
         assert!(Source::detect("foo.xml").is_err());
     }
 }

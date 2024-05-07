@@ -30,7 +30,7 @@ impl Generator {
         let mut config = Config::default();
         for metadata in proto_metadata {
             match input_source {
-                Source::PROTO => {
+                Source::Proto => {
                     links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
                     config = config.merge_right(from_proto(&[metadata.descriptor_set], query));
                 }
@@ -99,7 +99,7 @@ mod test {
             .to_string();
 
         let config = reader
-            .read_all(Source::PROTO, &[news, greetings_a, greetings_b], "Query")
+            .read_all(Source::Proto, &[news, greetings_a, greetings_b], "Query")
             .await
             .unwrap();
 

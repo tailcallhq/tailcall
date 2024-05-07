@@ -326,7 +326,7 @@ mod tests {
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
-        let config_module = gen.read_all(Source::PROTO, &[news], "Query").await?;
+        let config_module = gen.read_all(Source::Proto, &[news], "Query").await?;
         let actual = config_module
             .config
             .types
