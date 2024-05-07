@@ -36,6 +36,11 @@ input NEWS_NEWS_ID @tag(id: "news.NewsId") {
   id: Int
 }
 
+enum NEWS_STATUS {
+  DRAFT
+  PUBLISHED
+}
+
 type GREETINGS_A_B_HELLO_REPLY @tag(id: "greetings_a.b.HelloReply") {
   message: String
 }
