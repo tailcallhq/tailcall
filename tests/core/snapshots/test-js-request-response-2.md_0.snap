@@ -9,7 +9,8 @@ expression: response
   },
   "body": {
     "data": {
-      "hi": "hello world"
+      "hello": "darkness",
+      "hi": "I've come to talk with you again"
     }
   }
 }
