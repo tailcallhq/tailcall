@@ -3,7 +3,7 @@ use regex::Regex;
 
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
-use crate::core::config::{Config,Enum, Field, GraphQLOperationType, Protected, Union};
+use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
 use crate::core::lambda::{Cache, Context, Expression};
 use crate::core::try_fold::TryFold;

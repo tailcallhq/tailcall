@@ -11,8 +11,8 @@ use async_graphql::Name;
 use super::telemetry::Telemetry;
 use super::{Tag, JS};
 use crate::core::config::{
-    self, Cache, Call,Enum, Config, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema, Server,
-    Union, Upstream,
+    self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
+    Server, Union, Upstream,
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, Validator};
