@@ -64,10 +64,8 @@ impl PostData {
         let request = reqwest::Request::try_from(post_data)?;
         let client = reqwest::Client::new();
         let response = client.execute(request).await?;
-        tracing::debug!("{:?}", response);
         let text = response.text().await?;
-        tracing::debug!("{:?}", text);
-
+        tracing::debug!("Validation Message: {:?}", text);
         Ok(())
     }
 
