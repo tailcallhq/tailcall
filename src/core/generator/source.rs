@@ -1,6 +1,5 @@
 use thiserror::Error;
 
-use crate::core::config::UnsupportedConfigFormat;
 
 ///
 /// A list of sources from which a configuration can be created
@@ -10,9 +9,7 @@ pub enum Source {
     PROTO,
 }
 
-const ALL: &[Source] = &[Source::PROTO];
 
-const PROTO_EXT: &str = "proto";
 
 #[derive(Debug, Error, PartialEq)]
 #[error("Unsupported config extension: {0}")]
@@ -29,30 +26,34 @@ impl std::str::FromStr for Source {
     }
 }
 
-impl Source {
-    pub fn ext(&self) -> &'static str {
-        match self {
-            Source::PROTO => PROTO_EXT,
-        }
-    }
-
-    fn ends_with(&self, content: &str) -> bool {
-        content.ends_with(&format!(".{}", self.ext()))
-    }
-
-    pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
-        ALL.iter()
-            .find(|format| format.ends_with(name))
-            .ok_or(UnsupportedConfigFormat(name.to_string()))
-            .cloned()
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
-
+    use crate::core::config::UnsupportedConfigFormat;
     use super::*;
+
+    const ALL: &[Source] = &[Source::PROTO];
+
+    const PROTO_EXT: &str = "proto";
+    impl Source {
+        pub fn ext(&self) -> &'static str {
+            match self {
+                Source::PROTO => PROTO_EXT,
+            }
+        }
+    
+        fn ends_with(&self, content: &str) -> bool {
+            content.ends_with(&format!(".{}", self.ext()))
+        }
+    
+        pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
+            ALL.iter()
+                .find(|format| format.ends_with(name))
+                .ok_or(UnsupportedConfigFormat(name.to_string()))
+                .cloned()
+        }
+    }
 
     #[test]
     fn test_from_str() {
