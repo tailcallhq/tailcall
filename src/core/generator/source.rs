@@ -1,6 +1,5 @@
 use thiserror::Error;
 
-
 ///
 /// A list of sources from which a configuration can be created
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
@@ -8,8 +7,6 @@ pub enum Source {
     #[default]
     PROTO,
 }
-
-
 
 #[derive(Debug, Error, PartialEq)]
 #[error("Unsupported config extension: {0}")]
@@ -26,12 +23,12 @@ impl std::str::FromStr for Source {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
-    use crate::core::config::UnsupportedConfigFormat;
+
     use super::*;
+    use crate::core::config::UnsupportedConfigFormat;
 
     const ALL: &[Source] = &[Source::PROTO];
 
@@ -42,11 +39,11 @@ mod tests {
                 Source::PROTO => PROTO_EXT,
             }
         }
-    
+
         fn ends_with(&self, content: &str) -> bool {
             content.ends_with(&format!(".{}", self.ext()))
         }
-    
+
         pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
             ALL.iter()
                 .find(|format| format.ends_with(name))

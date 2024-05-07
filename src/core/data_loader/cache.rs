@@ -127,7 +127,6 @@ pub struct LruCache {
     cap: usize,
 }
 
-
 impl<K, V> CacheFactory<K, V> for LruCache
 where
     K: Send + Sync + Clone + Eq + Hash + 'static,
