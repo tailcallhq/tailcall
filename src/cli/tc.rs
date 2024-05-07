@@ -35,6 +35,8 @@ pub async fn run() -> Result<()> {
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
+
+    let _ = TRACKER.init().await;
     let _ = TRACKER
         .dispatch(cli.command.to_string().to_lowercase())
         .await;

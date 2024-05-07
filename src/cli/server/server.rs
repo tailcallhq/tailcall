@@ -8,7 +8,6 @@ use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::blueprint::{Blueprint, Http};
-use crate::cli::tc::TRACKER;
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
 use crate::config::ConfigModule;
@@ -58,8 +57,6 @@ impl Server {
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
-
-        let _ = TRACKER.check_alive(&runtime).await;
 
         let result = runtime.spawn(async { self.start().await }).await?;
         runtime.shutdown_background();

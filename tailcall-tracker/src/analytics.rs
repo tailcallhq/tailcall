@@ -5,7 +5,6 @@ use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use sysinfo::System;
-use tokio::runtime::Runtime;
 
 lazy_static! {
     static ref API_SECRET: String = "GVaEzXFeRkCI9YBIylbEjQ".to_string();
@@ -42,10 +41,10 @@ impl Tracker {
         }
     }
 
-    pub async fn check_alive(&'static self, runtime: &Runtime) {
+    pub async fn init(&'static self) {
         if self.is_tracking {
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
-            runtime.spawn(async move {
+            tokio::task::spawn(async move {
                 loop {
                     interval.tick().await;
                     let _ = self.dispatch("ping".to_string()).await;
@@ -80,8 +79,9 @@ impl Tracker {
     pub async fn send_request(request: reqwest::Request) -> anyhow::Result<()> {
         let client = reqwest::Client::new();
         let response = client.execute(request).await?;
+        let status = response.status();
         let text = response.text().await?;
-        tracing::debug!("Validation Message: {:?}", text);
+        tracing::debug!("Tracker: {}, message: {:?}", status.as_str(), text);
         Ok(())
     }
 
