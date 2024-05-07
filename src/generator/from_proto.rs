@@ -178,7 +178,7 @@ impl Context {
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
-                grpc_method.service = service_name.clone();
+                grpc_method.service.clone_from(&service_name);
                 grpc_method.name = field_name.to_string();
 
                 cfg_field.grpc = Some(Grpc {

@@ -35,10 +35,10 @@ impl ConfigReader {
 
     /// Reads the links in a Config and fill the content
     #[async_recursion::async_recursion]
-    async fn ext_links<'a: 'async_recursion>(
+    async fn ext_links(
         &self,
         mut config_module: ConfigModule,
-        parent_dir: Option<&'a Path>,
+        parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
             .config
