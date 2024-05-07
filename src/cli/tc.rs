@@ -52,7 +52,7 @@ pub async fn run() -> Result<()> {
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
     if usage_tracking {
-        tailcall_events::EventRequest::send_event(cli.command.to_string().to_lowercase().as_str())
+        tailcall_tracker::EventRequest::send_event(cli.command.to_string().to_lowercase().as_str())
             .await?;
     }
     match cli.command {

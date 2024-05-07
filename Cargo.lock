@@ -3285,9 +3285,9 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
- "proc-macro2 1.0.81",
+ "proc-macro2 1.0.82",
  "quote 1.0.36",
- "syn 2.0.60",
+ "syn 2.0.61",
 ]
 
 [[package]]
@@ -5250,10 +5250,10 @@ dependencies = [
  "serde_yaml",
  "stripmargin",
  "strum_macros 0.26.2",
- "tailcall-events",
  "tailcall-fixtures",
  "tailcall-macros",
  "tailcall-prettier",
+ "tailcall-tracker",
  "temp-env",
  "tempfile",
  "thiserror",
@@ -5324,21 +5324,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tailcall-events"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "lazy_static",
- "machineid-rs",
- "reqwest",
- "serde",
- "serde_json",
- "sysinfo 0.30.12",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "tailcall-fixtures"
 version = "0.1.0"
 dependencies = [
@@ -5364,6 +5349,21 @@ dependencies = [
  "lazy_static",
  "strum_macros 0.26.2",
  "tokio",
+]
+
+[[package]]
+name = "tailcall-tracker"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "machineid-rs",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sysinfo 0.30.12",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -6357,7 +6357,7 @@ version = "0.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e2ee588991b9e7e6c8338edf3333fbe4da35dc72092643958ebb43f0ab2c49c"
 dependencies = [
- "proc-macro2 1.0.81",
+ "proc-macro2 1.0.82",
  "quote 1.0.36",
  "syn 1.0.109",
 ]
@@ -6368,7 +6368,7 @@ version = "0.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6fb8df20c9bcaa8ad6ab513f7b40104840c8867d5751126e4df3b08388d0cc7"
 dependencies = [
- "proc-macro2 1.0.81",
+ "proc-macro2 1.0.82",
  "quote 1.0.36",
  "syn 1.0.109",
 ]

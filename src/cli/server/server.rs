@@ -58,7 +58,7 @@ impl Server {
             .enable_all()
             .build()?;
         if usage_tracking {
-            let _ = tailcall_events::EventRequest::alive_event_poll(&runtime).await;
+            let _ = tailcall_tracker::EventRequest::alive_event_poll(&runtime).await;
         }
 
         let result = runtime.spawn(async { self.start().await }).await?;

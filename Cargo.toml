@@ -142,12 +142,11 @@ dotenvy = "0.15.7"
 convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
-tailcall-events = { path = "tailcall-events", optional = true }
+tailcall-tracker = { path = "tailcall-tracker", optional = true }
 tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
-
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
@@ -186,7 +185,7 @@ cli = [
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
     "dep:opentelemetry-system-metrics",
-    "dep:tailcall-events"
+    "dep:tailcall-tracker"
 ]
 
 # Feature flag to enable all default features.
@@ -206,7 +205,7 @@ members = [
     "tailcall-query-plan",
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
-    "tailcall-events"]
+    "tailcall-tracker"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
