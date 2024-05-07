@@ -3,6 +3,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
+use convert_case::{Case, Casing};
 use dotenvy::dotenv;
 use inquire::Confirm;
 use lazy_static::lazy_static;
@@ -38,7 +39,7 @@ pub async fn run() -> Result<()> {
 
     let _ = TRACKER.init_ping().await;
     let _ = TRACKER
-        .dispatch(cli.command.to_string().to_lowercase())
+        .dispatch(cli.command.to_string().to_case(Case::Snake).as_str())
         .await;
     match cli.command {
         Command::Start { file_paths } => {

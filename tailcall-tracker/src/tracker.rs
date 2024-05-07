@@ -1,14 +1,12 @@
 use std::env;
 
-use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use reqwest::header::{HeaderName, HeaderValue};
-use serde::{Deserialize, Serialize};
-use sysinfo::System;
 
-const API_SECRET: &'static str = "GVaEzXFeRkCI9YBIylbEjQ";
-const MEASUREMENT_ID: &'static str = "G-JEP3QDWT0G";
-const BASE_URL: &'static str = "https://www.google-analytics.com";
-const PARAPHRASE: &'static str = "tc_key";
+use crate::event::Event;
+
+const API_SECRET: &str = "GVaEzXFeRkCI9YBIylbEjQ";
+const MEASUREMENT_ID: &str = "G-JEP3QDWT0G";
+const BASE_URL: &str = "https://www.google-analytics.com";
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
@@ -23,6 +21,12 @@ pub struct Tracker {
     api_secret: String,
     measurement_id: String,
     is_tracking: bool,
+}
+
+impl Default for Tracker {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Tracker {
@@ -41,14 +45,14 @@ impl Tracker {
             tokio::task::spawn(async move {
                 loop {
                     interval.tick().await;
-                    let _ = self.dispatch("ping".to_string()).await;
+                    let _ = self.dispatch("ping").await;
                 }
             });
         }
     }
 
-    fn create_request(&self, event_name: String) -> anyhow::Result<reqwest::Request> {
-        let event = EventList::prepare_event(event_name)?;
+    fn create_request(&self, event_name: &str) -> anyhow::Result<reqwest::Request> {
+        let event = Event::new(event_name);
         tracing::debug!("Sending event: {:?}", event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
         url.set_path("/mp/collect");
@@ -59,10 +63,6 @@ impl Tracker {
         let header_name = HeaderName::from_static("content-type");
         let header_value = HeaderValue::from_str("application/json")?;
         request.headers_mut().insert(header_name, header_value);
-        let event = serde_json::json!({
-            "client_id": event.client_id,
-            "events": event.events,
-        });
 
         let _ = request
             .body_mut()
@@ -79,9 +79,9 @@ impl Tracker {
         Ok(())
     }
 
-    pub async fn dispatch(&'static self, event_name: String) -> anyhow::Result<()> {
+    pub async fn dispatch(&'static self, name: &str) -> anyhow::Result<()> {
         if self.is_tracking {
-            let request = self.create_request(event_name)?;
+            let request = self.create_request(name)?;
             Self::send_request(request).await?;
             Ok(())
         } else {
@@ -107,47 +107,6 @@ impl Tracker {
         } else {
             is_prod
         }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Params {
-    pub cpu_cores: String,
-    pub os_name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Event {
-    pub name: String,
-    pub params: Params,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct EventList {
-    pub client_id: String,
-    pub events: Vec<Event>,
-}
-
-impl EventList {
-    fn create_client_id() -> anyhow::Result<String> {
-        let mut builder = IdBuilder::new(Encryption::SHA256);
-        builder
-            .add_component(HWIDComponent::SystemID)
-            .add_component(HWIDComponent::CPUCores);
-
-        Ok(builder.build(PARAPHRASE)?)
-    }
-    fn prepare_event(command_name: String) -> anyhow::Result<EventList> {
-        let sys = System::new_all();
-        let cores = sys.physical_core_count().unwrap_or(2).to_string();
-        let os_name = System::long_os_version().unwrap_or("Unknown".to_string());
-        Ok(EventList {
-            client_id: EventList::create_client_id()?,
-            events: vec![Event {
-                name: command_name,
-                params: Params { cpu_cores: cores, os_name },
-            }],
-        })
     }
 }
 
