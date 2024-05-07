@@ -3,8 +3,10 @@ use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
+use convert_case::{Case, Casing};
 use dotenvy::dotenv;
 use inquire::Confirm;
+use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
@@ -23,6 +25,9 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
+lazy_static! {
+    static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
+}
 pub async fn run() -> Result<()> {
     if let Ok(path) = dotenv() {
         tracing::info!("Env file: {:?} loaded", path);
@@ -31,6 +36,16 @@ pub async fn run() -> Result<()> {
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
+
+    // Initialize ping event every 60 seconds
+    let _ = TRACKER
+        .init_ping(tokio::time::Duration::from_secs(60))
+        .await;
+
+    // Dispatch the command as an event
+    let _ = TRACKER
+        .dispatch(cli.command.to_string().to_case(Case::Snake).as_str())
+        .await;
     match cli.command {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
