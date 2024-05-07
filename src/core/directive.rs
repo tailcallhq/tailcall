@@ -13,6 +13,7 @@ fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
 
+#[allow(dead_code)]
 fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective, String> {
     Valid::from_iter(directive.arguments.iter(), |(k, v)| {
         let name = pos(Name::new(k.clone()));
