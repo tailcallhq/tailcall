@@ -9,6 +9,9 @@ scalar Email
 
 scalar Empty
 
+"""
+Description of enum Foo
+"""
 enum Foo {
   BAR
   BAZ
