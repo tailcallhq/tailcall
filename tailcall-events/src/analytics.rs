@@ -24,16 +24,15 @@ pub struct Event {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PostData {
+pub struct EventRequest {
     base_url: String,
     api_secret: String,
     measurement_id: String,
-    #[serde(rename = "client_id")]
     pub client_id: String,
     pub events: Vec<Event>,
 }
 
-impl PostData {
+impl EventRequest {
     fn create_client_id() -> anyhow::Result<String> {
         let mut builder = IdBuilder::new(Encryption::SHA256);
         builder
@@ -42,15 +41,15 @@ impl PostData {
 
         Ok(builder.build(PARAPHRASE.as_str())?)
     }
-    fn prepare_event(command_name: &str) -> anyhow::Result<PostData> {
+    fn prepare_event(command_name: &str) -> anyhow::Result<EventRequest> {
         let sys = System::new_all();
         let cores = sys.physical_core_count().unwrap_or(2).to_string();
         let os_name = System::long_os_version().unwrap_or("Unknown".to_string());
-        Ok(PostData {
+        Ok(EventRequest {
             base_url: BASE_URL.to_string(),
             api_secret: API_SECRET.to_string(),
             measurement_id: MEASUREMENT_ID.to_string(),
-            client_id: PostData::create_client_id()?,
+            client_id: EventRequest::create_client_id()?,
             events: vec![Event {
                 name: command_name.to_string(),
                 params: Params { cpu_cores: cores, os_name },
@@ -59,7 +58,7 @@ impl PostData {
     }
 
     pub async fn send_event(command_name: &str) -> Result<(), anyhow::Error> {
-        let post_data = PostData::prepare_event(command_name)?;
+        let post_data = EventRequest::prepare_event(command_name)?;
         tracing::debug!("Sending event: {:?}", post_data);
         let request = reqwest::Request::try_from(post_data)?;
         let client = reqwest::Client::new();
@@ -74,16 +73,16 @@ impl PostData {
         runtime.spawn(async move {
             loop {
                 interval.tick().await;
-                let _ = PostData::send_event("alive").await;
+                let _ = EventRequest::send_event("alive").await;
             }
         });
     }
 }
 
-impl TryFrom<PostData> for reqwest::Request {
+impl TryFrom<EventRequest> for reqwest::Request {
     type Error = anyhow::Error;
 
-    fn try_from(value: PostData) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: EventRequest) -> std::result::Result<Self, Self::Error> {
         let mut url = reqwest::Url::parse(&value.base_url)?;
         url.set_path("/mp/collect");
         url.query_pairs_mut()

@@ -1,3 +1,3 @@
 mod analytics;
 
-pub use analytics::PostData;
+pub use analytics::EventRequest;

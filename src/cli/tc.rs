@@ -54,7 +54,7 @@ pub async fn run() -> Result<()> {
     match cli.command {
         Command::Start { file_paths } => {
             if usage_tracking {
-                tailcall_events::PostData::send_event("start").await?;
+                tailcall_events::EventRequest::send_event("start").await?;
             }
             let config_module = config_reader.read_all(&file_paths).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
@@ -65,7 +65,7 @@ pub async fn run() -> Result<()> {
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             if usage_tracking {
-                tailcall_events::PostData::send_event("check").await?;
+                tailcall_events::EventRequest::send_event("check").await?;
             }
             let config_module = (config_reader.read_all(&file_paths)).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
@@ -94,13 +94,13 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => {
             if usage_tracking {
-                tailcall_events::PostData::send_event("init").await?;
+                tailcall_events::EventRequest::send_event("init").await?;
             }
             init(&folder_path).await
         }
         Command::Gen { file_paths, input, output, query } => {
             if usage_tracking {
-                tailcall_events::PostData::send_event("gen").await?;
+                tailcall_events::EventRequest::send_event("gen").await?;
             }
             let generator = Generator::init(runtime);
             let cfg = generator
