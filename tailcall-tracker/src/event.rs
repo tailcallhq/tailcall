@@ -29,7 +29,6 @@ impl EventValue {
     }
 }
 
-
 /// Event structure to be sent to GA
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
