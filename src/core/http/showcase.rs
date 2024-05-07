@@ -30,14 +30,14 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("No Config URL specified", None);
         response.errors = vec![server_error];
-        return Ok(Err(GraphQLResponse::from(response).to_response()?));
+        return Ok(Err(GraphQLResponse::from(response).into_response()?));
     };
 
     if !enable_fs && Url::parse(&config_url).is_err() {
         let mut response = async_graphql::Response::default();
         let server_error = ServerError::new("Invalid Config URL specified", None);
         response.errors = vec![server_error];
-        return Ok(Err(GraphQLResponse::from(response).to_response()?));
+        return Ok(Err(GraphQLResponse::from(response).into_response()?));
     }
 
     let reader = ConfigReader::init(runtime.clone());
@@ -47,7 +47,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("Failed to read config: {}", e), None);
             response.errors = vec![server_error];
-            return Ok(Err(GraphQLResponse::from(response).to_response()?));
+            return Ok(Err(GraphQLResponse::from(response).into_response()?));
         }
     };
 
@@ -57,7 +57,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("{}", e), None);
             response.errors = vec![server_error];
-            return Ok(Err(GraphQLResponse::from(response).to_response()?));
+            return Ok(Err(GraphQLResponse::from(response).into_response()?));
         }
     };
 

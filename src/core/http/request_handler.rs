@@ -109,7 +109,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
 
             response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-            let mut resp = response.to_response()?;
+            let mut resp = response.into_response()?;
             update_response_headers(&mut resp, &req_ctx, app_ctx);
             Ok(resp)
         }
@@ -124,7 +124,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                 ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
             response.errors = vec![server_error];
 
-            Ok(GraphQLResponse::from(response).to_response()?)
+            Ok(GraphQLResponse::from(response).into_response()?)
         }
     }
 }
@@ -251,7 +251,7 @@ async fn handle_rest_apis(
                 .execute(&app_ctx.schema)
                 .await;
             response = update_cache_control_header(response, app_ctx.as_ref(), req_ctx.clone());
-            let mut resp = response.to_rest_response()?;
+            let mut resp = response.into_rest_response()?;
             update_response_headers(&mut resp, &req_ctx, &app_ctx);
             Ok(resp)
         }

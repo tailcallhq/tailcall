@@ -132,7 +132,7 @@ impl GraphQLResponse {
         Ok(Body::from(serde_json::to_string(&self.0)?))
     }
 
-    pub fn to_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_response(self) -> Result<Response<hyper::Body>> {
         self.build_response(StatusCode::OK, self.default_body()?)
     }
 
@@ -146,7 +146,7 @@ impl GraphQLResponse {
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub fn to_rest_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
         if !self.0.is_ok() {
             return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
         }
@@ -221,7 +221,7 @@ mod tests {
         let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
 
         let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
-        let rest_response = response.to_rest_response().unwrap();
+        let rest_response = response.into_rest_response().unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -248,7 +248,7 @@ mod tests {
             .collect();
 
         let response = GraphQLResponse(BatchResponse::Batch(list));
-        let rest_response = response.to_rest_response().unwrap();
+        let rest_response = response.into_rest_response().unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -277,7 +277,7 @@ mod tests {
             .map(|error| ServerError::new(error.to_string(), None))
             .collect();
         let response = GraphQLResponse(BatchResponse::Single(response));
-        let rest_response = response.to_rest_response().unwrap();
+        let rest_response = response.into_rest_response().unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");

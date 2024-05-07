@@ -66,7 +66,7 @@ impl AppContext {
                                 IO::GraphQL { req_template, field_name, batch, .. } => {
                                     let graphql_data_loader =
                                         GraphqlDataLoader::new(runtime.clone(), *batch)
-                                            .to_data_loader(
+                                            .into_data_loader(
                                                 upstream_batch.clone().unwrap_or_default(),
                                             );
 
