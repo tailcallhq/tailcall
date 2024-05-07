@@ -6,55 +6,55 @@ schema @server @upstream {
   query: Query
 }
 
-input GREETINGS_A_B_HELLO_REQUEST @tag(id: "greetings_a.b.HelloRequest") {
+input greetings_a__b__HelloRequest {
   name: String
 }
 
-input GREETINGS_B_C_HELLO_REQUEST @tag(id: "greetings_b.c.HelloRequest") {
+input greetings_b__c__HelloRequest {
   name: String
 }
 
-input NEWS_MULTIPLE_NEWS_ID @tag(id: "news.MultipleNewsId") {
-  ids: [NEWS_NEWS_ID]!
+input news__MultipleNewsId {
+  ids: [news__NewsId]!
 }
 
-input NEWS_NEWS @tag(id: "news.News") {
+input news__News {
   body: String
   id: Int
-  post_image: String
-  status: NEWS_STATUS
+  postImage: String
+  status: news__Status
   title: String
 }
 
-input NEWS_NEWS_ID @tag(id: "news.NewsId") {
+input news__NewsId {
   id: Int
 }
 
-enum NEWS_STATUS {
+enum news__Status {
   DELETED
   DRAFT
   PUBLISHED
 }
 
-type GREETINGS_A_B_HELLO_REPLY @tag(id: "greetings_a.b.HelloReply") {
-  message: String
-}
-
-type GREETINGS_B_C_HELLO_REPLY @tag(id: "greetings_b.c.HelloReply") {
-  message: String
-}
-
-type NEWS_NEWS_LIST @tag(id: "news.NewsList") {
-  news: [NEWS_NEWS]!
-}
-
 type Query {
-  greetings_a_b_say_hello(hello_request: GREETINGS_A_B_HELLO_REQUEST!): GREETINGS_A_B_HELLO_REPLY! @grpc(method: "greetings_a.b.SayHello")
-  greetings_b_c_say_hello(hello_request: GREETINGS_B_C_HELLO_REQUEST!): GREETINGS_B_C_HELLO_REPLY! @grpc(method: "greetings_b.c.SayHello")
-  news_add_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.AddNews")
-  news_delete_news(news_id: NEWS_NEWS_ID!): NEWS_EMPTY! @grpc(method: "news.DeleteNews")
-  news_edit_news(news: NEWS_NEWS!): NEWS_NEWS! @grpc(method: "news.EditNews")
-  news_get_all_news: NEWS_NEWS_LIST! @grpc(method: "news.GetAllNews")
-  news_get_multiple_news(multiple_news_id: NEWS_MULTIPLE_NEWS_ID!): NEWS_NEWS_LIST! @grpc(method: "news.GetMultipleNews")
-  news_get_news(news_id: NEWS_NEWS_ID!): NEWS_NEWS! @grpc(method: "news.GetNews")
+  greetings_a__b__SayHello(helloRequest: greetings_a__b__HelloRequest!): greetings_a__b__HelloReply! @grpc(method: "greetings_a__b.SayHello")
+  greetings_b__c__SayHello(helloRequest: greetings_b__c__HelloRequest!): greetings_b__c__HelloReply! @grpc(method: "greetings_b__c.SayHello")
+  news__AddNews(news: news__News!): news__News! @grpc(method: "news.AddNews")
+  news__DeleteNews(newsId: news__NewsId!): news__Empty! @grpc(method: "news.DeleteNews")
+  news__EditNews(news: news__News!): news__News! @grpc(method: "news.EditNews")
+  news__GetAllNews: news__NewsList! @grpc(method: "news.GetAllNews")
+  news__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): news__NewsList! @grpc(method: "news.GetMultipleNews")
+  news__GetNews(newsId: news__NewsId!): news__News! @grpc(method: "news.GetNews")
+}
+
+type greetings_a__b__HelloReply {
+  message: String
+}
+
+type greetings_b__c__HelloReply {
+  message: String
+}
+
+type news__NewsList {
+  news: [news__News]!
 }

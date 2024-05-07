@@ -46,18 +46,12 @@ impl Context {
             let variants = enum_
                 .value
                 .iter()
-                .map(|v| {
-                    GraphQLType::new(v.name())
-                        .as_enum_variant()
-                        .unwrap()
-                        .to_string()
-                })
+                .map(|v| GraphQLType::new(v.name()).as_enum_variant().to_string())
                 .collect::<BTreeSet<String>>();
 
             let type_name = GraphQLType::new(enum_name)
-                .package(&self.package)
+                .append_namespace(&self.package)
                 .as_enum()
-                .unwrap()
                 .to_string();
             self.config
                 .enums
@@ -80,16 +74,14 @@ impl Context {
             self = self.append_msg_type(&message.nested_type);
 
             let msg_type = GraphQLType::new(&msg_name)
-                .package(&self.package)
-                .as_object_type()
-                .unwrap();
+                .append_namespace(&self.package)
+                .as_object_type();
 
             let mut ty = Type::default();
             for field in message.field.iter() {
                 let field_name = GraphQLType::new(field.name())
-                    .package(&self.package)
-                    .as_field()
-                    .unwrap();
+                    .append_namespace(&self.package)
+                    .as_field();
 
                 let mut cfg_field = Field::default();
 
@@ -108,9 +100,8 @@ impl Context {
                     // for non-primitive types
                     let type_of = convert_ty(field.type_name());
                     let type_of = GraphQLType::new(&type_of)
-                        .package(self.package.as_str())
+                        .append_namespace(self.package.as_str())
                         .as_object_type()
-                        .unwrap()
                         .to_string();
 
                     cfg_field.type_of = type_of;
@@ -119,7 +110,7 @@ impl Context {
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
 
-            ty.tag = Some(Tag { id: msg_type.id() });
+            // ty.tag = Some(Tag { id: msg_type.id() });
 
             self = self.insert_type(msg_type.to_string(), ty);
         }
@@ -139,21 +130,18 @@ impl Context {
             let service_name = service.name().to_string();
             for method in &service.method {
                 let field_name = GraphQLType::new(method.name())
-                    .package(&self.package)
-                    .as_method()
-                    .unwrap();
+                    .append_namespace(&self.package)
+                    .as_method();
 
                 let mut cfg_field = Field::default();
                 if let Some(arg_type) = get_input_ty(method.input_type()) {
                     let key = GraphQLType::new(&arg_type)
-                        .package(&self.package)
+                        .append_namespace(&self.package)
                         .as_field()
-                        .unwrap()
                         .to_string();
                     let type_of = GraphQLType::new(&arg_type)
-                        .package(&self.package)
+                        .append_namespace(&self.package)
                         .as_object_type()
-                        .unwrap()
                         .to_string();
                     let val = Arg {
                         type_of,
@@ -171,9 +159,8 @@ impl Context {
 
                 let output_ty = get_output_ty(method.output_type());
                 let output_ty = GraphQLType::new(&output_ty)
-                    .package(&self.package)
+                    .append_namespace(&self.package)
                     .as_object_type()
-                    .unwrap()
                     .to_string();
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
