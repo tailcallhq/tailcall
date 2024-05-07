@@ -1,6 +1,4 @@
-use std::time::Duration;
-
-use cache_control::{Cachability, CacheControl};
+use cache_control::CacheControl;
 
 use super::Response;
 
@@ -11,47 +9,48 @@ pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl
     CacheControl::from_value(value)
 }
 
-pub fn max_age(res: &Response<async_graphql::Value>) -> Option<Duration> {
-    match cache_policy(res) {
-        Some(value) => value.max_age,
-        None => None,
-    }
-}
-
-pub fn cache_visibility(res: &Response<async_graphql::Value>) -> String {
-    let cachability = cache_policy(res).and_then(|value| value.cachability);
-
-    match cachability {
-        Some(Cachability::Public) => "public".to_string(),
-        Some(Cachability::Private) => "private".to_string(),
-        Some(Cachability::NoCache) => "no-cache".to_string(),
-        _ => "".to_string(),
-    }
-}
-
-/// Returns the minimum TTL of the given responses.
-pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response<async_graphql::Value>>) -> i32 {
-    let mut min = -1;
-
-    for res in res_vec {
-        if let Some(max_age) = max_age(res) {
-            let ttl = max_age.as_secs() as i32;
-            if min == -1 || ttl < min {
-                min = ttl;
-            }
-        }
-    }
-    min
-}
-
 #[cfg(test)]
 mod tests {
 
     use std::time::Duration;
 
+    use cache_control::Cachability;
     use hyper::HeaderMap;
 
     use crate::core::http::Response;
+
+    pub fn max_age(res: &Response<async_graphql::Value>) -> Option<Duration> {
+        match super::cache_policy(res) {
+            Some(value) => value.max_age,
+            None => None,
+        }
+    }
+
+    /// Returns the minimum TTL of the given responses.
+    pub fn min_ttl<'a>(res_vec: impl Iterator<Item = &'a Response<async_graphql::Value>>) -> i32 {
+        let mut min = -1;
+
+        for res in res_vec {
+            if let Some(max_age) = max_age(res) {
+                let ttl = max_age.as_secs() as i32;
+                if min == -1 || ttl < min {
+                    min = ttl;
+                }
+            }
+        }
+        min
+    }
+
+    pub fn cache_visibility(res: &Response<async_graphql::Value>) -> String {
+        let cachability = super::cache_policy(res).and_then(|value| value.cachability);
+
+        match cachability {
+            Some(Cachability::Public) => "public".to_string(),
+            Some(Cachability::Private) => "private".to_string(),
+            Some(Cachability::NoCache) => "no-cache".to_string(),
+            _ => "".to_string(),
+        }
+    }
 
     fn cache_control_header(i: i32) -> HeaderMap {
         let mut headers = reqwest::header::HeaderMap::default();
@@ -71,7 +70,7 @@ mod tests {
     #[test]
     fn test_max_age_none() {
         let response = Response::default();
-        assert_eq!(super::max_age(&response), None);
+        assert_eq!(max_age(&response), None);
     }
 
     #[test]
@@ -79,14 +78,14 @@ mod tests {
         let headers = cache_control_header(3600);
         let response = Response::default().headers(headers);
 
-        assert_eq!(super::max_age(&response), Some(Duration::from_secs(3600)));
+        assert_eq!(max_age(&response), Some(Duration::from_secs(3600)));
     }
 
     #[test]
     fn test_min_ttl() {
         let max_ages =
             [3600, 1800, 7200].map(|i| Response::default().headers(cache_control_header(i)));
-        let min = super::min_ttl(max_ages.iter());
+        let min = min_ttl(max_ages.iter());
         assert_eq!(min, 1800);
     }
 
@@ -95,8 +94,8 @@ mod tests {
         let headers = cache_control_header_visibility(3600, "public");
         let response = Response::default().headers(headers);
 
-        assert_eq!(super::max_age(&response), Some(Duration::from_secs(3600)));
-        assert_eq!(super::cache_visibility(&response), "public");
+        assert_eq!(max_age(&response), Some(Duration::from_secs(3600)));
+        assert_eq!(cache_visibility(&response), "public");
     }
 
     #[test]
@@ -104,7 +103,7 @@ mod tests {
         let headers = cache_control_header_visibility(3600, "private");
         let response = Response::default().headers(headers);
 
-        assert_eq!(super::max_age(&response), Some(Duration::from_secs(3600)));
-        assert_eq!(super::cache_visibility(&response), "private");
+        assert_eq!(max_age(&response), Some(Duration::from_secs(3600)));
+        assert_eq!(cache_visibility(&response), "private");
     }
 }
