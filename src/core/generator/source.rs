@@ -34,5 +34,4 @@ mod tests {
         assert_eq!(Source::from_str("proto"), Ok(Source::Proto));
         assert!(Source::from_str("foo").is_err());
     }
-
 }
