@@ -108,7 +108,6 @@ impl Context {
                 }
 
                 ty.fields.insert(field_name.to_string(), cfg_field);
-                
             }
 
             self = self.insert_type(msg_type.to_string(), ty);
