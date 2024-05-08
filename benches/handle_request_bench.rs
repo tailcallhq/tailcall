@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::anyhow;
-use criterion::{Criterion, criterion_main};
+use criterion::Criterion;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use hyper::body::Bytes;
 use hyper::Request;
@@ -12,12 +12,14 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use serde_json::json;
 use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::blueprint::Upstream;
+use tailcall::blueprint::{Blueprint, Upstream};
 use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
-use tailcall::http::showcase::create_app_ctx;
+use tailcall::cli::server::server_config::ServerConfig;
+use tailcall::config::{Config, ConfigModule};
 use tailcall::http::{handle_request, Response};
 use tailcall::runtime::TargetRuntime;
+use tailcall::valid::Validator;
 use tailcall::{blueprint, EnvIO, FileIO, HttpIO};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -158,36 +160,40 @@ pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
         extensions: Arc::new(vec![]),
     }
 }
+
 pub fn benchmark_handle_request(c: &mut Criterion) {
+    let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
+    let sdl = std::fs::read_to_string("./ci-benchmark/benchmark.graphql").unwrap();
+    let config_module: ConfigModule = Config::from_sdl(sdl.as_str()).to_result().unwrap().into();
+
+    let blueprint = Blueprint::try_from(&config_module).unwrap();
+    let endpoints = config_module.extensions.endpoint_set;
+
+    let server_config = tokio_runtime
+        .block_on(ServerConfig::new(blueprint, endpoints))
+        .unwrap();
+    let server_config = Arc::new(server_config);
+
     c.bench_function("test_handle_request", |b| {
-        let runtime = init(None);
-
+        let server_config = server_config.clone();
         b.iter(|| {
-            let runtime = runtime.clone();
-
-            let req = Request::builder()
-                .method("POST")
-                .uri("http://upstream/graphql?config=.%2Fci-benchmark%2Fbenchmark.graphql")
-                .body(hyper::Body::from(
-                    json!({
-                        "query": "query { user { name } }"
-                    })
-                    .to_string(),
-                ))
-                .unwrap();
-
-            let fut = async move {
-                let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
-                    .await
-                    .unwrap()
+            let server_config = server_config.clone();
+            tokio_runtime.spawn(async move {
+                let req = Request::builder()
+                    .method("POST")
+                    .uri("http://localhost:8000/graphql")
+                    .body(hyper::Body::from(
+                        json!({
+                            "query": "query { posts { title } }"
+                        })
+                        .to_string(),
+                    ))
                     .unwrap();
 
-                let _ = handle_request::<GraphQLRequest>(req, Arc::new(app))
+                let _ = handle_request::<GraphQLRequest>(req, server_config.app_ctx.clone())
                     .await
                     .unwrap();
-            };
-
-            tokio::runtime::Runtime::new().unwrap().block_on(fut);
+            });
         })
     });
 }
