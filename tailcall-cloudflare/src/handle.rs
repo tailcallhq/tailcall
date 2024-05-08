@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::{RwLock};
+use std::sync::RwLock;
 
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
