@@ -13,6 +13,7 @@ use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use trc::SharedTrc;
 
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
@@ -144,7 +145,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 
 async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    app_ctx: Arc<AppContext>,
+    app_ctx: SharedTrc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     let method = req.method();
@@ -176,7 +177,7 @@ async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
 
 async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    app_ctx: Arc<AppContext>,
+    app_ctx: SharedTrc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     // Safe to call `.unwrap()` because this method will only be called when
@@ -229,7 +230,7 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
 
 async fn handle_rest_apis(
     mut request: Request<Body>,
-    app_ctx: Arc<AppContext>,
+    app_ctx: SharedTrc<AppContext>,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
@@ -264,7 +265,7 @@ async fn handle_rest_apis(
 
 async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    app_ctx: Arc<AppContext>,
+    app_ctx: SharedTrc<AppContext>,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     if req.uri().path().starts_with(API_URL_PREFIX) {
@@ -318,7 +319,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 )]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    app_ctx: Arc<AppContext>,
+    app_ctx: SharedTrc<AppContext>,
 ) -> Result<Response<Body>> {
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);

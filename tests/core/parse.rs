@@ -17,6 +17,7 @@ use tailcall::config::{ConfigModule, Source};
 use tailcall::http::AppContext;
 use tailcall::runtime::TargetRuntime;
 use tailcall::EnvIO;
+use trc::SharedTrc;
 
 use super::file::File;
 use super::http::Http;
@@ -273,7 +274,7 @@ impl ExecutionSpec {
         config: &ConfigModule,
         env: HashMap<String, String>,
         http_client: Arc<Http>,
-    ) -> Arc<AppContext> {
+    ) -> SharedTrc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
         let http = if let Some(script) = blueprint.server.script.clone() {
             javascript::init_http(http_client, script)
@@ -300,6 +301,6 @@ impl ExecutionSpec {
             .await
             .unwrap();
 
-        Arc::new(AppContext::new(blueprint, runtime, endpoints))
+        SharedTrc::new(AppContext::new(blueprint, runtime, endpoints))
     }
 }

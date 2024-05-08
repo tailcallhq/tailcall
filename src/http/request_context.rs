@@ -1,11 +1,12 @@
 use std::num::NonZeroU64;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use trc::SharedTrc;
 
 use crate::async_cache::AsyncCache;
 use crate::auth::context::AuthContext;
@@ -22,17 +23,17 @@ use crate::runtime::TargetRuntime;
 pub struct RequestContext {
     pub server: Server,
     pub upstream: Upstream,
-    pub x_response_headers: Arc<Mutex<HeaderMap>>,
-    pub cookie_headers: Option<Arc<Mutex<HeaderMap>>>,
+    pub x_response_headers: SharedTrc<Mutex<HeaderMap>>,
+    pub cookie_headers: Option<SharedTrc<Mutex<HeaderMap>>>,
     // A subset of all the headers received in the GraphQL Request that will be sent to the
     // upstream.
     pub allowed_headers: HeaderMap,
     pub auth_ctx: AuthContext,
-    pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
-    pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-    pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
-    pub min_max_age: Arc<Mutex<Option<i32>>>,
-    pub cache_public: Arc<Mutex<Option<bool>>>,
+    pub http_data_loaders: SharedTrc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
+    pub gql_data_loaders: SharedTrc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+    pub grpc_data_loaders: SharedTrc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub min_max_age: SharedTrc<Mutex<Option<i32>>>,
+    pub cache_public: SharedTrc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
     pub cache: AsyncCache<u64, ConstValue, EvaluationError>,
 }
@@ -42,13 +43,13 @@ impl RequestContext {
         RequestContext {
             server: Default::default(),
             upstream: Default::default(),
-            x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
+            x_response_headers: SharedTrc::new(Mutex::new(HeaderMap::new())),
             cookie_headers: None,
-            http_data_loaders: Arc::new(vec![]),
-            gql_data_loaders: Arc::new(vec![]),
-            grpc_data_loaders: Arc::new(vec![]),
-            min_max_age: Arc::new(Mutex::new(None)),
-            cache_public: Arc::new(Mutex::new(None)),
+            http_data_loaders: SharedTrc::new(vec![]),
+            gql_data_loaders: SharedTrc::new(vec![]),
+            grpc_data_loaders: SharedTrc::new(vec![]),
+            min_max_age: SharedTrc::new(Mutex::new(None)),
+            cache_public: SharedTrc::new(Mutex::new(None)),
             runtime: target_runtime,
             cache: AsyncCache::new(),
             allowed_headers: HeaderMap::new(),
@@ -183,22 +184,22 @@ impl RequestContext {
 impl From<&AppContext> for RequestContext {
     fn from(app_ctx: &AppContext) -> Self {
         let cookie_headers = if app_ctx.blueprint.server.enable_set_cookie_header {
-            Some(Arc::new(Mutex::new(HeaderMap::new())))
+            Some(SharedTrc::new(Mutex::new(HeaderMap::new())))
         } else {
             None
         };
         Self {
             server: app_ctx.blueprint.server.clone(),
             upstream: app_ctx.blueprint.upstream.clone(),
-            x_response_headers: Arc::new(Mutex::new(HeaderMap::new())),
+            x_response_headers: SharedTrc::new(Mutex::new(HeaderMap::new())),
             cookie_headers,
             allowed_headers: HeaderMap::new(),
             auth_ctx: (&app_ctx.auth_ctx).into(),
             http_data_loaders: app_ctx.http_data_loaders.clone(),
             gql_data_loaders: app_ctx.gql_data_loaders.clone(),
             grpc_data_loaders: app_ctx.grpc_data_loaders.clone(),
-            min_max_age: Arc::new(Mutex::new(None)),
-            cache_public: Arc::new(Mutex::new(None)),
+            min_max_age: SharedTrc::new(Mutex::new(None)),
+            cache_public: SharedTrc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),
             cache: AsyncCache::new(),
         }
