@@ -335,11 +335,11 @@ mod tests {
 
         let expected = hashset![
             "Query",
-            "OUT_NEWS_NEWS",
-            "IN_NEWS_NEWS",
-            "NEWS_MULTIPLE_NEWS_ID",
-            "NEWS_NEWS_ID",
-            "NEWS_NEWS_LIST",
+            "news__News",
+            "news__NewsList",
+            "news__NewsInput",
+            "news__NewsId",
+            "news__MultipleNewsId"
         ];
         assert_eq!(actual, expected);
         Ok(())

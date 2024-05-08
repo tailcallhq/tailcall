@@ -6,11 +6,11 @@ schema @server @upstream {
   query: Query
 }
 
-input greetings_a__b__HelloRequest {
+input greetings__HelloRequest {
   name: String
 }
 
-input greetings_b__c__HelloRequest {
+input greetings_a__b__HelloRequest {
   name: String
 }
 
@@ -37,21 +37,21 @@ enum news__Status {
 }
 
 type Query {
-  greetings_a__b__SayHello(helloRequest: greetings_a__b__HelloRequest!): greetings_a__b__HelloReply! @grpc(method: "greetings_a__b.SayHello")
-  greetings_b__c__SayHello(helloRequest: greetings_b__c__HelloRequest!): greetings_b__c__HelloReply! @grpc(method: "greetings_b__c.SayHello")
-  news__AddNews(news: news__News!): news__News! @grpc(method: "news.AddNews")
-  news__DeleteNews(newsId: news__NewsId!): news__Empty! @grpc(method: "news.DeleteNews")
-  news__EditNews(news: news__News!): news__News! @grpc(method: "news.EditNews")
-  news__GetAllNews: news__NewsList! @grpc(method: "news.GetAllNews")
-  news__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): news__NewsList! @grpc(method: "news.GetMultipleNews")
-  news__GetNews(newsId: news__NewsId!): news__News! @grpc(method: "news.GetNews")
+  greetings_a__b__Greeter__SayHello(helloRequest: greetings_a__b__HelloRequest!): greetings_a__b__HelloReply! @grpc(method: "greetings_a.b.Greeter.SayHello")
+  greetings_b__c__Greeter__SayHello(helloRequest: greetings__HelloRequest!): greetings__HelloReply! @grpc(method: "greetings_b.c.Greeter.SayHello")
+  news__NewsService__AddNews(news: news__News!): news__News! @grpc(method: "news.NewsService.AddNews")
+  news__NewsService__DeleteNews(newsId: news__NewsId!): Empty! @grpc(method: "news.NewsService.DeleteNews")
+  news__NewsService__EditNews(news: news__News!): news__News! @grpc(method: "news.NewsService.EditNews")
+  news__NewsService__GetAllNews: news__NewsList! @grpc(method: "news.NewsService.GetAllNews")
+  news__NewsService__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): news__NewsList! @grpc(method: "news.NewsService.GetMultipleNews")
+  news__NewsService__GetNews(newsId: news__NewsId!): news__News! @grpc(method: "news.NewsService.GetNews")
 }
 
-type greetings_a__b__HelloReply {
+type greetings__HelloReply {
   message: String
 }
 
-type greetings_b__c__HelloReply {
+type greetings_a__b__HelloReply {
   message: String
 }
 

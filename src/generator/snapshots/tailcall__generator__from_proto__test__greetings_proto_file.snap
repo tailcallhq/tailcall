@@ -6,6 +6,14 @@ schema @server @upstream {
   query: Query
 }
 
+input greetings__HelloRequest {
+  name: String
+}
+
 type Query {
-  greetings__SayHello(greetingsHelloRequest: greetings__greetings_HelloRequest!): greetings__greetings_HelloReply! @grpc(method: "greetings.SayHello")
+  greetings__Greeter__SayHello(helloRequest: greetings__HelloRequest!): greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+}
+
+type greetings__HelloReply {
+  message: String
 }

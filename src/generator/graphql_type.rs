@@ -45,6 +45,10 @@ impl Namespace {
 
         self
     }
+
+    fn id(&self) -> String {
+        self.path.join(PACKAGE_SEPARATOR)
+    }
 }
 
 impl Display for Namespace {
@@ -106,7 +110,7 @@ impl GraphQLType<Unparsed> {
 impl GraphQLType<Parsed> {
     pub fn id(&self) -> String {
         if let Some(ref namespace) = self.0.namespace {
-            format!("{}.{}", namespace, self.0.name)
+            format!("{}.{}", namespace.id(), self.0.name)
         } else {
             self.0.name.clone()
         }
@@ -156,21 +160,20 @@ mod tests {
 
     use super::*;
 
-    type TestParams = ((Entity, Option<&'static str>, &'static str), &'static str);
+    type TestParams = (
+        (Entity, &'static [&'static str], &'static str),
+        &'static str,
+    );
 
     #[test]
     fn test_from_enum() {
         let input: Vec<TestParams> = vec![
             // Enums
-            ((Entity::Enum, None, "foo"), "foo"),
-            ((Entity::Enum, None, "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Enum, Some("a.b.c"), "foo"), "a__b__c__foo"),
-            (
-                (Entity::Enum, Some("a.b.c"), "d.e.f.foo"),
-                "a__b__c__d_e_f_foo",
-            ),
-            ((Entity::Enum, Some(""), "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Enum, None, "a_b_c_foo"), "a_b_c_foo"),
+            ((Entity::Enum, &[], "foo"), "foo"),
+            ((Entity::Enum, &[], "Foo"), "Foo"),
+            ((Entity::Enum, &["a.b.c"], "foo"), "a__b__c__foo"),
+            ((Entity::Enum, &["a", "b.c"], "foo_bar"), "a__b__c__foo_bar"),
+            ((Entity::Enum, &[], "a.b.c.foo"), "a_b_c_foo"),
         ];
 
         assert_type_names(input);
@@ -180,12 +183,9 @@ mod tests {
     fn test_from_enum_variant() {
         let input: Vec<TestParams> = vec![
             // Enum variants
-            ((Entity::EnumVariant, None, "foo"), "FOO"),
-            ((Entity::EnumVariant, None, "a.b.c.foo"), "FOO"),
-            ((Entity::EnumVariant, Some("a.b.c"), "foo"), "FOO"),
-            ((Entity::EnumVariant, Some("a.b"), "d.e.foo"), "FOO"),
-            ((Entity::EnumVariant, Some(""), "a.b.c.foo"), "FOO"),
-            ((Entity::EnumVariant, None, "a_b_c_foo"), "A_B_C_FOO"),
+            ((Entity::EnumVariant, &[], "foo"), "foo"),
+            ((Entity::EnumVariant, &[], "FOO_VAR"), "FOO_VAR"),
+            ((Entity::EnumVariant, &["a.b.c"], "foo"), "foo"),
         ];
 
         assert_type_names(input);
@@ -195,13 +195,12 @@ mod tests {
     fn test_from_object_type() {
         let input: Vec<TestParams> = vec![
             // Object types
-            ((Entity::ObjectType, None, "foo"), "FOO"),
-            ((Entity::ObjectType, None, "a.b.c.foo"), "A_B_C_FOO"),
-            ((Entity::ObjectType, Some("a.b.c"), "foo"), "A_B_C_FOO"),
-            ((Entity::ObjectType, Some("a.b"), "d.e.foo"), "A_B_FOO"),
-            ((Entity::ObjectType, Some(""), "a.b.c.foo"), "A_B_C_FOO"),
-            ((Entity::ObjectType, None, "a_b_c_foo"), "A_B_C_FOO"),
-            ((Entity::ObjectType, None, "foo.bar.Baz"), "FOO_BAR_BAZ"),
+            ((Entity::ObjectType, &[], "foo"), "foo"),
+            ((Entity::ObjectType, &["a.b.c"], "foo"), "a__b__c__foo"),
+            (
+                (Entity::ObjectType, &["a", "b.c"], "fooBar"),
+                "a__b__c__fooBar",
+            ),
         ];
 
         assert_type_names(input);
@@ -211,12 +210,12 @@ mod tests {
     fn test_from_method() {
         let input: Vec<TestParams> = vec![
             // Methods
-            ((Entity::Method, None, "foo"), "foo"),
-            ((Entity::Method, None, "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Method, Some("a.b.c"), "foo"), "a_b_c__foo"),
-            ((Entity::Method, Some("a.b"), "d.e.foo"), "a_b__d_e_foo"),
-            ((Entity::Method, Some(""), "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Method, None, "a_bC_foo"), "a_b_c_foo"),
+            ((Entity::Method, &[], "foo"), "foo"),
+            ((Entity::Method, &["a.b.c"], "fooBar"), "a__b__c__fooBar"),
+            (
+                (Entity::Method, &["a.b", "c"], "foo_bar"),
+                "a__b__c__foo_bar",
+            ),
         ];
 
         assert_type_names(input);
@@ -226,21 +225,18 @@ mod tests {
     fn test_from_field() {
         let input: Vec<TestParams> = vec![
             // Fields
-            ((Entity::Field, None, "foo"), "foo"),
-            ((Entity::Field, None, "a.b.c.foo"), "foo"),
-            ((Entity::Field, Some("a.b.c"), "foo"), "foo"),
-            ((Entity::Field, Some("a.b"), "d.e.foo"), "foo"),
-            ((Entity::Field, Some(""), "a.b.c.foo"), "foo"),
-            ((Entity::Field, None, "a_bC_foo"), "a_b_c_foo"),
+            ((Entity::Field, &[], "foo"), "foo"),
+            ((Entity::Field, &["a.b.c"], "fooBar"), "fooBar"),
+            ((Entity::Field, &["a.b", "c"], "foo_bar"), "fooBar"),
         ];
 
         assert_type_names(input);
     }
 
     fn assert_type_names(input: Vec<TestParams>) {
-        for ((entity, namespace, name), expected) in input {
+        for ((entity, namespaces, name), expected) in input {
             let mut g = GraphQLType::new(name);
-            if let Some(namespace) = namespace {
+            for namespace in namespaces {
                 g = g.append_namespace(namespace);
             }
 

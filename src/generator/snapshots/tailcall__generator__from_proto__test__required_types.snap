@@ -7,7 +7,7 @@ schema @server @upstream {
 }
 
 type Query {
-  person__GetPerson: person__Person! @grpc(method: "person.GetPerson")
+  person__PersonService__GetPerson: person__Person! @grpc(method: "person.PersonService.GetPerson")
 }
 
 type person__Person {
@@ -15,7 +15,7 @@ type person__Person {
   id: Int!
   name: String!
   phone: [person__PhoneNumber]!
-  stringMap: JSON
+  stringMap: [person__Person__StringMapEntry]!
 }
 
 type person__PhoneNumber {
