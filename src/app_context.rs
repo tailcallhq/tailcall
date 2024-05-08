@@ -1,6 +1,7 @@
+use std::sync::Arc;
+
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
-use trc::SharedTrc;
 
 use crate::auth::context::GlobalAuthContext;
 use crate::blueprint::Type::ListType;
@@ -17,12 +18,12 @@ use crate::runtime::TargetRuntime;
 pub struct AppContext {
     pub schema: dynamic::Schema,
     pub runtime: TargetRuntime,
-    pub blueprint: SharedTrc<Blueprint>,
-    pub http_data_loaders: SharedTrc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
-    pub gql_data_loaders: SharedTrc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
-    pub grpc_data_loaders: SharedTrc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
+    pub blueprint: Arc<Blueprint>,
+    pub http_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, HttpDataLoader>>>,
+    pub gql_data_loaders: Arc<Vec<DataLoader<DataLoaderRequest, GraphqlDataLoader>>>,
+    pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub endpoints: EndpointSet<Checked>,
-    pub auth_ctx: SharedTrc<GlobalAuthContext>,
+    pub auth_ctx: Arc<GlobalAuthContext>,
 }
 
 impl AppContext {
@@ -116,12 +117,12 @@ impl AppContext {
         AppContext {
             schema,
             runtime,
-            blueprint: SharedTrc::new(blueprint),
-            http_data_loaders: SharedTrc::new(http_data_loaders),
-            gql_data_loaders: SharedTrc::new(gql_data_loaders),
-            grpc_data_loaders: SharedTrc::new(grpc_data_loaders),
+            blueprint: Arc::new(blueprint),
+            http_data_loaders: Arc::new(http_data_loaders),
+            gql_data_loaders: Arc::new(gql_data_loaders),
+            grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
-            auth_ctx: SharedTrc::new(auth_ctx),
+            auth_ctx: Arc::new(auth_ctx),
         }
     }
 

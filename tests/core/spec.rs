@@ -18,7 +18,6 @@ use tailcall::http::{handle_request, AppContext};
 use tailcall::merge_right::MergeRight;
 use tailcall::print_schema::print_schema;
 use tailcall::valid::{Cause, ValidationError};
-use trc::SharedTrc;
 
 use super::file::File;
 use super::http::Http;
@@ -291,7 +290,7 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
 }
 
 async fn run_test(
-    app_ctx: SharedTrc<AppContext>,
+    app_ctx: Arc<AppContext>,
     request: &APIRequest,
 ) -> anyhow::Result<hyper::Response<Body>> {
     let body = request

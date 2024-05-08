@@ -1,6 +1,4 @@
-use std::sync::RwLock;
-
-use trc::SharedTrc;
+use std::sync::{Arc, RwLock};
 
 use super::verification::Verification;
 use super::verify::{AuthVerifier, Verify};
@@ -15,7 +13,7 @@ pub struct GlobalAuthContext {
 #[derive(Default)]
 pub struct AuthContext {
     auth_result: RwLock<Option<Verification>>,
-    global_ctx: SharedTrc<GlobalAuthContext>,
+    global_ctx: Arc<GlobalAuthContext>,
 }
 
 impl GlobalAuthContext {
@@ -52,8 +50,8 @@ impl AuthContext {
     }
 }
 
-impl From<&SharedTrc<GlobalAuthContext>> for AuthContext {
-    fn from(global_ctx: &SharedTrc<GlobalAuthContext>) -> Self {
+impl From<&Arc<GlobalAuthContext>> for AuthContext {
+    fn from(global_ctx: &Arc<GlobalAuthContext>) -> Self {
         Self {
             global_ctx: global_ctx.clone(),
             auth_result: Default::default(),

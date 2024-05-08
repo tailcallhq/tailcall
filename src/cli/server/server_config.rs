@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 
 use async_graphql_extension_apollo_tracing::ApolloTracing;
-use trc::SharedTrc;
 
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::{Blueprint, Http};
@@ -11,8 +11,8 @@ use crate::rest::{EndpointSet, Unchecked};
 use crate::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
-    pub blueprint: SharedTrc<Blueprint>,
-    pub app_ctx: SharedTrc<AppContext>,
+    pub blueprint: Arc<Blueprint>,
+    pub app_ctx: Arc<AppContext>,
 }
 
 impl ServerConfig {
@@ -37,7 +37,7 @@ impl ServerConfig {
         rt.add_extensions(extensions);
 
         let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;
-        let app_context = SharedTrc::new(AppContext::new(blueprint, rt, endpoints));
+        let app_context = Arc::new(AppContext::new(blueprint, rt, endpoints));
         let blueprint = app_context.blueprint.clone();
 
         Ok(Self { app_ctx: app_context, blueprint })
