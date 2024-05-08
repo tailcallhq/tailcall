@@ -28,29 +28,6 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::core::config::UnsupportedConfigFormat;
-
-    const ALL: &[Source] = &[Source::Proto];
-
-    const PROTO_EXT: &str = "proto";
-    impl Source {
-        pub fn ext(&self) -> &'static str {
-            match self {
-                Source::Proto => PROTO_EXT,
-            }
-        }
-
-        fn ends_with(&self, content: &str) -> bool {
-            content.ends_with(&format!(".{}", self.ext()))
-        }
-
-        pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
-            ALL.iter()
-                .find(|format| format.ends_with(name))
-                .ok_or(UnsupportedConfigFormat(name.to_string()))
-                .cloned()
-        }
-    }
 
     #[test]
     fn test_from_str() {
@@ -58,21 +35,4 @@ mod tests {
         assert!(Source::from_str("foo").is_err());
     }
 
-    #[test]
-    fn test_ext() {
-        assert_eq!(Source::Proto.ext(), "proto");
-    }
-
-    #[test]
-    fn test_ends_with() {
-        let proto = Source::Proto;
-        assert!(proto.ends_with("foo.proto"));
-        assert!(!proto.ends_with("foo.xml"));
-    }
-
-    #[test]
-    fn test_detect() {
-        assert_eq!(Source::detect("foo.proto"), Ok(Source::Proto));
-        assert!(Source::detect("foo.xml").is_err());
-    }
 }
