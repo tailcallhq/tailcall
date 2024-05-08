@@ -12,7 +12,7 @@ use hyper::{Body, Request};
 use serde::{Deserialize, Serialize};
 use tailcall::{
     handle_request, print_schema, AppContext, Blueprint, Cause, Config, ConfigModule, ConfigReader,
-    GraphQLBatchRequest, GraphQLRequest, MergeRight, Source, ValidationError
+    GraphQLBatchRequest, GraphQLRequest, MergeRight, Source, ValidationError,
 };
 
 use super::file::File;
