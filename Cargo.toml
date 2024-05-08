@@ -212,7 +212,6 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-jit",
 ]
 
 # Boost execution_spec snapshot diffing performance
