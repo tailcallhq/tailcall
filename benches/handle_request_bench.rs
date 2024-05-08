@@ -4,10 +4,10 @@ use criterion::Criterion;
 use hyper::Request;
 use serde_json::json;
 use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::blueprint::{Blueprint};
+use tailcall::blueprint::Blueprint;
 use tailcall::cli::server::server_config::ServerConfig;
 use tailcall::config::{Config, ConfigModule};
-use tailcall::http::{handle_request};
+use tailcall::http::handle_request;
 use tailcall::valid::Validator;
 
 pub fn benchmark_handle_request(c: &mut Criterion) {
