@@ -6,6 +6,7 @@ use crate::core::json::JsonLike;
 
 #[derive(JsonSchema, Default)]
 pub struct Url {
+    #[allow(dead_code)]
     #[serde(rename = "Url")]
     /// A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
     pub url: String,

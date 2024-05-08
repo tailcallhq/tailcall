@@ -7,6 +7,7 @@ use crate::core::json::JsonLike;
 
 #[derive(JsonSchema, Default)]
 pub struct Email {
+    #[allow(dead_code)]
     #[serde(rename = "Email")]
     #[schemars(schema_with = "email_schema")]
     /// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.

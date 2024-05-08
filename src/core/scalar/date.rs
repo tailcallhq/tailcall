@@ -7,6 +7,7 @@ use crate::core::json::JsonLike;
 
 #[derive(JsonSchema, Default)]
 pub struct Date {
+    #[allow(dead_code)]
     #[serde(rename = "Date")]
     /// A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
     pub date: String,
