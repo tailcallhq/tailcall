@@ -160,7 +160,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         }
         TypeKind::Enum(en) => {
             let directives = print_directives(&type_def.directives);
-            format!(
+            let enum_def = format!(
                 "enum {} {}{{\n{}\n}}\n",
                 type_def.name.node,
                 directives,
@@ -169,7 +169,14 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                     .map(|v| format!("  {}", v.node.value))
                     .collect::<Vec<String>>()
                     .join("\n")
-            )
+            );
+
+            if let Some(desc) = &type_def.description {
+                let ds = format!("\"\"\"\n{}\n\"\"\"\n", desc.node.as_str());
+                ds + &enum_def
+            } else {
+                enum_def
+            }
         } // Handle other type kinds...
     }
 }

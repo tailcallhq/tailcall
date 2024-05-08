@@ -138,6 +138,9 @@ fn to_type(def: &Definition, no_resolver: bool) -> dynamic::Type {
             for value in def.enum_values.iter() {
                 enum_type = enum_type.item(dynamic::EnumItem::new(value.name.clone()));
             }
+            if let Some(desc) = def.description.clone() {
+                enum_type = enum_type.description(desc);
+            }
             dynamic::Type::Enum(enum_type)
         }
         Definition::Union(def) => {

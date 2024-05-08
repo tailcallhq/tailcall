@@ -1,0 +1,17 @@
+[package]
+name = "tailcall-tracker"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { workspace = true }
+anyhow = { workspace = true }
+lazy_static = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+machineid-rs = "1.2.4"
+tokio = { workspace = true }
+tracing = { workspace = true }
+sysinfo = "0.30.12"

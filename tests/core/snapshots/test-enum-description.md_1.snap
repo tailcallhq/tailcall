@@ -1,5 +1,6 @@
 ---
 source: tests/core/spec.rs
+assertion_line: 203
 expression: response
 ---
 {
@@ -9,7 +10,7 @@ expression: response
   },
   "body": {
     "data": {
-      "hi": "hello world"
+      "foo": "BAZ"
     }
   }
 }

@@ -8,10 +8,6 @@ use std::time::Duration;
 
 use futures_channel::oneshot;
 use futures_timer::Delay;
-#[cfg(feature = "tracing")]
-use tracing::{info_span, instrument, Instrument};
-#[cfg(feature = "tracing")]
-use tracinglib as tracing;
 
 pub use super::cache::NoCache;
 pub use super::factory::CacheFactory;
@@ -108,7 +104,6 @@ where
     }
 
     /// Use this `DataLoader` load a data.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub async fn load_one(&self, key: K) -> Result<Option<T::Value>, T::Error>
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
@@ -119,7 +114,6 @@ where
     }
 
     /// Use this `DataLoader` to load some data.
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub async fn load_many<I>(&self, keys: I) -> Result<HashMap<K, T::Value>, T::Error>
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
@@ -182,10 +176,6 @@ where
                 let inner = self.inner.clone();
                 let disable_cache = self.disable_cache.load(Ordering::SeqCst);
                 let task = async move { inner.do_load(disable_cache, keys).await };
-                #[cfg(feature = "tracing")]
-                let task = task
-                    .instrument(info_span!("immediate_load"))
-                    .in_current_span();
 
                 #[cfg(not(target_arch = "wasm32"))]
                 tokio::spawn(Box::pin(task));
@@ -209,8 +199,6 @@ where
                         inner.do_load(disable_cache, keys).await
                     }
                 };
-                #[cfg(feature = "tracing")]
-                let task = task.instrument(info_span!("start_fetch")).in_current_span();
                 #[cfg(not(target_arch = "wasm32"))]
                 tokio::spawn(Box::pin(task));
                 #[cfg(target_arch = "wasm32")]
@@ -226,7 +214,6 @@ where
     ///
     /// **NOTE: If the cache type is [NoCache], this function will not take
     /// effect. **
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub async fn feed_many<I>(&self, values: I)
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
@@ -245,7 +232,6 @@ where
     ///
     /// **NOTE: If the cache type is [NoCache], this function will not take
     /// effect. **
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub async fn feed_one(&self, key: K, value: T::Value)
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
@@ -258,7 +244,6 @@ where
     ///
     /// **NOTE: If the cache type is [NoCache], this function will not take
     /// effect. **
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     pub fn clear(&self)
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
@@ -339,7 +324,6 @@ where
     T: Loader<K>,
     C: CacheFactory<K, T::Value>,
 {
-    #[cfg_attr(feature = "tracing", instrument(skip_all))]
     async fn do_load(&self, disable_cache: bool, (keys, senders): KeysAndSender<K, T>)
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
