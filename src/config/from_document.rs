@@ -243,11 +243,12 @@ where
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(Tag::from_directives(directives.iter()))
-        .map(|(cache, fields, protected, tag)| {
+        .fuse(Validate::from_directives(directives.iter()))
+        .map(|(cache, fields, protected, tag, validate)| {
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected, tag }
+            config::Type { fields, added_fields, doc, implements, cache, protected, tag, validate }
         })
 }
 fn to_input_object(

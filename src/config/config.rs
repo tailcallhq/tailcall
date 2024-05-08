@@ -111,6 +111,10 @@ pub struct Type {
     ///
     /// Contains source information for the type.
     pub tag: Option<Tag>,
+    ///
+    /// Indicates if a custom scalar type is valid
+    /// for a given JS function
+    pub validate: Option<Validate>,
 }
 
 impl Type {
@@ -603,10 +607,10 @@ pub struct Expr {
     pub body: Value,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
 pub struct Validate {
     /// Name of the JS function
-    pub js: JS,
+    pub js: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

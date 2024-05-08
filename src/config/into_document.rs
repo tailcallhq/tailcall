@@ -266,6 +266,7 @@ fn get_directives(field: &crate::config::Field) -> Vec<Positioned<ConstDirective
         field.cache.as_ref().map(|d| pos(d.to_directive())),
         field.call.as_ref().map(|d| pos(d.to_directive())),
         field.protected.as_ref().map(|d| pos(d.to_directive())),
+        field.validate.as_ref().map(|d| pos(d.to_directive())),
     ];
 
     directives.into_iter().flatten().collect()
