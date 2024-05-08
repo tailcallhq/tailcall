@@ -2265,7 +2265,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.6",
  "tokio",
  "tower-service",
  "tracing",
@@ -4888,6 +4888,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 
 [[package]]
+name = "stable_deref_trait"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5171,6 +5177,7 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
+ "trc",
  "ttl_cache",
  "update-informer",
  "url",
@@ -5206,6 +5213,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "trc",
 ]
 
 [[package]]
@@ -5227,6 +5235,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracing-subscriber-wasm",
+ "trc",
  "worker",
 ]
 
@@ -5823,6 +5832,16 @@ dependencies = [
  "gloo",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "trc"
+version = "1.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91dd8e922a6b95b816407eb8c37e17a409512f759561ac48ec2b7281b395a3c6"
+dependencies = [
+ "serde",
+ "stable_deref_trait",
 ]
 
 [[package]]

@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
+use std::sync::{RwLock};
 
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::async_graphql_hyper::GraphQLRequest;
 use tailcall::http::{handle_request, showcase, AppContext};
+use trc::SharedTrc;
 
 use crate::http::{to_request, to_response};
 use crate::runtime;
 
 lazy_static! {
-    static ref APP_CTX: RwLock<Option<(String, Arc<AppContext>)>> = RwLock::new(None);
+    static ref APP_CTX: RwLock<Option<(String, SharedTrc<AppContext>)>> = RwLock::new(None);
 }
 ///
 /// The handler which handles requests on cloudflare
@@ -42,7 +43,7 @@ pub async fn fetch(
 async fn get_app_ctx(
     env: Rc<worker::Env>,
     req: &Request<Body>,
-) -> anyhow::Result<Result<Arc<AppContext>, Response<Body>>> {
+) -> anyhow::Result<Result<SharedTrc<AppContext>, Response<Body>>> {
     // Read context from cache
     let file_path = req
         .uri()
@@ -62,7 +63,7 @@ async fn get_app_ctx(
     let runtime = runtime::init(env)?;
     match showcase::create_app_ctx::<GraphQLRequest>(req, runtime, true).await? {
         Ok(app_ctx) => {
-            let app_ctx: Arc<AppContext> = Arc::new(app_ctx);
+            let app_ctx: SharedTrc<AppContext> = SharedTrc::new(app_ctx);
             if let Some(file_path) = file_path {
                 *APP_CTX.write().unwrap() = Some((file_path, app_ctx.clone()));
             }
@@ -73,6 +74,6 @@ async fn get_app_ctx(
     }
 }
 
-fn read_app_ctx() -> Option<(String, Arc<AppContext>)> {
+fn read_app_ctx() -> Option<(String, SharedTrc<AppContext>)> {
     APP_CTX.read().unwrap().clone()
 }

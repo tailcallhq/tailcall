@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use dotenvy::dotenv;
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Response};
@@ -9,6 +7,7 @@ use tailcall::blueprint::Blueprint;
 use tailcall::config::reader::ConfigReader;
 use tailcall::http::{handle_request, AppContext};
 use tailcall::tracing::get_log_level;
+use trc::SharedTrc;
 
 mod http;
 mod runtime;
@@ -40,7 +39,7 @@ async fn main() -> Result<(), Error> {
         .into_checked(&blueprint, runtime.clone())
         .await?;
 
-    let app_ctx = Arc::new(AppContext::new(blueprint, runtime, endpoints));
+    let app_ctx = SharedTrc::new(AppContext::new(blueprint, runtime, endpoints));
 
     run(service_fn(|event| async {
         let resp = handle_request::<GraphQLRequest>(to_request(event)?, app_ctx.clone()).await?;
