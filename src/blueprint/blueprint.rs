@@ -1,15 +1,13 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 
-use async_graphql::dynamic::{Schema, SchemaBuilder};
-use async_graphql::extensions::ApolloTracing;
-use async_graphql::ValidationMode;
+use async_graphql::dynamic::Schema;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::GlobalTimeout;
+use crate::blueprint::into_schema::SchemaGenerator;
 use crate::blueprint::{Server, Upstream};
 use crate::lambda::Expression;
 use crate::schema_extension::SchemaExtension;
@@ -202,18 +200,6 @@ impl Blueprint {
         self.schema.mutation.clone()
     }
 
-    fn drop_resolvers(mut self) -> Self {
-        for def in self.definitions.iter_mut() {
-            if let Definition::Object(def) = def {
-                for field in def.fields.iter_mut() {
-                    field.resolver = None;
-                }
-            }
-        }
-
-        self
-    }
-
     ///
     /// This function is used to generate a schema from a blueprint.
     pub fn to_schema(&self) -> Schema {
@@ -224,38 +210,9 @@ impl Blueprint {
     /// This function is used to generate a schema from a blueprint.
     /// The generated schema can be modified using the SchemaModifiers.
     pub fn to_schema_with(&self, schema_modifiers: SchemaModifiers) -> Schema {
-        let blueprint = if schema_modifiers.no_resolver {
-            self.clone().drop_resolvers()
-        } else {
-            self.clone()
-        };
+        let schema_generator = SchemaGenerator::with_schema_modifier(self, schema_modifiers);
 
-        let server = &blueprint.server;
-        let mut schema = SchemaBuilder::from(&blueprint);
-
-        if server.enable_apollo_tracing {
-            schema = schema.extension(ApolloTracing);
-        }
-
-        if server.global_response_timeout > 0 {
-            schema = schema
-                .data(async_graphql::Value::from(server.global_response_timeout))
-                .extension(GlobalTimeout);
-        }
-
-        if server.get_enable_query_validation() || schema_modifiers.no_resolver {
-            schema = schema.validation_mode(ValidationMode::Strict);
-        } else {
-            schema = schema.validation_mode(ValidationMode::Fast);
-        }
-
-        if !server.get_enable_introspection() || schema_modifiers.no_resolver {
-            schema = schema.disable_introspection();
-        }
-
-        for extension in schema_modifiers.extensions.iter().cloned() {
-            schema = schema.extension(extension);
-        }
+        let schema = schema_generator.generate_schema();
 
         // We should safely assume the blueprint is correct and,
         // generation of schema cannot fail.

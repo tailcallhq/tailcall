@@ -2,12 +2,13 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
-use async_graphql::ErrorExtensions;
+use async_graphql::extensions::ApolloTracing;
+use async_graphql::{ErrorExtensions, ValidationMode};
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
 
-use crate::blueprint::{Blueprint, Definition, Type};
+use crate::blueprint::{Blueprint, Definition, GlobalTimeout, SchemaModifiers, Type};
 use crate::http::RequestContext;
 use crate::lambda::{Eval, EvaluationContext, ResolverContext};
 use crate::scalar::CUSTOM_SCALARS;
@@ -34,7 +35,7 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
-fn to_type(def: &Definition) -> dynamic::Type {
+fn to_type(def: &Definition, no_resolver: bool) -> dynamic::Type {
     match def {
         Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
@@ -49,8 +50,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
 
-                        match &field.resolver {
-                            None => {
+                        match (&field.resolver, no_resolver) {
+                            (None, _) | (Some(_), true) => {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                                 FieldFuture::from_value(
@@ -58,7 +59,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         .map(|a| a.into_owned().to_owned()),
                                 )
                             }
-                            Some(expr) => {
+                            (Some(expr), false) => {
                                 let span = tracing::info_span!(
                                     "field_resolver",
                                     otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
@@ -149,8 +150,36 @@ fn to_type(def: &Definition) -> dynamic::Type {
     }
 }
 
-impl From<&Blueprint> for SchemaBuilder {
-    fn from(blueprint: &Blueprint) -> Self {
+pub struct SchemaGenerator<'a> {
+    pub blueprint: &'a Blueprint,
+    pub schema_modifiers: Option<SchemaModifiers>,
+}
+
+impl<'a> SchemaGenerator<'a> {
+    pub fn new(blueprint: &'a Blueprint) -> Self {
+        SchemaGenerator { blueprint, schema_modifiers: None }
+    }
+
+    pub fn with_schema_modifier(
+        blueprint: &'a Blueprint,
+        schema_modifiers: SchemaModifiers,
+    ) -> Self {
+        SchemaGenerator { blueprint, schema_modifiers: Some(schema_modifiers) }
+    }
+
+    pub fn schema_modifier(self, schema_modifiers: SchemaModifiers) -> Self {
+        SchemaGenerator {
+            blueprint: self.blueprint,
+            schema_modifiers: Some(schema_modifiers),
+        }
+    }
+
+    pub fn generate_schema(self) -> SchemaBuilder {
+        let blueprint = self.blueprint;
+        let schema_modifiers = self.schema_modifiers;
+
+        let server = &blueprint.server;
+
         let query = blueprint.query();
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
@@ -161,8 +190,39 @@ impl From<&Blueprint> for SchemaBuilder {
             ));
         }
 
+        let no_resolver = schema_modifiers
+            .as_ref()
+            .map(|s| s.no_resolver)
+            .unwrap_or(false);
+
         for def in blueprint.definitions.iter() {
-            schema = schema.register(to_type(def));
+            schema = schema.register(to_type(def, no_resolver));
+        }
+
+        if let Some(schema_modifiers) = schema_modifiers {
+            if server.enable_apollo_tracing {
+                schema = schema.extension(ApolloTracing);
+            }
+
+            if server.global_response_timeout > 0 {
+                schema = schema
+                    .data(async_graphql::Value::from(server.global_response_timeout))
+                    .extension(GlobalTimeout);
+            }
+
+            if server.get_enable_query_validation() || schema_modifiers.no_resolver {
+                schema = schema.validation_mode(ValidationMode::Strict);
+            } else {
+                schema = schema.validation_mode(ValidationMode::Fast);
+            }
+
+            if !server.get_enable_introspection() || schema_modifiers.no_resolver {
+                schema = schema.disable_introspection();
+            }
+
+            for extension in schema_modifiers.extensions.iter().cloned() {
+                schema = schema.extension(extension);
+            }
         }
 
         schema

@@ -6,8 +6,9 @@ use async_graphql_extension_apollo_tracing::ApolloTracing;
 use crate::blueprint::telemetry::TelemetryExporter;
 use crate::blueprint::{Blueprint, Http};
 use crate::cli::runtime::init;
+use crate::cli::CLIError;
+use crate::config::ConfigModule;
 use crate::http::AppContext;
-use crate::rest::{EndpointSet, Unchecked};
 use crate::schema_extension::SchemaExtension;
 
 pub struct ServerConfig {
@@ -16,10 +17,8 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub async fn new(
-        blueprint: Blueprint,
-        endpoints: EndpointSet<Unchecked>,
-    ) -> anyhow::Result<Self> {
+    pub async fn new(config_module: ConfigModule) -> anyhow::Result<Self> {
+        let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from)?;
         let mut rt = init(&blueprint);
 
         let mut extensions = vec![];
@@ -36,7 +35,11 @@ impl ServerConfig {
         }
         rt.add_extensions(extensions);
 
-        let endpoints = endpoints.into_checked(&blueprint, rt.clone()).await?;
+        let endpoints = config_module
+            .extensions
+            .endpoint_set
+            .into_checked(&blueprint, rt.clone())
+            .await?;
         let app_context = Arc::new(AppContext::new(blueprint, rt, endpoints));
         let blueprint = app_context.blueprint.clone();
 

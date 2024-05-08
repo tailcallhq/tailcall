@@ -21,6 +21,7 @@ pub use cors::*;
 pub use definitions::*;
 pub use dynamic_value::*;
 pub use from_config::*;
+pub use into_schema::SchemaGenerator;
 pub use links::*;
 pub use operators::*;
 pub use schema::*;
