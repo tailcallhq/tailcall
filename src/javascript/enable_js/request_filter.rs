@@ -3,20 +3,9 @@ use std::sync::Arc;
 use hyper::body::Bytes;
 use rquickjs::FromJs;
 
-use super::{JsRequest, JsResponse};
 use crate::http::Response;
+use crate::javascript::{Command, Event, JsRequest, JsResponse};
 use crate::{HttpIO, WorkerIO};
-
-#[derive(Debug)]
-pub enum Event {
-    Request(JsRequest),
-}
-
-#[derive(Debug)]
-pub enum Command {
-    Request(JsRequest),
-    Response(JsResponse),
-}
 
 impl<'js> FromJs<'js> for Command {
     fn from_js(ctx: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
@@ -63,7 +52,7 @@ impl RequestFilter {
     async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        let command = self.worker.call(event).await?;
+        let command = self.worker.call("onRequest".to_string(), event).await?;
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {

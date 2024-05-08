@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
+use crate::javascript::{Command, Event};
 use crate::schema_extension::SchemaExtension;
-use crate::{Cache, EnvIO, FileIO, HttpIO};
+use crate::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
 /// IO implementations. This is used to reduce piping IO structs all
@@ -26,6 +27,10 @@ pub struct TargetRuntime {
     /// A list of extensions that can be used to extend the runtime's
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
+    /// Worker middleware for handling HTTP requests.
+    pub http_worker: Arc<dyn WorkerIO<Event, Command>>,
+    /// Worker middleware for resolving data.
+    pub resolver_worker: Arc<dyn WorkerIO<Option<ConstValue>, ConstValue>>,
 }
 
 impl TargetRuntime {
@@ -42,6 +47,8 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
+    use async_graphql_value::ConstValue;
+    use async_trait::async_trait;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
     use hyper::body::Bytes;
     use reqwest::Client;
@@ -51,8 +58,9 @@ pub mod test {
     use crate::blueprint::Upstream;
     use crate::cache::InMemoryCache;
     use crate::http::Response;
+    use crate::javascript::{Command, Event};
     use crate::runtime::TargetRuntime;
-    use crate::{blueprint, javascript, EnvIO, FileIO, HttpIO};
+    use crate::{blueprint, javascript, EnvIO, FileIO, HttpIO, WorkerIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -163,6 +171,22 @@ pub mod test {
         }
     }
 
+    struct TestWorker {}
+
+    #[async_trait]
+    impl WorkerIO<Option<ConstValue>, ConstValue> for TestWorker {
+        async fn call(&self, _: String, _: Option<ConstValue>) -> Result<Option<ConstValue>> {
+            todo!()
+        }
+    }
+
+    #[async_trait]
+    impl WorkerIO<Event, Command> for TestWorker {
+        async fn call(&self, _: String, _: Event) -> Result<Option<Command>> {
+            todo!()
+        }
+    }
+
     pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
         let http = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
@@ -189,6 +213,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            http_worker: Arc::new(TestWorker {}),
+            resolver_worker: Arc::new(TestWorker {}),
         }
     }
 }

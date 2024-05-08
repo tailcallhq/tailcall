@@ -6,14 +6,14 @@ use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
-use async_trait::async_trait;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::config::Batch;
 use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
+use tailcall::javascript::{Command, Event};
 use tailcall::runtime::TargetRuntime;
-use tailcall::{EnvIO, FileIO, HttpIO};
+use tailcall::{EnvIO, FileIO, HttpIO, WorkerIO};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -29,7 +29,6 @@ impl HttpIO for MockHttpClient {
 }
 
 struct Env {}
-#[async_trait]
 impl EnvIO for Env {
     fn get(&self, _: &str) -> Option<Cow<'_, str>> {
         unimplemented!("Not needed for this bench")
@@ -38,7 +37,22 @@ impl EnvIO for Env {
 
 struct File;
 
-#[async_trait]
+struct JsRt;
+#[async_trait::async_trait]
+impl WorkerIO<Event, Command> for JsRt {
+    async fn call(&self, _: String, _: Event) -> anyhow::Result<Option<Command>> {
+        unimplemented!("Not needed for this bench")
+    }
+}
+
+#[async_trait::async_trait]
+impl WorkerIO<Option<ConstValue>, ConstValue> for JsRt {
+    async fn call(&self, _: String, _: Option<ConstValue>) -> anyhow::Result<Option<ConstValue>> {
+        unimplemented!("Not needed for this bench")
+    }
+}
+
+#[async_trait::async_trait]
 impl FileIO for File {
     async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
         unimplemented!("Not needed for this bench")
@@ -50,7 +64,7 @@ impl FileIO for File {
 }
 
 struct Cache;
-#[async_trait]
+#[async_trait::async_trait]
 impl tailcall::Cache for Cache {
     type Key = u64;
     type Value = ConstValue;
@@ -60,7 +74,7 @@ impl tailcall::Cache for Cache {
     }
 
     async fn get<'a>(&'a self, _: &'a Self::Key) -> anyhow::Result<Option<Self::Value>> {
-        unimplemented!("Not needed for this bench")
+        unimplemented!("Nwot needed for this bench")
     }
 
     fn hit_rate(&self) -> Option<f64> {
@@ -81,6 +95,8 @@ pub fn benchmark_data_loader(c: &mut Criterion) {
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
                     extensions: Arc::new(vec![]),
+                    http_worker: Arc::new(JsRt {}),
+                    resolver_worker: Arc::new(JsRt {}),
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
                 let loader = loader.to_data_loader(Batch::default().delay(1));

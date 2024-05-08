@@ -5,8 +5,7 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
-use super::request_filter::{Command, Event};
-use super::JsRequest;
+use crate::javascript::{Command, Event, JsRequest};
 use crate::{blueprint, WorkerIO};
 
 struct LocalRuntime(Context);
@@ -49,33 +48,24 @@ impl LocalRuntime {
 
 pub struct Runtime {
     script: blueprint::Script,
-    function_name: String,
     // Single threaded JS runtime, that's shared across all tokio workers.
     tokio_runtime: Option<tokio::runtime::Runtime>,
 }
 
 impl Debug for Runtime {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Runtime {{ script: {:?}, function_name: {} }}",
-            self.script, self.function_name
-        )
+        write!(f, "Runtime {{ script: {:?} }}", self.script)
     }
 }
 
 impl Runtime {
-    pub fn new(name: String, script: blueprint::Script) -> Self {
+    pub fn new(script: blueprint::Script) -> Self {
         let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .build()
             .expect("JS runtime not initialized");
 
-        Self {
-            script,
-            function_name: name,
-            tokio_runtime: Some(tokio_runtime),
-        }
+        Self { script, tokio_runtime: Some(tokio_runtime) }
     }
 }
 
@@ -92,9 +82,8 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(&self, event: Event) -> anyhow::Result<Option<Command>> {
+    async fn call(&self, name: String, event: Event) -> anyhow::Result<Option<Command>> {
         let script = self.script.clone();
-        let name = self.function_name.clone();
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
@@ -110,9 +99,12 @@ impl WorkerIO<Event, Command> for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Option<ConstValue>, ConstValue> for Runtime {
-    async fn call(&self, input: Option<ConstValue>) -> anyhow::Result<Option<ConstValue>> {
+    async fn call(
+        &self,
+        name: String,
+        input: Option<ConstValue>,
+    ) -> anyhow::Result<Option<ConstValue>> {
         let script = self.script.clone();
-        let name = self.function_name.clone();
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {

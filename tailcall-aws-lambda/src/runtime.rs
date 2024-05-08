@@ -8,6 +8,7 @@ use tailcall::{EntityCache, EnvIO, FileIO};
 use tokio::io::AsyncReadExt;
 
 use crate::http::init_http;
+use crate::worker_io;
 
 #[derive(Clone, Copy)]
 pub struct LambdaEnv;
@@ -60,5 +61,7 @@ pub fn init_runtime() -> TargetRuntime {
         env: init_env(),
         cache: init_cache(),
         extensions: Arc::new(vec![]),
+        http_worker: Arc::new(worker_io::JsRuntime::init()),
+        resolver_worker: Arc::new(worker_io::JsRuntime::init()),
     }
 }

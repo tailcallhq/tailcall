@@ -6,7 +6,7 @@ use async_graphql_value::ConstValue;
 use tailcall::runtime::TargetRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO};
 
-use crate::{cache, env, file, http};
+use crate::{cache, env, file, http, worker_io};
 
 fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
@@ -38,5 +38,7 @@ pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
         file: init_file(env.clone(), &bucket_id)?,
         cache: init_cache(env),
         extensions: Arc::new(vec![]),
+        http_worker: Arc::new(worker_io::JsRuntime::init()),
+        resolver_worker: Arc::new(worker_io::JsRuntime::init()),
     })
 }

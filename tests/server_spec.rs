@@ -8,18 +8,46 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
+    use async_graphql_value::ConstValue;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cache::InMemoryCache;
     use tailcall::http::Response;
-    use tailcall::javascript;
+    use tailcall::javascript::{Command, Event};
     use tailcall::runtime::TargetRuntime;
+    use tailcall::{javascript, WorkerIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use crate::blueprint::Upstream;
     use crate::{blueprint, EnvIO, FileIO, HttpIO};
+
+    pub struct JsRuntime {}
+
+    impl JsRuntime {
+        pub fn init() -> Self {
+            Self {}
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl WorkerIO<Event, Command> for JsRuntime {
+        async fn call(&self, _: String, _: Event) -> anyhow::Result<Option<Command>> {
+            todo!()
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl WorkerIO<Option<ConstValue>, ConstValue> for JsRuntime {
+        async fn call(
+            &self,
+            _: String,
+            _: Option<ConstValue>,
+        ) -> anyhow::Result<Option<ConstValue>> {
+            todo!()
+        }
+    }
 
     #[derive(Clone)]
     struct TestHttp {
@@ -156,6 +184,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            http_worker: Arc::new(JsRuntime::init()),
+            resolver_worker: Arc::new(JsRuntime::init()),
         }
     }
 }

@@ -37,7 +37,6 @@ impl Expression {
                             })
                         }
                     },
-                    Expression::Js(_) => expr,
                     Expression::Dynamic(_) => expr,
                     Expression::IO(_) => expr,
                     Expression::Cache(Cache { expr, max_age }) => {

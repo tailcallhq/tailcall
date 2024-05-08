@@ -7,8 +7,9 @@ use std::sync::Arc;
 
 use crate::blueprint::Blueprint;
 use crate::cache::InMemoryCache;
+use crate::javascript::{Command, Event};
 use crate::runtime::TargetRuntime;
-use crate::{blueprint, EnvIO, FileIO, HttpIO};
+use crate::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {
@@ -31,6 +32,16 @@ fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> 
     let _ = script;
 
     http
+}
+
+fn init_http_worker_io(script: Option<blueprint::Script>) -> Arc<dyn WorkerIO<Event, Command>> {
+    crate::javascript::init_rt(script)
+}
+
+fn init_resolver_worker_io(
+    script: Option<blueprint::Script>,
+) -> Arc<dyn WorkerIO<Option<async_graphql::Value>, async_graphql::Value>> {
+    crate::javascript::init_rt(script)
 }
 
 // Provides access to http in native rust environment
@@ -60,5 +71,7 @@ pub fn init(blueprint: &Blueprint) -> TargetRuntime {
         file: init_file(),
         cache: Arc::new(init_in_memory_cache()),
         extensions: Arc::new(vec![]),
+        http_worker: init_http_worker_io(blueprint.server.script.clone()),
+        resolver_worker: init_resolver_worker_io(blueprint.server.script.clone()),
     }
 }

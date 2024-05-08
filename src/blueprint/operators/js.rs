@@ -38,12 +38,7 @@ fn js_enabled(inputs: CompileJs) -> Valid<Expression, String> {
                 })
                 .map_err(|e| crate::valid::ValidationError::new(e.to_string())),
             )
-            .map(|_| {
-                Expression::Js(std::sync::Arc::new(crate::javascript::Runtime::new(
-                    name.to_string(),
-                    Script { source: script.clone(), timeout: None },
-                )))
-            })
+            .map(|_| Expression::IO(crate::lambda::IO::Js { name: name.to_string() }))
         },
     )
 }

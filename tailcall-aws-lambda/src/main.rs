@@ -12,6 +12,7 @@ use tailcall::tracing::get_log_level;
 
 mod http;
 mod runtime;
+mod worker_io;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

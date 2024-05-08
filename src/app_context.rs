@@ -101,6 +101,9 @@ impl AppContext {
 
                                     result
                                 }
+                                IO::Js { name: method } => {
+                                    Some(Expression::IO(IO::Js { name: method.clone() }))
+                                }
                             },
                             _ => None,
                         })

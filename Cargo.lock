@@ -5043,6 +5043,7 @@ name = "tailcall-aws-lambda"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-graphql-value",
  "async-trait",
  "dotenvy",
  "hyper 0.14.28",

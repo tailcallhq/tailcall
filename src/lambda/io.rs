@@ -1,4 +1,5 @@
 use core::future::Future;
+use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -38,6 +39,9 @@ pub enum IO {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+    },
+    Js {
+        name: String,
     },
 }
 
@@ -133,6 +137,17 @@ impl IO {
 
                     Ok(res.body)
                 }
+                IO::Js { name: method } => {
+                    let value = ctx
+                        .request_ctx
+                        .runtime
+                        .resolver_worker
+                        .call(method.clone(), ctx.value().cloned())
+                        .await
+                        .map_err(EvaluationError::from)?;
+
+                    Ok(value.unwrap_or_default())
+                }
             }
         })
     }
@@ -144,6 +159,12 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
             IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
+            IO::Js { name: method } => {
+                // TODO
+                let mut hasher = std::hash::DefaultHasher::new();
+                method.hash(&mut hasher);
+                hasher.finish()
+            }
         }
     }
 }

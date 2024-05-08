@@ -21,6 +21,7 @@ use super::file::File;
 use super::http::Http;
 use super::model::*;
 use super::runtime::ExecutionSpec;
+use crate::core::worker_io;
 
 struct Env {
     env: HashMap<String, String>,
@@ -289,6 +290,8 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            http_worker: Arc::new(worker_io::JsRuntime::init()),
+            resolver_worker: Arc::new(worker_io::JsRuntime::init()),
         };
 
         let endpoints = config
