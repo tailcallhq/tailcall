@@ -52,7 +52,7 @@ impl Context {
                 .collect::<BTreeSet<String>>();
 
             let type_name = GraphQLType::new(enum_name)
-                .append_namespace(&self.package)
+                .append_ns(&self.package)
                 .into_enum()
                 .to_string();
             self.config
@@ -76,13 +76,13 @@ impl Context {
             self = self.append_msg_type(&message.nested_type)?;
 
             let msg_type = GraphQLType::new(&msg_name)
-                .append_namespace(&self.package)
+                .append_ns(&self.package)
                 .into_object_type();
 
             let mut ty = Type::default();
             for field in message.field.iter() {
                 let field_name = GraphQLType::new(field.name())
-                    .append_namespace(&self.package)
+                    .append_ns(&self.package)
                     .into_field();
 
                 let mut cfg_field = Field::default();
@@ -128,8 +128,8 @@ impl Context {
             let service_name = service.name().to_string();
             for method in &service.method {
                 let field_name = GraphQLType::new(method.name())
-                    .append_namespace(&self.package)
-                    .append_namespace(&service_name)
+                    .append_ns(&self.package)
+                    .append_ns(&service_name)
                     .into_method();
 
                 let mut cfg_field = Field::default();
@@ -191,7 +191,7 @@ fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>> {
     let name = &name[1..];
 
     if let Some((package, name)) = name.rsplit_once('.') {
-        Ok(GraphQLType::new(name).append_namespace(package))
+        Ok(GraphQLType::new(name).append_ns(package))
     } else {
         Ok(GraphQLType::new(name))
     }
