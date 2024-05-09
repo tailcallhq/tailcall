@@ -7,15 +7,22 @@ use serde::{Deserialize, Serialize};
 use crate::core::valid::{Valid, Validator};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+pub enum Scalar {
+    Str,
+    Num,
+    Bool,
+    Empty,
+    Any,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename = "schema")]
 pub enum JsonSchema {
+    Scalar(Scalar),
     Obj(HashMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
     Enum(BTreeSet<String>),
-    Str,
-    Num,
-    Bool,
 }
 
 impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
@@ -38,17 +45,25 @@ impl JsonSchema {
     // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
     pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
         match self {
-            JsonSchema::Str => match value {
-                async_graphql::Value::String(_) => Valid::succeed(()),
-                _ => Valid::fail("expected string"),
-            },
-            JsonSchema::Num => match value {
-                async_graphql::Value::Number(_) => Valid::succeed(()),
-                _ => Valid::fail("expected number"),
-            },
-            JsonSchema::Bool => match value {
-                async_graphql::Value::Boolean(_) => Valid::succeed(()),
-                _ => Valid::fail("expected boolean"),
+            JsonSchema::Scalar(scalar) => match scalar {
+                Scalar::Str => match value {
+                    async_graphql::Value::String(_) => Valid::succeed(()),
+                    _ => Valid::fail("expected string"),
+                },
+                Scalar::Num => match value {
+                    async_graphql::Value::Number(_) => Valid::succeed(()),
+                    _ => Valid::fail("expected number"),
+                },
+                Scalar::Bool => match value {
+                    async_graphql::Value::Boolean(_) => Valid::succeed(()),
+                    _ => Valid::fail("expected boolean"),
+                },
+                Scalar::Empty => match value {
+                    async_graphql::Value::Null => Valid::succeed(()),
+                    async_graphql::Value::Object(obj) if obj.is_empty() => Valid::succeed(()),
+                    _ => Valid::fail("expected empty"),
+                },
+                Scalar::Any => Valid::succeed(()),
             },
             JsonSchema::Arr(schema) => match value {
                 async_graphql::Value::List(list) => {
@@ -93,6 +108,36 @@ impl JsonSchema {
     // TODO: add unit tests
     pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
         match self {
+            JsonSchema::Scalar(scalar) => match scalar {
+                Scalar::Str => {
+                    if other != self {
+                        return Valid::fail(format!("expected String, got {:?}", other))
+                            .trace(name);
+                    }
+                }
+                Scalar::Num => {
+                    if other != self {
+                        return Valid::fail(format!("expected Number, got {:?}", other))
+                            .trace(name);
+                    }
+                }
+                Scalar::Bool => {
+                    if other != self {
+                        return Valid::fail(format!("expected Boolean, got {:?}", other))
+                            .trace(name);
+                    }
+                }
+                Scalar::Empty => {
+                    if other != self {
+                        return Valid::fail(format!("expected Empty, got {:?}", other)).trace(name);
+                    }
+                }
+                Scalar::Any => {
+                    if other != self {
+                        return Valid::fail(format!("expected Any, got {:?}", other)).trace(name);
+                    }
+                }
+            },
             JsonSchema::Obj(a) => {
                 if let JsonSchema::Obj(b) = other {
                     return Valid::from_iter(b.iter(), |(key, b)| {
@@ -117,21 +162,6 @@ impl JsonSchema {
                     return a.compare(b, name);
                 } else {
                     return Valid::fail("expected type to be required".to_string()).trace(name);
-                }
-            }
-            JsonSchema::Str => {
-                if other != self {
-                    return Valid::fail(format!("expected String, got {:?}", other)).trace(name);
-                }
-            }
-            JsonSchema::Num => {
-                if other != self {
-                    return Valid::fail(format!("expected Number, got {:?}", other)).trace(name);
-                }
-            }
-            JsonSchema::Bool => {
-                if other != self {
-                    return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
                 }
             }
             JsonSchema::Enum(a) => {
@@ -177,7 +207,11 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
             map.insert(field.name().to_case(Case::Camel), field_schema);
         }
 
-        Ok(JsonSchema::Obj(map))
+        if map.is_empty() {
+            Ok(JsonSchema::Scalar(Scalar::Empty))
+        } else {
+            Ok(JsonSchema::Obj(map))
+        }
     }
 }
 
@@ -198,21 +232,21 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
     fn try_from(value: &FieldDescriptor) -> Result<Self, Self::Error> {
         let field_schema = match value.kind() {
-            Kind::Double => JsonSchema::Num,
-            Kind::Float => JsonSchema::Num,
-            Kind::Int32 => JsonSchema::Num,
-            Kind::Int64 => JsonSchema::Num,
-            Kind::Uint32 => JsonSchema::Num,
-            Kind::Uint64 => JsonSchema::Num,
-            Kind::Sint32 => JsonSchema::Num,
-            Kind::Sint64 => JsonSchema::Num,
-            Kind::Fixed32 => JsonSchema::Num,
-            Kind::Fixed64 => JsonSchema::Num,
-            Kind::Sfixed32 => JsonSchema::Num,
-            Kind::Sfixed64 => JsonSchema::Num,
-            Kind::Bool => JsonSchema::Bool,
-            Kind::String => JsonSchema::Str,
-            Kind::Bytes => JsonSchema::Str,
+            Kind::Double => JsonSchema::Scalar(Scalar::Num),
+            Kind::Float => JsonSchema::Scalar(Scalar::Num),
+            Kind::Int32 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Int64 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Uint32 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Uint64 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Sint32 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Sint64 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Fixed32 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Fixed64 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Sfixed32 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Sfixed64 => JsonSchema::Scalar(Scalar::Num),
+            Kind::Bool => JsonSchema::Scalar(Scalar::Bool),
+            Kind::String => JsonSchema::Scalar(Scalar::Str),
+            Kind::Bytes => JsonSchema::Scalar(Scalar::Str),
             Kind::Message(msg) => JsonSchema::try_from(&msg)?,
             Kind::Enum(enm) => JsonSchema::try_from(&enm)?,
         };
@@ -242,15 +276,15 @@ mod tests {
     use indexmap::IndexMap;
     use tailcall_fixtures::protobuf;
 
-    use crate::core::blueprint::GrpcMethod;
     use crate::core::grpc::protobuf::tests::get_proto_file;
     use crate::core::grpc::protobuf::ProtobufSet;
     use crate::core::json::JsonSchema;
     use crate::core::valid::{Valid, Validator};
+    use crate::core::{blueprint::GrpcMethod, json::Scalar};
 
     #[test]
     fn test_validate_string() {
-        let schema = JsonSchema::Str;
+        let schema = JsonSchema::Scalar(Scalar::Str);
         let value = async_graphql::Value::String("hello".to_string());
         let result = schema.validate(&value);
         assert_eq!(result, Valid::succeed(()));
@@ -258,7 +292,10 @@ mod tests {
 
     #[test]
     fn test_validate_valid_object() {
-        let schema = JsonSchema::from([("name", JsonSchema::Str), ("age", JsonSchema::Num)]);
+        let schema = JsonSchema::from([
+            ("name", JsonSchema::Scalar(Scalar::Str)),
+            ("age", JsonSchema::Scalar(Scalar::Num)),
+        ]);
         let value = async_graphql::Value::Object({
             let mut map = IndexMap::new();
             map.insert(
@@ -274,7 +311,10 @@ mod tests {
 
     #[test]
     fn test_validate_invalid_object() {
-        let schema = JsonSchema::from([("name", JsonSchema::Str), ("age", JsonSchema::Num)]);
+        let schema = JsonSchema::from([
+            ("name", JsonSchema::Scalar(Scalar::Str)),
+            ("age", JsonSchema::Scalar(Scalar::Num)),
+        ]);
         let value = async_graphql::Value::Object({
             let mut map = IndexMap::new();
             map.insert(
@@ -294,12 +334,28 @@ mod tests {
     #[test]
     fn test_null_key() {
         let schema = JsonSchema::from([
-            ("name", JsonSchema::Str.optional()),
-            ("age", JsonSchema::Num),
+            ("name", JsonSchema::Scalar(Scalar::Str).optional()),
+            ("age", JsonSchema::Scalar(Scalar::Num)),
         ]);
         let value = async_graphql::Value::Object({
             let mut map = IndexMap::new();
             map.insert(Name::new("age"), async_graphql::Value::Number(1.into()));
+            map
+        });
+
+        let result = schema.validate(&value);
+        assert_eq!(result, Valid::succeed(()));
+    }
+
+    #[test]
+    fn test_empty() {
+        let schema = JsonSchema::from([
+            ("empty1", JsonSchema::Scalar(Scalar::Empty).optional()),
+            ("empty2", JsonSchema::Scalar(Scalar::Empty)),
+        ]);
+        let value = async_graphql::Value::Object({
+            let mut map = IndexMap::new();
+            map.insert(Name::new("empty2"), async_graphql::Value::Null);
             map
         });
 
@@ -322,11 +378,20 @@ mod tests {
             JsonSchema::Obj(HashMap::from_iter([
                 (
                     "postImage".to_owned(),
-                    JsonSchema::Opt(JsonSchema::Str.into())
+                    JsonSchema::Opt(JsonSchema::Scalar(Scalar::Str).into())
                 ),
-                ("title".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
-                ("id".to_owned(), JsonSchema::Opt(JsonSchema::Num.into())),
-                ("body".to_owned(), JsonSchema::Opt(JsonSchema::Str.into())),
+                (
+                    "title".to_owned(),
+                    JsonSchema::Opt(JsonSchema::Scalar(Scalar::Str).into())
+                ),
+                (
+                    "id".to_owned(),
+                    JsonSchema::Opt(JsonSchema::Scalar(Scalar::Num).into())
+                ),
+                (
+                    "body".to_owned(),
+                    JsonSchema::Opt(JsonSchema::Scalar(Scalar::Str).into())
+                ),
                 (
                     "status".to_owned(),
                     JsonSchema::Opt(

@@ -4,13 +4,13 @@ use async_graphql::dynamic::SchemaBuilder;
 
 use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
-use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
 use crate::core::json::JsonSchema;
 use crate::core::lambda::{Expression, IO};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::{blueprint::compress::compress, json::Scalar};
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
@@ -99,11 +99,12 @@ where
         JsonSchema::Enum(type_enum_.variants.to_owned())
     } else {
         match type_of {
-            "String" => JsonSchema::Str {},
-            "Int" => JsonSchema::Num {},
-            "Boolean" => JsonSchema::Bool {},
+            "String" => JsonSchema::Scalar(Scalar::Str),
+            "Int" => JsonSchema::Scalar(Scalar::Num),
+            "Boolean" => JsonSchema::Scalar(Scalar::Bool),
+            "Empty" => JsonSchema::Scalar(Scalar::Empty),
             "JSON" => JsonSchema::Obj(HashMap::new()),
-            _ => JsonSchema::Str {},
+            _ => JsonSchema::Scalar(Scalar::Any),
         }
     };
 
