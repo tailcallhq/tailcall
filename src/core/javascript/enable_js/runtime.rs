@@ -5,7 +5,7 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
-use crate::javascript::{Command, Event, JsRequest};
+use crate::core::javascript::{Command, Event, JsRequest};
 use crate::core::{blueprint, WorkerIO};
 
 struct LocalRuntime(Context);

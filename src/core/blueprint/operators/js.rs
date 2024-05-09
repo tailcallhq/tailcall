@@ -1,9 +1,10 @@
-use crate::blueprint::*;
-use crate::config;
-use crate::config::Field;
-use crate::lambda::Expression;
-use crate::try_fold::TryFold;
-use crate::valid::{Valid, Validator};
+use crate::core::blueprint::FieldDefinition;
+use crate::core::config;
+use crate::core::config::Field;
+use crate::core::lambda::IO;
+use crate::core::try_fold::TryFold;
+use crate::core::valid::Valid;
+use crate::{ConfigModule, Expression, ValidationError, Validator};
 
 pub struct CompileJs<'a> {
     pub name: &'a str,
@@ -36,9 +37,9 @@ fn js_enabled(inputs: CompileJs) -> Valid<Expression, String> {
                     ctx.eval::<(), &str>(script)?;
                     Ok::<_, anyhow::Error>(())
                 })
-                .map_err(|e| crate::valid::ValidationError::new(e.to_string())),
+                .map_err(|e| ValidationError::new(e.to_string())),
             )
-            .map(|_| Expression::IO(crate::lambda::IO::Js { name: name.to_string() }))
+            .map(|_| Expression::IO(IO::Js { name: name.to_string() }))
         },
     )
 }

@@ -9,8 +9,11 @@ use async_graphql_value::ConstValue;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall::{Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime, WorkerIO};
-use tailcall::javascript::{Command, Event};
+use tailcall::core::javascript::{Command, Event};
+use tailcall::{
+    Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime,
+    WorkerIO,
+};
 
 #[derive(Clone)]
 struct MockHttpClient {

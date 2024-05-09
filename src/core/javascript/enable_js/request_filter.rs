@@ -3,8 +3,8 @@ use std::sync::Arc;
 use hyper::body::Bytes;
 use rquickjs::FromJs;
 
-use super::{JsRequest, JsResponse};
 use crate::core::http::Response;
+use crate::core::javascript::{Command, Event, JsRequest, JsResponse};
 use crate::core::{HttpIO, WorkerIO};
 
 impl<'js> FromJs<'js> for Command {
@@ -93,9 +93,8 @@ mod tests {
     use hyper::body::Bytes;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
-    use crate::cli::javascript::request_filter::Command;
-    use crate::cli::javascript::{JsRequest, JsResponse};
     use crate::core::http::Response;
+    use crate::core::javascript::{Command, JsRequest, JsResponse};
 
     #[test]
     fn test_command_from_invalid_object() {

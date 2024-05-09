@@ -9,7 +9,7 @@ use rquickjs::{FromJs, IntoJs};
 use serde::{Deserialize, Serialize};
 
 use crate::core::is_default;
-use crate::javascript::JsRequest;
+use crate::core::javascript::JsRequest;
 
 impl JsRequest {
     fn uri(&self) -> Uri {

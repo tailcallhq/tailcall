@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
-use crate::javascript::{Command, Event};
+use crate::core::javascript::{Command, Event};
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 
@@ -58,8 +58,9 @@ pub mod test {
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
+    use crate::core::javascript::{Command, Event};
     use crate::core::runtime::TargetRuntime;
-    use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::core::{blueprint, javascript, EnvIO, FileIO, HttpIO};
     use crate::WorkerIO;
 
     #[derive(Clone)]

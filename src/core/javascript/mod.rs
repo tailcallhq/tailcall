@@ -27,10 +27,9 @@ pub enum Command {
     Response(JsResponse),
 }
 
-use crate::blueprint::Script;
-use crate::http::Response;
+use crate::{Response, Script};
 
-pub fn init_rt(script: Option<crate::blueprint::Script>) -> Arc<Runtime> {
+pub fn init_rt(script: Option<Script>) -> Arc<Runtime> {
     if let Some(script) = script {
         Arc::new(Runtime::new(script))
     } else {

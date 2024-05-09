@@ -16,10 +16,10 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::javascript::{Command, Event};
+use tailcall::core::javascript::{Command, Event};
 use tailcall::{
-    WorkerIO, EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
-    ResolverContextLike, Response, Server, TargetRuntime, Upstream,
+    EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
+    ResolverContextLike, Response, Server, TargetRuntime, Upstream, WorkerIO,
 };
 pub struct JsRuntime {}
 

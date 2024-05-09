@@ -1,5 +1,5 @@
 use async_graphql_value::ConstValue;
-use tailcall::javascript::{Command, Event};
+use tailcall::core::javascript::{Command, Event};
 use tailcall::WorkerIO;
 
 pub struct JsRuntime {}

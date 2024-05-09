@@ -5,7 +5,7 @@ use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
 use crate::core::http::Response;
-use crate::javascript::JsResponse;
+use crate::core::javascript::JsResponse;
 
 impl JsResponse {
     pub fn status(&self) -> u16 {
