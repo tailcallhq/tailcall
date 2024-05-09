@@ -8,7 +8,6 @@ use async_graphql::{Name, Value};
 use async_trait::async_trait;
 use criterion::{BenchmarkId, Criterion};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
-use tailcall::cli::MokaManager;
 use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
@@ -16,6 +15,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use tailcall::cli::MokaManager;
 use tailcall::{
     EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
     ResolverContextLike, Response, Server, TargetRuntime, Upstream,

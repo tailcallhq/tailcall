@@ -9,11 +9,10 @@ pub mod test {
 
     use anyhow::{anyhow, Result};
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
-    use tailcall::cli::MokaManager;
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tailcall::cli::javascript;
+    use tailcall::cli::{javascript, MokaManager};
     use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 

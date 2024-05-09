@@ -12,5 +12,5 @@ pub mod runtime;
 pub(crate) mod update_checker;
 
 pub use error::CLIError;
-pub use tc::run;
 pub use runtime::http_cache_manager::MokaManager;
+pub use tc::run;

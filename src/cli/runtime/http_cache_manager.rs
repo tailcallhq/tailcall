@@ -1,11 +1,9 @@
 use http_cache_reqwest::{CacheManager, HttpResponse};
-
 use http_cache_semantics::CachePolicy;
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, BoxError>;
-
 
 #[derive(Clone)]
 pub struct MokaManager {
@@ -31,10 +29,7 @@ impl MokaManager {
 
 #[async_trait::async_trait]
 impl CacheManager for MokaManager {
-    async fn get(
-        &self,
-        cache_key: &str,
-    ) -> Result<Option<(HttpResponse, CachePolicy)>> {
+    async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
         let store: Store = match self.cache.get(cache_key).await {
             Some(d) => d.clone(),
             None => return Ok(None),

@@ -43,13 +43,12 @@ pub mod test {
 
     use anyhow::{anyhow, Result};
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
-    use crate::cli::MokaManager;
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::cli::javascript;
+    use crate::cli::{javascript, MokaManager};
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
