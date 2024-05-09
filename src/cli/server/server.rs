@@ -7,8 +7,9 @@ use tokio::sync::oneshot::{self};
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
-use crate::blueprint::Http;
+use crate::blueprint::{Blueprint, Http};
 use crate::cli::telemetry::init_opentelemetry;
+use crate::cli::CLIError;
 use crate::config::ConfigModule;
 
 pub struct Server {
@@ -31,7 +32,10 @@ impl Server {
 
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
-        let server_config = Arc::new(ServerConfig::new(self.config_module).await?);
+        let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
+        let server_config = Arc::new(
+            ServerConfig::new(blueprint, self.config_module.extensions.endpoint_set).await?,
+        );
 
         init_opentelemetry(
             server_config.blueprint.telemetry.clone(),
