@@ -2,13 +2,10 @@ use std::sync::Arc;
 
 use criterion::Criterion;
 use hyper::Request;
-use serde_json::json;
-use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::blueprint::Blueprint;
 use tailcall::cli::server::server_config::ServerConfig;
-use tailcall::config::{Config, ConfigModule};
-use tailcall::http::handle_request;
-use tailcall::valid::Validator;
+use tailcall::{handle_request, Blueprint, Config, ConfigModule, GraphQLRequest, Validator};
+
+static QUERY: &str = r#"{"query":"query{posts{title}}"}"#;
 
 pub fn benchmark_handle_request(c: &mut Criterion) {
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
@@ -27,16 +24,11 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
         let server_config = server_config.clone();
         b.iter(|| {
             let server_config = server_config.clone();
-            tokio_runtime.spawn(async move {
+            tokio_runtime.block_on(async move {
                 let req = Request::builder()
                     .method("POST")
                     .uri("http://localhost:8000/graphql")
-                    .body(hyper::Body::from(
-                        json!({
-                            "query": "query { posts { title } }"
-                        })
-                        .to_string(),
-                    ))
+                    .body(hyper::Body::from(QUERY))
                     .unwrap();
 
                 let _ = handle_request::<GraphQLRequest>(req, server_config.app_ctx.clone())
