@@ -13,7 +13,7 @@ pub mod test {
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tailcall::core::javascript;
+    use tailcall::cli::javascript;
     use tailcall::core::javascript::{Command, Event};
     use tailcall::{InMemoryCache, Response, Script, TargetRuntime, WorkerIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};

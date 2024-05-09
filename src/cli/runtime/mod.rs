@@ -9,7 +9,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
 use crate::core::javascript::{Command, Event};
 use crate::core::runtime::TargetRuntime;
-use crate::core::{blueprint, javascript, EnvIO, FileIO, HttpIO, WorkerIO};
+use crate::core::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {
@@ -24,7 +24,7 @@ fn init_file() -> Arc<dyn FileIO> {
 fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
     #[cfg(feature = "js")]
     if let Some(script) = script {
-        return javascript::init_http(http, script);
+        return super::javascript::init_http(http, script);
     }
 
     #[cfg(not(feature = "js"))]
@@ -35,13 +35,27 @@ fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> 
 }
 
 fn init_http_worker_io(script: Option<blueprint::Script>) -> Arc<dyn WorkerIO<Event, Command>> {
-    javascript::init_rt(script)
+    #[cfg(feature = "js")]
+    if let Some(script) = script {
+        return Arc::new(super::javascript::Runtime::new(script));
+    };
+
+    #[cfg(not(feature = "js"))]
+    tracing::warn!("JS capabilities are disabled in this build");
+    Arc::new(crate::core::javascript::DefaultRuntime {})
 }
 
 fn init_resolver_worker_io(
     script: Option<blueprint::Script>,
 ) -> Arc<dyn WorkerIO<Option<async_graphql::Value>, async_graphql::Value>> {
-    javascript::init_rt(script)
+    #[cfg(feature = "js")]
+    if let Some(script) = script {
+        return Arc::new(super::javascript::Runtime::new(script));
+    };
+
+    #[cfg(not(feature = "js"))]
+    tracing::warn!("JS capabilities are disabled in this build");
+    Arc::new(crate::core::javascript::DefaultRuntime {})
 }
 
 // Provides access to http in native rust environment
