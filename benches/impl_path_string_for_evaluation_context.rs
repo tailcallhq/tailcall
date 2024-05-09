@@ -16,7 +16,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::core::javascript::{Command, Event};
+use tailcall::javascript::{Command, Event};
 use tailcall::{
     EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
     ResolverContextLike, Response, Server, TargetRuntime, Upstream, WorkerIO,

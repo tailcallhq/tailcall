@@ -1,4 +1,4 @@
-pub mod core;
+mod core;
 
 #[cfg(feature = "cli")]
 pub mod cli;
@@ -34,4 +34,4 @@ pub use core::tracing::{
     tailcall_filter_target,
 };
 pub use core::valid::{Cause, ValidationError, Validator};
-pub use core::{Cache, EntityCache, EnvIO, FileIO, HttpIO, WorkerIO};
+pub use core::{javascript, Cache, EntityCache, EnvIO, FileIO, HttpIO, WorkerIO};
