@@ -10,14 +10,10 @@ use colored::Colorize;
 use futures_util::future::join_all;
 use hyper::{Body, Request};
 use serde::{Deserialize, Serialize};
-use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::Blueprint;
-use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigModule, Source};
-use tailcall::http::{handle_request, AppContext};
-use tailcall::merge_right::MergeRight;
-use tailcall::print_schema::print_schema;
-use tailcall::valid::{Cause, ValidationError};
+use tailcall::{
+    handle_request, print_schema, AppContext, Blueprint, Cause, Config, ConfigModule, ConfigReader,
+    GraphQLBatchRequest, GraphQLRequest, MergeRight, Source, ValidationError,
+};
 
 use super::file::File;
 use super::http::Http;

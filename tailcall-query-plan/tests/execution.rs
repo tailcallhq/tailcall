@@ -2,10 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use async_graphql::parser::parse_query;
-use tailcall::blueprint::Blueprint;
-use tailcall::config::{Config, ConfigModule};
-use tailcall::http::RequestContext;
-use tailcall::valid::Validator;
+use tailcall::{Blueprint, Config, ConfigModule, RequestContext, Validator};
 use tailcall_query_plan::execution::executor::Executor;
 use tailcall_query_plan::execution::simple::SimpleExecutionBuilder;
 use tailcall_query_plan::plan::{GeneralPlan, OperationPlan};
