@@ -2251,7 +2251,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.6",
  "tokio",
  "tower-service",
  "tracing",
@@ -5270,6 +5270,27 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "tailcall-wasm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql-value",
+ "async-std",
+ "async-trait",
+ "console_error_panic_hook",
+ "dashmap",
+ "hyper 0.14.28",
+ "reqwest",
+ "serde_json",
+ "tailcall",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-subscriber-wasm",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

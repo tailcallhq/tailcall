@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <title>hello-wasm example</title>
+</head>
+<body>
+
+<div id="content">
+  <!-- Adding input field and button -->
+  <label for="queryInput"></label><input type="text" id="queryInput" placeholder="Enter your query here" />
+  <button id="btn">Run Query</button>
+  <p id="result"></p>
+</div>
+
+<script type="module">
+  import init, { TailcallBuilder } from "../../browser/pkg/tailcall_wasm.js";
+  await init();
+
+  let executor; // Making executor accessible
+
+  async function setup() {
+    try {
+      let schema =
+        "schema\n" +
+        '  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})\n' +
+        '  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {\n' +
+        "  query: Query\n" +
+        "}\n" +
+        "\n" +
+        "type Query {\n" +
+        '  posts: [Post] @http(path: "/posts")\n' +
+        '  users: [User] @http(path: "/users")\n' +
+        '  user(id: Int!): User @http(path: "/users/{{.args.id}}")\n' +
+        "}\n" +
+        "\n" +
+        "type User {\n" +
+        "  id: Int!\n" +
+        "  name: String!\n" +
+        "  username: String!\n" +
+        "  email: String!\n" +
+        "  phone: String\n" +
+        "  website: String\n" +
+        "}\n" +
+        "\n" +
+        "type Post {\n" +
+        "  id: Int!\n" +
+        "  userId: Int!\n" +
+        "  title: String!\n" +
+        "  body: String!\n" +
+        '  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])\n' +
+        "}\n";
+      let builder = new TailcallBuilder();
+      builder = await builder.with_config("jsonplaceholder.graphql", schema);
+      executor = await builder.build();
+    } catch (error) {
+      console.error("error: " + error);
+    }
+  }
+
+  async function runQuery() {
+    let query = document.getElementById("queryInput").value;
+    try {
+      let result = await executor.execute(query);
+      document.getElementById("result").textContent = result;
+    } catch (error) {
+      console.error("Error executing query: " + error);
+      document.getElementById("result").textContent = "Error: " + error;
+    }
+  }
+  setup();
+
+  let btn = document.getElementById("btn");
+  btn.addEventListener("click", runQuery);
+
+</script>
+</body>
+</html>

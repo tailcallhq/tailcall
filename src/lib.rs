@@ -27,6 +27,7 @@ pub use core::merge_right::MergeRight;
 pub use core::mustache::Mustache;
 pub use core::path::PathString;
 pub use core::print_schema::print_schema;
+pub use core::rest::EndpointSet;
 pub use core::runtime::TargetRuntime;
 pub use core::scalar::{is_predefined_scalar, CUSTOM_SCALARS};
 pub use core::tracing::{

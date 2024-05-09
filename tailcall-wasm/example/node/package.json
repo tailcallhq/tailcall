@@ -1,0 +1,22 @@
+{
+  "name": "example",
+  "version": "0.1.0",
+  "description": "Example impl for tc nodejs dependency",
+  "main": "index.js",
+  "scripts": {
+    "run": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tailcallhq/tailcall.git"
+  },
+  "author": "Sandipsinh Rathod",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/tailcallhq/tailcall/issues"
+  },
+  "homepage": "https://github.com/tailcallhq/tailcall#readme",
+  "dependencies": {
+    "@tailcallhq/tailcall-node": "file:../../node/pkg"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "compile node": "wasm-pack build --release --target nodejs --scope tailcallhq --out-dir ./node/pkg",
+    "compile browser": "wasm-pack build --release --target web --scope tailcallhq --out-dir ./browser/pkg",
+    "compile": "npm run compile node && npm run compile browser",
+    "compile dev node": "wasm-pack build --dev --target nodejs --scope tailcallhq --out-dir ./node/pkg",
+    "compile dev browser": "wasm-pack build --dev --target web --scope tailcallhq --out-dir ./browser/pkg",
+    "dev": "npm run compile dev node && npm run compile dev browser",
+    "publish": "npm run compile node && wasm-pack publish --target nodejs"
+  }
+}
