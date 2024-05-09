@@ -31,7 +31,7 @@ impl MokaManager {
 impl CacheManager for MokaManager {
     async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
         let store: Store = match self.cache.get(cache_key).await {
-            Some(d) => d.clone(),
+            Some(d) => d,
             None => return Ok(None),
         };
         Ok(Some((store.response, store.policy)))
