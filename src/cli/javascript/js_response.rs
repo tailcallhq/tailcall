@@ -4,7 +4,7 @@ use hyper::body::Bytes;
 use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
-use crate::http::Response;
+use crate::core::http::Response;
 
 #[derive(Debug)]
 pub struct JsResponse(Response<String>);
@@ -107,7 +107,7 @@ mod test {
     fn create_test_response() -> Result<JsResponse> {
         let mut headers = HeaderMap::new();
         headers.insert("content-type", "application/json".parse().unwrap());
-        let response = crate::http::Response {
+        let response = crate::core::http::Response {
             status: reqwest::StatusCode::OK,
             headers,
             body: Bytes::from("Hello, World!"),
@@ -132,7 +132,7 @@ mod test {
     #[test]
     fn test_from_js_response() {
         let js_response = create_test_response().unwrap();
-        let response: Result<crate::http::Response<Bytes>> = js_response.try_into();
+        let response: Result<crate::core::http::Response<Bytes>> = js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
         assert_eq!(response.status, reqwest::StatusCode::OK);
@@ -151,11 +151,14 @@ mod test {
             HeaderName::from_static("x-unusual-header"),
             HeaderValue::from_str("🚀").unwrap(),
         );
-        let response =
-            crate::http::Response { status: reqwest::StatusCode::OK, headers, body: body.into() };
+        let response = crate::core::http::Response {
+            status: reqwest::StatusCode::OK,
+            headers,
+            body: body.into(),
+        };
         let js_response = JsResponse(response);
 
-        let response: Result<crate::http::Response<Bytes>, _> = js_response.try_into();
+        let response: Result<crate::core::http::Response<Bytes>, _> = js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
         assert_eq!(response.headers.get("x-unusual-header").unwrap(), "🚀");

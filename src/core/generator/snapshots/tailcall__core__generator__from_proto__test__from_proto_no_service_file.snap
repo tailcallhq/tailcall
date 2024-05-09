@@ -1,0 +1,5 @@
+---
+source: src/core/generator/from_proto.rs
+expression: result
+---
+
