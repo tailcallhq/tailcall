@@ -8,8 +8,7 @@ use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
 use schemars::Map;
-use tailcall::config;
-use tailcall::scalar::CUSTOM_SCALARS;
+use tailcall::{Config, CUSTOM_SCALARS};
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 
@@ -549,7 +548,7 @@ fn write_all_directives(
     written_directives: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
 ) -> Result<()> {
-    let schema = schemars::schema_for!(config::Config);
+    let schema = schemars::schema_for!(Config);
 
     let defs: BTreeMap<String, Schema> = schema.definitions;
     for (name, schema) in defs.iter() {
@@ -615,7 +614,7 @@ fn write_all_input_types(
     writer: &mut IndentedWriter<impl Write>,
     mut extra_it: BTreeMap<String, ExtraTypes>,
 ) -> std::io::Result<()> {
-    let schema = schemars::schema_for!(config::Config);
+    let schema = schemars::schema_for!(Config);
 
     let scalar = CUSTOM_SCALARS
         .iter()

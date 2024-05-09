@@ -4,8 +4,8 @@ use hyper::body::Bytes;
 use rquickjs::FromJs;
 
 use super::{JsRequest, JsResponse};
-use crate::http::Response;
-use crate::{HttpIO, WorkerIO};
+use crate::core::http::Response;
+use crate::core::{HttpIO, WorkerIO};
 
 #[derive(Debug)]
 pub enum Event {
@@ -106,7 +106,7 @@ mod tests {
 
     use crate::cli::javascript::request_filter::Command;
     use crate::cli::javascript::{JsRequest, JsResponse};
-    use crate::http::Response;
+    use crate::core::http::Response;
 
     #[test]
     fn test_command_from_invalid_object() {

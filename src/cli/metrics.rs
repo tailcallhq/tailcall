@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 
-use crate::runtime::TargetRuntime;
+use crate::core::runtime::TargetRuntime;
 
 fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
     let meter = opentelemetry::global::meter("cache");
