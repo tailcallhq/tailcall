@@ -234,7 +234,7 @@ impl FieldTree {
                     if let Some(index) = parent_list_index {
                         list.get(index)
                     } else {
-                        return Err(anyhow!("Expected parent list index.html"));
+                        return Err(anyhow!("Expected parent list index"));
                     }
                 }
                 _ => None,
