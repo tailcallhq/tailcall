@@ -46,8 +46,7 @@ schema
 
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News!
-    @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}")
+  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}")
 }
 
 type Mutation {
