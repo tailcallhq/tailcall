@@ -13,7 +13,7 @@ pub use js_response::JsResponse;
 pub use request_filter::RequestFilter;
 pub use runtime::Runtime;
 
-use crate::{blueprint, HttpIO};
+use crate::core::{blueprint, HttpIO};
 
 pub fn init_http(
     http: Arc<impl HttpIO>,

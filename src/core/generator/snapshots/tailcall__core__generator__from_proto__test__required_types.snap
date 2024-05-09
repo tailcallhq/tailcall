@@ -1,0 +1,24 @@
+---
+source: src/core/generator/from_proto.rs
+expression: config
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  person__PersonService__GetPerson: person__Person! @grpc(method: "person.PersonService.GetPerson")
+}
+
+type person__Person {
+  email: String
+  id: Int!
+  name: String!
+  phone: [person__PhoneNumber]!
+  stringMap: [person__Person__StringMapEntry]!
+}
+
+type person__PhoneNumber {
+  number: String!
+  type: String
+}
