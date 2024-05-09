@@ -153,6 +153,7 @@ tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
+http-cache-semantics = {version = "1.0.2", features = ["with_serde", "reqwest"]}
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
