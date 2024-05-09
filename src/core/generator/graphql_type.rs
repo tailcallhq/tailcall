@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::str::FromStr;
 
 use convert_case::{Case, Casing};
 pub(super) static DEFAULT_SEPARATOR: &str = "__";
@@ -25,23 +26,37 @@ pub struct Unparsed {
     name: String,
 }
 
-#[derive(Debug, Clone)]
-struct Namespace {
+#[derive(Debug, Default, Clone)]
+pub struct Namespace {
     path: Vec<String>,
 }
 
-impl Namespace {
-    fn parse(input: &str) -> Self {
+impl FromStr for Namespace {
+    type Err = anyhow::Error;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        if input.is_empty() {
+            return Ok(Self { path: Vec::new() });
+        }
+
         let path = input
             .split(PACKAGE_SEPARATOR)
             .map(String::from)
             .collect::<Vec<_>>();
 
-        Self { path }
+        Ok(Self { path })
+    }
+}
+
+impl Namespace {
+    pub fn combine(mut self, other: Namespace) -> Self {
+        self.path.extend(other.path);
+
+        self
     }
 
-    fn combine(mut self, other: Namespace) -> Self {
-        self.path.extend(other.path);
+    pub fn pop(mut self) -> Self {
+        self.path.pop();
 
         self
     }
@@ -62,17 +77,15 @@ impl GraphQLType<Unparsed> {
         Self(Unparsed { namespace: None, name: name.to_string() })
     }
 
-    pub fn append_ns(mut self, namespace: &str) -> Self {
-        if namespace.is_empty() {
+    pub fn append_ns(mut self, additional: &Namespace) -> Self {
+        if additional.path.is_empty() {
             return self;
         }
 
-        let additional = Namespace::parse(namespace);
-
         self.0.namespace = if let Some(namespace) = self.0.namespace {
-            Some(namespace.combine(additional))
+            Some(namespace.combine(additional.clone()))
         } else {
-            Some(additional)
+            Some(additional.clone())
         };
 
         self
@@ -237,7 +250,7 @@ mod tests {
         for ((entity, namespaces, name), expected) in input {
             let mut g = GraphQLType::new(name);
             for namespace in namespaces {
-                g = g.append_ns(namespace);
+                g = g.append_ns(&Namespace::from_str(namespace).unwrap());
             }
 
             let actual = g.parse(entity).to_string();
