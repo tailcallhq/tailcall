@@ -11,7 +11,7 @@ input greetings__HelloRequest {
 }
 
 type Query {
-  greetings__Greeter__SayHello(helloRequest: greetings__HelloRequest!): greetings__HelloReply! @grpc(method: "greetings.Greeter.SayHello")
+  greetings__Greeter__SayHello(helloRequest: greetings__HelloRequest!): greetings__HelloReply! @grpc(body: "{{.args.helloRequest}}", method: "greetings.Greeter.SayHello")
 }
 
 type greetings__HelloReply {
