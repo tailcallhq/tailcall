@@ -42,7 +42,8 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
-    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
+    use crate::cli::MokaManager;
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};

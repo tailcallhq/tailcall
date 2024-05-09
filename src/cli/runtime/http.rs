@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
@@ -15,6 +15,7 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
+use super::http_cache_manager::MokaManager;
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;

@@ -1,6 +1,7 @@
 mod env;
 mod file;
 mod http;
+pub mod http_cache_manager;
 
 use std::hash::Hash;
 use std::sync::Arc;
