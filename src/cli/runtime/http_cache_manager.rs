@@ -5,17 +5,19 @@ use serde::{Deserialize, Serialize};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, BoxError>;
 
-#[derive(Clone)]
+use std::sync::Arc;
+
 pub struct MokaManager {
-    cache: Cache<String, Store>,
+    pub cache: Arc<Cache<String, Store>>,
 }
+
 impl Default for MokaManager {
     fn default() -> Self {
         Self::new(Cache::new(42))
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Store {
     response: HttpResponse,
     policy: CachePolicy,
@@ -23,7 +25,7 @@ pub struct Store {
 
 impl MokaManager {
     pub fn new(cache: Cache<String, Store>) -> Self {
-        Self { cache }
+        Self { cache: Arc::new(cache) }
     }
 }
 
