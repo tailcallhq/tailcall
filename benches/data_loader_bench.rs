@@ -9,11 +9,8 @@ use async_graphql_value::ConstValue;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
+use tailcall::{Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime, WorkerIO};
 use tailcall::javascript::{Command, Event};
-use tailcall::runtime::TargetRuntime;
-use tailcall::{EnvIO, FileIO, HttpIO, WorkerIO};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -74,7 +71,7 @@ impl tailcall::Cache for Cache {
     }
 
     async fn get<'a>(&'a self, _: &'a Self::Key) -> anyhow::Result<Option<Self::Value>> {
-        unimplemented!("Nwot needed for this bench")
+        unimplemented!("Not needed for this bench")
     }
 
     fn hit_rate(&self) -> Option<f64> {

@@ -14,6 +14,15 @@ futures-util = { version = "0.3.30" }
 indexmap = "2.2.6"
 insta = { version = "1.38.0", features = ["json"] }
 tokio = { version = "1.37.0", features = ["rt", "time"] }
+reqwest = { version = "0.11", features = [
+    "json",
+    "rustls-tls",
+], default-features = false }
+tracing = "0.1.40"
+lazy_static = "1.4.0"
+serde_json = { version = "1.0.116", features = ["preserve_order"] }
+serde = { version = "1.0.200", features = ["derive"] }
+
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
@@ -48,18 +57,15 @@ schemars = { version = "0.8.17", features = ["derive"] }
 hyper = { version = "0.14.28", features = ["server"], default-features = false }
 tokio = { workspace = true }
 anyhow = { workspace = true }
+reqwest = { workspace = true }
 derive_setters = "0.1.6"
 thiserror = "1.0.59"
-serde_json = { version = "1.0.116", features = ["preserve_order"] }
-serde = { version = "1.0.200", features = ["derive"] }
+serde_json = { workspace = true }
+serde = { workspace = true }
 serde_qs = "0.13"
 serde_yaml = "0.9.34"
 serde_urlencoded = "0.7.1"
 url = { version = "2.5.0", features = ["serde"] }
-reqwest = { version = "0.11", features = [
-    "json",
-    "rustls-tls",
-], default-features = false }
 indexmap = { workspace = true }
 once_cell = "1.19.0"
 clap = { version = "4.5.4", features = ["derive"] }
@@ -92,14 +98,14 @@ update-informer = { version = "1.1.0", default-features = false, features = [
     "github",
     "reqwest",
 ], optional = true }
-lazy_static = "1.4.0"
+lazy_static = { workspace = true }
 which = { version = "6.0.1", optional = true }
 async-recursion = "1.1.1"
 tempfile = "3.10.1"
 rquickjs = { "version" = "0.5.1", optional = true, features = ["macro"] }
 strum_macros = "0.26.2"
 # TODO: disable some levels with features?
-tracing = "0.1.40"
+tracing = { workspace = true }
 tracing-subscriber = { version = "0.3.18", features = [
     "default",
     "fmt",
@@ -142,14 +148,14 @@ dotenvy = "0.15.7"
 convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
+tailcall-tracker = { path = "tailcall-tracker", optional = true }
 tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
 
-
 [dev-dependencies]
-tailcall-prettier = {path = "tailcall-prettier"}
+tailcall-prettier = { path = "tailcall-prettier" }
 criterion = "0.5.1"
 httpmock = "0.7.0"
 pretty_assertions = "1.4.0"
@@ -185,6 +191,7 @@ cli = [
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
     "dep:opentelemetry-system-metrics",
+    "dep:tailcall-tracker"
 ]
 
 # Feature flag to enable all default features.
@@ -203,8 +210,8 @@ members = [
     "tailcall-prettier",
     "tailcall-query-plan",
     "tailcall-fixtures",
-    "tailcall-upstream-grpc"
-]
+    "tailcall-upstream-grpc",
+    "tailcall-tracker"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]

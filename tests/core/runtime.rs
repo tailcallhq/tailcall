@@ -6,10 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use derive_setters::Setters;
-use tailcall::cache::InMemoryCache;
-use tailcall::config::Source;
-use tailcall::runtime::TargetRuntime;
-use tailcall::{blueprint, javascript};
+use tailcall::{InMemoryCache, Script, Source, TargetRuntime};
 
 use super::env::Env;
 use super::file::TestFileIO;
@@ -63,7 +60,7 @@ impl ExecutionMock {
 pub fn create_runtime(
     http_client: Arc<Http>,
     env: Option<HashMap<String, String>>,
-    script: Option<blueprint::Script>,
+    script: Option<Script>,
 ) -> TargetRuntime {
     let http = if let Some(script) = script.clone() {
         javascript::init_http(http_client.clone(), script)

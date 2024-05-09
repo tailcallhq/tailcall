@@ -489,7 +489,6 @@
         },
         "protected": {
           "description": "Marks field as protected by auth provider",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
@@ -1267,7 +1266,6 @@
         },
         "protected": {
           "description": "Marks field as protected by auth providers",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"

@@ -2,9 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use tailcall::cache::InMemoryCache;
-use tailcall::runtime::TargetRuntime;
-use tailcall::{EntityCache, EnvIO, FileIO};
+use tailcall::{EntityCache, EnvIO, FileIO, InMemoryCache, TargetRuntime};
 use tokio::io::AsyncReadExt;
 
 use crate::http::init_http;

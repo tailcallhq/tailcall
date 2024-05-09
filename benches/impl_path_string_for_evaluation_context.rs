@@ -16,15 +16,11 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::blueprint::{Server, Upstream};
-use tailcall::cache::InMemoryCache;
-use tailcall::http::{RequestContext, Response};
 use tailcall::javascript::{Command, Event};
-use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path::PathString;
-use tailcall::runtime::TargetRuntime;
-use tailcall::{EnvIO, FileIO, HttpIO, WorkerIO};
-
+use tailcall::{
+    WorkerIO, EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
+    ResolverContextLike, Response, Server, TargetRuntime, Upstream,
+};
 pub struct JsRuntime {}
 
 impl JsRuntime {
@@ -255,7 +251,7 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-    let config_module = tailcall::config::ConfigModule::default();
+    let config_module = tailcall::ConfigModule::default();
 
     //TODO: default is used only in tests. Drop default and move it to test.
     let upstream = Upstream::try_from(&config_module).unwrap();
