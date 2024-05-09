@@ -184,7 +184,7 @@ fn execute_inner(name: String, value: Option<ConstValue>) -> anyhow::Result<Cons
 
             let function = fn_as_value
                 .as_function()
-                .ok_or(anyhow::anyhow!("`hello` is not a function"))?;
+                .ok_or(anyhow::anyhow!("`{}` is not a function", name))?;
             let val: String = function.call((value, ))
                 .map_err(|_| anyhow::anyhow!("unable to parse value from js function: {} maybe because it's not returning a string?", name,))?;
             Ok::<_, anyhow::Error>(serde_json::from_str(&val)?)
