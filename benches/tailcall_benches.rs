@@ -15,6 +15,7 @@ fn all_benchmarks(c: &mut Criterion) {
     protobuf_convert_output::benchmark_convert_output(c);
     request_template_bench::benchmark_to_request(c);
     handle_request_bench::benchmark_handle_request(c);
+    handle_request_bench::benchmark_handle_request_with_http_cache(c);
 }
 
 criterion_group! {
