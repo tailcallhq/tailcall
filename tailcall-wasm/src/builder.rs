@@ -63,11 +63,15 @@ impl TailcallBuilder {
         path: String,
         content: String,
     ) -> anyhow::Result<TailcallBuilder> {
-        self.target_runtime
-            .file
-            .write(&path, content.as_bytes())
-            .await?;
-        self.configs.push(path);
+        if url::Url::parse(&content).is_ok() {
+            self.configs.push(content);
+        } else {
+            self.target_runtime
+                .file
+                .write(&path, content.as_bytes())
+                .await?;
+            self.configs.push(path);
+        }
         Ok(self)
     }
 
