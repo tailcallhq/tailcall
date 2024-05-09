@@ -7,13 +7,13 @@ use std::sync::Arc;
 
 use derive_setters::Setters;
 use tailcall::cli::javascript;
+use tailcall::javascript::DefaultJsRuntime;
 use tailcall::{InMemoryCache, Script, Source, TargetRuntime};
 
 use super::env::Env;
 use super::file::TestFileIO;
 use super::http::Http;
 use super::model::*;
-use crate::core::worker_io::JsRuntime;
 
 #[derive(Clone, Setters)]
 pub struct ExecutionSpec {
@@ -85,7 +85,7 @@ pub fn create_runtime(
         file: Arc::new(file),
         cache: Arc::new(InMemoryCache::new()),
         extensions: Arc::new(vec![]),
-        http_worker: Arc::new(JsRuntime::init()),
-        resolver_worker: Arc::new(JsRuntime::init()),
+        http_worker: Arc::new(DefaultJsRuntime {}),
+        resolver_worker: Arc::new(DefaultJsRuntime {}),
     }
 }

@@ -11,13 +11,13 @@ use anyhow::anyhow;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::cli::javascript;
+use tailcall::javascript::DefaultJsRuntime;
 use tailcall::{AppContext, Blueprint, ConfigModule, EnvIO, InMemoryCache, Source, TargetRuntime};
 
 use super::file::File;
 use super::http::Http;
 use super::model::*;
 use super::runtime::ExecutionSpec;
-use crate::core::worker_io;
 
 struct Env {
     env: HashMap<String, String>,
@@ -286,8 +286,8 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker: Arc::new(worker_io::JsRuntime::init()),
-            resolver_worker: Arc::new(worker_io::JsRuntime::init()),
+            http_worker: Arc::new(DefaultJsRuntime {}),
+            resolver_worker: Arc::new(DefaultJsRuntime {}),
         };
 
         let endpoints = config

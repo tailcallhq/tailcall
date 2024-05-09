@@ -9,10 +9,9 @@ use async_graphql_value::ConstValue;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall::javascript::{Command, Event};
+use tailcall::javascript::DefaultJsRuntime;
 use tailcall::{
     Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime,
-    WorkerIO,
 };
 
 #[derive(Clone)]
@@ -36,21 +35,6 @@ impl EnvIO for Env {
 }
 
 struct File;
-
-struct JsRt;
-#[async_trait::async_trait]
-impl WorkerIO<Event, Command> for JsRt {
-    async fn call(&self, _: String, _: Event) -> anyhow::Result<Option<Command>> {
-        unimplemented!("Not needed for this bench")
-    }
-}
-
-#[async_trait::async_trait]
-impl WorkerIO<Option<ConstValue>, ConstValue> for JsRt {
-    async fn call(&self, _: String, _: Option<ConstValue>) -> anyhow::Result<Option<ConstValue>> {
-        unimplemented!("Not needed for this bench")
-    }
-}
 
 #[async_trait::async_trait]
 impl FileIO for File {
@@ -95,8 +79,8 @@ pub fn benchmark_data_loader(c: &mut Criterion) {
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
                     extensions: Arc::new(vec![]),
-                    http_worker: Arc::new(JsRt {}),
-                    resolver_worker: Arc::new(JsRt {}),
+                    http_worker: Arc::new(DefaultJsRuntime {}),
+                    resolver_worker: Arc::new(DefaultJsRuntime {}),
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
                 let loader = loader.to_data_loader(Batch::default().delay(1));

@@ -47,8 +47,6 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
-    use async_graphql_value::ConstValue;
-    use async_trait::async_trait;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
     use hyper::body::Bytes;
     use reqwest::Client;
@@ -59,10 +57,9 @@ pub mod test {
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
-    use crate::core::javascript::{Command, Event};
     use crate::core::runtime::TargetRuntime;
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
-    use crate::WorkerIO;
+    use crate::javascript::DefaultJsRuntime;
 
     #[derive(Clone)]
     struct TestHttp {
@@ -173,22 +170,6 @@ pub mod test {
         }
     }
 
-    struct TestWorker {}
-
-    #[async_trait]
-    impl WorkerIO<Option<ConstValue>, ConstValue> for TestWorker {
-        async fn call(&self, _: String, _: Option<ConstValue>) -> Result<Option<ConstValue>> {
-            todo!()
-        }
-    }
-
-    #[async_trait]
-    impl WorkerIO<Event, Command> for TestWorker {
-        async fn call(&self, _: String, _: Event) -> Result<Option<Command>> {
-            todo!()
-        }
-    }
-
     pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
         let http = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
@@ -215,8 +196,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker: Arc::new(TestWorker {}),
-            resolver_worker: Arc::new(TestWorker {}),
+            http_worker: Arc::new(DefaultJsRuntime {}),
+            resolver_worker: Arc::new(DefaultJsRuntime {}),
         }
     }
 }

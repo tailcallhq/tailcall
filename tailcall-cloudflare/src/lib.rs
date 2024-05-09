@@ -8,7 +8,6 @@ mod file;
 pub mod handle;
 mod http;
 mod runtime;
-mod worker_io;
 
 #[worker::event(fetch)]
 async fn fetch(

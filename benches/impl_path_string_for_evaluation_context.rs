@@ -5,7 +5,6 @@ use std::time::Duration;
 
 use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
-use async_graphql_value::ConstValue;
 use async_trait::async_trait;
 use criterion::{BenchmarkId, Criterion};
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
@@ -16,32 +15,11 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::javascript::{Command, Event};
+use tailcall::javascript::DefaultJsRuntime;
 use tailcall::{
     EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
-    ResolverContextLike, Response, Server, TargetRuntime, Upstream, WorkerIO,
+    ResolverContextLike, Response, Server, TargetRuntime, Upstream,
 };
-pub struct JsRuntime {}
-
-impl JsRuntime {
-    pub fn init() -> Self {
-        Self {}
-    }
-}
-
-#[async_trait::async_trait]
-impl WorkerIO<Event, Command> for JsRuntime {
-    async fn call(&self, _: String, _: Event) -> anyhow::Result<Option<Command>> {
-        todo!()
-    }
-}
-
-#[async_trait::async_trait]
-impl WorkerIO<Option<ConstValue>, ConstValue> for JsRuntime {
-    async fn call(&self, _: String, _: Option<ConstValue>) -> anyhow::Result<Option<ConstValue>> {
-        todo!()
-    }
-}
 
 struct Http {
     client: ClientWithMiddleware,
@@ -265,8 +243,8 @@ fn request_context() -> RequestContext {
         file: Arc::new(File {}),
         cache: Arc::new(InMemoryCache::new()),
         extensions: Arc::new(vec![]),
-        http_worker: Arc::new(JsRuntime::init()),
-        resolver_worker: Arc::new(JsRuntime::init()),
+        http_worker: Arc::new(DefaultJsRuntime {}),
+        resolver_worker: Arc::new(DefaultJsRuntime {}),
     };
     RequestContext::new(runtime)
         .server(server)

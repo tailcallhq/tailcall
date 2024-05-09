@@ -10,7 +10,6 @@ use tailcall::{
 
 mod http;
 mod runtime;
-mod worker_io;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

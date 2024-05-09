@@ -42,7 +42,7 @@ fn init_http_worker_io(script: Option<blueprint::Script>) -> Arc<dyn WorkerIO<Ev
 
     #[cfg(not(feature = "js"))]
     tracing::warn!("JS capabilities are disabled in this build");
-    Arc::new(crate::core::javascript::DefaultRuntime {})
+    Arc::new(crate::core::javascript::DefaultJsRuntime {})
 }
 
 fn init_resolver_worker_io(
@@ -55,7 +55,7 @@ fn init_resolver_worker_io(
 
     #[cfg(not(feature = "js"))]
     tracing::warn!("JS capabilities are disabled in this build");
-    Arc::new(crate::core::javascript::DefaultRuntime {})
+    Arc::new(crate::core::javascript::DefaultJsRuntime {})
 }
 
 // Provides access to http in native rust environment

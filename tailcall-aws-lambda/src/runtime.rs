@@ -2,11 +2,11 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use tailcall::javascript::DefaultJsRuntime;
 use tailcall::{EntityCache, EnvIO, FileIO, InMemoryCache, TargetRuntime};
 use tokio::io::AsyncReadExt;
 
 use crate::http::init_http;
-use crate::worker_io;
 
 #[derive(Clone, Copy)]
 pub struct LambdaEnv;
@@ -59,7 +59,7 @@ pub fn init_runtime() -> TargetRuntime {
         env: init_env(),
         cache: init_cache(),
         extensions: Arc::new(vec![]),
-        http_worker: Arc::new(worker_io::JsRuntime::init()),
-        resolver_worker: Arc::new(worker_io::JsRuntime::init()),
+        http_worker: Arc::new(DefaultJsRuntime {}),
+        resolver_worker: Arc::new(DefaultJsRuntime {}),
     }
 }

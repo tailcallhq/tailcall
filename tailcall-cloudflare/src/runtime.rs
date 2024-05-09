@@ -3,9 +3,10 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
+use tailcall::javascript::DefaultJsRuntime;
 use tailcall::{EnvIO, FileIO, HttpIO, TargetRuntime};
 
-use crate::{cache, env, file, http, worker_io};
+use crate::{cache, env, file, http};
 
 fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
@@ -37,7 +38,7 @@ pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
         file: init_file(env.clone(), &bucket_id)?,
         cache: init_cache(env),
         extensions: Arc::new(vec![]),
-        http_worker: Arc::new(worker_io::JsRuntime::init()),
-        resolver_worker: Arc::new(worker_io::JsRuntime::init()),
+        http_worker: Arc::new(DefaultJsRuntime {}),
+        resolver_worker: Arc::new(DefaultJsRuntime {}),
     })
 }
