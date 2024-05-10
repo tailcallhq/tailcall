@@ -5,9 +5,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
 use crate::env::WasmEnv;
-use crate::js_val::JsVal;
 use crate::runtime::init_rt;
-use crate::TailcallExecutor;
+use crate::{to_val, TailcallExecutor};
 
 #[wasm_bindgen]
 pub struct TailcallBuilder {
@@ -32,9 +31,7 @@ impl TailcallBuilder {
         path: String,
         content: String,
     ) -> Result<TailcallBuilder, JsValue> {
-        self.with_file_inner(path, content)
-            .await
-            .map_err(|e| JsValue::from(e.to_string()))
+        self.with_file_inner(path, content).await.map_err(to_val)
     }
     async fn with_file_inner<T: AsRef<[u8]>>(
         self,
@@ -53,9 +50,7 @@ impl TailcallBuilder {
         path: String,
         content: String,
     ) -> Result<TailcallBuilder, JsValue> {
-        self.with_config_inner(path, content)
-            .await
-            .map_err(|e| JsValue::from(e.to_string()))
+        self.with_config_inner(path, content).await.map_err(to_val)
     }
 
     async fn with_config_inner(
@@ -80,10 +75,7 @@ impl TailcallBuilder {
         self
     }
     pub async fn build(self) -> Result<TailcallExecutor, JsValue> {
-        match self.build_inner().await {
-            Ok(v) => Ok(v),
-            Err(e) => Err(JsVal::from(e).into()),
-        }
+        self.build_inner().await.map_err(to_val)
     }
     async fn build_inner(mut self) -> anyhow::Result<TailcallExecutor> {
         self.target_runtime.env = Arc::new(self.env);

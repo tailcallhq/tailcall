@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+use std::fmt::Display;
 use std::panic;
 use std::sync::Arc;
 
@@ -8,13 +9,10 @@ use tailcall::{handle_request, AppContext, GraphQLRequest};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use crate::js_val::JsVal;
-
 mod builder;
 mod env;
 mod file;
 mod http;
-mod js_val;
 mod runtime;
 
 #[wasm_bindgen]
@@ -25,11 +23,7 @@ pub struct TailcallExecutor {
 #[wasm_bindgen]
 impl TailcallExecutor {
     pub async fn execute(&self, query: String) -> Result<JsValue, JsValue> {
-        let result = self.execute_inner(query).await;
-        match result {
-            Ok(val) => Ok(JsVal::from(val).into()),
-            Err(err) => Err(JsVal::from(err).into()),
-        }
+        self.execute_inner(query).await.map(to_val).map_err(to_val)
     }
     async fn execute_inner(&self, query: String) -> anyhow::Result<String> {
         let body = json!({"query":query}).to_string();
@@ -59,6 +53,10 @@ fn start() {
         // a runtime error.
         .without_time()
         .init();
+}
+
+pub fn to_val<T: Display>(val: T) -> JsValue {
+    JsValue::from(val.to_string())
 }
 
 #[cfg(test)]
