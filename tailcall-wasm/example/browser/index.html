@@ -27,11 +27,12 @@
       let builder = new TailcallBuilder();
       builder = await builder.with_config("jsonplaceholder.graphql", schemaUrl);
       executor = await builder.build();
+      let btn = document.getElementById("btn");
+      btn.addEventListener("click", runQuery);
     } catch (error) {
       alert("error: " + error);
     }
   }
-
   async function runQuery() {
     let query = document.getElementById("queryInput").value;
     try {
@@ -42,10 +43,6 @@
     }
   }
   setup();
-
-  let btn = document.getElementById("btn");
-  btn.addEventListener("click", runQuery);
-
 </script>
 </body>
 </html>
