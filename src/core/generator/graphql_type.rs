@@ -77,7 +77,7 @@ impl GraphQLType<Unparsed> {
         Self(Unparsed { namespace: None, name: name.to_string() })
     }
 
-    pub fn append_ns(mut self, additional: &Namespace) -> Self {
+    pub fn push(mut self, additional: &Namespace) -> Self {
         if additional.path.is_empty() {
             return self;
         }
@@ -250,7 +250,7 @@ mod tests {
         for ((entity, namespaces, name), expected) in input {
             let mut g = GraphQLType::new(name);
             for namespace in namespaces {
-                g = g.append_ns(&Namespace::from_str(namespace).unwrap());
+                g = g.push(&Namespace::from_str(namespace).unwrap());
             }
 
             let actual = g.parse(entity).to_string();
