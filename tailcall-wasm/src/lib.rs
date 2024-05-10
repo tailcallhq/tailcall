@@ -81,7 +81,7 @@ mod tests {
     "#;
 
     #[wasm_bindgen_test]
-    async fn test_fetch() {
+    async fn test() {
         super::start();
         let executor = super::builder::TailcallBuilder::init()
             .with_config("hello.graphql".to_string(), CONFIG.to_string())

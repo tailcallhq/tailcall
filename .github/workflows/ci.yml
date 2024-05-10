@@ -92,9 +92,6 @@ jobs:
         with:
           target: wasm32-unknown-unknown
 
-      - name: Build WASM
-        run: cargo check --lib --target wasm32-unknown-unknown
-        working-directory: ./tailcall-cloudflare
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -249,7 +246,7 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, draft_release, check_if_build, test_cf]
+    needs: [test, draft_release, check_if_build, test_cf, test_wasm]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
