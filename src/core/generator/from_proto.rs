@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::str::FromStr;
 
 use anyhow::{bail, Result};
 use derive_setters::Setters;
@@ -7,7 +6,7 @@ use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use super::graphql_type::{Namespace, Unparsed};
+use super::graphql_type::Unparsed;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Type};
 use crate::core::generator::GraphQLType;
 
@@ -16,7 +15,7 @@ use crate::core::generator::GraphQLType;
 #[derive(Setters)]
 struct Context {
     /// The current proto package name.
-    namespace: Namespace,
+    namespace: Vec<String>,
 
     /// Final configuration that's being built up.
     config: Config,
@@ -52,7 +51,7 @@ impl Context {
                 .collect::<BTreeSet<String>>();
 
             let type_name = GraphQLType::new(enum_name)
-                .push(&self.namespace)
+                .extend(self.namespace.as_slice())
                 .into_enum()
                 .to_string();
             self.config
@@ -73,20 +72,20 @@ impl Context {
             }
 
             // first append the name of current message as namespace
-            self.namespace = self.namespace.combine(Namespace::from_str(msg_name)?);
+            self.namespace.push(msg_name.to_string());
             self = self.append_enums(&message.enum_type);
             self = self.append_msg_type(&message.nested_type)?;
             // then drop it after handling nested types
-            self.namespace = self.namespace.pop();
+            self.namespace.pop();
 
             let msg_type = GraphQLType::new(msg_name)
-                .push(&self.namespace)
+                .extend(self.namespace.as_slice())
                 .into_object_type();
 
             let mut ty = Type::default();
             for field in message.field.iter() {
                 let field_name = GraphQLType::new(field.name())
-                    .push(&self.namespace)
+                    .extend(self.namespace.as_slice())
                     .into_field();
 
                 let mut cfg_field = Field::default();
@@ -129,8 +128,8 @@ impl Context {
             let service_name = service.name();
             for method in &service.method {
                 let field_name = GraphQLType::new(method.name())
-                    .push(&self.namespace)
-                    .push(&Namespace::from_str(service_name)?)
+                    .extend(self.namespace.as_slice())
+                    .push(service_name)
                     .into_method();
 
                 let mut cfg_field = Field::default();
@@ -189,7 +188,7 @@ fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>> {
     let name = &name[1..];
 
     if let Some((package, name)) = name.rsplit_once('.') {
-        Ok(GraphQLType::new(name).push(&Namespace::from_str(package)?))
+        Ok(GraphQLType::new(name).push(package))
     } else {
         Ok(GraphQLType::new(name))
     }
@@ -238,7 +237,7 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
     let mut ctx = Context::new(query);
     for descriptor_set in descriptor_sets.iter() {
         for file_descriptor in descriptor_set.file.iter() {
-            ctx.namespace = Namespace::from_str(file_descriptor.package())?;
+            ctx.namespace = vec![file_descriptor.package().to_string()];
 
             ctx = ctx
                 .append_enums(&file_descriptor.enum_type)

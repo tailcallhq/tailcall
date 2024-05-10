@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::str::FromStr;
 
 use convert_case::{Case, Casing};
 pub(super) static DEFAULT_SEPARATOR: &str = "__";
@@ -9,97 +8,96 @@ fn normalize_name(name: &str) -> String {
     name.replace(PACKAGE_SEPARATOR, "_")
 }
 
-/// A helper to infer and build the name of a GraphQL type from raw chunks of strings separated by a special character.
-#[derive(Debug, Clone)]
+/// A helper to infer and build the name of a GraphQL type from raw list of
+/// strings separated by a special character. It can be used to represent any
+/// kind of GraphQL entity like an enum, an object type, a field or a method. It
+/// can also be used to represent a package or a namespace. In unparsed form it
+/// is just a list of strings.
+#[derive(Debug, Clone, PartialEq)]
 pub struct GraphQLType<A>(A);
 
-/// Represents a parsed GraphQL name where the actual name, the namespace and the type of the entity is known.
-#[derive(Debug, Clone)]
+/// Represents a parsed GraphQL name where the actual name, the namespace and
+/// the type of the entity is known.
+#[derive(Debug, Clone, PartialEq)]
 pub struct Parsed {
-    namespace: Option<Namespace>,
+    namespace: Namespace,
     name: String,
     entity: Entity,
 }
 
-/// Represents an unparsed GraphQL name with just a chunk of string.
+/// Represents an unparsed GraphQL name with just a list of strings.
+/// Keeping the head separated ensures that we don't have an empty list of
+/// strings.
 #[derive(Debug, Clone)]
 pub struct Unparsed {
-    namespace: Option<Namespace>,
-    name: String,
+    /// The head of the GraphQL type name.
+    head: String,
+
+    /// The tail of the GraphQL type name.
+    tail: Vec<String>,
 }
 
-/// Represents a package or a namespace for the type, a feature typically found in protobuf.
-#[derive(Debug, Default, Clone)]
-pub struct Namespace {
-    path: Vec<String>,
-}
-
-impl FromStr for Namespace {
-    type Err = anyhow::Error;
-
-    fn from_str(input: &str) -> Result<Self, Self::Err> {
-        if input.is_empty() {
-            return Ok(Self { path: Vec::new() });
-        }
-
-        let path = input
-            .split(PACKAGE_SEPARATOR)
-            .map(String::from)
-            .collect::<Vec<_>>();
-
-        Ok(Self { path })
-    }
-}
+/// Represents a package or a namespace for the type, a feature typically found
+/// in protobuf.
+#[derive(Debug, Default, Clone, PartialEq)]
+struct Namespace(Vec<String>);
 
 impl Namespace {
-    pub fn combine(mut self, other: Namespace) -> Self {
-        self.path.extend(other.path);
-
-        self
-    }
-
-    pub fn pop(mut self) -> Self {
-        self.path.pop();
-
-        self
-    }
-
     fn id(&self) -> String {
-        self.path.join(PACKAGE_SEPARATOR)
+        self.0.join(PACKAGE_SEPARATOR)
+    }
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[cfg(test)]
+    fn new<A: AsRef<str> + Clone>(s: &[A]) -> Self {
+        Self(s.iter().map(|a| a.as_ref().to_string()).collect())
     }
 }
 
 impl Display for Namespace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.path.join(DEFAULT_SEPARATOR).as_str())
+        f.write_str(self.0.join(DEFAULT_SEPARATOR).as_str())
     }
 }
 
 impl GraphQLType<Unparsed> {
     pub fn new(name: &str) -> Self {
-        Self(Unparsed { namespace: None, name: name.to_string() })
+        Self(Unparsed { head: name.to_string(), tail: Vec::new() })
     }
 
-    pub fn push(mut self, additional: &Namespace) -> Self {
-        if additional.path.is_empty() {
-            return self;
+    pub fn extend<S: AsRef<str>>(mut self, items: &[S]) -> Self {
+        for item in items {
+            self.0.tail.push(item.as_ref().to_string());
         }
+        self
+    }
 
-        self.0.namespace = if let Some(namespace) = self.0.namespace {
-            Some(namespace.combine(additional.clone()))
-        } else {
-            Some(additional.clone())
-        };
+    pub fn push<S: AsRef<str>>(mut self, text: S) -> Self {
+        self.0.tail.push(text.as_ref().to_string());
 
         self
     }
 
+    /// Parses list of string and extracts the entity's name, its package or
+    /// namespace and it's type.
     fn parse(self, entity: Entity) -> GraphQLType<Parsed> {
         let unparsed = self.0;
-        let name = normalize_name(&unparsed.name);
-        let namespace = unparsed.namespace;
+        let path = unparsed
+            .tail
+            .iter()
+            // TODO: separate should be passed as an argument.
+            // Parser can not assume that the separator is always a dot. For eg: in Rust itself the
+            // types are separated by `::`
+            .flat_map(|c| c.split(PACKAGE_SEPARATOR))
+            .map(|a| a.trim().to_string())
+            .filter(|a| !a.is_empty())
+            .collect::<Vec<_>>();
 
-        GraphQLType(Parsed { name, namespace, entity })
+        let name = normalize_name(&unparsed.head);
+
+        GraphQLType(Parsed { name, namespace: Namespace(path), entity })
     }
 
     pub fn into_enum(self) -> GraphQLType<Parsed> {
@@ -125,7 +123,8 @@ impl GraphQLType<Unparsed> {
 
 impl GraphQLType<Parsed> {
     pub fn id(&self) -> String {
-        if let Some(ref namespace) = self.0.namespace {
+        let namespace = &self.0.namespace;
+        if !namespace.is_empty() {
             format!("{}.{}", namespace.id(), self.0.name)
         } else {
             self.0.name.clone()
@@ -136,7 +135,7 @@ impl GraphQLType<Parsed> {
 // FIXME: make it private
 /// Used to convert proto type names to GraphQL formatted names.
 /// Enum to represent the type of the descriptor
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Entity {
     Enum,
     EnumVariant,
@@ -152,15 +151,15 @@ impl Display for GraphQLType<Parsed> {
             Entity::EnumVariant => f.write_str(parsed.name.as_str())?,
             Entity::Field => f.write_str(parsed.name.to_case(Case::Camel).as_str())?,
             Entity::Method => {
-                if let Some(package) = &parsed.namespace {
-                    f.write_str(package.to_string().as_str())?;
+                if !parsed.namespace.is_empty() {
+                    f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
                 };
                 f.write_str(parsed.name.as_str())?
             }
             Entity::Enum | Entity::ObjectType => {
-                if let Some(package) = &parsed.namespace {
-                    f.write_str(package.to_string().as_str())?;
+                if !parsed.namespace.is_empty() {
+                    f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
                 };
                 f.write_str(parsed.name.as_str())?
@@ -177,7 +176,11 @@ mod tests {
     use super::*;
 
     type TestParams = (
-        (Entity, &'static [&'static str], &'static str),
+        (
+            Entity, // Entity type for example Enum, EnumVariant, ObjectType, Method, Field
+            &'static [&'static str], // Namespace or package
+            &'static str, // Name of the entity
+        ),
         &'static str,
     );
 
@@ -249,11 +252,33 @@ mod tests {
         assert_type_names(input);
     }
 
+    #[test]
+    fn test_parse_name() {
+        let actual = GraphQLType::new("foo").into_enum();
+        let expected = GraphQLType(Parsed {
+            name: "foo".to_string(),
+            namespace: Namespace::default(),
+            entity: Entity::Enum,
+        });
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_parse_namespace() {
+        let actual = GraphQLType::new("foo").push("bar").push("baz").into_enum();
+        let expected = GraphQLType(Parsed {
+            name: "foo".to_string(),
+            namespace: Namespace::new(&["bar", "baz"]),
+            entity: Entity::Enum,
+        });
+        assert_eq!(actual, expected);
+    }
+
     fn assert_type_names(input: Vec<TestParams>) {
         for ((entity, namespaces, name), expected) in input {
             let mut g = GraphQLType::new(name);
             for namespace in namespaces {
-                g = g.push(&Namespace::from_str(namespace).unwrap());
+                g = g.push(namespace);
             }
 
             let actual = g.parse(entity).to_string();
