@@ -48,10 +48,10 @@ pub fn update_validate<'a>(
                 source: config_module.extensions.script.clone().expect("script is required"),
                 timeout: config_module.server.script.clone().map_or_else(|| None, |script| script.timeout).map(Duration::from_millis),
             };
-            let js_func = &field.validate.unwrap().js;
+            let js_func = &field.validate.as_ref().unwrap().js;
             let runtime = Runtime::new(script);
             let value = &field.const_field;
-            todo!()
+            todo!();
 
             Valid::succeed(b_field)
         }
