@@ -35,8 +35,7 @@
   async function runQuery() {
     let query = document.getElementById("queryInput").value;
     try {
-      let result = await executor.execute(query);
-      document.getElementById("result").textContent = result;
+      document.getElementById("result").textContent = await executor.execute(query);
     } catch (error) {
       console.error("Error executing query: " + error);
       document.getElementById("result").textContent = "Error: " + error;
