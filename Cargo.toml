@@ -89,7 +89,7 @@ async-std = { version = "1.12.0", features = [
     "wasm-bindgen-futures",
     "unstable",
 ] }
-ttl_cache = { git = "https://github.com/ssddOnTop/ttl_cache/", branch = "chore/drop-since", features = ["stats"] }
+ttl_cache = { git = "https://github.com/tailcallhq/ttl_cache/", branch = "chore/drop-since", features = ["stats"] }
 protox = "0.6.0"
 protox-parse = "0.6.0"
 prost-reflect = { version = "0.13.1", features = ["serde"] }
