@@ -2,7 +2,6 @@ const tc = require("@tailcallhq/tailcall-node")
 
 async function run() {
   try {
-    await tc.main() // must call
     let schema = "https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql"
     let builder = new tc.TailcallBuilder()
     builder = await builder.with_config("jsonplaceholder.graphql", schema)

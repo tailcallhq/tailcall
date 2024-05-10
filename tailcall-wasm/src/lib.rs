@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+use std::panic;
 use std::sync::Arc;
 
 use serde_json::json;
@@ -48,14 +49,15 @@ impl TailcallExecutor {
 #[wasm_bindgen(start)]
 fn main() {
     console_error_panic_hook::set_once();
-    /*    tracing_subscriber::fmt()
-    .with_writer(
-        // To avoid trace events in the browser from showing their JS backtrace
-        tracing_subscriber_wasm::MakeConsoleWriter::default()
-            .map_trace_level_to(tracing::Level::DEBUG),
-    )
-    // For some reason, if we don't do this in the browser, we get
-    // a runtime error.
-    .without_time()
-    .init();*/
+
+    tracing_subscriber::fmt()
+        .with_writer(
+            // To avoid trace events in the browser from showing their JS backtrace
+            tracing_subscriber_wasm::MakeConsoleWriter::default()
+                .map_trace_level_to(tracing::Level::DEBUG),
+        )
+        // For some reason, if we don't do this in the browser, we get
+        // a runtime error.
+        .without_time()
+        .init();
 }
