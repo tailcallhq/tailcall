@@ -94,7 +94,7 @@ impl NativeHttp {
             .http2_keep_alive_while_idle(upstream.keep_alive_while_idle)
             .pool_idle_timeout(Some(Duration::from_secs(upstream.pool_idle_timeout)))
             .pool_max_idle_per_host(upstream.pool_max_idle_per_host)
-            .user_agent(upstream.user_agent.clone());
+            .user_agent(upstream.user_agent.to_string());
 
         // Add Http2 Prior Knowledge
         if upstream.http2_only {

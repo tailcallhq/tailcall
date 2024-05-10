@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
+use crate::core::arc_string::ArcString;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
@@ -175,8 +176,11 @@ impl Upstream {
     pub fn get_enable_http_cache(&self) -> bool {
         self.http_cache.unwrap_or(false)
     }
-    pub fn get_allowed_headers(&self) -> BTreeSet<String> {
-        self.allowed_headers.clone().unwrap_or_default()
+    pub fn get_allowed_headers(&self) -> BTreeSet<ArcString> {
+        self.allowed_headers
+            .as_ref()
+            .map(|set| set.iter().map(ArcString::from).collect())
+            .unwrap_or_default()
     }
     pub fn get_delay(&self) -> usize {
         self.batch.clone().unwrap_or_default().delay

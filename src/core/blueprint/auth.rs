@@ -3,18 +3,19 @@ use std::fmt::Debug;
 
 use jsonwebtoken::jwk::JwkSet;
 
+use crate::core::arc_string::ArcString;
 use crate::core::config::ConfigModule;
 use crate::core::valid::Valid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Basic {
-    pub htpasswd: String,
+    pub htpasswd: ArcString,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Jwt {
-    pub issuer: Option<String>,
-    pub audiences: HashSet<String>,
+    pub issuer: Option<ArcString>,
+    pub audiences: HashSet<ArcString>,
     pub optional_kid: bool,
     pub jwks: JwkSet,
 }
@@ -36,7 +37,7 @@ impl Auth {
     pub fn make(config_module: &ConfigModule) -> Valid<Option<Auth>, String> {
         let htpasswd = config_module.extensions.htpasswd.iter().map(|htpasswd| {
             Auth::Provider(Provider::Basic(Basic {
-                htpasswd: htpasswd.content.clone(),
+                htpasswd: htpasswd.content.as_str().into(),
             }))
         });
 

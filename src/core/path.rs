@@ -113,6 +113,7 @@ mod tests {
         use indexmap::IndexMap;
         use once_cell::sync::Lazy;
 
+        use crate::core::arc_string::ArcString;
         use crate::core::http::RequestContext;
         use crate::core::lambda::{EvaluationContext, ResolverContextLike};
         use crate::core::path::{PathGraphql, PathString};
@@ -173,10 +174,10 @@ mod tests {
             map
         });
 
-        static TEST_VARS: Lazy<BTreeMap<String, String>> = Lazy::new(|| {
+        static TEST_VARS: Lazy<BTreeMap<ArcString, ArcString>> = Lazy::new(|| {
             let mut map = BTreeMap::new();
 
-            map.insert("existing".to_owned(), "var".to_owned());
+            map.insert("existing".into(), "var".into());
 
             map
         });

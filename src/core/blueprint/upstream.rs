@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 
+use crate::core::arc_string::ArcString;
 use crate::core::config::{self, Batch, ConfigModule};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -21,9 +22,9 @@ pub struct Upstream {
     pub connect_timeout: u64,
     pub timeout: u64,
     pub tcp_keep_alive: u64,
-    pub user_agent: String,
-    pub allowed_headers: BTreeSet<String>,
-    pub base_url: Option<String>,
+    pub user_agent: ArcString,
+    pub allowed_headers: BTreeSet<ArcString>,
+    pub base_url: Option<ArcString>,
     pub http_cache: bool,
     pub batch: Option<Batch>,
     pub http2_only: bool,
@@ -57,7 +58,7 @@ impl TryFrom<&ConfigModule> for Upstream {
 
         if config_module.extensions.has_auth() {
             // force add auth specific headers to use it to make actual validation
-            allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
+            allowed_headers.insert(hyper::header::AUTHORIZATION.as_str().into());
         }
 
         get_batch(&config_upstream)
@@ -73,9 +74,9 @@ impl TryFrom<&ConfigModule> for Upstream {
                 connect_timeout: (config_upstream).get_connect_timeout(),
                 timeout: (config_upstream).get_timeout(),
                 tcp_keep_alive: (config_upstream).get_tcp_keep_alive(),
-                user_agent: (config_upstream).get_user_agent(),
+                user_agent: (config_upstream).get_user_agent().into(),
                 allowed_headers,
-                base_url,
+                base_url: base_url.map(ArcString::from),
                 http_cache: (config_upstream).get_enable_http_cache(),
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),

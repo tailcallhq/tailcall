@@ -5,6 +5,7 @@ use hyper::HeaderMap;
 use url::Url;
 
 use super::TryFoldConfig;
+use crate::core::arc_string::ArcString;
 use crate::core::config::{
     self, Apollo, ConfigModule, KeyValue, PrometheusExporter, StdoutExporter,
 };
@@ -29,7 +30,7 @@ pub enum TelemetryExporter {
 #[derive(Debug, Default, Clone)]
 pub struct Telemetry {
     pub export: Option<TelemetryExporter>,
-    pub request_headers: Vec<String>,
+    pub request_headers: Vec<ArcString>,
 }
 
 fn to_url(url: &str) -> Valid<Url, String> {
@@ -72,7 +73,12 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
             export
                 .map(|export| Telemetry {
                     export: Some(export),
-                    request_headers: config.telemetry.request_headers.clone(),
+                    request_headers: config
+                        .telemetry
+                        .request_headers
+                        .iter()
+                        .map(ArcString::from)
+                        .collect(),
                 })
                 .trace(config::Telemetry::trace_name().as_str())
         } else {

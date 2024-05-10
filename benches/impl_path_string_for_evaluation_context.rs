@@ -16,7 +16,7 @@ use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::{
-    EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
+    ArcString, EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
     ResolverContextLike, Response, Server, TargetRuntime, Upstream,
 };
 
@@ -155,10 +155,10 @@ static TEST_HEADERS: Lazy<HeaderMap> = Lazy::new(|| {
     map
 });
 
-static TEST_VARS: Lazy<BTreeMap<String, String>> = Lazy::new(|| {
+static TEST_VARS: Lazy<BTreeMap<ArcString, ArcString>> = Lazy::new(|| {
     let mut map = BTreeMap::new();
 
-    map.insert("existing".to_owned(), "var".to_owned());
+    map.insert("existing".into(), "var".into());
 
     map
 });

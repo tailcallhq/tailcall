@@ -4,6 +4,7 @@ mod core;
 pub mod cli;
 
 // export only what's requried outside.
+pub use core::arc_string::ArcString;
 pub use core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 pub use core::blueprint::{
     Blueprint, Definition, DynamicValue, GrpcMethod, Script, Server, Type, Upstream,

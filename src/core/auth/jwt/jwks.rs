@@ -82,7 +82,7 @@ mod tests {
         let data = jwks.decode(JWT_VALID_TOKEN_WITH_KID).unwrap();
 
         assert!(matches!(data.aud, Some(OneOrMany::Vec(v)) if v == ["them"]));
-        assert!(matches!(data.iss, Some(v) if v == "me"));
+        assert!(matches!(data.iss, Some(v) if v.as_ref() == "me"));
 
         assert!(matches!(
             jwks.decode(JWT_VALID_TOKEN_NO_KID),

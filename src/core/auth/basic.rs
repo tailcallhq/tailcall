@@ -37,7 +37,7 @@ impl Verify for BasicVerifier {
 
 impl BasicVerifier {
     pub fn new(options: blueprint::Basic) -> Self {
-        Self { verifier: Htpasswd::new_owned(&options.htpasswd) }
+        Self { verifier: Htpasswd::new_owned(options.htpasswd.as_ref()) }
     }
 }
 
@@ -58,7 +58,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
     impl blueprint::Basic {
         pub fn test_value() -> Self {
-            Self { htpasswd: HTPASSWD_TEST.to_owned() }
+            Self { htpasswd: HTPASSWD_TEST.into() }
         }
     }
 
@@ -129,6 +129,6 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
 
     // Helper function for setting up the provider
     fn setup_provider() -> BasicVerifier {
-        BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() })
+        BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.into() })
     }
 }

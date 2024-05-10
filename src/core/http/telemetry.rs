@@ -39,7 +39,7 @@ impl RequestCounter {
         attributes.push(KeyValue::new(HTTP_REQUEST_METHOD, req.method().to_string()));
 
         for name in observable_headers {
-            if let Some(value) = headers.get(name) {
+            if let Some(value) = headers.get(name.as_str()) {
                 attributes.push(KeyValue::new(
                     format!("http.request.header.{}", name),
                     format!("{:?}", value),

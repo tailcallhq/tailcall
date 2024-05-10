@@ -3,6 +3,7 @@ use headers::{Authorization, HeaderMapExt};
 use serde::Deserialize;
 
 use super::jwks::Jwks;
+use crate::core::arc_string::ArcString;
 use crate::core::auth::error::Error;
 use crate::core::auth::verification::Verification;
 use crate::core::auth::verify::Verify;
@@ -18,8 +19,8 @@ pub enum OneOrMany<T> {
 
 #[derive(Debug, Default, Deserialize)]
 pub struct JwtClaim {
-    pub aud: Option<OneOrMany<String>>,
-    pub iss: Option<String>,
+    pub aud: Option<OneOrMany<ArcString>>,
+    pub iss: Option<ArcString>,
 }
 
 pub struct JwtVerifier {
@@ -184,10 +185,8 @@ pub mod tests {
 
         assert_eq!(valid, Verification::succeed());
 
-        let jwt_options = blueprint::Jwt {
-            issuer: Some("me".to_owned()),
-            ..blueprint::Jwt::test_value()
-        };
+        let jwt_options =
+            blueprint::Jwt { issuer: Some("me".into()), ..blueprint::Jwt::test_value() };
         let jwt_provider = JwtVerifier::new(jwt_options);
 
         let valid = jwt_provider
@@ -197,7 +196,7 @@ pub mod tests {
         assert_eq!(valid, Verification::succeed());
 
         let jwt_options = blueprint::Jwt {
-            issuer: Some("another".to_owned()),
+            issuer: Some("another".into()),
             ..blueprint::Jwt::test_value()
         };
         let jwt_provider = JwtVerifier::new(jwt_options);
@@ -221,7 +220,7 @@ pub mod tests {
         assert_eq!(valid, Verification::succeed());
 
         let jwt_options = blueprint::Jwt {
-            audiences: HashSet::from_iter(["them".to_string()]),
+            audiences: HashSet::from_iter(["them".into()]),
             ..blueprint::Jwt::test_value()
         };
         let jwt_provider = JwtVerifier::new(jwt_options);
@@ -233,7 +232,7 @@ pub mod tests {
         assert_eq!(valid, Verification::succeed());
 
         let jwt_options = blueprint::Jwt {
-            audiences: HashSet::from_iter(["anothem".to_string()]),
+            audiences: HashSet::from_iter(["anothem".into()]),
             ..blueprint::Jwt::test_value()
         };
         let jwt_provider = JwtVerifier::new(jwt_options);
@@ -256,23 +255,23 @@ pub mod tests {
 
             assert!(validate_iss(&options, &claims));
 
-            claims.iss = Some("iss".to_owned());
+            claims.iss = Some("iss".into());
 
             assert!(validate_iss(&options, &claims));
         }
 
         #[test]
         fn validate_iss_defined() {
-            let options = Jwt { issuer: Some("iss".to_owned()), ..Jwt::test_value() };
+            let options = Jwt { issuer: Some("iss".into()), ..Jwt::test_value() };
             let mut claims = JwtClaim::default();
 
             assert!(!validate_iss(&options, &claims));
 
-            claims.iss = Some("wrong".to_owned());
+            claims.iss = Some("wrong".into());
 
             assert!(!validate_iss(&options, &claims));
 
-            claims.iss = Some("iss".to_owned());
+            claims.iss = Some("iss".into());
 
             assert!(validate_iss(&options, &claims));
         }
@@ -290,29 +289,29 @@ pub mod tests {
             let mut claims = JwtClaim::default();
             assert!(validate_aud(&options, &claims));
 
-            claims.aud = Some(OneOrMany::One("aud".to_owned()));
+            claims.aud = Some(OneOrMany::One("aud".into()));
             assert!(validate_aud(&options, &claims));
 
-            claims.aud = Some(OneOrMany::Vec(vec!["aud1".to_owned(), "aud2".to_owned()]));
+            claims.aud = Some(OneOrMany::Vec(vec!["aud1".into(), "aud2".into()]));
             assert!(validate_aud(&options, &claims));
         }
 
         #[test]
         fn validate_aud_defined() {
             let options = Jwt {
-                audiences: HashSet::from_iter(["aud1".to_owned(), "aud2".to_owned()]),
+                audiences: HashSet::from_iter(["aud1".into(), "aud2".into()]),
                 ..Jwt::test_value()
             };
             let mut claims = JwtClaim::default();
             assert!(!validate_aud(&options, &claims));
 
-            claims.aud = Some(OneOrMany::One("wrong".to_owned()));
+            claims.aud = Some(OneOrMany::One("wrong".into()));
             assert!(!validate_aud(&options, &claims));
 
-            claims.aud = Some(OneOrMany::One("aud1".to_owned()));
+            claims.aud = Some(OneOrMany::One("aud1".into()));
             assert!(validate_aud(&options, &claims));
 
-            claims.aud = Some(OneOrMany::Vec(vec!["aud1".to_owned(), "aud5".to_owned()]));
+            claims.aud = Some(OneOrMany::Vec(vec!["aud1".into(), "aud5".into()]));
             assert!(validate_aud(&options, &claims));
         }
     }

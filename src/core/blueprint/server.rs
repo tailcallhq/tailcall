@@ -10,6 +10,7 @@ use hyper::HeaderMap;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use super::Auth;
+use crate::core::arc_string::ArcString;
 use crate::core::blueprint::Cors;
 use crate::core::config::{self, ConfigModule, HttpVersion};
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -28,7 +29,7 @@ pub struct Server {
     pub worker: usize,
     pub port: u16,
     pub hostname: IpAddr,
-    pub vars: BTreeMap<String, String>,
+    pub vars: BTreeMap<ArcString, ArcString>,
     pub response_headers: HeaderMap,
     pub http: Http,
     pub pipeline_flush: bool,
@@ -41,7 +42,7 @@ pub struct Server {
 /// Mimic of mini_v8::Script that's wasm compatible
 #[derive(Clone, Debug)]
 pub struct Script {
-    pub source: String,
+    pub source: ArcString,
     pub timeout: Option<Duration>,
 }
 
@@ -162,7 +163,7 @@ fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<
         || Valid::succeed(None),
         |script| {
             Valid::succeed(Some(Script {
-                source: script.clone(),
+                source: script.clone().into(),
                 timeout: config_module
                     .server
                     .script

@@ -17,6 +17,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
+use crate::core::arc_string::ArcString;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
@@ -129,12 +130,12 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
-fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
+fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<ArcString>) -> HeaderMap {
     let mut new_headers = HeaderMap::new();
     for (k, v) in headers.iter() {
         if allowed
             .iter()
-            .any(|allowed_key| allowed_key.eq_ignore_ascii_case(k.as_str()))
+            .any(|allowed_key| allowed_key.as_str().eq_ignore_ascii_case(k.as_str()))
         {
             new_headers.insert(k, v.clone());
         }
@@ -359,7 +360,7 @@ mod test {
         headers.insert("x-bar", HeaderValue::from_static("foo"));
         headers.insert("x-baz", HeaderValue::from_static("baz"));
 
-        let allowed = BTreeSet::from_iter(vec!["x-foo".to_string(), "X-bar".to_string()]);
+        let allowed = BTreeSet::from_iter(vec!["x-foo".into(), "X-bar".into()]);
 
         let new_headers = create_allowed_headers(&headers, &allowed);
         assert_eq!(new_headers.len(), 2);

@@ -109,7 +109,7 @@ mod tests {
     // Helper function for setting up the auth context
     async fn setup_auth_context() -> GlobalAuthContext {
         let basic_provider =
-            BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.to_owned() });
+            BasicVerifier::new(blueprint::Basic { htpasswd: HTPASSWD_TEST.into() });
         let jwt_options = blueprint::Jwt::test_value();
         let jwt_provider = JwtVerifier::new(jwt_options);
 

@@ -6,6 +6,7 @@ use async_graphql::{SelectionField, ServerError, Value};
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
+use crate::core::arc_string::ArcString;
 use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -93,10 +94,10 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     pub fn var(&self, key: &str) -> Option<&str> {
         let vars = &self.request_ctx.server.vars;
 
-        vars.get(key).map(|v| v.as_str())
+        vars.get(&key.into()).map(|v| v.as_str())
     }
 
-    pub fn vars(&self) -> &BTreeMap<String, String> {
+    pub fn vars(&self) -> &BTreeMap<ArcString, ArcString> {
         &self.request_ctx.server.vars
     }
 

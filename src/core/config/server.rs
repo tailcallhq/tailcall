@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use super::merge_key_value_vecs;
+use crate::core::arc_string::ArcString;
 use crate::core::config::headers::Headers;
 use crate::core::config::KeyValue;
 use crate::core::is_default;
@@ -173,11 +174,11 @@ impl Server {
         self.hostname.clone().unwrap_or("127.0.0.1".to_string())
     }
 
-    pub fn get_vars(&self) -> BTreeMap<String, String> {
+    pub fn get_vars(&self) -> BTreeMap<ArcString, ArcString> {
         self.vars
             .clone()
             .iter()
-            .map(|kv| (kv.key.clone(), kv.value.clone()))
+            .map(|kv| (kv.key.as_str().into(), kv.value.as_str().into()))
             .collect()
     }
 
