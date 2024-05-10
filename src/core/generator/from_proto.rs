@@ -7,7 +7,6 @@ use prost_reflect::prost_types::{
 };
 
 use super::graphql_type::Unparsed;
-use crate::core::blueprint::GrpcMethod;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Type};
 use crate::core::generator::GraphQLType;
 
@@ -121,9 +120,6 @@ impl Context {
             return Ok(self);
         }
 
-        let package = self.package.clone();
-        let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-
         for service in services {
             let service_name = service.name().to_string();
             for method in &service.method {
@@ -133,6 +129,8 @@ impl Context {
                     .into_method();
 
                 let mut cfg_field = Field::default();
+                let mut body = None;
+
                 if let Some(graphql_type) = get_input_type(method.input_type())? {
                     let key = graphql_type.clone().into_field().to_string();
                     let type_of = graphql_type.into_object_type().to_string();
@@ -147,6 +145,7 @@ impl Context {
                         default_value: None,
                     };
 
+                    body = Some(format!("{{{{.args.{key}}}}}"));
                     cfg_field.args.insert(key, val);
                 }
 
@@ -156,12 +155,9 @@ impl Context {
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
-                grpc_method.service.clone_from(&service_name);
-                grpc_method.name = field_name.to_string();
-
                 cfg_field.grpc = Some(Grpc {
                     base_url: None,
-                    body: None,
+                    body,
                     group_by: vec![],
                     headers: vec![],
                     method: field_name.id(),
