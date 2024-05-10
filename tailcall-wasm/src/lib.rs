@@ -11,7 +11,6 @@ use wasm_bindgen::JsValue;
 use crate::js_val::JsVal;
 
 mod builder;
-mod cache;
 mod env;
 mod file;
 mod http;

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use tailcall::{EnvIO, FileIO, HttpIO, TargetRuntime};
+use async_graphql_value::ConstValue;
+use tailcall::{EnvIO, FileIO, HttpIO, InMemoryCache, TargetRuntime};
 
-use crate::cache::WasmCache;
 use crate::env::WasmEnv;
 use crate::file::WasmFile;
 use crate::http::WasmHttp;
@@ -19,8 +19,8 @@ fn init_env() -> Arc<dyn EnvIO> {
     Arc::new(WasmEnv::init())
 }
 
-fn init_cache() -> Arc<WasmCache> {
-    Arc::new(WasmCache::init())
+fn init_cache() -> Arc<InMemoryCache<u64, ConstValue>> {
+    Arc::new(InMemoryCache::new())
 }
 
 pub fn init_rt() -> TargetRuntime {
