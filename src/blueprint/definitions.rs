@@ -506,6 +506,7 @@ pub fn to_field_definition(
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
+        .and(update_validate(object_name).trace(config::Validate::trace_name().as_str()))
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),

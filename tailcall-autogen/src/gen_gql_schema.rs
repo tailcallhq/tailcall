@@ -40,6 +40,7 @@ lazy_static! {
         ),
         ("js", vec![Entity::FieldDefinition], false),
         ("tag", vec![Entity::Object], false),
+        ("validate", vec![Entity::FieldDefinition], true),
     ];
 }
 
@@ -70,6 +71,7 @@ static OBJECT_WHITELIST: &[&str] = &[
     "PrometheusExporter",
     "Apollo",
     "Cors",
+    "Validate",
 ];
 
 #[derive(Clone, Copy)]

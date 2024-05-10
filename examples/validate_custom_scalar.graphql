@@ -1,0 +1,12 @@
+scalar EvenNumber 
+
+schema 
+  @server(port: 8000, hostname: "localhost")
+  @link(type: Script, src: "scripts/validate.js") {
+  query: Query
+}
+
+type Query {
+  any(value: EvenNumber!): EvenNumber!
+    @expr(body: "{{.args.value}}")
+}
