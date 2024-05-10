@@ -9,10 +9,11 @@ fn normalize_name(name: &str) -> String {
     name.replace(PACKAGE_SEPARATOR, "_")
 }
 
-/// A struct to represent the name of a GraphQL type.
+/// A helper to infer and build the name of a GraphQL type from raw chunks of strings separated by a special character.
 #[derive(Debug, Clone)]
 pub struct GraphQLType<A>(A);
 
+/// Represents a parsed GraphQL name where the actual name, the namespace and the type of the entity is known.
 #[derive(Debug, Clone)]
 pub struct Parsed {
     namespace: Option<Namespace>,
@@ -20,12 +21,14 @@ pub struct Parsed {
     entity: Entity,
 }
 
+/// Represents an unparsed GraphQL name with just a chunk of string.
 #[derive(Debug, Clone)]
 pub struct Unparsed {
     namespace: Option<Namespace>,
     name: String,
 }
 
+/// Represents a package or a namespace for the type, a feature typically found in protobuf.
 #[derive(Debug, Default, Clone)]
 pub struct Namespace {
     path: Vec<String>,
