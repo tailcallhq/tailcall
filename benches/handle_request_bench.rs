@@ -39,7 +39,6 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
     });
 }
 
-
 pub fn benchmark_handle_request_with_http_cache(c: &mut Criterion) {
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
     let sdl = std::fs::read_to_string("./examples/jsonplaceholder.graphql").unwrap();
@@ -53,7 +52,7 @@ pub fn benchmark_handle_request_with_http_cache(c: &mut Criterion) {
         .unwrap();
     let server_config = Arc::new(server_config);
 
-    c.bench_function("benchmark_handle_request_with_http_cache", |b| {
+    c.bench_function("handle_request_with_http_cache", |b| {
         let server_config = server_config.clone();
         b.iter(|| {
             let server_config = server_config.clone();
