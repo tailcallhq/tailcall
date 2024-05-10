@@ -35,3 +35,6 @@ pub use core::tracing::{
 };
 pub use core::valid::{Cause, ValidationError, Validator};
 pub use core::{Cache, EntityCache, EnvIO, FileIO, HttpIO, WorkerIO};
+
+
+pub use cli::runtime::NativeHttp;
