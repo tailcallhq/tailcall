@@ -58,8 +58,27 @@ jobs:
       - name: Build
         run: cargo lambda build
 
-  test_cf:
+  test_wasm:
     name: Run Tests (WASM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./tailcall-wasm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+
+      - name: Install Wasm Pack
+        run: cargo install wasm-bindgen-cli --vers "0.2.92"
+
+      - name: Test WASM
+        run: cargo test
+
+  test_cf:
+    name: Run Tests (Cloudflare)
     runs-on: ubuntu-latest
     defaults:
       run:

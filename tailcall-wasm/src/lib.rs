@@ -19,7 +19,7 @@ mod js_val;
 mod runtime;
 
 #[wasm_bindgen]
-struct TailcallExecutor {
+pub struct TailcallExecutor {
     app_context: Arc<AppContext>,
 }
 
@@ -47,7 +47,7 @@ impl TailcallExecutor {
 }
 
 #[wasm_bindgen(start)]
-fn main() {
+fn start() {
     console_error_panic_hook::set_once();
 
     tracing_subscriber::fmt()
@@ -60,4 +60,41 @@ fn main() {
         // a runtime error.
         .without_time()
         .init();
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use anyhow::anyhow;
+    use serde_json::{json, Value};
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    const CONFIG: &str = r#"
+        schema @server(port: 8000) {
+          query: Query
+        }
+
+        type Query {
+          hello: String! @expr(body: "Alo")
+        }
+    "#;
+
+    #[wasm_bindgen_test]
+    async fn test_fetch() {
+        super::start();
+        let executor = super::builder::TailcallBuilder::init()
+            .with_config("hello.graphql".to_string(), CONFIG.to_string())
+            .await
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
+        let response = executor
+            .execute("query { hello }".to_string())
+            .await
+            .unwrap();
+        let value: Value = serde_json::from_str(&response.as_string().unwrap()).unwrap();
+        assert_eq!(value, json!({"data": {"hello": "Alo"}}));
+    }
 }

@@ -10,7 +10,7 @@ use crate::runtime::init_rt;
 use crate::TailcallExecutor;
 
 #[wasm_bindgen]
-struct TailcallBuilder {
+pub struct TailcallBuilder {
     target_runtime: TargetRuntime,
     env: WasmEnv, // TODO
     configs: Vec<String>,
