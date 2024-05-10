@@ -171,9 +171,15 @@ mod tests {
             // Enums
             ((Entity::Enum, &[], "foo"), "foo"),
             ((Entity::Enum, &[], "Foo"), "Foo"),
-            ((Entity::Enum, &["a.b.c"], "foo"), "a__b__c__foo"),
             ((Entity::Enum, &["a", "b.c"], "foo_bar"), "a__b__c__foo_bar"),
             ((Entity::Enum, &[], "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::Enum, &["a.b.c"], "foo"), "a__b__c__foo"),
+            (
+                (Entity::Enum, &["a.b.c"], "d.e.f.foo"),
+                "a__b__c__d_e_f_foo",
+            ),
+            ((Entity::Enum, &[""], "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::Enum, &[], "a_b_c_foo"), "a_b_c_foo"),
         ];
 
         assert_type_names(input);
@@ -185,7 +191,11 @@ mod tests {
             // Enum variants
             ((Entity::EnumVariant, &[], "foo"), "foo"),
             ((Entity::EnumVariant, &[], "FOO_VAR"), "FOO_VAR"),
+            ((Entity::EnumVariant, &[], "a.b.c.foo"), "a_b_c_foo"),
             ((Entity::EnumVariant, &["a.b.c"], "foo"), "foo"),
+            ((Entity::EnumVariant, &["a.b"], "d.e.foo"), "d_e_foo"),
+            ((Entity::EnumVariant, &[""], "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::EnumVariant, &[], "a_b_c_foo"), "a_b_c_foo"),
         ];
 
         assert_type_names(input);
@@ -196,11 +206,16 @@ mod tests {
         let input: Vec<TestParams> = vec![
             // Object types
             ((Entity::ObjectType, &[], "foo"), "foo"),
-            ((Entity::ObjectType, &["a.b.c"], "foo"), "a__b__c__foo"),
             (
                 (Entity::ObjectType, &["a", "b.c"], "fooBar"),
                 "a__b__c__fooBar",
             ),
+            ((Entity::ObjectType, &[], "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::ObjectType, &["a.b.c"], "foo"), "a__b__c__foo"),
+            ((Entity::ObjectType, &["a.b"], "d.e.foo"), "a__b__d_e_foo"),
+            ((Entity::ObjectType, &[""], "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::ObjectType, &[], "a_b_c_foo"), "a_b_c_foo"),
+            ((Entity::ObjectType, &[], "foo.bar.Baz"), "foo_bar_Baz"),
         ];
 
         assert_type_names(input);
@@ -216,6 +231,11 @@ mod tests {
                 (Entity::Method, &["a.b", "c"], "foo_bar"),
                 "a__b__c__foo_bar",
             ),
+            ((Entity::Method, &[], "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::Method, &["a.b.c"], "foo"), "a__b__c__foo"),
+            ((Entity::Method, &["a.b"], "d.e.foo"), "a__b__d_e_foo"),
+            ((Entity::Method, &[""], "a.b.c.foo"), "a_b_c_foo"),
+            ((Entity::Method, &[], "a_b_c_foo"), "a_b_c_foo"),
         ];
 
         assert_type_names(input);
@@ -228,6 +248,11 @@ mod tests {
             ((Entity::Field, &[], "foo"), "foo"),
             ((Entity::Field, &["a.b.c"], "fooBar"), "fooBar"),
             ((Entity::Field, &["a.b", "c"], "foo_bar"), "fooBar"),
+            ((Entity::Field, &[], "a.b.c.foo"), "aBCFoo"),
+            ((Entity::Field, &["a.b.c"], "foo"), "foo"),
+            ((Entity::Field, &["a.b"], "d.e.foo"), "dEFoo"),
+            ((Entity::Field, &[""], "a.b.c.foo"), "aBCFoo"),
+            ((Entity::Field, &[], "a_bC_foo"), "aBCFoo"),
         ];
 
         assert_type_names(input);
