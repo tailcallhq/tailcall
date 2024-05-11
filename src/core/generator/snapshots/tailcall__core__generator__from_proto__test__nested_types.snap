@@ -17,7 +17,7 @@ enum nested__types__Result__NestedEnum {
 }
 
 type Query {
-  nested__types__Example__Get(veryNested: nested__types__Result__Nested__VeryNested!): nested__types__Result! @grpc(method: "nested.types.Example.Get")
+  nested__types__Example__Get(veryNested: nested__types__Result__Nested__VeryNested!): nested__types__Result! @grpc(body: "{{.args.veryNested}}", method: "nested.types.Example.Get")
 }
 
 type nested__types__Result {
