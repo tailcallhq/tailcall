@@ -11,7 +11,7 @@ use crate::{to_val, TailcallExecutor};
 #[wasm_bindgen]
 pub struct TailcallBuilder {
     target_runtime: TargetRuntime,
-    env: WasmEnv, // TODO
+    env: WasmEnv,
     configs: Vec<String>,
 }
 
