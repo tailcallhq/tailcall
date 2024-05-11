@@ -5894,10 +5894,10 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "ttl_cache"
 version = "0.5.1"
-source = "git+https://github.com/tailcallhq/ttl_cache/?branch=chore/drop-since#7840c9e5dfa5916adf2ea12fed4e593c5565333d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4189890526f0168710b6ee65ceaedf1460c48a14318ceec933cb26baa492096a"
 dependencies = [
  "linked-hash-map",
- "wasm-timer",
 ]
 
 [[package]]

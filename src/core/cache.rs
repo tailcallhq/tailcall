@@ -1,5 +1,6 @@
 use std::hash::Hash;
 use std::num::NonZeroU64;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
@@ -7,6 +8,8 @@ use ttl_cache::TtlCache;
 
 pub struct InMemoryCache<K: Hash + Eq, V> {
     data: Arc<RwLock<TtlCache<K, V>>>,
+    hits: AtomicUsize,
+    miss: AtomicUsize,
 }
 
 // TODO: take this from the user instead of hardcoding it
@@ -20,7 +23,11 @@ impl<K: Hash + Eq, V: Clone> Default for InMemoryCache<K, V> {
 
 impl<K: Hash + Eq, V: Clone> InMemoryCache<K, V> {
     pub fn new() -> Self {
-        InMemoryCache { data: Arc::new(RwLock::new(TtlCache::new(CACHE_CAPACITY))) }
+        InMemoryCache {
+            data: Arc::new(RwLock::new(TtlCache::new(CACHE_CAPACITY))),
+            hits: AtomicUsize::new(0),
+            miss: AtomicUsize::new(0),
+        }
     }
 }
 
@@ -38,13 +45,20 @@ impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> crate::core::Cache
     }
 
     async fn get<'a>(&'a self, key: &'a K) -> anyhow::Result<Option<Self::Value>> {
-        Ok(self.data.read().unwrap().get(key).cloned())
+        let val = self.data.read().unwrap().get(key).cloned();
+        if val.is_some() {
+            self.hits.fetch_add(1, Ordering::Relaxed);
+        } else {
+            self.miss.fetch_add(1, Ordering::Relaxed);
+        }
+        Ok(val)
     }
 
     fn hit_rate(&self) -> Option<f64> {
         let cache = self.data.read().unwrap();
-        let hits = cache.hit_count();
-        let misses = cache.miss_count();
+        let hits = self.hits.load(Ordering::Relaxed);
+        let misses = self.miss.load(Ordering::Relaxed);
+
         drop(cache);
 
         if hits + misses > 0 {
