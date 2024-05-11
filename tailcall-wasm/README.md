@@ -17,13 +17,13 @@ The [package.json](package.json) file contains the scripts to run the project.
 For test build:
 
 ```bash
-npm run dev node # compiles in debug mode
+npm run "dev node" # compiles in debug mode
 ```
 
 For release build:
 
 ```bash
-npm run compile node  # compiles in release mode with optimizations
+npm run "compile node"  # compiles in release mode with optimizations
 ```
 
 By default, the output is in the `node` folder.
@@ -39,13 +39,13 @@ cd example/node && node index.js
 For test build:
 
 ```bash
-npm run dev browser # compiles in debug mode
+npm run "dev browser" # compiles in debug mode
 ```
 
 For release build:
 
 ```bash
-npm run compile browser  # compiles in release mode with optimizations
+npm run "compile browser"  # compiles in release mode with optimizations
 ```
 
 By default, the output is in the `browser` folder.
