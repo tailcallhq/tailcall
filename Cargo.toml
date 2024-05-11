@@ -191,7 +191,7 @@ cli = [
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
     "dep:opentelemetry-system-metrics",
-    "dep:tailcall-tracker",
+    "dep:tailcall-tracker"
 ]
 
 # Feature flag to enable all default features.
@@ -211,8 +211,7 @@ members = [
     "tailcall-query-plan",
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
-    "tailcall-tracker",
-]
+    "tailcall-tracker"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]

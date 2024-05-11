@@ -9,9 +9,7 @@ use gen_gql_schema::update_gql;
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
-use tailcall::scalar::CUSTOM_SCALARS;
-use tailcall::tracing::default_tracing_for_name;
-use tailcall::{cli, config};
+use tailcall::{cli, default_tracing_for_name, Config, CUSTOM_SCALARS};
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
@@ -92,7 +90,7 @@ fn get_file_path() -> PathBuf {
 }
 
 async fn get_updated_json() -> Result<Value> {
-    let mut schema: RootSchema = schemars::schema_for!(config::Config);
+    let mut schema: RootSchema = schemars::schema_for!(Config);
     let scalar = CUSTOM_SCALARS
         .iter()
         .map(|(k, v)| (k.clone(), v.scalar()))
