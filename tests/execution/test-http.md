@@ -1,5 +1,5 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-http
