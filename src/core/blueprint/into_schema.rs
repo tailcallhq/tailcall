@@ -42,49 +42,51 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-                let mut dyn_schema_field = dynamic::Field::new(
-                    field_name,
-                    type_ref.clone(),
-                    move |ctx| {
+
+                let mut dyn_schema_field = match &field.resolver {
+                    None => dynamic::Field::new(field_name, type_ref.clone(), move |ctx| {
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
 
-                        match &field.resolver {
-                            None => {
-                                let ctx: ResolverContext = ctx.into();
-                                let ctx = EvaluationContext::new(req_ctx, &ctx);
-                                FieldFuture::from_value(
-                                    ctx.path_value(&[field_name])
-                                        .map(|a| a.into_owned().to_owned()),
-                                )
-                            }
-                            Some(expr) => {
-                                let span = tracing::info_span!(
-                                    "field_resolver",
-                                    otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
-                                );
-                                let expr = expr.to_owned();
-                                FieldFuture::new(
-                                    async move {
-                                        let ctx: ResolverContext = ctx.into();
-                                        let ctx = EvaluationContext::new(req_ctx, &ctx);
+                        let ctx: ResolverContext = ctx.into();
+                        let ctx = EvaluationContext::new(req_ctx, &ctx);
+                        FieldFuture::from_value(
+                            ctx.path_value(&[field_name])
+                                .map(|a| a.into_owned().to_owned()),
+                        )
+                    }),
+                    Some(expr) => {
+                        let expr = expr.clone();
+                        dynamic::Field::new(field_name, type_ref.clone(), move |ctx| {
+                            let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+                            let field_name = &field.name;
 
-                                        let const_value =
-                                            expr.eval(ctx).await.map_err(|err| err.extend())?;
-                                        let p = match const_value {
-                                            ConstValue::List(a) => Some(FieldValue::list(a)),
-                                            ConstValue::Null => FieldValue::NONE,
-                                            a => Some(FieldValue::from(a)),
-                                        };
-                                        Ok(p)
-                                    }
-                                    .instrument(span)
-                                    .inspect_err(|err| tracing::error!(?err)),
-                                )
-                            }
-                        }
-                    },
-                );
+                            let span = tracing::info_span!(
+                                "field_resolver",
+                                otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
+                            );
+                            let expr = expr.to_owned();
+                            FieldFuture::new(
+                                async move {
+                                    let ctx: ResolverContext = ctx.into();
+                                    let ctx = EvaluationContext::new(req_ctx, &ctx);
+
+                                    let const_value =
+                                        expr.eval(ctx).await.map_err(|err| err.extend())?;
+                                    let p = match const_value {
+                                        ConstValue::List(a) => Some(FieldValue::list(a)),
+                                        ConstValue::Null => FieldValue::NONE,
+                                        a => Some(FieldValue::from(a)),
+                                    };
+                                    Ok(p)
+                                }
+                                .instrument(span)
+                                .inspect_err(|err| tracing::error!(?err)),
+                            )
+                        })
+                    }
+                };
+
                 if let Some(description) = &field.description {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }

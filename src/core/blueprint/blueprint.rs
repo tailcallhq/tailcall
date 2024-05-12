@@ -9,7 +9,6 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::GlobalTimeout;
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::lambda::Expression;
 use crate::core::schema_extension::SchemaExtension;
@@ -138,7 +137,7 @@ pub struct FieldDefinition {
     pub name: String,
     pub args: Vec<InputFieldDefinition>,
     pub of_type: Type,
-    pub resolver: Option<Expression>,
+    pub resolver: Option<Arc<Expression>>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
 }
@@ -148,7 +147,7 @@ impl FieldDefinition {
     /// Transforms the current expression if it exists on the provided field.
     pub fn map_expr<F: FnMut(Expression) -> Expression>(&mut self, mut wrapper: F) {
         if let Some(resolver) = self.resolver.take() {
-            self.resolver = Some(wrapper(resolver))
+            self.resolver = Some(Arc::new(wrapper(resolver.as_ref().clone())))
         }
     }
 }
@@ -238,9 +237,8 @@ impl Blueprint {
         }
 
         if server.global_response_timeout > 0 {
-            schema = schema
-                .data(async_graphql::Value::from(server.global_response_timeout))
-                .extension(GlobalTimeout);
+            schema = schema.data(async_graphql::Value::from(server.global_response_timeout))
+            // .extension(GlobalTimeout);
         }
 
         if server.get_enable_query_validation() || schema_modifiers.no_resolver {

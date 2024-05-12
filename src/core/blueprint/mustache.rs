@@ -112,61 +112,64 @@ impl FieldDefinition {
         let parts_validator = MustachePartsValidator::new(type_of, config, self);
 
         match &self.resolver {
-            Some(Expression::IO(IO::Http { req_template, .. })) => {
-                Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
-                })
-                .and(Valid::from_iter(req_template.query.clone(), |query| {
-                    let (_, mustache) = query;
+            Some(expr) => match expr.as_ref() {
+                Expression::IO(IO::Http { req_template, .. }) => {
+                    Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
+                        parts_validator.validate(parts, false).trace("path")
+                    })
+                    .and(Valid::from_iter(req_template.query.clone(), |query| {
+                        let (_, mustache) = query;
 
-                    Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("query")
-                    })
-                }))
-                .unit()
-            }
-            Some(Expression::IO(IO::GraphQL { req_template, .. })) => {
-                Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
-                    Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("headers")
-                    })
-                })
-                .and_then(|_| {
-                    if let Some(args) = &req_template.operation_arguments {
-                        Valid::from_iter(args, |(_, mustache)| {
-                            Valid::from_iter(mustache.expression_segments(), |parts| {
-                                parts_validator.validate(parts, true).trace("args")
-                            })
+                        Valid::from_iter(mustache.expression_segments(), |parts| {
+                            parts_validator.validate(parts, true).trace("query")
                         })
-                    } else {
-                        Valid::succeed(Default::default())
-                    }
-                })
-                .unit()
-            }
-            Some(Expression::IO(IO::Grpc { req_template, .. })) => {
-                Valid::from_iter(req_template.url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
-                })
-                .and(
+                    }))
+                    .unit()
+                }
+                Expression::IO(IO::GraphQL { req_template, .. }) => {
                     Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                         Valid::from_iter(mustache.expression_segments(), |parts| {
                             parts_validator.validate(parts, true).trace("headers")
                         })
                     })
-                    .unit(),
-                )
-                .and_then(|_| {
-                    if let Some(body) = &req_template.body {
-                        Valid::from_iter(body.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true).trace("body")
+                    .and_then(|_| {
+                        if let Some(args) = &req_template.operation_arguments {
+                            Valid::from_iter(args, |(_, mustache)| {
+                                Valid::from_iter(mustache.expression_segments(), |parts| {
+                                    parts_validator.validate(parts, true).trace("args")
+                                })
+                            })
+                        } else {
+                            Valid::succeed(Default::default())
+                        }
+                    })
+                    .unit()
+                }
+                Expression::IO(IO::Grpc { req_template, .. }) => {
+                    Valid::from_iter(req_template.url.expression_segments(), |parts| {
+                        parts_validator.validate(parts, false).trace("path")
+                    })
+                    .and(
+                        Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
+                            Valid::from_iter(mustache.expression_segments(), |parts| {
+                                parts_validator.validate(parts, true).trace("headers")
+                            })
                         })
-                    } else {
-                        Valid::succeed(Default::default())
-                    }
-                })
-                .unit()
-            }
+                        .unit(),
+                    )
+                    .and_then(|_| {
+                        if let Some(body) = &req_template.body {
+                            Valid::from_iter(body.expression_segments(), |parts| {
+                                parts_validator.validate(parts, true).trace("body")
+                            })
+                        } else {
+                            Valid::succeed(Default::default())
+                        }
+                    })
+                    .unit()
+                }
+                _ => Valid::succeed(()),
+            },
             _ => Valid::succeed(()),
         }
     }

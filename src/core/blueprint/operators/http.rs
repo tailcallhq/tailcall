@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Field;
@@ -81,7 +83,7 @@ pub fn update_http<'a>(
             };
 
             compile_http(config_module, field, http)
-                .map(|resolver| b_field.resolver(Some(resolver)))
+                .map(|resolver| b_field.resolver(Some(Arc::new(resolver))))
                 .and_then(|b_field| {
                     b_field
                         .validate_field(type_of, config_module)

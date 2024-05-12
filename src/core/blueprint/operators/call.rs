@@ -120,7 +120,7 @@ fn compile_call(
                     b_field_next
                         .resolver
                         .as_ref()
-                        .map(|other_expr| expr.clone().and_then(other_expr.clone()))
+                        .map(|other_expr| expr.clone().and_then(other_expr.as_ref().clone()))
                         .unwrap_or(expr)
                 });
 

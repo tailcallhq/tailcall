@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{self, ConfigModule, Field, GraphQLOperationType};
 use crate::core::graphql::RequestTemplate;
@@ -50,7 +52,7 @@ pub fn update_graphql<'a>(
             };
 
             compile_graphql(config, operation_type, graphql)
-                .map(|resolver| b_field.resolver(Some(resolver)))
+                .map(|resolver| b_field.resolver(Some(Arc::new(resolver))))
                 .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
         },
     )

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
@@ -22,8 +24,8 @@ pub fn update_modify<'a>(
                             }
                         }
                     }
-                    b_field.resolver = Some(b_field.resolver.unwrap_or(Expression::Context(
-                        Context::Path(vec![b_field.name.clone()]),
+                    b_field.resolver = Some(b_field.resolver.unwrap_or(Arc::new(
+                        Expression::Context(Context::Path(vec![b_field.name.clone()])),
                     )));
                     b_field = b_field.name(new_name.clone());
                 }

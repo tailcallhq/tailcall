@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_graphql_value::ConstValue;
 
 use crate::core::blueprint::*;
@@ -74,7 +76,7 @@ pub fn update_const_field<'a>(
                 value: &const_field.body,
                 validate: true,
             })
-            .map(|resolver| b_field.resolver(Some(resolver)))
+            .map(|resolver| b_field.resolver(Some(Arc::new(resolver))))
         },
     )
 }

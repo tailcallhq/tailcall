@@ -223,7 +223,7 @@ opt-level = 3
 codegen-units = 1
 panic = 'abort'
 lto = 'thin'
-debug = false
+debug = true
 incremental = false
 overflow-checks = false
 

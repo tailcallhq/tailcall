@@ -86,7 +86,8 @@ impl FieldTree {
                     let depends_on: Vec<Id> =
                         current_field_plan_id.map(|id| vec![id]).unwrap_or_default();
                     let id = field_plans.len().into();
-                    let field_plan = FieldPlan { id, resolver, depends_on };
+                    let field_plan =
+                        FieldPlan { id, resolver: resolver.as_ref().clone(), depends_on };
                     field_plans.push(field_plan);
                     Some(id)
                 } else {

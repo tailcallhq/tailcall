@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{self, ConfigModule, Field};
 use crate::core::lambda::{Context, Expression};
@@ -27,8 +29,14 @@ pub fn update_protected<'a>(
                     );
                 }
 
-                b_field.resolver = Some(Expression::Protect(Box::new(b_field.resolver.unwrap_or(
-                    Expression::Context(Context::Path(vec![b_field.name.clone()])),
+                b_field.resolver = Some(Arc::new(Expression::Protect(Box::new(
+                    b_field
+                        .resolver
+                        .unwrap_or(Arc::new(Expression::Context(Context::Path(vec![b_field
+                            .name
+                            .clone()]))))
+                        .as_ref()
+                        .clone(),
                 ))));
             }
 

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
@@ -306,9 +308,11 @@ fn update_resolver_from_path(
         }
         let resolver = match updated_base_field.resolver.clone() {
             None => resolver,
-            Some(resolver) => Expression::Path(Box::new(resolver), context.path.to_owned()),
+            Some(resolver) => {
+                Expression::Path(Box::new(resolver.as_ref().clone()), context.path.to_owned())
+            }
         };
-        Valid::succeed(updated_base_field.resolver(Some(resolver)))
+        Valid::succeed(updated_base_field.resolver(Some(Arc::new(resolver))))
     })
 }
 
@@ -325,8 +329,8 @@ pub fn fix_dangling_resolvers<'a>(
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
             {
-                b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
-                    ConstValue::Object(Default::default()),
+                b_field = b_field.resolver(Some(Arc::new(Expression::Dynamic(
+                    DynamicValue::Value(ConstValue::Object(Default::default())),
                 ))));
             }
 

@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::sync::Arc;
 
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
@@ -227,7 +228,7 @@ pub fn update_grpc<'a>(
                 grpc,
                 validate_with_schema: true,
             })
-            .map(|resolver| b_field.resolver(Some(resolver)))
+            .map(|resolver| b_field.resolver(Some(Arc::new(resolver))))
             .and_then(|b_field| {
                 b_field
                     .validate_field(type_of, config_module)

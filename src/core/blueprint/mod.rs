@@ -25,7 +25,6 @@ pub use links::*;
 pub use operators::*;
 pub use schema::*;
 pub use server::*;
-pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
 use crate::core::config::{Arg, ConfigModule, Field};
