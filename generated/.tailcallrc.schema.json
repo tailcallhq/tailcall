@@ -6,6 +6,13 @@
     "schema"
   ],
   "properties": {
+    "enums": {
+      "description": "A map of all the enum types in the schema",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Enum"
+      }
+    },
     "links": {
       "description": "A list of all links in the schema.",
       "type": "array",
@@ -332,6 +339,28 @@
         "ApplicationXWwwFormUrlencoded"
       ]
     },
+    "Enum": {
+      "description": "Definition of GraphQL enum type",
+      "type": "object",
+      "required": [
+        "variants"
+      ],
+      "properties": {
+        "doc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
     "Expr": {
       "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",
       "type": "object",
@@ -459,7 +488,6 @@
         },
         "protected": {
           "description": "Marks field as protected by auth provider",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
@@ -1204,7 +1232,6 @@
         },
         "cache": {
           "description": "Setting to indicate if the type can be cached.",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Cache"
@@ -1221,17 +1248,6 @@
             "null"
           ]
         },
-        "enum": {
-          "description": "Variants for the type if it's an enum",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        },
         "fields": {
           "description": "A map of field name and its definition.",
           "type": "object",
@@ -1247,13 +1263,8 @@
           },
           "uniqueItems": true
         },
-        "interface": {
-          "description": "Flag to indicate if the type is an interface.",
-          "type": "boolean"
-        },
         "protected": {
           "description": "Marks field as protected by auth providers",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
@@ -1262,10 +1273,6 @@
               "type": "null"
             }
           ]
-        },
-        "scalar": {
-          "description": "Flag to indicate if the type is a scalar.",
-          "type": "boolean"
         },
         "tag": {
           "description": "Contains source information for the type.",
@@ -1345,7 +1352,10 @@
         },
         "dedupe": {
           "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
-          "type": "boolean"
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "http2Only": {
           "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",

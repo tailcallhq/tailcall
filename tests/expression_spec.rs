@@ -3,19 +3,17 @@ mod tests {
     use async_graphql::Value;
     use pretty_assertions::assert_eq;
     use serde_json::json;
-    use tailcall::blueprint::{Blueprint, DynamicValue};
-    use tailcall::http::RequestContext;
-    use tailcall::lambda::{
-        Concurrent, EmptyResolverContext, Eval, EvaluationContext, EvaluationError, Expression,
+    use tailcall::{
+        Blueprint, DynamicValue, EmptyResolverContext, Eval, EvaluationContext, EvaluationError,
+        Expression, Mustache, RequestContext,
     };
-    use tailcall::mustache::Mustache;
 
     async fn eval(expr: &Expression) -> Result<Value, EvaluationError> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
         let eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx);
-        expr.eval(eval_ctx, &Concurrent::Parallel).await
+        expr.eval(eval_ctx).await
     }
 
     #[tokio::test]

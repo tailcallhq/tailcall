@@ -10,14 +10,10 @@ use colored::Colorize;
 use futures_util::future::join_all;
 use hyper::{Body, Request};
 use serde::{Deserialize, Serialize};
-use tailcall::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::blueprint::Blueprint;
-use tailcall::config::reader::ConfigReader;
-use tailcall::config::{Config, ConfigModule, Source};
-use tailcall::http::{handle_request, AppContext};
-use tailcall::merge_right::MergeRight;
-use tailcall::print_schema::print_schema;
-use tailcall::valid::{Cause, ValidationError, Validator as _};
+use tailcall::{
+    handle_request, print_schema, AppContext, Blueprint, Cause, Config, ConfigModule, ConfigReader,
+    GraphQLBatchRequest, GraphQLRequest, MergeRight, Source, ValidationError,
+};
 
 use super::file::File;
 use super::http::Http;
@@ -57,11 +53,7 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
         // errors: errors are expected, make sure they match
         let (source, content) = &spec.server[0];
 
-        if !matches!(source, Source::GraphQL) {
-            panic!("Cannot use \"sdl error\" directive with a non-GraphQL server block.");
-        }
-
-        let config = Config::from_sdl(content).to_result();
+        let config = source.decode(content);
 
         let config = match config {
             Ok(config) => {
@@ -88,7 +80,7 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
                 let errors: Vec<SDLError> =
                     cause.as_vec().iter().map(|e| e.to_owned().into()).collect();
 
-                let snapshot_name = format!("execution_spec__{}_errors", spec.safe_name);
+                let snapshot_name = format!("{}_error", spec.safe_name);
 
                 insta::assert_json_snapshot!(snapshot_name, errors);
             }

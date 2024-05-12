@@ -5,10 +5,10 @@ mod http;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use crate::blueprint::Blueprint;
-use crate::cache::InMemoryCache;
-use crate::runtime::TargetRuntime;
-use crate::{blueprint, EnvIO, FileIO, HttpIO};
+use crate::core::blueprint::Blueprint;
+use crate::core::cache::InMemoryCache;
+use crate::core::runtime::TargetRuntime;
+use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {

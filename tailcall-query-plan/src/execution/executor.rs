@@ -6,8 +6,7 @@ use async_graphql::{Name, Value};
 use dashmap::DashMap;
 use futures_util::future::{join_all, try_join_all};
 use indexmap::IndexMap;
-use tailcall::http::RequestContext;
-use tailcall::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall::{EvaluationContext, RequestContext, ResolverContextLike};
 
 use super::step::ExecutionStep;
 use crate::plan::{GeneralPlan, OperationPlan};

@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
+use strum_macros::Display;
 
-use crate::{config, generator};
+use crate::core::{config, generator};
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {
     Some(version) => version,
@@ -20,7 +21,7 @@ pub struct Cli {
     pub command: Command,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Display)]
 pub enum Command {
     /// Starts the GraphQL server on the configured port
     Start {
