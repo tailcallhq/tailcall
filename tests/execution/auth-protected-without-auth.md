@@ -4,7 +4,7 @@ error: true
 
 # Using @protected operator without specifying server.auth config
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Grpc datasource
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000)
   @upstream(httpCache: true, baseURL: "http://localhost:50051")

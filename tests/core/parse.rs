@@ -163,7 +163,7 @@ impl ExecutionSpec {
                             let source = Source::from_str(&lang)?;
 
                             match name {
-                                "server" => {
+                                "config" => {
                                     // Server configs are only parsed if the test isn't skipped.
                                     server.push((source, content));
                                 }

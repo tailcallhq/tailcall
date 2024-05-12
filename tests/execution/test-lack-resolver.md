@@ -4,7 +4,7 @@ error: true
 
 # test-lack-resolver
 
-```graphql @server
+```graphql @config
 schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }

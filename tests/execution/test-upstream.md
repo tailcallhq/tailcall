@@ -4,7 +4,7 @@ identity: true
 
 # test-upstream
 
-```graphql @server
+```graphql @config
 schema @server @upstream(proxy: {url: "http://localhost:8085"}) {
   query: Query
 }

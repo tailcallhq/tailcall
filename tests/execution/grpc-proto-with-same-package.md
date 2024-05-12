@@ -33,7 +33,7 @@ service BarService {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000)
   @upstream(baseURL: "http://localhost:50051")

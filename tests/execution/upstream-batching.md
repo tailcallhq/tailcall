@@ -1,6 +1,6 @@
 # Sending requests to be batched by the upstream server
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

@@ -4,7 +4,7 @@ error: true
 
 # test-undefined-query
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }

@@ -4,7 +4,7 @@ error: true
 
 # test-groupby-without-batching
 
-```graphql @server
+```graphql @config
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
   query: Query
 }

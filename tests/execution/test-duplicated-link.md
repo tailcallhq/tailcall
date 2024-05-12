@@ -35,7 +35,7 @@ type Post {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
   @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder")
   @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")

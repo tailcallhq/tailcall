@@ -4,7 +4,7 @@ error: true
 
 # test-missing-schema-query
 
-```graphql @server
+```graphql @config
 schema {
   mutation: Mutation
 }

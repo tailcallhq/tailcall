@@ -4,7 +4,7 @@ identity: true
 
 # auth
 
-```graphql @server
+```graphql @config
 schema
   @server
   @upstream

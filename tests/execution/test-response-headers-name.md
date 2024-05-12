@@ -4,7 +4,7 @@ error: true
 
 # test-response-headers-name
 
-```graphql @server
+```graphql @config
 schema @server(headers: {custom: [{key: "🤣", value: "a"}]}) {
   query: Query
 }

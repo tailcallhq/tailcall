@@ -4,7 +4,7 @@ identity: true
 
 # test-omit-list
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }

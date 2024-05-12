@@ -4,7 +4,7 @@ error: true
 
 # test-no-base-url
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

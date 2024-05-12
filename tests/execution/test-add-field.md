@@ -4,7 +4,7 @@ identity: true
 
 # test-add-field
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }

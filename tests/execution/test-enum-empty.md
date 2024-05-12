@@ -4,7 +4,7 @@ error: true
 
 # test-enum-empty
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

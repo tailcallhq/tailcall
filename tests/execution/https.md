@@ -1,6 +1,6 @@
 # Against a server with HTTPS
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

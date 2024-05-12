@@ -4,7 +4,7 @@ error: true
 
 # test-empty-link
 
-```graphql @server
+```graphql @config
 schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Config, src: "") @link(type: Config) {
   query: Query
 }

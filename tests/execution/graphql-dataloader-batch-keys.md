@@ -7,7 +7,7 @@ skip: true
 [//]: # "nested @graphql directives currently not supported"
 [//]: # "This test had an assertion with a fail annotation that testconv cannot convert losslessly. If you need the original responses, you can find it in git history. For example, at commit https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da"
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
   @upstream(baseURL: "http://upstream/graphql", httpCache: true, batch: {delay: 1}) {

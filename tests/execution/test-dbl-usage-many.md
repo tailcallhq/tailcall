@@ -4,7 +4,7 @@ error: true
 
 # test-dbl-usage-many
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
