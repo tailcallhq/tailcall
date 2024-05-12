@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-http-baseurl
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://abc.com") {
   query: Query
 }

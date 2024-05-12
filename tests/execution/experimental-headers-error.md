@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-experimental-headers-error
 
-```graphql @server
+```graphql @config
 schema @server(headers: {experimental: ["non-experimental", "foo", "bar", "tailcall"]}) {
   query: Query
 }

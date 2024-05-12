@@ -1,6 +1,6 @@
 # Sending requests to verify Cache-Control behavior
 
-```json @server
+```json @config
 {
   "server": {
     "headers": {

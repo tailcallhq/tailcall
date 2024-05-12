@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # auth
 
-```graphql @server
+```graphql @config
 schema
   @server
   @upstream

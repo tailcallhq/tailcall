@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-dbl-usage
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

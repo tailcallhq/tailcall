@@ -1,6 +1,6 @@
 # Graphql datasource
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
   mutation: Mutation

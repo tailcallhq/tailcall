@@ -1,6 +1,6 @@
 # Experimental headers
 
-```graphql @server
+```graphql @config
 schema @server(headers: {experimental: ["x-tailcall", "X-experimental"]}) {
   query: Query
 }
