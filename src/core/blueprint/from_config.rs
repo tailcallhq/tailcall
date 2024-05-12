@@ -7,6 +7,7 @@ use super::{Server, TypeLike};
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
+use crate::core::getter::Getter;
 use crate::core::json::JsonSchema;
 use crate::core::lambda::{Expression, IO};
 use crate::core::try_fold::TryFold;
@@ -85,7 +86,7 @@ where
     let type_of = field.name();
     let list = field.list();
     let required = field.non_null();
-    let type_ = config.find_type(type_of);
+    let type_ = config.types.get(type_of);
     let type_enum_ = config.find_enum(type_of);
     let schema = if let Some(type_) = type_ {
         let mut schema_fields = HashMap::new();

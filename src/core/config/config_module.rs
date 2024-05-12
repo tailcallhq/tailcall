@@ -158,7 +158,7 @@ impl ConfigModule {
             let input_name = &resolution.input;
             let output_name = &resolution.output;
 
-            let og_ty = self.config.find_type(current_name).cloned();
+            let og_ty = self.config.types.get(current_name).cloned();
 
             // remove old types
             self.config = self.config.remove_ty(current_name);

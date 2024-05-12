@@ -14,7 +14,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
         "Query root is missing".to_owned(),
     )
     .and_then(|ref query_type_name| {
-        let Some(query) = config.find_type(query_type_name) else {
+        let Some(query) = config.types.get(query_type_name) else {
             return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
         };
 
@@ -87,7 +87,7 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
     let mutation_type_name = config.schema.mutation.as_ref();
 
     if let Some(mutation_type_name) = mutation_type_name {
-        let Some(mutation) = config.find_type(mutation_type_name) else {
+        let Some(mutation) = config.types.get(mutation_type_name) else {
             return Valid::fail("Mutation type is not defined".to_owned())
                 .trace(mutation_type_name);
         };

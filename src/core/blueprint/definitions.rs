@@ -5,6 +5,7 @@ use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
+use crate::core::getter::Getter;
 use crate::core::lambda::{Cache, Context, Expression};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
@@ -137,7 +138,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             });
         }
 
-        if let Some(next_type_info) = config_module.find_type(&next_field.type_of) {
+        if let Some(next_type_info) = config_module.types.get(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 config_module,
                 invalid_path_handler,
@@ -203,7 +204,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
             .fields
             .get(field_name)
             .map(|_| type_info)
-            .or_else(|| config_module.find_type(&field.type_of));
+            .or_else(|| config_module.types.get(&field.type_of));
 
         if let Some(type_info) = target_type_info {
             return process_field_within_type(ProcessFieldWithinTypeContext {

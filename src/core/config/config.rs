@@ -620,14 +620,6 @@ impl Config {
         self.types.iter().map(|t| t.name.clone()).collect()
     }
 
-    pub fn find_type(&self, name: &str) -> Option<&Type> {
-        self.types.iter().find(|t| t.name == name)
-    }
-
-    pub fn find_type_mut(&mut self, name: &str) -> Option<&mut Type> {
-        self.types.iter_mut().find(|t| t.name == name)
-    }
-
     pub fn insert_ty(mut self, ty: Type) -> Self {
         self.types.push(ty); // TODO maybe check duplicates or merge right in case of dups
         self
@@ -678,7 +670,7 @@ impl Config {
     }
 
     pub fn contains(&self, name: &str) -> bool {
-        self.find_type(name).is_some()
+        self.types.get(name).is_some()
             || self.unions.contains_key(name)
             || self.enums.contains_key(name)
     }
@@ -715,7 +707,7 @@ impl Config {
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
-        if let Some(type_) = self.find_type(type_of) {
+        if let Some(type_) = self.types.get(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) {
@@ -730,7 +722,8 @@ impl Config {
     ///
     /// Checks if a type is a scalar or not.
     pub fn is_scalar(&self, type_name: &str) -> bool {
-        self.find_type(type_name)
+        self.types
+            .get(type_name)
             .map_or(scalar::is_predefined_scalar(type_name), |ty| ty.scalar())
     }
 

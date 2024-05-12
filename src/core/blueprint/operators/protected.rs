@@ -1,5 +1,6 @@
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{self, ConfigModule, Field};
+use crate::core::getter::Getter;
 use crate::core::lambda::{Context, Expression};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
@@ -13,7 +14,8 @@ pub fn update_protected<'a>(
             if field.protected.is_some() // check the field itself has marked as protected
                 || type_.protected.is_some() // check the type that contains current field
                 || config // check that output type of the field is protected
-                    .find_type(&field.type_of)
+                .types
+                    .get(&field.type_of)
                     .and_then(|type_| type_.protected.as_ref())
                     .is_some()
             {

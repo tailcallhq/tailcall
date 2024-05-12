@@ -3,6 +3,7 @@ use serde_json::Value;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::{Field, GraphQLOperationType};
+use crate::core::getter::Getter;
 use crate::core::lambda::Expression;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -151,7 +152,7 @@ fn get_field_and_field_name<'a>(
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config_module.config.find_type(&type_name),
+            config_module.config.types.get(&type_name),
             format!("{} type not found on config", type_name),
         )
         .and_then(|query_type| {
