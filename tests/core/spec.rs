@@ -106,20 +106,15 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
 
         let config = Config::default().merge_right(config);
         if matches!(source, Source::GraphQL) {
-            let identity = config.to_sdl();
-
-            // \r is added automatically in windows, it's safe to replace it with \n
-            let content = content.replace("\r\n", "\n");
-
             let path_str = spec.path.display().to_string();
             let parser = tailcall_prettier::Parser::detect(path_str.as_str()).unwrap();
 
-            let identity = tailcall_prettier::format(identity, &parser).await.unwrap();
+            let actual = tailcall_prettier::format(config.to_sdl(), &parser).await.unwrap();
 
-            let content = tailcall_prettier::format(content, &parser).await.unwrap();
+            let expected = tailcall_prettier::format(content.replace("\r\n", "\n"), &parser).await.unwrap();
             pretty_assertions::assert_eq!(
-                identity,
-                content,
+                actual,
+                expected,
                 "Identity check failed for {:#?}",
                 spec.path,
             );
