@@ -230,7 +230,8 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         })));
     }
 
-    for (name, values) in config.enums.iter() {
+    for values in config.enums.iter() {
+        let name = &values.name;
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: values.doc.clone().map(pos),

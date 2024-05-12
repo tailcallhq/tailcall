@@ -8,8 +8,8 @@
   "properties": {
     "enums": {
       "description": "A map of all the enum types in the schema",
-      "type": "object",
-      "additionalProperties": {
+      "type": "array",
+      "items": {
         "$ref": "#/definitions/Enum"
       }
     },
@@ -344,6 +344,7 @@
       "description": "Definition of GraphQL enum type",
       "type": "object",
       "required": [
+        "name",
         "variants"
       ],
       "properties": {
@@ -352,6 +353,9 @@
             "string",
             "null"
           ]
+        },
+        "name": {
+          "type": "string"
         },
         "variants": {
           "type": "array",

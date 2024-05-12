@@ -60,9 +60,10 @@ impl Context {
                 .as_enum()
                 .unwrap()
                 .to_string();
-            self.config
-                .enums
-                .insert(type_name, Enum { variants, doc: None });
+            self.config.enums =
+                self.config
+                    .enums
+                    .insert(Enum { name: type_name, variants, doc: None });
         }
         self
     }

@@ -225,9 +225,9 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
+fn to_enum_type_definition(eu: &Enum) -> Definition {
     Definition::Enum(EnumTypeDefinition {
-        name: name.to_owned(),
+        name: eu.name.to_owned(),
         directives: Vec::new(),
         description: eu.doc.to_owned(),
         enum_values: eu
@@ -546,16 +546,13 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
             types.extend(config_module.unions.iter().map(to_union_type_definition));
             types
         })
-        .fuse(Valid::from_iter(
-            config_module.enums.iter(),
-            |(name, type_)| {
-                if type_.variants.is_empty() {
-                    Valid::fail("No variants found for enum".to_string())
-                } else {
-                    Valid::succeed(to_enum_type_definition((name, type_)))
-                }
-            },
-        ))
+        .fuse(Valid::from_iter(config_module.enums.iter(), |type_| {
+            if type_.variants.is_empty() {
+                Valid::fail("No variants found for enum".to_string())
+            } else {
+                Valid::succeed(to_enum_type_definition(type_))
+            }
+        }))
         .map(|tp| {
             let mut v = tp.0;
             v.extend(tp.1);
