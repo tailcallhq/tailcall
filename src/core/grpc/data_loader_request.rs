@@ -64,6 +64,7 @@ mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
+    use crate::core::getter::Getter;
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request_template::RenderedRequestTemplate;
 
@@ -80,8 +81,9 @@ mod tests {
             name: "SayHello".to_string(),
         };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
-        config =
-            config.insert_ty(Type::new("foo").fields(vec![("bar", Field::default().grpc(grpc))]));
+        config.types = config
+            .types
+            .insert(Type::new("foo").fields(vec![("bar", Field::default().grpc(grpc))]));
 
         let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);

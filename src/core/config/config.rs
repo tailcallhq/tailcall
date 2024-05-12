@@ -620,16 +620,6 @@ impl Config {
         self.types.iter().map(|t| t.name.clone()).collect()
     }
 
-    pub fn insert_ty(mut self, ty: Type) -> Self {
-        self.types.push(ty); // TODO maybe check duplicates or merge right in case of dups
-        self
-    }
-
-    pub fn remove_ty(mut self, name: &str) -> Self {
-        self.types.retain(|t| t.name != name);
-        self
-    }
-
     pub fn find_union(&self, name: &str) -> Option<&Union> {
         self.unions.get(name)
     }

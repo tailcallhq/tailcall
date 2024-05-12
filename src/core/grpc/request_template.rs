@@ -130,6 +130,7 @@ mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
+    use crate::core::getter::Getter;
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::lambda::CacheKey;
     use crate::core::mustache::Mustache;
@@ -152,8 +153,9 @@ mod tests {
             name: "b".to_string(),
         };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
-        config =
-            config.insert_ty(Type::new("foo").fields(vec![("bar", Field::default().grpc(grpc))]));
+        config.types = config
+            .types
+            .insert(Type::new("foo").fields(vec![("bar", Field::default().grpc(grpc))]));
 
         let protobuf_set = ProtobufSet::from_proto_file(
             reader

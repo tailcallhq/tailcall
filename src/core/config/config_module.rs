@@ -161,18 +161,18 @@ impl ConfigModule {
             let og_ty = self.config.types.get(current_name).cloned();
 
             // remove old types
-            self.config = self.config.remove_ty(current_name);
+            self.config.types = self.config.types.remove(current_name);
             self.input_types.remove(current_name);
             self.output_types.remove(current_name);
 
             // add new types
             if let Some(mut og_ty) = og_ty {
                 og_ty.name.clone_from(input_name);
-                self.config = self.config.insert_ty(og_ty.clone());
+                self.config.types = self.config.types.insert(og_ty.clone());
                 self.input_types.insert(input_name.clone());
 
                 og_ty.name.clone_from(output_name);
-                self.config = self.config.insert_ty(og_ty);
+                self.config.types = self.config.types.insert(og_ty);
                 self.output_types.insert(output_name.clone());
             }
         }
@@ -227,6 +227,7 @@ mod tests {
 
     use crate::core::config::{Config, ConfigModule, Resolution, Type};
     use crate::core::generator::Source;
+    use crate::core::getter::Getter;
 
     fn build_qry(mut config: Config) -> Config {
         let mut type1 = Type::new("Query");
@@ -252,7 +253,7 @@ mod tests {
         type1.fields.insert("field1".to_string(), field1);
         type1.fields.insert("field2".to_string(), field2);
 
-        config = config.insert_ty(type1);
+        config.types = config.types.insert(type1);
         config = config.query("Query");
 
         config
@@ -289,10 +290,9 @@ mod tests {
             "ty2".to_string(),
             crate::core::config::Field::default().type_of("Type2".to_string()),
         );
-
-        config = config.insert_ty(type1);
-        config = config.insert_ty(type2);
-        config = config.insert_ty(type3);
+        config.types = config.types.insert(type1);
+        config.types = config.types.insert(type2);
+        config.types = config.types.insert(type3);
 
         config = build_qry(config);
 
