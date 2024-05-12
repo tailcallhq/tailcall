@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # input-type-protected-error

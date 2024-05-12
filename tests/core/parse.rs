@@ -84,10 +84,11 @@ impl ExecutionSpec {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
                                 [a, b] => {
-                                    check_identity =
-                                        a.contains("check_identity") && b.ends_with("true");
-                                    sdl_error = a.contains("expect_validation_error")
-                                        && b.ends_with("true");
+                                    check_identity = a.contains("identity") && b.ends_with("true");
+                                    sdl_error = a.contains("error") && b.ends_with("true");
+                                    if a.contains("skip") && b.ends_with("true") {
+                                        runner = Some(Annotation::Skip);
+                                    }
                                 }
                                 _ => {
                                     return Err(anyhow!(
@@ -100,31 +101,26 @@ impl ExecutionSpec {
                         }
                     } else if heading.depth == 5 {
                         // Parse annotation
-                        if runner.is_none() {
+                        return if runner.is_none() {
                             if let Some(Node::Text(text)) = heading.children.first() {
-                                runner = Some(match text.value.as_str() {
-                                    "skip" => Annotation::Skip,
-                                    _ => {
-                                        return Err(anyhow!(
-                                            "Unexpected runner annotation {:?} in {:?}",
-                                            text.value,
-                                            path,
-                                        ));
-                                    }
-                                });
+                                Err(anyhow!(
+                                    "Unexpected runner annotation {:?} in {:?}",
+                                    text.value,
+                                    path,
+                                ))
                             } else {
-                                return Err(anyhow!(
+                                Err(anyhow!(
                                     "Unexpected content of level 5 heading in {:?}: {:#?}",
                                     path,
                                     heading
-                                ));
+                                ))
                             }
                         } else {
-                            return Err(anyhow!(
+                            Err(anyhow!(
                                 "Unexpected double-declaration of runner annotation in {:?}",
                                 path
-                            ));
-                        }
+                            ))
+                        };
                     } else if heading.depth == 4 {
                     } else {
                         return Err(anyhow!(

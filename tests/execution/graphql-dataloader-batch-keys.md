@@ -1,6 +1,8 @@
-# GraphQL datasource
+---
+skip: true
+---
 
-##### skip
+# GraphQL datasource
 
 [//]: # "nested @graphql directives currently not supported"
 [//]: # "This test had an assertion with a fail annotation that testconv cannot convert losslessly. If you need the original responses, you can find it in git history. For example, at commit https://github.com/tailcallhq/tailcall/tree/1c32ca9e8080ae3b17e9cf41078d028d3e0289da"

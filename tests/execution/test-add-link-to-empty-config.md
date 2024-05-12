@@ -1,5 +1,5 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-add-link-to-empty-config

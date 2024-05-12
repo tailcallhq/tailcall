@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-all-blueprint-errors
