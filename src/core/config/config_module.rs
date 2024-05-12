@@ -8,6 +8,7 @@ use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
 use crate::core::config::Config;
+use crate::core::getter::Getter;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -157,24 +158,26 @@ impl ConfigModule {
             let input_name = &resolution.input;
             let output_name = &resolution.output;
 
-            let og_ty = self.config.types.get(current_name).cloned();
+            let og_ty = self.config.find_type(current_name).cloned();
 
             // remove old types
-            self.config.types.remove(current_name);
+            self.config = self.config.remove_ty(current_name);
             self.input_types.remove(current_name);
             self.output_types.remove(current_name);
 
             // add new types
-            if let Some(og_ty) = og_ty {
-                self.config.types.insert(input_name.clone(), og_ty.clone());
+            if let Some(mut og_ty) = og_ty {
+                og_ty.name.clone_from(input_name);
+                self.config = self.config.insert_ty(og_ty.clone());
                 self.input_types.insert(input_name.clone());
 
-                self.config.types.insert(output_name.clone(), og_ty);
+                og_ty.name.clone_from(output_name);
+                self.config = self.config.insert_ty(og_ty);
                 self.output_types.insert(output_name.clone());
             }
         }
 
-        let keys = self.config.types.keys().cloned().collect::<Vec<String>>();
+        let keys = self.config.available_types();
 
         for k in keys {
             if let Some(ty) = self.config.types.get_mut(&k) {
@@ -226,7 +229,7 @@ mod tests {
     use crate::core::generator::Source;
 
     fn build_qry(mut config: Config) -> Config {
-        let mut type1 = Type::default();
+        let mut type1 = Type::new("Query");
         let mut field1 =
             crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() };
 
@@ -249,7 +252,7 @@ mod tests {
         type1.fields.insert("field1".to_string(), field1);
         type1.fields.insert("field2".to_string(), field2);
 
-        config.types.insert("Query".to_string(), type1);
+        config = config.insert_ty(type1);
         config = config.query("Query");
 
         config
@@ -260,9 +263,9 @@ mod tests {
         // Create a ConfigModule instance with ambiguous types
         let mut config = Config::default();
 
-        let mut type1 = Type::default();
-        let mut type2 = Type::default();
-        let mut type3 = Type::default();
+        let mut type1 = Type::new("Type1");
+        let mut type2 = Type::new("Type2");
+        let mut type3 = Type::new("Type3");
 
         type1.fields.insert(
             "name".to_string(),
@@ -287,9 +290,9 @@ mod tests {
             crate::core::config::Field::default().type_of("Type2".to_string()),
         );
 
-        config.types.insert("Type1".to_string(), type1);
-        config.types.insert("Type2".to_string(), type2);
-        config.types.insert("Type3".to_string(), type3);
+        config = config.insert_ty(type1);
+        config = config.insert_ty(type2);
+        config = config.insert_ty(type3);
 
         config = build_qry(config);
 
@@ -306,9 +309,8 @@ mod tests {
 
         let actual = config_module
             .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
+            .available_types()
+            .into_iter()
             .collect::<HashSet<_>>();
 
         let expected = hashset![
@@ -318,10 +320,14 @@ mod tests {
             "Type2Output",
             "Type2Input",
             "Type3",
-        ];
+        ]
+        .into_iter()
+        .map(|v| v.to_string())
+        .collect();
 
         assert_eq!(actual, expected);
     }
+
     #[tokio::test]
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
@@ -329,9 +335,8 @@ mod tests {
         let config_module = gen.read_all(Source::Proto, &[news], "Query").await?;
         let actual = config_module
             .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
+            .available_types()
+            .into_iter()
             .collect::<HashSet<_>>();
 
         let expected = hashset![
@@ -341,7 +346,11 @@ mod tests {
             "NEWS_MULTIPLE_NEWS_ID",
             "NEWS_NEWS_ID",
             "NEWS_NEWS_LIST",
-        ];
+        ]
+        .into_iter()
+        .map(|v| v.to_string())
+        .collect();
+
         assert_eq!(actual, expected);
         Ok(())
     }

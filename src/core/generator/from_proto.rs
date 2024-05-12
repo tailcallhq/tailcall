@@ -8,6 +8,7 @@ use prost_reflect::prost_types::{
 use crate::core::blueprint::GrpcMethod;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
 use crate::core::generator::GraphQLType;
+use crate::core::getter::Getter;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -33,8 +34,8 @@ impl Context {
     }
 
     /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: String, ty: Type) -> Self {
-        self.config.types.insert(name.to_string(), ty);
+    fn insert_type(mut self, ty: Type) -> Self {
+        self.config.types.push(ty);
         self
     }
 
@@ -84,7 +85,7 @@ impl Context {
                 .as_object_type()
                 .unwrap();
 
-            let mut ty = Type::default();
+            let mut ty = Type::new(msg_type.to_string());
             for field in message.field.iter() {
                 let field_name = GraphQLType::new(field.name())
                     .package(&self.package)
@@ -121,7 +122,7 @@ impl Context {
 
             ty.tag = Some(Tag { id: msg_type.id() });
 
-            self = self.insert_type(msg_type.to_string(), ty);
+            self = self.insert_type(ty);
         }
         self
     }
@@ -189,16 +190,14 @@ impl Context {
                     method: field_name.id(),
                 });
 
-                let ty = self
-                    .config
-                    .types
-                    .entry(self.query.clone())
-                    .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
-                        Type::default()
-                    });
-
-                ty.fields.insert(field_name.to_string(), cfg_field);
+                if let Some(ty) = self.config.types.get_mut(&self.query) {
+                    ty.fields.insert(field_name.to_string(), cfg_field);
+                } else {
+                    let mut ty = Type::new(&self.query);
+                    ty.fields.insert(field_name.to_string(), cfg_field);
+                    self.config.schema.query = Some(self.query.clone());
+                    self.config.types.push(ty);
+                }
             }
         }
         self

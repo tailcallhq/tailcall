@@ -142,7 +142,7 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 }
 fn to_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
-) -> Valid<BTreeMap<String, config::Type>, String> {
+) -> Valid<Vec<config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         match type_definition.node.kind.clone() {
@@ -150,32 +150,32 @@ fn to_types(
                 &object_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
+                type_name,
             )
             .some(),
             TypeKind::Interface(interface_type) => to_object_type(
                 &interface_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
+                type_name,
             )
             .some(),
             TypeKind::Enum(_) => Valid::none(),
-            TypeKind::InputObject(input_object_type) => {
-                to_input_object(input_object_type, &type_definition.node.directives).some()
-            }
+            TypeKind::InputObject(input_object_type) => to_input_object(
+                input_object_type,
+                &type_definition.node.directives,
+                type_name,
+            )
+            .some(),
             TypeKind::Union(_) => Valid::none(),
-            TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
+            TypeKind::Scalar => Valid::succeed(Some(to_scalar_type(type_name))),
         }
-        .map(|option| (type_name, option))
+        .map(|option| option)
     })
-    .map(|vec| {
-        BTreeMap::from_iter(
-            vec.into_iter()
-                .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
-        )
-    })
+    .map(|vec| vec.into_iter().flatten().collect())
 }
-fn to_scalar_type() -> config::Type {
-    config::Type { ..Default::default() }
+fn to_scalar_type(name: String) -> config::Type {
+    config::Type::new(name)
 }
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
@@ -232,6 +232,7 @@ fn to_object_type<T>(
     object: &T,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
+    name: String,
 ) -> Valid<config::Type, String>
 where
     T: ObjectLike,
@@ -247,16 +248,26 @@ where
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected, tag }
+            config::Type {
+                name,
+                fields,
+                added_fields,
+                doc,
+                implements,
+                cache,
+                protected,
+                tag,
+            }
         })
 }
 fn to_input_object(
     input_object_type: InputObjectType,
     directives: &[Positioned<ConstDirective>],
+    name: String,
 ) -> Valid<config::Type, String> {
     to_input_object_fields(&input_object_type.fields)
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(fields, protected)| config::Type { fields, protected, ..Default::default() })
+        .map(|(fields, protected)| config::Type { name, fields, protected, ..Default::default() })
 }
 
 fn to_fields_inner<T, F>(

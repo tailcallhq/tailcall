@@ -1,10 +1,11 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use async_graphql::parser::types::ConstDirective;
 
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};
 use crate::core::directive::DirectiveCodec;
+use crate::core::getter::Getter;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 fn validate_query(config: &Config) -> Valid<(), String> {
@@ -24,11 +25,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
 
 /// Validates that all the root type fields has resolver
 /// making into the account the nesting
-fn validate_type_has_resolvers(
-    name: &str,
-    ty: &Type,
-    types: &BTreeMap<String, Type>,
-) -> Valid<(), String> {
+fn validate_type_has_resolvers(name: &str, ty: &Type, types: &Vec<Type>) -> Valid<(), String> {
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, ty)
     })
@@ -39,7 +36,7 @@ fn validate_type_has_resolvers(
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
-    types: &BTreeMap<String, Type>,
+    types: &Vec<Type>,
     parent_ty: &Type,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())

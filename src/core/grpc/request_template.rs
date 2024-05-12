@@ -152,10 +152,8 @@ mod tests {
             name: "b".to_string(),
         };
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
-        config.types.insert(
-            "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
-        );
+        config =
+            config.insert_ty(Type::new("foo").fields(vec![("bar", Field::default().grpc(grpc))]));
 
         let protobuf_set = ProtobufSet::from_proto_file(
             reader

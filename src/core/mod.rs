@@ -13,6 +13,7 @@ pub mod directive;
 pub mod document;
 pub mod endpoint;
 pub mod generator;
+pub mod getter;
 pub mod graphql;
 pub mod grpc;
 pub mod has_headers;

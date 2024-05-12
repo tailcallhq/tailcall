@@ -267,7 +267,7 @@ mod reader_tests {
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
-        cfg = cfg.types([("Test", Type::default())].to_vec());
+        cfg = cfg.types([Type::new("Test")].to_vec());
 
         let server = start_mock_server();
         let header_server = server.mock(|when, then| {
@@ -302,10 +302,7 @@ mod reader_tests {
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
-            c.types
-                .keys()
-                .map(|i| i.to_string())
-                .collect::<Vec<String>>()
+            c.available_types()
         );
         foo_json_server.assert(); // checks if the request was actually made
         header_server.assert();
@@ -330,10 +327,7 @@ mod reader_tests {
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<String>>(),
-            c.types
-                .keys()
-                .map(|i| i.to_string())
-                .collect::<Vec<String>>()
+            c.available_types()
         );
     }
 

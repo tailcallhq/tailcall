@@ -52,6 +52,7 @@ mod test {
     use std::path::PathBuf;
 
     use super::*;
+    use crate::core::getter::Getter;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()

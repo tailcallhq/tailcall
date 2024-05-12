@@ -10,10 +10,10 @@ input GREETINGS_HELLO_REQUEST @tag(id: "greetings.HelloRequest") {
   name: String
 }
 
-type GREETINGS_HELLO_REPLY @tag(id: "greetings.HelloReply") {
-  message: String
-}
-
 type Query {
   greetings_say_hello(hello_request: GREETINGS_HELLO_REQUEST!): GREETINGS_HELLO_REPLY! @grpc(method: "greetings.SayHello")
+}
+
+type GREETINGS_HELLO_REPLY @tag(id: "greetings.HelloReply") {
+  message: String
 }

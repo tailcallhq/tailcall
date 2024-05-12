@@ -6,17 +6,17 @@ schema @server @upstream {
   query: Query
 }
 
+type PERSON_PHONE_NUMBER @tag(id: "person.PhoneNumber") {
+  number: String!
+  type: String
+}
+
 type PERSON_PERSON @tag(id: "person.Person") {
   email: String
   id: Int!
   name: String!
   phone: [PERSON_PHONE_NUMBER]!
   string_map: JSON
-}
-
-type PERSON_PHONE_NUMBER @tag(id: "person.PhoneNumber") {
-  number: String!
-  type: String
 }
 
 type Query {
