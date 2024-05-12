@@ -262,39 +262,29 @@ mod test {
         assert_eq!(req_ctx.is_cache_public(), None);
     }
 
-    #[test]
-    fn test_is_batching_disabled_default() {
-        // create ctx with default batch
+    fn create_req_ctx_with_batch(batch: Batch) -> RequestContext {
         let config_module = config::ConfigModule::default();
         let mut upstream = Upstream::try_from(&config_module).unwrap();
         let server = Server::try_from(config_module).unwrap();
-        upstream.batch = Some(Batch::default());
-        let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
+        upstream.batch = Some(batch);
+        RequestContext::default().upstream(upstream).server(server)
+    }
 
+    #[test]
+    fn test_is_batching_disabled_default() {
+        let req_ctx = create_req_ctx_with_batch(Default::default());
         assert!(!req_ctx.is_batching_enabled());
     }
 
     #[test]
     fn test_is_batching_disabled_for_delay_zero() {
-        // create ctx with default batch
-        let config_module = config::ConfigModule::default();
-        let mut upstream = Upstream::try_from(&config_module).unwrap();
-        let server = Server::try_from(config_module).unwrap();
-        upstream.batch = Some(Batch { delay: 0, ..Default::default() });
-        let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
-
+        let req_ctx = create_req_ctx_with_batch(Batch { delay: 0, ..Default::default() });
         assert!(!req_ctx.is_batching_enabled());
     }
 
     #[test]
     fn test_is_batching_disabled_for_max_size_none() {
-        // create ctx with default batch
-        let config_module = config::ConfigModule::default();
-        let mut upstream = Upstream::try_from(&config_module).unwrap();
-        let server = Server::try_from(config_module).unwrap();
-        upstream.batch = Some(Batch { max_size: None, ..Default::default() });
-        let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
-
+        let req_ctx = create_req_ctx_with_batch(Batch { max_size: None, ..Default::default() });
         assert!(!req_ctx.is_batching_enabled());
     }
 }
