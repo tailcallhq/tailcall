@@ -214,11 +214,11 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             kind,
         })));
     }
-    for (name, union) in config.unions.iter() {
+    for union in config.unions.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
             description: None,
-            name: pos(Name::new(name)),
+            name: pos(Name::new(&union.name)),
             directives: Vec::new(),
             kind: TypeKind::Union(UnionType {
                 members: union

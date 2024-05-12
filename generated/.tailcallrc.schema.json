@@ -55,8 +55,8 @@
     },
     "unions": {
       "description": "A map of all the union types in the schema.",
-      "type": "object",
-      "additionalProperties": {
+      "type": "array",
+      "items": {
         "$ref": "#/definitions/Union"
       }
     },
@@ -361,8 +361,7 @@
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "uniqueItems": true
+          }
         }
       }
     },
@@ -1300,6 +1299,7 @@
     "Union": {
       "type": "object",
       "required": [
+        "name",
         "types"
       ],
       "properties": {
@@ -1308,6 +1308,9 @@
             "string",
             "null"
           ]
+        },
+        "name": {
+          "type": "string"
         },
         "types": {
           "type": "array",
@@ -1535,8 +1538,7 @@
               "type": "array",
               "items": {
                 "type": "string"
-              },
-              "uniqueItems": true
+              }
             }
           },
           "additionalProperties": false

@@ -20,9 +20,9 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     }))
 }
 
-pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
+pub fn to_union_type_definition(u: &Union) -> Definition {
     Definition::Union(UnionTypeDefinition {
-        name: name.to_owned(),
+        name: u.name.to_owned(),
         description: u.doc.clone(),
         directives: Vec::new(),
         types: u.types.clone(),

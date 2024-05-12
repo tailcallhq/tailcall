@@ -62,7 +62,7 @@ pub struct Config {
     ///
     /// A map of all the union types in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub unions: BTreeMap<String, Union>,
+    pub unions: Vec<Union>,
 
     ///
     /// A map of all the enum types in the schema
@@ -397,6 +397,7 @@ pub struct Arg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 pub struct Union {
+    pub name: String,
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
 }
@@ -405,17 +406,13 @@ pub struct Union {
 /// Definition of GraphQL enum type
 pub struct Enum {
     pub name: String,
-    pub variants: BTreeSet<String>,
+    pub variants: Vec<String>,
     pub doc: Option<String>,
 }
 
 impl Enum {
     pub fn new<T: AsRef<str>>(name: T) -> Self {
-        Self {
-            name: name.as_ref().to_string(),
-            variants: BTreeSet::new(),
-            doc: None,
-        }
+        Self { name: name.as_ref().to_string(), variants: vec![], doc: None }
     }
 }
 
@@ -672,7 +669,7 @@ impl Config {
 
     pub fn contains(&self, name: &str) -> bool {
         self.types.get(name).is_some()
-            || self.unions.contains_key(name)
+            || self.unions.get(name).is_some()
             || self.enums.get(name).is_some()
     }
 

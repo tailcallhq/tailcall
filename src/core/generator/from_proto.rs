@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
@@ -53,7 +51,7 @@ impl Context {
                         .unwrap()
                         .to_string()
                 })
-                .collect::<BTreeSet<String>>();
+                .collect::<Vec<String>>();
 
             let type_name = GraphQLType::new(enum_name)
                 .package(&self.package)

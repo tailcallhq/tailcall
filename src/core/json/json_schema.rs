@@ -12,7 +12,7 @@ pub enum JsonSchema {
     Obj(HashMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
-    Enum(BTreeSet<String>),
+    Enum(Vec<String>),
     Str,
     Num,
     Bool,
@@ -189,7 +189,7 @@ impl TryFrom<&EnumDescriptor> for JsonSchema {
         for value in value.values() {
             set.insert(value.name().to_string());
         }
-        Ok(JsonSchema::Enum(set))
+        Ok(JsonSchema::Enum(Vec::from_iter(set)))
     }
 }
 
@@ -236,7 +236,7 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeSet, HashMap};
+    use std::collections::HashMap;
 
     use async_graphql::Name;
     use indexmap::IndexMap;
@@ -330,7 +330,7 @@ mod tests {
                 (
                     "status".to_owned(),
                     JsonSchema::Opt(
-                        JsonSchema::Enum(BTreeSet::from_iter([
+                        JsonSchema::Enum(Vec::from_iter([
                             "DELETED".to_owned(),
                             "DRAFT".to_owned(),
                             "PUBLISHED".to_owned()
@@ -345,9 +345,7 @@ mod tests {
     }
     #[test]
     fn test_compare_enum() {
-        let mut en = BTreeSet::new();
-        en.insert("A".to_string());
-        en.insert("B".to_string());
+        let en = vec!["A".to_string(), "B".to_string()];
         let value = JsonSchema::Arr(Box::new(JsonSchema::Enum(en.clone())));
         let schema = JsonSchema::Enum(en);
         let name = "foo";
@@ -360,15 +358,9 @@ mod tests {
 
     #[test]
     fn test_compare_enum_value() {
-        let mut en = BTreeSet::new();
-        en.insert("A".to_string());
-        en.insert("B".to_string());
+        let en = vec!["A".to_string(), "B".to_string()];
 
-        let mut en1 = BTreeSet::new();
-        en1.insert("A".to_string());
-        en1.insert("B".to_string());
-        en1.insert("C".to_string());
-
+        let en1 = vec!["A".to_string(), "B".to_string(), "C".to_string()];
         let value = JsonSchema::Enum(en1.clone());
         let schema = JsonSchema::Enum(en.clone());
         let name = "foo";

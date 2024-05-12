@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
@@ -181,9 +181,7 @@ fn to_scalar_type(name: String) -> config::Type {
     config::Type::new(name)
 }
 
-fn to_union_types(
-    type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<BTreeMap<String, Union>, String> {
+fn to_union_types(type_definitions: &[&Positioned<TypeDefinition>]) -> Valid<Vec<Union>, String> {
     Valid::succeed(
         type_definitions
             .iter()
@@ -197,10 +195,11 @@ fn to_union_types(
                             .description
                             .to_owned()
                             .map(|pos| pos.node),
+                        type_name,
                     ),
                     _ => return None,
                 };
-                Some((type_name, type_opt))
+                Some(type_opt)
             })
             .collect(),
     )
@@ -400,13 +399,13 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of, list, required, doc, modify, default_value }
 }
 
-fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
+fn to_union(union_type: UnionType, doc: &Option<String>, name: String) -> Union {
     let types = union_type
         .members
         .iter()
         .map(|member| member.node.to_string())
         .collect();
-    Union { types, doc: doc.clone() }
+    Union { name, types, doc: doc.clone() }
 }
 
 fn to_enum(enum_type: EnumType, doc: Option<String>, name: String) -> Enum {
@@ -414,8 +413,8 @@ fn to_enum(enum_type: EnumType, doc: Option<String>, name: String) -> Enum {
         .values
         .iter()
         .map(|member| member.node.value.node.as_str().to_owned())
-        .collect();
-    Enum { name, variants, doc }
+        .collect::<BTreeSet<String>>();
+    Enum { name, variants: Vec::from_iter(variants), doc }
 }
 
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {

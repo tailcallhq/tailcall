@@ -1,4 +1,4 @@
-use crate::core::config::{Enum, Type};
+use crate::core::config::{Enum, Type, Union};
 
 pub trait GetName {
     fn get_name(&self) -> &str;
@@ -11,6 +11,12 @@ impl GetName for Type {
 }
 
 impl GetName for Enum {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+}
+
+impl GetName for Union {
     fn get_name(&self) -> &str {
         &self.name
     }
