@@ -18,7 +18,7 @@ reqwest = { version = "0.11", features = [
     "json",
     "rustls-tls",
 ], default-features = false }
-tracing = "0.1.40"
+tracing = { version = "0.1.40", features = ["release_max_level_off"] }
 lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
@@ -223,7 +223,7 @@ opt-level = 3
 codegen-units = 1
 panic = 'abort'
 lto = 'thin'
-debug = false
+debug = true
 incremental = false
 overflow-checks = false
 

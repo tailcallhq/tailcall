@@ -263,7 +263,7 @@ mod test {
     }
 
     #[test]
-    fn test_is_batching_enabled_default() {
+    fn test_is_batching_disabled_default() {
         // create ctx with default batch
         let config_module = config::ConfigModule::default();
         let mut upstream = Upstream::try_from(&config_module).unwrap();
@@ -271,6 +271,30 @@ mod test {
         upstream.batch = Some(Batch::default());
         let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
 
-        assert!(req_ctx.is_batching_enabled());
+        assert!(!req_ctx.is_batching_enabled());
+    }
+
+    #[test]
+    fn test_is_batching_disabled_for_delay_zero() {
+        // create ctx with default batch
+        let config_module = config::ConfigModule::default();
+        let mut upstream = Upstream::try_from(&config_module).unwrap();
+        let server = Server::try_from(config_module).unwrap();
+        upstream.batch = Some(Batch { delay: 0, ..Default::default() });
+        let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
+
+        assert!(!req_ctx.is_batching_enabled());
+    }
+
+    #[test]
+    fn test_is_batching_disabled_for_max_size_none() {
+        // create ctx with default batch
+        let config_module = config::ConfigModule::default();
+        let mut upstream = Upstream::try_from(&config_module).unwrap();
+        let server = Server::try_from(config_module).unwrap();
+        upstream.batch = Some(Batch { max_size: None, ..Default::default() });
+        let req_ctx: RequestContext = RequestContext::default().upstream(upstream).server(server);
+
+        assert!(!req_ctx.is_batching_enabled());
     }
 }
