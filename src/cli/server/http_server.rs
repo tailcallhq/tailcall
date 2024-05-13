@@ -55,7 +55,6 @@ impl Server {
     pub async fn fork_start(self) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
-
             .enable_all()
             .build()?;
 
