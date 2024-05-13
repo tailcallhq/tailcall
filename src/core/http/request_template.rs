@@ -246,6 +246,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
 }
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+    #[inline]
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = TailcallHasher::default();
         let state = &mut hasher;
