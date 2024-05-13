@@ -5128,6 +5128,7 @@ dependencies = [
  "stripmargin",
  "strum_macros 0.26.2",
  "tailcall-fixtures",
+ "tailcall-hasher",
  "tailcall-macros",
  "tailcall-prettier",
  "tailcall-tracker",
@@ -5207,6 +5208,13 @@ dependencies = [
  "anyhow",
  "convert_case",
  "indenter",
+]
+
+[[package]]
+name = "tailcall-hasher"
+version = "0.1.0"
+dependencies = [
+ "fxhash",
 ]
 
 [[package]]
