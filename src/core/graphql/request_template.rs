@@ -1,10 +1,11 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
+use tailcall_hasher::TailcallHasher;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
@@ -124,7 +125,7 @@ impl RequestTemplate {
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = DefaultHasher::new();
+        let mut hasher = TailcallHasher::default();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
         hasher.finish()
