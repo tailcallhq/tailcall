@@ -6,11 +6,11 @@ use fxhash::FxHasher;
 /// around `fxhash::FxHasher`. We could potentially add some custom logic here
 /// in the future.
 #[derive(Default)]
-pub struct TcHasher {
+pub struct TailcallHasher {
     hasher: FxHasher,
 }
 
-impl Hasher for TcHasher {
+impl Hasher for TailcallHasher {
     fn finish(&self) -> u64 {
         self.hasher.finish()
     }

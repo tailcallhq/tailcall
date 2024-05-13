@@ -5,7 +5,7 @@ use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
 use reqwest::header::HeaderValue;
-use tailcall_hasher::TcHasher;
+use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::request::create_grpc_request;
@@ -108,7 +108,7 @@ impl RenderedRequestTemplate {
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = TcHasher::default();
+        let mut hasher = TailcallHasher::default();
         let rendered_req = self.render(ctx).unwrap();
         rendered_req.hash(&mut hasher);
         hasher.finish()
