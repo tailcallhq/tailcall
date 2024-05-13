@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-hostname-faliure
 
-```graphql @server
+```graphql @config
 schema @server(hostname: "abc") {
   query: Query
 }

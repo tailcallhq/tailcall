@@ -1,6 +1,6 @@
 # Resolved by parent
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-query-documentation
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }

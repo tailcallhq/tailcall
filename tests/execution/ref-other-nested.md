@@ -1,6 +1,6 @@
 # Ref other nested
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

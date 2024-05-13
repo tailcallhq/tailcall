@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-directives-undef-null-fields
 
-```graphql @server
+```graphql @config
 schema @server(vars: [{key: "a", value: "1"}, {key: "c", value: "d"}]) {
   query: Query
 }

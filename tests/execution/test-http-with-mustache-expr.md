@@ -1,6 +1,6 @@
 # Test expr with mustache
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
