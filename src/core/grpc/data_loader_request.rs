@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
+use fnv::FnvHasher;
 
 use super::request_template::RenderedRequestTemplate;
 
@@ -28,11 +29,11 @@ impl Hash for DataLoaderRequest {
 
 impl PartialEq for DataLoaderRequest {
     fn eq(&self, other: &Self) -> bool {
-        let mut hasher_self = DefaultHasher::new();
+        let mut hasher_self = FnvHasher::default();
         self.hash(&mut hasher_self);
         let hash_self = hasher_self.finish();
 
-        let mut hasher_other = DefaultHasher::new();
+        let mut hasher_other = FnvHasher::default();
         other.hash(&mut hasher_other);
         let hash_other = hasher_other.finish();
 

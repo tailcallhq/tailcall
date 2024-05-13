@@ -3,6 +3,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
+use fnv::FnvHasher;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
@@ -81,16 +82,12 @@ impl RequestTemplate {
     }
 
     /// Creates a HeaderMap for the context
-    fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
-        let mut header_map = HeaderMap::new();
-
+    fn create_headers<C: PathString>(&self, ctx: &C, header_map: &mut HeaderMap) {
         for (k, v) in &self.headers {
             if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
                 header_map.insert(k, header_value);
             }
         }
-
-        header_map
     }
 
     /// Creates a Request for the given context
@@ -141,12 +138,10 @@ impl RequestTemplate {
         mut req: reqwest::Request,
         ctx: &C,
     ) -> reqwest::Request {
-        let headers = self.create_headers(ctx);
-        if !headers.is_empty() {
-            req.headers_mut().extend(headers);
-        }
+        let header_len = self.headers.len() + 1 + ctx.headers().len();
+        let mut headers = HeaderMap::with_capacity(header_len);
+        self.create_headers(ctx, &mut headers);
 
-        let headers = req.headers_mut();
         // We want to set the header value based on encoding
         // TODO: potential of optimizations.
         // Can set content-type headers while creating the request template
@@ -163,6 +158,9 @@ impl RequestTemplate {
         }
 
         headers.extend(ctx.headers().to_owned());
+
+        let _ = std::mem::replace(req.headers_mut(), headers);
+
         req
     }
 
@@ -226,7 +224,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = DefaultHasher::new();
+        let mut hasher = FnvHasher::default();
         let state = &mut hasher;
 
         self.method.hash(state);
