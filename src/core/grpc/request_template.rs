@@ -2,7 +2,6 @@ use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use derive_setters::Setters;
-use fnv::FnvHasher;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
 use reqwest::header::HeaderValue;
@@ -50,7 +49,9 @@ impl RequestTemplate {
         Ok(url)
     }
 
-    fn create_headers<C: PathString>(&self, ctx: &C, header_map: &mut HeaderMap) {
+    fn create_headers<C: PathString>(&self, ctx: &C) -> HeaderMap {
+        let mut header_map = HeaderMap::new();
+
         header_map.insert(CONTENT_TYPE, GRPC_MIME_TYPE.to_owned());
 
         for (k, v) in &self.headers {
@@ -58,6 +59,8 @@ impl RequestTemplate {
                 header_map.insert(k, header_value);
             }
         }
+
+        header_map
     }
 
     pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
@@ -76,10 +79,12 @@ impl RequestTemplate {
     }
 
     fn render_headers<C: PathString + HasHeaders>(&self, ctx: &C) -> HeaderMap {
-        let len = self.headers.len() + 1 + ctx.headers().len();
-        let mut req_headers = HeaderMap::with_capacity(len);
+        let mut req_headers = HeaderMap::new();
 
-        self.create_headers(ctx, &mut req_headers);
+        let headers = self.create_headers(ctx);
+        if !headers.is_empty() {
+            req_headers.extend(headers);
+        }
 
         req_headers.extend(ctx.headers().to_owned());
 
@@ -102,7 +107,7 @@ impl RenderedRequestTemplate {
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = FnvHasher::default();
+        let mut hasher = DefaultHasher::new();
         let rendered_req = self.render(ctx).unwrap();
         rendered_req.hash(&mut hasher);
         hasher.finish()

@@ -3,7 +3,6 @@
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
-use fnv::FnvHasher;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
@@ -27,12 +26,16 @@ pub struct RequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_headers<C: PathGraphql>(&self, ctx: &C, header_map: &mut HeaderMap) {
+    fn create_headers<C: PathGraphql>(&self, ctx: &C) -> HeaderMap {
+        let mut header_map = HeaderMap::new();
+
         for (k, v) in &self.headers {
             if let Ok(header_value) = HeaderValue::from_str(&v.render_graphql(ctx)) {
                 header_map.insert(k, header_value);
             }
         }
+
+        header_map
     }
 
     fn set_headers<C: PathGraphql + HasHeaders>(
@@ -40,18 +43,17 @@ impl RequestTemplate {
         mut req: reqwest::Request,
         ctx: &C,
     ) -> reqwest::Request {
-        let header_len = self.headers.len() + 1 + ctx.headers().len();
-        let mut headers = HeaderMap::with_capacity(header_len);
-        self.create_headers(ctx, &mut headers);
+        let headers = req.headers_mut();
+        let config_headers = self.create_headers(ctx);
 
+        if !config_headers.is_empty() {
+            headers.extend(config_headers);
+        }
         headers.insert(
             reqwest::header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
         );
         headers.extend(ctx.headers().to_owned());
-
-        let _ = std::mem::replace(req.headers_mut(), headers);
-
         req
     }
 
@@ -125,7 +127,7 @@ impl RequestTemplate {
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = FnvHasher::default();
+        let mut hasher = DefaultHasher::new();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
         hasher.finish()

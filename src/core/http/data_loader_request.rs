@@ -42,11 +42,11 @@ impl Hash for DataLoaderRequest {
 
 impl PartialEq for DataLoaderRequest {
     fn eq(&self, other: &Self) -> bool {
-        let mut hasher_self = FnvHasher::default();
+        let mut hasher_self = DefaultHasher::new();
         self.hash(&mut hasher_self);
         let hash_self = hasher_self.finish();
 
-        let mut hasher_other = FnvHasher::default();
+        let mut hasher_other = DefaultHasher::new();
         other.hash(&mut hasher_other);
         let hash_other = hasher_other.finish();
 
