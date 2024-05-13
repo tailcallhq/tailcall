@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  macro_benchmarks:
+  nginx_benchmarks:
     name: Nginx Benchmarks
     if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
     runs-on: benchmarking-runner
