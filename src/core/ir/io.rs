@@ -67,7 +67,7 @@ impl Eval for IO {
                 }
             })
         } else {
-            Box::pin(self.eval_inner(ctx))
+            self.eval_inner(ctx)
         }
     }
 }
