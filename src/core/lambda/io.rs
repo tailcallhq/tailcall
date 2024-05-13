@@ -60,7 +60,7 @@ impl Eval for IO {
                     .clone()
             })
         } else {
-            Box::pin(self.eval_inner(ctx))
+            self.eval_inner(ctx)
         }
     }
 }
