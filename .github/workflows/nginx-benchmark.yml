@@ -1,4 +1,4 @@
-name: Benchmark
+name: Nginx Benchmark
 
 on:
   push:
