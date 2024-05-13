@@ -272,7 +272,7 @@ mod tests {
         let args = [
             "tailcall",
             "gen",
-            tailcall_fixtures::generator::proto::NEWS,
+            "tailcall-fixtures/fixtures/generator/proto/news.proto",
             "--input",
             "proto",
             "--output",

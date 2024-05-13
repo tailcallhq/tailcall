@@ -2,7 +2,7 @@
 source: src/cli/tc.rs
 expression: output
 ---
-schema @server @upstream @link(src: "/Users/ssdd/RustroverProjects/tco/tailcall-fixtures/fixtures/generator/proto/news.proto", type: Protobuf) {
+schema @server @upstream @link(src: "tailcall-fixtures/fixtures/generator/proto/news.proto", type: Protobuf) {
   query: Query
 }
 
