@@ -1,0 +1,78 @@
+name: Benchmark
+
+on:
+  push:
+    paths-ignore: ["docs/**", "**.md"]
+    branches:
+      - main
+  pull_request:
+    paths-ignore: ["docs/**", "**.md"]
+    types: [opened, reopened, synchronize, labeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macro_benchmarks:
+    name: Nginx Benchmarks
+    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark') || github.event_name == 'push'"
+    runs-on: benchmarking-runner
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Stable Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run Cargo Build
+        run: cargo build --release
+
+      - name: Run Tailcall
+        run: |
+          TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/nginx-benchmark.graphql &
+
+      - name: Install Nginx
+        run: |
+          sudo apt-get install -y nginx
+
+      - name: Start Nginx
+        run: |
+          nginx -c ci-benchmark/nginx.conf
+
+      - name: Install Wrk
+        run: |
+          sudo apt-get install -y wrk
+
+      - name: Run Test Query
+        run: |
+          curl -i -X POST -d '{"query": "{posts{title}}"}' http://localhost:8000/graphql -H "Content-Type: application/json"
+
+      - name: Warmup Wrk
+        working-directory: ci-benchmark
+        run: |
+          wrk -d 10 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql
+
+      - id: run_wrk
+        name: Run Wrk
+        working-directory: ci-benchmark
+        run: |
+          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+
+      - id: convert_wrk_output_markdown
+        name: Convert Output to Markdown
+        working-directory: ci-benchmark
+        run: |
+          node wrk-output-to-md.js wrk-output.txt > body.md
+      - id: cat_md
+        name: Cat Markdown
+        working-directory: ci-benchmark
+        run: |
+          cat body.md
+
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: body
+          path: ci-benchmark/body.md
