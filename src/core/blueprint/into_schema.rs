@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
@@ -42,17 +43,37 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
+                let args = &field.args;
+                let args = args
+                    .iter()
+                    .filter_map(|v| {
+                        let val = v.default_value.clone()?;
+                        if val.is_null() {
+                            return None;
+                        }
+                        Some((v.name.clone(), val))
+                    })
+                    .collect::<HashMap<String, serde_json::Value>>();
+                let args = if args.is_empty() {
+                    ConstValue::Null
+                } else {
+                    async_graphql_value::to_value(args).unwrap_or_default()
+                };
+
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
                     move |ctx| {
+                        let default_args = args.clone();
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
-
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
-                                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                let mut ctx = EvaluationContext::new(req_ctx, &ctx);
+                                if ConstValue::Null != default_args {
+                                    ctx = ctx.with_args(default_args);
+                                }
                                 FieldFuture::from_value(
                                     ctx.path_value(&[field_name])
                                         .map(|a| a.into_owned().to_owned()),
@@ -67,8 +88,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let ctx = EvaluationContext::new(req_ctx, &ctx);
-
+                                        let mut ctx = EvaluationContext::new(req_ctx, &ctx);
+                                        if ConstValue::Null != default_args {
+                                            ctx = ctx.with_args(default_args);
+                                        }
                                         let const_value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
                                         let p = match const_value {
@@ -89,10 +112,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }
                 for arg in field.args.iter() {
-                    dyn_schema_field = dyn_schema_field.argument(dynamic::InputValue::new(
-                        arg.name.clone(),
-                        to_type_ref(&arg.of_type),
-                    ));
+                    let mut inp =
+                        dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type));
+                    if let Some(default) = arg.default_value.clone() {
+                        inp = inp.default_value(ConstValue::from_json(default).unwrap());
+                    }
+                    dyn_schema_field = dyn_schema_field.argument(inp);
                 }
                 object = object.field(dyn_schema_field);
             }
