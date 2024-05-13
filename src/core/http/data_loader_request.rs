@@ -1,7 +1,7 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
+
 use fnv::FnvHasher;
 
 #[derive(Debug)]
