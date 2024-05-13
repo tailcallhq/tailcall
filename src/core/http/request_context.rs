@@ -287,4 +287,11 @@ mod test {
         let req_ctx = create_req_ctx_with_batch(Batch { max_size: None, ..Default::default() });
         assert!(!req_ctx.is_batching_enabled());
     }
+
+    #[test]
+    fn test_is_batching_enabled() {
+        let req_ctx =
+            create_req_ctx_with_batch(Batch { delay: 1, max_size: Some(1), ..Default::default() });
+        assert!(req_ctx.is_batching_enabled());
+    }
 }
