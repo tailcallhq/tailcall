@@ -40,7 +40,7 @@ jobs:
       - name: Start Nginx
         working-directory: ci-benchmark
         run: |
-          nginx -c nginx.conf
+          nginx -c "$(pwd)/nginx.conf"
 
       - name: Install Wrk
         run: |
