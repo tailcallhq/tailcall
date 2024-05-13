@@ -7,7 +7,7 @@ use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
 use async_trait::async_trait;
 use criterion::{BenchmarkId, Criterion};
-use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
@@ -19,6 +19,7 @@ use tailcall::{
     EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
     ResolverContextLike, Response, Server, TargetRuntime, Upstream,
 };
+use tailcall_http_cache::HttpCacheManager;
 
 struct Http {
     client: ClientWithMiddleware,
@@ -56,7 +57,7 @@ impl Http {
         if upstream.http_cache {
             client = client.with(Cache(HttpCache {
                 mode: CacheMode::Default,
-                manager: MokaManager::default(),
+                manager: HttpCacheManager::default(),
                 options: HttpCacheOptions::default(),
             }))
         }

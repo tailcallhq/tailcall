@@ -67,10 +67,8 @@ impl CacheManager for HttpCacheManager {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    
 
     use anyhow::Ok;
-    
     use http_cache::HttpVersion;
     use reqwest::{Method, Response, ResponseBuilderExt};
     use url::Url;
