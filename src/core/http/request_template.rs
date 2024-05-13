@@ -4,8 +4,8 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use url::Url;
 use tailcall_hasher::TCHasher;
+use url::Url;
 
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;

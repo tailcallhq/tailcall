@@ -5,8 +5,8 @@ use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
 use reqwest::header::HeaderValue;
-use url::Url;
 use tailcall_hasher::TCHasher;
+use url::Url;
 
 use super::request::create_grpc_request;
 use crate::core::config::GraphQLOperationType;
