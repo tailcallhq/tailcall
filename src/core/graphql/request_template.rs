@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use tailcall_hasher::TCHasher;
+use tailcall_hasher::TcHasher;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
@@ -128,7 +128,7 @@ impl RequestTemplate {
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = TCHasher::default();
+        let mut hasher = TcHasher::default();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
         hasher.finish()

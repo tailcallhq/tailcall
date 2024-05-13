@@ -2,12 +2,15 @@ use std::hash::Hasher;
 
 use fxhash::FxHasher;
 
+/// A hasher that uses the FxHash algorithm. Currently it's a dumb wrapper
+/// around `fxhash::FxHasher`. We could potentially add some custom logic here
+/// in the future.
 #[derive(Default)]
-pub struct TCHasher {
+pub struct TcHasher {
     hasher: FxHasher,
 }
 
-impl Hasher for TCHasher {
+impl Hasher for TcHasher {
     fn finish(&self) -> u64 {
         self.hasher.finish()
     }

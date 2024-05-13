@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use tailcall_hasher::TCHasher;
+use tailcall_hasher::TcHasher;
 use url::Url;
 
 use crate::core::config::Encoding;
@@ -226,7 +226,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = TCHasher::default();
+        let mut hasher = TcHasher::default();
         let state = &mut hasher;
 
         self.method.hash(state);
