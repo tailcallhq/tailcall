@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::Path;
+use std::str::FromStr;
 
 use anyhow::Result;
 use clap::Parser;
@@ -16,6 +17,7 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::config::{Resolution, ResolveOptions};
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
@@ -82,10 +84,39 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Gen { file_paths, input, output, query } => {
+        Command::Gen {
+            file_paths,
+            input,
+            output,
+            query,
+            resolve_ambiguous_input,
+            resolve_ambiguous_output,
+        } => {
             let generator = Generator::init(runtime);
+            let resolve_ambiguous_input = resolve_ambiguous_input
+                .as_ref()
+                .and_then(|v| ResolveOptions::from_str(v).ok());
+
+            let resolve_ambiguous_output = resolve_ambiguous_output
+                .as_ref()
+                .and_then(|v| ResolveOptions::from_str(v).ok());
+
+            let (resolve_ambiguous_input, resolve_ambiguous_output) =
+                validate_resolutions(resolve_ambiguous_input, resolve_ambiguous_output)?;
+
             let cfg = generator
-                .read_all(input, file_paths.as_ref(), query.as_str())
+                .read_all(input, file_paths.as_ref(), query.as_str(), |v| {
+                    let mut resolution =
+                        Resolution { input: format!("IN_{}", v), output: format!("OUT_{}", v) };
+                    if let Some(ResolveOptions { prefix, suffix }) = &resolve_ambiguous_input {
+                        resolution.input = format!("{}{}{}", prefix, v, suffix);
+                    }
+
+                    if let Some(ResolveOptions { prefix, suffix }) = &resolve_ambiguous_output {
+                        resolution.output = format!("{}{}{}", prefix, v, suffix);
+                    }
+                    resolution
+                })
                 .await?;
 
             let config = output.unwrap_or_default().encode(&cfg)?;
@@ -93,6 +124,19 @@ pub async fn run() -> Result<()> {
             Ok(())
         }
     }
+}
+
+fn validate_resolutions(
+    input: Option<ResolveOptions>,
+    output: Option<ResolveOptions>,
+) -> Result<(Option<ResolveOptions>, Option<ResolveOptions>)> {
+    if let Some(input) = input.as_ref() {
+        if let Some(output) = output.as_ref() {
+            input.validate_against(output)?;
+        }
+    }
+
+    Ok((input, output))
 }
 
 pub async fn init(folder_path: &str) -> Result<()> {

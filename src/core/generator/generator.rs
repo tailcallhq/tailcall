@@ -17,12 +17,13 @@ impl Generator {
             proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
         }
     }
-
+    #[allow(clippy::too_many_arguments)]
     pub async fn read_all<T: AsRef<str>>(
         &self,
         input_source: Source,
         files: &[T],
         query: &str,
+        resolution: impl Fn(&str) -> Resolution,
     ) -> Result<ConfigModule> {
         let mut links = vec![];
         let proto_metadata = self.proto_reader.read_all(files).await?;
@@ -38,12 +39,7 @@ impl Generator {
         }
 
         config.links = links;
-        Ok(
-            ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-                input: format!("IN_{}", v),
-                output: format!("OUT_{}", v),
-            }),
-        )
+        Ok(ConfigModule::from(config).resolve_ambiguous_types(resolution))
     }
 }
 
@@ -99,7 +95,12 @@ mod test {
             .to_string();
 
         let config = reader
-            .read_all(Source::Proto, &[news, greetings_a, greetings_b], "Query")
+            .read_all(
+                Source::Proto,
+                &[news, greetings_a, greetings_b],
+                "Query",
+                |v: &str| Resolution { input: format!("IN_{}", v), output: format!("OUT_{}", v) },
+            )
             .await
             .unwrap();
 

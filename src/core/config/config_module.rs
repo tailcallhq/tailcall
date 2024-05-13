@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use derive_setters::Setters;
@@ -91,6 +92,52 @@ impl Deref for ConfigModule {
     type Target = Config;
     fn deref(&self) -> &Self::Target {
         &self.config
+    }
+}
+
+#[derive(Default)]
+pub struct ResolveOptions {
+    pub prefix: String,
+    pub suffix: String,
+}
+
+impl ResolveOptions {
+    pub fn validate_against(&self, other: &Self) -> anyhow::Result<()> {
+        if self.prefix.is_empty() && other.prefix.is_empty() {
+            return Err(anyhow::anyhow!("Prefix cannot be empty"));
+        }
+
+        if self.suffix.is_empty() && other.suffix.is_empty() {
+            return Err(anyhow::anyhow!("Suffix cannot be empty"));
+        }
+        let lhs = format!("{}{}", self.prefix, self.suffix);
+        let rhs = format!("{}{}", other.prefix, other.suffix);
+
+        if lhs == rhs {
+            return Err(anyhow::anyhow!(
+                "Input and output resolutions cannot be the same"
+            ));
+        }
+        Ok(())
+    }
+}
+
+impl FromStr for ResolveOptions {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut prefix = String::new();
+        let mut suffix = String::new();
+
+        for part in s.split_whitespace() {
+            let mut split = part.split('=');
+            match (split.next(), split.next()) {
+                (Some("prefix"), Some(value)) => prefix = value.trim().to_string(),
+                (Some("suffix"), Some(value)) => suffix = value.trim().to_string(),
+                _ => return Err(format!("Invalid format for resolve options: {}", part)),
+            }
+        }
+        Ok(ResolveOptions { prefix, suffix })
     }
 }
 
@@ -326,7 +373,12 @@ mod tests {
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
-        let config_module = gen.read_all(Source::Proto, &[news], "Query").await?;
+        let config_module = gen
+            .read_all(Source::Proto, &[news], "Query", |v: &str| Resolution {
+                input: format!("IN_{}", v),
+                output: format!("OUT_{}", v),
+            })
+            .await?;
         let actual = config_module
             .config
             .types

@@ -76,5 +76,21 @@ pub enum Command {
         #[arg(default_value = "Query")]
         #[clap(short, long)]
         query: String,
+
+        /// Specify how to resolve ambiguous types with optional prefix and
+        /// suffix Usage:
+        /// Set prefix: --resolve-ambiguous-input prefix=FOO_
+        /// Set suffix: --resolve-ambiguous-input suffix=_BAR
+        /// Both: --resolve-ambiguous-input prefix=FOO_ suffix=_BAR
+        #[clap(short = 'r', long)]
+        resolve_ambiguous_input: Option<String>,
+
+        /// Specify how to resolve ambiguous types with optional prefix and
+        /// suffix Usage:
+        /// Set prefix: --resolve-ambiguous-output prefix=FOO_
+        /// Set suffix: --resolve-ambiguous-output suffix=_BAR
+        /// Both: --resolve-ambiguous-output prefix=FOO_ suffix=_BAR
+        #[clap(short = 's', long)]
+        resolve_ambiguous_output: Option<String>,
     },
 }
