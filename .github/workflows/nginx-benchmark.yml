@@ -38,8 +38,9 @@ jobs:
           sudo apt-get install -y nginx
 
       - name: Start Nginx
+        working-directory: ci-benchmark
         run: |
-          nginx -c ${{ GITHUB_WORKSPACE }}/ci-benchmark/nginx.conf
+          nginx -c nginx.conf
 
       - name: Install Wrk
         run: |
