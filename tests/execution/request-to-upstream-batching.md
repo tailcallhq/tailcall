@@ -1,6 +1,6 @@
 # Batched graphql request to batched upstream query
 
-```json @server
+```json @config
 {
   "server": {
     "batchRequests": true

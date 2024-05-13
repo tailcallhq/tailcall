@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-invalid-server
 
-```graphql @server
+```graphql @config
 schema @server(port: "8000") {
   query: Query
 }

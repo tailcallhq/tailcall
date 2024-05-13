@@ -1,6 +1,6 @@
 # Recursive Type JSON
 
-```json @server
+```json @config
 {
   "$schema": "./.tailcallrc.schema.json",
   "upstream": {

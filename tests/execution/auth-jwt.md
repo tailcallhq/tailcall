@@ -1,6 +1,6 @@
 # Auth with JWT loaded from expr
 
-```graphql @server
+```graphql @config
 schema @server(port: 8000) @link(id: "jwks", type: Jwks, src: "jwks.json") {
   query: Query
   mutation: Mutation

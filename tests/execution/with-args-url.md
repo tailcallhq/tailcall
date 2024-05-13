@@ -1,6 +1,6 @@
 # With args URL
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {
