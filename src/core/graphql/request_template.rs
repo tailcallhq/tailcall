@@ -1,9 +1,8 @@
 #![allow(clippy::too_many_arguments)]
 
-use std::hash::{Hash, Hasher};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 use derive_setters::Setters;
-use fnv::FnvHasher;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 
@@ -125,7 +124,7 @@ impl RequestTemplate {
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = FnvHasher::default();
+        let mut hasher = DefaultHasher::new();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
         hasher.finish()

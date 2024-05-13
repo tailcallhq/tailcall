@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::hash::{Hash, Hasher};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 use derive_setters::Setters;
-use fnv::FnvHasher;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use url::Url;
@@ -223,7 +222,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = FnvHasher::default();
+        let mut hasher = DefaultHasher::new();
         let state = &mut hasher;
 
         self.method.hash(state);

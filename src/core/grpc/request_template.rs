@@ -1,8 +1,7 @@
-use std::hash::{Hash, Hasher};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 use anyhow::Result;
 use derive_setters::Setters;
-use fnv::FnvHasher;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
 use reqwest::header::HeaderValue;
@@ -102,7 +101,7 @@ impl RenderedRequestTemplate {
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
-        let mut hasher = FnvHasher::default();
+        let mut hasher = DefaultHasher::new();
         let rendered_req = self.render(ctx).unwrap();
         rendered_req.hash(&mut hasher);
         hasher.finish()
