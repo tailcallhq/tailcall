@@ -30,11 +30,17 @@ const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 lazy_static! {
     static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
 }
+
 pub async fn run() -> Result<()> {
+    let cli = Cli::parse();
+    let writer = std::io::stdout().lock();
+    run_inner(cli, writer).await
+}
+
+pub async fn run_inner<W: std::io::Write>(cli: Cli, mut writer: W) -> Result<()> {
     if let Ok(path) = dotenv() {
         tracing::info!("Env file: {:?} loaded", path);
     }
-    let cli = Cli::parse();
     update_checker::check_for_update().await;
     let runtime = cli::runtime::init(&Blueprint::default());
     let config_reader = ConfigReader::init(runtime.clone());
@@ -61,7 +67,7 @@ pub async fn run() -> Result<()> {
             let config_module = (config_reader.read_all(&file_paths)).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
             if let Some(format) = format {
-                Fmt::display(format.encode(&config_module)?);
+                Fmt::display(format.encode(&config_module)?, &mut writer);
             }
             let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
@@ -76,7 +82,7 @@ pub async fn run() -> Result<()> {
                         .into_checked(&blueprint, runtime)
                         .await?;
                     if schema {
-                        display_schema(&blueprint);
+                        display_schema(&blueprint, &mut writer);
                     }
                     Ok(())
                 }
@@ -120,7 +126,7 @@ pub async fn run() -> Result<()> {
                 .await?;
 
             let config = output.unwrap_or_default().encode(&cfg)?;
-            Fmt::display(config);
+            Fmt::display(config, &mut writer);
             Ok(())
         }
     }
@@ -247,8 +253,39 @@ fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
     }
 }
 
-pub fn display_schema(blueprint: &Blueprint) {
-    Fmt::display(Fmt::heading("GraphQL Schema:\n"));
+pub fn display_schema<W: std::io::Write>(blueprint: &Blueprint, writer: &mut W) {
+    Fmt::display(Fmt::heading("GraphQL Schema:\n"), writer);
     let sdl = blueprint.to_schema();
-    Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
+    Fmt::display(format!("{}\n", print_schema::print_schema(sdl)), writer);
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use clap::Parser;
+
+    use crate::cli::command::Cli;
+
+    #[tokio::test]
+    async fn test_run_inner() {
+        let args = [
+            "tailcall",
+            "gen",
+            tailcall_fixtures::generator::proto::NEWS,
+            "--input",
+            "proto",
+            "--output",
+            "graphql",
+            "--resolve-ambiguous-input",
+            "prefix=InPrefix_",
+            "--resolve-ambiguous-output",
+            "prefix=OutPrefix_",
+        ];
+        let cli = Cli::parse_from(args);
+        let mut cursor = Cursor::new(Vec::new());
+        super::run_inner(cli, &mut cursor).await.unwrap();
+        let output = String::from_utf8(cursor.into_inner()).unwrap();
+        insta::assert_snapshot!(output);
+    }
 }

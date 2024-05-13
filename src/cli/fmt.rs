@@ -13,8 +13,8 @@ impl Fmt {
         format!("{}", meta.yellow())
     }
 
-    pub fn display(s: String) {
-        println!("{}", s);
+    pub fn display<W: std::io::Write>(s: String, writer: &mut W) {
+        writeln!(writer, "{}", s).unwrap();
     }
 
     pub fn format_n_plus_one_queries(n_plus_one_info: Vec<Vec<(String, String)>>) -> String {

@@ -1,0 +1,56 @@
+---
+source: src/cli/tc.rs
+expression: output
+---
+schema @server @upstream @link(src: "/Users/ssdd/RustroverProjects/tco/tailcall-fixtures/fixtures/generator/proto/news.proto", type: Protobuf) {
+  query: Query
+}
+
+input InPrefix_NEWS_NEWS @tag(id: "news.News") {
+  author: NEWS_AUTHOR
+  body: String
+  foo: NEWS_STATUS
+  id: Int
+  post_image: String
+  title: String
+}
+
+input NEWS_AUTHOR @tag(id: "news.Author") {
+  email: String
+  name: String
+}
+
+input NEWS_MULTIPLE_NEWS_ID @tag(id: "news.MultipleNewsId") {
+  ids: [NEWS_NEWS_ID]!
+}
+
+input NEWS_NEWS_ID @tag(id: "news.NewsId") {
+  id: Int
+}
+
+enum NEWS_STATUS {
+  DRAFT
+  PUBLISHED
+}
+
+type NEWS_NEWS_LIST @tag(id: "news.NewsList") {
+  news: [OutPrefix_NEWS_NEWS]!
+}
+
+type OutPrefix_NEWS_NEWS @tag(id: "news.News") {
+  author: NEWS_AUTHOR
+  body: String
+  foo: NEWS_STATUS
+  id: Int
+  post_image: String
+  title: String
+}
+
+type Query {
+  news_add_news(news: InPrefix_NEWS_NEWS!): OutPrefix_NEWS_NEWS! @grpc(method: "news.AddNews")
+  news_delete_news(news_id: NEWS_NEWS_ID!): NEWS_EMPTY! @grpc(method: "news.DeleteNews")
+  news_edit_news(news: InPrefix_NEWS_NEWS!): OutPrefix_NEWS_NEWS! @grpc(method: "news.EditNews")
+  news_get_all_news: NEWS_NEWS_LIST! @grpc(method: "news.GetAllNews")
+  news_get_multiple_news(multiple_news_id: NEWS_MULTIPLE_NEWS_ID!): NEWS_NEWS_LIST! @grpc(method: "news.GetMultipleNews")
+  news_get_news(news_id: NEWS_NEWS_ID!): OutPrefix_NEWS_NEWS! @grpc(method: "news.GetNews")
+}

@@ -103,13 +103,6 @@ pub struct ResolveOptions {
 
 impl ResolveOptions {
     pub fn validate_against(&self, other: &Self) -> anyhow::Result<()> {
-        if self.prefix.is_empty() && other.prefix.is_empty() {
-            return Err(anyhow::anyhow!("Prefix cannot be empty"));
-        }
-
-        if self.suffix.is_empty() && other.suffix.is_empty() {
-            return Err(anyhow::anyhow!("Suffix cannot be empty"));
-        }
         let lhs = format!("{}{}", self.prefix, self.suffix);
         let rhs = format!("{}{}", other.prefix, other.suffix);
 
