@@ -39,7 +39,7 @@ jobs:
 
       - name: Start Nginx
         run: |
-          nginx -c ci-benchmark/nginx.conf
+          nginx -c $(pwd)/ci-benchmark/nginx.conf
 
       - name: Install Wrk
         run: |
