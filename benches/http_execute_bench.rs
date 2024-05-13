@@ -19,10 +19,8 @@ pub fn benchmark_http_execute_method(c: &mut Criterion) {
     c.bench_function("test_http_execute_method", |b| {
         b.iter(|| {
             tokio_runtime.block_on(async {
-                for _ in 0..100 {
-                    let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
-                    let _result = native_http.execute(request).await;
-                }
+                let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
+                let _result = native_http.execute(request).await;
             })
         });
     });
