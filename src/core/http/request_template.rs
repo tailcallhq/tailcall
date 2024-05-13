@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
+use headers::HeaderName;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
@@ -33,6 +34,7 @@ pub struct RequestTemplate {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
+    #[inline]
     fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
@@ -73,6 +75,7 @@ impl RequestTemplate {
 
     /// Checks if the template has any mustache templates or not
     /// Returns true if there are not templates
+    #[inline]
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
             && self.body_path.as_ref().map_or(true, Mustache::is_const)
@@ -81,15 +84,19 @@ impl RequestTemplate {
     }
 
     /// Creates a HeaderMap for the context
-    fn create_headers<C: PathString>(&self, ctx: &C, header_map: &mut HeaderMap) {
-        for (k, v) in &self.headers {
-            if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
-                header_map.insert(k, header_value);
-            }
-        }
+    #[inline]
+    fn create_headers<'a, C: PathString>(
+        &'a self,
+        ctx: &'a C,
+    ) -> impl Iterator<Item = (HeaderName, HeaderValue)> + 'a {
+        self.headers.iter().filter_map(|(k, v)| {
+            let header_value = HeaderValue::from_str(&v.render(ctx)).ok()?;
+            Some((k.to_owned(), header_value))
+        })
     }
 
     /// Creates a Request for the given context
+    #[inline]
     pub fn to_request<C: PathString + HasHeaders>(
         &self,
         ctx: &C,
@@ -105,6 +112,7 @@ impl RequestTemplate {
     }
 
     /// Sets the body for the request
+    #[inline]
     fn set_body<C: PathString + HasHeaders>(
         &self,
         mut req: reqwest::Request,
@@ -132,31 +140,34 @@ impl RequestTemplate {
     }
 
     /// Sets the headers for the request
+    #[inline]
     fn set_headers<C: PathString + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
     ) -> reqwest::Request {
-        let header_len = self.headers.len() + 1 + ctx.headers().len();
-        let mut headers = HeaderMap::with_capacity(header_len);
-        self.create_headers(ctx, &mut headers);
+        let headers_iter = self
+            .create_headers(ctx)
+            .chain(ctx.headers().iter().map(|(k, v)| (k.clone(), v.clone())));
 
         // We want to set the header value based on encoding
         // TODO: potential of optimizations.
         // Can set content-type headers while creating the request template
-        if self.method != reqwest::Method::GET {
-            headers.insert(
-                reqwest::header::CONTENT_TYPE,
-                match self.encoding {
-                    Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
-                    Encoding::ApplicationXWwwFormUrlencoded => {
-                        HeaderValue::from_static("application/x-www-form-urlencoded")
-                    }
-                },
-            );
-        }
-
-        headers.extend(ctx.headers().to_owned());
+        let headers: HeaderMap = if self.method != reqwest::Method::GET {
+            headers_iter
+                .chain(std::iter::once((
+                    reqwest::header::CONTENT_TYPE,
+                    match self.encoding {
+                        Encoding::ApplicationJson => HeaderValue::from_static("application/json"),
+                        Encoding::ApplicationXWwwFormUrlencoded => {
+                            HeaderValue::from_static("application/x-www-form-urlencoded")
+                        }
+                    },
+                )))
+                .collect()
+        } else {
+            headers_iter.collect()
+        };
 
         let _ = std::mem::replace(req.headers_mut(), headers);
 

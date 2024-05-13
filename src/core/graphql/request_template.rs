@@ -3,6 +3,7 @@
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
+use headers::HeaderName;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
@@ -27,34 +28,38 @@ pub struct RequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_headers<C: PathGraphql>(&self, ctx: &C, header_map: &mut HeaderMap) {
-        for (k, v) in &self.headers {
-            if let Ok(header_value) = HeaderValue::from_str(&v.render_graphql(ctx)) {
-                header_map.insert(k, header_value);
-            }
-        }
+    #[inline]
+    fn create_headers<'a, C: PathGraphql>(
+        &'a self,
+        ctx: &'a C,
+    ) -> impl Iterator<Item = (HeaderName, HeaderValue)> + 'a {
+        self.headers.iter().filter_map(|(k, v)| {
+            let header_value = HeaderValue::from_str(&v.render_graphql(ctx)).ok()?;
+            Some((k.to_owned(), header_value))
+        })
     }
 
+    #[inline]
     fn set_headers<C: PathGraphql + HasHeaders>(
         &self,
         mut req: reqwest::Request,
         ctx: &C,
     ) -> reqwest::Request {
-        let header_len = self.headers.len() + 1 + ctx.headers().len();
-        let mut headers = HeaderMap::with_capacity(header_len);
-        self.create_headers(ctx, &mut headers);
-
-        headers.insert(
-            reqwest::header::CONTENT_TYPE,
-            HeaderValue::from_static("application/json"),
-        );
-        headers.extend(ctx.headers().to_owned());
+        let headers: HeaderMap = self
+            .create_headers(ctx)
+            .chain(std::iter::once((
+                reqwest::header::CONTENT_TYPE,
+                HeaderValue::from_static("application/json"),
+            )))
+            .chain(ctx.headers().iter().map(|(k, v)| (k.clone(), v.clone())))
+            .collect();
 
         let _ = std::mem::replace(req.headers_mut(), headers);
 
         req
     }
 
+    #[inline]
     pub fn to_request<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
         &self,
         ctx: &C,
@@ -65,6 +70,7 @@ impl RequestTemplate {
         Ok(req)
     }
 
+    #[inline]
     fn set_body<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
         &self,
         mut req: reqwest::Request,
