@@ -99,30 +99,16 @@ pub async fn run_inner<W: std::io::Write>(cli: Cli, mut writer: W) -> Result<()>
             resolve_ambiguous_output,
         } => {
             let generator = Generator::init(runtime);
-            let resolve_ambiguous_input = resolve_ambiguous_input
-                .as_ref()
-                .and_then(|v| ResolveOptions::from_str(v).ok());
-
-            let resolve_ambiguous_output = resolve_ambiguous_output
-                .as_ref()
-                .and_then(|v| ResolveOptions::from_str(v).ok());
-
             let (resolve_ambiguous_input, resolve_ambiguous_output) =
                 validate_resolutions(resolve_ambiguous_input, resolve_ambiguous_output)?;
 
             let cfg = generator
-                .read_all(input, file_paths.as_ref(), query.as_str(), |v| {
-                    let mut resolution =
-                        Resolution { input: format!("IN_{}", v), output: format!("OUT_{}", v) };
-                    if let Some(ResolveOptions { prefix, suffix }) = &resolve_ambiguous_input {
-                        resolution.input = format!("{}{}{}", prefix, v, suffix);
-                    }
-
-                    if let Some(ResolveOptions { prefix, suffix }) = &resolve_ambiguous_output {
-                        resolution.output = format!("{}{}{}", prefix, v, suffix);
-                    }
-                    resolution
-                })
+                .read_all(
+                    input,
+                    file_paths.as_ref(),
+                    query.as_str(),
+                    resolver_fn(resolve_ambiguous_input, resolve_ambiguous_output),
+                )
                 .await?;
 
             let config = output.unwrap_or_default().encode(&cfg)?;
@@ -132,10 +118,36 @@ pub async fn run_inner<W: std::io::Write>(cli: Cli, mut writer: W) -> Result<()>
     }
 }
 
+fn resolver_fn(
+    resolve_ambiguous_input: Option<ResolveOptions>,
+    resolve_ambiguous_output: Option<ResolveOptions>,
+) -> impl Fn(&str) -> Resolution {
+    move |v| {
+        let mut resolution =
+            Resolution { input: format!("IN_{}", v), output: format!("OUT_{}", v) };
+        if let Some(ResolveOptions { prefix, suffix }) = &resolve_ambiguous_input {
+            resolution.input = format!("{}{}{}", prefix, v, suffix);
+        }
+
+        if let Some(ResolveOptions { prefix, suffix }) = &resolve_ambiguous_output {
+            resolution.output = format!("{}{}{}", prefix, v, suffix);
+        }
+        resolution
+    }
+}
+
 fn validate_resolutions(
-    input: Option<ResolveOptions>,
-    output: Option<ResolveOptions>,
+    input: Option<String>,
+    output: Option<String>,
 ) -> Result<(Option<ResolveOptions>, Option<ResolveOptions>)> {
+    let input = input
+        .as_ref()
+        .and_then(|v| ResolveOptions::from_str(v).ok());
+
+    let output = output
+        .as_ref()
+        .and_then(|v| ResolveOptions::from_str(v).ok());
+
     if let Some(input) = input.as_ref() {
         if let Some(output) = output.as_ref() {
             input.validate_against(output)?;

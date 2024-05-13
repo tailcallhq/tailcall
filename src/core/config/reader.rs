@@ -20,7 +20,7 @@ use crate::core::runtime::TargetRuntime;
 pub struct ConfigReader {
     runtime: TargetRuntime,
     resource_reader: ResourceReader<Cached>,
-    proto_reader: ProtoReader,
+    pub proto_reader: ProtoReader,
 }
 
 impl ConfigReader {
@@ -172,15 +172,12 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString + Send + Sync>(&self, file: T) -> anyhow::Result<ConfigModule> {
+    pub async fn read<T: AsRef<str>>(&self, file: T) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString + Send + Sync>(
-        &self,
-        files: &[T],
-    ) -> anyhow::Result<ConfigModule> {
+    pub async fn read_all<T: AsRef<str>>(&self, files: &[T]) -> anyhow::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
 

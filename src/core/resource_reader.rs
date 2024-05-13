@@ -19,11 +19,9 @@ pub struct ResourceReader<A>(A);
 
 impl<A: Reader + Send + Sync> ResourceReader<A> {
     /// Reads all the files in parallel
-    pub async fn read_files<T: ToString + Send + Sync>(
-        &self,
-        files: &[T],
-    ) -> anyhow::Result<Vec<FileRead>> {
+    pub async fn read_files<T: AsRef<str>>(&self, files: &[T]) -> anyhow::Result<Vec<FileRead>> {
         let files = files.iter().map(|x| {
+            let x = x.as_ref();
             self.read_file(x.to_string())
                 .map_err(|e| e.context(x.to_string()))
         });

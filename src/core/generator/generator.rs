@@ -4,18 +4,16 @@ use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::Source;
 use crate::core::merge_right::MergeRight;
-use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
+use crate::ConfigReader;
 
 pub struct Generator {
-    proto_reader: ProtoReader,
+    config_reader: ConfigReader,
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
-        Self {
-            proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
-        }
+        let config_reader = ConfigReader::init(runtime);
+        Self { config_reader }
     }
     #[allow(clippy::too_many_arguments)]
     pub async fn read_all<T: AsRef<str>>(
@@ -26,15 +24,19 @@ impl Generator {
         resolution: impl Fn(&str) -> Resolution,
     ) -> Result<ConfigModule> {
         let mut links = vec![];
-        let proto_metadata = self.proto_reader.read_all(files).await?;
-
         let mut config = Config::default();
-        for metadata in proto_metadata {
-            match input_source {
-                Source::Proto => {
+
+        match input_source {
+            Source::Proto => {
+                let proto_metadata = self.config_reader.proto_reader.read_all(files).await?;
+                for metadata in proto_metadata {
                     links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
                     config = config.merge_right(from_proto(&[metadata.descriptor_set], query));
                 }
+            }
+            Source::Graphql => {
+                let module = self.config_reader.read_all(files).await?;
+                config = config.merge_right(module.config);
             }
         }
 
