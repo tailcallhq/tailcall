@@ -101,20 +101,6 @@ pub struct ResolveOptions {
     pub suffix: String,
 }
 
-impl ResolveOptions {
-    pub fn validate_against(&self, other: &Self) -> anyhow::Result<()> {
-        let lhs = format!("{}{}", self.prefix, self.suffix);
-        let rhs = format!("{}{}", other.prefix, other.suffix);
-
-        if lhs == rhs {
-            return Err(anyhow::anyhow!(
-                "Input and output resolutions cannot be the same"
-            ));
-        }
-        Ok(())
-    }
-}
-
 impl FromStr for ResolveOptions {
     type Err = String;
 

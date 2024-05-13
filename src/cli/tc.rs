@@ -150,11 +150,25 @@ fn validate_resolutions(
 
     if let Some(input) = input.as_ref() {
         if let Some(output) = output.as_ref() {
-            input.validate_against(output)?;
+            validate_against(input, output)?;
         }
     }
 
     Ok((input, output))
+}
+
+// TODO move this to impl ResolveOptions once it's integrated with
+// *Reader::read_all
+pub fn validate_against(s: &ResolveOptions, other: &ResolveOptions) -> Result<()> {
+    let lhs = format!("{}{}", s.prefix, s.suffix);
+    let rhs = format!("{}{}", other.prefix, other.suffix);
+
+    if lhs == rhs {
+        return Err(anyhow::anyhow!(
+            "Input and output resolutions cannot be the same"
+        ));
+    }
+    Ok(())
 }
 
 pub async fn init(folder_path: &str) -> Result<()> {
