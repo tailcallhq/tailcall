@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
+use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -43,7 +44,7 @@ impl<A> Deref for Content<A> {
 #[derive(Clone, Debug, Default, MergeRight)]
 pub struct Extensions {
     /// Contains the file descriptor set resolved from the links to proto files
-    pub grpc_file_descriptors: HashMap<String, FileDescriptorProto>,
+    pub grpc_file_descriptors: TailcallHashMap<String, FileDescriptorProto>,
 
     /// Contains the contents of the JS file
     pub script: Option<String>,
@@ -100,10 +101,10 @@ pub struct Resolution {
 }
 
 fn insert_resolution(
-    mut map: HashMap<String, Resolution>,
+    mut map: TailcallHashMap<String, Resolution>,
     current_name: &str,
     resolution: Resolution,
-) -> HashMap<String, Resolution> {
+) -> TailcallHashMap<String, Resolution> {
     if resolution.input.eq(&resolution.output) {
         tracing::warn!(
             "Unable to resolve input and output type: {}",
@@ -124,7 +125,7 @@ impl ConfigModule {
     /// object containing the new input and output types.
     /// The function will return a new ConfigModule with the resolved types.
     pub fn resolve_ambiguous_types(mut self, resolver: impl Fn(&str) -> Resolution) -> Self {
-        let mut resolution_map = HashMap::new();
+        let mut resolution_map = TailcallHashMap::with_hasher(TailcallBuildHasher);
 
         // iterate over intersection of input and output types
         for current_name in self.input_types.intersection(&self.output_types) {

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use tailcall_hasher::TailcallHashMap;
 
 use anyhow::Result;
 use async_graphql::ServerError;
@@ -21,7 +21,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     let config_url = req
         .uri()
         .query()
-        .and_then(|x| serde_qs::from_str::<HashMap<String, String>>(x).ok())
+        .and_then(|x| serde_qs::from_str::<TailcallHashMap<String, String>>(x).ok())
         .and_then(|x| x.get("config").cloned());
 
     let config_url = if let Some(config_url) = config_url {

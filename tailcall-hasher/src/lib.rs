@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::hash::Hasher;
 
 use fxhash::FxHasher;
@@ -19,3 +20,16 @@ impl Hasher for TailcallHasher {
         self.hasher.write(bytes)
     }
 }
+
+#[derive(Clone, Default)]
+pub struct TailcallBuildHasher;
+
+impl std::hash::BuildHasher for TailcallBuildHasher {
+    type Hasher = TailcallHasher;
+
+    fn build_hasher(&self) -> Self::Hasher {
+        TailcallHasher::default()
+    }
+}
+
+pub type TailcallHashMap<K, V> = HashMap<K, V, TailcallBuildHasher>;

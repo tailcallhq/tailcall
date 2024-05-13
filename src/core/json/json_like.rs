@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 
 use async_graphql_value::ConstValue;
 
@@ -16,7 +16,7 @@ pub trait JsonLike {
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output>;
     fn get_key(&self, path: &str) -> Option<&Self::Output>;
     fn new(value: &Self::Output) -> &Self;
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>;
+    fn group_by<'a>(&'a self, path: &'a [String]) -> TailcallHashMap<String, Vec<&'a Self::Output>>;
 }
 
 impl JsonLike for serde_json::Value {
@@ -83,7 +83,7 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> TailcallHashMap<String, Vec<&'a Self::Output>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -180,7 +180,7 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> TailcallHashMap<String, Vec<&'a Self::Output>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -210,8 +210,8 @@ pub fn gather_path_matches<'a, J: JsonLike>(
     vector
 }
 
-pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
-    let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
+pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> TailcallHashMap<String, Vec<&'a J>> {
+    let mut map: TailcallHashMap<String, Vec<&'a J>> = TailcallHashMap::with_hasher(TailcallBuildHasher);
     for (key, value) in src {
         // Need to handle number and string keys
         let key_str = key

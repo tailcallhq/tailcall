@@ -1,6 +1,6 @@
 extern crate core;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -8,6 +8,7 @@ use std::sync::Arc;
 use derive_setters::Setters;
 use tailcall::cli::javascript;
 use tailcall::{InMemoryCache, Script, Source, TargetRuntime};
+use tailcall_hasher::TailcallHashMap;
 
 use super::env::Env;
 use super::file::TestFileIO;
@@ -22,7 +23,7 @@ pub struct ExecutionSpec {
 
     pub server: Vec<(Source, String)>,
     pub mock: Option<Vec<Mock>>,
-    pub env: Option<HashMap<String, String>>,
+    pub env: Option<TailcallHashMap<String, String>>,
     pub test: Option<Vec<APIRequest>>,
     pub files: BTreeMap<String, String>,
 
@@ -59,7 +60,7 @@ impl ExecutionMock {
 
 pub fn create_runtime(
     http_client: Arc<Http>,
-    env: Option<HashMap<String, String>>,
+    env: Option<TailcallHashMap<String, String>>,
     script: Option<Script>,
 ) -> TargetRuntime {
     let http = if let Some(script) = script.clone() {

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use tailcall_hasher::TailcallHashMap;
 use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
@@ -95,7 +95,7 @@ impl Reader for Direct {
 pub struct Cached {
     direct: Direct,
     // Cache file content, path -> content
-    cache: Arc<Mutex<HashMap<String, String>>>,
+    cache: Arc<Mutex<TailcallHashMap<String, String>>>,
 }
 
 impl Cached {

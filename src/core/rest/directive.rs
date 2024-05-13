@@ -87,7 +87,7 @@ impl TryFrom<&Directive> for Rest {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use tailcall_hasher::TailcallHashMap;
 
     use async_graphql::parser::types::Directive;
     use once_cell::sync::Lazy;
@@ -170,15 +170,17 @@ mod tests {
         )
     }
 
-    fn all_methods_valid() -> HashMap<String, Rest> {
+    fn all_methods_valid() -> TailcallHashMap<String, Rest> {
         let default_rest_query = DEFAULT_REST_QUERY.clone();
-        HashMap::from([
+        [
             generate_method_variant(&default_rest_query, Method::GET, DEFAULT_QUERY_PARAM),
             generate_method_variant(&default_rest_query, Method::PUT, DEFAULT_QUERY_PARAM),
             generate_method_variant(&default_rest_query, Method::DELETE, DEFAULT_QUERY_PARAM),
             generate_method_variant(&default_rest_query, Method::HEAD, DEFAULT_QUERY_PARAM),
             generate_method_variant(&default_rest_query, Method::PATCH, DEFAULT_QUERY_PARAM),
-        ])
+        ]
+            .into_iter()
+            .collect()
     }
 
     #[test]

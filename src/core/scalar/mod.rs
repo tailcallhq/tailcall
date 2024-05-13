@@ -12,15 +12,16 @@ mod json;
 mod phone;
 mod url;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
+use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 
 lazy_static! {
-    pub static ref CUSTOM_SCALARS: HashMap<String, Arc<dyn Scalar + Send + Sync>> = {
+    pub static ref CUSTOM_SCALARS: TailcallHashMap<String, Arc<dyn Scalar + Send + Sync>> = {
         let scalars: Vec<Arc<dyn Scalar + Send + Sync>> = vec![
             Arc::new(Email::default()),
             Arc::new(PhoneNumber::default()),
@@ -29,7 +30,7 @@ lazy_static! {
             Arc::new(JSON::default()),
             Arc::new(Empty::default()),
         ];
-        let mut hm = HashMap::new();
+        let mut hm = TailcallHashMap::with_hasher(TailcallBuildHasher);
 
         for scalar in scalars {
             hm.insert(scalar.name(), scalar);

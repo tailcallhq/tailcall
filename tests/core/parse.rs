@@ -1,7 +1,7 @@
 extern crate core;
 
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::panic;
 use std::path::Path;
 use std::str::FromStr;
@@ -12,6 +12,7 @@ use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::cli::javascript;
 use tailcall::{AppContext, Blueprint, ConfigModule, EnvIO, InMemoryCache, Source, TargetRuntime};
+use tailcall_hasher::TailcallHashMap;
 
 use super::file::File;
 use super::http::Http;
@@ -19,7 +20,7 @@ use super::model::*;
 use super::runtime::ExecutionSpec;
 
 struct Env {
-    env: HashMap<String, String>,
+    env: TailcallHashMap<String, String>,
 }
 
 impl EnvIO for Env {
@@ -29,7 +30,7 @@ impl EnvIO for Env {
 }
 
 impl Env {
-    pub fn init(map: HashMap<String, String>) -> Self {
+    pub fn init(map: TailcallHashMap<String, String>) -> Self {
         Self { env: map }
     }
 }
@@ -46,7 +47,7 @@ impl ExecutionSpec {
         let mut name: Option<String> = None;
         let mut server: Vec<(Source, String)> = Vec::with_capacity(2);
         let mut mock: Option<Vec<Mock>> = None;
-        let mut env: Option<HashMap<String, String>> = None;
+        let mut env: Option<TailcallHashMap<String, String>> = None;
         let mut files: BTreeMap<String, String> = BTreeMap::new();
         let mut test: Option<Vec<APIRequest>> = None;
         let mut runner: Option<Annotation> = None;
@@ -262,7 +263,7 @@ impl ExecutionSpec {
     pub async fn app_context(
         &self,
         config: &ConfigModule,
-        env: HashMap<String, String>,
+        env: TailcallHashMap<String, String>,
         http_client: Arc<Http>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();

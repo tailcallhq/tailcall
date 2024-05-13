@@ -1,4 +1,5 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
+use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
@@ -9,7 +10,7 @@ use crate::core::valid::{Valid, Validator};
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename = "schema")]
 pub enum JsonSchema {
-    Obj(HashMap<String, JsonSchema>),
+    Obj(TailcallHashMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
     Enum(BTreeSet<String>),
@@ -20,7 +21,7 @@ pub enum JsonSchema {
 
 impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
     fn from(fields: [(&'static str, JsonSchema); L]) -> Self {
-        let mut map = HashMap::new();
+        let mut map = TailcallHashMap::with_hasher(TailcallBuildHasher);
         for (name, schema) in fields {
             map.insert(name.to_string(), schema);
         }
@@ -30,7 +31,7 @@ impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
 
 impl Default for JsonSchema {
     fn default() -> Self {
-        JsonSchema::Obj(HashMap::new())
+        JsonSchema::Obj(TailcallHashMap::with_hasher(TailcallBuildHasher))
     }
 }
 
@@ -165,7 +166,7 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
     type Error = crate::core::valid::ValidationError<String>;
 
     fn try_from(value: &MessageDescriptor) -> Result<Self, Self::Error> {
-        let mut map = std::collections::HashMap::new();
+        let mut map = tailcall_hasher::TailcallHashMap::with_hasher(TailcallBuildHasher);
         let fields = value.fields();
 
         for field in fields {
@@ -236,7 +237,8 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeSet, HashMap};
+    use std::collections::BTreeSet;
+    use tailcall_hasher::TailcallHashMap;
 
     use async_graphql::Name;
     use indexmap::IndexMap;
@@ -319,7 +321,7 @@ mod tests {
 
         assert_eq!(
             schema,
-            JsonSchema::Obj(HashMap::from_iter([
+            JsonSchema::Obj(TailcallHashMap::from_iter([
                 (
                     "postImage".to_owned(),
                     JsonSchema::Opt(JsonSchema::Str.into())

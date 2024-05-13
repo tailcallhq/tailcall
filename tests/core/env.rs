@@ -1,13 +1,13 @@
 extern crate core;
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use tailcall_hasher::TailcallHashMap;
 
 use tailcall::EnvIO;
 
 #[derive(Clone)]
 pub struct Env {
-    vars: HashMap<String, String>,
+    vars: TailcallHashMap<String, String>,
 }
 
 impl EnvIO for Env {
@@ -17,7 +17,7 @@ impl EnvIO for Env {
 }
 
 impl Env {
-    pub fn init(vars: Option<HashMap<String, String>>) -> Self {
+    pub fn init(vars: Option<TailcallHashMap<String, String>>) -> Self {
         Self { vars: vars.unwrap_or_default() }
     }
 }

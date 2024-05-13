@@ -3,7 +3,7 @@ use tailcall::{EnvIO, FileIO, HttpIO, Upstream};
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
-    use std::collections::HashMap;
+    use tailcall_hasher::TailcallHashMap;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -112,7 +112,7 @@ pub mod test {
 
     #[derive(Clone)]
     struct TestEnvIO {
-        vars: HashMap<String, String>,
+        vars: TailcallHashMap<String, String>,
     }
 
     impl EnvIO for TestEnvIO {

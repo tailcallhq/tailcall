@@ -92,12 +92,12 @@ pub fn is_default<T: Default + Eq>(val: &T) -> bool {
 
 #[cfg(test)]
 pub mod tests {
-    use std::collections::HashMap;
+    use tailcall_hasher::TailcallHashMap;
 
     use super::*;
 
     #[derive(Clone, Default)]
-    pub struct TestEnvIO(HashMap<String, String>);
+    pub struct TestEnvIO(TailcallHashMap<String, String>);
 
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {
@@ -107,7 +107,7 @@ pub mod tests {
 
     impl FromIterator<(String, String)> for TestEnvIO {
         fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
-            Self(HashMap::from_iter(iter))
+            Self(TailcallHashMap::from_iter(iter))
         }
     }
 }

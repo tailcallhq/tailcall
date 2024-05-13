@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
+use tailcall_hasher::TailcallHashMap;
 
 use async_graphql::parser::types::ConstDirective;
 
@@ -76,7 +77,7 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
             }
             Err(value.unwrap_err())
         })
-        .collect::<Result<HashMap<String, serde_json::Value>, _>>()
+        .collect::<Result<TailcallHashMap<String, serde_json::Value>, _>>()
         .map_err(|e| ValidationError::new(e.to_string()))
         .map(|arguments| Directive {
             name: const_directive.name.node.clone().to_string(),

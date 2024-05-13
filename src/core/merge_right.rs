@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
+use tailcall_hasher::TailcallHashMap;
 use std::sync::Arc;
 
 pub trait MergeRight {
@@ -68,7 +69,7 @@ where
     }
 }
 
-impl<K, V> MergeRight for HashMap<K, V>
+impl<K, V> MergeRight for TailcallHashMap<K, V>
 where
     K: Eq + std::hash::Hash,
 {

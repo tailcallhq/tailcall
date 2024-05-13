@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use tailcall_hasher::TailcallHashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
@@ -46,7 +46,7 @@ async fn get_app_ctx(
     let file_path = req
         .uri()
         .query()
-        .and_then(|x| serde_qs::from_str::<HashMap<String, String>>(x).ok())
+        .and_then(|x| serde_qs::from_str::<TailcallHashMap<String, String>>(x).ok())
         .and_then(|x| x.get("config").cloned());
 
     if let Some(file_path) = &file_path {

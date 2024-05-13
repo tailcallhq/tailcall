@@ -5,6 +5,7 @@ use std::time::Duration;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
+use tailcall_hasher::TailcallHashMap;
 
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
@@ -13,14 +14,14 @@ use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
-fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+fn get_body_value_single(body_value: &TailcallHashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
         .get(id)
         .and_then(|a| a.first().cloned().cloned())
         .unwrap_or(ConstValue::Null)
 }
 
-fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+fn get_body_value_list(body_value: &TailcallHashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     ConstValue::List(
         body_value
             .get(id)
@@ -35,7 +36,7 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 pub struct HttpDataLoader {
     pub runtime: TargetRuntime,
     pub group_by: Option<GroupBy>,
-    pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
+    pub body: fn(&TailcallHashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
 }
 impl HttpDataLoader {
     pub fn new(runtime: TargetRuntime, group_by: Option<GroupBy>, is_list: bool) -> Self {

@@ -1,4 +1,5 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
+use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
@@ -78,7 +79,7 @@ impl ProtoReader {
         parent_proto: FileDescriptorProto,
         parent_path: Option<&Path>,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
-        let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
+        let mut descriptors: TailcallHashMap<String, FileDescriptorProto> = TailcallHashMap::with_hasher(TailcallBuildHasher);
         let mut queue = VecDeque::new();
         queue.push_back(parent_proto.clone());
 
