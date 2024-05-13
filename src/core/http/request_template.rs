@@ -28,13 +28,18 @@ pub struct RequestTemplate {
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
+    pub parsed_url: Option<Url>,
 }
 
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
     fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
-        let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
+        let mut url = if let Some(parsed_url) = &self.parsed_url {
+            parsed_url.clone()
+        } else {
+            Url::parse(self.root_url.render(ctx).as_str())?
+        };
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
@@ -175,6 +180,7 @@ impl RequestTemplate {
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
             encoding: Default::default(),
+            parsed_url: Default::default(),
         })
     }
 
@@ -212,7 +218,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
         };
         let encoding = endpoint.encoding.clone();
 
-        Ok(Self {
+        let mut req_template = Self {
             root_url: path,
             query,
             method,
@@ -220,7 +226,14 @@ impl TryFrom<Endpoint> for RequestTemplate {
             body_path: body,
             endpoint,
             encoding,
-        })
+            parsed_url: None,
+        };
+
+        if req_template.root_url.is_const() {
+            req_template.parsed_url = Some(Url::parse(req_template.endpoint.path.as_str())?);
+        }
+
+        Ok(req_template)
     }
 }
 
