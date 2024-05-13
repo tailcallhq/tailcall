@@ -11,7 +11,7 @@ mod runtime;
 pub use js_request::JsRequest;
 pub use js_response::JsResponse;
 pub use request_filter::RequestFilter;
-pub use runtime::Runtime;
+pub use runtime::{Runtime, setup_builtins};
 
 use crate::{blueprint, HttpIO};
 

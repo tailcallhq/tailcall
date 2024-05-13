@@ -23,7 +23,7 @@ fn qjs_print(msg: String, is_err: bool) {
     }
 }
 
-fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
+pub fn setup_builtins(ctx: &Ctx<'_>) -> rquickjs::Result<()> {
     ctx.globals().set("__qjs_print", js_qjs_print)?;
     let _: Value = ctx.eval_file("src/cli/javascript/shim/console.js")?;
 

@@ -4,26 +4,8 @@ use core::time::Duration;
 use crate::lambda::{Expression, IO};
 use crate::try_fold::TryFold;
 use crate::valid::{Valid, ValidationError, Validator};
-use crate::cli::javascript::Runtime;
-// use crate::cli::javascript::call;
-// use crate::cli::javascript::{Event, Command, setup_builtins};
-// use opentelemetry::trace::FutureExt;
-// use rquickjs::{Context, Runtime};
-// use rquickjs;
-// use reqwest::Request;
-
-
-// pub fn compile_validate(
-//     config_module: &ConfigModule,
-//     field: &Field,
-//     value: &serde_json::Value,
-//     validate: bool,
-// ) -> Valid<Expression, String> {
-//     Valid::fail("The validation function does not return a boolean".to_string())
-//         .when(
-//             call()
-//         )
-// }
+use rquickjs::{Runtime, Context, Function, FromJs};
+use crate::cli::javascript::setup_builtins;
 
 
 pub fn update_validate<'a>(
@@ -44,13 +26,30 @@ pub fn update_validate<'a>(
                 }
             }
 
-            let script = Script {
-                source: config_module.extensions.script.clone().expect("script is required"),
-                timeout: config_module.server.script.clone().map_or_else(|| None, |script| script.timeout).map(Duration::from_millis),
-            };
+
             let js_func = &field.validate.as_ref().unwrap().js;
-            let runtime = Runtime::new(script);
-            let value = &field.const_field;
+            let value = &field.const_field.as_ref().unwrap().body;
+            let script = config_module.extensions.script.clone().expect("script is required");
+            let js_runtime = Runtime::new().ok().unwrap();
+            let context = Context::full(&js_runtime).ok().unwrap();
+
+            // context.with(|ctx| {
+            //     setup_builtins(&ctx).ok().unwrap();
+            //     ctx.eval(script)
+            // });
+
+            context.with(|ctx| {
+                let fn_as_value = ctx
+                    .globals()
+                    .get::<&str, Function>(js_func.as_str())
+                    .map_err(|_| anyhow::anyhow!("globalThis not initialized"));
+
+                let function = fn_as_value.ok().unwrap()
+                    .as_function()
+                    .ok_or(anyhow::anyhow!("`{js_func}` is not a function"));
+
+            });
+
             todo!();
 
             Valid::succeed(b_field)
