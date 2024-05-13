@@ -2572,9 +2572,9 @@ dependencies = [
 
 [[package]]
 name = "lambda_http"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfbe291122ade1f6a119c94496da02d989888f97d5bea2a0bd9bcbc6d0a0af43"
+checksum = "c89d7aef5484499900f4394280a2b06f02af17cb4a48ff9c35198f8f7423df12"
 dependencies = [
  "aws_lambda_events",
  "base64 0.22.1",
