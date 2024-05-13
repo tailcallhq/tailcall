@@ -31,9 +31,11 @@ pub struct Upstream {
 }
 
 impl Upstream {
+    /// If the delay is set to 0, then batching is disabled. By default delay is
+    /// set to 0.
     pub fn is_batching_enabled(&self) -> bool {
         if let Some(batch) = self.batch.as_ref() {
-            batch.delay >= 1 || batch.max_size.unwrap_or_default() >= 1
+            batch.delay >= 1
         } else {
             false
         }
