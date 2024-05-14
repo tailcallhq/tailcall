@@ -18,3 +18,5 @@ tailcall = { path = ".." }
 [dev-dependencies]
 insta = { workspace = true }
 tailcall-fixtures = { path = "../tailcall-fixtures"}
+tailcall-main = {path = "../tailcall-main"}
+

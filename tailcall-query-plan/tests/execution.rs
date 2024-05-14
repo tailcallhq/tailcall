@@ -37,7 +37,7 @@ async fn test_simple() {
 
         let executor = Executor::new(&general_plan, &operation_plan);
 
-        let runtime = tailcall::cli::runtime::init(&Blueprint::default());
+        let runtime = tailcall_main::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let execution_result = executor.execute(&req_ctx, &execution_plan).await;
 

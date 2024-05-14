@@ -15,3 +15,5 @@ serde_json = "1.0.116"
 tailcall = { path = "../" }
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
+tailcall-main = {path = "../tailcall-main"}
+

@@ -9,7 +9,8 @@ use gen_gql_schema::update_gql;
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
-use tailcall::{cli, default_tracing_for_name, Config, CUSTOM_SCALARS};
+use tailcall::{default_tracing_for_name, Config, CUSTOM_SCALARS};
+use tailcall_main::cli;
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
