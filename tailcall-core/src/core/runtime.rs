@@ -48,12 +48,11 @@ pub mod test {
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::cli::javascript;
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
-    use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::core::{EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -164,21 +163,10 @@ pub mod test {
         }
     }
 
-    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
-        let http = if let Some(script) = script.clone() {
-            javascript::init_http(TestHttp::init(&Default::default()), script)
-        } else {
-            TestHttp::init(&Default::default())
-        };
+    pub fn init() -> TargetRuntime {
+        let http = TestHttp::init(&Default::default());
 
-        let http2 = if let Some(script) = script {
-            javascript::init_http(
-                TestHttp::init(&Upstream::default().http2_only(true)),
-                script,
-            )
-        } else {
-            TestHttp::init(&Upstream::default().http2_only(true))
-        };
+        let http2 = TestHttp::init(&Upstream::default().http2_only(true));
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();

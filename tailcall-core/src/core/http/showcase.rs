@@ -89,7 +89,7 @@ mod tests {
             }).to_string()))
             .unwrap();
 
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
             .await
             .unwrap()

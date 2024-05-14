@@ -139,7 +139,7 @@ mod tests {
 
         let id = "greetings".to_string();
 
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let reader = ConfigReader::init(runtime);
         let mut config = Config::default().links(vec![Link {
             id: Some(id.clone()),

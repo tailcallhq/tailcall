@@ -104,7 +104,7 @@ mod tests {
     async fn prepare_args(
         test_http: TestHttp,
     ) -> Result<(TargetRuntime, ProtobufOperation, Request)> {
-        let mut runtime = crate::core::runtime::test::init(None);
+        let mut runtime = crate::core::runtime::test::init();
         runtime.http2_only = Arc::new(test_http);
 
         let file_descriptor_set =

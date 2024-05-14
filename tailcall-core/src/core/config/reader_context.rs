@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn path_string() {
-        let mut runtime = crate::core::runtime::test::init(None);
+        let mut runtime = crate::core::runtime::test::init();
         runtime.env = Arc::new(TestEnvIO::from_iter([(
             "ENV_1".to_owned(),
             "ENV_VAL".to_owned(),
