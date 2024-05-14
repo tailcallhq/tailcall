@@ -4,7 +4,7 @@ use derive_setters::Setters;
 use hyper::body::Bytes;
 use indexmap::IndexMap;
 use prost::Message;
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
@@ -34,16 +34,16 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<'a, T: Deserialize<'a> + Default>(&'a self) -> Result<Response<T>> {
+    pub fn to_json<T: DeserializeOwned + Default>(self) -> Result<Response<T>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
-                headers: self.headers.clone(),
+                headers: self.headers,
                 body: Default::default(),
             });
         }
         let body = serde_json::from_slice::<T>(&self.body)?;
-        Ok(Response { status: self.status, headers: self.headers.clone(), body })
+        Ok(Response { status: self.status, headers: self.headers, body })
     }
 
     pub fn to_grpc_value(
