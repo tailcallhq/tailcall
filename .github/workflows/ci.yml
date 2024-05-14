@@ -195,7 +195,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Build Project
-        run: cargo build
+        run:  RUSTFLAGS="--cfg tokio_unstable" cargo build
 
       - name: Check all examples
         run: ./examples/lint.sh

@@ -27,11 +27,11 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Run Cargo Build
-        run: cargo build --release
+        run: RUSTFLAGS="--cfg tokio_unstable" cargo build --release
 
       - name: Run Tailcall
         run: |
-          RUSTFLAGS="--cfg tokio_unstable" TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/nginx-benchmark.graphql &
+          TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/nginx-benchmark.graphql &
 
       - name: Install Nginx
         run: |
