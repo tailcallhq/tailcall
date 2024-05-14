@@ -18,7 +18,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
-use crate::core::http::Response;
+use crate::core::http::{reqwest_header_to_tonic_header, Response};
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -152,7 +152,8 @@ impl HttpIO for NativeHttp {
             opentelemetry::global::get_text_map_propagator(|propagator| {
                 propagator.inject_context(
                     &tracing::Span::current().context(),
-                    &mut HeaderInjector(request.headers_mut()),
+                    // TODO: this is a bug. We need to update the source header
+                    &mut HeaderInjector(&mut reqwest_header_to_tonic_header(request.headers())),
                 );
             });
         }

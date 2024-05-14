@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
@@ -39,7 +40,7 @@ impl HttpIO for LambdaHttp {
     }
 }
 
-pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<Full<Bytes>>> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let method: hyper::Method = match req.method().to_owned() {
         lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
@@ -70,11 +71,11 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hy
     Ok(hyper::Request::builder()
         .method(method)
         .uri(url)
-        .body(hyper::Body::from(req.body().to_vec()))?)
+        .body(Full::new(Bytes::from(req.body().to_vec())))?)
 }
 
 pub async fn to_response(
-    res: hyper::Response<hyper::Body>,
+    res: hyper::Response<Full<Bytes>>,
 ) -> Result<lambda_http::Response<lambda_http::Body>, lambda_http::http::Error> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let mut build = lambda_http::Response::builder().status(res.status().as_u16());
@@ -83,9 +84,9 @@ pub async fn to_response(
         build = build.header(k.to_string(), v.as_bytes());
     }
 
-    build.body(lambda_http::Body::Binary(Vec::from(
-        hyper::body::to_bytes(res.into_body()).await.unwrap(),
-    )))
+    let bytes = res.into_body().frame().await.unwrap()?.into_data().unwrap();
+
+    build.body(lambda_http::Body::Binary(bytes.to_vec()))
 }
 
 pub fn init_http() -> Arc<LambdaHttp> {

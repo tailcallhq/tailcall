@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use criterion::Criterion;
+use http_body_util::Full;
 use hyper::Request;
 use tailcall::cli::server::server_config::ServerConfig;
 use tailcall::{handle_request, Blueprint, Config, ConfigModule, GraphQLRequest, Validator};
@@ -28,7 +29,7 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
                 let req = Request::builder()
                     .method("POST")
                     .uri("http://localhost:8000/graphql")
-                    .body(hyper::Body::from(QUERY))
+                    .body(Full::from(QUERY))
                     .unwrap();
 
                 let _ = handle_request::<GraphQLRequest>(req, server_config.app_ctx.clone())

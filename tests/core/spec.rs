@@ -6,9 +6,11 @@ use std::sync::Arc;
 use std::{fs, panic};
 
 use anyhow::Context;
+use bytes::Bytes;
 use colored::Colorize;
 use futures_util::future::join_all;
-use hyper::{Body, Request};
+use http_body_util::{BodyExt, Full};
+use hyper::Request;
 use serde::{Deserialize, Serialize};
 use tailcall::{
     handle_request, print_schema, AppContext, Blueprint, Cause, Config, ConfigModule, ConfigReader,
@@ -184,7 +186,14 @@ async fn run_query_tests_on_spec(
                 headers,
                 body: Some(APIBody::Value(
                     serde_json::from_slice(
-                        &hyper::body::to_bytes(response.into_body()).await.unwrap(),
+                        &response
+                            .into_body()
+                            .frame()
+                            .await
+                            .unwrap()
+                            .unwrap()
+                            .into_data()
+                            .unwrap(),
                     )
                     .unwrap_or_default(),
                 )),
@@ -288,11 +297,11 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
 async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
-) -> anyhow::Result<hyper::Response<Body>> {
+) -> anyhow::Result<hyper::Response<Full<Bytes>>> {
     let body = request
         .body
         .as_ref()
-        .map(|body| Body::from(body.to_bytes()))
+        .map(|body| Full::from(body.to_bytes()))
         .unwrap_or_default();
 
     let method = request.method.clone();

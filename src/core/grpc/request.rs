@@ -55,7 +55,7 @@ mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request::execute_grpc_request;
-    use crate::core::http::Response;
+    use crate::core::http::{reqwest_header_to_tonic_header, Response};
     use crate::core::lambda::EvaluationError;
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
@@ -74,7 +74,7 @@ mod tests {
     #[async_trait]
     impl HttpIO for TestHttp {
         async fn execute(&self, _request: Request) -> Result<Response<Bytes>> {
-            let mut headers = HeaderMap::new();
+            let headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");
             let error = Bytes::from_static(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");
 
@@ -84,13 +84,13 @@ mod tests {
                 }
                 TestScenario::SuccessWithOkGrpcStatus => {
                     let status = Status::ok("");
-                    status.add_header(&mut headers)?;
+                    status.add_header(&mut reqwest_header_to_tonic_header(&headers))?;
                     Ok(Response { status: StatusCode::OK, headers, body: message })
                 }
                 TestScenario::SuccessWithErrorGrpcStatus => {
                     let status =
                         Status::with_details(Code::InvalidArgument, "description message", error);
-                    status.add_header(&mut headers)?;
+                    status.add_header(&mut reqwest_header_to_tonic_header(&headers))?;
                     Ok(Response { status: StatusCode::OK, headers, body: Bytes::default() })
                 }
                 TestScenario::Error => Ok(Response {
