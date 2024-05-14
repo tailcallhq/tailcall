@@ -58,7 +58,7 @@ pub fn protobuf_value_as_str(value: &prost_reflect::Value) -> String {
 pub fn get_field_value_as_str(message: &DynamicMessage, field_name: &str) -> Result<String> {
     let field = message
         .get_field_by_name(field_name)
-        .ok_or(anyhow!("Unable to find key"))?;
+        .ok_or_else(|| anyhow!("Unable to find key"))?;
 
     Ok(protobuf_value_as_str(&field))
 }
@@ -181,12 +181,12 @@ impl ProtobufOperation {
             .input_type
             .fields()
             .find(|field| field.is_list())
-            .ok_or(anyhow!("Unable to find list field on type"))?;
+            .ok_or_else(|| anyhow!("Unable to find list field on type"))?;
 
         let field_kind = field_descriptor.kind();
         let child_message_descriptor = field_kind
             .as_message()
-            .ok_or(anyhow!("Couldn't resolve message"))?;
+            .ok_or_else(|| anyhow!("Couldn't resolve message"))?;
         let mut message = DynamicMessage::new(self.input_type.clone());
 
         let child_messages = child_inputs

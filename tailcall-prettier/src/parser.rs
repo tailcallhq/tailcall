@@ -15,7 +15,7 @@ impl Parser {
         let ext = path
             .split('.')
             .last()
-            .ok_or(anyhow!("No file extension found"))?
+            .ok_or_else(|| anyhow!("No file extension found"))?
             .to_lowercase();
         match ext.as_str() {
             "gql" | "graphql" => Ok(Parser::Gql),

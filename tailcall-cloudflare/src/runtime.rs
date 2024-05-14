@@ -28,7 +28,7 @@ pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
     let env_io = init_env(env.clone());
     let bucket_id = env_io
         .get("BUCKET")
-        .ok_or(anyhow!("BUCKET var is not set"))?;
+        .ok_or_else(|| anyhow!("BUCKET var is not set"))?;
 
     Ok(TargetRuntime {
         http: http.clone(),

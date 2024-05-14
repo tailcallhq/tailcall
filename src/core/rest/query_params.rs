@@ -24,7 +24,7 @@ impl QueryParams {
         for (k, v) in map {
             let t = TypedVariable::try_from(
                 q.get(&k)
-                    .ok_or(anyhow::anyhow!("undefined query param: {}", k))?,
+                    .ok_or_else(|| anyhow::anyhow!("undefined query param: {}", k))?,
                 &v,
             )?;
             params.push((k, t));

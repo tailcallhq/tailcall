@@ -93,12 +93,14 @@ impl HttpIO for Http {
                     });
                 method_match && url_match && headers_match && body_match
             })
-            .ok_or(anyhow!(
-                "No mock found for request: {:?} {} in {}",
-                req.method(),
-                req.url(),
-                self.spec_path
-            ))?;
+            .ok_or_else(|| {
+                anyhow!(
+                    "No mock found for request: {:?} {} in {}",
+                    req.method(),
+                    req.url(),
+                    self.spec_path
+                )
+            })?;
 
         execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
 

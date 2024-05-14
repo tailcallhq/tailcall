@@ -32,7 +32,7 @@ async fn get(bucket: Rc<worker::Bucket>, path: String) -> anyhow::Result<String>
         .execute()
         .await
         .map_err(to_anyhow)?;
-    let object = maybe_object.ok_or(anyhow!("File '{}' was not found in bucket", path))?;
+    let object = maybe_object.ok_or_else(|| anyhow!("File '{}' was not found in bucket", path))?;
 
     let body = match object.body() {
         Some(body) => body.text().await.map_err(to_anyhow),

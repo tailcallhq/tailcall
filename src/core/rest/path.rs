@@ -36,11 +36,9 @@ impl Path {
         let mut segments = Vec::new();
         for s in input.split('/').filter(|s| !s.is_empty()) {
             if let Some(key) = s.strip_prefix('$') {
-                let value = variables.get(key).ok_or(anyhow::anyhow!(
-                    "undefined param: {} in {}",
-                    s,
-                    input
-                ))?;
+                let value = variables
+                    .get(key)
+                    .ok_or_else(|| anyhow::anyhow!("undefined param: {} in {}", s, input))?;
                 let t = TypedVariable::try_from(value, key)?;
                 segments.push(Segment::param(t));
             } else {

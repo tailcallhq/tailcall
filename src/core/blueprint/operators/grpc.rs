@@ -92,13 +92,12 @@ fn validate_group_by(
 ) -> Valid<(), String> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
-    let mut field_descriptor: Result<FieldDescriptor, ValidationError<String>> = None.ok_or(
-        ValidationError::new(format!("field {} not found", group_by[0])),
-    );
+    let mut field_descriptor: Result<FieldDescriptor, ValidationError<String>> =
+        None.ok_or_else(|| ValidationError::new(format!("field {} not found", group_by[0])));
     for item in group_by.iter().take(&group_by.len() - 1) {
         field_descriptor = output_type
             .get_field_by_json_name(item.as_str())
-            .ok_or(ValidationError::new(format!("field {} not found", item)));
+            .ok_or_else(|| ValidationError::new(format!("field {} not found", item)));
     }
     let output_type = field_descriptor.and_then(|f| JsonSchema::try_from(&f));
 

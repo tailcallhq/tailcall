@@ -47,7 +47,7 @@ impl TryFrom<&reqwest::Request> for JsRequest {
     fn try_from(value: &Request) -> Result<Self, Self::Error> {
         let request = value
             .try_clone()
-            .ok_or(anyhow::anyhow!("unable to clone request"))?;
+            .ok_or_else(|| anyhow::anyhow!("unable to clone request"))?;
         Ok(JsRequest(request))
     }
 }
@@ -78,7 +78,7 @@ impl<'js> IntoJs<'js> for JsRequest {
 
 impl<'js> FromJs<'js> for JsRequest {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        let object = value.as_object().ok_or(rquickjs::Error::FromJs {
+        let object = value.as_object().ok_or_else(|| rquickjs::Error::FromJs {
             from: value.type_name(),
             to: "rquickjs::Object",
             message: Some("unable to cast JS Value as object".to_string()),
@@ -142,7 +142,7 @@ impl<'js> IntoJs<'js> for Scheme {
 
 impl<'js> FromJs<'js> for Scheme {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        let as_string = value.as_string().ok_or(rquickjs::Error::FromJs {
+        let as_string = value.as_string().ok_or_else(|| rquickjs::Error::FromJs {
             from: value.type_name(),
             to: "rquickjs::String",
             message: Some("unable to cast JS Value as string".to_string()),
@@ -191,7 +191,7 @@ impl<'js> IntoJs<'js> for Uri {
 
 impl<'js> FromJs<'js> for Uri {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
-        let object = value.as_object().ok_or(rquickjs::Error::FromJs {
+        let object = value.as_object().ok_or_else(|| rquickjs::Error::FromJs {
             from: value.type_name(),
             to: "rquickjs::Object",
             message: Some("unable to cast JS Value as object".to_string()),

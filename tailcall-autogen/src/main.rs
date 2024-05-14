@@ -53,7 +53,7 @@ async fn mode_check() -> Result<()> {
         .read(
             json_schema
                 .to_str()
-                .ok_or(anyhow!("Unable to determine path"))?,
+                .ok_or_else(|| anyhow!("Unable to determine path"))?,
         )
         .await?;
     let content = serde_json::from_str::<Value>(&content)?;
@@ -78,7 +78,8 @@ async fn update_json() -> Result<()> {
     tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
         .write(
-            path.to_str().ok_or(anyhow!("Unable to determine path"))?,
+            path.to_str()
+                .ok_or_else(|| anyhow!("Unable to determine path"))?,
             schema.as_bytes(),
         )
         .await?;

@@ -115,7 +115,7 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell
             .get_mut()
-            .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
+            .ok_or_else(|| anyhow::anyhow!("JS runtime not initialized"))?;
         runtime.0.with(|ctx| match event {
             Event::Request(req) => {
                 let fn_as_value = ctx
@@ -125,7 +125,7 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
 
                 let function = fn_as_value
                     .as_function()
-                    .ok_or(anyhow::anyhow!("`{name}` is not a function"))?;
+                    .ok_or_else(|| anyhow::anyhow!("`{name}` is not a function"))?;
 
                 let args = prepare_args(&ctx, req)?;
                 let command: Option<Value> = function.call(args).ok();

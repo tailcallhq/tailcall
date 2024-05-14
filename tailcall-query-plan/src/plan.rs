@@ -247,7 +247,7 @@ impl FieldTree {
             FieldTreeEntry::Scalar | FieldTreeEntry::ScalarList => value
                 .cloned()
                 .or(Some(Value::default()))
-                .ok_or(anyhow!("Can't resolve value for field")),
+                .ok_or_else(|| anyhow!("Can't resolve value for field")),
             FieldTreeEntry::Compound(children) => {
                 Self::collect_value_object(children, execution_result, value, parent_list_index)
             }

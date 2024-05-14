@@ -51,7 +51,7 @@ impl Source {
     pub fn detect(name: &str) -> Result<Source, UnsupportedConfigFormat> {
         ALL.into_iter()
             .find(|format| format.ends_with(name))
-            .ok_or(UnsupportedConfigFormat(name.to_string()))
+            .ok_or_else(|| UnsupportedConfigFormat(name.to_string()))
     }
 
     /// Encode the config to the given format

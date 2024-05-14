@@ -60,7 +60,7 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hy
         req.uri().scheme_str().unwrap_or("http"),
         req.uri()
             .host()
-            .ok_or(anyhow::anyhow!("Invalid request host"))?,
+            .ok_or_else(|| anyhow::anyhow!("Invalid request host"))?,
         req.path_parameters()
             .all("proxy")
             .unwrap_or(Vec::with_capacity(0))

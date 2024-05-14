@@ -194,9 +194,7 @@ fn init_tracer() -> Result<()> {
         .with_trace_config(opentelemetry_sdk::trace::config().with_resource(RESOURCE.clone()))
         .install_batch(runtime::Tokio)?
         .provider()
-        .ok_or(TraceError::Other(
-            anyhow!("Failed to instantiate OTLP provider").into(),
-        ))?;
+        .ok_or_else(|| TraceError::Other(anyhow!("Failed to instantiate OTLP provider").into()))?;
 
     let tracer = provider.tracer("tracing");
     let trace_layer = tracing_opentelemetry::layer()

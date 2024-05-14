@@ -23,9 +23,10 @@ impl From<JwkSet> for Jwks {
 impl Jwks {
     fn decode_with_jwk(&self, token: &str, jwk: &Jwk) -> Result<JwtClaim, Error> {
         let key = DecodingKey::from_jwk(jwk).map_err(|err| Error::Parse(err.to_string()))?;
-        let algorithm = jwk.common.key_algorithm.ok_or(Error::Parse(
-            "Key algorithm is not specified in JWKS".to_owned(),
-        ))?;
+        let algorithm = jwk
+            .common
+            .key_algorithm
+            .ok_or_else(|| Error::Parse("Key algorithm is not specified in JWKS".to_owned()))?;
         let algorithm = Algorithm::from_str(algorithm.to_string().as_str())
             .map_err(|err| Error::Parse(err.to_string()))?;
         let mut validation = Validation::new(algorithm);
@@ -42,9 +43,9 @@ impl Jwks {
         let header = decode_header(token).map_err(|_| Error::Invalid)?;
 
         if let Some(kid) = &header.kid {
-            let jwk = self.set.find(kid).ok_or(Error::Parse(
-                "Couldn't find JWK entry with specified kid".to_owned(),
-            ))?;
+            let jwk = self.set.find(kid).ok_or_else(|| {
+                Error::Parse("Couldn't find JWK entry with specified kid".to_owned())
+            })?;
 
             self.decode_with_jwk(token, jwk)
         } else {
