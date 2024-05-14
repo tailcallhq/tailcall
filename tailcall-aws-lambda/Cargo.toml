@@ -29,4 +29,4 @@ anyhow = "1.0.82"
 async-trait = "0.1.80"
 hyper = { version = "0.14.28", default-features = false }
 reqwest = { version = "0.11", default-features = false }
-tailcall = { path = "..", default-features = false }
+tailcall_core = { path = "../tailcall-core" }
