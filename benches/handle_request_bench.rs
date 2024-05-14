@@ -3,7 +3,7 @@ use std::sync::Arc;
 use criterion::Criterion;
 use hyper::Request;
 use tailcall::cli::server::server_config::ServerConfig;
-use tailcall::{handle_request, Blueprint, Config, ConfigModule, GraphQLRequest, Validator};
+use tailcall_core::{handle_request, Blueprint, Config, ConfigModule, GraphQLRequest, Validator};
 
 static QUERY: &str = r#"{"query":"query{posts{title}}"}"#;
 

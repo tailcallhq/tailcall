@@ -4,7 +4,7 @@ use criterion::{black_box, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use serde_json::json;
-use tailcall::{Endpoint, HasHeaders, PathString, RequestTemplate};
+use tailcall_core::{Endpoint, HasHeaders, PathString, RequestTemplate};
 
 #[derive(Setters)]
 struct Context {

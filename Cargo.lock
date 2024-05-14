@@ -5139,6 +5139,7 @@ dependencies = [
  "lambda_runtime",
  "reqwest",
  "tailcall",
+ "tailcall-core",
  "tokio",
  "tracing",
  "tracing-subscriber",

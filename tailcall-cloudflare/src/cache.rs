@@ -4,7 +4,7 @@ use std::rc::Rc;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
-use tailcall::Cache;
+use tailcall_core::Cache;
 use worker::kv::KvStore;
 
 use crate::to_anyhow;

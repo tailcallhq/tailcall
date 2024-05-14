@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall::{
+use tailcall_core::{
     Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime,
 };
 
@@ -50,7 +50,7 @@ impl FileIO for File {
 
 struct Cache;
 #[async_trait]
-impl tailcall::Cache for Cache {
+impl tailcall_core::Cache for Cache {
     type Key = u64;
     type Value = ConstValue;
 
