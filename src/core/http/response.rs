@@ -1,6 +1,7 @@
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
+use headers::HeaderMap;
 use hyper::body::Bytes;
 use indexmap::IndexMap;
 use prost::Message;
@@ -17,23 +18,14 @@ pub struct Response<Body> {
     pub headers: reqwest::header::HeaderMap,
     pub body: Body,
 }
-
-static REQUIRED_HEADERS: [&str; 1] = ["cache-control"];
-
 impl Response<Bytes> {
     pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
+        let mut headers = HeaderMap::with_capacity(1);
+        if let Some(cc) = resp.headers().get("cache-control") {
+            headers.insert("cache-control", cc.clone());
+        }
         let status = resp.status();
-        let headers = resp
-            .headers()
-            .iter()
-            .filter_map(|(k, v)| {
-                if REQUIRED_HEADERS.contains(&k.as_str()) {
-                    Some((k.clone(), v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let headers = headers;
         let body = resp.bytes().await?;
         Ok(Response { status, headers, body })
     }
