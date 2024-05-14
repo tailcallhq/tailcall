@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{command, Args, Parser, Subcommand};
 use strum_macros::Display;
 
 use crate::core::{config, generator};
@@ -58,23 +58,26 @@ pub enum Command {
         folder_path: String,
     },
 
-    /// Generates a Tailcall Configuration from one or more source files.
-    Gen {
-        /// Path of the source files separated by spaces if more than one
-        #[arg(required = true)]
-        file_paths: Vec<String>,
+    /// Generates a Tailcall Configuration from one or more source files.    
+    Gen(Generate),
+}
 
-        /// Format of the input file
-        #[clap(short, long)]
-        input: generator::Source,
+#[derive(Args)]
+pub struct Generate {
+    /// Path of the source files separated by spaces if more than one
+    #[arg(required = true)]
+    pub file_paths: Vec<String>,
 
-        /// Format of the output file
-        #[clap(short, long)]
-        output: Option<config::Source>,
+    /// Format of the input file
+    #[clap(short, long)]
+    pub input: generator::Source,
 
-        /// Root query name
-        #[arg(default_value = "Query")]
-        #[clap(short, long)]
-        query: String,
-    },
+    /// Format of the output file
+    #[clap(short, long)]
+    pub output: Option<config::Source>,
+
+    /// Root query name
+    #[arg(default_value = "Query")]
+    #[clap(short, long)]
+    pub query: String,
 }

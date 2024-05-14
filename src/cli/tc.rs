@@ -9,7 +9,7 @@ use inquire::Confirm;
 use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
-use super::command::{Cli, Command};
+use super::command::{Cli, Command, Generate};
 use super::update_checker;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
@@ -82,7 +82,7 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Gen { file_paths, input, output, query } => {
+        Command::Gen(Generate { file_paths, input, output, query }) => {
             let generator = Generator::init(runtime);
             let cfg = generator
                 .read_all(input, file_paths.as_ref(), query.as_str())
