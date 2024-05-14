@@ -1,0 +1,20 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  query: Query
+}
+
+type Query {
+  user(id: Int): User @http(path: "/users/{{.args.id}}")
+}
+
+type User {
+  email: String!
+  id: Int!
+  name: String!
+  phone: String
+  username: String!
+  website: String
+}
