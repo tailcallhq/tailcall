@@ -1,13 +1,11 @@
 mod core;
 
-#[cfg(feature = "cli")]
-pub mod cli;
-
-// export only what's requried outside.
+// export only what's required outside.
 pub use core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 pub use core::blueprint::{
-    Blueprint, Definition, DynamicValue, GrpcMethod, Script, Server, Type, Upstream,
+    Blueprint, Definition, DynamicValue, GrpcMethod, Script, Server, Type, Upstream, Http
 };
+pub use core::blueprint::telemetry::{TelemetryExporter, OtlpExporter, Telemetry};
 pub use core::cache::InMemoryCache;
 pub use core::config::reader::ConfigReader;
 pub use core::config::{Batch, Config, ConfigModule, Source};
@@ -35,3 +33,8 @@ pub use core::tracing::{
 };
 pub use core::valid::{Cause, ValidationError, Validator};
 pub use core::{Cache, EntityCache, EnvIO, FileIO, HttpIO, WorkerIO};
+
+pub use core::rest::{Unchecked, EndpointSet};
+pub use core::schema_extension::SchemaExtension;
+pub use core::{config, generator};
+pub use core::is_default;
