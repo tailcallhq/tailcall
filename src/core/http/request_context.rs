@@ -219,7 +219,7 @@ mod test {
 
             let upstream = Upstream::try_from(&config_module).unwrap();
             let server = Server::try_from(config_module).unwrap();
-            RequestContext::new(crate::core::runtime::test::init(None))
+            RequestContext::new(crate::core::runtime::test::init())
                 .upstream(upstream)
                 .server(server)
         }

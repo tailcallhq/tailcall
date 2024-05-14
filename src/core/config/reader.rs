@@ -263,7 +263,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_all() {
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
@@ -313,7 +313,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_local_files() {
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
 
         let files: Vec<String> = [
             "examples/jsonplaceholder.yml",
@@ -339,7 +339,7 @@ mod reader_tests {
 
     #[tokio::test]
     async fn test_script_loader() {
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let file_rt = runtime.file.clone();
 
         let cargo_manifest = std::env::var("CARGO_MANIFEST_DIR").unwrap();

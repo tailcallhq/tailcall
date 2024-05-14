@@ -210,10 +210,10 @@ mod grpc_fetch {
 
         let grpc_reflection = GrpcReflection::new(
             format!("http://localhost:{}", server.port()),
-            crate::core::runtime::test::init(None),
+            crate::core::runtime::test::init(),
         );
 
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let resp = grpc_reflection.get_by_service("news.NewsService").await?;
 
         let content = runtime.file.read(tailcall_fixtures::protobuf::NEWS).await?;
@@ -236,7 +236,7 @@ mod grpc_fetch {
             then.status(200).body(get_fake_resp());
         });
 
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
 
         let grpc_reflection =
             GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
@@ -268,7 +268,7 @@ mod grpc_fetch {
             then.status(200).body("\0\0\0\0\x02:\0"); // Mock an empty response
         });
 
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
 
         let grpc_reflection =
             GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);
@@ -295,7 +295,7 @@ mod grpc_fetch {
             then.status(404); // Mock a 404 not found response
         });
 
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
 
         let grpc_reflection =
             GrpcReflection::new(format!("http://localhost:{}", server.port()), runtime);

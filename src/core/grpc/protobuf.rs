@@ -256,7 +256,7 @@ pub mod tests {
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
 
     pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let reader = ConfigReader::init(runtime);
 
         let id = Path::new(path)

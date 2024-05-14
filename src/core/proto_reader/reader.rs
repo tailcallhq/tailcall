@@ -161,7 +161,7 @@ mod test_proto_config {
     #[tokio::test]
     async fn test_resolve() {
         // Skipping IO tests as they are covered in reader.rs
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         reader
             .read_proto("google/protobuf/empty.proto", None)
@@ -174,7 +174,7 @@ mod test_proto_config {
         let test_dir = Path::new(protobuf::SELF);
         let test_file = protobuf::NESTED_0;
 
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let file_rt = runtime.file.clone();
 
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
@@ -200,7 +200,7 @@ mod test_proto_config {
 
     #[tokio::test]
     async fn test_proto_no_pkg() -> Result<()> {
-        let runtime = crate::core::runtime::test::init(None);
+        let runtime = crate::core::runtime::test::init();
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         let proto_no_pkg =
             PathBuf::from(tailcall_fixtures::configs::SELF).join("proto_no_pkg.graphql");
