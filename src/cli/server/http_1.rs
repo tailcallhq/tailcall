@@ -32,7 +32,7 @@ pub async fn start_http_1(
     });
     let builder = hyper::Server::try_bind(&addr)
         .map_err(CLIError::from)?
-        .http1_only(true)
+        // .http1_only(true)
         .http1_keepalive(true)
         // .tcp_keepalive(Some(std::time::Duration::from_secs(60)))
         // .tcp_nodelay(true)
