@@ -181,7 +181,7 @@ js = ["dep:rquickjs"]
 cli = [
     "tokio/fs",
     "tokio/rt-multi-thread",
-    "dep:mimalloc",
+    "dep:tikv-jemallocator",
     "dep:http-cache-reqwest",
     "dep:moka",
     "dep:hyper-rustls",
