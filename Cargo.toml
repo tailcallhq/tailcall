@@ -213,7 +213,7 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-hasher"]
+    "tailcall-hasher", "tailcall-core"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
