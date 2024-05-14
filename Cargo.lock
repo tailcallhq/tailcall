@@ -5105,6 +5105,7 @@ dependencies = [
  "serde_yaml",
  "stripmargin",
  "strum_macros",
+ "tailcall-core",
  "tailcall-fixtures",
  "tailcall-hasher",
  "tailcall-macros",

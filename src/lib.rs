@@ -1,4 +1,6 @@
-mod core;
+mod core {
+    pub use tailcall_core::core::*;
+}
 
 #[cfg(feature = "cli")]
 pub mod cli;

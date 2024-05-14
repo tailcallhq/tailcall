@@ -154,6 +154,7 @@ datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
+tailcall-core = { path = "tailcall-core" }
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
@@ -192,7 +193,7 @@ cli = [
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
     "dep:opentelemetry-system-metrics",
-    "dep:tailcall-tracker"
+    "dep:tailcall-tracker",
 ]
 
 # Feature flag to enable all default features.
@@ -213,7 +214,9 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-hasher", "tailcall-core"]
+    "tailcall-hasher",
+    "tailcall-core",
+]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
