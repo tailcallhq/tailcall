@@ -56,7 +56,7 @@ impl Server {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
-            .global_queue_interval(100)
+            .global_queue_interval(10)
             .build()?;
 
         let result = runtime.spawn(async { self.start().await }).await?;
