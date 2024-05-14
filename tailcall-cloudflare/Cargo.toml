@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 hyper = { version = "0.14.28", default-features = false }
 worker = "0.2.0"
-tailcall_core = { path = "../tailcall-core" }
+tailcall-core = { path = "../tailcall-core" }
 lazy_static = "1.4.0"
 anyhow = "1.0.82"
 async-trait = "0.1.80"
