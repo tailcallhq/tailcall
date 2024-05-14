@@ -10,7 +10,7 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
-use tailcall::cli::javascript;
+use tailcall_main::cli::javascript;
 use tailcall::{AppContext, Blueprint, ConfigModule, EnvIO, InMemoryCache, Source, TargetRuntime};
 
 use super::file::File;

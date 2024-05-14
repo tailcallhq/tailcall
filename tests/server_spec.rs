@@ -1,5 +1,4 @@
 use tailcall::{EnvIO, FileIO, HttpIO, Upstream};
-
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
@@ -12,7 +11,7 @@ pub mod test {
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tailcall::cli::javascript;
+    use tailcall_main::cli::javascript;
     use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -161,7 +160,7 @@ pub mod test {
 mod server_spec {
     use reqwest::Client;
     use serde_json::json;
-    use tailcall::cli::server::Server;
+    use tailcall_main::cli::server::Server;
     use tailcall::ConfigReader;
 
     async fn test_server(configs: &[&str], url: &str) {
