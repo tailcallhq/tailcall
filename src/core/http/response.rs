@@ -1,10 +1,11 @@
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
+use headers::HeaderMap;
 use hyper::body::Bytes;
 use indexmap::IndexMap;
 use prost::Message;
-use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
@@ -34,16 +35,16 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: DeserializeOwned + Default>(self) -> Result<Response<T>> {
+    pub fn to_json<'a, T: Deserialize<'a> + Default>(&'a self) -> Result<Response<T>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
-                headers: self.headers,
+                headers: HeaderMap::default(),
                 body: Default::default(),
             });
         }
         let body = serde_json::from_slice::<T>(&self.body)?;
-        Ok(Response { status: self.status, headers: self.headers, body })
+        Ok(Response { status: self.status, headers: HeaderMap::default(), body })
     }
 
     pub fn to_grpc_value(

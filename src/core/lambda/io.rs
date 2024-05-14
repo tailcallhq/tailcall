@@ -194,23 +194,10 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
         .http
         .execute(req)
         .await
-        .map_err(EvaluationError::from)?;
-    let mut final_res: Response<async_graphql::Value> = Response::default();
-    final_res.headers = response.headers;
-    final_res.status = response.status;
-    if response.body.is_empty() {
-        final_res.body = async_graphql::Value::Null;
-    } else {
-        let result = test(&response.body)?;
-        final_res.body = result;
-    }
+        .map_err(EvaluationError::from)?
+        .to_json()?;
 
-    Ok(final_res)
-}
-
-fn test(body: &hyper::body::Bytes) -> anyhow::Result<async_graphql::Value> {
-    let result = serde_json::from_slice::<async_graphql::Value>(body);
-    Ok(result?)
+    Ok(response)
 }
 
 async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
