@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
+use tailcall_hasher::TailcallHashMap;
 
 use async_graphql::parser::types::ConstDirective;
-use tailcall_hasher::TailcallHashMap;
 
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};

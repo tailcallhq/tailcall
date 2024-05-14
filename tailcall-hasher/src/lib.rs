@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::hash::Hasher;
 
-use ahash::AHasher;
+use fnv::FnvHasher;
 
 /// A hasher that uses the FxHash algorithm. Currently it's a dumb wrapper
 /// around `fxhash::FxHasher`. We could potentially add some custom logic here
 /// in the future.
 #[derive(Default)]
 pub struct TailcallHasher {
-    hasher: AHasher,
+    hasher: FnvHasher,
 }
 
 impl Hasher for TailcallHasher {

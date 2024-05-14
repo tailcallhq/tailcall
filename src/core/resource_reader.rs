@@ -1,8 +1,8 @@
+use tailcall_hasher::TailcallHashMap;
 use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
-use tailcall_hasher::TailcallHashMap;
 use url::Url;
 
 use crate::core::runtime::TargetRuntime;

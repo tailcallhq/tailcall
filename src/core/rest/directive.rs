@@ -87,9 +87,10 @@ impl TryFrom<&Directive> for Rest {
 
 #[cfg(test)]
 mod tests {
+    use tailcall_hasher::TailcallHashMap;
+
     use async_graphql::parser::types::Directive;
     use once_cell::sync::Lazy;
-    use tailcall_hasher::TailcallHashMap;
 
     use super::*;
 
@@ -178,8 +179,8 @@ mod tests {
             generate_method_variant(&default_rest_query, Method::HEAD, DEFAULT_QUERY_PARAM),
             generate_method_variant(&default_rest_query, Method::PATCH, DEFAULT_QUERY_PARAM),
         ]
-        .into_iter()
-        .collect()
+            .into_iter()
+            .collect()
     }
 
     #[test]

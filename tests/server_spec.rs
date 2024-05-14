@@ -3,6 +3,7 @@ use tailcall::{EnvIO, FileIO, HttpIO, Upstream};
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
+    use tailcall_hasher::TailcallHashMap;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -13,7 +14,6 @@ pub mod test {
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript;
     use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
-    use tailcall_hasher::TailcallHashMap;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use crate::{EnvIO, FileIO, HttpIO, Upstream};

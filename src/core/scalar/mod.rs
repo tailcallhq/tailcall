@@ -18,7 +18,7 @@ use std::sync::Arc;
 use async_graphql_value::ConstValue;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
-use tailcall_hasher::TailcallHashMap;
+use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 
 lazy_static! {
     pub static ref CUSTOM_SCALARS: TailcallHashMap<String, Arc<dyn Scalar + Send + Sync>> = {
@@ -30,7 +30,7 @@ lazy_static! {
             Arc::new(JSON::default()),
             Arc::new(Empty::default()),
         ];
-        let mut hm = TailcallHashMap::default();
+        let mut hm = TailcallHashMap::with_hasher(TailcallBuildHasher);
 
         for scalar in scalars {
             hm.insert(scalar.name(), scalar);

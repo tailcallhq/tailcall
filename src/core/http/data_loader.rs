@@ -14,20 +14,14 @@ use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
-fn get_body_value_single(
-    body_value: &TailcallHashMap<String, Vec<&ConstValue>>,
-    id: &str,
-) -> ConstValue {
+fn get_body_value_single(body_value: &TailcallHashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value
         .get(id)
         .and_then(|a| a.first().cloned().cloned())
         .unwrap_or(ConstValue::Null)
 }
 
-fn get_body_value_list(
-    body_value: &TailcallHashMap<String, Vec<&ConstValue>>,
-    id: &str,
-) -> ConstValue {
+fn get_body_value_list(body_value: &TailcallHashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     ConstValue::List(
         body_value
             .get(id)

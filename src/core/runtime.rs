@@ -37,6 +37,7 @@ impl TargetRuntime {
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
+    use tailcall_hasher::TailcallHashMap;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -45,7 +46,6 @@ pub mod test {
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tailcall_hasher::TailcallHashMap;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use crate::cli::javascript;
