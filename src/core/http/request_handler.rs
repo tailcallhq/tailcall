@@ -335,7 +335,9 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
     };
 
-    req_counter.update(&response);
+    if app_ctx.blueprint.telemetry.export.is_some() {
+        req_counter.update(&response);
+    }
     if let Ok(response) = &response {
         let status = get_response_status_code(response);
         tracing::Span::current().set_attribute(status.key, status.value);

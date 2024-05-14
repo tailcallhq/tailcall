@@ -167,9 +167,8 @@ impl HttpIO for NativeHttp {
         let response = self.client.execute(request).await;
         tracing::debug!("response: {:?}", response);
 
-        req_counter.update(&response);
-
         if self.enable_telemetry {
+            req_counter.update(&response);
             let status_code = get_response_status(&response);
             tracing::Span::current().set_attribute(status_code.key, status_code.value);
         }
