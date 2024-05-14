@@ -5127,20 +5127,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tailcall-autogen"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "lazy_static",
- "schemars",
- "serde",
- "serde_json",
- "tailcall",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "tailcall-aws-lambda"
 version = "0.1.0"
 dependencies = [
@@ -5225,6 +5211,20 @@ dependencies = [
  "serde",
  "serde_json",
  "sysinfo 0.30.12",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "tailcall-typedefs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tailcall",
  "tokio",
  "tracing",
 ]
