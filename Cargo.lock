@@ -279,7 +279,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2 1.0.82",
  "quote 1.0.36",
- "strum 0.26.2",
+ "strum",
  "syn 2.0.63",
  "thiserror",
 ]
@@ -2572,9 +2572,9 @@ dependencies = [
 
 [[package]]
 name = "lambda_http"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfbe291122ade1f6a119c94496da02d989888f97d5bea2a0bd9bcbc6d0a0af43"
+checksum = "c89d7aef5484499900f4394280a2b06f02af17cb4a48ff9c35198f8f7423df12"
 dependencies = [
  "aws_lambda_events",
  "base64 0.22.1",
@@ -3516,14 +3516,14 @@ dependencies = [
 
 [[package]]
 name = "phonenumber"
-version = "0.3.4+8.13.34"
+version = "0.3.5+8.13.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d888d375f2963bf06c5079665fbe53db69860879ff5a78524fe3c93c54fb7b8"
+checksum = "f174c8db59b620032bd52b655fc97000458850fec0db35fcd4e802b668517ec0"
 dependencies = [
  "bincode",
  "either",
  "fnv",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "lazy_static",
  "nom",
  "quick-xml",
@@ -3531,7 +3531,7 @@ dependencies = [
  "regex-cache",
  "serde",
  "serde_derive",
- "strum 0.25.0",
+ "strum",
  "thiserror",
 ]
 
@@ -3775,7 +3775,7 @@ checksum = "80b776a1b2dc779f5ee0641f8ade0125bc1298dd41a9a0c16d8bd57b42d222b1"
 dependencies = [
  "bytes",
  "heck 0.5.0",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "log",
  "multimap",
  "once_cell",
@@ -3795,7 +3795,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19de2de2a00075bf566bee3bd4db014b11587e84184d3f7a791bc17f1a8e9e48"
 dependencies = [
  "anyhow",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "proc-macro2 1.0.82",
  "quote 1.0.36",
  "syn 2.0.63",
@@ -4902,33 +4902,11 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
-version = "0.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
-dependencies = [
- "strum_macros 0.25.3",
-]
-
-[[package]]
-name = "strum"
 version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d8cec3501a5194c432b2b7976db6b7d10ec95c253208b45f83f7136aa985e29"
 dependencies = [
- "strum_macros 0.26.2",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.25.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23dc1fa9ac9c169a78ba62f0b841814b7abae11bdd047b9c58f893439e309ea0"
-dependencies = [
- "heck 0.4.1",
- "proc-macro2 1.0.82",
- "quote 1.0.36",
- "rustversion",
- "syn 2.0.63",
+ "strum_macros",
 ]
 
 [[package]]
@@ -5126,8 +5104,9 @@ dependencies = [
  "serde_urlencoded",
  "serde_yaml",
  "stripmargin",
- "strum_macros 0.26.2",
+ "strum_macros",
  "tailcall-fixtures",
+ "tailcall-hasher",
  "tailcall-macros",
  "tailcall-prettier",
  "tailcall-tracker",
@@ -5210,6 +5189,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tailcall-hasher"
+version = "0.1.0"
+dependencies = [
+ "fxhash",
+]
+
+[[package]]
 name = "tailcall-macros"
 version = "0.1.0"
 dependencies = [
@@ -5224,7 +5210,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "lazy_static",
- "strum_macros 0.26.2",
+ "strum_macros",
  "tokio",
 ]
 
