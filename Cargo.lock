@@ -5210,6 +5210,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tailcall-http-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http-cache-reqwest",
+ "hyper 0.14.28",
+ "reqwest",
+ "reqwest-middleware",
+ "tailcall",
+]
+
+[[package]]
 name = "tailcall-macros"
 version = "0.1.0"
 dependencies = [
