@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 fxhash = "0.2.1"
+fnv = "1.0.7"
