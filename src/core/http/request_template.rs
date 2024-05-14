@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::Write;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -58,14 +59,14 @@ impl RequestTemplate {
 
         let qp_string = base_qp
             .chain(extra_qp)
-            .map(|(k, v)| format!("{}={}", k, v))
-            .fold("".to_string(), |str, item| {
-                if str.is_empty() {
-                    item
+            .try_fold(String::new(), |mut res, (k, v)| {
+                if res.is_empty() {
+                    write!(&mut res, "{k}={v}")?;
                 } else {
-                    format!("{}&{}", str, item)
+                    write!(&mut res, "&{}={}", k, v)?;
                 }
-            });
+                Ok::<_, anyhow::Error>(res)
+            })?;
 
         if qp_string.is_empty() {
             url.set_query(None);
