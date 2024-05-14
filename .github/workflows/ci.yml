@@ -277,7 +277,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
-            features: --no-default-features --features cli
+            features: --all-features --workspace
             libc: musl
             cross: true
 
