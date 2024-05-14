@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::Write;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -29,6 +30,8 @@ pub struct RequestTemplate {
     pub endpoint: Endpoint,
     pub encoding: Encoding,
     pub parsed_url: Option<Url>,
+    pub parsed_query: String,
+    pub parsed_headers: HeaderMap,
 }
 
 impl RequestTemplate {
@@ -59,7 +62,7 @@ impl RequestTemplate {
         let qp_string = base_qp
             .chain(extra_qp)
             .map(|(k, v)| format!("{}={}", k, v))
-            .fold("".to_string(), |str, item| {
+            .fold(self.parsed_query.clone(), |str, item| {
                 if str.is_empty() {
                     item
                 } else {
@@ -107,6 +110,7 @@ impl RequestTemplate {
         let url = self.create_url(ctx)?;
         let method = self.method.clone();
         let mut req = reqwest::Request::new(method, url);
+        let _ = std::mem::replace(req.headers_mut(), self.parsed_headers.clone());
         req = self.set_headers(req, ctx);
         req = self.set_body(req, ctx)?;
 
@@ -181,6 +185,8 @@ impl RequestTemplate {
             endpoint: Endpoint::new(root_url.to_string()),
             encoding: Default::default(),
             parsed_url: Default::default(),
+            parsed_query: Default::default(),
+            parsed_headers: Default::default(),
         })
     }
 
@@ -199,17 +205,37 @@ impl TryFrom<Endpoint> for RequestTemplate {
     type Error = anyhow::Error;
     fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
         let path = Mustache::parse(endpoint.path.as_str())?;
-        let query = endpoint
-            .query
-            .iter()
-            .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
-            .collect::<anyhow::Result<Vec<_>>>()?;
+
+        let mut query = vec![];
+        let mut query_str = "".to_string();
+
+        for (k, v) in endpoint.query.iter() {
+            let key = k.to_owned();
+            let mustache = Mustache::parse(v.as_str())?;
+            if mustache.is_const() {
+                if !query_str.is_empty() {
+                    write!(&mut query_str, "&")?;
+                }
+                write!(&mut query_str, "{k}={v}")?;
+            } else {
+                query.push((key, mustache));
+            }
+        }
+
         let method = endpoint.method.clone().to_hyper();
-        let headers = endpoint
-            .headers
-            .iter()
-            .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
-            .collect::<anyhow::Result<Vec<_>>>()?;
+
+        let mut const_headers = HeaderMap::new();
+        let mut headers = vec![];
+
+        for (k, v) in endpoint.headers.iter() {
+            let key = k.clone();
+            let mustache = Mustache::parse(v.to_str()?)?;
+            if mustache.is_const() {
+                const_headers.insert(key, v.to_owned());
+            } else {
+                headers.push((key, mustache));
+            }
+        }
 
         let body = if let Some(body) = &endpoint.body {
             Some(Mustache::parse(body.as_str())?)
@@ -227,6 +253,8 @@ impl TryFrom<Endpoint> for RequestTemplate {
             endpoint,
             encoding,
             parsed_url: None,
+            parsed_query: query_str,
+            parsed_headers: const_headers,
         };
 
         if req_template.root_url.is_const() {
@@ -621,7 +649,7 @@ mod tests {
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
-            assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
+            assert_eq!(req.url().to_string(), "http://localhost:3000/?b=1&q=1");
         }
 
         #[test]
