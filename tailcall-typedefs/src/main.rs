@@ -15,7 +15,7 @@ static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
 #[tokio::main]
 async fn main() {
-    tracing::subscriber::set_global_default(default_tracing_for_name("autogen")).unwrap();
+    tracing::subscriber::set_global_default(default_tracing_for_name("typedefs")).unwrap();
     let args: Vec<String> = env::args().collect();
     let arg = args.get(1);
 
