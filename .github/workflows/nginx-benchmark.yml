@@ -2,12 +2,12 @@ name: Nginx Benchmark
 
 on:
   push:
-    paths-ignore: ["docs/**", "**.md"]
+    paths-ignore: [ "docs/**", "**.md" ]
     branches:
       - main
   pull_request:
-    paths-ignore: ["docs/**", "**.md"]
-    types: [opened, reopened, synchronize, labeled]
+    paths-ignore: [ "docs/**", "**.md" ]
+    types: [ opened, reopened, synchronize, labeled ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,7 +27,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Run Cargo Build
-        run: cargo build --release
+        run: MALLOC_CONF="thp:always,metadata_thp:always" cargo build --release
 
       - name: Run Tailcall
         run: |

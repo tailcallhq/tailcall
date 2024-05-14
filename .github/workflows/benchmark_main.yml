@@ -2,7 +2,7 @@ name: Benchmark main
 
 on:
   push:
-    paths-ignore: ["docs/**", "**.md"]
+    paths-ignore: [ "docs/**", "**.md" ]
     branches:
       - main
 
@@ -25,6 +25,8 @@ jobs:
         uses: bencherdev/bencher@main
 
       - name: Run Benchmarks
+        env:
+          MALLOC_CONF: thp:always,metadata_thp:always
         run: |
           bencher run \
           --project tailcall \

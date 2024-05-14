@@ -3,13 +3,12 @@
 
 use std::cell::Cell;
 
-use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
 use tailcall::default_tracing_tailcall;
 use tracing::subscriber::DefaultGuard;
 
 #[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 thread_local! {
     static TRACING_GUARD: Cell<Option<DefaultGuard>> = const { Cell::new(None) };
