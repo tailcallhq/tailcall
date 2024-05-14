@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
-use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 
 use async_graphql::dynamic::SchemaBuilder;
+use tailcall_hasher::TailcallHashMap;
 
 use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
@@ -73,7 +73,7 @@ pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
     to_json_schema(field, config)
 }
 pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
-    let mut schema_fields = TailcallHashMap::with_hasher(TailcallBuildHasher);
+    let mut schema_fields = TailcallHashMap::default();
     for (name, arg) in args.iter() {
         schema_fields.insert(name.clone(), to_json_schema(arg, config));
     }
@@ -89,7 +89,7 @@ where
     let type_ = config.find_type(type_of);
     let type_enum_ = config.find_enum(type_of);
     let schema = if let Some(type_) = type_ {
-        let mut schema_fields = TailcallHashMap::with_hasher(TailcallBuildHasher);
+        let mut schema_fields = TailcallHashMap::default();
         for (name, field) in type_.fields.iter() {
             if field.script.is_none() && field.http.is_none() {
                 schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
@@ -103,7 +103,7 @@ where
             "String" => JsonSchema::Str {},
             "Int" => JsonSchema::Num {},
             "Boolean" => JsonSchema::Bool {},
-            "JSON" => JsonSchema::Obj(TailcallHashMap::with_hasher(TailcallBuildHasher)),
+            "JSON" => JsonSchema::Obj(TailcallHashMap::default()),
             _ => JsonSchema::Str {},
         }
     };

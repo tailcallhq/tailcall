@@ -1,10 +1,10 @@
-use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
 use futures_util::Future;
+use tailcall_hasher::TailcallHashMap;
 use tokio::sync::broadcast::Sender;
 
 /// A simple async cache that uses a `TailcallHashMap` to store the values.
@@ -30,7 +30,7 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
     AsyncCache<Key, Value, Error>
 {
     pub fn new() -> Self {
-        Self { cache: Arc::new(RwLock::new(TailcallHashMap::with_hasher(TailcallBuildHasher))) }
+        Self { cache: Arc::new(RwLock::new(TailcallHashMap::default())) }
     }
 
     fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value, Error>> {

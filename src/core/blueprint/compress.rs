@@ -1,5 +1,6 @@
 use std::collections::HashSet;
-use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
+
+use tailcall_hasher::TailcallHashMap;
 
 use super::{Blueprint, Definition};
 
@@ -44,7 +45,7 @@ pub fn compress(mut blueprint: Blueprint) -> Blueprint {
 }
 
 fn build_dependency_graph(blueprint: &Blueprint) -> TailcallHashMap<&str, Vec<&str>> {
-    let mut graph: TailcallHashMap<&str, Vec<&str>> = TailcallHashMap::with_hasher(TailcallBuildHasher);
+    let mut graph: TailcallHashMap<&str, Vec<&str>> = TailcallHashMap::default();
 
     for def in &blueprint.definitions {
         let type_name = def.name();
@@ -88,7 +89,10 @@ fn build_dependency_graph(blueprint: &Blueprint) -> TailcallHashMap<&str, Vec<&s
 }
 
 // Function to perform DFS and identify all reachable types
-fn identify_referenced_types(graph: &TailcallHashMap<&str, Vec<&str>>, root: Vec<&str>) -> HashSet<String> {
+fn identify_referenced_types(
+    graph: &TailcallHashMap<&str, Vec<&str>>,
+    root: Vec<&str>,
+) -> HashSet<String> {
     let mut stack = root;
     let mut referenced_types = HashSet::new();
 

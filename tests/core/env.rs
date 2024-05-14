@@ -1,9 +1,9 @@
 extern crate core;
 
 use std::borrow::Cow;
-use tailcall_hasher::TailcallHashMap;
 
 use tailcall::EnvIO;
+use tailcall_hasher::TailcallHashMap;
 
 #[derive(Clone)]
 pub struct Env {

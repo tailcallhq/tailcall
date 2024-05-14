@@ -1,10 +1,10 @@
-use tailcall_hasher::TailcallHashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::{handle_request, showcase, AppContext, GraphQLRequest};
+use tailcall_hasher::TailcallHashMap;
 
 use crate::http::{to_request, to_response};
 use crate::runtime;

@@ -1,9 +1,8 @@
-use tailcall_hasher::TailcallHashMap;
-
 use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::{Body, Request, Response};
 use serde::de::DeserializeOwned;
+use tailcall_hasher::TailcallHashMap;
 use url::Url;
 
 use super::AppContext;

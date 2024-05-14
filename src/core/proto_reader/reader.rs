@@ -1,11 +1,11 @@
 use std::collections::VecDeque;
-use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
+use tailcall_hasher::TailcallHashMap;
 
 use crate::core::proto_reader::fetch::GrpcReflection;
 use crate::core::resource_reader::{Cached, ResourceReader};
@@ -79,7 +79,8 @@ impl ProtoReader {
         parent_proto: FileDescriptorProto,
         parent_path: Option<&Path>,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
-        let mut descriptors: TailcallHashMap<String, FileDescriptorProto> = TailcallHashMap::with_hasher(TailcallBuildHasher);
+        let mut descriptors: TailcallHashMap<String, FileDescriptorProto> =
+            TailcallHashMap::default();
         let mut queue = VecDeque::new();
         queue.push_back(parent_proto.clone());
 

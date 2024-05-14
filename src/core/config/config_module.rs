@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -7,6 +6,7 @@ use derive_setters::Setters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use tailcall_hasher::TailcallHashMap;
 
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
@@ -125,7 +125,7 @@ impl ConfigModule {
     /// object containing the new input and output types.
     /// The function will return a new ConfigModule with the resolved types.
     pub fn resolve_ambiguous_types(mut self, resolver: impl Fn(&str) -> Resolution) -> Self {
-        let mut resolution_map = TailcallHashMap::with_hasher(TailcallBuildHasher);
+        let mut resolution_map = TailcallHashMap::default();
 
         // iterate over intersection of input and output types
         for current_name in self.input_types.intersection(&self.output_types) {

@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+
 use tailcall_hasher::TailcallHashMap;
 
 use crate::core::EnvIO;
@@ -22,7 +23,6 @@ impl EnvNative {
 
 #[cfg(test)]
 mod tests {
-    use tailcall_hasher::TailcallBuildHasher;
     use super::*;
 
     #[test]
@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn test_get_existing_var() {
-        let mut vars = TailcallHashMap::with_hasher(TailcallBuildHasher);
+        let mut vars = TailcallHashMap::default();
         vars.insert("EXISTING_VAR".to_string(), "value".to_string());
         let test_env = EnvNative { vars };
         let result = test_env.get("EXISTING_VAR");
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_get_non_existing_var() {
-        let vars = TailcallHashMap::with_hasher(TailcallBuildHasher);
+        let vars = TailcallHashMap::default();
         let test_env = EnvNative { vars };
         let result = test_env.get("NON_EXISTING_VAR");
         assert_eq!(result, None);

@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
-use tailcall_hasher::TailcallHashMap;
 use std::sync::Arc;
+
+use tailcall_hasher::TailcallHashMap;
 
 pub trait MergeRight {
     fn merge_right(self, other: Self) -> Self;

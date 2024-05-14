@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
-use tailcall_hasher::{TailcallBuildHasher, TailcallHashMap};
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
+use tailcall_hasher::TailcallHashMap;
 
 use crate::core::valid::{Valid, Validator};
 
@@ -21,7 +21,7 @@ pub enum JsonSchema {
 
 impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
     fn from(fields: [(&'static str, JsonSchema); L]) -> Self {
-        let mut map = TailcallHashMap::with_hasher(TailcallBuildHasher);
+        let mut map = TailcallHashMap::default();
         for (name, schema) in fields {
             map.insert(name.to_string(), schema);
         }
@@ -31,7 +31,7 @@ impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
 
 impl Default for JsonSchema {
     fn default() -> Self {
-        JsonSchema::Obj(TailcallHashMap::with_hasher(TailcallBuildHasher))
+        JsonSchema::Obj(TailcallHashMap::default())
     }
 }
 
@@ -166,7 +166,7 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
     type Error = crate::core::valid::ValidationError<String>;
 
     fn try_from(value: &MessageDescriptor) -> Result<Self, Self::Error> {
-        let mut map = tailcall_hasher::TailcallHashMap::with_hasher(TailcallBuildHasher);
+        let mut map = tailcall_hasher::TailcallHashMap::default();
         let fields = value.fields();
 
         for field in fields {
@@ -238,11 +238,11 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
-    use tailcall_hasher::TailcallHashMap;
 
     use async_graphql::Name;
     use indexmap::IndexMap;
     use tailcall_fixtures::protobuf;
+    use tailcall_hasher::TailcallHashMap;
 
     use crate::core::blueprint::GrpcMethod;
     use crate::core::grpc::protobuf::tests::get_proto_file;
