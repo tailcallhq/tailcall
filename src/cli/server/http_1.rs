@@ -33,6 +33,11 @@ pub async fn start_http_1(
     let builder = hyper::Server::try_bind(&addr)
         .map_err(CLIError::from)?
         .http1_only(true)
+        .http1_half_close(true)
+        .http1_keepalive(true)
+        .http1_max_buf_size(32 * 1024)
+        .tcp_keepalive(Some(std::time::Duration::from_secs(60)))
+        .tcp_nodelay(true)
         .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
     super::log_launch(sc.as_ref());
 
