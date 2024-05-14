@@ -2,10 +2,9 @@ use std::sync::Arc;
 
 use hyper::body::Bytes;
 use rquickjs::FromJs;
+use tailcall::{HttpIO, Response, WorkerIO};
 
 use super::{JsRequest, JsResponse};
-use tailcall::Response;
-use tailcall::{HttpIO, WorkerIO};
 
 #[derive(Debug)]
 pub enum Event {
@@ -103,10 +102,10 @@ impl HttpIO for RequestFilter {
 mod tests {
     use hyper::body::Bytes;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
+    use tailcall::Response;
 
     use crate::cli::javascript::request_filter::Command;
     use crate::cli::javascript::{JsRequest, JsResponse};
-    use tailcall::Response;
 
     #[test]
     fn test_command_from_invalid_object() {

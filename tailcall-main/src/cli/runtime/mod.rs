@@ -5,10 +5,7 @@ mod http;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use tailcall::Blueprint;
-use tailcall::InMemoryCache;
-use tailcall::TargetRuntime;
-use tailcall::{Script, EnvIO, FileIO, HttpIO};
+use tailcall::{Blueprint, EnvIO, FileIO, HttpIO, InMemoryCache, Script, TargetRuntime};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {

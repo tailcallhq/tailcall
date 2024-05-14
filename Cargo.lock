@@ -5329,6 +5329,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tailcall",
+ "tailcall-main",
  "tokio",
  "tracing",
 ]
@@ -5376,6 +5377,7 @@ dependencies = [
  "insta",
  "tailcall",
  "tailcall-fixtures",
+ "tailcall-main",
  "tokio",
 ]
 

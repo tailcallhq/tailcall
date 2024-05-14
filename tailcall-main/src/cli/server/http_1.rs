@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use hyper::service::{make_service_fn, service_fn};
+use tailcall::{handle_request, GraphQLBatchRequest, GraphQLRequest};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::cli::CLIError;
-use tailcall::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::handle_request;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,

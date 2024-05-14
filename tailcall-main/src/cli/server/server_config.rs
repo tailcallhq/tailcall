@@ -2,13 +2,11 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use async_graphql_extension_apollo_tracing::ApolloTracing;
+use tailcall::{
+    AppContext, Blueprint, EndpointSet, Http, SchemaExtension, TelemetryExporter, Unchecked,
+};
 
 use crate::cli::runtime::init;
-use tailcall::TelemetryExporter;
-use tailcall::{Blueprint, Http};
-use tailcall::AppContext;
-use tailcall::{EndpointSet, Unchecked};
-use tailcall::SchemaExtension;
 
 pub struct ServerConfig {
     pub blueprint: Blueprint,

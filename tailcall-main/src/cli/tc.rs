@@ -8,18 +8,15 @@ use dotenvy::dotenv;
 use inquire::Confirm;
 use lazy_static::lazy_static;
 use stripmargin::StripMargin;
+use tailcall::{
+    print_schema, Blueprint, ConfigReader, EndpointSet, Generator, Unchecked, API_URL_PREFIX,
+};
 
 use super::command::{Cli, Command};
 use super::update_checker;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
-use tailcall::Blueprint;
-use tailcall::ConfigReader;
-use tailcall::Generator;
-use tailcall::API_URL_PREFIX;
-use tailcall::print_schema;
-use tailcall::{EndpointSet, Unchecked};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";

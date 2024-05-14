@@ -6,12 +6,11 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::Server;
 use hyper_rustls::TlsAcceptor;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use tailcall::{handle_request, GraphQLBatchRequest, GraphQLRequest};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::cli::CLIError;
-use tailcall::{GraphQLBatchRequest, GraphQLRequest};
-use tailcall::handle_request;
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,

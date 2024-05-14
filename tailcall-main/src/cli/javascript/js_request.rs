@@ -7,7 +7,6 @@ use reqwest::header::HeaderName;
 use reqwest::Request;
 use rquickjs::{FromJs, IntoJs};
 use serde::{Deserialize, Serialize};
-
 use tailcall::is_default;
 
 #[derive(Debug)]

@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use strum_macros::Display;
-
 use tailcall::{config, generator};
 
 pub const VERSION: &str = match option_env!("APP_VERSION") {

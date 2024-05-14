@@ -1,5 +1,4 @@
 use colored::*;
-
 use tailcall::Config;
 
 pub struct Fmt {}

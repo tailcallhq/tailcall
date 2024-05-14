@@ -2,10 +2,10 @@ use std::cell::{OnceCell, RefCell};
 use std::thread;
 
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
+use tailcall::{Script, WorkerIO};
 
 use super::request_filter::{Command, Event};
 use super::JsRequest;
-use tailcall::{Script, WorkerIO};
 
 struct LocalRuntime(Context);
 

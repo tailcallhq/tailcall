@@ -6,8 +6,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use derive_setters::Setters;
-use tailcall_main::cli::javascript;
 use tailcall::{InMemoryCache, Script, Source, TargetRuntime};
+use tailcall_main::cli::javascript;
 
 use super::env::Env;
 use super::file::TestFileIO;

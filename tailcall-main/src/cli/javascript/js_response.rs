@@ -2,9 +2,9 @@ use std::collections::BTreeMap;
 
 use hyper::body::Bytes;
 use rquickjs::{FromJs, IntoJs};
+use tailcall::Response;
 
 use super::create_header_map;
-use tailcall::Response;
 
 #[derive(Debug)]
 pub struct JsResponse(Response<String>);
@@ -151,11 +151,8 @@ mod test {
             HeaderName::from_static("x-unusual-header"),
             HeaderValue::from_str("🚀").unwrap(),
         );
-        let response = tailcall::Response {
-            status: reqwest::StatusCode::OK,
-            headers,
-            body: body.into(),
-        };
+        let response =
+            tailcall::Response { status: reqwest::StatusCode::OK, headers, body: body.into() };
         let js_response = JsResponse(response);
 
         let response: Result<tailcall::Response<Bytes>, _> = js_response.try_into();

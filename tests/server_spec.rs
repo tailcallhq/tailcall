@@ -11,8 +11,8 @@ pub mod test {
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tailcall_main::cli::javascript;
     use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
+    use tailcall_main::cli::javascript;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use crate::{EnvIO, FileIO, HttpIO, Upstream};
@@ -160,8 +160,8 @@ pub mod test {
 mod server_spec {
     use reqwest::Client;
     use serde_json::json;
-    use tailcall_main::cli::server::Server;
     use tailcall::ConfigReader;
+    use tailcall_main::cli::server::Server;
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = crate::test::init(None);

@@ -13,12 +13,8 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use tailcall::{HttpIO, Response, Telemetry, Upstream};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-
-use tailcall::HttpIO;
-use tailcall::Telemetry;
-use tailcall::Upstream;
-use tailcall::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");

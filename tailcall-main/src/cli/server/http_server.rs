@@ -2,6 +2,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
+use tailcall::{Blueprint, ConfigModule, Http};
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
@@ -9,8 +10,6 @@ use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
-use tailcall::{Blueprint, Http};
-use tailcall::ConfigModule;
 
 pub struct Server {
     config_module: ConfigModule,

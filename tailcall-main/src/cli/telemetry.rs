@@ -15,6 +15,10 @@ use opentelemetry_sdk::runtime::Tokio;
 use opentelemetry_sdk::trace::{Tracer, TracerProvider};
 use opentelemetry_sdk::{runtime, Resource};
 use serde::Serialize;
+use tailcall::{
+    default_tracing_tailcall, get_log_level, tailcall_filter_target, OtlpExporter, TargetRuntime,
+    Telemetry, TelemetryExporter,
+};
 use tonic::metadata::MetadataMap;
 use tracing::level_filters::LevelFilter;
 use tracing::Subscriber;
@@ -25,9 +29,6 @@ use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
 use crate::cli::CLIError;
-use tailcall::{OtlpExporter, Telemetry, TelemetryExporter};
-use tailcall::TargetRuntime;
-use tailcall::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![

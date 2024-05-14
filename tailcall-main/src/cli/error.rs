@@ -2,8 +2,8 @@ use std::fmt::{Debug, Display};
 
 use colored::Colorize;
 use derive_setters::Setters;
-use thiserror::Error;
 use tailcall::ValidationError;
+use thiserror::Error;
 
 #[derive(Debug, Error, Setters, PartialEq, Clone)]
 pub struct CLIError {
@@ -233,9 +233,9 @@ mod tests {
 
     use pretty_assertions::assert_eq;
     use stripmargin::StripMargin;
+    use tailcall::Cause;
 
     use super::*;
-    use tailcall::Cause;
 
     #[test]
     fn test_no_newline() {

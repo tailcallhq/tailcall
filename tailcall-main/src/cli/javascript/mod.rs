@@ -12,13 +12,9 @@ pub use js_request::JsRequest;
 pub use js_response::JsResponse;
 pub use request_filter::RequestFilter;
 pub use runtime::Runtime;
+use tailcall::{HttpIO, Script};
 
-use tailcall::{Script, HttpIO};
-
-pub fn init_http(
-    http: Arc<impl HttpIO>,
-    script: Script,
-) -> Arc<dyn HttpIO + Sync + Send> {
+pub fn init_http(http: Arc<impl HttpIO>, script: Script) -> Arc<dyn HttpIO + Sync + Send> {
     tracing::debug!("Initializing JavaScript HTTP filter: {}", script.source);
     let script_io = Arc::new(Runtime::new(script));
     Arc::new(RequestFilter::new(http, script_io))

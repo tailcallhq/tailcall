@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-
 use tailcall::TargetRuntime;
 
 fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {

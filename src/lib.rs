@@ -2,10 +2,10 @@ mod core;
 
 // export only what's required outside.
 pub use core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+pub use core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 pub use core::blueprint::{
-    Blueprint, Definition, DynamicValue, GrpcMethod, Script, Server, Type, Upstream, Http
+    Blueprint, Definition, DynamicValue, GrpcMethod, Http, Script, Server, Type, Upstream,
 };
-pub use core::blueprint::telemetry::{TelemetryExporter, OtlpExporter, Telemetry};
 pub use core::cache::InMemoryCache;
 pub use core::config::reader::ConfigReader;
 pub use core::config::{Batch, Config, ConfigModule, Source};
@@ -25,16 +25,15 @@ pub use core::merge_right::MergeRight;
 pub use core::mustache::Mustache;
 pub use core::path::PathString;
 pub use core::print_schema::print_schema;
+pub use core::rest::{EndpointSet, Unchecked};
 pub use core::runtime::TargetRuntime;
 pub use core::scalar::{is_predefined_scalar, CUSTOM_SCALARS};
+pub use core::schema_extension::SchemaExtension;
 pub use core::tracing::{
     default_tracing, default_tracing_for_name, default_tracing_tailcall, get_log_level,
     tailcall_filter_target,
 };
 pub use core::valid::{Cause, ValidationError, Validator};
-pub use core::{Cache, EntityCache, EnvIO, FileIO, HttpIO, WorkerIO};
-
-pub use core::rest::{Unchecked, EndpointSet};
-pub use core::schema_extension::SchemaExtension;
-pub use core::{config, generator};
-pub use core::is_default;
+pub use core::{
+    config, generator, is_default, Cache, EntityCache, EnvIO, FileIO, HttpIO, WorkerIO,
+};
