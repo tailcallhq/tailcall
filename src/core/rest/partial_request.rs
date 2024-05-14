@@ -1,6 +1,8 @@
+use anyhow::Context;
 use async_graphql::parser::types::ExecutableDocument;
 use async_graphql::{Name, Variables};
 use async_graphql_value::ConstValue;
+use http_body_util::BodyExt;
 
 use super::path::Path;
 use super::Request;
@@ -19,7 +21,13 @@ impl<'a> PartialRequest<'a> {
     pub async fn into_request(self, request: Request) -> anyhow::Result<GraphQLRequest> {
         let mut variables = self.variables;
         if let Some(key) = self.body {
-            let bytes = hyper::body::to_bytes(request.into_body()).await?;
+            let bytes = request
+                .into_body()
+                .frame()
+                .await
+                .context("Failed to read request body")??
+                .into_data()
+                .map_err(|e| anyhow::anyhow!("{e:?}"))?;
             let body: ConstValue = serde_json::from_slice(&bytes)?;
             variables.insert(Name::new(key), body);
         }

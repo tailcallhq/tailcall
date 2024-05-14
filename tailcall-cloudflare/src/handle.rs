@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
-use hyper::{Body, Request, Response};
+use http_body_util::Full;
+use hyper::body::Bytes;
+use hyper::{Request, Response};
 use lazy_static::lazy_static;
 use tailcall::{handle_request, showcase, AppContext, GraphQLRequest};
 
@@ -40,8 +42,8 @@ pub async fn fetch(
 /// for future requests.
 async fn get_app_ctx(
     env: Rc<worker::Env>,
-    req: &Request<Body>,
-) -> anyhow::Result<Result<Arc<AppContext>, Response<Body>>> {
+    req: &Request<Full<Bytes>>,
+) -> anyhow::Result<Result<Arc<AppContext>, Response<Full<Bytes>>>> {
     // Read context from cache
     let file_path = req
         .uri()

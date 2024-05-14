@@ -2,9 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use rustls_pemfile;
-use rustls_pki_types::{
-    CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
-};
+use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
@@ -142,9 +140,9 @@ impl ConfigReader {
 
     /// Reads the certificate from a given file
     async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
-        let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
-
-        Ok(certificates.into_iter().map(CertificateDer::from).collect())
+        rustls_pemfile::certs(&mut content.as_bytes())
+            .map(|res| Ok(res.map(CertificateDer::from)?))
+            .collect()
     }
 
     /// Reads a private key from a given file
@@ -152,20 +150,11 @@ impl ConfigReader {
         &self,
         content: String,
     ) -> anyhow::Result<Vec<PrivateKeyDer<'static>>> {
-        let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
-
-        Ok(keys
-            .into_iter()
+        Ok(rustls_pemfile::read_all(&mut content.as_bytes())
             .filter_map(|key| match key {
-                rustls_pemfile::Item::RSAKey(key) => {
-                    Some(PrivateKeyDer::Pkcs1(PrivatePkcs1KeyDer::from(key)))
-                }
-                rustls_pemfile::Item::ECKey(key) => {
-                    Some(PrivateKeyDer::Sec1(PrivateSec1KeyDer::from(key)))
-                }
-                rustls_pemfile::Item::PKCS8Key(key) => {
-                    Some(PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key)))
-                }
+                Ok(rustls_pemfile::Item::Pkcs1Key(key)) => Some(PrivateKeyDer::Pkcs1(key)),
+                Ok(rustls_pemfile::Item::Sec1Key(key)) => Some(PrivateKeyDer::Sec1(key)),
+                Ok(rustls_pemfile::Item::Pkcs8Key(key)) => Some(PrivateKeyDer::Pkcs8(key)),
                 _ => None,
             })
             .collect())

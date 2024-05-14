@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
@@ -59,15 +61,16 @@ impl Response<Bytes> {
     }
 
     pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> anyhow::Error {
-        let grpc_status = match Status::from_header_map(&self.headers) {
-            Some(status) => status,
-            None => {
-                return EvaluationError::IOException(
-                    "Error while parsing upstream headers".to_owned(),
-                )
-                .into()
-            }
-        };
+        let grpc_status =
+            match Status::from_header_map(&reqwest_header_to_tonic_header(&self.headers)) {
+                Some(status) => status,
+                None => {
+                    return EvaluationError::IOException(
+                        "Error while parsing upstream headers".to_owned(),
+                    )
+                    .into()
+                }
+            };
 
         let mut obj: IndexMap<Name, async_graphql::Value> = IndexMap::new();
         let mut status_details = Vec::new();
@@ -118,4 +121,16 @@ impl Response<Bytes> {
             headers: self.headers,
         })
     }
+}
+
+pub fn reqwest_header_to_tonic_header(
+    header: &reqwest::header::HeaderMap,
+) -> tonic::codegen::http::header::HeaderMap {
+    let mut metadata = tonic::codegen::http::header::HeaderMap::new();
+    for (key, value) in header.iter() {
+        let val = tonic::codegen::http::header::HeaderValue::from_bytes(value.as_bytes()).unwrap();
+        let name = tonic::codegen::http::header::HeaderName::from_str(key.as_str()).unwrap();
+        metadata.insert(name, val);
+    }
+    metadata
 }

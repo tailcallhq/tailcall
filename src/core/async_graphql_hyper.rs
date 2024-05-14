@@ -2,8 +2,10 @@ use std::any::Any;
 
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor, Value};
+use bytes::Bytes;
+use http_body_util::Full;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
-use hyper::{Body, Response, StatusCode};
+use hyper::{Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -110,7 +112,11 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+    fn build_response(
+        &self,
+        status: StatusCode,
+        body: Full<Bytes>,
+    ) -> Result<Response<Full<Bytes>>> {
         let mut response = Response::builder()
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
@@ -128,11 +134,11 @@ impl GraphQLResponse {
         Ok(response)
     }
 
-    fn default_body(&self) -> Result<Body> {
-        Ok(Body::from(serde_json::to_string(&self.0)?))
+    fn default_body(&self) -> Result<Full<Bytes>> {
+        Ok(Full::<Bytes>::from(serde_json::to_string(&self.0)?))
     }
 
-    pub fn into_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_response(self) -> Result<Response<Full<Bytes>>> {
         self.build_response(StatusCode::OK, self.default_body()?)
     }
 
@@ -146,7 +152,7 @@ impl GraphQLResponse {
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(self) -> Result<Response<Full<Bytes>>> {
         if !self.0.is_ok() {
             return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
         }
@@ -156,7 +162,7 @@ impl GraphQLResponse {
                 let item = Self::flatten_response(&res.data);
                 let data = serde_json::to_string(item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, Full::from(data))
             }
             BatchResponse::Batch(ref list) => {
                 let item = list
@@ -165,7 +171,7 @@ impl GraphQLResponse {
                     .collect::<Vec<&Value>>();
                 let data = serde_json::to_string(&item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, Full::from(data))
             }
         }
     }
@@ -207,6 +213,7 @@ impl GraphQLResponse {
 #[cfg(test)]
 mod tests {
     use async_graphql::{Name, Response, ServerError, Value};
+    use http_body_util::BodyExt;
     use hyper::StatusCode;
     use indexmap::IndexMap;
     use serde_json::json;
@@ -226,8 +233,13 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
+            rest_response
+                .into_body()
+                .frame()
                 .await
+                .unwrap()
+                .unwrap()
+                .into_data()
                 .unwrap()
                 .to_vec(),
             json!({ "name": name }).to_string().as_bytes().to_vec()
@@ -253,8 +265,13 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
+            rest_response
+                .into_body()
+                .frame()
                 .await
+                .unwrap()
+                .unwrap()
+                .into_data()
                 .unwrap()
                 .to_vec(),
             json!([
@@ -282,8 +299,13 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
+            rest_response
+                .into_body()
+                .frame()
                 .await
+                .unwrap()
+                .unwrap()
+                .into_data()
                 .unwrap()
                 .to_vec(),
             json!({
