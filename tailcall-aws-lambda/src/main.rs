@@ -4,9 +4,6 @@ use dotenvy::dotenv;
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;
-use tailcall_core::{
-    get_log_level, handle_request, AppContext, Blueprint, ConfigReader, GraphQLRequest,
-};
 
 mod http;
 mod runtime;

@@ -1,5 +1,3 @@
-use tailcall::{EnvIO, FileIO, HttpIO, Upstream};
-
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
@@ -13,7 +11,7 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript;
-    use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
+
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use crate::{EnvIO, FileIO, HttpIO, Upstream};

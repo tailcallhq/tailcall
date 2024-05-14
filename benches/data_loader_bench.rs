@@ -10,9 +10,6 @@ use async_trait::async_trait;
 use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall_core::{
-    Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime,
-};
 
 #[derive(Clone)]
 struct MockHttpClient {

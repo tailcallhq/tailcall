@@ -15,10 +15,6 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall_core::{
-    EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
-    ResolverContextLike, Response, Server, TargetRuntime, Upstream,
-};
 
 struct Http {
     client: ClientWithMiddleware,

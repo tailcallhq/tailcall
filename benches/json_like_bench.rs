@@ -1,6 +1,6 @@
 use criterion::{black_box, Criterion};
 use serde_json::json;
-use tailcall_core::JsonLike;
+
 
 pub fn benchmark_batched_body(c: &mut Criterion) {
     c.bench_function("test_batched_body", |b| {

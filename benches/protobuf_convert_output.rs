@@ -4,7 +4,6 @@ use anyhow::Result;
 use criterion::{black_box, Criterion};
 use rand::{thread_rng, Fill};
 use serde_json::{json, Value};
-use tailcall_core::{GrpcMethod, ProtobufSet};
 
 const PROTO_DIR: &str = "benches/grpc";
 const PROTO_FILE: &str = "dummy.proto";
