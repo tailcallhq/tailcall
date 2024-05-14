@@ -5314,6 +5314,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "tailcall",
  "tailcall-core",
  "tokio",
  "tracing",

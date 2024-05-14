@@ -11,7 +11,12 @@ use anyhow::anyhow;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::cli::javascript;
-use tailcall::{AppContext, Blueprint, ConfigModule, EnvIO, InMemoryCache, Source, TargetRuntime};
+use tailcall_core::core::blueprint::Blueprint;
+use tailcall_core::core::cache::InMemoryCache;
+use tailcall_core::core::config::{ConfigModule, Source};
+use tailcall_core::core::http::AppContext;
+use tailcall_core::core::runtime::TargetRuntime;
+use tailcall_core::core::EnvIO;
 
 use super::file::File;
 use super::http::Http;

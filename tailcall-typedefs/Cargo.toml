@@ -13,5 +13,6 @@ schemars = "0.8.17"
 serde = "1.0.200"
 serde_json = "1.0.116"
 tailcall-core = { path = "../tailcall-core" }
+tailcall = { path = ".." }
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"

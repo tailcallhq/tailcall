@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::rc::Rc;
 
-use tailcall_core::EnvIO;
+use tailcall_core::core::EnvIO;
 use worker::Env;
 
 pub struct CloudflareEnv {

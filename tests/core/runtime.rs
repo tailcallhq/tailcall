@@ -7,7 +7,10 @@ use std::sync::Arc;
 
 use derive_setters::Setters;
 use tailcall::cli::javascript;
-use tailcall::{InMemoryCache, Script, Source, TargetRuntime};
+use tailcall_core::core::blueprint::Script;
+use tailcall_core::core::cache::InMemoryCache;
+use tailcall_core::core::config::Source;
+use tailcall_core::core::runtime::TargetRuntime;
 
 use super::env::Env;
 use super::file::TestFileIO;

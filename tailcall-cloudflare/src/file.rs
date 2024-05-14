@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use anyhow::anyhow;
 use async_std::task::spawn_local;
-use tailcall_core::FileIO;
+use tailcall_core::core::FileIO;
 use worker::Env;
 
 use crate::to_anyhow;

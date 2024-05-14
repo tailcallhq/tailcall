@@ -3,7 +3,12 @@ mod tests {
     use async_graphql::Value;
     use pretty_assertions::assert_eq;
     use serde_json::json;
-    use tailcall_core::core::{blueprint::DynamicValue, lambda::Expression};
+    use tailcall_core::core::blueprint::{Blueprint, DynamicValue};
+    use tailcall_core::core::http::RequestContext;
+    use tailcall_core::core::lambda::{
+        EmptyResolverContext, Eval, EvaluationContext, EvaluationError, Expression,
+    };
+    use tailcall_core::core::mustache::Mustache;
 
     async fn eval(expr: &Expression) -> Result<Value, EvaluationError> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());

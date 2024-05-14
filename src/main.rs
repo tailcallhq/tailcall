@@ -5,7 +5,7 @@ use std::cell::Cell;
 
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
-use tailcall_core::default_tracing_tailcall;
+use tailcall_core::core::tracing::default_tracing_tailcall;
 use tracing::subscriber::DefaultGuard;
 
 #[global_allocator]
