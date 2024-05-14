@@ -3,10 +3,6 @@ name = "tailcall"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "tailcall"
-path = "src/main.rs"
-
 [workspace.dependencies]
 anyhow = "1.0.82"
 async-graphql = { version = "7.0.3" }
@@ -167,7 +163,7 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
-
+tailcall-main = {path = "tailcall-main"}
 [features]
 
 # Feature Flag to enable V8.
@@ -213,7 +209,8 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-hasher"]
+    "tailcall-hasher",
+    "tailcall-main"]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
