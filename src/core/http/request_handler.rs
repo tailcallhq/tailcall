@@ -320,7 +320,11 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
-    telemetry::propagate_context(&req);
+    let is_telemetry_enabled = app_ctx.blueprint.telemetry.export.is_some();
+    if is_telemetry_enabled {
+        telemetry::propagate_context(&req);
+    }
+
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 
     let response = if app_ctx.blueprint.server.cors.is_some() {
@@ -335,10 +339,14 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
     };
 
-    req_counter.update(&response);
+    if is_telemetry_enabled {
+        req_counter.update(&response);
+    }
     if let Ok(response) = &response {
         let status = get_response_status_code(response);
-        tracing::Span::current().set_attribute(status.key, status.value);
+        if is_telemetry_enabled {
+            tracing::Span::current().set_attribute(status.key, status.value);
+        }
     };
 
     response
