@@ -1,11 +1,10 @@
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
-use headers::HeaderMap;
 use hyper::body::Bytes;
 use indexmap::IndexMap;
 use prost::Message;
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
@@ -19,10 +18,22 @@ pub struct Response<Body> {
     pub body: Body,
 }
 
+static REQUIRED_HEADERS: [&str; 1] = ["cache-control"];
+
 impl Response<Bytes> {
     pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
         let status = resp.status();
-        let headers = resp.headers().to_owned();
+        let headers = resp
+            .headers()
+            .iter()
+            .filter_map(|(k, v)| {
+                if REQUIRED_HEADERS.contains(&k.as_str()) {
+                    Some((k.clone(), v.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
         let body = resp.bytes().await?;
         Ok(Response { status, headers, body })
     }
@@ -35,16 +46,16 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<'a, T: Deserialize<'a> + Default>(&'a self) -> Result<Response<T>> {
+    pub fn to_json<T: DeserializeOwned + Default>(self) -> Result<Response<T>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
-                headers: HeaderMap::default(),
+                headers: self.headers,
                 body: Default::default(),
             });
         }
         let body = serde_json::from_slice::<T>(&self.body)?;
-        Ok(Response { status: self.status, headers: HeaderMap::default(), body })
+        Ok(Response { status: self.status, headers: self.headers, body })
     }
 
     pub fn to_grpc_value(
