@@ -33,6 +33,7 @@ fn run_blocking() -> anyhow::Result<()> {
             TRACING_GUARD.take();
         })
         .enable_all()
+        .disable_lifo_slot()
         .build()?;
     rt.block_on(async { tailcall::cli::run().await })
 }

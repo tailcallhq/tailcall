@@ -14,6 +14,7 @@ run_cargo_fmt() {
 }
 
 run_cargo_clippy() {
+    export RUSTFLAGS="--cfg tokio_unstable"
     MODE=$1
     CMD="cargo clippy --all --all-targets --all-features"
     if [ "$MODE" == "fix" ]; then

@@ -31,7 +31,7 @@ jobs:
 
       - name: Run Tailcall
         run: |
-          TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/benchmark.graphql &
+          RUSTFLAGS="--cfg tokio_unstable" TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/benchmark.graphql &
 
       - name: Install Wrk
         run: |
