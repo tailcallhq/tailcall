@@ -34,8 +34,8 @@ pub async fn start_http_1(
         .map_err(CLIError::from)?
         .http1_only(true)
         .http1_keepalive(true)
-        .tcp_keepalive(Some(std::time::Duration::from_secs(60)))
-        .tcp_nodelay(true)
+        // .tcp_keepalive(Some(std::time::Duration::from_secs(60)))
+        // .tcp_nodelay(true)
         .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
     super::log_launch(sc.as_ref());
 
