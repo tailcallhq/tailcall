@@ -36,7 +36,7 @@ run_prettier() {
 
 run_autogen_schema() {
     MODE=$1
-    cargo run -p tailcall-autogen $MODE
+    cargo run -p tailcall-typedefs $MODE
     return $?
 }
 
