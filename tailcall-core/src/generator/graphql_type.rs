@@ -123,7 +123,6 @@ impl GraphQLType<Parsed> {
     }
 }
 
-// FIXME: make it private
 /// Used to convert proto type names to GraphQL formatted names.
 /// Enum to represent the type of the descriptor
 #[derive(Clone, Debug)]

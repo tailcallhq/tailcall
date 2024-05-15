@@ -210,8 +210,7 @@ members = [
     "tailcall-cloudflare",
     "tailcall-macros",
     "tailcall-prettier",
-    # FIXME: ensure query plan is added back
-    # "tailcall-query-plan", 
+    "tailcall-query-plan", 
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
