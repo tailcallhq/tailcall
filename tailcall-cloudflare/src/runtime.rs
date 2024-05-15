@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
-use tailcall_core::core::runtime::TargetRuntime;
-use tailcall_core::core::{EnvIO, FileIO, HttpIO};
+use tailcall_core::runtime::TargetRuntime;
+use tailcall_core::{EnvIO, FileIO, HttpIO};
 
 use crate::{cache, env, file, http};
 
@@ -22,7 +22,7 @@ fn init_http() -> Arc<dyn HttpIO> {
 
 fn init_cache(
     env: Rc<worker::Env>,
-) -> Arc<dyn tailcall_core::core::Cache<Key = u64, Value = ConstValue>> {
+) -> Arc<dyn tailcall_core::Cache<Key = u64, Value = ConstValue>> {
     Arc::new(cache::CloudflareChronoCache::init(env))
 }
 

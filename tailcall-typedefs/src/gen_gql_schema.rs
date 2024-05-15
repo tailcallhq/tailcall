@@ -8,8 +8,8 @@ use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
 use schemars::Map;
-use tailcall_core::core::config::Config;
-use tailcall_core::core::scalar::CUSTOM_SCALARS;
+use tailcall_core::config::Config;
+use tailcall_core::scalar::CUSTOM_SCALARS;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
 

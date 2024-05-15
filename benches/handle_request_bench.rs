@@ -3,11 +3,11 @@ use std::sync::Arc;
 use criterion::Criterion;
 use hyper::Request;
 use tailcall::cli::server::server_config::ServerConfig;
-use tailcall_core::core::async_graphql_hyper::GraphQLRequest;
-use tailcall_core::core::blueprint::Blueprint;
-use tailcall_core::core::config::{Config, ConfigModule};
-use tailcall_core::core::http::handle_request;
-use tailcall_core::core::valid::Validator;
+use tailcall_core::async_graphql_hyper::GraphQLRequest;
+use tailcall_core::blueprint::Blueprint;
+use tailcall_core::config::{Config, ConfigModule};
+use tailcall_core::http::handle_request;
+use tailcall_core::valid::Validator;
 
 static QUERY: &str = r#"{"query":"query{posts{title}}"}"#;
 

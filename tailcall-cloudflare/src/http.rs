@@ -2,8 +2,8 @@ use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
 use hyper::body::Bytes;
 use reqwest::Client;
-use tailcall_core::core::http::Response;
-use tailcall_core::core::HttpIO;
+use tailcall_core::http::Response;
+use tailcall_core::HttpIO;
 
 use crate::to_anyhow;
 

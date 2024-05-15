@@ -4,8 +4,8 @@ use std::sync::{Arc, RwLock};
 
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
-use tailcall_core::core::async_graphql_hyper::GraphQLRequest;
-use tailcall_core::core::http::{handle_request, showcase, AppContext};
+use tailcall_core::async_graphql_hyper::GraphQLRequest;
+use tailcall_core::http::{handle_request, showcase, AppContext};
 
 use crate::http::{to_request, to_response};
 use crate::runtime;

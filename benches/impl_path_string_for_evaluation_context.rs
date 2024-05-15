@@ -15,13 +15,13 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall_core::core::blueprint::{Server, Upstream};
-use tailcall_core::core::cache::InMemoryCache;
-use tailcall_core::core::http::{RequestContext, Response};
-use tailcall_core::core::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall_core::core::path::PathString;
-use tailcall_core::core::runtime::TargetRuntime;
-use tailcall_core::core::{EnvIO, FileIO, HttpIO};
+use tailcall_core::blueprint::{Server, Upstream};
+use tailcall_core::cache::InMemoryCache;
+use tailcall_core::http::{RequestContext, Response};
+use tailcall_core::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall_core::path::PathString;
+use tailcall_core::runtime::TargetRuntime;
+use tailcall_core::{EnvIO, FileIO, HttpIO};
 
 struct Http {
     client: ClientWithMiddleware,
@@ -231,7 +231,7 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-    let config_module = tailcall_core::core::config::ConfigModule::default();
+    let config_module = tailcall_core::config::ConfigModule::default();
 
     //TODO: default is used only in tests. Drop default and move it to test.
     let upstream = Upstream::try_from(&config_module).unwrap();

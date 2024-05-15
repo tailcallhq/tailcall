@@ -10,9 +10,9 @@ use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
 use tailcall::cli;
-use tailcall_core::core::config::Config;
-use tailcall_core::core::scalar::CUSTOM_SCALARS;
-use tailcall_core::core::tracing::default_tracing_for_name;
+use tailcall_core::config::Config;
+use tailcall_core::scalar::CUSTOM_SCALARS;
+use tailcall_core::tracing::default_tracing_for_name;
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
