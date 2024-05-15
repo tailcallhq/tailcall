@@ -6,9 +6,8 @@ use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use super::graphql_type::Unparsed;
+use super::graphql_type::{GraphQLType, Unparsed};
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Type};
-use crate::core::generator::GraphQLType;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
