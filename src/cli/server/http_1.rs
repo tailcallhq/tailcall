@@ -50,7 +50,6 @@ async fn start<T: DeserializeOwned + GraphQLRequestLike + Send>(
         tokio::task::spawn(async move {
             if let Err(err) = hyper::server::conn::http1::Builder::new()
                 .timer(TokioTimer::new())
-                .pipeline_flush(true)
                 .serve_connection(
                     io,
                     service_fn(move |req: Request<Incoming>| {
