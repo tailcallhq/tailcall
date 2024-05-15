@@ -1,5 +1,5 @@
 use std::collections::BTreeSet;
-use std::ops::Deref; 
+use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
@@ -91,7 +91,11 @@ pub fn update_response_headers(
     req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
-    set_headers(resp.headers_mut(), &app_ctx.blueprint.server.response_headers, req_ctx.cookie_headers.as_ref());
+    set_headers(
+        resp.headers_mut(),
+        &app_ctx.blueprint.server.response_headers,
+        req_ctx.cookie_headers.as_ref(),
+    );
     req_ctx.extend_x_headers(resp.headers_mut());
 }
 
