@@ -46,6 +46,9 @@ impl Expression {
                         Expression::Path(expr.modify_box(modifier), path)
                     }
                     Expression::Protect(expr) => Expression::Protect(expr.modify_box(modifier)),
+                    Expression::ScalarValidation(expr) => {
+                        Expression::ScalarValidation(expr.modify_box(modifier))
+                    },
                 }
             }
         }

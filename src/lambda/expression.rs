@@ -22,6 +22,7 @@ pub enum Expression {
     Cache(Cache),
     Path(Box<Expression>, Vec<String>),
     Protect(Box<Expression>),
+    ScalarValidation(Box<Expression>),
 }
 
 impl Display for Expression {
@@ -33,6 +34,7 @@ impl Display for Expression {
             Expression::Cache(_) => write!(f, "Cache"),
             Expression::Path(_, _) => write!(f, "Input"),
             Expression::Protect(expr) => write!(f, "Protected({expr})"),
+            Expression::ScalarValidation(expr) => write!(f, "ScalarValidation({expr})"),
         }
     }
 }
@@ -75,6 +77,9 @@ pub enum EvaluationError {
 
     #[error("Authentication Failure: {0}")]
     AuthError(auth::error::Error),
+
+    #[error("Custom Scalar validation failed: {0}")]
+    ScalarValidationError(String),
 }
 
 // TODO: remove conversion from anyhow and don't use anyhow to pass errors
@@ -181,6 +186,14 @@ impl Eval for Expression {
                 }
                 Expression::Dynamic(value) => Ok(value.render_value(&ctx)),
                 Expression::Protect(expr) => {
+                    ctx.request_ctx
+                        .auth_ctx
+                        .validate(ctx.request_ctx)
+                        .await
+                        .to_result()?;
+                    expr.eval(ctx).await
+                }
+                Expression::ScalarValidation(expr) => {
                     ctx.request_ctx
                         .auth_ctx
                         .validate(ctx.request_ctx)
