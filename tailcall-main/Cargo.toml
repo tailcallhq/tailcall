@@ -139,8 +139,6 @@ rand = "0.8.5"
 tailcall-macros = { path = "../tailcall-macros" }
 tailcall-tracker = { path = "../tailcall-tracker", optional = true }
 tonic-types = "0.11.0"
-datatest-stable = "0.2.9"
-tokio-test = "0.4.4"
 base64 = "0.22.1"
 tailcall-hasher = { path = "../tailcall-hasher" }
 
