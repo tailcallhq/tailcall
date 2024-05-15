@@ -14,7 +14,7 @@ use hyper::Request;
 use serde::{Deserialize, Serialize};
 use tailcall::{
     handle_request, print_schema, AppContext, Blueprint, Cause, Config, ConfigModule, ConfigReader,
-    GraphQLBatchRequest, GraphQLRequest, MergeRight, Source, ValidationError,
+    GraphQLBatchRequest, GraphQLRequest, MergeRight, RequestBody, Source, ValidationError,
 };
 
 use super::file::File;
@@ -301,7 +301,7 @@ async fn run_test(
     let body = request
         .body
         .as_ref()
-        .map(|body| Full::from(body.to_bytes()))
+        .map(|body| RequestBody::Full(Full::from(body.to_bytes())))
         .unwrap_or_default();
 
     let method = request.method.clone();

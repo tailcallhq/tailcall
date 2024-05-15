@@ -3,7 +3,7 @@ use async_std::task::spawn_local;
 use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
 use reqwest::Client;
-use tailcall::{HttpIO, Response};
+use tailcall::{HttpIO, RequestBody, Response};
 
 use crate::to_anyhow;
 
@@ -88,7 +88,7 @@ pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
     }
 }
 
-pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<Full<Bytes>>> {
+pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<RequestBody>> {
     let body = req.text().await.map_err(to_anyhow)?;
     let method = req.method();
     let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
@@ -99,5 +99,5 @@ pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<Full<
     for (k, v) in headers {
         builder = builder.header(k, v);
     }
-    Ok(builder.body(Full::from(body))?)
+    Ok(builder.body(RequestBody::Full(Full::from(body)))?)
 }

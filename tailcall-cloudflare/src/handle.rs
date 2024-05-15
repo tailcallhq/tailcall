@@ -6,7 +6,7 @@ use http_body_util::Full;
 use hyper::body::Bytes;
 use hyper::{Request, Response};
 use lazy_static::lazy_static;
-use tailcall::{handle_request, showcase, AppContext, GraphQLRequest};
+use tailcall::{handle_request, showcase, AppContext, GraphQLRequest, RequestBody};
 
 use crate::http::{to_request, to_response};
 use crate::runtime;
@@ -42,7 +42,7 @@ pub async fn fetch(
 /// for future requests.
 async fn get_app_ctx(
     env: Rc<worker::Env>,
-    req: &Request<Full<Bytes>>,
+    req: &Request<RequestBody>,
 ) -> anyhow::Result<Result<Arc<AppContext>, Response<Full<Bytes>>>> {
     // Read context from cache
     let file_path = req

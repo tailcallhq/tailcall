@@ -12,7 +12,7 @@ use opentelemetry_semantic_conventions::trace::{
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::core::blueprint::telemetry::Telemetry;
-use crate::core::http::reqwest_header_to_tonic_header;
+use crate::core::http::{reqwest_header_to_tonic_header, RequestBody};
 
 static HTTP_SERVER_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -29,7 +29,7 @@ pub struct RequestCounter {
 }
 
 impl RequestCounter {
-    pub fn new(telemetry: &Telemetry, req: &Request<Full<Bytes>>) -> Self {
+    pub fn new(telemetry: &Telemetry, req: &Request<RequestBody>) -> Self {
         if telemetry.export.is_none() {
             return Self::default();
         }
@@ -73,7 +73,7 @@ pub fn get_response_status_code(response: &Response<Full<Bytes>>) -> KeyValue {
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, response.status().as_u16() as i64)
 }
 
-pub fn propagate_context(req: &Request<Full<Bytes>>) {
+pub fn propagate_context(req: &Request<RequestBody>) {
     let context = opentelemetry::global::get_text_map_propagator(|propagator| {
         let headers = reqwest_header_to_tonic_header(req.headers());
         propagator.extract(&HeaderExtractor(&headers))

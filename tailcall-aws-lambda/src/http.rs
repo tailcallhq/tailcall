@@ -5,7 +5,7 @@ use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
-use tailcall::{HttpIO, Response};
+use tailcall::{HttpIO, RequestBody, Response};
 
 #[derive(Clone)]
 pub struct LambdaHttp {
@@ -40,7 +40,7 @@ impl HttpIO for LambdaHttp {
     }
 }
 
-pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<Full<Bytes>>> {
+pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<RequestBody>> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let method: hyper::Method = match req.method().to_owned() {
         lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
@@ -71,7 +71,9 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<Fu
     Ok(hyper::Request::builder()
         .method(method)
         .uri(url)
-        .body(Full::new(Bytes::from(req.body().to_vec())))?)
+        .body(RequestBody::Full(Full::new(Bytes::from(
+            req.body().to_vec(),
+        ))))?)
 }
 
 pub async fn to_response(

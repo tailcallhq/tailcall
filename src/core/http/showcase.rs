@@ -12,11 +12,12 @@ use super::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::http::request_handler::RequestBody;
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
-    req: &Request<Full<Bytes>>,
+    req: &Request<RequestBody>,
     runtime: TargetRuntime,
     enable_fs: bool,
 ) -> Result<Result<AppContext, Response<Full<Bytes>>>> {
@@ -74,22 +75,23 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 mod tests {
     use std::sync::Arc;
 
+    use bytes::Bytes;
     use http_body_util::Full;
     use hyper::Request;
     use serde_json::json;
 
     use crate::core::async_graphql_hyper::GraphQLRequest;
-    use crate::core::http::handle_request;
     use crate::core::http::showcase::create_app_ctx;
+    use crate::core::http::{handle_request, RequestBody};
 
     #[tokio::test]
     async fn works_with_file() {
         let req = Request::builder()
             .method("POST")
             .uri("http://upstream/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
-            .body(Full::from(json!({
+            .body(RequestBody::Full(Full::from(Bytes::from(json!({
                 "query": "query { user { name } }"
-            }).to_string()))
+            }).to_string()))))
             .unwrap();
 
         let runtime = crate::core::runtime::test::init(None);
@@ -101,12 +103,12 @@ mod tests {
         let req = Request::builder()
             .method("POST")
             .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
-            .body(Full::from(
+            .body(RequestBody::Full(Full::from(Bytes::from(
                 json!({
                     "query": "query { user { name } }"
                 })
                 .to_string(),
-            ))
+            ))))
             .unwrap();
 
         let res = handle_request::<GraphQLRequest>(req, Arc::new(app))

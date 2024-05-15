@@ -1,11 +1,14 @@
 use std::collections::BTreeSet;
 use std::ops::Deref;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::Poll;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_graphql::ServerError;
 use bytes::Bytes;
 use http_body_util::{BodyExt, Full};
+use hyper::body::{Body, Frame, Incoming};
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{HeaderMap, Request, Response, StatusCode};
@@ -24,6 +27,32 @@ use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
 
 pub const API_URL_PREFIX: &str = "/api";
+
+pub enum RequestBody {
+    Full(Full<Bytes>),
+    Incoming(Incoming),
+}
+
+impl Body for RequestBody {
+    type Data = Bytes;
+    type Error = anyhow::Error;
+
+    fn poll_frame(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> Poll<Option<std::result::Result<Frame<Self::Data>, Self::Error>>> {
+        match self.get_mut() {
+            RequestBody::Full(body) => Pin::new(body).poll_frame(cx).map_err(|e| e.into()),
+            RequestBody::Incoming(body) => Pin::new(body).poll_frame(cx).map_err(|e| e.into()),
+        }
+    }
+}
+
+impl Default for RequestBody {
+    fn default() -> Self {
+        RequestBody::Full(Full::default())
+    }
+}
 
 fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Full<Bytes>>> {
     let metric_families = prometheus::default_registry().gather();
@@ -53,7 +82,7 @@ fn not_found() -> Result<Response<Full<Bytes>>> {
         .body(Full::from(Bytes::new()))?)
 }
 
-fn create_request_context(req: &Request<Full<Bytes>>, app_ctx: &AppContext) -> RequestContext {
+fn create_request_context(req: &Request<RequestBody>, app_ctx: &AppContext) -> RequestContext {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
     let allowed_headers = create_allowed_headers(req.headers(), &allowed);
@@ -98,20 +127,13 @@ pub fn update_response_headers(
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Full<Bytes>>,
+    req: Request<RequestBody>,
     app_ctx: &AppContext,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Full<Bytes>>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let bytes = req
-        .into_body()
-        .frame()
-        .await
-        .context("Failed to read request body")??
-        .into_data()
-        .map_err(|e| anyhow::anyhow!("{e:?}"))?
-        .to_vec();
+    let bytes = req.into_body().collect().await?.to_bytes();
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(request) => {
@@ -152,7 +174,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 }
 
 async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Full<Bytes>>,
+    req: Request<RequestBody>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Full<Bytes>>> {
@@ -184,7 +206,7 @@ async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Full<Bytes>>,
+    req: Request<RequestBody>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Full<Bytes>>> {
@@ -237,7 +259,7 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 async fn handle_rest_apis(
-    mut request: Request<Full<Bytes>>,
+    mut request: Request<RequestBody>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Full<Bytes>>> {
@@ -272,7 +294,7 @@ async fn handle_rest_apis(
 }
 
 async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Full<Bytes>>,
+    req: Request<RequestBody>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Full<Bytes>>> {
@@ -326,7 +348,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     )
 )]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Full<Bytes>>,
+    req: Request<RequestBody>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Full<Bytes>>> {
     let is_telemetry_enabled = app_ctx.blueprint.telemetry.export.is_some();
@@ -342,9 +364,13 @@ pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
         if origin == TAILCALL_HTTPS_ORIGIN || origin == TAILCALL_HTTP_ORIGIN {
             handle_origin_tailcall::<T>(req, app_ctx, &mut req_counter).await
         } else {
+            let (parts, body) = req.into_parts();
+            let req = Request::from_parts(parts, body);
             handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
         }
     } else {
+        let (parts, body) = req.into_parts();
+        let req = Request::from_parts(parts, body);
         handle_request_inner::<T>(req, app_ctx, &mut req_counter).await
     };
 

@@ -1,7 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 use std::sync::Arc;
 
-use http_body_util::{BodyExt, Full};
 use hyper::body::Incoming;
 use hyper::service::service_fn;
 use hyper::Request;
@@ -15,7 +14,7 @@ use super::server_config::ServerConfig;
 use crate::cli::server::log_launch;
 use crate::cli::CLIError;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
-use crate::core::http::handle_request;
+use crate::core::http::{handle_request, RequestBody};
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
@@ -76,10 +75,11 @@ async fn start<T: DeserializeOwned + GraphQLRequestLike + Send>(
                                         service_fn(move |req: Request<Incoming>| {
                                             let app_ctx = app_ctx.clone();
                                             async move {
-                                                let (part, body) = req.into_parts();
-                                                let body = body.collect().await?.to_bytes();
-                                                let req =
-                                                    Request::from_parts(part, Full::new(body));
+                                                let (parts, body) = req.into_parts();
+                                                let req = Request::from_parts(
+                                                    parts,
+                                                    RequestBody::Incoming(body),
+                                                );
                                                 handle_request::<T>(req, app_ctx).await
                                             }
                                         }),

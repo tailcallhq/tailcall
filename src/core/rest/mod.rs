@@ -8,8 +8,8 @@ mod query_params;
 mod type_map;
 mod typed_variables;
 
-use bytes::Bytes;
 pub use endpoint_set::{Checked, EndpointSet, Unchecked};
-use http_body_util::Full;
 
-type Request = hyper::Request<Full<Bytes>>;
+use crate::core::http::RequestBody;
+
+type Request = hyper::Request<RequestBody>;

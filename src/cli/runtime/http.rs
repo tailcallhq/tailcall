@@ -86,6 +86,12 @@ impl Default for NativeHttp {
 impl NativeHttp {
     pub fn init(upstream: &Upstream, telemetry: &Telemetry) -> Self {
         let mut builder = Client::builder()
+            // .use_rustls_tls()
+            .no_gzip()
+            // .no_brotli()
+            // .no_zstd()
+            // .no_deflate()
+            .tcp_nodelay(true)
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
             .connect_timeout(Duration::from_secs(upstream.connect_timeout))

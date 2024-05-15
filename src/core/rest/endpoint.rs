@@ -290,15 +290,16 @@ mod tests {
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
 
+        use crate::core::http::RequestBody;
         use crate::core::rest::endpoint::tests::TEST_QUERY;
         use crate::core::rest::endpoint::Endpoint;
 
-        fn test_request(method: Method, uri: &str) -> anyhow::Result<hyper::Request<Full<Bytes>>> {
+        fn test_request(method: Method, uri: &str) -> anyhow::Result<hyper::Request<RequestBody>> {
             Ok(Request::builder()
                 .method(method)
                 .uri(Uri::from_str(uri)?)
                 .version(Version::HTTP_11)
-                .body(Full::default())?)
+                .body(RequestBody::Full(Full::from(Bytes::default())))?)
         }
 
         fn test_matches(query: &str, method: Method, uri: &str) -> Option<Variables> {

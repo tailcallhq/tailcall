@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use http_body_util::{BodyExt, Full};
 use hyper::body::Incoming;
 use hyper::service::service_fn;
 use hyper::Request;
@@ -12,7 +11,7 @@ use super::server_config::ServerConfig;
 use crate::cli::server::log_launch;
 use crate::cli::CLIError;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
-use crate::core::http::handle_request;
+use crate::core::http::{handle_request, RequestBody};
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
@@ -51,14 +50,14 @@ async fn start<T: DeserializeOwned + GraphQLRequestLike + Send>(
         tokio::task::spawn(async move {
             if let Err(err) = hyper::server::conn::http1::Builder::new()
                 .timer(TokioTimer::new())
+                .pipeline_flush(true)
                 .serve_connection(
                     io,
                     service_fn(move |req: Request<Incoming>| {
                         let state = sc.clone();
                         async move {
-                            let (part, body) = req.into_parts();
-                            let body = body.collect().await?.to_bytes();
-                            let req = Request::from_parts(part, Full::new(body));
+                            let (parts, body) = req.into_parts();
+                            let req = Request::from_parts(parts, RequestBody::Incoming(body));
                             handle_request::<T>(req, state.app_ctx.clone()).await
                         }
                     }),
