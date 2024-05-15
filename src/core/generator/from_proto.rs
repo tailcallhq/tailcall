@@ -5,9 +5,8 @@ use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use crate::core::blueprint::GrpcMethod;
+use super::graphql_type::GraphQLType;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
-use crate::core::generator::GraphQLType;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -132,11 +131,7 @@ impl Context {
             return self;
         }
 
-        let package = self.package.clone();
-        let mut grpc_method = GrpcMethod { package, service: "".to_string(), name: "".to_string() };
-
         for service in services {
-            let service_name = service.name().to_string();
             for method in &service.method {
                 let field_name = GraphQLType::new(method.name())
                     .package(&self.package)
@@ -177,9 +172,6 @@ impl Context {
                     .to_string();
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
-
-                grpc_method.service.clone_from(&service_name);
-                grpc_method.name = field_name.to_string();
 
                 cfg_field.grpc = Some(Grpc {
                     base_url: None,

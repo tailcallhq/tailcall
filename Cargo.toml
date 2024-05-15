@@ -154,6 +154,7 @@ tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
+tailcall-hasher = { path = "tailcall-hasher" }
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
@@ -204,7 +205,7 @@ default = ["cli", "js"]
 [workspace]
 members = [
     ".",
-    "tailcall-autogen",
+    "tailcall-typedefs",
     "tailcall-aws-lambda",
     "tailcall-cloudflare",
     "tailcall-macros",
@@ -213,7 +214,8 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-http-cache"
+    "tailcall-hasher",
+    "tailcall-http-cache",
 ]
 
 # Boost execution_spec snapshot diffing performance
@@ -225,7 +227,7 @@ similar.opt-level = 3
 opt-level = 3
 codegen-units = 1
 panic = 'abort'
-lto = 'thin'
+lto = 'fat'
 debug = false
 incremental = false
 overflow-checks = false
