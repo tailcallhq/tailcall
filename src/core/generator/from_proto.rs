@@ -261,8 +261,7 @@ mod test {
     use tailcall_fixtures::protobuf;
 
     use super::*;
-    use crate::core::config::Resolution;
-    use crate::ConfigModule;
+    use crate::core::config::{ConfigModule, Resolution};
 
     fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet> {
         Ok(protox::compile(files, [protobuf::SELF])?)
