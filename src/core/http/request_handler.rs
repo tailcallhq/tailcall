@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
+use std::ops::Deref; 
 use std::sync::{Arc, Mutex};
-use std::ops::Deref;
 
 use anyhow::Result;
 use async_graphql::ServerError;
