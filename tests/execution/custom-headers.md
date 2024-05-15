@@ -1,6 +1,6 @@
 # Custom Headers
 
-```json @server
+```json @config
 {
   "server": {
     "headers": {

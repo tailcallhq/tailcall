@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-grpc-group-by
@@ -40,7 +40,7 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000)
   @upstream(httpCache: true, batch: {delay: 10})

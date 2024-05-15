@@ -1,6 +1,6 @@
 # Simple query
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

@@ -9,7 +9,7 @@ query ($id: Int!) @rest(method: POST, path: "/user/$id") {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
   @server
   @upstream(baseURL: "http://jsonplaceholder.typicode.com")

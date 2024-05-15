@@ -1,6 +1,6 @@
 # Batching group by
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {

@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # Js Hello World
@@ -12,7 +12,7 @@ function onRequest(request) {}
 function onRequest(request) {}
 ```
 
-```graphql @server
+```graphql @config
 schema @server @link(type: Script, src: "test1.js") @link(type: Script, src: "test2.js") {
   query: Query
 }
