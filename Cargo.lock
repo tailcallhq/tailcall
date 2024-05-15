@@ -5280,7 +5280,6 @@ dependencies = [
  "http-cache",
  "http-cache-reqwest",
  "http-cache-semantics",
- "moka",
  "reqwest",
  "serde",
  "tokio",

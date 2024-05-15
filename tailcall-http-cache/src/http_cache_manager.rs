@@ -1,6 +1,5 @@
-use http_cache_reqwest::{CacheManager, HttpResponse};
+use http_cache_reqwest::{CacheManager, HttpResponse, MokaCache};
 use http_cache_semantics::CachePolicy;
-use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, BoxError>;
@@ -8,12 +7,12 @@ pub type Result<T> = std::result::Result<T, BoxError>;
 use std::sync::Arc;
 
 pub struct HttpCacheManager {
-    pub cache: Arc<Cache<String, Store>>,
+    pub cache: Arc<MokaCache<String, Store>>,
 }
 
 impl Default for HttpCacheManager {
     fn default() -> Self {
-        Self::new(Cache::new(42))
+        Self::new(MokaCache::new(42))
     }
 }
 
@@ -24,7 +23,7 @@ pub struct Store {
 }
 
 impl HttpCacheManager {
-    pub fn new(cache: Cache<String, Store>) -> Self {
+    pub fn new(cache: MokaCache<String, Store>) -> Self {
         Self { cache: Arc::new(cache) }
     }
 
