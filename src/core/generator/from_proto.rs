@@ -261,6 +261,8 @@ mod test {
     use tailcall_fixtures::protobuf;
 
     use super::*;
+    use crate::core::config::Resolution;
+    use crate::ConfigModule;
 
     fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet> {
         Ok(protox::compile(files, [protobuf::SELF])?)
@@ -338,6 +340,20 @@ mod test {
         let set = compile_protobuf(&[protobuf::PERSON])?;
         let config = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
+        Ok(())
+    }
+
+    #[test]
+    fn test_movies() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::MOVIES])?;
+        let config = from_proto(&[set], "Query")?;
+        let config_module = ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
+            input: format!("{}Input", v),
+            output: v.to_owned(),
+        });
+        let config = config_module.to_sdl();
+        insta::assert_snapshot!(config);
+
         Ok(())
     }
 

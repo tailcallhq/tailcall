@@ -226,7 +226,7 @@ mod tests {
     use crate::core::generator::Source;
 
     fn build_qry(mut config: Config) -> Config {
-        let mut type1 = Type::default();
+        let mut query = Type::default();
         let mut field1 =
             crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() };
 
@@ -236,20 +236,15 @@ mod tests {
 
         let arg2 = crate::core::config::Arg { type_of: "Type2".to_string(), ..Default::default() };
 
-        let _field3 =
-            crate::core::config::Field { type_of: "Type3".to_string(), ..Default::default() };
-        let arg3 = crate::core::config::Arg { type_of: "Type3".to_string(), ..Default::default() };
-
         field1.args.insert("arg2".to_string(), arg2);
-        field1.args.insert("arg3".to_string(), arg3);
 
         let mut field2 = field1.clone();
         field2.type_of = "Type2".to_string();
 
-        type1.fields.insert("field1".to_string(), field1);
-        type1.fields.insert("field2".to_string(), field2);
+        query.fields.insert("field1".to_string(), field1);
+        query.fields.insert("field2".to_string(), field2);
 
-        config.types.insert("Query".to_string(), type1);
+        config.types.insert("Query".to_string(), query);
         config = config.query("Query");
 
         config
@@ -272,10 +267,6 @@ mod tests {
         type2.fields.insert(
             "ty1".to_string(),
             crate::core::config::Field::default().type_of("Type1".to_string()),
-        );
-        type2.fields.insert(
-            "ty3".to_string(),
-            crate::core::config::Field::default().type_of("Type3".to_string()),
         );
 
         type3.fields.insert(
@@ -315,9 +306,9 @@ mod tests {
             "Query",
             "Type1Input",
             "Type1Output",
-            "Type2Output",
             "Type2Input",
-            "Type3",
+            "Type2Output",
+            "Type3"
         ];
 
         assert_eq!(actual, expected);

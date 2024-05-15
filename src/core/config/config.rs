@@ -697,7 +697,7 @@ impl Config {
         if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
-                if !types.contains(&field.type_of) {
+                if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
                     types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
                 }
@@ -727,25 +727,16 @@ impl Config {
             })
     }
 
-    /// Returns a list of all the types that are not used as inputs
+    /// Returns a list of all the types that are used as output types
     pub fn output_types(&self) -> HashSet<String> {
         let mut types = HashSet::new();
-        let input_types = self.input_types();
 
         if let Some(ref query) = &self.schema.query {
-            types.insert(query.clone());
+            types = self.find_connections(query, types);
         }
 
         if let Some(ref mutation) = &self.schema.mutation {
-            types.insert(mutation.clone());
-        }
-
-        for (type_name, type_of) in self.types.iter() {
-            if !input_types.contains(type_name) {
-                for field in type_of.fields.values() {
-                    types.insert(field.type_of.clone());
-                }
-            }
+            types = self.find_connections(mutation, types);
         }
 
         types
