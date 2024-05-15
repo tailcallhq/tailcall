@@ -1,10 +1,10 @@
 use std::collections::BTreeSet;
+use std::sync::{Arc, Mutex};
 use std::ops::Deref;
-use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::header::{self, HeaderValue, CONTENT_TYPE};
+use hyper::header::{self, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
@@ -73,24 +73,25 @@ fn update_cache_control_header(
     response
 }
 
+fn set_headers(
+    headers: &mut HeaderMap,
+    additional_headers: &HeaderMap,
+    cookie_headers: Option<&Arc<Mutex<HeaderMap>>>,
+) {
+    headers.extend(additional_headers.clone());
+
+    if let Some(cookie_headers) = cookie_headers {
+        let cookie_headers = cookie_headers.lock().unwrap();
+        headers.extend(cookie_headers.deref().clone());
+    }
+}
+
 pub fn update_response_headers(
     resp: &mut hyper::Response<hyper::Body>,
     req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
-    if !app_ctx.blueprint.server.response_headers.is_empty() {
-        // Add static response headers
-        resp.headers_mut()
-            .extend(app_ctx.blueprint.server.response_headers.clone());
-    }
-
-    // Insert Cookie Headers
-    if let Some(ref cookie_headers) = req_ctx.cookie_headers {
-        let cookie_headers = cookie_headers.lock().unwrap();
-        resp.headers_mut().extend(cookie_headers.deref().clone());
-    }
-
-    // Insert Experimental Headers
+    set_headers(resp.headers_mut(), &app_ctx.blueprint.server.response_headers, req_ctx.cookie_headers.as_ref());
     req_ctx.extend_x_headers(resp.headers_mut());
 }
 
@@ -150,26 +151,11 @@ async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
     let method = req.method();
     if method == Method::OPTIONS {
         let mut res = Response::new(Body::default());
-        res.headers_mut().insert(
-            header::ACCESS_CONTROL_ALLOW_ORIGIN,
-            HeaderValue::from_static("https://tailcall.run"),
-        );
-        res.headers_mut().insert(
-            header::ACCESS_CONTROL_ALLOW_METHODS,
-            HeaderValue::from_static("GET, POST, OPTIONS"),
-        );
-        res.headers_mut().insert(
-            header::ACCESS_CONTROL_ALLOW_HEADERS,
-            HeaderValue::from_static("*"),
-        );
+        set_headers(res.headers_mut(), &HeaderMap::new(), None);
         Ok(res)
     } else {
         let mut res = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
-        res.headers_mut().insert(
-            header::ACCESS_CONTROL_ALLOW_ORIGIN,
-            HeaderValue::from_static("https://tailcall.run"),
-        );
-
+        set_headers(res.headers_mut(), &HeaderMap::new(), None);
         Ok(res)
     }
 }
@@ -179,25 +165,17 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
-    // Safe to call `.unwrap()` because this method will only be called when
-    // `cors` is `Some`
     let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
 
     let mut headers = HeaderMap::new();
-
-    // These headers are applied to both preflight and subsequent regular CORS
-    // requests: https://fetch.spec.whatwg.org/#http-responses
-
     headers.extend(cors.allow_origin_to_header(origin));
     headers.extend(cors.allow_credentials_to_header());
     headers.extend(cors.allow_private_network_to_header(&parts));
     headers.extend(cors.vary_to_header());
 
-    // Return results immediately upon preflight request
     if parts.method == Method::OPTIONS {
-        // These headers are applied only to preflight requests
         headers.extend(cors.allow_methods_to_header());
         headers.extend(cors.allow_headers_to_header());
         headers.extend(cors.max_age_to_header());
@@ -207,20 +185,15 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
 
         Ok(response)
     } else {
-        // This header is applied only to non-preflight requests
         headers.extend(cors.expose_headers_to_header());
 
         let req = Request::from_parts(parts, body);
         let mut response = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
 
         let response_headers = response.headers_mut();
-
-        // vary header can have multiple values, don't overwrite
-        // previously-set value(s).
         if let Some(vary) = headers.remove(header::VARY) {
             response_headers.append(header::VARY, vary);
         }
-        // extend will overwrite previous headers of remaining names
         response_headers.extend(headers.drain());
 
         Ok(response)
@@ -272,9 +245,6 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     }
 
     match *req.method() {
-        // NOTE:
-        // The first check for the route should be for `/graphql`
-        // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
             graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
