@@ -14,6 +14,7 @@ mod data_loader;
 
 mod cache;
 mod data_loader_request;
+pub mod filter;
 mod method;
 mod request_context;
 mod request_handler;

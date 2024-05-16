@@ -13,6 +13,7 @@ pub use super::cache::NoCache;
 pub use super::factory::CacheFactory;
 pub use super::loader::Loader;
 pub use super::storage::CacheStorage;
+use crate::core::http;
 
 /// Data loader.
 ///
@@ -104,17 +105,27 @@ where
     }
 
     /// Use this `DataLoader` load a data.
-    pub async fn load_one(&self, key: K) -> Result<Option<T::Value>, T::Error>
+    pub async fn load_one(
+        &self,
+        key: K,
+        http_filter: http::filter::HttpFilter,
+    ) -> Result<Option<T::Value>, T::Error>
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
         T: Loader<K>,
     {
-        let mut values = self.load_many(std::iter::once(key.clone())).await?;
+        let mut values = self
+            .load_many(std::iter::once(key.clone()), http_filter)
+            .await?;
         Ok(values.remove(&key))
     }
 
     /// Use this `DataLoader` to load some data.
-    pub async fn load_many<I>(&self, keys: I) -> Result<HashMap<K, T::Value>, T::Error>
+    pub async fn load_many<I>(
+        &self,
+        keys: I,
+        http_filter: http::filter::HttpFilter,
+    ) -> Result<HashMap<K, T::Value>, T::Error>
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
         I: IntoIterator<Item = K>,
@@ -175,7 +186,7 @@ where
             Action::ImmediateLoad(keys) => {
                 let inner = self.inner.clone();
                 let disable_cache = self.disable_cache.load(Ordering::SeqCst);
-                let task = async move { inner.do_load(disable_cache, keys).await };
+                let task = async move { inner.do_load(disable_cache, keys, http_filter).await };
 
                 #[cfg(not(target_arch = "wasm32"))]
                 tokio::spawn(Box::pin(task));
@@ -196,7 +207,7 @@ where
                     };
 
                     if !keys.0.is_empty() {
-                        inner.do_load(disable_cache, keys).await
+                        inner.do_load(disable_cache, keys, http_filter).await
                     }
                 };
                 #[cfg(not(target_arch = "wasm32"))]
@@ -324,14 +335,18 @@ where
     T: Loader<K>,
     C: CacheFactory<K, T::Value>,
 {
-    async fn do_load(&self, disable_cache: bool, (keys, senders): KeysAndSender<K, T>)
-    where
+    async fn do_load(
+        &self,
+        disable_cache: bool,
+        (keys, senders): KeysAndSender<K, T>,
+        http_filter: http::filter::HttpFilter,
+    ) where
         K: Send + Sync + Hash + Eq + Clone + 'static,
         T: Loader<K>,
     {
         let keys = keys.into_iter().collect::<Vec<_>>();
 
-        match self.loader.load(&keys).await {
+        match self.loader.load(&keys, http_filter).await {
             Ok(values) => {
                 // update cache
                 let mut requests = self.requests.lock().unwrap();
@@ -380,7 +395,11 @@ mod tests {
         type Value = i32;
         type Error = ();
 
-        async fn load(&self, keys: &[i32]) -> Result<HashMap<i32, Self::Value>, Self::Error> {
+        async fn load(
+            &self,
+            keys: &[i32],
+            _http_filter: http::filter::HttpFilter,
+        ) -> Result<HashMap<i32, Self::Value>, Self::Error> {
             assert!(keys.len() <= 10);
             Ok(keys.iter().copied().map(|k| (k, k)).collect())
         }
@@ -391,7 +410,11 @@ mod tests {
         type Value = i64;
         type Error = ();
 
-        async fn load(&self, keys: &[i64]) -> Result<HashMap<i64, Self::Value>, Self::Error> {
+        async fn load(
+            &self,
+            keys: &[i64],
+            _http_filter: http::filter::HttpFilter,
+        ) -> Result<HashMap<i64, Self::Value>, Self::Error> {
             assert!(keys.len() <= 10);
             Ok(keys.iter().copied().map(|k| (k, k)).collect())
         }
@@ -405,7 +428,11 @@ mod tests {
                 let loader = loader.clone();
                 move |n| {
                     let loader = loader.clone();
-                    async move { loader.load_one(n).await }
+                    async move {
+                        loader
+                            .load_one(n, http::filter::HttpFilter::default())
+                            .await
+                    }
                 }
             }))
             .await
@@ -422,7 +449,11 @@ mod tests {
                 let loader = loader.clone();
                 move |n| {
                     let loader = loader.clone();
-                    async move { loader.load_one(n).await }
+                    async move {
+                        loader
+                            .load_one(n, http::filter::HttpFilter::default())
+                            .await
+                    }
                 }
             }))
             .await
@@ -439,7 +470,7 @@ mod tests {
     async fn test_dataloader_load_empty() {
         let loader = DataLoader::new(MyLoader);
         assert!(loader
-            .load_many::<Vec<i32>>(vec![])
+            .load_many::<Vec<i32>>(vec![], http::filter::HttpFilter::default())
             .await
             .unwrap()
             .is_empty());
@@ -452,26 +483,38 @@ mod tests {
 
         // All from the cache
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
         );
 
         // Part from the cache
         assert_eq!(
-            loader.load_many(vec![1, 5, 6]).await.unwrap(),
+            loader
+                .load_many(vec![1, 5, 6], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 10), (5, 5), (6, 6)].into_iter().collect()
         );
 
         // All from the loader
         assert_eq!(
-            loader.load_many(vec![8, 9, 10]).await.unwrap(),
+            loader
+                .load_many(vec![8, 9, 10], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(8, 8), (9, 9), (10, 10)].into_iter().collect()
         );
 
         // Clear cache
         loader.clear();
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
         );
     }
@@ -483,26 +526,38 @@ mod tests {
 
         // All from the cache
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
         );
 
         // Part from the cache
         assert_eq!(
-            loader.load_many(vec![1, 5, 6]).await.unwrap(),
+            loader
+                .load_many(vec![1, 5, 6], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 10), (5, 5), (6, 6)].into_iter().collect()
         );
 
         // All from the loader
         assert_eq!(
-            loader.load_many(vec![8, 9, 10]).await.unwrap(),
+            loader
+                .load_many(vec![8, 9, 10], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(8, 8), (9, 9), (10, 10)].into_iter().collect()
         );
 
         // Clear cache
         loader.clear();
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
         );
     }
@@ -515,14 +570,20 @@ mod tests {
         // All from the loader
         loader.enable_all_cache(false);
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
         );
 
         // All from the cache
         loader.enable_all_cache(true);
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
         );
     }
@@ -535,14 +596,20 @@ mod tests {
         // All from the loader
         loader.enable_cache(false);
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
         );
 
         // All from the cache
         loader.enable_cache(true);
         assert_eq!(
-            loader.load_many(vec![1, 2, 3]).await.unwrap(),
+            loader
+                .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                .await
+                .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
         );
     }
@@ -556,7 +623,11 @@ mod tests {
             type Value = i32;
             type Error = ();
 
-            async fn load(&self, keys: &[i32]) -> Result<HashMap<i32, Self::Value>, Self::Error> {
+            async fn load(
+                &self,
+                keys: &[i32],
+                _http_filter: http::filter::HttpFilter,
+            ) -> Result<HashMap<i32, Self::Value>, Self::Error> {
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 Ok(keys.iter().copied().map(|k| (k, k)).collect())
             }
@@ -567,12 +638,18 @@ mod tests {
         let handle = tokio::spawn({
             let loader = loader.clone();
             async move {
-                loader.load_many(vec![1, 2, 3]).await.unwrap();
+                loader
+                    .load_many(vec![1, 2, 3], http::filter::HttpFilter::default())
+                    .await
+                    .unwrap();
             }
         });
 
         tokio::time::sleep(Duration::from_millis(500)).await;
         handle.abort();
-        loader.load_many(vec![4, 5, 6]).await.unwrap();
+        loader
+            .load_many(vec![4, 5, 6], http::filter::HttpFilter::default())
+            .await
+            .unwrap();
     }
 }

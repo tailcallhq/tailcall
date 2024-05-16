@@ -14,7 +14,7 @@ use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::request::create_grpc_request;
-use crate::core::http::Response;
+use crate::core::http::{self, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
@@ -106,6 +106,7 @@ impl Loader<DataLoaderRequest> for GrpcDataLoader {
     async fn load(
         &self,
         keys: &[DataLoaderRequest],
+        _http_filter: http::filter::HttpFilter,
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if let Some(group_by) = &self.group_by {
             self.load_with_group_by(group_by, keys)

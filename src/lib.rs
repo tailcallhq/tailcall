@@ -16,7 +16,7 @@ pub use core::generator::Generator;
 pub use core::grpc::protobuf::ProtobufSet;
 pub use core::has_headers::HasHeaders;
 pub use core::http::{
-    handle_request, showcase, AppContext, DataLoaderRequest, HttpDataLoader, Method,
+    filter, handle_request, showcase, AppContext, DataLoaderRequest, HttpDataLoader, Method,
     RequestContext, RequestTemplate, Response, API_URL_PREFIX,
 };
 pub use core::json::{gather_path_matches, JsonLike};

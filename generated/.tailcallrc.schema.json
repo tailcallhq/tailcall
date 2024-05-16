@@ -713,6 +713,13 @@
             }
           ]
         },
+        "onRequest": {
+          "description": "onRequest field in @http directive gives the ability to specify the request interception handler.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "output": {
           "description": "Schema of the output of the API call. It is automatically inferred in most cases.",
           "anyOf": [
@@ -1394,6 +1401,13 @@
           "description": "A boolean value that determines whether keep-alive messages should be sent while the connection is idle.",
           "type": [
             "boolean",
+            "null"
+          ]
+        },
+        "onRequest": {
+          "description": "onRequest field gives the ability to specify the global request interception handler.",
+          "type": [
+            "string",
             "null"
           ]
         },

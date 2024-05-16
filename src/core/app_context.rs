@@ -44,7 +44,7 @@ impl AppContext {
                     field.map_expr(|expr| {
                         expr.modify(|expr| match expr {
                             Expression::IO(io) => match io {
-                                IO::Http { req_template, group_by, .. } => {
+                                IO::Http { req_template, group_by, http_filter, .. } => {
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
@@ -56,6 +56,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId(http_data_loaders.len())),
+                                        http_filter: http_filter.clone(),
                                     }));
 
                                     http_data_loaders.push(data_loader);

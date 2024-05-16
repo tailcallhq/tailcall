@@ -4,7 +4,7 @@ use anyhow::Result;
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
-use tailcall::{HttpIO, Response};
+use tailcall::{filter, HttpIO, Response};
 
 #[derive(Clone)]
 pub struct LambdaHttp {
@@ -26,6 +26,24 @@ impl LambdaHttp {
 #[async_trait::async_trait]
 impl HttpIO for LambdaHttp {
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        let req_str = format!("{} {}", request.method(), request.url());
+        let response = self
+            .client
+            .execute(request)
+            .await?
+            .error_for_status()
+            .map_err(|err| err.without_url())?;
+        let res = Response::from_reqwest(response).await?;
+        tracing::info!("{} {}", req_str, res.status.as_u16());
+        Ok(res)
+    }
+
+    // just to statisfy trait
+    async fn execute_with(
+        &self,
+        request: reqwest::Request,
+        _http_filter: &'life0 filter::HttpFilter,
+    ) -> Result<Response<Bytes>> {
         let req_str = format!("{} {}", request.method(), request.url());
         let response = self
             .client

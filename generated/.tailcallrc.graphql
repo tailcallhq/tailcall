@@ -161,6 +161,11 @@ directive @http(
   """
   method: Method
   """
+  onRequest field in @http directive gives the ability to specify the request interception 
+  handler.
+  """
+  onRequest: String
+  """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
   output: Schema
@@ -381,6 +386,10 @@ directive @upstream(
   the connection is idle.
   """
   keepAliveWhileIdle: Boolean
+  """
+  onRequest field gives the ability to specify the global request interception handler.
+  """
+  onRequest: String
   """
   The time in seconds that the connection pool will wait before closing idle connections.
   """
@@ -645,6 +654,11 @@ input Http {
   `POST`, `PUT`, `DELETE` etc. @default `GET`.
   """
   method: Method
+  """
+  onRequest field in @http directive gives the ability to specify the request interception 
+  handler.
+  """
+  onRequest: String
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """

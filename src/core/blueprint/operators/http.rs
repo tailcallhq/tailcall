@@ -6,7 +6,7 @@ use crate::core::http::{Method, RequestTemplate};
 use crate::core::lambda::{Expression, IO};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
-use crate::core::{config, helpers};
+use crate::core::{config, helpers, http};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
@@ -59,14 +59,23 @@ pub fn compile_http(
             .into()
         })
         .map(|req_template| {
+            // marge http and upstream on_request
+            let on_request = http
+                .on_request
+                .clone()
+                .or(config_module.upstream.on_request.clone())
+                .or(Some("onRequest".to_string()));
+            let http_filter = http::filter::HttpFilter { on_request };
+
             if !http.group_by.is_empty() && http.method == Method::GET {
                 Expression::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.group_by.clone())),
                     dl_id: None,
+                    http_filter,
                 })
             } else {
-                Expression::IO(IO::Http { req_template, group_by: None, dl_id: None })
+                Expression::IO(IO::Http { req_template, group_by: None, dl_id: None, http_filter })
             }
         })
 }

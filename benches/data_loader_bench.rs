@@ -11,7 +11,8 @@ use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::{
-    Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response, TargetRuntime,
+    filter, Batch, DataLoaderRequest, EnvIO, FileIO, HttpDataLoader, HttpIO, Response,
+    TargetRuntime,
 };
 
 #[derive(Clone)]
@@ -23,6 +24,15 @@ struct MockHttpClient {
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
     async fn execute(&self, _req: Request) -> anyhow::Result<Response<Bytes>> {
+        Ok(Response::empty())
+    }
+
+    // just to satisfy trait
+    async fn execute_with(
+        &self,
+        _req: Request,
+        _http_filter: &'life0 filter::HttpFilter,
+    ) -> anyhow::Result<Response<Bytes>> {
         Ok(Response::empty())
     }
 }
@@ -98,8 +108,10 @@ pub fn benchmark_data_loader(c: &mut Criterion) {
                 let key1 = DataLoaderRequest::new(request1, headers_to_consider.clone());
                 let key2 = DataLoaderRequest::new(request2, headers_to_consider);
 
-                let futures1 = (0..100).map(|_| loader.load_one(key1.clone()));
-                let futures2 = (0..100).map(|_| loader.load_one(key2.clone()));
+                let futures1 =
+                    (0..100).map(|_| loader.load_one(key1.clone(), filter::HttpFilter::default()));
+                let futures2 =
+                    (0..100).map(|_| loader.load_one(key2.clone(), filter::HttpFilter::default()));
                 let _ = join_all(futures1.chain(futures2)).await;
                 assert_eq!(
                     client.request_count.load(Ordering::SeqCst),

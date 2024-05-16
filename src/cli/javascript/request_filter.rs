@@ -4,7 +4,7 @@ use hyper::body::Bytes;
 use rquickjs::FromJs;
 
 use super::{JsRequest, JsResponse};
-use crate::core::http::Response;
+use crate::core::http::{self, Response};
 use crate::core::{HttpIO, WorkerIO};
 
 #[derive(Debug)]
@@ -60,10 +60,19 @@ impl RequestFilter {
     }
 
     #[async_recursion::async_recursion]
-    async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+    async fn on_request(
+        &self,
+        mut request: reqwest::Request,
+        http_filter: http::filter::HttpFilter,
+    ) -> anyhow::Result<Response<Bytes>> {
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        let command = self.worker.call("onRequest".to_string(), event).await?;
+
+        let mut command = None;
+        if let Some(ref on_request) = http_filter.on_request {
+            command = self.worker.call(on_request.clone(), event).await?;
+        }
+
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {
@@ -78,7 +87,8 @@ impl RequestFilter {
                         request
                             .url_mut()
                             .set_path(js_response.headers()["location"].as_str());
-                        self.on_request(request).await
+                        self.on_request(request, http::filter::HttpFilter::default())
+                            .await
                     } else {
                         Ok(js_response.try_into()?)
                     }
@@ -91,11 +101,16 @@ impl RequestFilter {
 
 #[async_trait::async_trait]
 impl HttpIO for RequestFilter {
-    async fn execute(
+    async fn execute_with(
         &self,
         request: reqwest::Request,
+        http_filter: &'life0 http::filter::HttpFilter,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.on_request(request).await
+        if http_filter.on_request.is_some() {
+            self.on_request(request, http_filter.clone()).await
+        } else {
+            self.client.execute(request).await
+        }
     }
 }
 

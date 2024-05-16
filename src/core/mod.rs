@@ -51,10 +51,19 @@ pub trait EnvIO: Send + Sync + 'static {
 
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send + 'static {
+    async fn execute_with<'a>(
+        &'a self,
+        request: reqwest::Request,
+        http_filter: &'a http::filter::HttpFilter,
+    ) -> anyhow::Result<Response<hyper::body::Bytes>>;
+
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>>;
+    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
+        self.execute_with(request, &http::filter::HttpFilter::default())
+            .await
+    }
 }
 
 #[async_trait::async_trait]

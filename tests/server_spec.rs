@@ -13,7 +13,7 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript;
-    use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
+    use tailcall::{filter, InMemoryCache, Response, Script, TargetRuntime};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use crate::{EnvIO, FileIO, HttpIO, Upstream};
@@ -71,6 +71,21 @@ pub mod test {
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+            let response = self.client.execute(request).await;
+            Response::from_reqwest(
+                response?
+                    .error_for_status()
+                    .map_err(|err| err.without_url())?,
+            )
+            .await
+        }
+
+        // just to satisfy trait
+        async fn execute_with(
+            &self,
+            request: reqwest::Request,
+            _http_filter: &'life0 filter::HttpFilter,
+        ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?

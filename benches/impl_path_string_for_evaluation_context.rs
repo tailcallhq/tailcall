@@ -16,7 +16,7 @@ use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::{
-    EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
+    filter, EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
     ResolverContextLike, Response, Server, TargetRuntime, Upstream,
 };
 
@@ -67,6 +67,19 @@ impl Http {
 #[async_trait]
 impl HttpIO for Http {
     async fn execute(&self, mut request: Request) -> anyhow::Result<Response<Bytes>> {
+        if self.http2_only {
+            *request.version_mut() = reqwest::Version::HTTP_2;
+        }
+        let resp = self.client.execute(request).await?;
+        Response::from_reqwest(resp).await
+    }
+
+    // just to satisfy the trait
+    async fn execute_with(
+        &self,
+        mut request: Request,
+        _http_filter: &'life0 filter::HttpFilter,
+    ) -> anyhow::Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }

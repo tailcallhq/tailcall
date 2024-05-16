@@ -27,6 +27,7 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+        http_filter: http::filter::HttpFilter,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -72,16 +73,16 @@ impl IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                IO::Http { req_template, dl_id, .. } => {
+                IO::Http { req_template, dl_id, http_filter, .. } => {
                     let req = req_template.to_request(&ctx)?;
                     let is_get = req.method() == reqwest::Method::GET;
 
                     let res = if is_get && ctx.request_ctx.is_batching_enabled() {
                         let data_loader: Option<&DataLoader<DataLoaderRequest, HttpDataLoader>> =
                             dl_id.and_then(|index| ctx.request_ctx.http_data_loaders.get(index.0));
-                        execute_request_with_dl(&ctx, req, data_loader).await?
+                        execute_request_with_dl(&ctx, req, data_loader, http_filter.clone()).await?
                     } else {
-                        execute_raw_request(&ctx, req).await?
+                        execute_raw_request(&ctx, req, http_filter.clone()).await?
                     };
 
                     if ctx.request_ctx.server.get_enable_http_validation() {
@@ -105,9 +106,15 @@ impl IO {
                     {
                         let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                             dl_id.and_then(|index| ctx.request_ctx.gql_data_loaders.get(index.0));
-                        execute_request_with_dl(&ctx, req, data_loader).await?
+                        execute_request_with_dl(
+                            &ctx,
+                            req,
+                            data_loader,
+                            http::filter::HttpFilter::default(),
+                        )
+                        .await?
                     } else {
-                        execute_raw_request(&ctx, req).await?
+                        execute_raw_request(&ctx, req, http::filter::HttpFilter::default()).await?
                     };
 
                     set_headers(&ctx, &res);
@@ -187,12 +194,13 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
+    http_filter: http::filter::HttpFilter,
 ) -> Result<Response<async_graphql::Value>, EvaluationError> {
     let response = ctx
         .request_ctx
         .runtime
         .http
-        .execute(req)
+        .execute_with(req, &http_filter)
         .await
         .map_err(EvaluationError::from)?
         .to_json()?;
@@ -234,7 +242,7 @@ async fn execute_grpc_request_with_dl<
 
     Ok(data_loader
         .unwrap()
-        .load_one(endpoint_key)
+        .load_one(endpoint_key, http::filter::HttpFilter::default())
         .await
         .map_err(EvaluationError::from)?
         .unwrap_or_default())
@@ -248,6 +256,7 @@ async fn execute_request_with_dl<
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
+    http_filter: http::filter::HttpFilter,
 ) -> Result<Response<async_graphql::Value>, EvaluationError> {
     let headers = ctx
         .request_ctx
@@ -260,7 +269,7 @@ async fn execute_request_with_dl<
 
     Ok(data_loader
         .unwrap()
-        .load_one(endpoint_key)
+        .load_one(endpoint_key, http_filter)
         .await
         .map_err(EvaluationError::from)?
         .unwrap_or_default())
