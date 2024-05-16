@@ -10,6 +10,10 @@ scalar Empty
 
 scalar JSON
 
+type Mutation {
+  deleteNews(news: NewsId!): Empty!
+}
+
 type News {
   body: String
   id: Int
@@ -19,6 +23,10 @@ type News {
 
 type NewsData {
   news: [News]!
+}
+
+input NewsId {
+  id: Int
 }
 
 input NewsInput {
