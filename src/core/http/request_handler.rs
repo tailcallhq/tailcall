@@ -80,6 +80,7 @@ fn set_headers(
 ) {
     headers.extend(additional_headers.clone());
 
+    // Insert Cookie Headers
     if let Some(cookie_headers) = cookie_headers {
         let cookie_headers = cookie_headers.lock().unwrap();
         headers.extend(cookie_headers.deref().clone());
@@ -96,6 +97,7 @@ pub fn update_response_headers(
         &app_ctx.blueprint.server.response_headers,
         req_ctx.cookie_headers.as_ref(),
     );
+    // Insert Experimental Headers
     req_ctx.extend_x_headers(resp.headers_mut());
 }
 
@@ -169,16 +171,23 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
+    // Safe to call `.unwrap()` because this method will only be called when
+    // `cors` is `Some`
     let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
     let (parts, body) = req.into_parts();
     let origin = parts.headers.get(&header::ORIGIN);
 
     let mut headers = HeaderMap::new();
+
+    // These headers are applied to both preflight and subsequent regular CORS
+    // requests: https://fetch.spec.whatwg.org/#http-responses
+
     headers.extend(cors.allow_origin_to_header(origin));
     headers.extend(cors.allow_credentials_to_header());
     headers.extend(cors.allow_private_network_to_header(&parts));
     headers.extend(cors.vary_to_header());
 
+    // Return results immediately upon preflight request
     if parts.method == Method::OPTIONS {
         headers.extend(cors.allow_methods_to_header());
         headers.extend(cors.allow_headers_to_header());
@@ -189,15 +198,20 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
 
         Ok(response)
     } else {
+        // This header is applied only to non-preflight requests
         headers.extend(cors.expose_headers_to_header());
 
         let req = Request::from_parts(parts, body);
         let mut response = handle_request_inner::<T>(req, app_ctx, request_counter).await?;
 
         let response_headers = response.headers_mut();
+
+        // vary header can have multiple values, don't overwrite
+        // previously-set value(s).
         if let Some(vary) = headers.remove(header::VARY) {
             response_headers.append(header::VARY, vary);
         }
+        // extend will overwrite previous headers of remaining names
         response_headers.extend(headers.drain());
 
         Ok(response)
@@ -249,6 +263,9 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     }
 
     match *req.method() {
+        // NOTE:
+        // The first check for the route should be for `/graphql`
+        // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
             graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
