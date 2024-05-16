@@ -1488,7 +1488,9 @@
           "enum": [
             "Str",
             "Num",
-            "Bool"
+            "Bool",
+            "Empty",
+            "Any"
           ]
         },
         {

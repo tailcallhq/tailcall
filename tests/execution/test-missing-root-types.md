@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-missing-root-types
 
-```graphql @server
+```graphql @config
 schema {
   query: QueryType
   mutation: MutationDef

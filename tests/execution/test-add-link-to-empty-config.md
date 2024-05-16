@@ -1,5 +1,5 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-add-link-to-empty-config
@@ -29,7 +29,7 @@ type Query {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema @server @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
   query: Query
 }

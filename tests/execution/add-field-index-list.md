@@ -1,6 +1,6 @@
 # Sending field index list
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

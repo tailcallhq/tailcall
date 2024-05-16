@@ -1,6 +1,6 @@
 # Batching disabled
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

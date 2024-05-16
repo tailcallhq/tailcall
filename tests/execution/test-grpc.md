@@ -1,5 +1,5 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-grpc
@@ -40,7 +40,7 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000)
   @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: [], maxSize: 1000})

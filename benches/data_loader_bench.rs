@@ -60,7 +60,7 @@ impl FileIO for File {
 
 struct Cache;
 #[async_trait]
-impl tailcall::Cache for Cache {
+impl tailcall::core::Cache for Cache {
     type Key = u64;
     type Value = ConstValue;
 

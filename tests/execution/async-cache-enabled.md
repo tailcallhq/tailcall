@@ -1,6 +1,6 @@
 # Async Cache Enabled
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", dedupe: true) {

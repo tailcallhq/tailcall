@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-union
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }

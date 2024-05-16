@@ -1,6 +1,6 @@
 # Simple GraphQL Request
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

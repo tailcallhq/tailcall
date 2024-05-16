@@ -1,6 +1,6 @@
 # test-scalar-email
 
-```graphql @server
+```graphql @config
 # this is already defined scalars in tailcall
 scalar Email
 

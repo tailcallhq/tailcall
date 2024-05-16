@@ -1,6 +1,6 @@
 # Resolve with headers
 
-```graphql @server
+```graphql @config
 schema @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }

@@ -1,6 +1,6 @@
 # Set Cookie Header
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8080, hostname: "0.0.0.0", headers: {setCookies: true})
   @upstream(baseURL: "http://jsonplaceholder.typicode.com") {

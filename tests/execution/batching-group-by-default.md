@@ -1,6 +1,6 @@
 # Batching group by default
 
-```graphql @server
+```graphql @config
 schema
   @server
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {

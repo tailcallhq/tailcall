@@ -1,6 +1,6 @@
 # Add field with modify
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
