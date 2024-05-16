@@ -27,15 +27,13 @@ pub struct KeyValue {
 }
 
 pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
-    let mut acc: BTreeMap<&String, &String> =
-        current.iter().map(|kv| (&kv.key, &kv.value)).collect();
-
-    for kv in other {
-        acc.insert(&kv.key, &kv.value);
-    }
-
-    acc.iter()
-        .map(|(k, v)| KeyValue { key: k.to_string(), value: v.to_string() })
+    current
+        .iter()
+        .chain(other.iter())
+        .map(|KeyValue { key, value }| (key, value))
+        .collect::<BTreeMap<_, _>>()
+        .into_iter()
+        .map(|(k, v)| KeyValue { key: k.to_owned(), value: v.to_owned() })
         .collect()
 }
 
