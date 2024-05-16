@@ -4,7 +4,8 @@ use anyhow::Result;
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
-use tailcall::{filter, HttpIO, Response};
+use tailcall::core::http::{filter, Response};
+use tailcall::core::HttpIO;
 
 #[derive(Clone)]
 pub struct LambdaHttp {

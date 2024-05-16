@@ -8,8 +8,8 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
-use tailcall::{filter, HttpIO, Response};
-
+use tailcall::core::http::{filter, Response};
+use tailcall::core::HttpIO;
 use super::runtime::{ExecutionMock, ExecutionSpec};
 
 #[derive(Clone, Debug)]

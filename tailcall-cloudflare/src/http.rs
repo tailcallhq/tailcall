@@ -2,8 +2,8 @@ use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
 use hyper::body::Bytes;
 use reqwest::Client;
-use tailcall::{filter, HttpIO, Response};
-
+use tailcall::core::http::{filter, Response};
+use tailcall::core::HttpIO;
 use crate::to_anyhow;
 
 #[derive(Clone)]

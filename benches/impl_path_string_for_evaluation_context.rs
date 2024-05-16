@@ -15,10 +15,13 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::{
-    filter, EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
-    ResolverContextLike, Response, Server, TargetRuntime, Upstream,
-};
+use tailcall::core::blueprint::{Server, Upstream};
+use tailcall::core::cache::InMemoryCache;
+use tailcall::core::http::{filter, RequestContext, Response};
+use tailcall::core::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall::core::path::PathString;
+use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::{EnvIO, FileIO, HttpIO};
 
 struct Http {
     client: ClientWithMiddleware,
