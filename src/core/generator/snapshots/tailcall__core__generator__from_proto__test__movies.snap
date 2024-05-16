@@ -6,25 +6,25 @@ schema @server @upstream {
   query: Query
 }
 
-input google__protobuf__DurationInput {
+input google__protobuf__DurationInput @tag(id: "google.protobuf.Duration") {
   nanos: Int
   seconds: Int
 }
 
-input google__protobuf__Int32ValueInput {
+input google__protobuf__Int32ValueInput @tag(id: "google.protobuf.Int32Value") {
   value: Int
 }
 
-input google__protobuf__StringValue {
+input google__protobuf__StringValue @tag(id: "google.protobuf.StringValue") {
   value: String
 }
 
-input google__protobuf__TimestampInput {
+input google__protobuf__TimestampInput @tag(id: "google.protobuf.Timestamp") {
   nanos: Int
   seconds: Int
 }
 
-input movies__MovieInput {
+input movies__MovieInput @tag(id: "movies.Movie") {
   cast: [String]!
   duration: google__protobuf__DurationInput
   genre: movies__GenreInput
@@ -34,11 +34,11 @@ input movies__MovieInput {
   year: google__protobuf__Int32ValueInput
 }
 
-input movies__MovieRequest {
+input movies__MovieRequest @tag(id: "movies.MovieRequest") {
   movie: movies__MovieInput
 }
 
-input movies__SearchByCastRequest {
+input movies__SearchByCastRequest @tag(id: "movies.SearchByCastRequest") {
   castName: google__protobuf__StringValue
 }
 
@@ -55,21 +55,21 @@ type Query {
   movies__Example__SearchMoviesByCast(searchByCastRequest: movies__SearchByCastRequest!): movies__Movie! @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.Example.SearchMoviesByCast")
 }
 
-type google__protobuf__Duration {
+type google__protobuf__Duration @tag(id: "google.protobuf.Duration") {
   nanos: Int
   seconds: Int
 }
 
-type google__protobuf__Int32Value {
+type google__protobuf__Int32Value @tag(id: "google.protobuf.Int32Value") {
   value: Int
 }
 
-type google__protobuf__Timestamp {
+type google__protobuf__Timestamp @tag(id: "google.protobuf.Timestamp") {
   nanos: Int
   seconds: Int
 }
 
-type movies__Movie {
+type movies__Movie @tag(id: "movies.Movie") {
   cast: [String]!
   duration: google__protobuf__Duration
   genre: movies__Genre
@@ -79,6 +79,6 @@ type movies__Movie {
   year: google__protobuf__Int32Value
 }
 
-type movies__MoviesResult {
+type movies__MoviesResult @tag(id: "movies.MoviesResult") {
   result: [movies__Movie]!
 }

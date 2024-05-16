@@ -6,14 +6,14 @@ schema @server @upstream {
   query: Query
 }
 
-type News {
+type News @tag(id: "News") {
   body: String
   id: Int
   postImage: String
   title: String
 }
 
-type NewsList {
+type NewsList @tag(id: "NewsList") {
   news: [News]!
 }
 

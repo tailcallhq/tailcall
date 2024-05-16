@@ -6,19 +6,19 @@ schema @server @upstream {
   query: Query
 }
 
-input greetings__HelloRequest {
+input greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
   name: String
 }
 
-input greetings_a__b__HelloRequest {
+input greetings_a__b__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
   name: String
 }
 
-input news__MultipleNewsId {
+input news__MultipleNewsId @tag(id: "news.MultipleNewsId") {
   ids: [news__NewsId]!
 }
 
-input news__News {
+input news__News @tag(id: "news.News") {
   body: String
   id: Int
   postImage: String
@@ -26,7 +26,7 @@ input news__News {
   title: String
 }
 
-input news__NewsId {
+input news__NewsId @tag(id: "news.NewsId") {
   id: Int
 }
 
@@ -47,14 +47,14 @@ type Query {
   news__NewsService__GetNews(newsId: news__NewsId!): news__News! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
 }
 
-type greetings__HelloReply {
+type greetings__HelloReply @tag(id: "greetings.HelloReply") {
   message: String
 }
 
-type greetings_a__b__HelloReply {
+type greetings_a__b__HelloReply @tag(id: "greetings_a.b.HelloReply") {
   message: String
 }
 
-type news__NewsList {
+type news__NewsList @tag(id: "news.NewsList") {
   news: [news__News]!
 }
