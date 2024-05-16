@@ -439,7 +439,8 @@ pub mod tests {
         let service = file.find_service(&grpc_method)?;
         let operation = service.find_operation(&grpc_method)?;
 
-        // only single key-value in json since the converted output can change the ordering on every run
+        // only single key-value in json since the converted output can change the
+        // ordering on every run
         let input = operation.convert_input(r#"{ "map": { "key": "value" } }"#)?;
 
         assert_eq!(input, b"\0\0\0\0\x0e\n\x0c\n\x03key\x12\x05value");
