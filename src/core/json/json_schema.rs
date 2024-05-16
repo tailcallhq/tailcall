@@ -16,6 +16,8 @@ pub enum JsonSchema {
     Str,
     Num,
     Bool,
+    Empty,
+    Any,
 }
 
 impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
@@ -50,6 +52,12 @@ impl JsonSchema {
                 async_graphql::Value::Boolean(_) => Valid::succeed(()),
                 _ => Valid::fail("expected boolean"),
             },
+            JsonSchema::Empty => match value {
+                async_graphql::Value::Null => Valid::succeed(()),
+                async_graphql::Value::Object(obj) if obj.is_empty() => Valid::succeed(()),
+                _ => Valid::fail("expected empty"),
+            },
+            JsonSchema::Any => Valid::succeed(()),
             JsonSchema::Arr(schema) => match value {
                 async_graphql::Value::List(list) => {
                     // TODO: add unit tests
@@ -93,6 +101,31 @@ impl JsonSchema {
     // TODO: add unit tests
     pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
         match self {
+            JsonSchema::Str => {
+                if other != self {
+                    return Valid::fail(format!("expected String, got {:?}", other)).trace(name);
+                }
+            }
+            JsonSchema::Num => {
+                if other != self {
+                    return Valid::fail(format!("expected Number, got {:?}", other)).trace(name);
+                }
+            }
+            JsonSchema::Bool => {
+                if other != self {
+                    return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
+                }
+            }
+            JsonSchema::Empty => {
+                if other != self {
+                    return Valid::fail(format!("expected Empty, got {:?}", other)).trace(name);
+                }
+            }
+            JsonSchema::Any => {
+                if other != self {
+                    return Valid::fail(format!("expected Any, got {:?}", other)).trace(name);
+                }
+            }
             JsonSchema::Obj(a) => {
                 if let JsonSchema::Obj(b) = other {
                     return Valid::from_iter(b.iter(), |(key, b)| {
@@ -117,21 +150,6 @@ impl JsonSchema {
                     return a.compare(b, name);
                 } else {
                     return Valid::fail("expected type to be required".to_string()).trace(name);
-                }
-            }
-            JsonSchema::Str => {
-                if other != self {
-                    return Valid::fail(format!("expected String, got {:?}", other)).trace(name);
-                }
-            }
-            JsonSchema::Num => {
-                if other != self {
-                    return Valid::fail(format!("expected Number, got {:?}", other)).trace(name);
-                }
-            }
-            JsonSchema::Bool => {
-                if other != self {
-                    return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
                 }
             }
             JsonSchema::Enum(a) => {
@@ -177,7 +195,11 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
             map.insert(field.name().to_case(Case::Camel), field_schema);
         }
 
-        Ok(JsonSchema::Obj(map))
+        if map.is_empty() {
+            Ok(JsonSchema::Empty)
+        } else {
+            Ok(JsonSchema::Obj(map))
+        }
     }
 }
 
@@ -300,6 +322,58 @@ mod tests {
         let value = async_graphql::Value::Object({
             let mut map = IndexMap::new();
             map.insert(Name::new("age"), async_graphql::Value::Number(1.into()));
+            map
+        });
+
+        let result = schema.validate(&value);
+        assert_eq!(result, Valid::succeed(()));
+    }
+
+    #[test]
+    fn test_empty_valid() {
+        let schema = JsonSchema::from([
+            ("empty1", JsonSchema::Empty.optional()),
+            ("empty2", JsonSchema::Empty),
+        ]);
+        let value = async_graphql::Value::Object({
+            let mut map = IndexMap::new();
+            map.insert(
+                Name::new("empty1"),
+                async_graphql::Value::Object(Default::default()),
+            );
+            map.insert(Name::new("empty2"), async_graphql::Value::Null);
+            map
+        });
+
+        let result = schema.validate(&value);
+        assert_eq!(result, Valid::succeed(()));
+    }
+
+    #[test]
+    fn test_empty_invalid() {
+        let schema = JsonSchema::Empty;
+        let value = async_graphql::Value::String("test".to_owned());
+
+        let result = schema.validate(&value);
+        assert_eq!(result, Valid::fail("expected empty"));
+    }
+
+    #[test]
+    fn test_any_valid() {
+        let schema = JsonSchema::from([
+            ("any1", JsonSchema::Any.optional()),
+            ("any2", JsonSchema::Any),
+        ]);
+        let value = async_graphql::Value::Object({
+            let mut map = IndexMap::new();
+            map.insert(
+                Name::new("any1"),
+                async_graphql::Value::Object(Default::default()),
+            );
+            map.insert(
+                Name::new("any2"),
+                async_graphql::Value::String("test".to_owned()),
+            );
             map
         });
 
