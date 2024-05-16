@@ -181,6 +181,11 @@
     "aliases": ["security"]
   },
   {
+    "name": "type: performance",
+    "color": "FA1DD4",
+    "description": "Improved performance."
+  },
+  {
     "name": "type: testing",
     "color": "FA1DD4",
     "description": "Related to testing.",
