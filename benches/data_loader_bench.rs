@@ -11,7 +11,7 @@ use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::core::config::Batch;
-use tailcall::core::http::{DataLoaderRequest, filter, HttpDataLoader, Response};
+use tailcall::core::http::{filter, DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 

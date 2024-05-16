@@ -13,10 +13,9 @@ pub mod test {
     use tailcall::cli::javascript;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
-    use tailcall::core::http::Response;
+    use tailcall::core::http::{filter, Response};
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
-    use tailcall::core::http::filter;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[derive(Clone)]
