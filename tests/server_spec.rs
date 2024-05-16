@@ -266,4 +266,34 @@ mod server_spec {
         )
         .await
     }
+
+    #[test]
+    fn check_merge_vec_fn() {
+        use tailcall::core::config::{merge_key_value_vecs, KeyValue};
+        let left_vec = [
+            KeyValue { key: "left".to_string(), value: "From Left".to_string() },
+            KeyValue { key: "1".to_string(), value: "1, Left".to_string() },
+            KeyValue { key: "2".to_string(), value: "2, Left".to_string() },
+        ]
+        .to_vec();
+
+        let right_vec = [
+            KeyValue { key: "right".to_string(), value: "From Right".to_string() },
+            KeyValue { key: "1".to_string(), value: "1, Right".to_string() },
+            KeyValue { key: "2".to_string(), value: "2, Right".to_string() },
+        ]
+        .to_vec();
+
+        let expected_vec = [
+            KeyValue { key: "right".to_string(), value: "From Right".to_string() },
+            KeyValue { key: "left".to_string(), value: "From Left".to_string() },
+            KeyValue { key: "1".to_string(), value: "1, Right".to_string() },
+            KeyValue { key: "2".to_string(), value: "2, Right".to_string() },
+        ]
+        .to_vec()
+        .sort_by(|a, b| a.key.cmp(&b.key));
+
+        let mut merge_vec = merge_key_value_vecs(&left_vec, &right_vec);
+        assert_eq!(merge_vec.sort_by(|a, b| a.key.cmp(&b.key)), expected_vec)
+    }
 }
