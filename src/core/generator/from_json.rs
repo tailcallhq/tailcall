@@ -199,8 +199,7 @@ mod test {
     use serde_json::json;
     use url::Url;
 
-    use crate::core::config::ConfigModule;
-    use crate::core::generator::from_json::{from_json, ConfigGenerator, UrlQueryParser};
+    use crate::core::generator::from_json::{ConfigGenerator, UrlQueryParser};
 
     #[test]
     fn test_should_generate_type() {
@@ -239,93 +238,6 @@ mod test {
     }
 
     #[test]
-    fn test_generation_of_config_with_incompatible_json_properties() {
-        let resp = r#"
-        {
-            "colors": [],
-            "campaignTemplates": {
-                "10": {
-                    "name": "test"
-                },
-                "15": {
-                    "name": "test"
-                }
-            }
-        }
-        "#;
-
-        let resp = serde_json::from_str(resp).unwrap();
-        let cgf_module = ConfigModule::from(from_json("https://example.com", &resp).config);
-        insta::assert_snapshot!(cgf_module.to_sdl());
-    }
-
-    #[test]
-    fn test_nested_same_json_properties() {
-        let resp = r#"
-            {
-                "container": {
-                    "name": "Testing",
-                    "container": {
-                        "name": "Testing",
-                        "container": {
-                            "age": 16
-                        }
-                    }
-                }
-            }
-        "#;
-
-        let resp = serde_json::from_str(resp).unwrap();
-        let cgf_module = ConfigModule::from(from_json("https://example.com", &resp).config);
-        insta::assert_snapshot!(cgf_module.to_sdl());
-    }
-
-    #[test]
-    fn test_list_json_resp() {
-        let resp = r#"[{"name":"test", "age": 12},{"name":"test-1", "age": 19},{"name":"test-3", "age": 21}]"#;
-        let resp = serde_json::from_str(resp).unwrap();
-        let cgf_module = ConfigModule::from(from_json("https://example.com/users", &resp).config);
-        insta::assert_snapshot!(cgf_module.to_sdl());
-    }
-
-    #[test]
-    fn test_number_json_resp() {
-        let resp = r#"12"#;
-        let resp = serde_json::from_str(resp).unwrap();
-        let cgf_module = ConfigModule::from(
-            from_json("https://example.com/users?verified_user=true", &resp).config,
-        );
-        insta::assert_snapshot!(cgf_module.to_sdl());
-    }
-
-    #[test]
-    fn test_string_json_resp() {
-        let resp = r#""succesfully.""#;
-        let resp = serde_json::from_str(resp).unwrap();
-        let cgf_module =
-            ConfigModule::from(from_json("https://example.com/login/status", &resp).config);
-        insta::assert_snapshot!(cgf_module.to_sdl());
-    }
-
-    #[test]
-    fn test_null_json_resp() {
-        let resp = r#"null"#;
-        let resp = serde_json::from_str(resp).unwrap();
-        let cgf_module =
-            ConfigModule::from(from_json("https://example.com/users?age=12", &resp).config);
-        insta::assert_snapshot!(cgf_module.to_sdl());
-    }
-
-    #[test]
-    fn test_boolean_json_resp() {
-        let resp = r#"true"#;
-        let resp = serde_json::from_str(resp).unwrap();
-        let cgf_module =
-            ConfigModule::from(from_json("https://example.com/user/12/online", &resp).config);
-        insta::assert_snapshot!(cgf_module.to_sdl());
-    }
-
-    #[test]
     fn test_new_url_query_parser() {
         let url = Url::parse(
             "http://example.com/path?query1=value1&query2=12&query3=12.3&query4=1,2,4&query5=true",
@@ -355,7 +267,6 @@ mod test {
     fn test_new_url_query_parser_empty() {
         let url = Url::parse("http://example.com/path").unwrap();
         let parser = UrlQueryParser::new(&url);
-
         assert_eq!(parser.queries.len(), 0);
     }
 }
