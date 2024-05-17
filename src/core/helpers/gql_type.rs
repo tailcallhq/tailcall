@@ -45,7 +45,7 @@ pub fn is_primitive(value: &Value) -> bool {
 
 #[cfg(test)]
 mod test {
-    use serde_json::{json};
+    use serde_json::json;
 
     use super::{
         detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
