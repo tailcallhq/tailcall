@@ -324,6 +324,18 @@ mod test {
     }
 
     #[test]
+    fn test_list_json_resp(){
+        let resp = r#"[{"name":"test", "age": 12},{"name":"test-1", "age": 19},{"name":"test-3", "age": 21}]"#;
+        let resp = serde_json::from_str(resp).unwrap();
+        let mut ctx = ConfigGenerator::new("https://example.com/users");
+        ctx.generate(&resp);
+
+        let cgf_module = ConfigModule::from(ctx.config);
+        insta::assert_snapshot!(cgf_module.to_sdl());
+    }
+
+
+    #[test]
     fn test_new_url_query_parser() {
         let url = Url::parse(
             "http://example.com/path?query1=value1&query2=12&query3=12.3&query4=1,2,4&query5=true",
