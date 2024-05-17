@@ -1,12 +1,10 @@
 use serde_json::Value;
 use url::Url;
 
-use crate::cli::fmt::Fmt;
 use crate::core::config::{Arg, Config, ConfigModule, Field, Http, Type};
 use crate::core::helpers::gql_type::{
     detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
 };
-use crate::core::http::Response;
 
 #[derive(Debug)]
 struct UrlQuery {
@@ -193,42 +191,10 @@ impl ConfigGenerator {
     }
 }
 
-pub async fn fetch_json(url: &str) -> Value {
-    let resp = reqwest::get(url).await.unwrap();
-    let resp = Response::from_reqwest(resp).await.unwrap();
-    let value: Value = resp.to_json().unwrap().body;
-    value
-}
-
-// TODO: fix this.
-pub async fn from_json() {
-    let url = "https://www.carwale.com/api/modelpagedata/?makeMaskingName=maruti-suzuki&modelMaskingName=swift&cityId=1&areaId=-1&showOfferUpfront=false&platformId=1";
-    // let url = "https://www.carwale.com/api/areas/?sort=1&cityId=1";
-    // let url = "https://www.carwale.com/api/homepagedata/?pageId=1&platformId=43";
-    let resp = fetch_json(url).await;
-
-    // let resp = r#"
-    //     {
-    //         "container": [],
-    //         "container": {
-    //             "name": "Testing",
-    //             "container": {
-    //                 "name": "Testing",
-    //                 "container": {
-    //                     "age": 16
-    //                 }
-    //             }
-    //         }
-    //     }
-    // "#;
-
-    // let resp = serde_json::from_str(resp).unwrap();
-
+pub async fn from_json(url: &str, json_resp: &Value) -> ConfigModule {
     let mut ctx = ConfigGenerator::new(url);
-    ctx.generate(&resp);
-
-    let cgf_module = ConfigModule::from(ctx.config);
-    Fmt::display(cgf_module.to_sdl());
+    ctx.generate(&json_resp);
+    ConfigModule::from(ctx.config)
 }
 
 #[cfg(test)]
