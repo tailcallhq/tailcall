@@ -16,11 +16,11 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::generator::from_json;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -90,6 +90,10 @@ pub async fn run() -> Result<()> {
 
             let config = output.unwrap_or_default().encode(&cfg)?;
             Fmt::display(config);
+
+            // TODO: add separate command for json to config gen.
+            from_json().await;
+
             Ok(())
         }
     }
