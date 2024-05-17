@@ -2,11 +2,11 @@ name: Test Release
 
 on:
   pull_request:
-    types: [ opened, reopened, labeled ]
+    types: [opened, reopened, labeled]
 
 jobs:
   test_release:
-    if:  "${{ contains(github.event.pull_request.labels.*.name, 'ci: test release') }}"
+    if: "${{ contains(github.event.pull_request.labels.*.name, 'ci: test release') }}"
     name: Test Release Build
     runs-on: ${{ matrix.os }}
     strategy:
