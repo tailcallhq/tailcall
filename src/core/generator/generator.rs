@@ -53,6 +53,9 @@ impl Generator {
                     let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
                     config = config.merge_right(from_proto(&[descriptor_set], query)?);
                 }
+                _ => {
+                    unreachable!();
+                },
             }
         }
 

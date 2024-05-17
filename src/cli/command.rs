@@ -62,7 +62,7 @@ pub enum Command {
     Gen {
         /// Path of the source files separated by spaces if more than one
         #[arg(required = true)]
-        file_paths: Vec<String>,
+        paths: Vec<String>,
 
         /// Format of the input file
         #[clap(short, long)]
