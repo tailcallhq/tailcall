@@ -1,0 +1,16 @@
+---
+source: tests/json_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://example.com") {
+  query: Query
+}
+
+type Query {
+  root: [T1] @http(path: "/users")
+}
+
+type T1 {
+  age: Int
+  name: String
+}

@@ -1,0 +1,18 @@
+---
+source: tests/json_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://example.com") {
+  query: Query
+}
+
+scalar Any
+
+type Query {
+  root: T1 @http(path: "/")
+}
+
+type T1 {
+  campaignTemplates: Any
+  colors: [Any]
+}
