@@ -22,13 +22,9 @@ struct UrlQueryParser {
 
 impl UrlQueryParser {
     fn new(url: &Url) -> Self {
-        let query_pairs: Vec<(String, String)> = url
+        let query_list: Vec<_> = url
             .query_pairs()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect();
-        let query_list: Vec<_> = query_pairs
-            .into_iter()
-            .map(|(key, value)| UrlQuery { key, data_type: detect_gql_data_type(&value) })
+            .map(|(k, v)| UrlQuery { key: k.to_string(), data_type: detect_gql_data_type(&v) } )
             .collect();
         Self { queries: query_list }
     }
