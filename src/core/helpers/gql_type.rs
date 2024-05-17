@@ -2,13 +2,13 @@ use regex::Regex;
 use serde_json::Value;
 
 pub fn detect_gql_data_type(value: &str) -> String {
-    if let Ok(_) = value.parse::<i32>() {
+    if value.parse::<i32>().is_ok() {
         return "Int".to_string();
     }
-    if let Ok(_) = value.parse::<f64>() {
+    if value.parse::<f64>().is_ok() {
         return "Float".to_string();
     }
-    if let Ok(_) = value.parse::<bool>() {
+    if value.parse::<bool>().is_ok() {
         return "Boolean".to_string();
     }
     if value.contains(',') {
@@ -31,7 +31,7 @@ pub fn to_gql_type(value: &Value) -> String {
         Value::Array(_) => "List",
         Value::Object(_) => "Object",
     }
-        .to_string()
+    .to_string()
 }
 
 pub fn is_list_type(value: &Value) -> bool {
@@ -43,13 +43,15 @@ pub fn is_primitive(value: &Value) -> bool {
     value_type != "List" && value_type != "Object"
 }
 
-
 #[cfg(test)]
 mod test {
-    use serde_json::{json, Value};
-    use super::{detect_gql_data_type, is_valid_field_name, to_gql_type, is_list_type, is_primitive};
+    use serde_json::{json};
+
+    use super::{
+        detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
+    };
     #[test]
-    fn test_detect_gql_data_type(){
+    fn test_detect_gql_data_type() {
         assert_eq!(detect_gql_data_type("42"), "Int");
         assert_eq!(detect_gql_data_type("3.14"), "Float");
         assert_eq!(detect_gql_data_type("true"), "Boolean");
@@ -59,18 +61,17 @@ mod test {
     }
 
     #[test]
-    fn test_is_valid_field_name(){
-        assert_eq!(is_valid_field_name("first name"),false);
-        assert_eq!(is_valid_field_name("10"),false);
-        assert_eq!(is_valid_field_name("$10"),false);
-        assert_eq!(is_valid_field_name("#10"),false);
+    fn test_is_valid_field_name() {
+        assert!(!is_valid_field_name("first name"));
+        assert!(!is_valid_field_name("10"));
+        assert!(!is_valid_field_name("$10"));
+        assert!(!is_valid_field_name("#10"));
 
-
-        assert_eq!(is_valid_field_name("firstName"),true);
-        assert_eq!(is_valid_field_name("lastname"),true);
-        assert_eq!(is_valid_field_name("lastname1"),true);
-        assert_eq!(is_valid_field_name("lastname2"),true);
-        assert_eq!(is_valid_field_name("last_name"),true);
+        assert!(is_valid_field_name("firstName"));
+        assert!(is_valid_field_name("lastname"));
+        assert!(is_valid_field_name("lastname1"));
+        assert!(is_valid_field_name("lastname2"));
+        assert!(is_valid_field_name("last_name"));
     }
 
     #[test]
@@ -89,33 +90,31 @@ mod test {
         assert_eq!(to_gql_type(&json!({})), "Object");
     }
 
-
     #[test]
     fn test_is_list_type() {
-        assert_eq!(is_list_type(&json!("Testing")), false);
-        assert_eq!(is_list_type(&json!(12)), false);
-        assert_eq!(is_list_type(&json!(12.3)), false);
-        assert_eq!(is_list_type(&json!(-12)), false);
-        assert_eq!(is_list_type(&json!(-12.2)), false);
-        assert_eq!(is_list_type(&json!(true)), false);
-        assert_eq!(is_list_type(&json!(false)), false);
-        assert_eq!(is_list_type(&json!({"name":"test", "age": 12})), false);
+        assert!(!is_list_type(&json!("Testing")));
+        assert!(!is_list_type(&json!(12)));
+        assert!(!is_list_type(&json!(12.3)));
+        assert!(!is_list_type(&json!(-12)));
+        assert!(!is_list_type(&json!(-12.2)));
+        assert!(!is_list_type(&json!(true)));
+        assert!(!is_list_type(&json!(false)));
+        assert!(!is_list_type(&json!({"name":"test", "age": 12})));
 
-        assert_eq!(is_list_type(&json!([1, 2, 3])), true);
+        assert!(is_list_type(&json!([1, 2, 3])));
     }
 
     #[test]
     fn test_is_primitive() {
-        assert_eq!(is_primitive(&json!("Testing")), true);
-        assert_eq!(is_primitive(&json!(12)), true);
-        assert_eq!(is_primitive(&json!(12.3)), true);
-        assert_eq!(is_primitive(&json!(-12)), true);
-        assert_eq!(is_primitive(&json!(-12.2)), true);
-        assert_eq!(is_primitive(&json!(true)), true);
-        assert_eq!(is_primitive(&json!(false)), true);
+        assert!(is_primitive(&json!("Testing")));
+        assert!(is_primitive(&json!(12)));
+        assert!(is_primitive(&json!(12.3)));
+        assert!(is_primitive(&json!(-12)));
+        assert!(is_primitive(&json!(-12.2)));
+        assert!(is_primitive(&json!(true)));
+        assert!(is_primitive(&json!(false)));
 
-        assert_eq!(is_primitive(&json!([1, 2, 3])), false);
-        assert_eq!(is_primitive(&json!({"name":"test", "age": 12})), false);
+        assert!(!is_primitive(&json!([1, 2, 3])));
+        assert!(!is_primitive(&json!({"name":"test", "age": 12})));
     }
-
 }
