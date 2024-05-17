@@ -269,8 +269,21 @@ mod test {
         Ok(protox::compile(files, [protobuf::SELF])?)
     }
 
+    macro_rules! assert_gen {
+        ($( $set:expr ), +) => {
+            let set = compile_protobuf(&[$( $set ),+]).unwrap();
+            let config = from_proto(&[set], "Query").unwrap();
+            let config_module = ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
+                input: format!("{}Input", v),
+                output: v.to_owned(),
+            });
+            let result = config_module.to_sdl();
+            insta::assert_snapshot!(result);
+        };
+    }
+
     #[test]
-    fn test_from_proto() -> Result<()> {
+    fn test_from_proto() {
         // news_enum.proto covers:
         // test for mutation
         // test for empty objects
@@ -280,38 +293,22 @@ mod test {
         // test for a type used as both input and output
         // test for two types having same name in different packages
 
-        let set =
-            compile_protobuf(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
-        let result = from_proto(&[set], "Query")?.to_sdl();
-        insta::assert_snapshot!(result);
-
-        Ok(())
+        assert_gen!(protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B);
     }
 
     #[test]
-    fn test_from_proto_no_pkg_file() -> Result<()> {
-        let set = compile_protobuf(&[protobuf::NEWS_NO_PKG])?;
-        let result = from_proto(&[set], "Query")?.to_sdl();
-        insta::assert_snapshot!(result);
-        Ok(())
+    fn test_from_proto_no_pkg_file() {
+        assert_gen!(protobuf::NEWS_NO_PKG);
     }
 
     #[test]
-    fn test_from_proto_no_service_file() -> Result<()> {
-        let set = compile_protobuf(&[protobuf::NEWS_NO_SERVICE])?;
-        let result = from_proto(&[set], "Query")?.to_sdl();
-        insta::assert_snapshot!(result);
-
-        Ok(())
+    fn test_from_proto_no_service_file() {
+        assert_gen!(protobuf::NEWS_NO_SERVICE);
     }
 
     #[test]
-    fn test_greetings_proto_file() -> Result<()> {
-        let set = compile_protobuf(&[protobuf::GREETINGS, protobuf::GREETINGS_MESSAGE]).unwrap();
-        let result = from_proto(&[set], "Query")?.to_sdl();
-        insta::assert_snapshot!(result);
-
-        Ok(())
+    fn test_greetings_proto_file() {
+        assert_gen!(protobuf::GREETINGS, protobuf::GREETINGS_MESSAGE);
     }
 
     #[test]
@@ -331,51 +328,28 @@ mod test {
     }
 
     #[test]
-    fn test_required_types() -> Result<()> {
+    fn test_required_types() {
         // required fields are deprecated in proto3 (https://protobuf.dev/programming-guides/dos-donts/#add-required)
         // this example uses proto2 to test the same.
         // for proto3 it's guaranteed to have a default value (https://protobuf.dev/programming-guides/proto3/#default)
         // and our implementation (https://github.com/tailcallhq/tailcall/pull/1537) supports default values by default.
         // so we do not need to explicitly mark fields as required.
 
-        let set = compile_protobuf(&[protobuf::PERSON])?;
-        let config = from_proto(&[set], "Query")?.to_sdl();
-        insta::assert_snapshot!(config);
-        Ok(())
+        assert_gen!(protobuf::PERSON);
     }
 
     #[test]
-    fn test_movies() -> Result<()> {
-        let set = compile_protobuf(&[protobuf::MOVIES])?;
-        let config = from_proto(&[set], "Query")?;
-        let config_module = ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-            input: format!("{}Input", v),
-            output: v.to_owned(),
-        });
-        let config = config_module.to_sdl();
-        insta::assert_snapshot!(config);
-
-        Ok(())
+    fn test_movies() {
+        assert_gen!(protobuf::MOVIES);
     }
 
     #[test]
-    fn test_nested_types() -> Result<()> {
-        let set = compile_protobuf(&[protobuf::NESTED_TYPES])?;
-        let config = from_proto(&[set], "Query")?.to_sdl();
-        insta::assert_snapshot!(config);
-        Ok(())
+    fn test_nested_types() {
+        assert_gen!(protobuf::NESTED_TYPES);
     }
 
     #[test]
-    fn test_oneof_types() -> Result<()> {
-        let set = compile_protobuf(&[protobuf::ONEOF])?;
-        let config = from_proto(&[set], "Query")?;
-        let config_module = ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-            input: format!("{}Input", v),
-            output: v.to_owned(),
-        });
-        let config = config_module.to_sdl();
-        insta::assert_snapshot!(config);
-        Ok(())
+    fn test_oneof_types() {
+        assert_gen!(protobuf::ONEOF);
     }
 }

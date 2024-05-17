@@ -698,7 +698,6 @@ impl Config {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
-                    types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
                 }
             }
