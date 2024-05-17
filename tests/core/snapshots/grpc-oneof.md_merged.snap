@@ -1,0 +1,40 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: true) @link(src: "oneof.proto", type: Protobuf) {
+  query: Query
+}
+
+input oneof__CommandInput {
+  command: String
+}
+
+input oneof__PayloadInput {
+  payload: String
+}
+
+input oneof__Request {
+  command: oneof__CommandInput
+  payload: oneof__PayloadInput
+  usual: String
+}
+
+type Query {
+  oneof__OneOfService__GetOneOf(request: oneof__Request!): oneof__Response! @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+}
+
+type oneof__Command @tag(id: "oneof.Command") {
+  command: String
+}
+
+type oneof__Payload @tag(id: "oneof.Payload") {
+  payload: String
+}
+
+type oneof__Response @tag(id: "oneof.Response") {
+  command: oneof__Command
+  payload: oneof__Payload
+  response: String
+  usual: Int
+}

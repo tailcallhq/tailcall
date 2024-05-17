@@ -323,7 +323,7 @@ mod test {
         let set2 = compile_protobuf(&[protobuf::GREETINGS_A])?;
         let set3 = compile_protobuf(&[protobuf::GREETINGS_B])?;
 
-        let actual = from_proto(&[set.clone()], "Query")?.to_sdl();
+        let actual = from_proto(&[set], "Query")?.to_sdl();
         let expected = from_proto(&[set1, set2, set3], "Query")?.to_sdl();
 
         pretty_assertions::assert_eq!(actual, expected);
@@ -362,6 +362,19 @@ mod test {
     fn test_nested_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::NESTED_TYPES])?;
         let config = from_proto(&[set], "Query")?.to_sdl();
+        insta::assert_snapshot!(config);
+        Ok(())
+    }
+
+    #[test]
+    fn test_oneof_types() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::ONEOF])?;
+        let config = from_proto(&[set], "Query")?;
+        let config_module = ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
+            input: format!("{}Input", v),
+            output: v.to_owned(),
+        });
+        let config = config_module.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
     }
