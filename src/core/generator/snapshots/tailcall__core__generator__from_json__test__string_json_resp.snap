@@ -1,0 +1,11 @@
+---
+source: src/core/generator/from_json.rs
+expression: cgf_module.to_sdl()
+---
+schema @server @upstream(baseURL: "https://example.com") {
+  query: Query
+}
+
+type Query {
+  root: String @http(path: "/login/status")
+}
