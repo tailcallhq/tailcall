@@ -10,7 +10,7 @@ pub use core::blueprint::{
 };
 pub use core::cache::InMemoryCache;
 pub use core::config::reader::ConfigReader;
-pub use core::config::{Batch, Config, ConfigModule, Source};
+pub use core::config::{Batch, Config, ConfigModule, Field, Source, Type as ConfigType};
 pub use core::endpoint::Endpoint;
 pub use core::generator::Generator;
 pub use core::grpc::protobuf::ProtobufSet;
