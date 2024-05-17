@@ -100,7 +100,7 @@ pub async fn run() -> Result<()> {
                         let parsed_url = Url::parse(&url).expect("failed to parse the url");
                         let request = reqwest::Request::new(Method::GET, parsed_url);
                         let resp = runtime.http.execute(request).await?.to_json()?;
-                        let config = from_json(&url, &resp.body).await;
+                        let config = from_json(&url, &resp.body);
                         Fmt::display(config.to_sdl());
                     }
                 }

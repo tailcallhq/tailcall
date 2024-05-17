@@ -191,7 +191,7 @@ impl ConfigGenerator {
     }
 }
 
-pub async fn from_json(url: &str, json_resp: &Value) -> ConfigModule {
+pub fn from_json(url: &str, json_resp: &Value) -> ConfigModule {
     let mut ctx = ConfigGenerator::new(url);
     ctx.generate(json_resp);
     ConfigModule::from(ctx.config)
@@ -203,7 +203,7 @@ mod test {
     use url::Url;
 
     use crate::core::config::ConfigModule;
-    use crate::core::generator::from_json::{ConfigGenerator, UrlQueryParser};
+    use crate::core::generator::from_json::{from_json, ConfigGenerator, UrlQueryParser};
 
     #[test]
     fn test_should_generate_type() {
@@ -256,11 +256,9 @@ mod test {
             }
         }
         "#;
-        let resp = serde_json::from_str(resp).unwrap();
-        let mut ctx = ConfigGenerator::new("https://example.com");
-        ctx.generate(&resp);
 
-        let cgf_module = ConfigModule::from(ctx.config);
+        let resp = serde_json::from_str(resp).unwrap();
+        let cgf_module = ConfigModule::from(from_json("https://example.com", &resp).config);
         insta::assert_snapshot!(cgf_module.to_sdl());
     }
 
@@ -281,11 +279,7 @@ mod test {
         "#;
 
         let resp = serde_json::from_str(resp).unwrap();
-
-        let mut ctx = ConfigGenerator::new("https://example.com");
-        ctx.generate(&resp);
-
-        let cgf_module = ConfigModule::from(ctx.config);
+        let cgf_module = ConfigModule::from(from_json("https://example.com", &resp).config);
         insta::assert_snapshot!(cgf_module.to_sdl());
     }
 
@@ -293,10 +287,7 @@ mod test {
     fn test_list_json_resp() {
         let resp = r#"[{"name":"test", "age": 12},{"name":"test-1", "age": 19},{"name":"test-3", "age": 21}]"#;
         let resp = serde_json::from_str(resp).unwrap();
-        let mut ctx = ConfigGenerator::new("https://example.com/users");
-        ctx.generate(&resp);
-
-        let cgf_module = ConfigModule::from(ctx.config);
+        let cgf_module = ConfigModule::from(from_json("https://example.com/users", &resp).config);
         insta::assert_snapshot!(cgf_module.to_sdl());
     }
 
