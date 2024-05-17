@@ -123,9 +123,8 @@ impl ConfigGenerator {
                 self.insert_type(&type_name, ty);
                 type_name
             }
-            _ => {
-                // generate a scalar if type isn't object or list.
-                self.generate_scalar()
+            other => {
+                to_gql_type(other)
             }
         }
     }
@@ -290,6 +289,39 @@ mod test {
         let cgf_module = ConfigModule::from(from_json("https://example.com/users", &resp).config);
         insta::assert_snapshot!(cgf_module.to_sdl());
     }
+
+    #[test]
+    fn test_number_json_resp(){
+        let resp = r#"12"#;
+        let resp = serde_json::from_str(resp).unwrap();
+        let cgf_module = ConfigModule::from(from_json("https://example.com/users?verified_user=true", &resp).config);
+        insta::assert_snapshot!(cgf_module.to_sdl());
+    }
+
+    #[test]
+    fn test_string_json_resp(){
+        let resp = r#""succesfully.""#;
+        let resp = serde_json::from_str(resp).unwrap();
+        let cgf_module = ConfigModule::from(from_json("https://example.com/login/status", &resp).config);
+        insta::assert_snapshot!(cgf_module.to_sdl());
+    }
+
+    #[test]
+    fn test_null_json_resp(){
+        let resp = r#"null"#;
+        let resp = serde_json::from_str(resp).unwrap();
+        let cgf_module = ConfigModule::from(from_json("https://example.com/users?age=12", &resp).config);
+        insta::assert_snapshot!(cgf_module.to_sdl());
+    }
+
+    #[test]
+    fn test_boolean_json_resp(){
+        let resp = r#"true"#;
+        let resp = serde_json::from_str(resp).unwrap();
+        let cgf_module = ConfigModule::from(from_json("https://example.com/user/12/online", &resp).config);
+        insta::assert_snapshot!(cgf_module.to_sdl());
+    }
+
 
     #[test]
     fn test_new_url_query_parser() {
