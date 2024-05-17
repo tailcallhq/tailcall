@@ -28,9 +28,7 @@ impl UrlQueryParser {
             .collect();
         let query_list: Vec<_> = query_pairs
             .into_iter()
-            .map(|(key, value)| {
-                UrlQuery { key, data_type:  detect_gql_data_type(&value) }
-            })
+            .map(|(key, value)| UrlQuery { key, data_type: detect_gql_data_type(&value) })
             .collect();
         Self { queries: query_list }
     }
@@ -240,10 +238,10 @@ pub async fn from_json() {
 
 #[cfg(test)]
 mod test {
-    use crate::ConfigModule;
     use serde_json::json;
 
     use crate::core::generator::from_json::ConfigGenerator;
+    use crate::ConfigModule;
 
     #[test]
     fn test_should_generate_type() {
