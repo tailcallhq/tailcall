@@ -20,7 +20,8 @@ pub struct Response<Body> {
 // Trait to convert a serde_json_borrow::Value to a ConstValue.
 // serde_json_borrow::Value is a borrowed version of serde_json::Value.
 // It has a limited lifetime tied to the input JSON, making it more
-// efficient.
+// efficient. Benchmarking is required to determine the performance If any
+// change is made.
 
 pub trait FromValue {
     fn from_value(value: serde_json_borrow::Value) -> Self;
