@@ -45,7 +45,7 @@ pub fn is_primitive(value: &Value) -> bool {
 
 #[cfg(test)]
 mod test {
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     use super::{
         detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
@@ -85,6 +85,7 @@ mod test {
         assert_eq!(to_gql_type(&json!(false)), "Boolean");
         assert_eq!(to_gql_type(&json!([1, 2, 3])), "List");
         assert_eq!(to_gql_type(&json!({"name":"test", "age": 12})), "Object");
+        assert_eq!(to_gql_type(&Value::Null), "Empty");
 
         assert_eq!(to_gql_type(&json!([])), "List");
         assert_eq!(to_gql_type(&json!({})), "Object");
