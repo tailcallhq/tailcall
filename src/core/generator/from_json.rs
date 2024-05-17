@@ -24,7 +24,7 @@ impl UrlQueryParser {
     fn new(url: &Url) -> Self {
         let query_list: Vec<_> = url
             .query_pairs()
-            .map(|(k, v)| UrlQuery { key: k.to_string(), data_type: detect_gql_data_type(&v) } )
+            .map(|(k, v)| UrlQuery { key: k.to_string(), data_type: detect_gql_data_type(&v) })
             .collect();
         Self { queries: query_list }
     }
@@ -235,8 +235,9 @@ pub async fn from_json() {
 #[cfg(test)]
 mod test {
     use serde_json::json;
+    use url::Url;
 
-    use crate::core::generator::from_json::ConfigGenerator;
+    use crate::core::generator::from_json::{ConfigGenerator, UrlQueryParser};
     use crate::ConfigModule;
 
     #[test]
@@ -321,5 +322,39 @@ mod test {
 
         let cgf_module = ConfigModule::from(ctx.config);
         insta::assert_snapshot!(cgf_module.to_sdl());
+    }
+
+    #[test]
+    fn test_new_url_query_parser() {
+        let url = Url::parse(
+            "http://example.com/path?query1=value1&query2=12&query3=12.3&query4=1,2,4&query5=true",
+        )
+        .unwrap();
+        let parser = UrlQueryParser::new(&url);
+
+        assert_eq!(parser.queries.len(), 5);
+
+        assert_eq!(parser.queries[0].key, "query1");
+        assert_eq!(parser.queries[0].data_type, "String");
+
+        assert_eq!(parser.queries[1].key, "query2");
+        assert_eq!(parser.queries[1].data_type, "Int");
+
+        assert_eq!(parser.queries[2].key, "query3");
+        assert_eq!(parser.queries[2].data_type, "Float");
+
+        assert_eq!(parser.queries[3].key, "query4");
+        assert_eq!(parser.queries[3].data_type, "List");
+
+        assert_eq!(parser.queries[4].key, "query5");
+        assert_eq!(parser.queries[4].data_type, "Boolean");
+    }
+
+    #[test]
+    fn test_new_url_query_parser_empty() {
+        let url = Url::parse("http://example.com/path").unwrap();
+        let parser = UrlQueryParser::new(&url);
+
+        assert_eq!(parser.queries.len(), 0);
     }
 }
