@@ -1,4 +1,8 @@
 {
   "url": "https://example.com/users",
-  "body": [{"name":"test", "age": 12},{"name":"test-1", "age": 19},{"name":"test-3", "age": 21}]
+  "body": [
+    {"name": "test", "age": 12},
+    {"name": "test-1", "age": 19},
+    {"name": "test-3", "age": 21}
+  ]
 }
