@@ -1,6 +1,7 @@
 mod command;
 mod error;
-mod fmt;
+// TODO: make it private after testing.
+pub mod fmt;
 #[cfg(feature = "js")]
 pub mod javascript;
 pub mod metrics;
