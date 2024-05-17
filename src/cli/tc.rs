@@ -98,7 +98,7 @@ pub async fn run() -> Result<()> {
                     // TODO: once the input format is discussed, move this to Generator.
                     for url in paths {
                         let parsed_url = Url::parse(&url).expect("failed to parse the url");
-                        let request = reqwest::Request::new(Method::GET,parsed_url);
+                        let request = reqwest::Request::new(Method::GET, parsed_url);
                         let resp = runtime.http.execute(request).await?.to_json()?;
                         let config = from_json(&url, &resp.body).await;
                         Fmt::display(config.to_sdl());

@@ -193,7 +193,7 @@ impl ConfigGenerator {
 
 pub async fn from_json(url: &str, json_resp: &Value) -> ConfigModule {
     let mut ctx = ConfigGenerator::new(url);
-    ctx.generate(&json_resp);
+    ctx.generate(json_resp);
     ConfigModule::from(ctx.config)
 }
 

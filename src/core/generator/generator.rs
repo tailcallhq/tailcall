@@ -55,7 +55,7 @@ impl Generator {
                 }
                 _ => {
                     unreachable!();
-                },
+                }
             }
         }
 

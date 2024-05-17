@@ -41,5 +41,4 @@ mod tests {
 
         assert!(Source::from_str("foo").is_err());
     }
-    
 }
