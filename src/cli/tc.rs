@@ -19,7 +19,7 @@ use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::generator::{from_json, Generator, Source};
-use crate::core::http::API_URL_PREFIX;
+use crate::core::http::{API_URL_PREFIX, Response};
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
 const FILE_NAME: &str = ".tailcallrc.graphql";
@@ -99,7 +99,7 @@ pub async fn run() -> Result<()> {
                     for url in paths {
                         let parsed_url = Url::parse(&url).expect("failed to parse the url");
                         let request = reqwest::Request::new(Method::GET, parsed_url);
-                        let resp = runtime.http.execute(request).await?.to_json()?;
+                        let resp : Response<_> = runtime.http.execute(request).await?.to_json()?;
                         let config = from_json(&url, &resp.body);
                         Fmt::display(config.to_sdl());
                     }
