@@ -2,12 +2,11 @@ use serde_json::Value;
 use url::Url;
 
 use crate::cli::fmt::Fmt;
-use crate::core::config::{Arg, Http};
+use crate::core::config::{Arg, Config, ConfigModule, Field, Http, Type};
 use crate::core::helpers::gql_type::{
     detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
 };
 use crate::core::http::Response;
-use crate::{Config, ConfigModule, ConfigType, Field};
 
 #[derive(Debug)]
 struct UrlQuery {
@@ -50,7 +49,7 @@ impl ConfigGenerator {
         }
     }
 
-    fn insert_type(&mut self, type_name: &str, actual_type: ConfigType) {
+    fn insert_type(&mut self, type_name: &str, actual_type: Type) {
         self.config.types.insert(type_name.to_string(), actual_type);
     }
 
@@ -79,7 +78,7 @@ impl ConfigGenerator {
         if self.config.types.contains_key("Any") {
             return "Any".to_string();
         }
-        self.insert_type("Any", ConfigType::default());
+        self.insert_type("Any", Type::default());
         "Any".to_string()
     }
 
@@ -97,7 +96,7 @@ impl ConfigGenerator {
                 self.generate_scalar()
             }
             Value::Object(json_obj) => {
-                let mut ty = ConfigType::default();
+                let mut ty = Type::default();
                 for (json_property, json_val) in json_obj {
                     if !self.should_generate_type(json_val) {
                         // if object, array is empty or object has in-compatible fields then
@@ -169,7 +168,7 @@ impl ConfigGenerator {
         field.http = Some(http);
 
         // by default query field will have root field name.
-        let mut ty = ConfigType::default();
+        let mut ty = Type::default();
         ty.fields.insert("root".to_string(), field);
         self.insert_type("Query", ty);
     }
@@ -237,8 +236,8 @@ mod test {
     use serde_json::json;
     use url::Url;
 
+    use crate::core::config::ConfigModule;
     use crate::core::generator::from_json::{ConfigGenerator, UrlQueryParser};
-    use crate::ConfigModule;
 
     #[test]
     fn test_should_generate_type() {
