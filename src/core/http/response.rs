@@ -4,7 +4,6 @@ use derive_setters::Setters;
 use hyper::body::Bytes;
 use indexmap::IndexMap;
 use prost::Message;
-use serde::de::DeserializeOwned;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
@@ -18,6 +17,12 @@ pub struct Response<Body> {
     pub body: Body,
 }
 
+/**
+ * Trait to convert a serde_json_borrow::Value to a ConstValue.
+ * serde_json_borrow::Value is a borrowed version of serde_json::Value.
+ * It has a limited lifetime tied to the input JSON, making it more
+ * efficient.
+ */
 pub trait FromValue {
     fn from_value(value: serde_json_borrow::Value) -> Self;
 }
@@ -57,7 +62,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: DeserializeOwned + Default + FromValue>(self) -> Result<Response<T>> {
+    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
@@ -65,6 +70,9 @@ impl Response<Bytes> {
                 body: Default::default(),
             });
         }
+        // Note: We convert the body to a serde_json_borrow::Value for better
+        // performance. Warning: Do not change this to direct conversion to `T`
+        // without benchmarking the performance impact.
         let body: serde_json_borrow::Value = serde_json::from_slice(&self.body)?;
         let body = T::from_value(body);
         Ok(Response { status: self.status, headers: self.headers, body })
