@@ -18,10 +18,10 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{RequestContext, Response};
-use tailcall::core::javascript::DefaultJsRuntime;
 use tailcall::core::lambda::{EvaluationContext, ResolverContextLike};
 use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::worker::DefaultJsRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 
 struct Http {
@@ -247,7 +247,7 @@ fn request_context() -> RequestContext {
         cache: Arc::new(InMemoryCache::new()),
         extensions: Arc::new(vec![]),
         http_worker: Arc::new(DefaultJsRuntime {}),
-        resolver_worker: Arc::new(DefaultJsRuntime {}),
+        worker: Arc::new(DefaultJsRuntime {}),
     };
     RequestContext::new(runtime)
         .server(server)

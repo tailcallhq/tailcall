@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
-use crate::core::javascript::{Command, Event};
 use crate::core::schema_extension::SchemaExtension;
+use crate::core::worker::{Command, Event};
 use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
@@ -30,7 +30,7 @@ pub struct TargetRuntime {
     /// Worker middleware for handling HTTP requests.
     pub http_worker: Arc<dyn WorkerIO<Event, Command>>,
     /// Worker middleware for resolving data.
-    pub resolver_worker: Arc<dyn WorkerIO<ConstValue, ConstValue>>,
+    pub worker: Arc<dyn WorkerIO<ConstValue, ConstValue>>,
 }
 
 impl TargetRuntime {
@@ -57,8 +57,8 @@ pub mod test {
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
-    use crate::core::javascript::DefaultJsRuntime;
     use crate::core::runtime::TargetRuntime;
+    use crate::core::worker::DefaultJsRuntime;
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
@@ -197,7 +197,7 @@ pub mod test {
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
             http_worker: Arc::new(DefaultJsRuntime {}),
-            resolver_worker: Arc::new(DefaultJsRuntime {}),
+            worker: Arc::new(DefaultJsRuntime {}),
         }
     }
 }

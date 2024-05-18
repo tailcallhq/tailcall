@@ -14,8 +14,8 @@ pub mod test {
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
     use tailcall::core::http::Response;
-    use tailcall::core::javascript::DefaultJsRuntime;
     use tailcall::core::runtime::TargetRuntime;
+    use tailcall::core::worker::DefaultJsRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -155,7 +155,7 @@ pub mod test {
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
             http_worker: Arc::new(DefaultJsRuntime {}),
-            resolver_worker: Arc::new(DefaultJsRuntime {}),
+            worker: Arc::new(DefaultJsRuntime {}),
         }
     }
 }

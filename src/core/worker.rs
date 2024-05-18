@@ -10,18 +10,18 @@ impl<A: Send + Sync + 'static, B> WorkerIO<A, B> for DefaultJsRuntime {
 }
 
 #[derive(Debug)]
-pub struct JsResponse(pub Response<String>);
+pub struct WorkerResponse(pub Response<String>);
 
 #[derive(Debug)]
-pub struct JsRequest(pub reqwest::Request);
+pub struct WorkerRequest(pub reqwest::Request);
 
 #[derive(Debug)]
 pub enum Event {
-    Request(JsRequest),
+    Request(WorkerRequest),
 }
 
 #[derive(Debug)]
 pub enum Command {
-    Request(JsRequest),
-    Response(JsResponse),
+    Request(WorkerRequest),
+    Response(WorkerResponse),
 }

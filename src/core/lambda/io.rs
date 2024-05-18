@@ -142,7 +142,7 @@ impl IO {
                     let value = ctx
                         .request_ctx
                         .runtime
-                        .resolver_worker
+                        .worker
                         .call(method.clone(), value)
                         .await
                         .map_err(EvaluationError::from)?;

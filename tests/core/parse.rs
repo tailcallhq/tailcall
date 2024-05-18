@@ -15,8 +15,8 @@ use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ConfigModule, Source};
 use tailcall::core::http::AppContext;
-use tailcall::core::javascript::DefaultJsRuntime;
 use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::worker::DefaultJsRuntime;
 use tailcall::core::EnvIO;
 
 use super::file::File;
@@ -288,7 +288,7 @@ impl ExecutionSpec {
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
             http_worker: Arc::new(DefaultJsRuntime {}),
-            resolver_worker: Arc::new(DefaultJsRuntime {}),
+            worker: Arc::new(DefaultJsRuntime {}),
         };
 
         let endpoints = config

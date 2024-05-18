@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
-use crate::core::javascript::{Command, Event};
 use crate::core::runtime::TargetRuntime;
+use crate::core::worker::{Command, Event};
 use crate::core::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
 
 // Provides access to env in native rust environment
@@ -42,7 +42,7 @@ fn init_http_worker_io(script: Option<blueprint::Script>) -> Arc<dyn WorkerIO<Ev
 
     #[cfg(not(feature = "js"))]
     tracing::warn!("JS capabilities are disabled in this build");
-    Arc::new(crate::core::javascript::DefaultJsRuntime {})
+    Arc::new(crate::core::worker::DefaultJsRuntime {})
 }
 
 fn init_resolver_worker_io(
@@ -55,7 +55,7 @@ fn init_resolver_worker_io(
 
     #[cfg(not(feature = "js"))]
     tracing::warn!("JS capabilities are disabled in this build");
-    Arc::new(crate::core::javascript::DefaultJsRuntime {})
+    Arc::new(crate::core::worker::DefaultJsRuntime {})
 }
 
 // Provides access to http in native rust environment
@@ -86,6 +86,6 @@ pub fn init(blueprint: &Blueprint) -> TargetRuntime {
         cache: Arc::new(init_in_memory_cache()),
         extensions: Arc::new(vec![]),
         http_worker: init_http_worker_io(blueprint.server.script.clone()),
-        resolver_worker: init_resolver_worker_io(blueprint.server.script.clone()),
+        worker: init_resolver_worker_io(blueprint.server.script.clone()),
     }
 }

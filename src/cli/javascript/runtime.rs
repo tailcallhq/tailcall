@@ -5,7 +5,7 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
-use crate::core::javascript::{Command, Event, JsRequest};
+use crate::core::worker::{Command, Event, WorkerRequest};
 use crate::core::{blueprint, WorkerIO};
 
 struct LocalRuntime(Context);
@@ -130,7 +130,7 @@ fn init_rt(script: blueprint::Script) -> anyhow::Result<()> {
     })
 }
 
-fn prepare_args<'js>(ctx: &Ctx<'js>, req: JsRequest) -> rquickjs::Result<(Value<'js>,)> {
+fn prepare_args<'js>(ctx: &Ctx<'js>, req: WorkerRequest) -> rquickjs::Result<(Value<'js>,)> {
     let object = rquickjs::Object::new(ctx.clone())?;
     object.set("request", req.into_js(ctx)?)?;
     Ok((object.into_value(),))

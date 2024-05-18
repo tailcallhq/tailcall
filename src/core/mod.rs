@@ -18,7 +18,6 @@ pub mod grpc;
 pub mod has_headers;
 pub mod helpers;
 pub mod http;
-pub mod javascript;
 pub mod json;
 pub mod lambda;
 pub mod merge_right;
@@ -36,6 +35,7 @@ mod serde_value_ext;
 pub mod tracing;
 pub mod try_fold;
 pub mod valid;
+pub mod worker;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
