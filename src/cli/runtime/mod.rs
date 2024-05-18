@@ -27,8 +27,6 @@ fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> 
         return super::javascript::init_http(http, script);
     }
 
-    #[cfg(not(feature = "js"))]
-    tracing::warn!("JS capabilities are disabled in this build");
     let _ = script;
 
     http
@@ -40,8 +38,6 @@ fn init_http_worker_io(script: Option<blueprint::Script>) -> Arc<dyn WorkerIO<Ev
         return Arc::new(super::javascript::Runtime::new(script));
     };
 
-    #[cfg(not(feature = "js"))]
-    tracing::warn!("JS capabilities are disabled in this build");
     Arc::new(crate::core::worker::DefaultJsRuntime {})
 }
 
@@ -53,8 +49,6 @@ fn init_resolver_worker_io(
         return Arc::new(super::javascript::Runtime::new(script));
     };
 
-    #[cfg(not(feature = "js"))]
-    tracing::warn!("JS capabilities are disabled in this build");
     Arc::new(crate::core::worker::DefaultJsRuntime {})
 }
 
@@ -78,6 +72,9 @@ fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {
 }
 
 pub fn init(blueprint: &Blueprint) -> TargetRuntime {
+    #[cfg(not(feature = "js"))]
+    tracing::warn!("JS capabilities are disabled in this build");
+
     TargetRuntime {
         http: init_http(blueprint),
         http2_only: init_http2_only(blueprint),
