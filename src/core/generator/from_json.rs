@@ -1,7 +1,8 @@
+use convert_case::Casing;
 use serde_json::Value;
 use url::Url;
 
-use crate::core::config::{Arg, Config, ConfigModule, Field, Http, Type};
+use crate::core::config::{Arg, Config, Field, Http, Type};
 use crate::core::helpers::gql_type::{
     detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
 };
@@ -30,19 +31,14 @@ impl UrlQueryParser {
 struct ConfigGenerator {
     /// final configuration that's being built up.
     config: Config,
-
-    /// API used for generation of the GQL schema.
-    url: Url,
-
     /// Used to generate the type names.
     type_counter: i32,
 }
 
 impl ConfigGenerator {
-    fn new(url: &str) -> Self {
+    fn new() -> Self {
         Self {
             config: Config::default(),
-            url: Url::parse(url).expect("unable to parse the url."),
             type_counter: 1,
         }
     }
@@ -127,14 +123,14 @@ impl ConfigGenerator {
         }
     }
 
-    fn generate_query_type(&mut self, value: &Value, root_type_name: String) {
+    fn generate_query_type(&mut self, url:&Url, value: &Value, root_type_name: String) {
         let mut field = Field {
             list: is_list_type(value),
-            type_of: root_type_name,
+            type_of: root_type_name.to_string(),
             ..Default::default()
         };
 
-        let query_list = UrlQueryParser::new(&self.url).queries;
+        let query_list = UrlQueryParser::new(url).queries;
 
         // collect queries to generate mustache format path.
         let mut path_queries: Vec<String> = Vec::with_capacity(query_list.len());
@@ -155,7 +151,7 @@ impl ConfigGenerator {
 
         // add path in http directive.
         let mut http = Http::default();
-        let mut complete_path = self.url.path().to_string();
+        let mut complete_path = url.path().to_string();
         if !path_queries.is_empty() {
             complete_path = format!("{}?{}", complete_path, path_queries.join("&"))
         }
@@ -164,15 +160,15 @@ impl ConfigGenerator {
 
         // by default query field will have root field name.
         let mut ty = Type::default();
-        ty.fields.insert("root".to_string(), field);
+        ty.fields.insert(root_type_name.to_case(convert_case::Case::Camel), field);
         self.insert_type("Query", ty);
     }
 
-    fn generate_upstream(&mut self) {
+    fn generate_upstream(&mut self, url: &Url) {
         self.config.upstream.base_url = Some(format!(
             "{}://{}",
-            self.url.scheme(),
-            self.url.host_str().unwrap()
+            url.scheme(),
+            url.host_str().unwrap()
         ));
     }
 
@@ -180,18 +176,38 @@ impl ConfigGenerator {
         self.config.schema.query = Some("Query".to_string());
     }
 
-    fn generate(&mut self, resp: &Value) {
+    fn generate(&mut self,url: &str, resp: &Value) -> anyhow::Result<()> {
+        let url = Url::parse(url)?;
         let root_type_name = self.generate_types(resp);
-        self.generate_query_type(resp, root_type_name);
-        self.generate_upstream();
+        self.generate_query_type(&url, resp, root_type_name);
+        self.generate_upstream(&url);
         self.generate_schema();
+        Ok(())
     }
 }
 
-pub fn from_json(url: &str, json_resp: &Value) -> ConfigModule {
-    let mut ctx = ConfigGenerator::new(url);
-    ctx.generate(json_resp);
-    ConfigModule::from(ctx.config)
+pub struct ConfigGenerationRequest<'a> {
+    pub url: &'a str,
+    resp: &'a Value,
+}
+
+impl<'a> ConfigGenerationRequest<'a> {
+    pub fn new(url: &'a str, resp: &'a Value) -> Self {
+        Self {
+            url,
+            resp
+        }
+    }
+}
+
+pub fn from_json(config_gen_req: &[ConfigGenerationRequest]) -> anyhow::Result<Config> {
+    let mut config = Config::default();
+    let mut ctx = ConfigGenerator::new();
+    for request in config_gen_req.iter() {
+        ctx.generate(request.url,request.resp)?;
+        config = config.merge_right(ctx.config.clone());
+    }
+    Ok(config)
 }
 
 #[cfg(test)]
@@ -203,7 +219,7 @@ mod test {
 
     #[test]
     fn test_should_generate_type() {
-        let config_gen = ConfigGenerator::new("https://www.jsonplaceholder.typicode.come/users");
+        let config_gen = ConfigGenerator::new();
         assert!(config_gen.should_generate_type(&json!("Testing")));
         assert!(config_gen.should_generate_type(&json!(12)));
         assert!(config_gen.should_generate_type(&json!(12.3)));
@@ -229,13 +245,6 @@ mod test {
         }})));
     }
 
-    #[test]
-    fn test_generate_upstream() {
-        let mut config_gen =
-            ConfigGenerator::new("https://www.jsonplaceholder.typicode.come/users");
-        config_gen.generate_upstream();
-        assert!(config_gen.config.upstream.base_url.is_some())
-    }
 
     #[test]
     fn test_new_url_query_parser() {
