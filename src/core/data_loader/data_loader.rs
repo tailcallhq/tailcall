@@ -13,7 +13,7 @@ pub use super::cache::NoCache;
 pub use super::factory::CacheFactory;
 pub use super::loader::Loader;
 pub use super::storage::CacheStorage;
-use crate::core::http;
+use crate::core::http::HttpFilter;
 
 /// Data loader.
 ///
@@ -108,7 +108,7 @@ where
     pub async fn load_one(
         &self,
         key: K,
-        http_filter: http::HttpFilter,
+        http_filter: HttpFilter,
     ) -> Result<Option<T::Value>, T::Error>
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
@@ -124,7 +124,7 @@ where
     pub async fn load_many<I>(
         &self,
         keys: I,
-        http_filter: http::HttpFilter,
+        http_filter: HttpFilter,
     ) -> Result<HashMap<K, T::Value>, T::Error>
     where
         K: Send + Sync + Hash + Eq + Clone + 'static,
@@ -339,7 +339,7 @@ where
         &self,
         disable_cache: bool,
         (keys, senders): KeysAndSender<K, T>,
-        http_filter: http::HttpFilter,
+        http_filter: HttpFilter,
     ) where
         K: Send + Sync + Hash + Eq + Clone + 'static,
         T: Loader<K>,
@@ -398,7 +398,7 @@ mod tests {
         async fn load(
             &self,
             keys: &[i32],
-            _http_filter: http::HttpFilter,
+            _http_filter: HttpFilter,
         ) -> Result<HashMap<i32, Self::Value>, Self::Error> {
             assert!(keys.len() <= 10);
             Ok(keys.iter().copied().map(|k| (k, k)).collect())
@@ -413,7 +413,7 @@ mod tests {
         async fn load(
             &self,
             keys: &[i64],
-            _http_filter: http::HttpFilter,
+            _http_filter: HttpFilter,
         ) -> Result<HashMap<i64, Self::Value>, Self::Error> {
             assert!(keys.len() <= 10);
             Ok(keys.iter().copied().map(|k| (k, k)).collect())
@@ -428,7 +428,7 @@ mod tests {
                 let loader = loader.clone();
                 move |n| {
                     let loader = loader.clone();
-                    async move { loader.load_one(n, http::HttpFilter::default()).await }
+                    async move { loader.load_one(n, HttpFilter::default()).await }
                 }
             }))
             .await
@@ -445,7 +445,7 @@ mod tests {
                 let loader = loader.clone();
                 move |n| {
                     let loader = loader.clone();
-                    async move { loader.load_one(n, http::HttpFilter::default()).await }
+                    async move { loader.load_one(n, HttpFilter::default()).await }
                 }
             }))
             .await
@@ -462,7 +462,7 @@ mod tests {
     async fn test_dataloader_load_empty() {
         let loader = DataLoader::new(MyLoader);
         assert!(loader
-            .load_many::<Vec<i32>>(vec![], http::HttpFilter::default())
+            .load_many::<Vec<i32>>(vec![], HttpFilter::default())
             .await
             .unwrap()
             .is_empty());
@@ -476,7 +476,7 @@ mod tests {
         // All from the cache
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
@@ -485,7 +485,7 @@ mod tests {
         // Part from the cache
         assert_eq!(
             loader
-                .load_many(vec![1, 5, 6], http::HttpFilter::default())
+                .load_many(vec![1, 5, 6], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 10), (5, 5), (6, 6)].into_iter().collect()
@@ -494,7 +494,7 @@ mod tests {
         // All from the loader
         assert_eq!(
             loader
-                .load_many(vec![8, 9, 10], http::HttpFilter::default())
+                .load_many(vec![8, 9, 10], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(8, 8), (9, 9), (10, 10)].into_iter().collect()
@@ -504,7 +504,7 @@ mod tests {
         loader.clear();
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
@@ -519,7 +519,7 @@ mod tests {
         // All from the cache
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
@@ -528,7 +528,7 @@ mod tests {
         // Part from the cache
         assert_eq!(
             loader
-                .load_many(vec![1, 5, 6], http::HttpFilter::default())
+                .load_many(vec![1, 5, 6], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 10), (5, 5), (6, 6)].into_iter().collect()
@@ -537,7 +537,7 @@ mod tests {
         // All from the loader
         assert_eq!(
             loader
-                .load_many(vec![8, 9, 10], http::HttpFilter::default())
+                .load_many(vec![8, 9, 10], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(8, 8), (9, 9), (10, 10)].into_iter().collect()
@@ -547,7 +547,7 @@ mod tests {
         loader.clear();
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
@@ -563,7 +563,7 @@ mod tests {
         loader.enable_all_cache(false);
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
@@ -573,7 +573,7 @@ mod tests {
         loader.enable_all_cache(true);
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
@@ -589,7 +589,7 @@ mod tests {
         loader.enable_cache(false);
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 1), (2, 2), (3, 3)].into_iter().collect()
@@ -599,7 +599,7 @@ mod tests {
         loader.enable_cache(true);
         assert_eq!(
             loader
-                .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                .load_many(vec![1, 2, 3], HttpFilter::default())
                 .await
                 .unwrap(),
             vec![(1, 10), (2, 20), (3, 30)].into_iter().collect()
@@ -618,7 +618,7 @@ mod tests {
             async fn load(
                 &self,
                 keys: &[i32],
-                _http_filter: http::HttpFilter,
+                _http_filter: HttpFilter,
             ) -> Result<HashMap<i32, Self::Value>, Self::Error> {
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 Ok(keys.iter().copied().map(|k| (k, k)).collect())
@@ -631,7 +631,7 @@ mod tests {
             let loader = loader.clone();
             async move {
                 loader
-                    .load_many(vec![1, 2, 3], http::HttpFilter::default())
+                    .load_many(vec![1, 2, 3], HttpFilter::default())
                     .await
                     .unwrap();
             }
@@ -640,7 +640,7 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(500)).await;
         handle.abort();
         loader
-            .load_many(vec![4, 5, 6], http::HttpFilter::default())
+            .load_many(vec![4, 5, 6], HttpFilter::default())
             .await
             .unwrap();
     }

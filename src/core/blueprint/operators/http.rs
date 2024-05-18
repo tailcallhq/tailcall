@@ -2,11 +2,11 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
-use crate::core::http::{Method, RequestTemplate};
+use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::lambda::{Expression, IO};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
-use crate::core::{config, helpers, http};
+use crate::core::{config, helpers};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
@@ -65,7 +65,7 @@ pub fn compile_http(
                 .clone()
                 .or(config_module.upstream.on_request.clone())
                 .or(Some("onRequest".to_string()));
-            let http_filter = http::HttpFilter { on_request };
+            let http_filter = HttpFilter { on_request };
 
             if !http.group_by.is_empty() && http.method == Method::GET {
                 Expression::IO(IO::Http {

@@ -55,7 +55,7 @@ mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request::execute_grpc_request;
-    use crate::core::http::{self, Response};
+    use crate::core::http::{HttpFilter, Response};
     use crate::core::lambda::EvaluationError;
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
@@ -104,7 +104,7 @@ mod tests {
         async fn execute_with(
             &self,
             _request: Request,
-            _http_filter: &'life0 http::HttpFilter,
+            _http_filter: &'life0 HttpFilter,
         ) -> Result<Response<Bytes>> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");

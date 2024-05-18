@@ -18,7 +18,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
-use crate::core::http::{self, Response};
+use crate::core::http::{HttpFilter, Response};
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -144,7 +144,7 @@ impl HttpIO for NativeHttp {
     async fn execute_with(
         &self,
         mut request: reqwest::Request,
-        _: &'life0 http::HttpFilter,
+        _: &'life0 HttpFilter,
     ) -> Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;

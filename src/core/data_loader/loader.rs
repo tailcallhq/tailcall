@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::core::http;
+use crate::core::http::HttpFilter;
 
 /// Trait for batch loading.
 #[async_trait::async_trait]
@@ -16,6 +16,6 @@ pub trait Loader<K: Send + Sync + Hash + Eq + Clone + 'static>: Send + Sync + 's
     async fn load(
         &self,
         keys: &[K],
-        http_filter: http::HttpFilter,
+        http_filter: HttpFilter,
     ) -> Result<HashMap<K, Self::Value>, Self::Error>;
 }

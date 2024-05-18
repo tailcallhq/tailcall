@@ -4,7 +4,7 @@ use hyper::body::Bytes;
 use rquickjs::FromJs;
 
 use super::{JsRequest, JsResponse};
-use crate::core::http::{self, Response};
+use crate::core::http::{HttpFilter, Response};
 use crate::core::{HttpIO, WorkerIO};
 
 #[derive(Debug)]
@@ -63,7 +63,7 @@ impl RequestFilter {
     async fn on_request(
         &self,
         mut request: reqwest::Request,
-        http_filter: http::HttpFilter,
+        http_filter: HttpFilter,
     ) -> anyhow::Result<Response<Bytes>> {
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
@@ -87,7 +87,7 @@ impl RequestFilter {
                         request
                             .url_mut()
                             .set_path(js_response.headers()["location"].as_str());
-                        self.on_request(request, http::HttpFilter::default()).await
+                        self.on_request(request, HttpFilter::default()).await
                     } else {
                         Ok(js_response.try_into()?)
                     }
@@ -103,7 +103,7 @@ impl HttpIO for RequestFilter {
     async fn execute_with(
         &self,
         request: reqwest::Request,
-        http_filter: &'life0 http::HttpFilter,
+        http_filter: &'life0 HttpFilter,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
         if http_filter.on_request.is_some() {
             self.on_request(request, http_filter.clone()).await
