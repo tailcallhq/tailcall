@@ -7,5 +7,5 @@ schema @server @upstream(baseURL: "https://example.com") {
 }
 
 type Query {
-  root(verified_user: Boolean!): Int @http(path: "/users?verified_user={{.args.verified_user}}")
+  int(verified_user: Boolean!): Int @http(path: "/users?verified_user={{.args.verified_user}}")
 }

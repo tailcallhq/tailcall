@@ -7,5 +7,5 @@ schema @server @upstream(baseURL: "https://example.com") {
 }
 
 type Query {
-  root: Boolean @http(path: "/user/12/online")
+  boolean: Boolean @http(path: "/user/12/online")
 }
