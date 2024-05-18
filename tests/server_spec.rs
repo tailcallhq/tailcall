@@ -11,7 +11,7 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript;
-    use tailcall::javascript::DefaultJsRuntime;
+    use tailcall::core::javascript::DefaultJsRuntime;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
     use tailcall::core::http::Response;

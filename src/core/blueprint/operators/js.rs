@@ -1,10 +1,9 @@
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
-use crate::core::config::Field;
-use crate::core::lambda::IO;
+use crate::core::config::{Field, ConfigModule};
+use crate::core::lambda::{Expression, IO};
 use crate::core::try_fold::TryFold;
-use crate::core::valid::Valid;
-use crate::{ConfigModule, Expression, Validator};
+use crate::core::valid::{Valid, Validator};
 
 pub struct CompileJs<'a> {
     pub name: &'a str,

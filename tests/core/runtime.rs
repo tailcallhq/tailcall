@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use derive_setters::Setters;
 use tailcall::cli::javascript;
-use tailcall::javascript::DefaultJsRuntime;
+use tailcall::core::javascript::DefaultJsRuntime;
 use tailcall::core::blueprint::Script;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::Source;

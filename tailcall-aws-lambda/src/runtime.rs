@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use tailcall::javascript::DefaultJsRuntime;
+use tailcall::core::javascript::DefaultJsRuntime;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EntityCache, EnvIO, FileIO};

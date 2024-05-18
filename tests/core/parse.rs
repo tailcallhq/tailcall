@@ -11,7 +11,7 @@ use anyhow::anyhow;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::cli::javascript;
-use tailcall::javascript::DefaultJsRuntime;
+use tailcall::core::javascript::DefaultJsRuntime;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ConfigModule, Source};

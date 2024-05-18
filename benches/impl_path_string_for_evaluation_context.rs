@@ -15,7 +15,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::javascript::DefaultJsRuntime;
+use tailcall::core::javascript::DefaultJsRuntime;
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{RequestContext, Response};

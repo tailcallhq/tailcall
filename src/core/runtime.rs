@@ -59,7 +59,7 @@ pub mod test {
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
-    use crate::javascript::DefaultJsRuntime;
+    use crate::core::javascript::DefaultJsRuntime;
 
     #[derive(Clone)]
     struct TestHttp {
