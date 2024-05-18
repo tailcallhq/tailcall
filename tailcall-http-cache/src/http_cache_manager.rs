@@ -63,90 +63,90 @@ impl CacheManager for HttpCacheManager {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::collections::HashMap;
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
 
-//     use anyhow::Ok;
-//     use http_cache::HttpVersion;
-//     use reqwest::{Method, Response, ResponseBuilderExt};
-//     use url::Url;
+    use anyhow::Ok;
+    use http_cache::HttpVersion;
+    use reqwest::{Method, Response, ResponseBuilderExt};
+    use url::Url;
 
-//     use super::*;
+    use super::*;
 
-//     fn convert_response(response: HttpResponse) -> anyhow::Result<Response> {
-//         let ret_res = http::Response::builder()
-//             .status(response.status)
-//             .url(response.url)
-//             .version(response.version.into())
-//             .body(response.body)?;
+    fn convert_response(response: HttpResponse) -> anyhow::Result<Response> {
+        let ret_res = http::Response::builder()
+            .status(response.status)
+            .url(response.url)
+            .version(response.version.into())
+            .body(response.body)?;
 
-//         Ok(Response::from(ret_res))
-//     }
+        Ok(Response::from(ret_res))
+    }
 
-//     async fn insert_key_into_cache(manager: &HttpCacheManager) {
-//         let request_url = "http://localhost:8080/test";
-//         let url = Url::parse(request_url).unwrap();
+    async fn insert_key_into_cache(manager: &HttpCacheManager) {
+        let request_url = "http://localhost:8080/test";
+        let url = Url::parse(request_url).unwrap();
 
-//         let http_resp = HttpResponse {
-//             headers: HashMap::default(),
-//             body: vec![1, 2, 3],
-//             status: 200,
-//             url: url.clone(),
-//             version: HttpVersion::Http11,
-//         };
-//         let resp = convert_response(http_resp.clone()).unwrap();
-//         let request: reqwest::Request =
-//             reqwest::Request::new(Method::GET, request_url.parse().unwrap());
+        let http_resp = HttpResponse {
+            headers: HashMap::default(),
+            body: vec![1, 2, 3],
+            status: 200,
+            url: url.clone(),
+            version: HttpVersion::Http11,
+        };
+        let resp = convert_response(http_resp.clone()).unwrap();
+        let request: reqwest::Request =
+            reqwest::Request::new(Method::GET, request_url.parse().unwrap());
 
-//         let _ = manager
-//             .put(
-//                 "test".to_string(),
-//                 http_resp,
-//                 CachePolicy::new(&request, &resp),
-//             )
-//             .await
-//             .unwrap();
-//     }
+        let _ = manager
+            .put(
+                "test".to_string(),
+                http_resp,
+                CachePolicy::new(&request, &resp),
+            )
+            .await
+            .unwrap();
+    }
 
-//     #[tokio::test]
-//     async fn test_put() {
-//         let manager = HttpCacheManager::default();
-//         insert_key_into_cache(&manager).await;
-//         assert!(manager.cache.contains_key("test"));
-//     }
+    #[tokio::test]
+    async fn test_put() {
+        let manager = HttpCacheManager::default();
+        insert_key_into_cache(&manager).await;
+        assert!(manager.cache.contains_key("test"));
+    }
 
-//     #[tokio::test]
-//     async fn test_get_when_key_present() {
-//         let manager = HttpCacheManager::default();
-//         insert_key_into_cache(&manager).await;
-//         let value = manager.get("test").await.unwrap();
-//         assert!(value.is_some());
-//     }
+    #[tokio::test]
+    async fn test_get_when_key_present() {
+        let manager = HttpCacheManager::default();
+        insert_key_into_cache(&manager).await;
+        let value = manager.get("test").await.unwrap();
+        assert!(value.is_some());
+    }
 
-//     #[tokio::test]
-//     async fn test_get_when_key_not_present() {
-//         let manager = HttpCacheManager::default();
-//         let result = manager.get("test").await.unwrap();
-//         assert!(result.is_none());
-//     }
+    #[tokio::test]
+    async fn test_get_when_key_not_present() {
+        let manager = HttpCacheManager::default();
+        let result = manager.get("test").await.unwrap();
+        assert!(result.is_none());
+    }
 
-//     #[tokio::test]
-//     async fn test_delete_when_key_present() {
-//         let manager = HttpCacheManager::default();
-//         insert_key_into_cache(&manager).await;
+    #[tokio::test]
+    async fn test_delete_when_key_present() {
+        let manager = HttpCacheManager::default();
+        insert_key_into_cache(&manager).await;
 
-//         assert!(manager.cache.iter().count() as i32 == 1);
-//         let _ = manager.delete("test").await;
-//         assert!(manager.cache.iter().count() as i32 == 0);
-//     }
+        assert!(manager.cache.iter().count() as i32 == 1);
+        let _ = manager.delete("test").await;
+        assert!(manager.cache.iter().count() as i32 == 0);
+    }
 
-//     #[tokio::test]
-//     async fn test_clear() {
-//         let manager = HttpCacheManager::default();
-//         insert_key_into_cache(&manager).await;
-//         assert!(manager.cache.iter().count() as i32 == 1);
-//         let _ = manager.clear().await;
-//         assert!(manager.cache.iter().count() as i32 == 0);
-//     }
-// }
+    #[tokio::test]
+    async fn test_clear() {
+        let manager = HttpCacheManager::default();
+        insert_key_into_cache(&manager).await;
+        assert!(manager.cache.iter().count() as i32 == 1);
+        let _ = manager.clear().await;
+        assert!(manager.cache.iter().count() as i32 == 0);
+    }
+}
