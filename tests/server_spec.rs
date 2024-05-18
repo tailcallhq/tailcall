@@ -16,8 +16,8 @@ pub mod test {
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tailcall_http_cache::HttpCacheManager;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[derive(Clone)]
     struct TestHttp {
