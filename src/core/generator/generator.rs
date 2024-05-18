@@ -170,7 +170,8 @@ mod test {
 
         assert_eq!(config.first().unwrap().links.len(), 3);
         assert_eq!(
-            config.first()
+            config
+                .first()
                 .unwrap()
                 .types
                 .get("Query")

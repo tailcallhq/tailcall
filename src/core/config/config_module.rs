@@ -318,7 +318,8 @@ mod tests {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
         let config_module = gen.read_all(Source::Proto, &[news], "Query").await?;
-        let actual = config_module.first()
+        let actual = config_module
+            .first()
             .unwrap()
             .config
             .types
