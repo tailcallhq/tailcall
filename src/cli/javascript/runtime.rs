@@ -98,12 +98,8 @@ impl WorkerIO<Event, Command> for Runtime {
 }
 
 #[async_trait::async_trait]
-impl WorkerIO<Option<ConstValue>, ConstValue> for Runtime {
-    async fn call(
-        &self,
-        name: String,
-        input: Option<ConstValue>,
-    ) -> anyhow::Result<Option<ConstValue>> {
+impl WorkerIO<ConstValue, ConstValue> for Runtime {
+    async fn call(&self, name: String, input: ConstValue) -> anyhow::Result<Option<ConstValue>> {
         let script = self.script.clone();
         if let Some(runtime) = &self.tokio_runtime {
             runtime
@@ -167,10 +163,8 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
     })
 }
 
-fn execute_inner(name: String, value: Option<ConstValue>) -> anyhow::Result<ConstValue> {
-    let value = value
-        .map(|v| serde_json::to_string(&v))
-        .ok_or(anyhow::anyhow!("No graphql value found"))??;
+fn execute_inner(name: String, value: ConstValue) -> anyhow::Result<ConstValue> {
+    let value = serde_json::to_string(&value)?;
 
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell

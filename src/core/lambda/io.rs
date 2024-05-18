@@ -138,11 +138,12 @@ impl IO {
                     Ok(res.body)
                 }
                 IO::Js { name: method } => {
+                    let value = ctx.value().cloned().unwrap_or_default();
                     let value = ctx
                         .request_ctx
                         .runtime
                         .resolver_worker
-                        .call(method.clone(), ctx.value().cloned())
+                        .call(method.clone(), value)
                         .await
                         .map_err(EvaluationError::from)?;
 

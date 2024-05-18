@@ -11,10 +11,10 @@ pub mod test {
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript;
-    use tailcall::core::javascript::DefaultJsRuntime;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
     use tailcall::core::http::Response;
+    use tailcall::core::javascript::DefaultJsRuntime;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};

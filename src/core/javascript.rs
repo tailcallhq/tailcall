@@ -1,4 +1,4 @@
-use crate::core::{WorkerIO, Response};
+use crate::core::{Response, WorkerIO};
 
 pub struct DefaultJsRuntime;
 

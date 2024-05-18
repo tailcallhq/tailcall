@@ -30,7 +30,7 @@ pub struct TargetRuntime {
     /// Worker middleware for handling HTTP requests.
     pub http_worker: Arc<dyn WorkerIO<Event, Command>>,
     /// Worker middleware for resolving data.
-    pub resolver_worker: Arc<dyn WorkerIO<Option<ConstValue>, ConstValue>>,
+    pub resolver_worker: Arc<dyn WorkerIO<ConstValue, ConstValue>>,
 }
 
 impl TargetRuntime {
@@ -57,9 +57,9 @@ pub mod test {
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
+    use crate::core::javascript::DefaultJsRuntime;
     use crate::core::runtime::TargetRuntime;
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
-    use crate::core::javascript::DefaultJsRuntime;
 
     #[derive(Clone)]
     struct TestHttp {

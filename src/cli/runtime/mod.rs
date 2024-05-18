@@ -47,7 +47,7 @@ fn init_http_worker_io(script: Option<blueprint::Script>) -> Arc<dyn WorkerIO<Ev
 
 fn init_resolver_worker_io(
     script: Option<blueprint::Script>,
-) -> Arc<dyn WorkerIO<Option<async_graphql::Value>, async_graphql::Value>> {
+) -> Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value>> {
     #[cfg(feature = "js")]
     if let Some(script) = script {
         return Arc::new(super::javascript::Runtime::new(script));
