@@ -38,10 +38,7 @@ struct ConfigGenerator {
 
 impl ConfigGenerator {
     fn new() -> Self {
-        Self {
-            config: Config::default(),
-            type_counter: 1,
-        }
+        Self { config: Config::default(), type_counter: 1 }
     }
 
     fn insert_type(&mut self, type_name: &str, actual_type: Type) {
@@ -124,7 +121,7 @@ impl ConfigGenerator {
         }
     }
 
-    fn generate_query_type(&mut self, url:&Url, value: &Value, root_type_name: String) {
+    fn generate_query_type(&mut self, url: &Url, value: &Value, root_type_name: String) {
         let mut field = Field {
             list: is_list_type(value),
             type_of: root_type_name.to_string(),
@@ -161,23 +158,21 @@ impl ConfigGenerator {
 
         // by default query field will have root field name.
         let mut ty = Type::default();
-        ty.fields.insert(root_type_name.to_case(convert_case::Case::Camel), field);
+        ty.fields
+            .insert(root_type_name.to_case(convert_case::Case::Camel), field);
         self.insert_type("Query", ty);
     }
 
     fn generate_upstream(&mut self, url: &Url) {
-        self.config.upstream.base_url = Some(format!(
-            "{}://{}",
-            url.scheme(),
-            url.host_str().unwrap()
-        ));
+        self.config.upstream.base_url =
+            Some(format!("{}://{}", url.scheme(), url.host_str().unwrap()));
     }
 
     fn generate_schema(&mut self) {
         self.config.schema.query = Some("Query".to_string());
     }
 
-    fn generate(&mut self,url: &str, resp: &Value) -> anyhow::Result<()> {
+    fn generate(&mut self, url: &str, resp: &Value) -> anyhow::Result<()> {
         let url = Url::parse(url)?;
         let root_type_name = self.generate_types(resp);
         self.generate_query_type(&url, resp, root_type_name);
@@ -194,10 +189,7 @@ pub struct ConfigGenerationRequest<'a> {
 
 impl<'a> ConfigGenerationRequest<'a> {
     pub fn new(url: &'a str, resp: &'a Value) -> Self {
-        Self {
-            url,
-            resp
-        }
+        Self { url, resp }
     }
 }
 
@@ -205,7 +197,7 @@ pub fn from_json(config_gen_req: &[ConfigGenerationRequest]) -> anyhow::Result<C
     let mut config = Config::default();
     let mut ctx = ConfigGenerator::new();
     for request in config_gen_req.iter() {
-        ctx.generate(request.url,request.resp)?;
+        ctx.generate(request.url, request.resp)?;
         config = config.merge_right(ctx.config.clone());
     }
     Ok(config)
@@ -245,7 +237,6 @@ mod test {
             "age": 12
         }})));
     }
-
 
     #[test]
     fn test_new_url_query_parser() {

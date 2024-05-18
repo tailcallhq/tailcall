@@ -5,13 +5,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::core::generator::{from_json, ConfigGenerationRequest};
 
-
 #[derive(Serialize, Deserialize)]
 struct JsonFixture {
     url: String,
     body: Value,
 }
-
 
 pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
     let (url, body) = load_json(path)?;

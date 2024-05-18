@@ -1,10 +1,11 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 use reqwest::Method;
 use serde_json::Value;
-use std::collections::HashMap;
 use url::Url;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
@@ -101,7 +102,7 @@ impl Generator {
                     let domain = url.domain().unwrap();
                     domain_groupings
                         .entry(domain.to_string())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(req);
                 }
 
@@ -167,10 +168,9 @@ mod test {
             .await
             .unwrap();
 
-        assert_eq!(config.get(0).unwrap().links.len(), 3);
+        assert_eq!(config.first().unwrap().links.len(), 3);
         assert_eq!(
-            config
-                .get(0)
+            config.first()
                 .unwrap()
                 .types
                 .get("Query")

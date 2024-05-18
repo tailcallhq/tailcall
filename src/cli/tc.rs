@@ -16,7 +16,7 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::generator::{Generator};
+use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
@@ -93,7 +93,8 @@ pub async fn run() -> Result<()> {
                 let config = output_source.encode(&cfg_module)?;
                 Fmt::display(config);
                 if idx < cfg_len {
-                    // if we've multiple configurations generated then add space between each config.
+                    // if we've multiple configurations generated then add space between each
+                    // config.
                     println!();
                 }
             }

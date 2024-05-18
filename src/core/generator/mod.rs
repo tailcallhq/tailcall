@@ -4,7 +4,6 @@ mod generator;
 mod graphql_type;
 mod source;
 
-pub use from_json::from_json;
-pub use from_json::ConfigGenerationRequest;
+pub use from_json::{from_json, ConfigGenerationRequest};
 pub use generator::Generator;
 pub use source::Source;
