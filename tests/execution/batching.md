@@ -1,6 +1,6 @@
 # Sending a batched graphql request
 
-```json @server
+```json @config
 {
   "server": {
     "batchRequests": true

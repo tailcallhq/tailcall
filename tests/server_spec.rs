@@ -1,5 +1,3 @@
-use tailcall::{EnvIO, FileIO, HttpIO, Upstream};
-
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
@@ -14,10 +12,12 @@ pub mod test {
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
     use tailcall::cli::javascript;
     use tailcall::javascript::DefaultJsRuntime;
-    use tailcall::{InMemoryCache, Response, Script, TargetRuntime};
+    use tailcall::core::blueprint::{Script, Upstream};
+    use tailcall::core::cache::InMemoryCache;
+    use tailcall::core::http::Response;
+    use tailcall::core::runtime::TargetRuntime;
+    use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-    use crate::{EnvIO, FileIO, HttpIO, Upstream};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -165,7 +165,7 @@ mod server_spec {
     use reqwest::Client;
     use serde_json::json;
     use tailcall::cli::server::Server;
-    use tailcall::ConfigReader;
+    use tailcall::core::config::reader::ConfigReader;
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = crate::test::init(None);

@@ -1,6 +1,6 @@
 # Call multiple steps piping
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

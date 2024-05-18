@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-enum-empty
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

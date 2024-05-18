@@ -165,7 +165,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Run Cargo Test
-        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
@@ -263,7 +263,6 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-musl
-            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -278,7 +277,6 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-unknown-linux-musl
-            features: --no-default-features --features cli
             libc: musl
             cross: true
 
@@ -286,7 +284,6 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-unknown-linux-gnu
-            features: --no-default-features --features cli
             libc: glibc
             cross: true
 
@@ -312,7 +309,6 @@ jobs:
             os: windows-latest
             rust: stable
             target: x86_64-pc-windows-gnu
-            features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
 

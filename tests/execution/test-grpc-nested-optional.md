@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-grpc-nested-optional
@@ -40,7 +40,7 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

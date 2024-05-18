@@ -6,7 +6,7 @@ type Foo {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema @upstream(allowedHeaders: ["Authorization"]) @link(src: "stripe-types.graphql", type: Config) {
   query: Query
 }

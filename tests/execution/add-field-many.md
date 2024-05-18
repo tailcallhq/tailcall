@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # add-field-many
 
-```graphql @server
+```graphql @config
 schema @server @upstream {
   query: Query
 }

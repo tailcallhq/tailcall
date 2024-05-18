@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use tailcall::javascript::DefaultJsRuntime;
-use tailcall::{EntityCache, EnvIO, FileIO, InMemoryCache, TargetRuntime};
+use tailcall::core::cache::InMemoryCache;
+use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::{EntityCache, EnvIO, FileIO};
 use tokio::io::AsyncReadExt;
 
 use crate::http::init_http;

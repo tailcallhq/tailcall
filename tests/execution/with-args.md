@@ -1,6 +1,6 @@
 # With args
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

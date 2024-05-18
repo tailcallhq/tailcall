@@ -1,5 +1,5 @@
 [package]
-name = "tailcall-autogen"
+name = "tailcall-typedefs"
 version = "0.1.0"
 edition = "2021"
 

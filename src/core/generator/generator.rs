@@ -1,4 +1,6 @@
 use anyhow::Result;
+use prost_reflect::prost_types::FileDescriptorSet;
+use prost_reflect::DescriptorPool;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
 use crate::core::generator::from_proto::from_proto;
@@ -7,6 +9,22 @@ use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
+
+// this function resolves all the names to fully-qualified syntax in descriptors
+// that is important for generation to work
+// TODO: probably we can drop this in case the config_reader will use
+// protox::compile instead of more low-level protox_parse::parse
+fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<FileDescriptorSet> {
+    let descriptor_set = DescriptorPool::from_file_descriptor_set(descriptor_set)?;
+    let descriptor_set = FileDescriptorSet {
+        file: descriptor_set
+            .files()
+            .map(|file| file.file_descriptor_proto().clone())
+            .collect(),
+    };
+
+    Ok(descriptor_set)
+}
 
 pub struct Generator {
     proto_reader: ProtoReader,
@@ -32,7 +50,8 @@ impl Generator {
             match input_source {
                 Source::Proto => {
                     links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
-                    config = config.merge_right(from_proto(&[metadata.descriptor_set], query));
+                    let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
+                    config = config.merge_right(from_proto(&[descriptor_set], query)?);
                 }
             }
         }
@@ -40,8 +59,8 @@ impl Generator {
         config.links = links;
         Ok(
             ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-                input: format!("IN_{}", v),
-                output: format!("OUT_{}", v),
+                input: format!("{}Input", v),
+                output: v.to_owned(),
             }),
         )
     }
@@ -50,6 +69,8 @@ impl Generator {
 #[cfg(test)]
 mod test {
     use std::path::PathBuf;
+
+    use tailcall_fixtures::protobuf;
 
     use super::*;
 
@@ -61,18 +82,10 @@ mod test {
     async fn test_read_all() {
         let server = start_mock_server();
         let runtime = crate::core::runtime::test::init(None);
-        let test_dir = PathBuf::from(tailcall_fixtures::generator::proto::SELF);
+        let test_dir = PathBuf::from(tailcall_fixtures::protobuf::SELF);
 
-        let news_content = runtime
-            .file
-            .read(test_dir.join("news.proto").to_str().unwrap())
-            .await
-            .unwrap();
-        let greetings_a = runtime
-            .file
-            .read(test_dir.join("greetings_a.proto").to_str().unwrap())
-            .await
-            .unwrap();
+        let news_content = runtime.file.read(protobuf::NEWS).await.unwrap();
+        let greetings_a = runtime.file.read(protobuf::GREETINGS_A).await.unwrap();
 
         server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/news.proto");
@@ -89,7 +102,7 @@ mod test {
                 .body(&greetings_a);
         });
 
-        let reader = Generator::init(runtime);
+        let generator = Generator::init(runtime);
         let news = format!("http://localhost:{}/news.proto", server.port());
         let greetings_a = format!("http://localhost:{}/greetings_a.proto", server.port());
         let greetings_b = test_dir
@@ -98,7 +111,7 @@ mod test {
             .unwrap()
             .to_string();
 
-        let config = reader
+        let config = generator
             .read_all(Source::Proto, &[news, greetings_a, greetings_b], "Query")
             .await
             .unwrap();
