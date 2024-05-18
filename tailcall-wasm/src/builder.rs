@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
-use tailcall::{AppContext, Blueprint, ConfigReader, EndpointSet, TargetRuntime};
+use tailcall::core::blueprint::Blueprint;
+use tailcall::core::config::reader::ConfigReader;
+use tailcall::core::http::AppContext;
+use tailcall::core::rest::EndpointSet;
+use tailcall::core::runtime::TargetRuntime;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 

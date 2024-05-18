@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
-use tailcall::{EnvIO, FileIO, HttpIO, InMemoryCache, TargetRuntime};
+use tailcall::core::cache::InMemoryCache;
+use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::{EnvIO, FileIO, HttpIO};
 
 use crate::env::WasmEnv;
 use crate::file::WasmFile;

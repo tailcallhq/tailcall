@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use dashmap::DashMap;
-use tailcall::EnvIO;
+use tailcall::core::EnvIO;
 
 pub struct WasmEnv {
     env: DashMap<String, String>,

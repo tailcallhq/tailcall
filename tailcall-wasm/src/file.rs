@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use dashmap::DashMap;
-use tailcall::FileIO;
+use tailcall::core::FileIO;
 
 pub struct WasmFile {
     files: DashMap<String, String>,
