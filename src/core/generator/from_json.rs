@@ -6,6 +6,7 @@ use crate::core::config::{Arg, Config, Field, Http, Type};
 use crate::core::helpers::gql_type::{
     detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
 };
+use crate::core::merge_right::MergeRight;
 
 #[derive(Debug)]
 struct UrlQuery {
