@@ -7,9 +7,7 @@ use convert_case::{Case, Casing};
 use dotenvy::dotenv;
 use inquire::Confirm;
 use lazy_static::lazy_static;
-use reqwest::Method;
 use stripmargin::StripMargin;
-use url::Url;
 
 use super::command::{Cli, Command};
 use super::update_checker;
@@ -18,7 +16,7 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::generator::{from_json, Generator, Source};
+use crate::core::generator::{Generator};
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
@@ -84,28 +82,13 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { paths, input, output, query } => {
-            match input {
-                Source::Proto => {
-                    let generator = Generator::init(runtime);
-                    let cfg = generator
-                        .read_all(input, paths.as_ref(), query.as_str())
-                        .await?;
+            let generator = Generator::init(runtime);
+            let cfg = generator
+                .read_all(input, paths.as_ref(), query.as_str())
+                .await?;
 
-                    let config = output.unwrap_or_default().encode(&cfg)?;
-                    Fmt::display(config);
-                }
-                Source::Url => {
-                    // TODO: once the input format is discussed, move this to Generator.
-                    for url in paths {
-                        let parsed_url = Url::parse(&url).expect("failed to parse the url");
-                        let request = reqwest::Request::new(Method::GET, parsed_url);
-                        let resp = runtime.http.execute(request).await?;
-                        let body = serde_json::from_slice(&resp.body)?;
-                        let config = from_json(&url, &body);
-                        Fmt::display(config.to_sdl());
-                    }
-                }
-            }
+            let config = output.unwrap_or_default().encode(&cfg)?;
+            Fmt::display(config);
             Ok(())
         }
     }
