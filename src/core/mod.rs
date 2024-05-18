@@ -53,6 +53,7 @@ pub trait EnvIO: Send + Sync + 'static {
 
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send + 'static {
+    /// Provides an way to specify a function name that will be invoked on the configured worker. The worker will have the ability to modify the upstream request or respond with a complete HTTP response.
     async fn execute_with<'a>(
         &'a self,
         request: reqwest::Request,
