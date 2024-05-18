@@ -1,6 +1,6 @@
 # Interfaces defined in json
 
-```json @server
+```json @config
 {
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com"

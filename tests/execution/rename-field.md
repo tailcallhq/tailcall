@@ -1,6 +1,6 @@
 # Rename field
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

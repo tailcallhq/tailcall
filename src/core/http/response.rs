@@ -4,7 +4,6 @@ use derive_setters::Setters;
 use hyper::body::Bytes;
 use indexmap::IndexMap;
 use prost::Message;
-use serde::de::DeserializeOwned;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
@@ -16,6 +15,35 @@ pub struct Response<Body> {
     pub status: reqwest::StatusCode,
     pub headers: reqwest::header::HeaderMap,
     pub body: Body,
+}
+
+// Trait to convert a serde_json_borrow::Value to a ConstValue.
+// serde_json_borrow::Value is a borrowed version of serde_json::Value.
+// It has a limited lifetime tied to the input JSON, making it more
+// efficient. Benchmarking is required to determine the performance If any
+// change is made.
+
+pub trait FromValue {
+    fn from_value(value: serde_json_borrow::Value) -> Self;
+}
+
+impl FromValue for ConstValue {
+    fn from_value(value: serde_json_borrow::Value) -> Self {
+        match value {
+            serde_json_borrow::Value::Null => ConstValue::Null,
+            serde_json_borrow::Value::Bool(b) => ConstValue::Boolean(b),
+            serde_json_borrow::Value::Number(n) => ConstValue::Number(n.into()),
+            serde_json_borrow::Value::Str(s) => ConstValue::String(s.into()),
+            serde_json_borrow::Value::Array(a) => {
+                ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
+            }
+            serde_json_borrow::Value::Object(o) => ConstValue::Object(
+                o.into_iter()
+                    .map(|(k, v)| (Name::new(k), Self::from_value(v)))
+                    .collect(),
+            ),
+        }
+    }
 }
 
 impl Response<Bytes> {
@@ -34,7 +62,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: DeserializeOwned + Default>(self) -> Result<Response<T>> {
+    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
@@ -42,7 +70,11 @@ impl Response<Bytes> {
                 body: Default::default(),
             });
         }
-        let body = serde_json::from_slice::<T>(&self.body)?;
+        // Note: We convert the body to a serde_json_borrow::Value for better
+        // performance. Warning: Do not change this to direct conversion to `T`
+        // without benchmarking the performance impact.
+        let body: serde_json_borrow::Value = serde_json::from_slice(&self.body)?;
+        let body = T::from_value(body);
         Ok(Response { status: self.status, headers: self.headers, body })
     }
 

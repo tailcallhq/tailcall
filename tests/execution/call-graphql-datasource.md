@@ -1,6 +1,6 @@
 # Call operator with graphQL datasource
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {

@@ -1,6 +1,6 @@
 # Nested objects
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

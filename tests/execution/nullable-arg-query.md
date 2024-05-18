@@ -1,6 +1,6 @@
 # Nullable arg query
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

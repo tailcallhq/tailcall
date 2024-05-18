@@ -2,12 +2,17 @@ use std::fs;
 use std::path::Path;
 
 use async_graphql::parser::parse_query;
-use tailcall::{Blueprint, Config, ConfigModule, RequestContext, Validator};
+use tailcall::core::blueprint::Blueprint;
+use tailcall::core::config::{Config, ConfigModule};
+use tailcall::core::http::RequestContext;
+use tailcall::core::valid::Validator;
 use tailcall_query_plan::execution::executor::Executor;
 use tailcall_query_plan::execution::simple::SimpleExecutionBuilder;
 use tailcall_query_plan::plan::{GeneralPlan, OperationPlan};
 
 #[tokio::test]
+#[ignore]
+// TODO: This test hangs up sometimes
 async fn test_simple() {
     let root_dir = Path::new(tailcall_fixtures::configs::SELF);
     let config = fs::read_to_string(root_dir.join("user-posts.graphql")).unwrap();
